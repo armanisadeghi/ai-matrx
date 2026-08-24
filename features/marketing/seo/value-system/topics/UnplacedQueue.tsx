@@ -16,7 +16,7 @@
  *   • `baseFilters: { topic: "none" }` — the keywords nobody has placed;
  *   • an opening column set, which the person can change and save.
  *
- * Placing a keyword is the Service cell (one gesture, no dialog) or the bulk
+ * Placing a keyword is the Offering cell (one gesture, no dialog) or the bulk
  * panel, both of which are THE one placement write (`seo.gsc_set_keyword_topic`)
  * that the workbench already used. The Topic Assigner agent stays here, because
  * handing a batch of unplaced keywords to it is a thing only this surface does.
@@ -61,7 +61,7 @@ const SURFACE: KeywordTableSurface = {
   // Two keyword tables share this route, so each owns its own URL namespace and
   // Back undoes exactly one step on the one you touched.
   prefix: "u",
-  // The Service column is the placement gesture, so it opens visible even
+  // The Offering column is the placement gesture, so it opens visible even
   // though every row in this queue is empty in it — that emptiness is the work.
   defaultColumns: [
     "key",

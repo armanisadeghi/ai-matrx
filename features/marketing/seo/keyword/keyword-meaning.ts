@@ -7,14 +7,14 @@
  * Why this file exists: the Keyword Intelligence window is the shared dossier
  * that twelve surfaces open, and until 2026-08-24 it showed the 13 retired
  * mirror facets (Intent · Funnel stage · Specificity …) and nothing at all
- * from the stamp system — no Class, no Service, no Score, no Level, no
+ * from the stamp system — no Class, no Offering, no Score, no Level, no
  * receipt. The facts were in the database and invisible in the one place a
  * curious person actually looks.
  *
  * It composes the canonical reads and adds NO read or write of its own:
  *   • Class · Score · Level · the receipt → `seo.gsc_keyword_value_for`
  *     (search-console/data-insights.ts — ONE resolver, never re-derived here)
- *   • Service (topic placement) + lineage → `seo.gsc_keyword_topics_for`
+ *   • Offering (topic placement) + lineage → `seo.gsc_keyword_topics_for`
  *   • Every dimension stamp + provenance → `seo.gsc_keyword_stamps_for`
  *   • The dimension vocabulary itself   → `seo.facet_dimension_catalog`
  *
@@ -166,7 +166,7 @@ export function keywordMeaningLines(
   }
   if (service) {
     lines.push([
-      "Service",
+      "Offering",
       service.lineage
         ? `${service.lineage} › ${service.topicName}`
         : service.topicName,

@@ -75,12 +75,12 @@ const FILTER_LABELS: Record<GscFilterKey, string> = {
   location: "Location",
   stamps: "Dimension",
   levels: "Level",
-  // THE SERVICE FILTER is set and shown by the surface that can NAME a topic
-  // (the keyword workbench's own Service control). This bar has no topic
+  // THE OFFERING FILTER is set and shown by the surface that can NAME a topic
+  // (the keyword workbench's own Offering control). This bar has no topic
   // catalog, so it never offers the key and never renders a raw uuid chip for
   // it — see SKIPPED_KEYS below.
-  topic: "Service",
-  // WHOSE RULING a placement is. Like the service filter, it is set by the
+  topic: "Offering",
+  // WHOSE RULING a placement is. Like the offering filter, it is set by the
   // surface it MAKES (the topic tree's proposals queue), never chosen here —
   // see SKIPPED_KEYS below.
   placement: "Placement",
@@ -131,7 +131,7 @@ const QUERY_PAGE_KEYS: GscFilterKey[] = [
   "page_eq",
   "stamps",
   "levels",
-  // The service filter is a keyword-level filter like a stamp, so it belongs
+  // The offering filter is a keyword-level filter like a stamp, so it belongs
   // to this profile group even though this bar does not render its control.
   "topic",
 ];

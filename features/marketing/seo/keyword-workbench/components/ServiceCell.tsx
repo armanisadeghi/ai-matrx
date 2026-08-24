@@ -1,19 +1,19 @@
 "use client";
 
 /**
- * THE SERVICE CELL — "the first thing I wanna know is what service they map
+ * THE OFFERING CELL — "the first thing I wanna know is what service they map
  * to" (Arman, 2026-08-24).
  *
  * The cell IS the control, the same doctrine as `ClassCell`: click the value
  * you are reading and place the keyword, one gesture, no dialog. It shows the
- * service by NAME with its root beside it, because "Data Destruction Services"
+ * offering by NAME with its root beside it, because "Data Destruction Services"
  * only means something once you can see it sits under ITAD; and where the
- * worth is inherited from an ancestor it still shows the service itself, with
+ * worth is inherited from an ancestor it still shows the offering itself, with
  * the ancestor named in the tooltip — never a blank, and never a keyword whose
  * placement looks like no placement.
  *
  * Unplaced reads "Not placed yet". A dash would be a shrug; that sentence is
- * an invitation, and it is also the exact thing the Service filter can select.
+ * an invitation, and it is also the exact thing the Offering filter can select.
  */
 
 import { Filter } from "lucide-react";
@@ -21,7 +21,7 @@ import { Filter } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import type { KeywordServicePlacement } from "../data";
 import type { SiteServices } from "../hooks/useSiteServices";
-import { ServicePicker, SERVICE_UNPLACED } from "./ServicePicker";
+import { OfferingPicker, OFFERING_UNPLACED } from "./OfferingPicker";
 
 /** Whose ruling this is, in words a non-technical reader can act on. */
 function sourceHint(assignedBy: string | null): string | null {
@@ -45,7 +45,7 @@ export function ServiceCell({
   disabled?: boolean;
   /** `null` takes the keyword off the tree. */
   onPlace: (topicId: string | null) => void;
-  /** Show everything that maps to this service — the pattern-spotting door. */
+  /** Show everything that maps to this offering — the pattern-spotting door. */
   onFilter?: (topicId: string) => void;
 }) {
   const hint = sourceHint(placement?.assignedBy ?? null);
@@ -58,7 +58,7 @@ export function ServiceCell({
           ? `Root: ${placement.rootName}`
           : null,
         placement.hasOwnWorth
-          ? "This service carries this site's own worth ruling."
+          ? "This offering carries this site's own worth ruling."
           : placement.worthFromName
             ? `Worth inherited from ${placement.worthFromName}.`
             : "No worth ruling on this branch yet — it uses the default.",
@@ -67,25 +67,25 @@ export function ServiceCell({
       ]
         .filter(Boolean)
         .join("\n")
-    : "Not placed on any service yet. Click to place it.";
+    : "Not placed on any offering yet. Click to place it.";
 
   return (
     <span className="group/cell flex min-w-0 items-center gap-1" title={title}>
-      <ServicePicker
+      <OfferingPicker
         siteId={siteId}
         services={services}
         value={placement?.topicId ?? null}
         onSelect={(next) =>
-          onPlace(next === SERVICE_UNPLACED ? null : next)
+          onPlace(next === OFFERING_UNPLACED ? null : next)
         }
         disabled={disabled}
         unplacedLabel={placement ? "Take it off the tree" : undefined}
         placeholder="Not placed yet"
-        ariaLabel="Service this keyword maps to"
+        ariaLabel="Offering this keyword maps to"
         className="h-auto min-h-6 border-0 px-1 py-0.5 shadow-none hover:bg-accent"
         renderSelected={
           placement ? (
-            // TWO LINES, deliberately: the service is the first thing Arman
+            // TWO LINES, deliberately: the offering is the first thing Arman
             // reads, and three pieces of text on one line truncated all three
             // to "Data Dest… IT Asset Di… AI". The name gets the width; the
             // root sits under it in the size of a footnote.

@@ -2,7 +2,7 @@
 type: Feature
 title: "Keyword Workbench"
 description: "The one surface where a subject-matter expert finds exactly the keywords they mean and tells the system what those keywords ARE — with the reason, in their own words, at the moment they decide."
-tags: [seo, keywords, stamps, assignment, gsc, topics, services]
+tags: [seo, keywords, stamps, assignment, gsc, topics, offerings]
 timestamp: 2026-08-24
 ---
 
@@ -42,7 +42,13 @@ Plus one negative requirement that shapes the layout more than any of them:
 I don't like pages where there are novels written."* The top is ONE line of
 context plus the controls. Everything else is table.
 
-## THE SERVICE COLUMN (2026-08-24)
+## THE OFFERING COLUMN (2026-08-24)
+
+> 🚨 **Renamed 2026-08-24 (KI-047).** This column and its components were
+> called "Service" through 2026-08-24; every user-visible label and the
+> `ServicePicker`/`ServiceAssignPanel` components are now **Offering**. The
+> Change Log below keeps the period-accurate name for entries written before
+> the rename.
 
 Arman: *"What I've lost is my ability to set the service or product or main
 thing that this relates to. That's gone."* And: *"when I look at all green
@@ -50,7 +56,7 @@ electronics recycling, the first thing I wanna know is what service they map
 to… I wanna know what maps to e-waste recycling, what maps to ITAD, and what
 maps to data destruction."*
 
-**Service** is the second column, right after the keyword — the order a person
+**Offering** is the second column, right after the keyword — the order a person
 reads: the phrase, what it is FOR, how we classify it, the dimensions, the
 numbers. It is the keyword's PRIMARY TOPIC: the name, with its root under it
 ("Data Destruction Services" / "IT Asset Disposition (ITAD)"), an `AI` badge
@@ -64,16 +70,16 @@ dimension+value pair. Everything else about it is the same contract as a stamp:
 | Gesture | How |
 |---|---|
 | Place one keyword | The cell IS the control (same doctrine as Class) — click, pick, done. No dialog. |
-| Invent a service | The picker's `Create "…"` plus ONE extra choice: its own root, or under an existing topic (**P23**). Creating and placing is one gesture. |
-| Place the checked rows | **Service…** in the selection bar → `ServiceAssignPanel`, with the reason box. |
-| Place everything matching | **Service for all N** in the toolbar. Honest when the server caps the sweep — the same sentence the stamp panel uses, from the shared `AssignTargetHeadline`. |
+| Invent an offering | The picker's `Create "…"` plus ONE extra choice: its own root, or under an existing topic (**P23**). Creating and placing is one gesture. |
+| Place the checked rows | **Offering…** in the selection bar → `OfferingAssignPanel`, with the reason box. |
+| Place everything matching | **Offering for all N** in the toolbar. Honest when the server caps the sweep — the same sentence the stamp panel uses, from the shared `AssignTargetHeadline`. |
 | Say WHY (**P24**) | One reason per placement, stored ON the placement (`seo.keyword_topic.notes`). |
-| Find everything under a service | The **Service** filter (its own control beside the filter bar), the hover Filter icon in any cell, or the column's own filter. All three write ONE server filter. |
-| Sort by service | Server-side (`p_sort = 'topic'`). A paged table sorted in the browser would sort 50 of 4,471 rows and say nothing about it. |
+| Find everything under an offering | The **Offering** filter (its own control beside the filter bar), the hover Filter icon in any cell, or the column's own filter. All three write ONE server filter. |
+| Sort by offering | Server-side (`p_sort = 'topic'`). A paged table sorted in the browser would sort 50 of 4,471 rows and say nothing about it. |
 
 Two deliberate choices worth knowing:
 
-- **A service filter means the service AND its whole subtree.** Filtering
+- **An offering filter means the offering AND its whole subtree.** Filtering
   "ITAD" answers "what maps to this branch", which is the question. `none`
   selects the unplaced — that is the work queue.
 - **The filter's control lives here, not in the shared `FilterBar`.** The URL
@@ -92,10 +98,10 @@ Two deliberate choices worth knowing:
 | `components/ColumnChooser.tsx` | Every dimension this site sees, offered as a column (P26). |
 | `components/SavedViewTabs.tsx` | Saved views as tabs — rename, share, reorder, delete, and "keep these changes". |
 | `components/cells.tsx` | The Class dropdown that ASSIGNS (with P11's door in it), and the stamp cell that assigns and filters. |
-| `components/ServiceCell.tsx` | THE SERVICE COLUMN's cell — the name, its root, who placed it, and the picker behind it. |
-| `components/ServicePicker.tsx` | The tree-shaped, creatable service picker shared by the cell, the bulk panel, and the filter. |
-| `components/ServiceAssignPanel.tsx` | Bulk placement + the reason, over the ONE placement write. |
-| `components/ServiceFilterControl.tsx` | The Service filter chip and picker (the shared bar cannot name a topic). |
+| `components/ServiceCell.tsx` | THE OFFERING COLUMN's cell — the name, its root, who placed it, and the picker behind it. |
+| `components/OfferingPicker.tsx` | The tree-shaped, creatable offering picker shared by the cell, the bulk panel, and the filter. |
+| `components/OfferingAssignPanel.tsx` | Bulk placement + the reason, over the ONE placement write. |
+| `components/ServiceFilterControl.tsx` | The Offering filter chip and picker (the shared bar cannot name a topic). |
 | `hooks/useSiteServices.ts` | The site's topic tree, flattened parent → child for a picker. Shares the topic screen's query keys. |
 | `state.ts` | The URL state. A saved view IS this state, stored verbatim. |
 | `data.ts` | The RPC callers. **No write path of its own** — see below. |
@@ -135,7 +141,7 @@ Two deliberate choices worth knowing:
   (`buildTopicTree`, `flattenTree`, `lineageOf`), its create
   (`saveTopic` → `gsc_topic_save`) and its root vocabulary (`ROOT_TYPE_META`).
   This feature owns no second topic catalog, no second tree walk, and no
-  second way to invent a service.
+  second way to invent an offering.
 - **The trigger's compact display** → `CreatablePicker`'s `renderSelected`
   (added 2026-08-24). A dense cell shows one line; the option row it came from
   is indented and annotated. Same selection, two jobs, one component.
@@ -169,13 +175,13 @@ write for a PLACEMENT is `seo.gsc_set_keyword_topic`, the same way.
 | `seo.gsc_quick_add_value` | P23 (via `quickAddDimensionValue`). |
 | `seo.gsc_set_keyword_stamps` | P24. Human stamps are pinned. |
 | `seo.gsc_saved_views` / `gsc_save_view` / `gsc_delete_saved_view` | Saved views (site-editor guarded). |
-| `seo.gsc_keyword_topics_for` | THE SERVICE COLUMN's data — name, root, lineage, who placed it, which ancestor its worth comes from. THE SCOPE RULE: ≤2,000 ids. |
-| `seo.gsc_topic_keyword_set` | Every keyword placed anywhere in a topic's subtree — what the service filter means. |
+| `seo.gsc_keyword_topics_for` | THE OFFERING COLUMN's data — name, root, lineage, who placed it, which ancestor its worth comes from. THE SCOPE RULE: ≤2,000 ids. |
+| `seo.gsc_topic_keyword_set` | Every keyword placed anywhere in a topic's subtree — what the offering filter means. |
 | `seo.gsc_set_keyword_topic` | THE placement write, now carrying `p_notes` (P24). Answers with the band each keyword lands in AFTER the change, from the resolver. |
 
 Migrations: `migrations/seo_keyword_workbench_c14.sql` (builds on C13's
 `seo_stamp_assignment_layer.sql`) and
-`migrations/seo_keyword_workbench_service_column.sql` (the Service column:
+`migrations/seo_keyword_workbench_service_column.sql` (the Offering column:
 `keyword_topic.notes`, the two reads above, `p_notes`, and the `topic` filter
 key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
 `gsc_breakdown_keyword_ids`).
@@ -198,7 +204,7 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
   browser history. The Keyword header filter and toolbar search now share this
   one draft/query path.
 - **Controlled column filters round-trip typed state.** The table emits
-  `ColumnFilterValue` objects, not raw strings. Service, Class, and dimension
+  `ColumnFilterValue` objects, not raw strings. Offering, Class, and dimension
   filters are translated into the URL/server contract and mirrored back into
   `columnFilters`; otherwise a valid click appears to do nothing on the next
   controlled render.
@@ -206,7 +212,7 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
   says so and offers "make it your own dimension" rather than a list with no
   way out. `pnpm check:picker-add` catches the omission.
 
-## Traps the SERVICE column added to the list
+## Traps the OFFERING column added to the list
 
 - **An added DEFAULT parameter creates a SECOND function.** `gsc_set_keyword_topic`
   had to be dropped and recreated to take `p_notes`; leaving both overloads
@@ -223,6 +229,14 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
 
 ## Change log
 
+- **2026-08-24** — **KI-047: renamed "Service" to "Offering" everywhere it is
+  a user-visible label.** Column header, filter label, picker aria-labels,
+  toasts, and the placement panel's copy all now say Offering. `ServicePicker`
+  → `OfferingPicker` (export `SERVICE_UNPLACED` → `OFFERING_UNPLACED`) and
+  `ServiceAssignPanel` → `OfferingAssignPanel`, both files renamed, every
+  import site updated. Left alone on purpose: `nodeType: "service"` and the
+  `service_match` column (DB values, not labels — a separate owned change),
+  and the unrelated "Service areas" (geographic) concept elsewhere in SEO.
 - **2026-08-24** — Collapsed the second right-click menu. This page's inline
   `extraSections` was the only full keyword menu in the platform; it is now
   the shared `useKeywordMenuSection` plus one local quick-assign item. The

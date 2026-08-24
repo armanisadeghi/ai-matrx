@@ -847,7 +847,7 @@ function OverviewTab({
         })
       )}
 
-      {/* THE MEANING HALF — Class, Service, Score, Level, the receipt and
+      {/* THE MEANING HALF — Class, Offering, Score, Level, the receipt and
           every dimension stamp, all settable in place. This replaced the 13
           retired mirror facets on 2026-08-24; see the note at the top of this
           file. Without a site there is nothing to say: meaning is per-site. */}
@@ -862,7 +862,7 @@ function OverviewTab({
       ) : (
         <div className="rounded-lg border border-dashed border-border p-3">
           <p className="text-xs font-medium text-foreground">
-            Class, service and value are decided per website
+            Class, offering and value are decided per website
           </p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             This dossier is currently global. Open it from a website to see —

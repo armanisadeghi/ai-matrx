@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * THE SERVICE FILTER — "I wanna know what maps to e-waste recycling, what maps
+ * THE OFFERING FILTER — "I wanna know what maps to e-waste recycling, what maps
  * to ITAD, and what maps to data destruction."
  *
  * It is a SERVER filter (`topic` in the shared GSC filter dialect, `tp=` in the
@@ -9,7 +9,7 @@
  * table sieved in the browser tells you "12 of 4,471" and means "12 of the 50 I
  * happened to fetch".
  *
- * Choosing a service means that service AND everything under it — a person
+ * Choosing an offering means that offering AND everything under it — a person
  * filtering "ITAD" is asking about the branch, not the root node's three direct
  * keywords. "Not placed yet" is a first-class choice: it is the work queue.
  *
@@ -22,7 +22,7 @@
 import { Network, X } from "lucide-react";
 
 import type { SiteServices } from "../hooks/useSiteServices";
-import { ServicePicker, SERVICE_UNPLACED } from "./ServicePicker";
+import { OfferingPicker, OFFERING_UNPLACED } from "./OfferingPicker";
 
 export function ServiceFilterControl({
   siteId,
@@ -32,14 +32,14 @@ export function ServiceFilterControl({
 }: {
   siteId: string;
   services: SiteServices;
-  /** A topic id, `SERVICE_UNPLACED`, or undefined for "no service filter". */
+  /** A topic id, `OFFERING_UNPLACED`, or undefined for "no offering filter". */
   value: string | undefined;
   onChange: (next: string | undefined) => void;
 }) {
   const active = value
-    ? value === SERVICE_UNPLACED
+    ? value === OFFERING_UNPLACED
       ? "Not placed yet"
-      : (services.byId.get(value)?.name ?? "That service")
+      : (services.byId.get(value)?.name ?? "That offering")
     : null;
 
   if (active) {
@@ -47,14 +47,14 @@ export function ServiceFilterControl({
       <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs text-foreground sm:max-w-72">
         <Network className="h-3 w-3 shrink-0 text-muted-foreground" />
         <span className="shrink-0 whitespace-nowrap text-muted-foreground">
-          Service:
+          Offering:
         </span>
         <span className="min-w-0 truncate whitespace-nowrap font-medium" title={active}>
           {active}
         </span>
         <button
           type="button"
-          aria-label="Remove Service filter"
+          aria-label="Remove Offering filter"
           className="ml-0.5 shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           onClick={() => onChange(undefined)}
         >
@@ -66,14 +66,14 @@ export function ServiceFilterControl({
 
   return (
     <div className="w-44">
-      <ServicePicker
+      <OfferingPicker
         siteId={siteId}
         services={services}
         value={null}
         onSelect={(next) => onChange(next)}
-        placeholder="Filter by service"
+        placeholder="Filter by offering"
         unplacedLabel="Not placed yet"
-        ariaLabel="Filter by service"
+        ariaLabel="Filter by offering"
         className="h-7 text-xs"
       />
     </div>

@@ -53,9 +53,9 @@ which is why it lives in the URL.
 
 | File | What it owns |
 |---|---|
-| `KeywordTable.tsx` | The component. Controlled `MatrxDataTable`, the URL ↔ query-state translation, selection, and the two write panels (dimension assign, service placement). |
-| `useKeywordRows.ts` | **THE ONE QUERY** (P28). `seo.gsc_perf_breakdown` for the rows plus the four page-scoped reads that decorate them (value, service, stamps, catalog) and the site's own band vocabulary. |
-| `columns.tsx` | **THE ONE COLUMN SET** (P26). Keyword, Service, Class, any dimension, Clicks, Impressions, CTR, Position, Score, Level. |
+| `KeywordTable.tsx` | The component. Controlled `MatrxDataTable`, the URL ↔ query-state translation, selection, and the two write panels (dimension assign, offering placement). |
+| `useKeywordRows.ts` | **THE ONE QUERY** (P28). `seo.gsc_perf_breakdown` for the rows plus the four page-scoped reads that decorate them (value, offering, stamps, catalog) and the site's own band vocabulary. |
+| `columns.tsx` | **THE ONE COLUMN SET** (P26). Keyword, Offering, Class, any dimension, Clicks, Impressions, CTR, Position, Score, Level. |
 | `state.ts` | The URL dialect + the per-surface `prefix`, `visibleCoreColumns`, and `liveSearchParams`. |
 | `ColumnChooser.tsx` | Add AND remove core columns; add any dimension from the site's catalog. |
 
@@ -73,9 +73,9 @@ otherwise is the quiet lie this whole system exists to stop.
 
 | Surface | Opens on | Base filter | Prefix |
 |---|---|---|---|
-| Keyword Workbench (`/keywords?view=workbench`) | keyword, service, class, clicks, impressions, score, level | — | *(none — it owns its route, and every saved view already stored uses this dialect)* |
-| Not placed on the tree (`/value/topics`) | keyword, service, class, clicks, impressions, level | `topic: "none"` | `u_` |
-| Proposals (`/value/topics`) | keyword, service, clicks, impressions, level + How sure | `placement: "proposed"` | `pq_` |
+| Keyword Workbench (`/keywords?view=workbench`) | keyword, offering, class, clicks, impressions, score, level | — | *(none — it owns its route, and every saved view already stored uses this dialect)* |
+| Not placed on the tree (`/value/topics`) | keyword, offering, class, clicks, impressions, level | `topic: "none"` | `u_` |
+| Proposals (`/value/topics`) | keyword, offering, clicks, impressions, level + How sure | `placement: "proposed"` | `pq_` |
 
 Two tables share `/value/topics`, so each owns a URL namespace and Back undoes
 exactly one step on the one you touched.

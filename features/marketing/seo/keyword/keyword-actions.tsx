@@ -15,7 +15,7 @@
  *
  * 🚨 NO NEW WRITE PATH LIVES HERE. Every action delegates:
  *   • a dimension answer (Class included) → `AssignPanel`  → `seo.gsc_set_keyword_stamps`
- *   • a service placement               → `ServiceAssignPanel` → `seo.gsc_set_keyword_topic`
+ *   • an offering placement               → `OfferingAssignPanel` → `seo.gsc_set_keyword_topic`
  *   • a pinned level                    → `RulingDialog`   → `seo.gsc_set_keyword_value`
  *
  * And no fake items: an action that cannot run for the right-clicked row
@@ -48,7 +48,7 @@ import {
   AssignPanel,
   type AssignTarget,
 } from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
-import { ServiceAssignPanel } from "@/features/marketing/seo/keyword-workbench/components/ServiceAssignPanel";
+import { OfferingAssignPanel } from "@/features/marketing/seo/keyword-workbench/components/OfferingAssignPanel";
 import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
 import {
@@ -298,7 +298,7 @@ export function useKeywordAssignSurfaces(opts: {
                 toast.success(
                   placed.topicId
                     ? `Placed under ${placed.name}.`
-                    : "Taken off the service tree.",
+                    : "Taken off the offering tree.",
                 );
               }}
             />
@@ -339,7 +339,7 @@ function ServiceAssign({
 }) {
   const services = useSiteServices(siteId, window.start, window.end);
   return (
-    <ServiceAssignPanel
+    <OfferingAssignPanel
       siteId={siteId}
       services={services}
       target={target}
@@ -401,10 +401,10 @@ export function useKeywordMenuSection(opts: {
     {
       kind: "item",
       id: "kw-set-service",
-      label: "Which service?",
+      label: "Which offering?",
       icon: Network,
       description:
-        "Place this keyword under the service, product or thing it is really about",
+        "Place this keyword under the offering, product or thing it is really about",
       onSelect: withRow((row) => surfaces.openService(row)),
     },
     {

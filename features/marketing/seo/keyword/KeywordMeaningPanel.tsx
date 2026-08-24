@@ -6,13 +6,13 @@
  *
  * Before 2026-08-24 the Keyword Intelligence window (the dossier twelve
  * surfaces open) showed the 13 retired mirror facets and nothing from the
- * stamp system. This panel replaces them: Class with its source, Service with
+ * stamp system. This panel replaces them: Class with its source, Offering with
  * its lineage, Score + Level with the full receipt, and every dimension answer
  * with its provenance — plus the honest count of dimensions with no answer.
  *
  * NOTHING here is a second write path, and nothing here is a second copy of an
  * assignment UI: the buttons open the SAME surfaces the right-click menu opens
- * (`useKeywordAssignSurfaces` → AssignPanel / ServiceAssignPanel /
+ * (`useKeywordAssignSurfaces` → AssignPanel / OfferingAssignPanel /
  * RulingDialog → `gsc_set_keyword_stamps` / `gsc_set_keyword_topic` /
  * `gsc_set_keyword_value`), with the same reason field (P24).
  */
@@ -155,7 +155,7 @@ export function KeywordMeaningPanel({
         </Field>
 
         <Field
-          label="Service"
+          label="Offering"
           action={
             <Button
               size="sm"

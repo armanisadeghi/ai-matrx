@@ -52,7 +52,7 @@ import {
  */
 export const KEYWORD_CORE_COLUMNS = [
   { id: "key", label: "Keyword" },
-  { id: "topic", label: "Service" },
+  { id: "topic", label: "Offering" },
   { id: "traffic_class", label: "Class" },
   // C10 — WHICH branch a local search belongs to. Opt-in, because a
   // single-location business has one answer for every row and a column that

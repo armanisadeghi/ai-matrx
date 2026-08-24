@@ -75,7 +75,7 @@ import {
   setKeywordStamps,
 } from "@/features/marketing/seo/keyword-workbench/data";
 import { AssignPanel, type AssignTarget } from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
-import { ServiceAssignPanel } from "@/features/marketing/seo/keyword-workbench/components/ServiceAssignPanel";
+import { OfferingAssignPanel } from "@/features/marketing/seo/keyword-workbench/components/OfferingAssignPanel";
 import { ServiceFilterControl } from "@/features/marketing/seo/keyword-workbench/components/ServiceFilterControl";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
 import { ColumnChooser } from "./ColumnChooser";
@@ -105,12 +105,12 @@ export interface KeywordTableSurface {
   defaultColumns: KeywordCoreColumnId[];
   /**
    * Filters this surface always applies and the user cannot clear — they are
-   * what MAKES it that surface ("keywords with no service", "placements the
+   * what MAKES it that surface ("keywords with no offering", "placements the
    * assigner is unsure about"). Everything else stays a normal, clearable
    * filter.
    */
   baseFilters?: GscFilters;
-  /** Show the shared Search Console filter bar + service filter. Default true. */
+  /** Show the shared Search Console filter bar + offering filter. Default true. */
   showFilterBar?: boolean;
   /** Show the date-range / compare control. Default true. */
   showRangeControl?: boolean;
@@ -118,11 +118,11 @@ export interface KeywordTableSurface {
 
 /**
  * The table's own write panels, handed to a surface so it never rebuilds one.
- * "Place under a topic…" on the unplaced queue and "Service…" on the workbench
+ * "Place under a topic…" on the unplaced queue and "Offering…" on the workbench
  * are the SAME panel over the SAME RPC (`seo.gsc_set_keyword_topic`).
  */
 export interface KeywordTableControls {
-  /** Open the reason-carrying service placement panel for these keywords. */
+  /** Open the reason-carrying offering placement panel for these keywords. */
   openServiceAssign: (keywordIds: string[], label: string) => void;
   /**
    * Open the dimension assign panel (P24 — the WHY rides the stamp).
@@ -379,12 +379,12 @@ export function KeywordTable({
       await setKeywordService({ siteId, keywordIds: [keywordId], topicId });
       await afterWrite();
       const name = topicId
-        ? (data.services.byId.get(topicId)?.name ?? "that service")
+        ? (data.services.byId.get(topicId)?.name ?? "that offering")
         : null;
       toast.success(
         name
           ? `“${keyword}” maps to ${name}.`
-          : `“${keyword}” is off the tree — it maps to no service now.`,
+          : `“${keyword}” is off the tree — it maps to no offering now.`,
       );
     } catch (error) {
       toast.error(
@@ -421,7 +421,7 @@ export function KeywordTable({
   };
 
   /**
-   * C10 — WHICH BRANCH. A server filter (`lo=`) like the service filter, never
+   * C10 — WHICH BRANCH. A server filter (`lo=`) like the offering filter, never
    * a page-local one: "everything the San Diego yard owns" has to mean the
    * whole list. Clicking the location you are already filtered to clears it,
    * so the cell is a toggle and never a dead end.
@@ -856,7 +856,7 @@ export function KeywordTable({
 
       {serviceTarget ? (
         <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
-          <ServiceAssignPanel
+          <OfferingAssignPanel
             siteId={siteId}
             services={data.services}
             target={serviceTarget}

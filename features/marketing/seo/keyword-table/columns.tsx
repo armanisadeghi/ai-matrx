@@ -27,7 +27,7 @@ import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
 import { ClassCell, StampCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
 import { ServiceCell } from "@/features/marketing/seo/keyword-workbench/components/ServiceCell";
-import { SERVICE_UNPLACED } from "@/features/marketing/seo/keyword-workbench/components/ServicePicker";
+import { OFFERING_UNPLACED } from "@/features/marketing/seo/keyword-workbench/components/OfferingPicker";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
 import { LocationCell } from "@/features/marketing/seo/value-system/locations/LocationCell";
 import type { KeywordCoreColumnId } from "./state";
@@ -113,18 +113,18 @@ export function buildKeywordColumns({
   if (shown.has("topic")) {
     columns.push({
       /**
-       * THE SERVICE COLUMN — "the first thing I wanna know is what service
+       * THE OFFERING COLUMN — "the first thing I wanna know is what service
        * they map to". It sits next to the keyword because that is the order a
        * person reads: the phrase, then what it is FOR, then how we classify
        * it, then the dimensions, then the numbers.
        */
       id: "topic",
-      header: "Service",
+      header: "Offering",
       sortable: true,
       filter: "select",
       filterSingle: true,
       filterOptions: [
-        { value: SERVICE_UNPLACED, label: "Not placed yet" },
+        { value: OFFERING_UNPLACED, label: "Not placed yet" },
         ...services.options.map((option) => ({
           value: option.topicId,
           label:

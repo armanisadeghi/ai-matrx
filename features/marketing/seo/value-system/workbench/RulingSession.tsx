@@ -63,9 +63,9 @@ import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/dat
 import { setKeywordService } from "@/features/marketing/seo/keyword-workbench/data";
 import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
 import {
-  ServicePicker,
-  SERVICE_UNPLACED,
-} from "@/features/marketing/seo/keyword-workbench/components/ServicePicker";
+  OfferingPicker,
+  OFFERING_UNPLACED,
+} from "@/features/marketing/seo/keyword-workbench/components/OfferingPicker";
 import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import { humanizeSlug, type BandMeta, type ValueWindow } from "../lib";
 import { getRulingSessionQueue, type SessionQueueRow } from "./session/data";
@@ -258,7 +258,7 @@ export function RulingSession({
       }),
     onSuccess: (_result, input) => {
       toast.success(
-        `Placed on ${services.byId.get(input.topicId)?.name ?? "that service"}`,
+        `Placed on ${services.byId.get(input.topicId)?.name ?? "that offering"}`,
       );
       advance(input.row.keywordId);
     },
@@ -574,14 +574,14 @@ export function RulingSession({
             <div className="mt-3 border-t border-dashed border-border pt-3">
               <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
                 <Network className="h-3.5 w-3.5 text-muted-foreground" />
-                Which of your services is this about?
+                Which of your offerings is this about?
               </p>
-              <ServicePicker
+              <OfferingPicker
                 siteId={siteId}
                 services={services}
                 value={null}
                 onSelect={(next) => {
-                  if (next === SERVICE_UNPLACED) return;
+                  if (next === OFFERING_UNPLACED) return;
                   place.mutate({
                     row: current,
                     topicId: next,
@@ -590,7 +590,7 @@ export function RulingSession({
                 }}
                 size="md"
                 className="mt-1.5"
-                ariaLabel="Service"
+                ariaLabel="Offering"
               />
             </div>
 

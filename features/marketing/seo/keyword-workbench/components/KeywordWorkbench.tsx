@@ -382,7 +382,7 @@ export function KeywordWorkbench() {
                 disabled={selectingAll}
               >
                 <Network className="h-3.5 w-3.5" />
-                Service for all {formatCount(live.total)}
+                Offering for all {formatCount(live.total)}
               </Button>
             </div>
           ) : null
@@ -423,7 +423,7 @@ export function KeywordWorkbench() {
               }
             >
               <Network className="h-3.5 w-3.5" />
-              Service…
+              Offering…
             </Button>
             {lastUsed ? (
               <Button

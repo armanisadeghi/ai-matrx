@@ -40,14 +40,14 @@ const SURFACE: KeywordTableSurface = {
   prefix: "pq",
   defaultColumns: ["key", "topic", "clicks", "impressions", "value_band"],
   baseFilters: { placement: "proposed" },
-  // The service filter would fight the base filter for meaning here; the
-  // Service COLUMN still filters, which is the same door.
+  // The offering filter would fight the base filter for meaning here; the
+  // Offering COLUMN still filters, which is the same door.
   showFilterBar: false,
 };
 
 /**
  * How sure the assigner was. It rides the SHARED placement read
- * (`gsc_keyword_topics_for`) that the Service column already needs, so this
+ * (`gsc_keyword_topics_for`) that the Offering column already needs, so this
  * column costs no extra query.
  */
 function confidenceColumn(

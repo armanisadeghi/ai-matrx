@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * THE SERVICE CATALOG the workbench picks from — the site's topic tree,
+ * THE OFFERING CATALOG the workbench picks from — the site's topic tree,
  * flattened parent → child so a person can SEE that "Data Destruction
  * Services" sits under "IT Asset Disposition (ITAD)".
  *
