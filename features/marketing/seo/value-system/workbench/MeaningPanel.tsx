@@ -129,7 +129,7 @@ const GUARD_LABELS: Record<string, string> = {
 };
 
 function guardChips(value: SiteTopicValue) {
-  const guards = [value.lead_quality, value.service_match]
+  const guards = [value.lead_quality, value.offering_match]
     .filter((g): g is string => Boolean(g))
     .filter((g) => g in GUARD_LABELS);
   return guards.map((guard) => (

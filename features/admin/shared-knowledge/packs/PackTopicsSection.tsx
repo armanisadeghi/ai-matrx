@@ -43,7 +43,7 @@ interface TopicDraft {
   topic: { id: string; name: string; slug: string } | null;
   weight: string;
   lead_quality: string;
-  service_match: string;
+  offering_match: string;
   notes: string;
 }
 
@@ -53,7 +53,7 @@ function toDraft(t?: StarterPackTopicItem): TopicDraft {
     topic: t ? { id: t.topic_id, name: t.name, slug: t.slug } : null,
     weight: t?.weight === null || t?.weight === undefined ? "" : String(t.weight),
     lead_quality: t?.lead_quality ?? NONE,
-    service_match: t?.service_match ?? NONE,
+    offering_match: t?.offering_match ?? NONE,
     notes: t?.notes ?? "",
   };
 }
@@ -133,7 +133,7 @@ function TopicEditor({
         topic_id: d.topic?.id ?? null,
         weight,
         lead_quality: d.lead_quality === NONE ? null : d.lead_quality,
-        service_match: d.service_match === NONE ? null : d.service_match,
+        offering_match: d.offering_match === NONE ? null : d.offering_match,
         notes: d.notes.trim() || null,
       }),
     onSuccess: () => onDone(true),
@@ -176,7 +176,7 @@ function TopicEditor({
         </label>
         <label className="space-y-1">
           <span className="text-[11px] text-muted-foreground">Service match</span>
-          <Select value={d.service_match} onValueChange={(v) => setD({ ...d, service_match: v })}>
+          <Select value={d.offering_match} onValueChange={(v) => setD({ ...d, offering_match: v })}>
             <SelectTrigger className="h-8 text-xs">
               <SelectValue placeholder="—" />
             </SelectTrigger>
@@ -281,9 +281,9 @@ export function PackTopicsSection({ detail, onChanged }: { detail: AdminPackDeta
                           {t.lead_quality.replace(/_/g, " ")}
                         </Badge>
                       ) : null}
-                      {t.service_match ? (
+                      {t.offering_match ? (
                         <Badge variant="outline" className="text-[10px]">
-                          {t.service_match.replace(/_/g, " ")}
+                          {t.offering_match.replace(/_/g, " ")}
                         </Badge>
                       ) : null}
                     </div>

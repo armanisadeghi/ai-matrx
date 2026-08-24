@@ -752,8 +752,8 @@ export function PackReview({
                 const stats = topicStats.get(topic.item_id);
                 const guard = topic.lead_quality === "negative_value"
                   ? GUARD_LABELS.negative_value
-                  : topic.service_match && GUARD_LABELS[topic.service_match]
-                    ? GUARD_LABELS[topic.service_match]
+                  : topic.offering_match && GUARD_LABELS[topic.offering_match]
+                    ? GUARD_LABELS[topic.offering_match]
                     : null;
                 return (
                   <Row

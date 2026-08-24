@@ -137,7 +137,7 @@ export interface PackItemPatch {
   topic_id?: string | null;
   weight?: number | null;
   lead_quality?: string | null;
-  service_match?: string | null;
+  offering_match?: string | null;
   value?: string | null;
   label?: string | null;
   description?: string | null;
@@ -309,5 +309,5 @@ export const TARGET_CLASSES = ["money", "educational", "brand", "mismatch"] as c
 // Values are the site tables' CHECK vocabularies (seo.site_topic_value / site_geo_area) —
 // a pack item must be copyable onto a site without translation.
 export const LEAD_QUALITIES = ["high_value", "medium_value", "low_value", "negative_value"] as const;
-export const SERVICE_MATCHES = ["core_service", "adjacent_service", "not_offered", "actively_avoided"] as const;
+export const SERVICE_MATCHES = ["core_offering", "adjacent_offering", "not_offered", "actively_avoided"] as const;
 export const AREA_KINDS = ["city", "county", "region", "state", "country", "radius", "other"] as const;

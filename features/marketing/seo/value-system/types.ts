@@ -226,7 +226,7 @@ export interface SiteTopicValue {
   topic_id: string;
   weight: number | null;
   lead_quality: string | null;
-  service_match: string | null;
+  offering_match: string | null;
   notes: string | null;
 }
 
@@ -363,7 +363,7 @@ export interface StarterPackTopicItem {
   description: string | null;
   weight: number | null;
   lead_quality: string | null;
-  service_match: string | null;
+  offering_match: string | null;
   notes: string | null;
   sort: number;
 }

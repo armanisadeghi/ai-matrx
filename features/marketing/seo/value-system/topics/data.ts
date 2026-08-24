@@ -96,7 +96,7 @@ export async function listTopicWorth(
     await seoDb()
   )
     .from("site_topic_value")
-    .select("id, site_id, topic_id, weight, lead_quality, service_match, notes")
+    .select("id, site_id, topic_id, weight, lead_quality, offering_match, notes")
     .eq("site_id", siteId)
     .is("deleted_at", null);
   return assertData(response.data, response.error) as SiteTopicValue[];
@@ -201,7 +201,7 @@ export async function setTopicWorth(
   input: {
     weight?: number | null;
     leadQuality?: string | null;
-    serviceMatch?: string | null;
+    offeringMatch?: string | null;
     notes?: string | null;
     clear?: boolean;
   },
@@ -213,7 +213,7 @@ export async function setTopicWorth(
     p_topic_id: topicId ?? undefined,
     p_weight: input.weight ?? undefined,
     p_lead_quality: input.leadQuality ?? undefined,
-    p_service_match: input.serviceMatch ?? undefined,
+    p_offering_match: input.offeringMatch ?? undefined,
     p_notes: input.notes ?? undefined,
     p_clear: input.clear ?? false,
   });

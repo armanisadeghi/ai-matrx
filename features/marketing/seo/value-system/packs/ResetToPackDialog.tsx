@@ -85,11 +85,11 @@ function itemDelta(item: StarterPackStatusItem): { pack: string; site: string } 
       };
     case "topic":
       return {
-        pack: `weight ${String(p.weight ?? "—")}${p.service_match ? ` · ${humanizeSlug(String(p.service_match))}` : ""}${p.lead_quality ? ` · ${humanizeSlug(String(p.lead_quality))}` : ""}`,
+        pack: `weight ${String(p.weight ?? "—")}${p.offering_match ? ` · ${humanizeSlug(String(p.offering_match))}` : ""}${p.lead_quality ? ` · ${humanizeSlug(String(p.lead_quality))}` : ""}`,
         site:
           item.state === "archived"
             ? "archived"
-            : `weight ${String(s.weight ?? "—")}${s.service_match ? ` · ${humanizeSlug(String(s.service_match))}` : ""}${s.lead_quality ? ` · ${humanizeSlug(String(s.lead_quality))}` : ""}`,
+            : `weight ${String(s.weight ?? "—")}${s.offering_match ? ` · ${humanizeSlug(String(s.offering_match))}` : ""}${s.lead_quality ? ` · ${humanizeSlug(String(s.lead_quality))}` : ""}`,
       };
     default:
       return { pack: "", site: "" };

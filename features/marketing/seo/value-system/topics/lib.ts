@@ -7,7 +7,7 @@
  *     a `seo.site_topic_value` row (`ORDER BY depth` in the resolver's
  *     `topic_base`), defaulting to 50 when no ancestor has one;
  *   - the root is the TOPMOST ancestor (`ORDER BY depth DESC` in `root_kind`);
- *   - `lead_quality='negative_value'` or `service_match IN
+ *   - `lead_quality='negative_value'` or `offering_match IN
  *     ('not_offered','actively_avoided')` on that nearest row forces Negative.
  * It never re-derives a band or a score — bands always come from the resolver.
  * This exists so the screen can SHOW which ancestor a node inherits from, which
@@ -182,7 +182,7 @@ export function buildTopicTree(
         ? DEFAULT_TOPIC_WEIGHT
         : Number(effective.weight);
     node.negativeGuard = effective
-      ? isNegativeGuard(effective.lead_quality, effective.service_match)
+      ? isNegativeGuard(effective.lead_quality, effective.offering_match)
       : false;
 
     for (const child of node.children) walk(child, [...ancestors, node]);

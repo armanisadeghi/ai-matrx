@@ -51633,10 +51633,10 @@ export type Database = {
           lead_quality: string | null
           metadata: Json
           notes: string | null
+          offering_match: string | null
           organization_id: string
           priority_computed_at: string | null
           priority_score: number | null
-          service_match: string | null
           site_id: string
           suppression_reason: string | null
           traffic_class: string | null
@@ -51663,10 +51663,10 @@ export type Database = {
           lead_quality?: string | null
           metadata?: Json
           notes?: string | null
+          offering_match?: string | null
           organization_id: string
           priority_computed_at?: string | null
           priority_score?: number | null
-          service_match?: string | null
           site_id: string
           suppression_reason?: string | null
           traffic_class?: string | null
@@ -51693,10 +51693,10 @@ export type Database = {
           lead_quality?: string | null
           metadata?: Json
           notes?: string | null
+          offering_match?: string | null
           organization_id?: string
           priority_computed_at?: string | null
           priority_score?: number | null
-          service_match?: string | null
           site_id?: string
           suppression_reason?: string | null
           traffic_class?: string | null
@@ -51731,8 +51731,8 @@ export type Database = {
           lead_quality: string | null
           metadata: Json
           notes: string | null
+          offering_match: string | null
           organization_id: string
-          service_match: string | null
           site_id: string
           topic_id: string
           updated_at: string
@@ -51751,8 +51751,8 @@ export type Database = {
           lead_quality?: string | null
           metadata?: Json
           notes?: string | null
+          offering_match?: string | null
           organization_id: string
-          service_match?: string | null
           site_id: string
           topic_id: string
           updated_at?: string
@@ -51771,8 +51771,8 @@ export type Database = {
           lead_quality?: string | null
           metadata?: Json
           notes?: string | null
+          offering_match?: string | null
           organization_id?: string
-          service_match?: string | null
           site_id?: string
           topic_id?: string
           updated_at?: string
@@ -52197,9 +52197,9 @@ export type Database = {
           match_tokens: Json
           metadata: Json
           notes: string | null
+          offering_match: string | null
           organization_id: string
           pack_id: string
-          service_match: string | null
           sort: number
           topic_id: string | null
           updated_at: string
@@ -52224,9 +52224,9 @@ export type Database = {
           match_tokens?: Json
           metadata?: Json
           notes?: string | null
+          offering_match?: string | null
           organization_id: string
           pack_id: string
-          service_match?: string | null
           sort?: number
           topic_id?: string | null
           updated_at?: string
@@ -52251,9 +52251,9 @@ export type Database = {
           match_tokens?: Json
           metadata?: Json
           notes?: string | null
+          offering_match?: string | null
           organization_id?: string
           pack_id?: string
-          service_match?: string | null
           sort?: number
           topic_id?: string | null
           updated_at?: string
@@ -53563,11 +53563,11 @@ export type Database = {
           keyword_id: string
           lead_quality: string
           notes: string
+          offering_match: string
           override_class: string
           query: string
           ruling_confirmed: boolean
           ruling_origin: string
-          service_match: string
           suppression_reason: string
           total_count: number
           traffic_class: string
@@ -54316,7 +54316,7 @@ export type Database = {
           p_clear?: boolean
           p_lead_quality?: string
           p_notes?: string
-          p_service_match?: string
+          p_offering_match?: string
           p_site_id: string
           p_topic_id: string
           p_weight?: number

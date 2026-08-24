@@ -200,10 +200,10 @@ export const LEAD_QUALITY_OPTIONS = [
   },
 ] as const;
 
-/** `seo.site_topic_value.service_match`. */
-export const SERVICE_MATCH_OPTIONS = [
-  { value: "core_service", label: "This is what we do" },
-  { value: "adjacent_service", label: "Near what we do" },
+/** `seo.site_topic_value.offering_match`. */
+export const OFFERING_MATCH_OPTIONS = [
+  { value: "core_offering", label: "This is what we do" },
+  { value: "adjacent_offering", label: "Near what we do" },
   { value: "not_offered", label: "We do not offer this", guard: true },
   { value: "actively_avoided", label: "We turn this work away", guard: true },
 ] as const;
@@ -211,11 +211,11 @@ export const SERVICE_MATCH_OPTIONS = [
 /** The two rulings that force a keyword's band to Negative regardless of arithmetic. */
 export function isNegativeGuard(
   leadQuality: string | null,
-  serviceMatch: string | null,
+  offeringMatch: string | null,
 ): boolean {
   return (
     leadQuality === "negative_value" ||
-    serviceMatch === "not_offered" ||
-    serviceMatch === "actively_avoided"
+    offeringMatch === "not_offered" ||
+    offeringMatch === "actively_avoided"
   );
 }

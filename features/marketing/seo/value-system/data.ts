@@ -217,7 +217,7 @@ export async function listSiteTopicValues(
   const db = await seoDb();
   const valuesRes = await db
     .from("site_topic_value")
-    .select("id, site_id, topic_id, weight, lead_quality, service_match, notes")
+    .select("id, site_id, topic_id, weight, lead_quality, offering_match, notes")
     .eq("site_id", siteId)
     .is("deleted_at", null);
   const values = assertData(valuesRes.data, valuesRes.error) as SiteTopicValue[];

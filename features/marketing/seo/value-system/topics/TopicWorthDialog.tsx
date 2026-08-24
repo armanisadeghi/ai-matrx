@@ -32,7 +32,7 @@ import { cn } from "@/styles/themes/utils";
 import {
   isNegativeGuard,
   LEAD_QUALITY_OPTIONS,
-  SERVICE_MATCH_OPTIONS,
+  OFFERING_MATCH_OPTIONS,
 } from "./types";
 import { DEFAULT_TOPIC_WEIGHT, type TopicTreeNode } from "./lib";
 
@@ -49,7 +49,7 @@ export function TopicWorthDialog({
   onSave: (values: {
     weight: number | null;
     leadQuality: string | null;
-    serviceMatch: string | null;
+    offeringMatch: string | null;
     notes: string;
   }) => void;
   onClear: () => void;
@@ -61,8 +61,8 @@ export function TopicWorthDialog({
   const [leadQuality, setLeadQuality] = useState<string | null>(
     own?.lead_quality ?? null,
   );
-  const [serviceMatch, setServiceMatch] = useState<string | null>(
-    own?.service_match ?? null,
+  const [offeringMatch, setOfferingMatch] = useState<string | null>(
+    own?.offering_match ?? null,
   );
   const [notes, setNotes] = useState(own?.notes ?? "");
 
@@ -70,7 +70,7 @@ export function TopicWorthDialog({
   const weightInvalid =
     parsedWeight !== null &&
     (Number.isNaN(parsedWeight) || parsedWeight < 0 || parsedWeight > 100);
-  const guard = isNegativeGuard(leadQuality, serviceMatch);
+  const guard = isNegativeGuard(leadQuality, offeringMatch);
 
   const inheritedWeight =
     node.inheritedWorth?.weight === null ||
@@ -110,7 +110,7 @@ export function TopicWorthDialog({
               , the nearest parent above it that carries one.
               {isNegativeGuard(
                 node.inheritedWorth?.lead_quality ?? null,
-                node.inheritedWorth?.service_match ?? null,
+                node.inheritedWorth?.offering_match ?? null,
               )
                 ? " That parent is ruled negative, so keywords here never count as wins."
                 : ""}
@@ -154,9 +154,9 @@ export function TopicWorthDialog({
           />
           <OptionRow
             label="Do you actually do this?"
-            options={SERVICE_MATCH_OPTIONS}
-            value={serviceMatch}
-            onChange={setServiceMatch}
+            options={OFFERING_MATCH_OPTIONS}
+            value={offeringMatch}
+            onChange={setOfferingMatch}
           />
 
           {guard ? (
@@ -206,7 +206,7 @@ export function TopicWorthDialog({
                 onSave({
                   weight: parsedWeight,
                   leadQuality,
-                  serviceMatch,
+                  offeringMatch,
                   notes,
                 })
               }

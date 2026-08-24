@@ -220,14 +220,14 @@ export function TopicTreeWorkbench() {
       topicId: string;
       weight: number | null;
       leadQuality: string | null;
-      serviceMatch: string | null;
+      offeringMatch: string | null;
       notes: string;
       clear?: boolean;
     }) =>
       setTopicWorth(siteId, input.topicId, {
         weight: input.weight,
         leadQuality: input.leadQuality,
-        serviceMatch: input.serviceMatch,
+        offeringMatch: input.offeringMatch,
         notes: input.notes,
         clear: input.clear,
       }),
@@ -813,7 +813,7 @@ export function TopicTreeWorkbench() {
               topicId: worthNode.topic.id,
               weight: null,
               leadQuality: null,
-              serviceMatch: null,
+              offeringMatch: null,
               notes: "",
               clear: true,
             })
