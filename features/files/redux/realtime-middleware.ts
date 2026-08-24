@@ -54,7 +54,7 @@ import {
   dbRowToCloudFolder,
 } from "./converters";
 import { isOwnEcho, ledgerSize } from "./request-ledger";
-import { reconcileTree } from "./thunks";
+import { loadUserFileTree, reconcileTree } from "./thunks";
 import { isHiddenFromUserTree } from "@/features/files/utils/folder-conventions";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
 import { invalidateOfficeExtraction } from "@/features/files/hooks/office-extraction-cache";
@@ -169,6 +169,16 @@ function extractRequestId(
 // cooldown OR if any mutation is currently in flight (the ledger is non-empty).
 const RECONCILE_COOLDOWN_MS = 10_000;
 let lastReconcileAt = 0;
+// When the initial `loadUserFileTree` snapshot RESOLVED, or null while it is
+// still in flight. This decides whether the on-SUBSCRIBED reconcile is needed:
+// a snapshot that completed BEFORE the channel went live can have missed
+// writes committed in between (the gap the reconcile exists to close); a
+// snapshot still in flight at SUBSCRIBED will read post-subscribe state, so
+// there is no gap and the reconcile would be a pure duplicate RPC.
+// (Adversarial review 2026-08-22: the earlier seed-the-cooldown approach
+// skipped the reconcile on every normal load and silently gave up the gap
+// guarantee; this keeps both properties.)
+let initialSnapshotDoneAt: number | null = null;
 
 export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
   let channel: RealtimeChannel | null = null;
@@ -198,19 +208,8 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     await teardown();
 
     subscribedUserId = userId;
+    initialSnapshotDoneAt = null;
     dispatch(setRealtimeStatus({ status: "connecting", userId }));
-    // Seed the reconcile cooldown here, not just after an actual reconcile.
-    // `CloudFilesRealtimeProvider` dispatches `attachCloudFilesRealtime`
-    // (which lands here) and `loadUserFileTree` in the same effect — that
-    // pairing is load-bearing (see the provider's comment: "calling both is
-    // intentional"). Without this seed, `lastReconcileAt` starts at 0, so the
-    // very first `SUBSCRIBED` event — which arrives shortly after this call
-    // on every single page load, not just on reconnect — always clears the
-    // cooldown and fires a second, redundant `get_user_file_tree` RPC on top
-    // of the mount-effect's own load. Seeding it here means a normal-speed
-    // handshake (well under the 10s cooldown) skips that duplicate, while a
-    // genuinely slow handshake or a later reconnect still reconciles.
-    lastReconcileAt = Date.now();
 
     channel = supabase
       .channel(`cloud-files:${userId}`)
@@ -288,8 +287,13 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
           // On (re)subscribe, reconcile — but debounced (P1-10): skip if we
           // reconciled recently or a mutation is in flight, so a flapping
           // connection can't storm the RPC or revert optimistic edits.
+          // First subscribe: reconcile ONLY if the initial snapshot already
+          // resolved (its data predates the live channel — the gap window);
+          // a snapshot still in flight reads post-subscribe state, so firing
+          // here would only duplicate the RPC it is racing.
           const now = Date.now();
           if (
+            initialSnapshotDoneAt !== null &&
             now - lastReconcileAt >= RECONCILE_COOLDOWN_MS &&
             ledgerSize() === 0
           ) {
@@ -626,6 +630,10 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
   // -------------------------------------------------------------------------
 
   return (next) => (action) => {
+    if (loadUserFileTree.fulfilled.match(action)) {
+      initialSnapshotDoneAt = Date.now();
+      return next(action);
+    }
     if (isAttachAction(action as RealtimeAction)) {
       const userId = (action as AttachAction).payload.userId;
       void setup(userId);
