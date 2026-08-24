@@ -52,6 +52,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreatablePicker } from "../pickers/CreatablePicker";
+import { AddDimensionDialog } from "../pickers/AddDimensionDialog";
+import { useQuickAdd } from "../pickers/useQuickAdd";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useDebounce } from "@/hooks/usehooks/useDebounce";
@@ -202,6 +205,9 @@ export function ValueComboEditor({
   const [form, setForm] = useState<ValueComboFormState>(() =>
     combo ? comboToForm(combo) : EMPTY,
   );
+  const { quickAdd } = useQuickAdd(siteId);
+  // P23 — what was typed into the dimension picker when it matched nothing.
+  const [newDimensionDraft, setNewDimensionDraft] = useState<string | null>(null);
   const [pickDimension, setPickDimension] = useState("");
   const [pickValue, setPickValue] = useState("");
   const set = <K extends keyof ValueComboFormState>(
@@ -426,29 +432,25 @@ export function ValueComboEditor({
             ) : (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                 <Field label="Dimension">
-                  <Select
-                    value={pickDimension}
-                    onValueChange={(v) => {
+                  {/* P23 — invent the dimension here rather than abandoning
+                      the combination to go and create it elsewhere. */}
+                  <CreatablePicker
+                    value={pickDimension || null}
+                    onSelect={(v) => {
                       setPickDimension(v);
                       setPickValue("");
                     }}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Choose a dimension" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(dimensions.data ?? []).map((dimension) => (
-                        <SelectItem
-                          key={dimension.dimension_id}
-                          value={dimension.slug}
-                          className="text-xs"
-                        >
-                          {dimension.label}
-                          {dimension.scope === "site" ? " (yours)" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Choose a dimension"
+                    noun="dimension"
+                    ariaLabel="Combination dimension"
+                    loading={dimensions.isPending}
+                    onCreateRequiresMore={(typed) => setNewDimensionDraft(typed)}
+                    options={(dimensions.data ?? []).map((dimension) => ({
+                      value: dimension.slug,
+                      label: dimension.label,
+                      hint: dimension.scope === "site" ? "yours" : undefined,
+                    }))}
+                  />
                 </Field>
                 <Field
                   label="Is"
@@ -458,29 +460,47 @@ export function ValueComboEditor({
                       : undefined
                   }
                 >
-                  <Select
-                    value={pickValue}
-                    onValueChange={setPickValue}
+                  <CreatablePicker
+                    value={pickValue || null}
+                    onSelect={setPickValue}
                     disabled={!selectedDimension}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Choose a value" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(selectedDimension?.facet_values ?? [])
-                        .filter((value) => !form.valueIds.includes(value.value_id))
-                        .map((value) => (
-                          <SelectItem
-                            key={value.value_id}
-                            value={value.key}
-                            className="text-xs"
-                          >
-                            {value.label}
-                            {value.keyword_count > 0 ? ` · ${value.keyword_count}` : ""}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Choose a value"
+                    noun="value"
+                    ariaLabel="Combination value"
+                    options={(selectedDimension?.facet_values ?? [])
+                      .filter((value) => !form.valueIds.includes(value.value_id))
+                      .map((value) => ({
+                        value: value.key,
+                        label: value.label,
+                        hint:
+                          value.keyword_count > 0
+                            ? `${value.keyword_count.toLocaleString()} kw`
+                            : undefined,
+                      }))}
+                    lockedNote={
+                      selectedDimension && selectedDimension.scope !== "site"
+                        ? `“${selectedDimension.label}” is a shared dimension every business uses, so its choices are platform-governed.`
+                        : undefined
+                    }
+                    lockedAction={
+                      selectedDimension && selectedDimension.scope !== "site"
+                        ? {
+                            label: "Make this your own dimension instead",
+                            onSelect: () =>
+                              setNewDimensionDraft(selectedDimension.label),
+                          }
+                        : undefined
+                    }
+                    onCreate={async (typed) => {
+                      if (!selectedDimension) return null;
+                      const created = await quickAdd(typed, {
+                        dimensionId: selectedDimension.dimension_id,
+                      });
+                      if (!created) return null;
+                      await dimensions.refetch();
+                      return created.value_key;
+                    }}
+                  />
                 </Field>
                 <div className="flex items-end">
                   <Button
@@ -648,6 +668,19 @@ export function ValueComboEditor({
           </div>
         </DialogFooter>
       </DialogContent>
+      {newDimensionDraft !== null ? (
+        <AddDimensionDialog
+          siteId={siteId}
+          initialLabel={newDimensionDraft}
+          onCancel={() => setNewDimensionDraft(null)}
+          onCreated={(created) => {
+            setNewDimensionDraft(null);
+            void dimensions.refetch();
+            setPickDimension(created.dimension_slug);
+            setPickValue(created.value_key);
+          }}
+        />
+      ) : null}
     </Dialog>
   );
 }

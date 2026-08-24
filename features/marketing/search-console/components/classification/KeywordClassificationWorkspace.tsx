@@ -97,6 +97,7 @@ import {
   kwGuidelinesQueryKey,
 } from "@/features/marketing/search-console/data-kw-guidelines";
 import { ImportExportMenu } from "@/features/marketing/search-console/components/classification/ImportExportMenu";
+import { AddDimensionDialog } from "@/features/marketing/seo/value-system/pickers/AddDimensionDialog";
 import {
   classifyKeywordsWithAi,
   confirmGscKeywordClass,
@@ -283,6 +284,8 @@ export function KeywordClassificationWorkspace({
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
   const [preview, setPreview] = useState<RulePreview | null>(null);
+  /** P11 door out of the shared traffic classes — a dimension of their own. */
+  const [ownDimensionDraft, setOwnDimensionDraft] = useState<string | null>(null);
   const [brandAliasFilter, setBrandAliasFilter] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
@@ -736,6 +739,7 @@ export function KeywordClassificationWorkspace({
             confirmed={row.ruling_confirmed ?? true}
             disabled={classify.isPending}
             onRule={(ruling) => rule(ruling, [row.keyword_id], row.query)}
+            onAddOwnDimension={() => setOwnDimensionDraft("")}
           />
         </span>
       ),
@@ -1357,6 +1361,15 @@ export function KeywordClassificationWorkspace({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {ownDimensionDraft !== null ? (
+        <AddDimensionDialog
+          siteId={siteId}
+          initialLabel={ownDimensionDraft}
+          onCancel={() => setOwnDimensionDraft(null)}
+          onCreated={() => setOwnDimensionDraft(null)}
+        />
+      ) : null}
     </div>
   );
 }

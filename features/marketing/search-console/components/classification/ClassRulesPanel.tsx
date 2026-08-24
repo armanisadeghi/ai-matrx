@@ -275,7 +275,7 @@ export function ClassRulesPanel({
               onChange={(e) => setDraft({ ...draft, pattern: e.target.value })}
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[11px] text-muted-foreground">Classify as</span>
             <Select
               value={draft.targetClass}
@@ -296,6 +296,13 @@ export function ClassRulesPanel({
                 )}
               </SelectContent>
             </Select>
+            {/* P11 — this vocabulary is shared by every business, so the rule
+                editor cannot widen it. Say so, and point at what it CAN do
+                (P23: never a bare refusal). */}
+            <span className="text-[11px] leading-snug text-muted-foreground">
+              These classes are shared by every business. To split traffic your
+              own way, make a dimension of yours and rule on that.
+            </span>
           </div>
           <Textarea
             value={draft.notes}

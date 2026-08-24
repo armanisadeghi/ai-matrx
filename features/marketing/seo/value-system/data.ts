@@ -236,7 +236,8 @@ export async function listSiteTopicValues(
  * So: a raise whose message starts with one of OUR governance codes is passed
  * through verbatim; everything else still gets the generic sentence.
  */
-const GOVERNANCE_CODE = /^(gsc_vocab_[a-z_]+|gsc_bad_vocab_kind|gsc_unknown_value_band|gsc_no_keywords|seo_registry_[a-z_]+):\s*/;
+const GOVERNANCE_CODE =
+  /^(gsc_vocab_[a-z_]+|gsc_bad_vocab_kind|gsc_unknown_value_band|gsc_no_keywords|gsc_site_[a-z_]+|seo_registry_[a-z_]+|seo_dimension_[a-z_]+|seo_value_[a-z_]+|seo_platform_dimension_readonly):\s*/;
 
 function assertGoverned<T>(data: T | null, error: unknown, action: string): T {
   if (error) {
@@ -567,4 +568,132 @@ export async function adoptStarterPack(
     p_target: target,
   });
   return assertData(response.data, response.error) as unknown as StarterPackAdoptResult;
+}
+
+// ── P23 — THE "+ Add" write path (the assignment layer) ─────────────────────
+
+/**
+ * P23 — EVERY PICKER TAKES NEW INPUT. Arman, 2026-08-23: "the moment I went in
+ * to assign a tier, I got a pop up that forced me to choose from the shitty
+ * options I had in front of me… our system was too arrogant and cocky and
+ * didn't want my opinion."
+ *
+ * THIS IS THE ONE WRITE PATH behind every dimension-value picker's "+ Add".
+ * `seo.gsc_quick_add_value` turns typed text into a real value — creating the
+ * site's own dimension too when the person is inventing one — and answers with
+ * the ids so the picker selects it immediately. Never hand-roll a second
+ * creation path; `facet_value_upsert` is the dimensions EDITOR's path and this
+ * delegates to the same tables under the same governance.
+ *
+ * P11 is the one exception, and it is enforced in the DB, never here: a
+ * PLATFORM dimension is shared by every tenant, so widening it is a super-admin
+ * act. The refusal arrives as `seo_platform_dimension_readonly` with a sentence
+ * written for the reader — surface it and offer "make this your own dimension",
+ * never a dead end.
+ */
+export interface QuickAddValueResult {
+  dimension_id: string;
+  dimension_slug: string;
+  dimension_label: string;
+  value_id: string;
+  value_key: string;
+  value_label: string;
+  created_dimension: boolean;
+  created_value: boolean;
+}
+
+/** Governance codes the "+ Add" path raises, kept so a caller can branch on P11. */
+export class QuickAddRefusal extends Error {
+  readonly code: string;
+  constructor(code: string, message: string, cause?: unknown) {
+    super(message, { cause });
+    this.name = "QuickAddRefusal";
+    this.code = code;
+  }
+  /** True for the P11 refusal: a shared vocabulary the site may not widen. */
+  get isPlatformVocabulary(): boolean {
+    return this.code === "seo_platform_dimension_readonly";
+  }
+}
+
+const QUICK_ADD_CODE =
+  /^(seo_[a-z_]+|gsc_site_[a-z_]+):\s*/;
+
+export async function quickAddValue(input: {
+  siteId: string;
+  /** What the person typed. Idempotent — an existing label returns its row. */
+  valueLabel: string;
+  /** The dimension they picked, or null when they are naming a new one. */
+  dimensionId?: string | null;
+  newDimensionLabel?: string | null;
+  description?: string | null;
+  nature?: "intrinsic" | "situational";
+}): Promise<QuickAddValueResult> {
+  const response = await (await seoDb()).rpc("gsc_quick_add_value", {
+    p_site_id: input.siteId,
+    p_value_label: input.valueLabel,
+    ...(input.dimensionId ? { p_dimension_id: input.dimensionId } : {}),
+    ...(input.newDimensionLabel
+      ? { p_new_dimension_label: input.newDimensionLabel }
+      : {}),
+    ...(input.description ? { p_description: input.description } : {}),
+    ...(input.nature ? { p_nature: input.nature } : {}),
+  });
+  if (response.error) {
+    const message = extractErrorMessage(response.error).split(" · ")[0];
+    const governed = message.match(QUICK_ADD_CODE);
+    if (governed) {
+      throw new QuickAddRefusal(
+        governed[1],
+        message.slice(governed[0].length),
+        response.error,
+      );
+    }
+  }
+  return assertGoverned(
+    response.data,
+    response.error,
+    "add that value",
+  ) as unknown as QuickAddValueResult;
+}
+
+// ── The ruling counter (the KPI that only YOU can move) ─────────────────────
+
+export interface RulingCounts {
+  /** Every keyword on this site carrying an explicit expert tier ruling. */
+  total: number;
+  /** How many of those were set or changed in the last 7 days. */
+  thisWeek: number;
+}
+
+/**
+ * Counts only — `head: true`, so nothing is fetched and the 1000-row PostgREST
+ * cap can never make this lie (the `readAllRows` law's other half: when you
+ * want a number, ask for a number).
+ *
+ * This is the one number on the workbench that no arithmetic can move for you.
+ * That is exactly why it is a KPI: it counts the expert's own contribution,
+ * and it is the number a person watches go up.
+ */
+export async function getRulingCounts(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<RulingCounts> {
+  const db = await seoDb();
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const base = () =>
+    db
+      .from("site_keyword_value")
+      .select("id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .not("value_tier", "is", null)
+      .is("deleted_at", null)
+      .abortSignal(signal ?? new AbortController().signal);
+  const [all, week] = await Promise.all([
+    base(),
+    base().gte("updated_at", since),
+  ]);
+  if (all.error) throw all.error;
+  if (week.error) throw week.error;
+  return { total: all.count ?? 0, thisWeek: week.count ?? 0 };
 }

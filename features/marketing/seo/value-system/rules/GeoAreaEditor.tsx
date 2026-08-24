@@ -57,6 +57,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreatablePicker } from "../pickers/CreatablePicker";
+import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useDebounce } from "@/hooks/usehooks/useDebounce";
@@ -163,6 +165,9 @@ export function GeoAreaEditor({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  // P23 — "+ Add a geo band" from inside the band picker; the string is what
+  // was typed. A band needs a multiplier, so it is collected, never guessed.
+  const [addingBand, setAddingBand] = useState<string | null>(null);
   const [form, setForm] = useState<GeoAreaFormState>(() =>
     area ? areaToForm(area) : EMPTY,
   );
@@ -365,21 +370,22 @@ export function GeoAreaEditor({
                     onRetry={() => void geoBands.refetch()}
                   />
                 ) : (
-                  <Select value={form.geoBand} onValueChange={(v) => set("geoBand", v)}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Choose a band" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(geoBands.data ?? []).map((band) => (
-                        <SelectItem key={band.value} value={band.value} className="text-xs">
-                          {band.label}
-                          {typeof band.config?.multiplier === "number"
-                            ? ` ×${band.config.multiplier}`
-                            : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CreatablePicker
+                    value={form.geoBand || null}
+                    onSelect={(v) => set("geoBand", v)}
+                    placeholder="Choose a band"
+                    noun="geo band"
+                    ariaLabel="Geo band"
+                    onCreateRequiresMore={(typed) => setAddingBand(typed)}
+                    options={(geoBands.data ?? []).map((band) => ({
+                      value: band.value,
+                      label: band.label,
+                      hint:
+                        typeof band.config?.multiplier === "number"
+                          ? `×${band.config.multiplier}`
+                          : undefined,
+                    }))}
+                  />
                 )}
               </Field>
             </div>
@@ -493,6 +499,19 @@ export function GeoAreaEditor({
           </div>
         </DialogFooter>
       </DialogContent>
+      {addingBand !== null ? (
+        <AddLevelDialog
+          siteId={siteId}
+          kind="geo_band"
+          initialLabel={addingBand}
+          onCancel={() => setAddingBand(null)}
+          onCreated={(value) => {
+            setAddingBand(null);
+            set("geoBand", value);
+            void geoBands.refetch();
+          }}
+        />
+      ) : null}
     </Dialog>
   );
 }

@@ -12,9 +12,15 @@
  * Unconfirmed automatic rulings (rule auto-apply, imports the user never
  * eyeballed) render with a warning ring until confirmed — Arman's rule:
  * anything applied off-screen carries a visible flag until a human looks.
+ *
+ * P23 + P11 — the traffic classes are the ONE shared vocabulary every business,
+ * every report and every model reads the same way (the GSC traffic-class
+ * doctrine: never fork a second mapping), so this menu genuinely cannot take a
+ * new one. That is not a licence to be a dead end: it SAYS why, and offers the
+ * way forward — your own dimension, with your own values, on the same keywords.
  */
 
-import { ChevronDown, Eraser } from "lucide-react";
+import { ChevronDown, Eraser, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +39,7 @@ export function ClassCell({
   confirmed,
   disabled,
   onRule,
+  onAddOwnDimension,
 }: {
   trafficClass: string | null;
   classSource: string | null;
@@ -40,6 +47,8 @@ export function ClassCell({
   confirmed: boolean;
   disabled?: boolean;
   onRule: (ruling: GscClassRuling) => void;
+  /** P11 door: the classes are shared, so offer a dimension of their own. */
+  onAddOwnDimension?: () => void;
 }) {
   const meta = GSC_TRAFFIC_CLASSES.find((c) => c.key === trafficClass);
   const isRuled = classSource === "site_value";
@@ -89,6 +98,24 @@ export function ClassCell({
             </DropdownMenuItem>
           ),
         )}
+        {onAddOwnDimension ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="flex-col items-start gap-0.5 py-1.5"
+              onSelect={onAddOwnDimension}
+            >
+              <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                <Plus className="h-3.5 w-3.5" />
+                None of these? Make it your own dimension
+              </span>
+              <span className="text-[10px] leading-snug text-muted-foreground">
+                These four classes are shared by every business, so they are
+                platform-governed. Your own dimension is yours to name and fill.
+              </span>
+            </DropdownMenuItem>
+          </>
+        ) : null}
         {isRuled ? (
           <>
             <DropdownMenuSeparator />

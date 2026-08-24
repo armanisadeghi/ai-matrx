@@ -5,6 +5,13 @@
  * or bulk) with an optional note explaining WHY. The note matters: an
  * override is the highest-quality data in the model (value-system.md, law 3),
  * and the reason travels with it.
+ *
+ * P23 — THIS IS THE DIALOG THAT FAILED ARMAN (2026-08-23): "the moment I went
+ * in to assign a tier, I got a pop up that forced me to choose from the shitty
+ * options I had in front of me… our system was too arrogant and cocky and
+ * didn't want my opinion." The tier control is now a type-ahead with "+ Add a
+ * level" in it — a level being a name AND where it starts, collected by
+ * `AddLevelDialog` and saved through the ONE vocabulary write path.
  */
 
 import { useState } from "react";
@@ -19,14 +26,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/styles/themes/utils";
+import { CreatablePicker } from "../pickers/CreatablePicker";
+import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import type { BandMeta } from "../lib";
 
 export interface RulingDraft {
@@ -39,12 +41,15 @@ export interface RulingDraft {
 }
 
 export function RulingDialog({
+  siteId,
   draft,
   metas,
   busy,
   onCancel,
   onApply,
 }: {
+  /** Needed so "+ Add a level" writes to THIS site's vocabulary (P23). */
+  siteId: string;
   draft: RulingDraft;
   metas: BandMeta[];
   busy: boolean;
@@ -53,6 +58,7 @@ export function RulingDialog({
 }) {
   const [tier, setTier] = useState<string | null>(draft.tier);
   const [notes, setNotes] = useState("");
+  const [addingLevel, setAddingLevel] = useState<string | null>(null);
   const count = draft.keywordIds.length;
   const clearing = draft.mode === "clear";
   // Rulable tiers: every band except the reserved Unvalued (clearing is how
@@ -103,32 +109,42 @@ export function RulingDialog({
         {!clearing ? (
           <div className="space-y-1">
             <p className="text-xs font-medium text-foreground">Value tier</p>
-            <Select value={tier ?? ""} onValueChange={(value) => setTier(value)}>
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Choose a tier…" />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map((meta) => (
-                  <SelectItem key={meta.value} value={meta.value}>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "rounded border px-1.5 py-px text-[10px] font-medium",
-                          meta.chip,
-                        )}
-                      >
-                        {meta.label}
-                      </span>
-                      {meta.description ? (
-                        <span className="max-w-56 truncate text-xs text-muted-foreground">
-                          {meta.description}
-                        </span>
-                      ) : null}
+            <CreatablePicker
+              size="md"
+              value={tier}
+              onSelect={setTier}
+              placeholder="Choose a tier…"
+              searchPlaceholder="Search or add a level…"
+              noun="level"
+              ariaLabel="Value tier"
+              onCreateRequiresMore={(typed) => setAddingLevel(typed)}
+              options={options.map((meta) => ({
+                value: meta.value,
+                label: meta.label,
+                keywords: meta.description ?? "",
+                render: (
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "rounded border px-1.5 py-px text-[10px] font-medium",
+                        meta.chip,
+                      )}
+                    >
+                      {meta.label}
                     </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    {meta.description ? (
+                      <span className="max-w-56 truncate text-xs text-muted-foreground">
+                        {meta.description}
+                      </span>
+                    ) : null}
+                  </span>
+                ),
+              }))}
+            />
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              None of these fit? Type what you would call it and add it — it
+              joins your value scale for good.
+            </p>
           </div>
         ) : null}
 
@@ -167,6 +183,18 @@ export function RulingDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      {addingLevel !== null ? (
+        <AddLevelDialog
+          siteId={siteId}
+          kind="value_band"
+          initialLabel={addingLevel}
+          onCancel={() => setAddingLevel(null)}
+          onCreated={(value) => {
+            setAddingLevel(null);
+            setTier(value);
+          }}
+        />
+      ) : null}
     </Dialog>
   );
 }

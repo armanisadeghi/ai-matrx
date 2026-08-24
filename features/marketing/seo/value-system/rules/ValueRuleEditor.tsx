@@ -55,6 +55,9 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { CreatablePicker } from "../pickers/CreatablePicker";
+import { AddDimensionDialog } from "../pickers/AddDimensionDialog";
+import { useQuickAdd } from "../pickers/useQuickAdd";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import {
@@ -185,6 +188,10 @@ export function ValueRuleEditor({
     key: K,
     value: ValueRuleFormState[K],
   ) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const { quickAdd } = useQuickAdd(siteId);
+  // P23 — what was typed into the dimension picker when it matched nothing.
+  const [newDimensionDraft, setNewDimensionDraft] = useState<string | null>(null);
 
   const dimensions = useQuery({
     queryKey: facetDimensionsQueryKey(siteId),
@@ -418,26 +425,24 @@ export function ValueRuleEditor({
             ) : (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Field label="Fact">
-                  <Select
-                    value={form.matchFacet}
-                    onValueChange={(v) => setForm((p) => ({ ...p, matchFacet: v, matchFacetValue: "" }))}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Choose a dimension" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(dimensions.data ?? []).map((dimension) => (
-                        <SelectItem
-                          key={dimension.dimension_id}
-                          value={dimension.slug}
-                          className="text-xs"
-                        >
-                          {dimension.label}
-                          {dimension.scope === "site" ? " (yours)" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {/* P23 — a dimension you have not invented yet is one line
+                      away, not a trip to another screen. */}
+                  <CreatablePicker
+                    value={form.matchFacet || null}
+                    onSelect={(v) =>
+                      setForm((p) => ({ ...p, matchFacet: v, matchFacetValue: "" }))
+                    }
+                    placeholder="Choose a dimension"
+                    noun="dimension"
+                    ariaLabel="Fact dimension"
+                    loading={dimensions.isPending}
+                    onCreateRequiresMore={(typed) => setNewDimensionDraft(typed)}
+                    options={(dimensions.data ?? []).map((dimension) => ({
+                      value: dimension.slug,
+                      label: dimension.label,
+                      hint: dimension.scope === "site" ? "yours" : undefined,
+                    }))}
+                  />
                 </Field>
                 <Field
                   label="Is"
@@ -447,23 +452,45 @@ export function ValueRuleEditor({
                       : undefined
                   }
                 >
-                  <Select
-                    value={form.matchFacetValue}
-                    onValueChange={(v) => set("matchFacetValue", v)}
+                  <CreatablePicker
+                    value={form.matchFacetValue || null}
+                    onSelect={(v) => set("matchFacetValue", v)}
                     disabled={!selectedDimension}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Choose a value" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(selectedDimension?.facet_values ?? []).map((value) => (
-                        <SelectItem key={value.value_id} value={value.key} className="text-xs">
-                          {value.label}
-                          {value.keyword_count > 0 ? ` · ${value.keyword_count}` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Choose a value"
+                    noun="value"
+                    ariaLabel="Fact value"
+                    options={(selectedDimension?.facet_values ?? []).map((value) => ({
+                      value: value.key,
+                      label: value.label,
+                      hint:
+                        value.keyword_count > 0
+                          ? `${value.keyword_count.toLocaleString()} kw`
+                          : undefined,
+                    }))}
+                    lockedNote={
+                      selectedDimension && selectedDimension.scope !== "site"
+                        ? `“${selectedDimension.label}” is a shared dimension every business uses, so its choices are platform-governed.`
+                        : undefined
+                    }
+                    lockedAction={
+                      selectedDimension && selectedDimension.scope !== "site"
+                        ? {
+                            label: "Make this your own dimension instead",
+                            onSelect: () =>
+                              setNewDimensionDraft(selectedDimension.label),
+                          }
+                        : undefined
+                    }
+                    onCreate={async (typed) => {
+                      if (!selectedDimension) return null;
+                      const created = await quickAdd(typed, {
+                        dimensionId: selectedDimension.dimension_id,
+                      });
+                      if (!created) return null;
+                      await dimensions.refetch();
+                      return created.value_key;
+                    }}
+                  />
                 </Field>
               </div>
             )}
@@ -570,6 +597,23 @@ export function ValueRuleEditor({
           </div>
         </DialogFooter>
       </DialogContent>
+      {newDimensionDraft !== null ? (
+        <AddDimensionDialog
+          siteId={siteId}
+          initialLabel={newDimensionDraft}
+          onCancel={() => setNewDimensionDraft(null)}
+          onCreated={(created) => {
+            setNewDimensionDraft(null);
+            void dimensions.refetch();
+            setForm((p) => ({
+              ...p,
+              mode: "fact",
+              matchFacet: created.dimension_slug,
+              matchFacetValue: created.value_key,
+            }));
+          }}
+        />
+      ) : null}
     </Dialog>
   );
 }

@@ -34,6 +34,15 @@ const MarketingSiteContext = createContext<MarketingSiteContextValue | null>(
   null,
 );
 
+/**
+ * The same context, for components that legitimately mount both inside and
+ * outside a site shell (shared pickers, embedded panels). Returns null instead
+ * of throwing so a caller can degrade to "no site door" rather than crash.
+ */
+export function useMarketingSiteOptional(): MarketingSiteContextValue | null {
+  return useContext(MarketingSiteContext);
+}
+
 export function useMarketingSite() {
   const value = useContext(MarketingSiteContext);
   if (!value)

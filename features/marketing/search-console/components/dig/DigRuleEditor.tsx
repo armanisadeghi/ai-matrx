@@ -38,6 +38,9 @@ import {
 } from "@/features/marketing/search-console/types";
 
 import { getValueVocabulary } from "@/features/marketing/seo/value-system/data";
+import { CreatablePicker } from "@/features/marketing/seo/value-system/pickers/CreatablePicker";
+import { AddLevelDialog } from "@/features/marketing/seo/value-system/pickers/AddLevelDialog";
+import { AddDimensionDialog } from "@/features/marketing/seo/value-system/pickers/AddDimensionDialog";
 
 export interface DigRuleDraft {
   name: string;
@@ -77,6 +80,10 @@ export function DigRuleEditor({
 }) {
   // Value inputs hold free text while typing; commit parses to number.
   const [valueDrafts, setValueDrafts] = useState<Record<number, string>>({});
+  // P23 — what was typed into the Level pin when nothing matched, and the
+  // P11 door out of the platform-governed traffic classes.
+  const [newLevelDraft, setNewLevelDraft] = useState<string | null>(null);
+  const [newDimensionDraft, setNewDimensionDraft] = useState<string | null>(null);
   // Levels are THIS site's value scale, read live — never a hardcoded ladder.
   const levels = useQuery({
     queryKey: ["marketing", "gsc", "filter-level-vocabulary", siteId],
@@ -170,35 +177,41 @@ export function DigRuleEditor({
           ))}
         </SelectContent>
       </Select>
+      {/* P11 — the traffic classes are ONE shared vocabulary every business
+          and every model reads the same way, so this picker cannot widen it.
+          It says so and hands over the door instead of refusing (P23). */}
+      <button
+        type="button"
+        onClick={() => setNewDimensionDraft("")}
+        className="text-left text-[11px] leading-snug text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      >
+        These four classes are shared by every business — need your own way of
+        splitting traffic? Make it a dimension of yours.
+      </button>
 
       {/* Level pin — dig within ONE level of your value scale, beside the
           class pin. A level is a keyword fact, so a level-pinned page rule
           evaluates per query server-side, exactly like a class-pinned one. */}
-      <Select
+      <CreatablePicker
         value={content.level ?? "all"}
-        onValueChange={(next) =>
-          setContent({ level: next === "all" ? null : next })
-        }
-      >
-        <SelectTrigger size="sm" className="h-7 w-full text-xs" aria-label="Level">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all" className="text-xs">
-            All levels
-          </SelectItem>
-          {(levels.data ?? []).map((level) => (
-            <SelectItem key={level.value} value={level.value} className="text-xs">
-              {level.label} only
-            </SelectItem>
-          ))}
-          {RESOLVER_LEVELS.map((level) => (
-            <SelectItem key={level.value} value={level.value} className="text-xs">
-              {level.label} only
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        onSelect={(next) => setContent({ level: next === "all" ? null : next })}
+        placeholder="All levels"
+        noun="level"
+        ariaLabel="Level"
+        loading={levels.isPending}
+        onCreateRequiresMore={(typed) => setNewLevelDraft(typed)}
+        options={[
+          { value: "all", label: "All levels" },
+          ...(levels.data ?? []).map((level) => ({
+            value: level.value,
+            label: `${level.label} only`,
+          })),
+          ...RESOLVER_LEVELS.map((level) => ({
+            value: level.value,
+            label: `${level.label} only`,
+          })),
+        ]}
+      />
 
       <div className="space-y-1">
         <p className="text-[11px] font-medium text-muted-foreground">
@@ -443,6 +456,28 @@ export function DigRuleEditor({
           {isNew ? "Save rule" : "Save changes"}
         </Button>
       </div>
+
+      {newLevelDraft !== null ? (
+        <AddLevelDialog
+          siteId={siteId}
+          kind="value_band"
+          initialLabel={newLevelDraft}
+          onCancel={() => setNewLevelDraft(null)}
+          onCreated={(value) => {
+            setNewLevelDraft(null);
+            void levels.refetch();
+            setContent({ level: value });
+          }}
+        />
+      ) : null}
+      {newDimensionDraft !== null ? (
+        <AddDimensionDialog
+          siteId={siteId}
+          initialLabel={newDimensionDraft}
+          onCancel={() => setNewDimensionDraft(null)}
+          onCreated={() => setNewDimensionDraft(null)}
+        />
+      ) : null}
     </div>
   );
 }

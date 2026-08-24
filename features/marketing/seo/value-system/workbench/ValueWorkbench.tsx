@@ -36,9 +36,47 @@
  * the work queue, never a silently-guessed middle tier. And "Your setup, as it
  * actually stands" (./MeaningHealth) says what is unfinished about THIS site's
  * meaning — measured live, never a score.
+ *
+ * 🚨 2026-08-23 — THE RE-LAYOUT (C17). Arman: "some of the things that used to
+ * be extremely valuable and used to show KPIs to gamify the system for the
+ * user got hijacked by the new system, and they've been hidden or have become
+ * massively over complicated… half of the page now is just taken up by a bunch
+ * of garbage at the top that is completely meaningless. I don't like pages
+ * where there are novels written." He was measurably right: 630px of a 856px
+ * first screen — 74% — was spent before the first keyword row.
+ *
+ * The ORDER is now the ruling, and every future addition to this page has to
+ * earn its place in it:
+ *
+ *   1. ONE header line          — title, domain, window. A window is a fact,
+ *                                 so it is a chip, not a sentence.
+ *   2. THE KPI BAND             — ./ValueKpiBand. Four numbers, biggest type
+ *                                 on the page, every one of them a door.
+ *   3. THE VERDICT             — one sentence, under the numbers it explains.
+ *   4. SETUP STATES             — ./MeaningHealth, a row of pills, not five
+ *                                 cards. The novel lives in their hover and
+ *                                 in "Details".
+ *   5. BY LEVEL (provisional)   — ./BandScoreboard, kept on his instruction,
+ *                                 subordinate and collapsible.
+ *   6. AI SUGGESTIONS           — one chip row, BELOW the numbers. A proposal
+ *                                 never outranks the site's own facts.
+ *   7. THE TABLE.
+ *
+ * DUPLICATIONS DELETED in the same pass, because one page said the same thing
+ * three times: the scoreboard's own "site clicks vs prior 28 days" headline
+ * (the verdict already says it), the full-width unvalued work-queue banner
+ * (now the unvalued KPI tile, session button and all), the unvalued strip
+ * inside the scoreboard (now an ordinary level tile), and the table's
+ * "N GSC-active keywords · every tier shows its why · your ruling always
+ * wins" narration (the KPI band carries the count; the doctrine is not news
+ * to the reader on their second visit).
+ *
+ * NOTHING WAS CULLED. Rulings, the ruling session, receipts, the level editor,
+ * packs, the guidelines door and the facet registry are all still exactly one
+ * click away, under the same names.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   keepPreviousData,
   useMutation,
@@ -51,6 +89,7 @@ import {
   CircleDollarSign,
   Gavel,
   PanelRightOpen,
+  Plus,
   StickyNote,
   Undo2,
 } from "lucide-react";
@@ -81,14 +120,17 @@ import {
   getValueReview,
   getValueSummary,
   getValueVocabulary,
+  getRulingCounts,
   setKeywordValue,
 } from "../data";
 import type { ValueReviewRow, ValueSource } from "../types";
 import {
   bandMetaFor,
   buildBandMeta,
+  buildKpis,
   buildVerdict,
   formatScore,
+  formatWindowLabel,
   humanizeSlug,
   reviewWindow,
   type BandMeta,
@@ -96,11 +138,13 @@ import {
 import { KeywordMeaningSuggestions } from "@/features/marketing/seo/value-system/suggestions/KeywordMeaningSuggestions";
 import { ValueDoors } from "../ValueDoors";
 import { BandScoreboard } from "./BandScoreboard";
+import { ValueKpiBand } from "./ValueKpiBand";
 import { ReasonChainDetail, ReasonChainInline } from "./ReasonChain";
 import { MeaningPanel } from "./MeaningPanel";
 import { MeaningHealth } from "./MeaningHealth";
 import { ReadyDefaultsBanner } from "../packs/ReadyDefaultsBanner";
 import { RulingDialog, type RulingDraft } from "./RulingDialog";
+import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import { RulingSession } from "./RulingSession";
 
 const REVIEW_SORTS = new Set(["clicks", "impressions", "score", "keyword"]);
@@ -140,6 +184,7 @@ function BandCell({
   onRule,
   onClear,
   onRuleWithNote,
+  onAddLevel,
   busy,
 }: {
   row: ValueReviewRow;
@@ -147,6 +192,8 @@ function BandCell({
   onRule: (tier: string) => void;
   onClear: () => void;
   onRuleWithNote: () => void;
+  /** P23 — none of the tiers fit, so make a new one right here. */
+  onAddLevel: () => void;
   busy: boolean;
 }) {
   const meta = bandMetaFor(metas, row.value_band);
@@ -197,6 +244,11 @@ function BandCell({
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
+        {/* P23 — a picker that only offers what already exists is a dead end. */}
+        <DropdownMenuItem className="gap-2 text-xs" onSelect={onAddLevel}>
+          <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+          None of these fit — add a level…
+        </DropdownMenuItem>
         <DropdownMenuItem className="gap-2 text-xs" onSelect={onRuleWithNote}>
           <StickyNote className="h-3.5 w-3.5 text-muted-foreground" />
           Rule with a note…
@@ -244,11 +296,16 @@ export function ValueWorkbench() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [meaningOpen, setMeaningOpen] = useState(false);
   const [draft, setDraft] = useState<RulingDraft | null>(null);
+  /** P23 — "+ Add a level" from the tier chip; the string is what was typed. */
+  const [addingLevel, setAddingLevel] = useState<string | null>(null);
   // The ruling session is a MODE, not an overlay: it replaces the table so the
   // one keyword in front of you is the only thing to answer.
   const [sessionOpen, setSessionOpen] = useState(false);
   // Counted from rulings that LANDED, never from taps — see RulingSession.
   const [sessionRuled, setSessionRuled] = useState(0);
+  // The by-level tiles: kept, subordinate, and collapsible (see BandScoreboard).
+  const [levelsOpen, setLevelsOpen] = useState(true);
+  const levelsRef = useRef<HTMLElement | null>(null);
 
   const vocab = useQuery({
     queryKey: ["marketing", "value", "vocab", siteId, "value_band"],
@@ -280,16 +337,44 @@ export function ValueWorkbench() {
     staleTime: 60_000,
   });
 
+  /**
+   * The expert's own contribution, counted. Separate from the summary because
+   * it is a property of the SITE, not of this 28-day window: a ruling made
+   * last month still counts, and a person who ruled 40 keywords should see 40
+   * — not however many of them happened to earn a click this month.
+   */
+  const rulings = useQuery({
+    queryKey: ["marketing", "value", "ruling-counts", siteId],
+    queryFn: ({ signal }) => getRulingCounts(siteId, signal),
+    staleTime: 60_000,
+  });
+
   const summaryRows = summary.data ?? [];
   const verdict = buildVerdict(summaryRows, metas);
-  const unvaluedQueries = summaryRows
-    .filter((row) => row.value_band === "unvalued")
-    .reduce((total, row) => total + row.queries, 0);
-  const unvaluedClicks = summaryRows
-    .filter((row) => row.value_band === "unvalued")
-    .reduce((total, row) => total + row.clicks, 0);
+  const kpis = summary.data ? buildKpis(summaryRows) : null;
+  const unvaluedQueries = kpis?.unvaluedQueries ?? 0;
 
   const state = table.queryState;
+
+  /**
+   * ONE way for anything on this page to point the table somewhere — the KPI
+   * tiles, the level tiles and the verdict sentence all go through here.
+   * Four hand-rolled copies of this object spread was how the same filter
+   * ended up behaving three different ways.
+   */
+  function filterBy(column: "value_band" | "value_source", value: string | null) {
+    table.onStateChange({
+      ...table.state,
+      page: 1,
+      columnFilters: {
+        ...table.state.columnFilters,
+        [column]: value
+          ? ({ kind: "select", value } as ColumnFilterValue)
+          : undefined,
+      },
+    });
+  }
+
   const bandFilter = singleSelectValue(state.columnFilters.value_band);
   const sourceFilter = singleSelectValue(state.columnFilters.value_source);
   const sortId =
@@ -419,6 +504,7 @@ export function ValueWorkbench() {
               label: row.keyword,
             })
           }
+          onAddLevel={() => setAddingLevel("")}
           onRuleWithNote={() =>
             setDraft({
               keywordIds: [row.keyword_id],
@@ -522,17 +608,20 @@ export function ValueWorkbench() {
     // One scroll surface, at natural height, is what the rest of this family
     // does (topics, rules, packs) and what a 50-row page wants.
     <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto bg-textured p-3 sm:p-4">
-      {/* Header */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 pr-14">
-        <div className="min-w-0">
+      {/* HEADER — one line. The window used to be spelled out in a
+          sentence under the title; it is a fact, so it is a chip. */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 pr-14">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
             <CircleDollarSign className="h-4 w-4 text-primary" />
             Keyword value
           </h1>
-          <p className="text-xs text-muted-foreground">
-            What {site.domain}&rsquo;s search traffic is actually worth —{" "}
-            {window.start} → {window.end}, compared to the 28 days before.
-          </p>
+          <span
+            className="truncate text-xs text-muted-foreground"
+            title={`What ${site.domain}'s search traffic is actually worth. Every number on this page covers ${window.start} to ${window.end}, compared with the 28 days before it.`}
+          >
+            {site.domain} · {formatWindowLabel(window)} vs prior 28 days
+          </span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <ValueDoors brandId={brandId} siteId={siteId} />
@@ -549,9 +638,47 @@ export function ValueWorkbench() {
         </div>
       </div>
 
+      {/* THE KPI BAND — first, always. The numbers a person came for, and the
+          only block on this page allowed to be the biggest thing on it. */}
+      {summary.isError ? (
+        <InlineQueryError
+          what="the value decomposition"
+          error={summary.error}
+          onRetry={() => void summary.refetch()}
+        />
+      ) : (
+        <ValueKpiBand
+          kpis={kpis}
+          rulings={rulings.data ?? null}
+          // isPending, not isLoading: a paused fetch (offline) must show the
+          // skeleton — zero-filled tiles for data that never arrived are a lie.
+          isLoading={summary.isPending}
+          activeBand={bandFilter}
+          activeSource={sourceFilter}
+          onFilterBand={(band) => filterBy("value_band", band)}
+          onFilterSource={(source) => filterBy("value_source", source)}
+          onClearFilters={() =>
+            table.onStateChange({
+              ...table.state,
+              page: 1,
+              columnFilters: {},
+            })
+          }
+          onShowLevels={() => {
+            setLevelsOpen(true);
+            levelsRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }}
+          onStartSession={() => setSessionOpen(true)}
+          sessionOpen={sessionOpen}
+        />
+      )}
+
       {/* THE VERDICT — grafted from variant B. Composed English that names the
-          divergence the totals hide. Renders only when there is a verdict to
-          give; the contrast band is clickable because the sentence is a claim
+          divergence the totals hide. One sentence, under the numbers it is
+          about; the contrast band is clickable because the sentence is a claim
           the user must be able to inspect. */}
       {verdict ? (
         <p className="shrink-0 text-xs leading-5 text-foreground">
@@ -562,19 +689,7 @@ export function ValueWorkbench() {
                 type="button"
                 className="ml-1 text-left text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
                 title={`Filter the table to ${bandMetaFor(metas, verdict.contrastBand).label}`}
-                onClick={() =>
-                  table.onStateChange({
-                    ...table.state,
-                    page: 1,
-                    columnFilters: {
-                      ...table.state.columnFilters,
-                      value_band: {
-                        kind: "select",
-                        value: verdict.contrastBand,
-                      } as ColumnFilterValue,
-                    },
-                  })
-                }
+                onClick={() => filterBy("value_band", verdict.contrastBand)}
               >
                 {verdict.detail}
               </button>
@@ -587,13 +702,8 @@ export function ValueWorkbench() {
         </p>
       ) : null}
 
-      {/* What the agents proposed and you have not answered yet. Nothing here
-          has touched a matcher, a worth row, a stamp or the guidelines — that
-          is P12, and it is why this sits above the numbers rather than inside
-          a settings screen. */}
-      <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
-
-      <ReadyDefaultsBanner />
+      {/* What is unfinished about this site's setup — states and doors, never
+          the page's headline (see ./MeaningHealth for why it is a row now). */}
       <MeaningHealth
         rows={health.data}
         isLoading={health.isPending}
@@ -603,29 +713,7 @@ export function ValueWorkbench() {
         siteId={siteId}
       />
 
-      {/* THE WORK QUEUE — grafted from variant B. 4,524 of this site's keywords
-          carry no meaning at all, and a table is the wrong shape for a pile
-          that size: the useful motion is one question, one answer, next. */}
-      {!sessionOpen && unvaluedQueries > 0 ? (
-        <button
-          type="button"
-          onClick={() => setSessionOpen(true)}
-          className="flex w-full shrink-0 flex-wrap items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-left transition-colors hover:border-warning/70"
-        >
-          <Gavel className="h-3.5 w-3.5 shrink-0 text-warning" />
-          <span className="min-w-0 flex-1 text-xs text-foreground">
-            <span className="font-semibold">
-              {formatCount(unvaluedQueries)} keywords
-            </span>{" "}
-            — carrying {formatCount(unvaluedClicks)} clicks — have no value
-            yet. Until you rule on them, the totals above understate what you
-            know.
-          </span>
-          <span className="shrink-0 text-[11px] font-semibold text-warning">
-            Start a ruling session →
-          </span>
-        </button>
-      ) : null}
+      <ReadyDefaultsBanner />
 
       {sessionOpen ? (
         <RulingSession
@@ -650,50 +738,73 @@ export function ValueWorkbench() {
         />
       ) : (
         <>
-      {/* Decomposition scoreboard */}
-      {vocab.isError ? (
-        <InlineQueryError
-          what="the value-band vocabulary"
-          error={vocab.error}
-          onRetry={() => void vocab.refetch()}
-        />
-      ) : null}
-      {summary.isError ? (
-        <InlineQueryError
-          what="the value decomposition"
-          error={summary.error}
-          onRetry={() => void summary.refetch()}
-        />
-      ) : (
-        <BandScoreboard
-          metas={metas}
-          summary={summary.data}
-          // isPending, not isLoading: a paused fetch (offline) must show the
-          // skeleton — zero-filled tiles for data that never arrived are a lie.
-          isLoading={summary.isPending || vocab.isPending}
-          activeBand={bandFilter}
-          onSelectBand={(band) =>
-            table.onStateChange({
-              ...table.state,
-              page: 1,
-              columnFilters: {
-                ...table.state.columnFilters,
-                value_band: band
-                  ? ({ kind: "select", value: band } as ColumnFilterValue)
-                  : undefined,
-              },
-            })
-          }
-        />
-      )}
+      {/* THE LEVEL BREAKDOWN — kept on Arman's explicit instruction ("don't
+          get rid of them yet") and marked for exactly what he said about it:
+          he is not sure the tiles are meaningful. So they render UNDER the
+          KPIs, at tile size, behind a header that says so. Every tile is
+          still a live filter into the table. */}
+      <section ref={levelsRef} className="shrink-0 space-y-1.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setLevelsOpen((open) => !open)}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground transition-colors hover:text-primary"
+          >
+            <ChevronDown
+              className={cn(
+                "h-3 w-3 transition-transform",
+                !levelsOpen && "-rotate-90",
+              )}
+            />
+            By level
+          </button>
+          <span
+            className="rounded border border-border bg-muted/40 px-1.5 py-px text-[10px] uppercase tracking-wide text-muted-foreground"
+            title="Provisional. These tiles predate the level system and Arman has not yet ruled on whether the split is the right one — they are kept, and deliberately subordinate to the KPIs above, until he does."
+          >
+            provisional
+          </span>
+          {bandFilter ? (
+            <button
+              type="button"
+              onClick={() => filterBy("value_band", null)}
+              className="text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+            >
+              Showing {bandMetaFor(metas, bandFilter).label} only — clear
+            </button>
+          ) : (
+            <span className="text-[11px] text-muted-foreground">
+              click a level to filter the table
+            </span>
+          )}
+        </div>
+
+        {vocab.isError ? (
+          <InlineQueryError
+            what="the value-band vocabulary"
+            error={vocab.error}
+            onRetry={() => void vocab.refetch()}
+          />
+        ) : levelsOpen && !summary.isError ? (
+          <BandScoreboard
+            metas={metas}
+            summary={summary.data}
+            isLoading={summary.isPending || vocab.isPending}
+            activeBand={bandFilter}
+            onSelectBand={(band) => filterBy("value_band", band)}
+          />
+        ) : null}
+      </section>
+
+      {/* WHAT THE AGENTS PROPOSED and you have not answered yet. Nothing here
+          has touched a matcher, a worth row, a stamp or the guidelines — that
+          is P12. It used to sit above every number, which put a suggestion
+          ahead of the site's own facts; it is one chip row, below them, and
+          it renders nothing at all when the queue is empty. */}
+      <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
 
       {/* Review table */}
       <div className="flex flex-col rounded-lg border border-border bg-card p-2">
-        <p className="mb-1.5 flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
-          <Gavel className="h-3.5 w-3.5 text-primary" />
-          {formatCount(total)} GSC-active keywords in this window · every tier
-          shows its why · your ruling always wins
-        </p>
         {review.isError ? (
           <InlineQueryError
             what="the keyword value review"
@@ -909,8 +1020,19 @@ export function ValueWorkbench() {
         />
       ) : null}
 
+      {addingLevel !== null ? (
+        <AddLevelDialog
+          siteId={siteId}
+          kind="value_band"
+          initialLabel={addingLevel}
+          onCancel={() => setAddingLevel(null)}
+          onCreated={() => setAddingLevel(null)}
+        />
+      ) : null}
+
       {draft ? (
         <RulingDialog
+          siteId={siteId}
           draft={draft}
           metas={metas}
           busy={ruling.isPending}
