@@ -551,6 +551,14 @@ export async function recordAppliedKeywordStrategy(
   };
   const mutate = (block: Record<string, unknown>) => {
     block[KEYWORD_STRATEGY_APPLIED_KEY] = stored;
+    // Stamp the PROPOSAL too — `keyword_strategy_proposal.applied_at` was a
+    // dead field always written null (keyword-chain audit finding 6,
+    // 2026-08-24), so anyone reading the proposal JSON to answer "was this
+    // applied?" got a false negative. One write, two records agreeing.
+    const proposal = block["keyword_strategy_proposal"];
+    if (proposal && typeof proposal === "object") {
+      (proposal as Record<string, unknown>)["applied_at"] = stored.applied_at;
+    }
   };
   if (await writeDraftOnce(siteId, mutate)) return;
   if (await writeDraftOnce(siteId, mutate)) return;

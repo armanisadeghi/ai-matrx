@@ -1389,8 +1389,16 @@ export function SetupView() {
             bound: result.bound,
           });
         } catch (error) {
-          setKeywordError(
-            `Bound ${result.bound} page(s), but the strategy summary was not recorded: ${extractErrorMessage(error)}`,
+          // NEVER overwrite an earlier per-route failure message with this
+          // unrelated one (keyword-chain audit finding 3, 2026-08-24): the
+          // user must still see WHICH routes lost their assignment.
+          setKeywordError((previous) =>
+            [
+              previous,
+              `Also: the strategy summary was not recorded — ${extractErrorMessage(error)}`,
+            ]
+              .filter(Boolean)
+              .join(" "),
           );
         }
         toast.success(
