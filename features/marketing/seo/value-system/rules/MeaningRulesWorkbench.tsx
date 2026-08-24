@@ -438,7 +438,7 @@ export function MeaningRulesWorkbench() {
     if (value) params.set(RULEBOOK_SOURCE_QUERY, value);
     else params.delete(RULEBOOK_SOURCE_QUERY);
     const qs = params.toString();
-    router.replace(qs ? `${basePath}?${qs}` : basePath);
+    router.push(qs ? `${basePath}?${qs}` : basePath);
   };
 
   const visibleRules = (rules.data ?? []).filter((r) => matchesSource(r.id, r.metadata));
@@ -727,7 +727,7 @@ export function MeaningRulesWorkbench() {
               {onlyIncompleteAreas ? (
                 <button
                   type="button"
-                  onClick={() => router.replace(pathWithoutAreaFilter)}
+                  onClick={() => router.push(pathWithoutAreaFilter)}
                   className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent"
                 >
                   <X className="h-2.5 w-2.5" aria-hidden />
@@ -942,7 +942,7 @@ export function MeaningRulesWorkbench() {
               const params = new URLSearchParams(searchParams.toString());
               params.delete("bands");
               const qs = params.toString();
-              router.replace(qs ? `${basePath}?${qs}` : basePath);
+              router.push(qs ? `${basePath}?${qs}` : basePath);
             }
           }}
           onSaved={() => {

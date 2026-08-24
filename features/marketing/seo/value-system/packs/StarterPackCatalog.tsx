@@ -478,7 +478,7 @@ export function StarterPackCatalog() {
   const closeReview = () => router.push(`${basePath}?pack=${activeId ?? ""}`);
   const selectPack = (packId: string) => {
     setSelectedId(packId);
-    router.replace(`${basePath}?pack=${packId}`);
+    router.push(`${basePath}?pack=${packId}`);
   };
 
   // ── REVIEW ──────────────────────────────────────────────────────────────

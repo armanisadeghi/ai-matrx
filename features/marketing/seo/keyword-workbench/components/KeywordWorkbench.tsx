@@ -141,13 +141,20 @@ export function KeywordWorkbench() {
   const openWhyScore = useOpenGscWhyScoreWindow();
 
   const state = parseWorkbenchState(params);
-  const push = (next: WorkbenchState) => {
-    router.replace(
-      `${sitePath}/keywords?${workbenchSearchParams(next).toString()}`,
-      {
-        scroll: false,
-      },
-    );
+  /**
+   * THE BACK BUTTON IS UNDO (2026-08-24). Every write here is a discrete user
+   * action — a filter, a dimension column, a saved view, a page — so it PUSHES
+   * a history entry and Back walks back exactly one step. `router.replace` used
+   * to overwrite it, which left Back exiting the workbench entirely.
+   * `history: "replace"` stays available for programmatic corrections.
+   */
+  const push = (
+    next: WorkbenchState,
+    options: { history?: "push" | "replace" } = {},
+  ) => {
+    const href = `${sitePath}/keywords?${workbenchSearchParams(next).toString()}`;
+    if (options.history === "replace") router.replace(href, { scroll: false });
+    else router.push(href, { scroll: false });
   };
   const patch = (partial: Partial<WorkbenchState>) =>
     push({ ...state, page: 1, ...partial });

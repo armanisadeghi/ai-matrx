@@ -201,9 +201,28 @@ export function SearchConsoleWorkspace() {
     enabled: state.tab === "overview",
   });
 
-  const applyState = (next: SearchConsoleUrlState) => {
+  /**
+   * THE BACK BUTTON IS UNDO (2026-08-24, Arman: "our browser navigation is not
+   * working since we're using url parameters … especially when there isn't an
+   * easy way to undo something or go back a step").
+   *
+   * Every call here is a DISCRETE user action — pick a site, switch a tab, add
+   * or remove a filter chip, drill a row, change the range, choose an insight.
+   * Those PUSH, so Back undoes exactly one step and Forward redoes it, which is
+   * the doctrine `lib/url-state/useUrlState.ts` already states. `router.replace`
+   * overwrote the entry, so Back left the dashboard entirely and a mis-click was
+   * unrecoverable. Programmatic corrections (clamping, pruning, resolving a
+   * default) pass `history: "replace"` — a correction the user did not make is
+   * not a step they should have to walk back through.
+   */
+  const applyState = (
+    next: SearchConsoleUrlState,
+    options: { history?: "push" | "replace" } = {},
+  ) => {
+    const href = buildSearchConsoleUrl(next);
     startNavigation(() => {
-      router.replace(buildSearchConsoleUrl(next), { scroll: false });
+      if (options.history === "replace") router.replace(href, { scroll: false });
+      else router.push(href, { scroll: false });
     });
   };
 
