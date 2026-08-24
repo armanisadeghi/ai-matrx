@@ -77,7 +77,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "keyword_brief",
     label: "Keyword brief",
     description:
-      "THE condensed keyword dossier (buildKeywordBrief): search volume, CPC, competition, trend, classification, and site performance when scoped. The single value an agent should read first. Empty when no phrase is entered.",
+      "THE condensed keyword dossier (buildKeywordBrief): search volume, CPC, competition, trend, site performance when scoped, and — with a site binding — this site's class/service/score/level and dimension stamps under `site_meaning`. The single value an agent should read first. Empty when no phrase is entered.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 600,

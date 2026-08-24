@@ -77,9 +77,17 @@ export function buildKeywordBrief(input: {
     demand_trajectory: market?.demand_trajectory ?? null,
     metrics_fetched_at: market?.metrics_fetched_at ?? null,
   };
-  for (const [field] of CLASSIFICATION_FIELDS) {
-    const value = keyword[field];
-    if (typeof value === "string" && value) data[field] = value;
+  // The 6 mirror columns are a LEGACY MIRROR of `seo.keyword_facet`, and the
+  // stamps in `meaning` carry the same facts with their provenance. When a
+  // caller supplies meaning, the mirror is dropped rather than repeated — two
+  // answers to "what is this keyword" in one payload is the drift itself.
+  // Callers with no site binding (page workspace, content plan) still get the
+  // mirror, because for them the alternative is nothing.
+  if (!input.meaning) {
+    for (const [field] of CLASSIFICATION_FIELDS) {
+      const value = keyword[field];
+      if (typeof value === "string" && value) data[field] = value;
+    }
   }
 
   const lines: [string, string][] = [["Keyword", keyword.phrase]];
@@ -93,10 +101,12 @@ export function buildKeywordBrief(input: {
   } else {
     lines.push(["Keyword market", "no market data fetched yet"]);
   }
-  const classification = CLASSIFICATION_FIELDS.flatMap(([field, label]) => {
-    const value = keyword[field];
-    return typeof value === "string" && value ? [`${label}: ${value}`] : [];
-  });
+  const classification = input.meaning
+    ? []
+    : CLASSIFICATION_FIELDS.flatMap(([field, label]) => {
+        const value = keyword[field];
+        return typeof value === "string" && value ? [`${label}: ${value}`] : [];
+      });
   if (classification.length > 0) {
     lines.push(["Keyword classification", classification.join(" · ")]);
   }

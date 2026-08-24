@@ -662,7 +662,10 @@ export function SiteKeywordPerformanceWorkspace() {
         sourceFeature="marketing"
         surfaceName={SITE_KEYWORDS_SURFACE_NAME}
         contentSource={{ type: "raw" }}
-        contextData={{ content: "" }}
+        // The surface's declared values ride along (same emitter the page
+        // provider uses), so an agent launched from a row sees the surface's
+        // values, not an empty scope.
+        contextData={{ ...getScope(), content: "" }}
         resolveContextOnOpen={(target) => {
           const id = target
             ?.closest("[data-row-id]")

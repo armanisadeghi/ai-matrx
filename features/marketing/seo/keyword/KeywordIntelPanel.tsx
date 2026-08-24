@@ -402,7 +402,12 @@ export function KeywordIntelPanel({
               },
             }
           : {})}
+        // The surface's declared values ride along, so a shortcut or agent
+        // launched from the menu sees exactly what the window's
+        // SurfaceRuntimeProvider emits (the value-mapping guard screams
+        // otherwise, and it is right to).
         contextData={{
+          ...getScope(),
           content: humanLines(brief.lines),
           context: brief.data,
         }}
