@@ -22,6 +22,7 @@ import {
   Key,
   Flame,
 } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -172,9 +173,14 @@ function RunLogCard({
           {modeLabel[log.mode]}
         </Badge>
         {log.conversationId && (
-          <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[120px]">
-            {log.conversationId}
-          </span>
+          <EntityRef
+            token="conversation"
+            id={log.conversationId}
+            openInNewTab
+            showIcon={false}
+            className="min-w-0 max-w-[160px]"
+            nameClassName="text-[10px] font-mono text-muted-foreground"
+          />
         )}
         <span className="text-[10px] text-muted-foreground ml-auto flex-shrink-0">
           {timeAgo(log.startedAt)}

@@ -38,6 +38,7 @@ import {
   selectEditorMode,
 } from "@/features/code/redux/codeWorkspaceSlice";
 import type { RootState } from "@/lib/redux/store";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import {
   AlertTriangle,
@@ -255,9 +256,14 @@ export default function CodeWorkspaceDebug() {
                 className="rounded border border-neutral-200 bg-white px-2 py-1 dark:border-neutral-800 dark:bg-neutral-950/60"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate font-mono text-[10px]">
-                    {entry.conversationId}
-                  </span>
+                  <EntityRef
+                    token="conversation"
+                    id={entry.conversationId}
+                    wrap
+                    openInNewTab
+                    className="min-w-0"
+                    nameClassName="font-mono text-[10px]"
+                  />
                   {entry.hasToken ? (
                     <span className="rounded bg-emerald-500/15 px-1 py-0.5 text-[9px] uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
                       token

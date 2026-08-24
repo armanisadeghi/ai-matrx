@@ -40,6 +40,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
 import { RefinableContentEditor } from "@/components/content-refine/RefinableContentEditor";
 import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindow";
@@ -370,7 +371,15 @@ export function QuickNoteSaveCore({
         <div className="shrink-0 flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs">
           <Check className="h-3.5 w-3.5 text-green-600" />
           <span className="font-medium">
-            Saved to <span className="font-semibold">{savedNote.label}</span>
+            Saved to{" "}
+            <EntityRef
+              token="note"
+              id={savedNote.id}
+              name={savedNote.label}
+              openInNewTab
+              showIcon={false}
+              nameClassName="font-semibold"
+            />
           </span>
           <span className="text-muted-foreground">
             · {refine.charCount.toLocaleString()} chars

@@ -24,13 +24,13 @@ import {
   CheckCircle2,
   CircleAlert,
   Clock,
-  FileText,
   FolderOpen,
   Loader2,
   Send,
   Upload,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import {
@@ -191,11 +191,13 @@ export function IngestTab({
         </div>
         {picked ? (
           <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-foreground">
-            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="truncate">{picked.label}</span>
-            <span className="truncate text-xs text-muted-foreground">
-              {picked.fileId}
-            </span>
+            <EntityRef
+              token="file"
+              id={picked.fileId}
+              name={picked.label}
+              openInNewTab
+              className="min-w-0"
+            />
           </div>
         ) : (
           <div className="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">

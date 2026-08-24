@@ -13,6 +13,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { SURFACE_META } from "../../constants/surfaces";
 import { humanLines, scheduleDetailLocation } from "../../lib/copy";
 import type { AgendaTask } from "../../types";
@@ -99,9 +100,16 @@ export function SpecCard({ task }: Props) {
           />
         </div>
         <Row label="Agent">
-          <span className="font-mono text-xs">
-            {task.agentId ?? "Platform default"}
-          </span>
+          {task.agentId ? (
+            <EntityRef
+              token="agent"
+              id={task.agentId}
+              wrap
+              nameClassName="font-mono text-xs"
+            />
+          ) : (
+            <span className="font-mono text-xs">Platform default</span>
+          )}
         </Row>
 
         <SectionTitle icon={Code} label="Prompt" />
@@ -166,9 +174,12 @@ export function SpecCard({ task }: Props) {
         </Row>
         {task.persistentConversationId && (
           <Row label="Conversation">
-            <span className="font-mono text-xs">
-              {task.persistentConversationId}
-            </span>
+            <EntityRef
+              token="conversation"
+              id={task.persistentConversationId}
+              wrap
+              nameClassName="font-mono text-xs"
+            />
           </Row>
         )}
         {task.tags.length > 0 && (

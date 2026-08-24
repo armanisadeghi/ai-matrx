@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
@@ -204,7 +205,15 @@ export function QuickSaveCodeCore({
         <div className="shrink-0 flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs">
           <Check className="h-3.5 w-3.5 text-green-600" />
           <span className="font-medium">
-            Saved as <span className="font-semibold">{savedFile.name}</span>
+            Saved as{" "}
+            <EntityRef
+              token="code_file"
+              id={savedFile.id}
+              name={savedFile.name}
+              openInNewTab
+              showIcon={false}
+              nameClassName="font-semibold"
+            />
           </span>
           <span className="text-muted-foreground">
             · {charCount.toLocaleString()} chars

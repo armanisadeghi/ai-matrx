@@ -12,9 +12,20 @@ Generated types are **always correct**. Code, local types, and stored data confo
 | Boundary | Generated source | Regen |
 |---|---|---|
 | Database (Supabase) | `types/database.types.ts` | `pnpm db-types` |
-| Python API (aidream Pydantic → OpenAPI) | `types/python-generated/api-types.ts` — alias via `components["schemas"]["..."]` | `pnpm sync-types` |
+| Python API (aidream Pydantic → OpenAPI) | `types/python-generated/api-types.ts` — alias via `components["schemas"]["..."]` | `pnpm sync-types` (live) · local-ahead case below |
 
 Never hand-mirror, re-declare, or widen a generated type. A hand-written "compatible" copy is a violation even if it currently matches — it drifts silently and shields call sites from schema changes. Full standards: [`TYPESCRIPT_STANDARDS.md`](../../../TYPESCRIPT_STANDARDS.md). Duplicate-type doctrine: [`PRINCIPLES.md`](../../../PRINCIPLES.md) §1.
+
+### Live OpenAPI behind local aidream
+
+`pnpm sync-types` (no flag) hits the **live** server. A route that exists in local `../aidream` but is not deployed yet is **absent** from `keyof paths` / `PathWith<"get">`. That is not an escalation and not a license to copy `openapi.json` or `api-types.ts` by hand.
+
+**Do this — then stop:**
+
+1. **Start** the AI Dream server from `../aidream`: `python run.py`. Wait until it prints `Local Link: http://localhost:8000`. If 8000 is already serving this checkout's aidream, reuse it — do not start a second.
+2. From this repo: **`pnpm sync-types:local`**.
+3. Stay until Step 3 prints **Type-check passed**. Remaining errors are real code/contract bugs — fix them per this skill and re-run until green.
+4. **Kill** the server you started. Do not leave it running. Do not kill a server you did not start.
 
 **Supabase query/RPC patterns** (`DbRpcRow` guard, the one sanctioned cast, Json field narrowing, `Tables<T>`): [`supabase-patterns.md`](./supabase-patterns.md) in this skill.
 
@@ -66,7 +77,9 @@ If your solution contains any of these at a data boundary, you have hidden the b
 
 ## Escalation is success, silencing is failure
 
-Some errors cannot be fixed without a human decision: an architecture choice, a DB migration/backfill, a contract question only the Python side can answer, a product-behavior call. **Stopping and reporting these is the correct outcome** — it is worth more than any diff. Making the error disappear and claiming victory is the single worst thing you can do.
+A path missing from live `keyof paths` that **exists on local aidream** is the **Live OpenAPI behind local aidream** procedure above — not this brief.
+
+Some errors cannot be fixed without a human decision: an architecture choice, a DB migration/backfill, a contract question only the Python **source** can answer, a product-behavior call. **Stopping and reporting these is the correct outcome** — it is worth more than any diff. Making the error disappear and claiming victory is the single worst thing you can do.
 
 Escalate with a **decision brief**, not a shrug:
 
@@ -96,7 +109,7 @@ An escalation without "Consumed by" is incomplete — trace the destination firs
 
 ## Operating modes
 
-**Deep Fix (default).** You own the whole fix: the Required Sequence above, cross-feature audit, ingress validation, backfill. Escalate (decision brief) for: a DB migration/backfill needing approval, an architecture or product-behavior decision, a wire-contract question needing the Python side changed, or protected resources (`protected-resources` skill).
+**Deep Fix (default).** You own the whole fix: the Required Sequence above, cross-feature audit, ingress validation, backfill. Live types missing a route that local aidream already serves → local-sync procedure, not an escalation. Escalate (decision brief) for: a DB migration/backfill needing approval, an architecture or product-behavior decision, a wire-contract question needing the Python **source** changed, or protected resources (`protected-resources` skill).
 
 **Batch / wave mode** — only when explicitly running assigned per-file task lists (strictness waves, `type-errors/` fan-outs; see [`docs/upgrades/STRICTNESS-WAVE-HANDOFF.md`](../../../docs/upgrades/STRICTNESS-WAVE-HANDOFF.md)):
 - Edit only the assigned file; work blind from the error list.
@@ -108,7 +121,7 @@ An escalation without "Consumed by" is incomplete — trace the destination firs
 
 - Solo sessions: `pnpm type-check` (raw `tsc`, ~60–70s) — but read the active-wave banner in `STRICTNESS-WAVE-HANDOFF.md` first; during an active wave it is red by design.
 - `pnpm check:hatches` — the escape-hatch ratchet must not grow; `pnpm check:hatches <path>` lists offenders under a path.
-- After DB/API changes: `pnpm sync-types` (regen + type-check), per the `finalize-and-ship` skill.
+- After DB/API changes: `pnpm sync-types` when the route is **already live**. Local aidream is ahead of live → the local-sync procedure above (`python run.py` → `pnpm sync-types:local` → green → kill). Per the `finalize-and-ship` skill.
 
 ## Reporting
 

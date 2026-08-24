@@ -38,6 +38,7 @@ import { SurfaceValuesTable } from "@/features/surfaces/components/SurfaceValues
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import type { SurfaceValue } from "@/features/surfaces/types";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 interface Props {
   surface: SurfaceWithStats;
   onClose: () => void;
@@ -474,9 +475,14 @@ export function SurfaceDetailPanel({
                     key={b.id}
                     className="px-2 py-1.5 flex items-center gap-2"
                   >
-                    <span className="font-mono text-[11px] truncate flex-1">
-                      {b.agent_id}
-                    </span>
+                    <EntityRef
+                      token="agent"
+                      id={b.agent_id}
+                      wrap
+                      openInNewTab
+                      className="min-w-0 flex-1"
+                      nameClassName="font-mono text-[11px]"
+                    />
                     <Badge variant="outline" className="text-[10px]">
                       {scopeLabel}
                     </Badge>
