@@ -139,6 +139,8 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
     const params = new URLSearchParams(window.location.search);
     params.delete("edit");
     const query = params.toString();
+    // Programmatic: consuming the one-shot `edit` intent off the current
+    // entry so a refresh cannot re-open the editor.
     window.history.replaceState(
       window.history.state,
       "",

@@ -57,7 +57,9 @@ export const ChatHistorySlot: React.FC<ChatHistorySlotProps> = ({
       const next = new URLSearchParams(searchParams.toString());
       next.set("conversationId", conv.conversationId);
       if (conv.agentId) next.set("agentId", conv.agentId);
-      router.replace(`${pathname}?${next.toString()}`);
+      // Discrete: opening a past conversation — Back returns to the one
+      // the user was reading.
+      router.push(`${pathname}?${next.toString()}`);
     },
     [pathname, router, searchParams],
   );

@@ -469,7 +469,8 @@ export function AccountsTableClient() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("user");
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname);
+    // Discrete close — Back re-opens the user the admin was just reading.
+    router.push(query ? `${pathname}?${query}` : pathname);
   }
 
   return (

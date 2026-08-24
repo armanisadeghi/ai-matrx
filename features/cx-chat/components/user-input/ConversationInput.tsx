@@ -626,7 +626,7 @@ export function ConversationInput({
           {hasVariables && (
             <button
               type="button"
-              onClick={() => router.replace(toggleUrl)}
+              onClick={() => router.push(toggleUrl)}
               className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex-shrink-0"
               title={
                 useGuidedVars

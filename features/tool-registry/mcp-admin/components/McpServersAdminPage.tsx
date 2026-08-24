@@ -145,7 +145,8 @@ export function McpServersAdminPage() {
     if (slug) params.set(MCP_SERVER_DEEP_LINK_PARAM, slug);
     else params.delete(MCP_SERVER_DEEP_LINK_PARAM);
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, {
+    // Discrete selection — Back closes the server the user just opened.
+    router.push(query ? `${pathname}?${query}` : pathname, {
       scroll: false,
     });
   };

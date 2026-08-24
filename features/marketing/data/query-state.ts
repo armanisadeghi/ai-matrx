@@ -172,7 +172,14 @@ function readState(
   };
 }
 
-/** URL-owned table state with immediate input feedback and debounced DB reads. */
+/**
+ * URL-owned table state with immediate input feedback and debounced DB reads.
+ *
+ * HISTORY CONTRACT (inherited by every consumer — fix it here, not per table):
+ * a discrete control (sort, page, page size, filter) PUSHES one history entry
+ * so Back is the undo affordance for the view; free-text search/anyOf
+ * REPLACES on a debounce so typing never fills the history stack.
+ */
 export function useMarketingTableState(options: MarketingTableStateOptions) {
   const pathname = usePathname();
   const router = useRouter();
@@ -206,6 +213,20 @@ export function useMarketingTableState(options: MarketingTableStateOptions) {
   );
 
   const onStateChange = (nextState: MatrxDataTableQueryState) => {
+    const changed = (
+      Object.keys(nextState) as (keyof MatrxDataTableQueryState)[]
+    ).filter(
+      (name) =>
+        JSON.stringify(nextState[name]) !== JSON.stringify(state[name]),
+    );
+    // A DISCRETE control (sort, page, page size, a filter chip) is one user
+    // decision, so it gets one history entry and Back undoes exactly it.
+    // Only free-text typing (`search` / `anyOf`) replaces — otherwise a
+    // 20-character search buries the page under 20 Back presses.
+    const textOnly =
+      changed.length > 0 &&
+      changed.every((name) => name === "search" || name === "anyOf");
+
     setState(nextState);
     if (queryTimer.current) clearTimeout(queryTimer.current);
     queryTimer.current = setTimeout(() => setQueryState(nextState), 250);
@@ -216,12 +237,17 @@ export function useMarketingTableState(options: MarketingTableStateOptions) {
       options,
     );
     const query = nextParams.toString();
+    const href = query ? `${pathname}?${query}` : pathname;
     if (urlTimer.current) clearTimeout(urlTimer.current);
+    if (!textOnly) {
+      lastWrittenUrl.current = query;
+      router.push(href, { scroll: false });
+      return;
+    }
+    // Debounced so one search is one entry, not one per keystroke.
     urlTimer.current = setTimeout(() => {
       lastWrittenUrl.current = query;
-      router.replace(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
-      });
+      router.replace(href, { scroll: false });
     }, 250);
   };
 

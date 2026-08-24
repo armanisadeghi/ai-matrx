@@ -192,7 +192,8 @@ export function useInstanceBootstrap() {
       if (!resolvedId) return;
 
       // 3. Write the instanceId into the URL (replace, no history entry).
-      //    This is the only place instanceId is "stored" — it's the URL.
+      //    Programmatic bootstrap resolution, not a user step — Back must
+      //    leave the page, not un-resolve the instance.
       if (searchParams.get("instance") !== resolvedId) {
         router.replace(withInstanceParam(pathname, searchParams, resolvedId), {
           scroll: false,

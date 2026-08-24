@@ -79,7 +79,8 @@ export function SitemapsWorkspace() {
       if (on) next.set("scope", "dismissed");
       else next.delete("scope");
       const query = next.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, {
+      // Discrete scope toggle — Back undoes exactly this toggle.
+      router.push(query ? `${pathname}?${query}` : pathname, {
         scroll: false,
       });
     },

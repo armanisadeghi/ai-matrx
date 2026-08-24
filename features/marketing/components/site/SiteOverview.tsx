@@ -230,6 +230,8 @@ export function SiteOverview() {
       new URLSearchParams(window.location.search).get("capture") === "homepage";
     if (!requested || site.initialized_at || autoInitStarted.current) return;
     autoInitStarted.current = true;
+    // Programmatic: consume the one-shot `capture` intent off the current
+    // entry so a refresh cannot re-fire it. Never a user step.
     window.history.replaceState(null, "", window.location.pathname);
     void runInitialize();
   }, [runInitialize, site.initialized_at]);

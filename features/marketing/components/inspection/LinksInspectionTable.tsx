@@ -206,7 +206,8 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
     const params = new URLSearchParams(searchParams.toString());
     next === "graph" ? params.delete("view") : params.set("view", next);
     const encoded = params.toString();
-    router.replace(encoded ? `${pathname}?${encoded}` : pathname, {
+    // Discrete view switch — Back returns to the previous view.
+    router.push(encoded ? `${pathname}?${encoded}` : pathname, {
       scroll: false,
     });
   };

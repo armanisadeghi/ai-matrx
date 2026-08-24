@@ -858,7 +858,9 @@ function SearchTab({
       const next = new URLSearchParams();
       if (trimmed) next.set("q", trimmed);
       if (scope.storeId) next.set("store_id", scope.storeId);
-      router.replace(`/knowledge/search${next.toString() ? `?${next}` : ""}`);
+      // A SUBMITTED search is one discrete action (not one per keystroke) —
+      // Back returns to the previous search.
+      router.push(`/knowledge/search${next.toString() ? `?${next}` : ""}`);
     } catch (e) {
       if (seq !== seqRef.current) return;
       setError(e instanceof Error ? e.message : "Search failed");

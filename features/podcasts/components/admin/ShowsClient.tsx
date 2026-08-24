@@ -77,6 +77,7 @@ export function ShowsClient() {
       const params = new URLSearchParams(searchParams.toString());
       if (value) params.set("q", value);
       else params.delete("q");
+      // Free-text search — replace so typing does not push per keystroke.
       router.replace(`/administration/knowledge/podcasts/shows?${params.toString()}`);
     });
   };

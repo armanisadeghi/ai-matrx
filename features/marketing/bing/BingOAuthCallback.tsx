@@ -40,6 +40,8 @@ export function BingOAuthCallback() {
       .then(() => {
         setStatus("success");
         setMessage("Bing Webmaster is connected. Loading your verified sites…");
+        // OAuth callback: replace so Back never re-enters the consumed
+        // callback URL. NEVER convert this to push.
         window.setTimeout(
           () => router.replace("/marketing/connections/bing"),
           700,

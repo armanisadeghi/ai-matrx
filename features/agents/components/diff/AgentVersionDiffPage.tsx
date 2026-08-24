@@ -112,7 +112,8 @@ export function AgentVersionDiffPage({
       return;
     }
     const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    // Discrete tab switch — Back returns to the previous tab.
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 

@@ -89,7 +89,8 @@ export function BacklinkInsightsTab({
     clearTableUrlParams(params);
     startNavigation(() => {
       const qs = params.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      // Discrete lens switch — Back returns to the previous lens.
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     });
   };
 

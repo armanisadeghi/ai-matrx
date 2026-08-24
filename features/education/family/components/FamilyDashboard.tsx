@@ -65,6 +65,8 @@ export function FamilyDashboard() {
       toast.success(
         "Thanks — we're confirming your card. Consent shows as verified here within a few seconds.",
       );
+      // Programmatic: consuming the Stripe return param off the current
+      // entry so a refresh cannot re-fire the toast. Never a user step.
       router.replace("/education/family");
       const t = setTimeout(reload, 4000);
       return () => clearTimeout(t);

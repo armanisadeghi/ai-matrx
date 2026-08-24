@@ -249,7 +249,8 @@ export function MarketingReportsWorkspace() {
   const selectSite = (siteId: string) => {
     const next = new URLSearchParams(searchParams.toString());
     next.set("site", siteId);
-    router.replace(`${marketingRoutes.reports()}?${next.toString()}`, {
+    // Discrete site switch — Back returns to the previous site.
+    router.push(`${marketingRoutes.reports()}?${next.toString()}`, {
       scroll: false,
     });
   };

@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { historyModeForParamChange } from "@/lib/url-state/useUrlState";
 import {
   isContentType,
   type ContentType,
@@ -208,11 +209,19 @@ export function useTabUrlState() {
 
   const push = useCallback(
     (updater: (params: URLSearchParams) => void) => {
+      const current = new URLSearchParams(searchParams.toString());
       const params = new URLSearchParams(searchParams.toString());
       updater(params);
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      // Opening, closing, switching or filtering a tab is a discrete step and
+      // pushes, so Back undoes exactly it. Free-text keys (a tab's search box
+      // `<id>.q` and its label while being typed) replace instead.
+      const textKeys = tabIds.flatMap((id) => [`${id}.q`, `${id}.label`]);
+      const mode = historyModeForParamChange(current, params, textKeys);
+      const href = `${pathname}?${params.toString()}`;
+      if (mode === "replace") router.replace(href, { scroll: false });
+      else router.push(href, { scroll: false });
     },
-    [router, pathname, searchParams],
+    [router, pathname, searchParams, tabIds],
   );
 
   const setActiveTab = useCallback(

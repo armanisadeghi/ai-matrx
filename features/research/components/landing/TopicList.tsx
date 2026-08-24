@@ -388,6 +388,8 @@ export default function TopicList() {
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set("q", value);
     else params.delete("q");
+    // Free-text search: replace so typing does not push one entry per
+    // keystroke. Discrete controls on this surface push.
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 

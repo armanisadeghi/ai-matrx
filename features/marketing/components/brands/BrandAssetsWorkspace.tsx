@@ -111,7 +111,8 @@ export function BrandAssetsWorkspace({ brandId }: { brandId: string }) {
   const goToView = useCallback(
     (next: MarketingBrandAssetsView) => {
       const base = pathname ?? marketingRoutes.brandAssets(brandId);
-      router.replace(next === "library" ? base : `${base}?view=${next}`, {
+      // Discrete view switch — Back returns to the previous view.
+      router.push(next === "library" ? base : `${base}?view=${next}`, {
         scroll: false,
       });
     },

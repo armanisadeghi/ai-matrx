@@ -192,6 +192,8 @@ export function AgentRunnerPage({
     const target = buildConversationUrl
       ? buildConversationUrl(pendingNavigation.conversationId)
       : `${basePath}/${agentId}/run?conversationId=${pendingNavigation.conversationId}`;
+    // Programmatic: promoting a just-created conversation id onto the current
+    // entry. Back must leave the runner, not un-name the run.
     router.replace(target);
     dispatch(clearPendingNavigation({ surfaceKey }));
   }, [

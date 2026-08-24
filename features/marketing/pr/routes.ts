@@ -226,7 +226,9 @@ export function usePressRoomUrl(): PressRoomUrlState {
         }
       }
       const query = params.toString();
-      router.replace(query ? `?${query}` : marketingRoutes.press(), {
+      // Every field here is a discrete choice (brand, site, view, sort,
+      // focus) — one change, one history entry, Back undoes exactly it.
+      router.push(query ? `?${query}` : marketingRoutes.press(), {
         scroll: false,
       });
     },

@@ -478,6 +478,8 @@ export function CrmListPage({
     next.delete(CRM_CREATE_PARAM);
     next.delete(CRM_CREATE_NAME_PARAM);
     const query = next.toString();
+    // Programmatic: consuming the one-shot create intent off the current
+    // entry so a refresh cannot re-open the create dialog.
     router.replace(query ? `/crm?${query}` : "/crm", { scroll: false });
   }, [
     requestedCreateKind,

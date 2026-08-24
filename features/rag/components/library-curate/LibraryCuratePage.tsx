@@ -80,7 +80,8 @@ export function LibraryCuratePage() {
       const params = new URLSearchParams(search?.toString() ?? "");
       if (id) params.set("pack", id);
       else params.delete("pack");
-      router.replace(`/knowledge/library-curate${params.size ? `?${params}` : ""}`, {
+      // Discrete selection — Back closes the pack the user just opened.
+      router.push(`/knowledge/library-curate${params.size ? `?${params}` : ""}`, {
         scroll: false,
       });
     },

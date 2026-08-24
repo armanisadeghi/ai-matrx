@@ -120,7 +120,8 @@ function BundlesAdminPageInner() {
     if (id) params.set(BUNDLE_DEEP_LINK_PARAM, id);
     else params.delete(BUNDLE_DEEP_LINK_PARAM);
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, {
+    // Discrete selection — Back closes the bundle the user just opened.
+    router.push(query ? `${pathname}?${query}` : pathname, {
       scroll: false,
     });
   };

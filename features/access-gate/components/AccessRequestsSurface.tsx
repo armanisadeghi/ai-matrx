@@ -337,7 +337,8 @@ export function AccessRequestsSurface() {
       key={target}
       type="button"
       onClick={() =>
-        router.replace(
+        // Discrete tab switch — Back returns to the previous box.
+        router.push(
           target === "inbox"
             ? "/settings/access-requests"
             : "/settings/access-requests?box=sent",

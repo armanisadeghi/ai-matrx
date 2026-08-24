@@ -80,7 +80,8 @@ export default function AiModelsContainer() {
       if (modelId) params.set(AI_MODEL_DEEP_LINK_PARAM, modelId);
       else params.delete(AI_MODEL_DEEP_LINK_PARAM);
       const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, {
+      // Discrete open/close of a model — Back undoes exactly that step.
+      router.push(query ? `${pathname}?${query}` : pathname, {
         scroll: false,
       });
     },

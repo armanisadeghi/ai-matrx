@@ -81,6 +81,7 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
     if (agentId) return;
     const next = new URLSearchParams(searchParams.toString());
     next.set("agentId", defaultAgentId);
+    // Programmatic: resolving the default agent on mount is not a user step.
     router.replace(`${pathname}?${next.toString()}`, { scroll: false });
     // We deliberately depend on `defaultAgentId` only — once the URL has
     // an agentId it stays sticky across reruns.

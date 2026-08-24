@@ -89,8 +89,9 @@ export function FrontDoorSiteSelect({
     <Select
       value={state.site.id}
       onValueChange={(siteId) =>
+        // Discrete site switch — Back returns to the previous site.
         startTransition(() =>
-          router.replace(`${basePath}?site=${encodeURIComponent(siteId)}`),
+          router.push(`${basePath}?site=${encodeURIComponent(siteId)}`),
         )
       }
       disabled={isNavigating}

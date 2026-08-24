@@ -159,7 +159,8 @@ function CoverageChips() {
       // Coverage changes the result set; return to page 1.
       next.delete("page");
       const query = next.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, {
+      // Discrete coverage filter — Back undoes exactly this choice.
+      router.push(query ? `${pathname}?${query}` : pathname, {
         scroll: false,
       });
     },
@@ -177,7 +178,8 @@ function CoverageChips() {
       }
       next.delete("page");
       const query = next.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, {
+      // Discrete scope filter — Back undoes exactly this choice.
+      router.push(query ? `${pathname}?${query}` : pathname, {
         scroll: false,
       });
     },

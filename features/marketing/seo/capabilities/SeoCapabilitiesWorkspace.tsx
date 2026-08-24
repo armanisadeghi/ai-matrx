@@ -101,8 +101,9 @@ export function SeoCapabilitiesWorkspace() {
         <Select
           value={site.id}
           onValueChange={(siteId) =>
+            // Discrete site switch — Back returns to the previous site.
             startTransition(() =>
-              router.replace(marketingRoutes.capabilities(siteId)),
+              router.push(marketingRoutes.capabilities(siteId)),
             )
           }
           disabled={isNavigating}

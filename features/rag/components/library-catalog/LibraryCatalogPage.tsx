@@ -144,7 +144,8 @@ export function LibraryCatalogPage() {
         params.delete("type");
       }
       const qs = params.toString();
-      router.replace(`/knowledge/library-catalog${qs ? `?${qs}` : ""}`);
+      // Discrete selection — Back closes the item the user just opened.
+      router.push(`/knowledge/library-catalog${qs ? `?${qs}` : ""}`);
     },
     [router, search],
   );

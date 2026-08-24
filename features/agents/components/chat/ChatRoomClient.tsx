@@ -267,6 +267,8 @@ export function ChatRoomClient({
   const pendingNavigation = useAppSelector(selectPendingNavigation(surfaceKey));
   useEffect(() => {
     if (!pendingNavigation) return;
+    // Programmatic: promoting a just-created conversation id onto the current
+    // entry. Back must leave the chat, not un-name the conversation.
     router.replace(buildConversationHref(pendingNavigation.conversationId));
     dispatch(clearPendingNavigation({ surfaceKey }));
   }, [pendingNavigation, router, dispatch, surfaceKey, buildConversationHref]);
@@ -373,6 +375,7 @@ export function ChatRoomClient({
         null;
       if (focusNow !== target) return;
       promotedRef.current = target;
+      // Programmatic promotion of the focused conversation — see above.
       router.replace(buildConversationHref(target));
     })();
 
@@ -712,6 +715,8 @@ function AttachDocDeepLink({
     const params = new URLSearchParams(window.location.search);
     params.delete("attachDoc");
     const qs = params.toString();
+    // Programmatic: consuming the one-shot `attachDoc` intent off the current
+    // entry so a refresh cannot re-open the panel.
     window.history.replaceState(
       window.history.state,
       "",

@@ -92,7 +92,8 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
     startTransition(() => {
       const params = new URLSearchParams(searchParams.toString());
       params.set("panel", value);
-      router.replace(
+      // Discrete panel switch — Back returns to the previous panel.
+      router.push(
         `/administration/knowledge/podcasts/shows/${showId}?${params.toString()}`,
       );
     });
@@ -124,6 +125,8 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
     // After creating a new show, redirect to its real route
     if (isNew) {
       startTransition(() =>
+        // Programmatic: the "new" URL is consumed once the show exists;
+        // Back must not return to a create route for a saved record.
         router.replace(`/administration/knowledge/podcasts/shows/${saved.id}?panel=show`),
       );
     }

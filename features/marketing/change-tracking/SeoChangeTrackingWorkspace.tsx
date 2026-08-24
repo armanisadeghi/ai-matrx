@@ -1724,7 +1724,8 @@ export function SeoChangeTrackingWorkspace() {
       params.set("change", id);
     }
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, {
+    // Discrete drill-in/out — Back undoes exactly this selection.
+    router.push(query ? `${pathname}?${query}` : pathname, {
       scroll: false,
     });
   };

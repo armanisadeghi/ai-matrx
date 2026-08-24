@@ -547,7 +547,8 @@ export function BacklinksWorkspace() {
     startNavigation(() => {
       // The two methods are different tables over different evidence — one's
       // paging/sort/search must never carry into the other's query.
-      router.replace(
+      // Discrete method switch — Back returns to the previous method.
+      router.push(
         tabHref(
           "prospects",
           next === "competitors" ? {} : { [PROSPECT_METHOD_PARAM]: next },
@@ -561,7 +562,8 @@ export function BacklinksWorkspace() {
     startNavigation(() => {
       // The two views are different tables with different columns — one's
       // paging/sort/search must never carry into the other's query.
-      router.replace(
+      // Discrete view switch — Back returns to the previous view.
+      router.push(
         tabHref("domains", next === "ours" ? {} : { [DOMAIN_VIEW_PARAM]: next }),
         { scroll: false },
       );
@@ -581,6 +583,7 @@ export function BacklinksWorkspace() {
     params.delete("reviewRequest");
     params.delete("reviewBatch");
     const query = params.toString();
+    // Programmatic: consuming a one-shot route intent off the current entry.
     router.replace(query ? `${pathname}?${query}` : pathname, {
       scroll: false,
     });

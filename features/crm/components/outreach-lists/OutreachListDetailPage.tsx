@@ -406,7 +406,8 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
               // Every evidence trail is a door: the Outcomes view opens with
               // this exact row selected, the same deep link the assist uses.
               setActiveView("outcomes");
-              router.replace(
+              // Discrete drill-in — Back returns to the row the user left.
+              router.push(
                 `/crm/outreach-lists/${listId}?view=outcomes&outcome=${outcome.outcomeEventId}`,
                 { scroll: false },
               );

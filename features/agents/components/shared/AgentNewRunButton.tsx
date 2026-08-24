@@ -22,7 +22,8 @@ export function AgentNewRunButton({ surfaceKey }: AgentNewRunButtonProps) {
     if (!conversationId) return;
     const params = new URLSearchParams(searchParams.toString());
     params.delete("conversationId");
-    router.replace(`${pathname}?${params.toString()}`);
+    // Discrete: starting a new run — Back returns to the run the user left.
+    router.push(`${pathname}?${params.toString()}`);
 
     dispatch(
       startNewConversation({

@@ -210,6 +210,8 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
       if (result.search_id) {
         const url = new URL(window.location.href);
         url.searchParams.set("search", result.search_id);
+        // Programmatic: stamping the id of the search the user just ran onto
+        // the current entry, not a new step the user could go Back over.
         window.history.replaceState(null, "", url);
       }
       try {
@@ -259,7 +261,8 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
     setHistoryOpen(false);
     const url = new URL(window.location.href);
     url.searchParams.set("search", entry.id);
-    window.history.replaceState(null, "", url);
+    // Discrete: opening a past search is a step Back must undo.
+    window.history.pushState(null, "", url);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

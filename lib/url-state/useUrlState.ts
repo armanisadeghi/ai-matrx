@@ -75,6 +75,28 @@ export function commitUrlParams(
   window.dispatchEvent(new Event(URL_STATE_EVENT));
 }
 
+/**
+ * Classify a URL transition for surfaces that MIRROR state (Redux, local) into
+ * the URL from an effect, where there is no single call site to label.
+ *
+ * THE RULE: a discrete user decision (tab, filter, sort, page, selection)
+ * PUSHES, so Back undoes exactly that one step; only high-frequency text
+ * (`textKeys` — search boxes, a slider being dragged) REPLACES, so one search
+ * is one entry instead of one per keystroke.
+ */
+export function historyModeForParamChange(
+  current: URLSearchParams,
+  next: URLSearchParams,
+  textKeys: readonly string[],
+): UrlHistoryMode {
+  const keys = new Set([...current.keys(), ...next.keys()]);
+  const changed = [...keys].filter(
+    (key) => current.get(key) !== next.get(key),
+  );
+  if (changed.length === 0) return "replace";
+  return changed.every((key) => textKeys.includes(key)) ? "replace" : "push";
+}
+
 export function useUrlState<T>(
   key: string,
   codec: UrlStateCodec<T>,

@@ -149,7 +149,8 @@ export function DataStoresPage() {
       if (id) params.set("store_id", id);
       else params.delete("store_id");
       const qs = params.toString();
-      router.replace(`/knowledge/data-stores${qs ? `?${qs}` : ""}`);
+      // Discrete selection — Back closes the store the user just opened.
+      router.push(`/knowledge/data-stores${qs ? `?${qs}` : ""}`);
     },
     [router, search],
   );

@@ -38,11 +38,13 @@ export function useSourceFilters() {
             params.delete('offset');
         }
 
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        // Discrete filter/page change — Back undoes exactly one step.
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
     }, [searchParams, router, pathname]);
 
     const resetFilters = useCallback(() => {
-        router.replace(pathname, { scroll: false });
+        // Discrete "clear filters" — Back restores what was cleared.
+        router.push(pathname, { scroll: false });
     }, [router, pathname]);
 
     const hasActiveFilters = !!(

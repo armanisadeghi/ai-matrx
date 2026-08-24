@@ -385,19 +385,20 @@ export default function ProvidersContainer() {
     return () => clearTimeout(timer);
   }, [deepLinkedProviderId, isLoading, providers]);
 
-  const replaceProviderDeepLink = (providerId: string | null) => {
+  // Discrete open/close of a provider — Back undoes exactly that step.
+  const setProviderDeepLink = (providerId: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
     if (providerId) params.set(AI_PROVIDER_DEEP_LINK_PARAM, providerId);
     else params.delete(AI_PROVIDER_DEEP_LINK_PARAM);
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
 
   const openProvider = (provider: AiProvider) => {
     setSelectedProvider(provider);
     setIsNewProvider(false);
     setPanelOpen(true);
-    replaceProviderDeepLink(provider.id);
+    setProviderDeepLink(provider.id);
   };
 
   const openNew = () => {
@@ -407,7 +408,7 @@ export default function ProvidersContainer() {
   };
 
   const closePanel = () => {
-    replaceProviderDeepLink(null);
+    setProviderDeepLink(null);
     setPanelOpen(false);
     setSelectedProvider(null);
     setIsNewProvider(false);

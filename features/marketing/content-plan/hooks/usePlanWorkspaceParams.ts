@@ -43,8 +43,9 @@ export function usePlanWorkspaceParams() {
     ? (viewParam as PlanView)
     : "tree";
 
-  // Switching sites is NAVIGATION between records (push — back returns to
-  // the previous site); switching views is state on the same record (replace).
+  // Switching sites is NAVIGATION between records; switching views is state
+  // on the same record. BOTH are discrete user decisions, so both push: Back
+  // is the undo affordance for a view switch, not an exit from the page.
   const setSiteId = useCallback(
     (next: string) => {
       router.push(marketingRoutes.contentPlanSite(next, view), {
@@ -56,7 +57,7 @@ export function usePlanWorkspaceParams() {
   const setView = useCallback(
     (next: PlanView) => {
       if (!siteId) return;
-      router.replace(marketingRoutes.contentPlanSite(siteId, next), {
+      router.push(marketingRoutes.contentPlanSite(siteId, next), {
         scroll: false,
       });
     },

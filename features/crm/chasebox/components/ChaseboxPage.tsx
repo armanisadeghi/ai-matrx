@@ -94,9 +94,9 @@ export function ChaseboxPage() {
       setPage(1);
       const params = new URLSearchParams(searchParams.toString());
       params.set("queue", next);
-      // `replace`, not `push`: switching queues is looking around one page, and
-      // it should not bury the page the user arrived from under Back presses.
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      // Switching queues is a discrete decision: one entry, and Back returns
+      // to the queue the user was just looking at.
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
     },
     [pathname, router, searchParams],
   );
