@@ -11,11 +11,19 @@
 // It reads the canonical study spine (`item_mastery` through `studyService`), so
 // the numbers here are the SAME numbers the deck page and the planner show. No
 // second progress model, no derived store.
+//
+// 🚨 Mastery is recomputed LIVE via `displayMasteryPct`, never read off
+// `item_mastery.mastery_score`. That column is a WRITE-TIME SNAPSHOT (~1 at the
+// moment of review) and decays continuously with elapsed time — trusting it
+// would show a deck last touched a month ago as freshly mastered, and would
+// silently disagree with the deck page and the planner, which both decay.
+// `masteryFsrs.ts` states the rule; this is a reader, so it obeys it.
 
 "use client";
 
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import { displayMasteryPct } from "@/features/education/study/utils/masteryFsrs";
 
 const FC_CARD = "fc_card";
 
@@ -69,14 +77,18 @@ export async function readKitStudyState(
       deck.cardIds.map((id) => ({ itemType: FC_CARD, itemId: id })),
     );
     const rows = mastery.data ?? [];
-    const now = Date.now();
+    const now = new Date();
+    const nowMs = now.getTime();
     const dueCount = rows.filter(
-      (r) => r.due_at != null && new Date(r.due_at).getTime() <= now,
+      (r) => r.due_at != null && new Date(r.due_at).getTime() <= nowMs,
     ).length;
     // Unseen cards count as 0 — "40% mastered" must mean 40% of the DECK, not
     // 40% of the handful already touched, which would read as progress a
     // learner has not made.
-    const scoreSum = rows.reduce((sum, r) => sum + (r.mastery_score ?? 0), 0);
+    const scoreSum = rows.reduce(
+      (sum, r) => sum + (displayMasteryPct(r, now) ?? 0),
+      0,
+    );
     return {
       setId: deck.id,
       cardCount: deck.cardIds.length,
