@@ -38,8 +38,13 @@ export interface AutomationUpdateSpec {
 
 export const PATROL_PATHS = {
   repoRoot: "/Users/armanisadeghi/code/matrx-frontend",
+  // The patrol docs live under systems/improvement/. This pointed at
+  // systems/pattern-patrols for long enough that every generated prompt told
+  // its agent to read four files that do not exist — a patrol reading nothing
+  // still reports a clean run, which is the worst possible failure for a
+  // system whose whole job is noticing.
   commonDocsRoot:
-    "/Users/armanisadeghi/code/common-docs/systems/pattern-patrols",
+    "/Users/armanisadeghi/code/common-docs/systems/improvement/pattern-patrols",
   automationRoot: "/Users/armanisadeghi/.codex/automations",
   projectId: "local-700fcb138daa8c7b565a2744267dd9b8",
 } as const;
@@ -218,6 +223,20 @@ export const PATROLS = [
     cadence: "Tuesdays and Fridays 9:10 AM",
     runInstruction:
       "Inventory route leaves, overlays, window panels, dialogs, drawers, tabs, and other interactive surfaces against canonical manifests, route resolution, live emitters, Locate anchors, and readiness evidence. Create or complete clear declarations automatically in bounded batches; never treat a green manifest-only drift check as proof that every surface or loaded value is declared.",
+  },
+  {
+    patrolId: "P13",
+    slug: "picker-custom-entry",
+    job: "Picker custom entry",
+    automationId: "pattern-patrol-p13-picker-custom-entry",
+    automationName: "Pattern Patrol P13 · Picker custom entry",
+    tier: "M/R",
+    recipePath: ".claude/skills/picker-custom-entry/SKILL.md",
+    reportSlug: "picker-custom-entry",
+    rrule: "FREQ=WEEKLY;BYDAY=SU;BYHOUR=1;BYMINUTE=10",
+    cadence: "Sundays 1:10 AM",
+    runInstruction:
+      "Find controls that offer a set of choices with no way to add one, and close them: a type-ahead offering Create \"what you typed\", writing through that vocabulary's ONE existing path, selecting the new value at once. Adding a SECOND write path is the failure mode to avoid — find the canonical creator before editing. A platform-shared vocabulary is the one exception and still never a dead end: say so in the control and offer the local-override path. Escalate only when the vocabulary's owner, or what \"a new one\" means, is a genuine product question.",
   },
 ] as const satisfies readonly PatrolDefinition[];
 

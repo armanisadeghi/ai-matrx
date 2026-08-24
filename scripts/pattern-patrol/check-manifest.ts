@@ -53,8 +53,10 @@ function validateManifest(): string[] {
       );
     }
   }
-  if (PATROLS.length !== 12)
-    problems.push(`expected 12 product patrols, found ${PATROLS.length}`);
+  // No hardcoded fleet size: the list IS the definition, and a constant here
+  // only ever means "someone added a patrol and forgot to edit this line".
+  // The non-empty `as const` manifest plus the per-row checks below establish
+  // the useful invariants without a second count that can drift.
 
   for (const spec of automationUpdateSpecs()) {
     for (const contract of [

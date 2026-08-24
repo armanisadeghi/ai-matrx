@@ -179,6 +179,12 @@ if $STRICT; then
         # repos reached zero violations, so a finding here is new drift, not
         # backlog. Allowlist additions go through scripts/docs-guards/ via PR.
         "Docs guards (titles/root-md/pointers)|pnpm exec tsx scripts/check-docs-guards.ts"
+        # EVERY PICKER TAKES NEW INPUT (P13). Advisory in both modes: it carries a
+        # standing backlog, and each remaining one needs its vocabulary's canonical
+        # creator found FIRST — a second write path is worse than the dead end it
+        # replaces, so this must never be rushed by a release.
+        # Recipe: .claude/skills/picker-custom-entry/SKILL.md
+        "Pickers that take new input (P13)|pnpm check:picker-add"
         # NO DEAD ENDS stays ADVISORY even in strict mode. The tree carries a
         # known Door Law backlog (scoreboard: /administration/reporting/dead-ends,
         # worklist: docs/handoffs/no-dead-ends-sweep.md); hard-failing on it would
@@ -337,6 +343,12 @@ else
         # STRICT since 2026-08-15 (also in the strict list above): the Wave-5
         # backlog is cleared, so a failure in a --strict run hard-fails it.
         "Docs guards (titles/root-md/pointers)|pnpm exec tsx scripts/check-docs-guards.ts"
+        # EVERY PICKER TAKES NEW INPUT (P13). Advisory in both modes: it carries a
+        # standing backlog, and each remaining one needs its vocabulary's canonical
+        # creator found FIRST — a second write path is worse than the dead end it
+        # replaces, so this must never be rushed by a release.
+        # Recipe: .claude/skills/picker-custom-entry/SKILL.md
+        "Pickers that take new input (P13)|pnpm check:picker-add"
         # THE DOOR LAW — surfaces that name a record without letting the user
         # open it. Advisory by design (Arman: no check blocks a build); the
         # ranked scoreboard lives at /administration/reporting/dead-ends.
