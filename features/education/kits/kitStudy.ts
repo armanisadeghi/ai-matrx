@@ -21,7 +21,7 @@
 
 "use client";
 
-import { fcService } from "@/features/flashcards/data/fcService";
+import { associationsService } from "@/features/scopes/service/associationsService";
 import { studyService } from "@/features/education/study/service/studyService";
 import { displayMasteryPct } from "@/features/education/study/utils/masteryFsrs";
 
@@ -58,16 +58,28 @@ export async function readKitStudyState(
 ): Promise<KitStudyState | null> {
   if (setIds.length === 0) return null;
   try {
-    const decks = await Promise.all(
-      setIds.map(async (id): Promise<LoadedDeck | null> => {
-        const res = await fcService.getSetWithCards(id);
-        if (!res.data || res.data.cards.length === 0) return null;
-        return { id, cardIds: res.data.cards.map((c) => c.id) };
-      }),
+    // Membership edges ONLY — one batched RPC for every deck at once.
+    // `fcService.getSetWithCards` would fetch each deck's full card bodies AND
+    // every `fc_detail` row just so we could count them and throw the content
+    // away; a kit hub must not pay for a deck it does not even select.
+    const res = await associationsService.listForTargetsVisible(
+      "fc_set",
+      setIds,
     );
-    // flatMap narrows without a hand-written type predicate (which would be
-    // claiming a narrower shape than the array actually holds).
-    const usable = decks.flatMap((d) => (d ? [d] : []));
+    if (!res.ok) {
+      console.error("[kits] deck membership read failed:", res.error);
+      return null;
+    }
+    const cardsBySet = new Map<string, string[]>();
+    for (const edge of res.data.edges) {
+      if (edge.role !== "member") continue;
+      const list = cardsBySet.get(edge.targetId) ?? [];
+      list.push(edge.sourceId);
+      cardsBySet.set(edge.targetId, list);
+    }
+    const usable: LoadedDeck[] = [...cardsBySet.entries()]
+      .filter(([, cardIds]) => cardIds.length > 0)
+      .map(([id, cardIds]) => ({ id, cardIds }));
     if (usable.length === 0) return null;
 
     const deck = usable.reduce((a, b) =>
