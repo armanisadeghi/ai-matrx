@@ -24127,6 +24127,7 @@ export type Database = {
       my_orgs: { Args: never; Returns: string[] }
       org_readable: { Args: { p_org: string }; Returns: boolean }
       personal_org_id: { Args: { p_user_id: string }; Returns: string }
+      rulebook_ids_curated_by: { Args: { p_uid: string }; Returns: string[] }
       runnable_agent_fields: {
         Args: { p_agent_id: string }
         Returns: {
@@ -24150,6 +24151,10 @@ export type Database = {
       scraper_visible: {
         Args: { p_id: string; p_schema: string; p_table: string }
         Returns: boolean
+      }
+      starter_pack_ids_curated_by: {
+        Args: { p_uid: string }
+        Returns: string[]
       }
       sweep_claim: {
         Args: { p_agent: string; p_schema: string; p_table: string }
