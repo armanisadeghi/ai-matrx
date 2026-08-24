@@ -269,6 +269,11 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-24 — Workbench keyword drawer deleted (side drawers are out — SEO VISION §2.7b). A
+  keyword row now opens the ONE canonical door, the Keyword Intelligence WindowPanel
+  (`useOpenKeywordWindow`); the drawer-only market/edge body (`KeywordDetail`/`EdgeList`) was
+  removed as a redundant second renderer.
+
 - 2026-08-25 — **KI-036: `?view=classification` retired.** `SiteKeywordsView`
   dropped the `classification` branch; the Workbench reached parity on
   assignment. An old `?view=classification` (or `?tab=classification`) link

@@ -106,7 +106,7 @@ export function SiteMediaWorkspace() {
       getScope={getScope}
     >
       <div className="h-full overflow-y-auto">
-        <div className="mx-auto max-w-7xl space-y-4 p-3 sm:p-4">
+        <div className="space-y-4 p-3 sm:p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
               <ImageIcon className="h-4 w-4 text-foreground/60" />

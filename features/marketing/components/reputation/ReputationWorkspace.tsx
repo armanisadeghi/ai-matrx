@@ -740,7 +740,7 @@ export function ReputationWorkspace() {
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          <div className="mx-auto max-w-7xl space-y-4">
+          <div className="space-y-4">
             {analysis.run.error ? (
               <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />

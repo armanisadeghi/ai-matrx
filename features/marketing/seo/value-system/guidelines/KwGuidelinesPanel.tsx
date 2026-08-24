@@ -19,6 +19,16 @@
  *
  * ONE write path (`setKwGuidelines` → `seo.gsc_set_site_kw_guidelines`); never
  * write `web.site.settings` directly for this key.
+ *
+ * 🚨 2026-08-25 (KI-031) — THE BLANK PAGE WAS THE BUG. The delivery machinery
+ * was built and A/B-proven and 1 of 32 sites had a document, because writing
+ * one from an empty textarea is unprompted homework. This panel now opens with
+ * an offer instead of an empty box: `GuidelinesDraftButton` runs the Business
+ * Discovery Ladder's drafting rung on the site's own pages, and the result
+ * arrives as a PROPOSAL in the queue above the editor — approve it, or edit it
+ * and then approve it. An AI draft is never written straight into the document
+ * (P12); the queue's approval replays it through the same write path a person
+ * clicking Save uses.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -42,10 +52,17 @@ import {
   kwGuidelinesQueryKey,
   setKwGuidelines,
 } from "@/features/marketing/search-console/data-kw-guidelines";
+import { KeywordMeaningSuggestions } from "../suggestions/KeywordMeaningSuggestions";
+import { GuidelinesDraftButton } from "./GuidelinesDraft";
+import { GUIDELINES_STALE_AFTER_DAYS } from "./GuidelinesGapPrompt";
 
 /** After this long without an edit the document is called out as possibly
- *  stale — "we keep these things up to date" is half the ruling. */
-const STALE_AFTER_DAYS = 90;
+ *  stale — "we keep these things up to date" is half the ruling. ONE line,
+ *  shared with the gap prompt and `seo.gsc_site_meaning_health`. */
+const STALE_AFTER_DAYS = GUIDELINES_STALE_AFTER_DAYS;
+
+/** This screen owns ONE subject, so its queue shows one kind of proposal. */
+const GUIDELINE_KINDS = ["guideline_edit"] as const;
 
 /** Section headings only — an outline the expert fills in, never invented
  *  business claims. Industry starter packs (D36) will seed real content. */
@@ -177,12 +194,32 @@ export function KwGuidelinesPanel({
         />
       ) : null}
 
+      {/* Whatever an agent proposed about this document, waiting on a person.
+          It sits ABOVE the editor because a draft you have not read is the
+          most useful thing on this screen. */}
+      <KeywordMeaningSuggestions siteId={siteId} kinds={GUIDELINE_KINDS} />
+
+      {/* The editor is where you LAND from every prompt, so the offer has to
+          be here too — an empty textarea with no way out is the whole bug. */}
+      {!stored.isLoading && !savedText ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-2">
+          <span className="min-w-0 flex-1 text-[11px] leading-snug text-foreground">
+            You do not have to start from a blank page — we can read your own
+            site and propose a draft for you to correct. Nothing is saved until
+            you approve it.
+          </span>
+          <GuidelinesDraftButton siteId={siteId} hasDocument={false} />
+        </div>
+      ) : null}
+
       {stale ? (
         <p className="flex items-start gap-1.5 rounded-md border border-warning/60 bg-warning/10 px-2 py-1.5 text-[11px] leading-snug text-warning">
           <TriangleAlert className="mt-px h-3 w-3 shrink-0" />
           <span>
             Not edited in {age} days. The AI is still ruling on every keyword
             from this text — re-read it before the next classification sweep.
+            An out-of-date sentence keeps deciding things long after it stopped
+            being true.
           </span>
         </p>
       ) : null}
@@ -225,6 +262,9 @@ export function KwGuidelinesPanel({
             >
               Start an outline
             </Button>
+          ) : null}
+          {savedText && !dirty ? (
+            <GuidelinesDraftButton siteId={siteId} hasDocument />
           ) : null}
           {dirty ? (
             <Button

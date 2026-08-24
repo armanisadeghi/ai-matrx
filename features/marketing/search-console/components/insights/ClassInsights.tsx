@@ -888,11 +888,13 @@ export function ShiftsView({
             total_rows: total,
           }),
         }}
-        detail={{
+        detail={{ enabled: false }}
+        window={{
           enabled: true,
           title: (row) => row.query,
-          render: (row) => (
-            <div className="space-y-2 p-2">
+          renderEdit: false,
+          renderView: (row) => (
+            <div className="space-y-2 p-3">
               <p className="text-xs text-muted-foreground">
                 Page mix, compare period vs current. Click the row to open the
                 Pages tab filtered to this query.
@@ -929,7 +931,6 @@ export function ShiftsView({
             </div>
           ),
         }}
-        window={{ enabled: false }}
         onRowOpen={(row) => onDrill("query", row.query)}
         pageSize={25}
         emptyState={{

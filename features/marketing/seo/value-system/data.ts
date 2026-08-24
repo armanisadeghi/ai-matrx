@@ -132,6 +132,10 @@ export async function setKeywordValue(
  *   inert — expressed but doing nothing. The worst state, because it LOOKS
  *           configured (4 service areas that match no place name).
  *   gap   — never expressed at all.
+ *   stale — expressed, still doing work, and not looked at in a long time
+ *           (KI-031: business guidelines untouched for over 90 days). Neither
+ *           `ok` (it may have stopped being true) nor `inert` (it is deciding
+ *           every run), so it is its own state rather than a fudge.
  *   ok    — working; reported so the screen can be honest about what IS done.
  */
 export type MeaningHealthArea =
@@ -139,8 +143,9 @@ export type MeaningHealthArea =
   | "rules"
   | "topics"
   | "dimensions"
-  | "bands";
-export type MeaningHealthSeverity = "inert" | "gap" | "ok";
+  | "bands"
+  | "guidelines";
+export type MeaningHealthSeverity = "inert" | "stale" | "gap" | "ok";
 
 export interface MeaningHealthRow {
   area: MeaningHealthArea;

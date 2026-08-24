@@ -32,6 +32,7 @@ import {
   Pencil,
   Plus,
   TreePine,
+  TriangleAlert,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,11 @@ import {
   listSiteTopicValues,
   listValueRules,
 } from "../data";
+import {
+  GUIDELINES_STALE_AFTER_DAYS,
+  GuidelinesGapPrompt,
+  daysSinceGuidelinesEdit,
+} from "../guidelines/GuidelinesGapPrompt";
 import { BandVocabularyEditor } from "../vocabulary/BandVocabularyEditor";
 import { ValueRuleEditor } from "../rules/ValueRuleEditor";
 import { ValueComboEditor } from "../rules/ValueComboEditor";
@@ -219,6 +225,11 @@ export function MeaningPanel({
     queryFn: ({ signal }) => getKwGuidelines(siteId, signal),
     staleTime: 5 * 60_000,
   });
+  // Staleness is the same 90-day line the editor and `gsc_site_meaning_health`
+  // use; it is stated here because this is where people READ the document.
+  const guidelinesAgeDays = daysSinceGuidelinesEdit(
+    guidelines.data?.updated_at,
+  );
   const geoBands = useQuery({
     queryKey: ["marketing", "value", "vocab", siteId, "geo_band"],
     queryFn: ({ signal }) => getValueVocabulary(siteId, "geo_band", signal),
@@ -331,11 +342,18 @@ export function MeaningPanel({
             />
           ) : null}
           {guidelines.data && !guidelines.data.guidelines ? (
-            <EmptyLine>
-              Nothing written yet — the AI values this site&apos;s keywords with
-              no idea what the business actually sells. A few plain sentences
-              here change every future classification run.
-            </EmptyLine>
+            <div className="space-y-1.5">
+              <EmptyLine>
+                Nothing written yet — the AI values this site&apos;s keywords
+                with no idea what the business actually sells. A few plain
+                sentences here change every future classification run.
+              </EmptyLine>
+              {/* THE DOOR, not just the diagnosis (KI-031). A readout that
+                  names an absence and offers no way to fill it is how this
+                  document stayed unwritten on 31 of 32 sites. ONE prompt
+                  component, shared with the Dimensions screen. */}
+              <GuidelinesGapPrompt siteId={siteId} brandId={brandId} />
+            </div>
           ) : null}
           {guidelines.data?.guidelines ? (
             <div className="rounded-md border border-border bg-card px-2.5 py-2">
@@ -351,6 +369,16 @@ export function MeaningPanel({
                   ? ` on ${new Date(guidelines.data.updated_at).toLocaleDateString()}`
                   : ""}
               </p>
+              {guidelinesAgeDays !== null &&
+              guidelinesAgeDays > GUIDELINES_STALE_AFTER_DAYS ? (
+                <p className="mt-1 flex items-start gap-1.5 text-[10px] leading-4 text-warning">
+                  <TriangleAlert className="mt-px h-3 w-3 shrink-0" />
+                  <span>
+                    Not edited in {guidelinesAgeDays} days, and still deciding
+                    every run.
+                  </span>
+                </p>
+              ) : null}
             </div>
           ) : null}
         </section>

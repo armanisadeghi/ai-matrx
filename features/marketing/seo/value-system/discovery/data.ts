@@ -18,6 +18,10 @@ export const DISCOVERY_STEP_ORDER = [
   "offerings",
   "offering_values",
   "proposed_setup",
+  // KI-031 — the ONE rung with no prerequisite. A site that has told the AI
+  // nothing about itself has usually climbed no ladder either, so this reads
+  // the site cold and is merely BRIEFED by steps 1-3 when they exist.
+  "guidelines_draft",
 ] as const;
 
 export type DiscoveryStepKey = (typeof DISCOVERY_STEP_ORDER)[number];

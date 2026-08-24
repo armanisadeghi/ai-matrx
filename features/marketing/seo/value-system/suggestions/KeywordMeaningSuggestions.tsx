@@ -62,11 +62,24 @@ import {
  */
 export const KEYWORD_MEANING_SURFACE = "matrx-user/keyword-meaning-review";
 
-/** Is this row a keyword-meaning suggestion for THIS site? */
-function isForSite(assist: Assist, siteId: string): boolean {
+/**
+ * Is this row a keyword-meaning suggestion for THIS site — and, when the host
+ * surface owns only one kind of proposal, for that kind?
+ *
+ * `kinds` exists so a single-subject screen (the Business guidelines editor)
+ * can show its own queue without a matcher proposal appearing next to a
+ * document, and without forking a second approval component to do it. Omit it
+ * and the queue is the whole site's, exactly as before.
+ */
+function isForSite(
+  assist: Assist,
+  siteId: string,
+  kinds?: readonly KeywordMeaningProposalKind[],
+): boolean {
   return (
     assist.action.kind === "apply_keyword_meaning" &&
-    assist.action.siteId === siteId
+    assist.action.siteId === siteId &&
+    (kinds === undefined || kinds.includes(assist.action.proposal.proposal))
   );
 }
 
@@ -100,9 +113,12 @@ function toRows(assists: Assist[]): Row[] {
 
 export function KeywordMeaningSuggestions({
   siteId,
+  kinds,
   className,
 }: {
   siteId: string;
+  /** Narrow the queue to one subject; omit for the whole site's queue. */
+  kinds?: readonly KeywordMeaningProposalKind[];
   className?: string;
 }) {
   const dispatch = useAppDispatch();
@@ -122,8 +138,8 @@ export function KeywordMeaningSuggestions({
   }, [dispatch, userId, loaded]);
 
   const rows = useMemo(
-    () => toRows(surfaceAssists.filter((a) => isForSite(a, siteId))),
-    [surfaceAssists, siteId],
+    () => toRows(surfaceAssists.filter((a) => isForSite(a, siteId, kinds))),
+    [surfaceAssists, siteId, kinds],
   );
 
   const [expanded, setExpanded] = useState(false);
@@ -132,8 +148,8 @@ export function KeywordMeaningSuggestions({
   const [rejecting, setRejecting] = useState<Row[] | null>(null);
 
   const chipFilter = useMemo(
-    () => (assist: Assist) => isForSite(assist, siteId),
-    [siteId],
+    () => (assist: Assist) => isForSite(assist, siteId, kinds),
+    [siteId, kinds],
   );
 
   if (rows.length === 0) return null;

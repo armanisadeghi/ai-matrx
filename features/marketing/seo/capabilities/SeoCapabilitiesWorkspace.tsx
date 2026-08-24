@@ -88,7 +88,7 @@ export function SeoCapabilitiesWorkspace() {
   const capabilities = siteSeoCapabilities(sitePath);
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 lg:p-6">
+    <div className="flex w-full flex-col gap-5 p-4 lg:p-6">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">
           SEO capabilities

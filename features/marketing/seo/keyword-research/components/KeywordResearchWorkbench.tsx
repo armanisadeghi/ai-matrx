@@ -49,7 +49,6 @@ import {
   normalizeMonthlySearches,
 } from "../types";
 import type {
-  KeywordEdgeView,
   KeywordMarketRow,
   KeywordWithMarket,
   MonthlySearchPoint,
@@ -63,13 +62,6 @@ import {
 } from "./KeywordMetrics";
 import { keywordLibraryCopyRow } from "../format";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
-
-const EDGE_TYPE_LABELS: Record<string, string> = {
-  refines: "Refines",
-  variant_of: "Variant of",
-  brand_of: "Brand of",
-  related: "Related",
-};
 
 function usMarket(row: KeywordWithMarket): KeywordMarketRow | null {
   return (
@@ -109,140 +101,6 @@ function TrajectoryBadge({ value }: { value: string | null }) {
   );
 }
 
-function EdgeList({ edges }: { edges: KeywordEdgeView[] }) {
-  const grouped = useMemo(() => {
-    const groups = new Map<string, KeywordEdgeView[]>();
-    for (const edge of edges) {
-      const key = edge.edge_type;
-      groups.set(key, [...(groups.get(key) ?? []), edge]);
-    }
-    return Array.from(groups.entries());
-  }, [edges]);
-
-  if (edges.length === 0) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        No relationships yet — run research on this keyword to map them.
-      </p>
-    );
-  }
-  return (
-    <div className="flex flex-col gap-2">
-      {grouped.map(([type, group]) => (
-        <div key={type} className="flex flex-wrap items-baseline gap-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {EDGE_TYPE_LABELS[type] ?? type}
-          </span>
-          {group.map((edge) => (
-            <span
-              key={edge.id}
-              className={`rounded-md border px-1.5 py-0.5 text-xs ${
-                edge.status === "rejected"
-                  ? "border-destructive/40 text-muted-foreground line-through"
-                  : "border-border text-foreground"
-              }`}
-              title={`${edge.direction} · ${edge.origin} · confidence ${edge.confidence ?? "—"}${edge.status === "rejected" ? " · rejected" : ""}`}
-            >
-              {edge.partner_phrase}
-            </span>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function KeywordDetail({
-  row,
-  loadEdges,
-}: {
-  row: KeywordWithMarket;
-  loadEdges: (keywordId: string) => Promise<KeywordEdgeView[]>;
-}) {
-  const [edges, setEdges] = useState<KeywordEdgeView[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const market = usMarket(row);
-  const points = monthlyPoints(market);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadEdges(row.id)
-      .then((loaded) => {
-        if (!cancelled) setEdges(loaded);
-      })
-      .catch((edgeError) => {
-        if (!cancelled) {
-          setError(
-            edgeError instanceof Error ? edgeError.message : String(edgeError),
-          );
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [row.id, loadEdges]);
-
-  return (
-    <div className="grid gap-4 border-t border-border bg-muted/30 px-4 py-3 md:grid-cols-2">
-      <div>
-        <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Monthly searches{market ? ` · ${points.length} mo` : ""}
-        </h4>
-        {points.length > 0 ? (
-          <div className="flex items-end gap-1">
-            {points.map((point) => (
-              <div
-                key={`${point.year}-${point.month}`}
-                className="flex flex-col items-center gap-1"
-              >
-                <div
-                  className="w-4 rounded-sm bg-primary/70"
-                  style={{
-                    height: `${Math.max(4, (point.search_volume / Math.max(...points.map((p) => p.search_volume), 1)) * 56)}px`,
-                  }}
-                  title={point.search_volume.toLocaleString()}
-                />
-                <span className="text-[9px] text-muted-foreground">
-                  {String(point.month).padStart(2, "0")}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            No market data fetched yet.
-          </p>
-        )}
-        {market && (
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Bids {market.low_top_of_page_bid ?? "—"}–
-            {market.high_top_of_page_bid ?? "—"} · growth{" "}
-            {market.growth_rate !== null
-              ? `${(Number(market.growth_rate) * 100).toFixed(0)}%`
-              : "—"}{" "}
-            · fetched{" "}
-            {market.metrics_fetched_at
-              ? new Date(market.metrics_fetched_at).toLocaleDateString()
-              : "never"}
-          </p>
-        )}
-      </div>
-      <div>
-        <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Relationships
-        </h4>
-        {error ? (
-          <p className="text-xs text-destructive">{error}</p>
-        ) : edges === null ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        ) : (
-          <EdgeList edges={edges} />
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function KeywordResearchWorkbench() {
   // `?keyword=` pre-fills the launcher — the return door from a saved report
   // ("Open workbench"). Read once; the launcher owns the input from then on.
@@ -262,7 +120,6 @@ export default function KeywordResearchWorkbench() {
     volumeStage,
     runResearch,
     refreshVolume,
-    loadEdges,
     reloadKeywords,
   } = useKeywordResearch();
   const openKeywordIntel = useOpenKeywordWindow();
@@ -805,16 +662,14 @@ export default function KeywordResearchWorkbench() {
                   </button>
                 ),
               }}
-              detail={{
-                title: (row) => row.phrase,
-                render: (row) => (
-                  <KeywordDetail row={row} loadEdges={loadEdges} />
-                ),
-              }}
-              // A keyword already has one canonical WindowPanel: Keyword
-              // Intelligence. Suppress the table's generic record window so
-              // the phrase and menu action cannot disagree about the door.
+              // A keyword has ONE door: the canonical Keyword Intelligence
+              // WindowPanel. The side drawer that used to duplicate part of it
+              // is gone (side drawers are out — VISION §2.7b), and the table's
+              // generic record window stays suppressed so the phrase and menu
+              // action cannot disagree about the door.
+              detail={{ enabled: false }}
               window={{ enabled: false }}
+              onRowOpen={(row) => openKeywordIntel({ phrase: row.phrase })}
               rowActions={(row) => {
                 const menuConfig = (): ItemMenuConfig => ({
                   header: { title: row.phrase },

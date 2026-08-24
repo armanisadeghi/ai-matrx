@@ -257,7 +257,7 @@ export function SearchConsolePortfolio({
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-6xl space-y-4 py-1">
+      <div className="space-y-4 py-1">
         {rows.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/60 p-10 text-center">
             <SearchCheck className="h-8 w-8 text-muted-foreground" />

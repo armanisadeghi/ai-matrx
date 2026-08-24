@@ -39,6 +39,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { FacetCoverage } from "@/features/marketing/seo/value-system/coverage/FacetCoverage";
+import { GuidelinesGapPrompt } from "@/features/marketing/seo/value-system/guidelines/GuidelinesGapPrompt";
 import { WhatIsADimension } from "./WhatIsADimension";
 import {
   DimensionSearchField,
@@ -198,6 +199,13 @@ export function DimensionManager() {
               keywords. Admin-gated by its own read (renders nothing for
               everyone else). */}
           <FacetCoverage siteId={siteId} />
+
+          {/* KI-031 — the dimensions are the QUESTIONS; the guidelines are what
+              this business means by the answers. A site that has written none
+              has every keyword on this screen judged by a model that knows
+              nothing about it, and until now no screen said so. Renders
+              nothing once the document exists and is current. */}
+          <GuidelinesGapPrompt siteId={siteId} brandId={brandId} />
 
           <WhatIsADimension
             key={

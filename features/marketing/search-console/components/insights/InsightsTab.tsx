@@ -677,11 +677,13 @@ function CannibalizationTable({
             total_rows: total,
           }),
         }}
-        detail={{
+        detail={{ enabled: false }}
+        window={{
           enabled: true,
           title: (row) => row.query,
-          render: (row) => (
-            <div className="space-y-2 p-2">
+          renderEdit: false,
+          renderView: (row) => (
+            <div className="space-y-2 p-3">
               <p className="text-xs text-muted-foreground">
                 {row.competing_pages} pages compete for this query. Click the
                 row to open the Pages tab filtered to it.
@@ -710,7 +712,6 @@ function CannibalizationTable({
             </div>
           ),
         }}
-        window={{ enabled: false }}
         onRowOpen={(row) => onDrill("query", row.query)}
         pageSize={50}
         emptyState={{

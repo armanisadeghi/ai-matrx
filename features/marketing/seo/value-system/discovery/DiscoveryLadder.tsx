@@ -42,40 +42,66 @@ import {
   type DiscoveryStepStatus,
 } from "./data";
 
+/**
+ * `requires` is the rung's REAL prerequisite list, not its position.
+ *
+ * The screen used to gate every rung on "everything above it is done", which
+ * was true until KI-031 added a rung that reads the site cold. Gating that one
+ * behind five analyses it does not consume would have locked the door on
+ * exactly the sites it exists for — the ones that have done nothing yet.
+ */
 const STEP_META: Record<
   DiscoveryStepKey,
-  { title: string; question: string; agent: string }
+  {
+    title: string;
+    question: string;
+    agent: string;
+    requires: readonly DiscoveryStepKey[];
+  }
 > = {
   business_model: {
     title: "1 · Business model",
     question: "What IS this business — who does it serve, which way does money flow?",
     agent: "Site Business Model Analyst",
+    requires: [],
   },
   ideal_customer: {
     title: "2 · Ideal customer",
     question: "Who makes them money — and who only looks like a customer?",
     agent: "Ideal Customer Analyst",
+    requires: ["business_model"],
   },
   money_map: {
     title: "3 · Money map",
     question: "Which lines earn big, which are loss leaders, which are noise?",
     agent: "Money Map Analyst",
+    requires: ["business_model", "ideal_customer"],
   },
   offerings: {
     title: "4 · Offerings",
     question: "The canonical list of things this site wants traffic to reach.",
     agent: "Offering Extractor",
+    requires: ["business_model", "ideal_customer", "money_map"],
   },
   offering_values: {
     title: "5 · Offering values",
     question: "Each Offering's proposed ± from the 100-point baseline.",
     agent: "Offering Valuer",
+    requires: ["business_model", "ideal_customer", "money_map", "offerings"],
   },
   proposed_setup: {
     title: "6 · Proposed setup",
     question:
       "Dimensions, matchers, worths and guidelines — proposed for your approval.",
     agent: "Coming with the pack-content reshape",
+    requires: ["business_model", "ideal_customer", "money_map", "offerings", "offering_values"],
+  },
+  guidelines_draft: {
+    title: "Business guidelines",
+    question:
+      "The plain-text document every keyword agent reads — drafted from your site, proposed for your approval.",
+    agent: "Business Guidelines Drafter",
+    requires: [],
   },
 };
 
@@ -155,7 +181,11 @@ export function DiscoveryLadder({ siteId }: { siteId: string }) {
     );
   }
 
-  let priorDone = true;
+  const isComplete = (step: DiscoveryStepKey) => {
+    const row = bySteps.get(step);
+    return row?.status === "completed" && row.artifact != null;
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-2.5">
@@ -172,8 +202,9 @@ export function DiscoveryLadder({ siteId }: { siteId: string }) {
         const meta = STEP_META[step];
         const row = bySteps.get(step);
         const implemented = row?.implemented ?? false;
-        const completed = row?.status === "completed" && row.artifact != null;
-        const runnable = implemented && priorDone;
+        const completed = isComplete(step);
+        const missing = meta.requires.filter((need) => !isComplete(need));
+        const runnable = implemented && missing.length === 0;
         const isRunning =
           runningStep === step ||
           (run.status === "running" && runningStep === step);
@@ -249,8 +280,10 @@ export function DiscoveryLadder({ siteId }: { siteId: string }) {
                     className="h-7 gap-1 text-xs"
                     disabled={!runnable || isRunning || run.status === "running"}
                     title={
-                      !priorDone
-                        ? "Run the earlier steps first — the ladder is a chain."
+                      missing.length > 0
+                        ? `This rung reads ${missing
+                            .map((need) => STEP_META[need].title)
+                            .join(", ")} — run those first.`
                         : completed
                           ? `Re-run ${meta.agent} — supersedes this result for later steps.`
                           : `Run ${meta.agent} on this site's pages.`
@@ -280,7 +313,6 @@ export function DiscoveryLadder({ siteId }: { siteId: string }) {
             ) : null}
           </div>
         );
-        priorDone = priorDone && completed;
         return card;
       })}
     </div>

@@ -423,7 +423,7 @@ export function SitePerformanceWorkspace() {
 
   return (
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
-      <div className="mx-auto grid max-w-7xl gap-4 pb-8">
+      <div className="grid gap-4 pb-8">
         <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>

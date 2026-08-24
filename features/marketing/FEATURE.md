@@ -551,6 +551,10 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-24 — Width caps removed from the table dashboards (site performance, search-console
+  portfolio, reputation, media, SEO capabilities): Arman's ruling — a business dashboard uses the
+  FULL page width; a width-capped table is a defect (SEO VISION §2.7b, DECISIONS 2026-08-24).
+
 - 2026-08-24 — Codex: **Marketing dialogs keep long content inside their frames.** The shared `DialogContent` contract now lets every direct child shrink, wraps unbroken text, and clips only stray horizontal paint; all 36 Marketing dialog surfaces inherit the guard. The Keyword Value matcher editor also constrains its nested reach-preview flex list, so long real search phrases truncate within the preview instead of widening the modal, and its height cap uses dynamic viewport units.
 
 - `2026-08-24` — **Matcher editor: brand identity is informational, not authorable.** The add-form offered "Brand identity" as a pattern kind, but `dvm_target_check` forbids a pattern on that kind — the save was a guaranteed constraint failure. Root cause of the shape: there are no per-alias rows; ONE dynamic matcher per site re-derives its alias list live from the brand's own names (`seo.gsc_brand_hits`), now kept in existence by the fact→meaning sync triggers. The editor lists the row read-only with an "Edit brand names" door to the brand's settings (no-dead-ends).

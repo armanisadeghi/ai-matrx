@@ -37,7 +37,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, ChevronDown, CircleDashed } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  ChevronDown,
+  CircleDashed,
+  Clock,
+} from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -56,17 +62,20 @@ const AREA_ROUTE: Record<MeaningHealthArea, { path: string; label: string }> = {
   topics: { path: "/value/topics", label: "Open Topics" },
   dimensions: { path: "/value/dimensions", label: "Open Dimensions" },
   bands: { path: "/value", label: "Open the workbench" },
+  guidelines: { path: "/value/guidelines", label: "Write the guidelines" },
 };
 
 /**
  * `inert` first — "configured but doing nothing" is the most misleading state
  * a user can be in, and the one this feature keeps failing into. Then `gap`
- * (never expressed), then `ok`.
+ * (never expressed), then `stale` (expressed, still deciding every run, not
+ * looked at in months), then `ok`.
  */
 const SEVERITY_ORDER: Record<MeaningHealthSeverity, number> = {
   inert: 0,
   gap: 1,
-  ok: 2,
+  stale: 2,
+  ok: 3,
 };
 
 const SEVERITY_CHROME: Record<
@@ -82,6 +91,11 @@ const SEVERITY_CHROME: Record<
     icon: CircleDashed,
     pill: "border-border bg-card hover:border-primary/40",
     tone: "text-muted-foreground",
+  },
+  stale: {
+    icon: Clock,
+    pill: "border-warning/30 bg-warning/5 hover:border-warning/60",
+    tone: "text-warning",
   },
   ok: {
     icon: null,

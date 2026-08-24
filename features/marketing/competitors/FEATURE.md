@@ -79,6 +79,13 @@ classification without buying a page-crawl autopsy. Everything lands `proposed`.
 
 ## Change log
 
+- 2026-08-24 — **Local competitor search** (Arman's ruling, SEO VISION §2.7a): the Review tab
+  gained a keyword + geographic-area search (`POST /seo/sites/{site_id}/competitors/discover-local`,
+  `discoverLocalCompetitors` in `landscapeBrief.ts`). Runs the real Google local-pack search a
+  customer would run; the whole pack renders inline (own listing + no-website businesses included)
+  and every business with a website lands as a proposal in the ruling queue
+  (`discovery_source='serp'`). An ambiguous place name surfaces the catalogue's suggestions.
+
 - 2026-08-15 — Replaced the unprovable “Only you” privacy claim above the
   landscape-review questions with factual review copy; access is never inferred
   from a label or a single visibility column.

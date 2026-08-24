@@ -750,6 +750,11 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-24 — Insights drilldowns (cannibalization, shifts) moved off the side drawer onto the
+  canonical table-owned WindowPanel (`detail` disabled, `window.renderView`), per Arman's ruling:
+  side drawers are out, the window panel is the panel primitive (SEO VISION §2.7b). Portfolio
+  width cap (`max-w-6xl`) removed — business-dashboard tables use the full page width.
+
 - 2026-08-24 — Repaired the settings-ladder contract exposed by the first
   platform save (`gsc_vocab_missing_negative`): reads keep the threshold-less
   reserved guard; the editor prevents its removal and validates drafts before
