@@ -290,9 +290,10 @@ export function ScheduleCascadePanel({
           <div className="flex flex-col gap-1">
             <Label
               htmlFor="schedule-max-keywords"
-              className="text-[10px] text-muted-foreground"
+              className="truncate text-[10px] text-muted-foreground"
+              title={`The seo.topic_placement knob caps this at ${capCeiling}`}
             >
-              Keywords per run (max {capCeiling})
+              Keywords / run · max {capCeiling}
             </Label>
             <Input
               id="schedule-max-keywords"
@@ -308,9 +309,9 @@ export function ScheduleCascadePanel({
           <div className="flex flex-col gap-1">
             <Label
               htmlFor="schedule-sites-per-run"
-              className="text-[10px] text-muted-foreground"
+              className="truncate text-[10px] text-muted-foreground"
             >
-              Brands per run
+              Brands / run
             </Label>
             <Input
               id="schedule-sites-per-run"
