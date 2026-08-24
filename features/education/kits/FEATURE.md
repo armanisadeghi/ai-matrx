@@ -36,6 +36,30 @@ No kit table, no kit column, no migration. Reads go through the registered assoc
 thing" is the point; splitting a learner's material into "kit #1" and "kit #2" because they came
 back the next day would recreate the scattering this feature exists to end.
 
+## 🚨 WHAT THIS DOES NOT YET SOLVE — one kit is still ONE upload
+
+Arman's words that prompted this feature were plural: *"they're uploading **a bunch of stuff**
+that's for one thing... give them a place they can go where all they look at is one thing, but
+**everything for that one thing**."*
+
+What shipped closes the easier half: one upload's artifacts stop scattering. It does **not**
+close the half he actually described — a unit made of several sources (the chapter PDF, the
+recorded lecture, the photographed worksheet) still becomes three separate kit pages, which
+reproduces the same fragmentation one layer up. For anything past a single PDF that is the
+common case, not an edge case.
+
+This is NOT settled by the vision. D-Q13 ("one upload → a full study kit is the headline flow")
+describes the generation TRIGGER, not a ceiling on what a kit may contain. Do not read the
+one-upload definition here as a considered answer to his quote — it is the narrower thing that
+the existing lineage data supported without new structure.
+
+**And the obvious primitive was not weighed:** `context.scopes` (Classes) already groups plural
+things under one subject with zero new tables, and Arman called the scopes model "a massive
+win" (DECISIONS.md). A kit could plausibly BE a scope-scoped collection of sources rather than
+a second grouping construct. Choosing between that and an explicit multi-source membership edge
+is an architecture decision that belongs to Arman — building either one unilaterally would be
+exactly the "add a layer on your own authority" the platform forbids. It is on his review queue.
+
 ## The two reads (`kitService.ts`)
 
 - **`readKit(sourceType, sourceId)`** — one kit. `listGeneratedFrom` on the anchor, then
@@ -79,6 +103,8 @@ A kit is reachable from every direction a learner can arrive from:
   before 2026-08-22 render the raw filename they were created with (`sample_video`,
   `STUDY KIT PDF VERIFICATION TEST`). They are not broken; they predate naming. A kit with no
   `sourceTitle` on any edge falls back to its newest artifact's title.
+- **The "largest deck" rule.** A kit with several decks shows the study bar for its biggest one.
+  Fine today (kits have one deck); revisit if multi-deck kits become normal.
 - **Artifact titles may legitimately differ from the kit's name.** A single-pass run lets a
   generator's own agent title its artifact, which is often better for that artifact. The kit's
   name is the name of the MATERIAL, which is what the hub is about.
