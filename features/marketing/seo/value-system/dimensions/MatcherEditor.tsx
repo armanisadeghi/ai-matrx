@@ -29,6 +29,7 @@
  * matchers are never split across two places to look.
  */
 
+import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -92,11 +93,6 @@ const PATTERN_KINDS = [
   { key: "exact", label: "Exact phrase", hint: "the entire search, nothing else" },
   { key: "starts_with", label: "Starts with", hint: "the phrase opens with this" },
   { key: "ends_with", label: "Ends with", hint: "the phrase closes with this" },
-  {
-    key: "brand_identity",
-    label: "Brand identity",
-    hint: "a name, misspelling or legal form that IS this brand — people, DBAs, and known variants",
-  },
 ] as const;
 type PatternKind = (typeof PATTERN_KINDS)[number]["key"];
 
@@ -112,7 +108,10 @@ const KIND_META: Record<
   place: { label: "Place", icon: MapPin, editableHere: false },
   fact: { label: "Fact", icon: ShieldCheck, editableHere: false },
   condition: { label: "Dig Here segment", icon: Timer, editableHere: false },
-  brand_identity: { label: "Brand identity", icon: Fingerprint, editableHere: true },
+  // ONE dynamic row per site; dvm_target_check forbids a pattern on this kind,
+  // and the alias list is read live from the brand's own names on every run —
+  // authoring happens on the BRAND (its names/aliases), never here.
+  brand_identity: { label: "Brand identity", icon: Fingerprint, editableHere: false },
 };
 
 function kindMeta(kind: string) {
@@ -124,10 +123,13 @@ function kindMeta(kind: string) {
 function MatcherRow({
   matcher,
   siteId,
+  brandId,
   onChanged,
 }: {
   matcher: ValueMatcher;
   siteId: string;
+  /** For the brand-identity row's door to where its names are actually edited. */
+  brandId?: string;
   onChanged: () => void;
 }) {
   const meta = kindMeta(matcher.kind);
@@ -186,6 +188,14 @@ function MatcherRow({
       <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
         {target}
       </span>
+      {matcher.kind === "brand_identity" && brandId ? (
+        <Link
+          href={`/marketing/brands/${brandId}/settings`}
+          className="shrink-0 text-[11px] font-medium text-primary hover:underline"
+        >
+          Edit brand names
+        </Link>
+      ) : null}
       {matcher.matchCount !== null ? (
         <span
           className="shrink-0 text-[11px] text-muted-foreground"
@@ -468,6 +478,8 @@ export function MatcherEditor({
   /** The dimension card's own refresh — matcher counts / condition badges live there too. */
   onChanged: () => void;
 }) {
+  // The brand-identity row's "Edit brand names" door needs the brand.
+  const { brandId } = useMarketingSite();
   const queryClient = useQueryClient();
   const matchersKey = [
     "marketing",
@@ -547,6 +559,7 @@ export function MatcherEditor({
                   key={matcher.id}
                   matcher={matcher}
                   siteId={siteId}
+                  brandId={brandId}
                   onChanged={refresh}
                 />
               ))}
