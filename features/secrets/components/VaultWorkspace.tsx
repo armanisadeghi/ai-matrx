@@ -9,6 +9,7 @@
  * The list is modelled on the best password managers: one identity line and
  * one concise supporting line. Values and full metadata belong in detail.
  */
+import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   AlertCircle,
@@ -66,6 +67,7 @@ import {
   scopeToPrincipal,
   vaultScopeKey,
 } from "../types";
+import { VaultContextMenu } from "./VaultContextMenu";
 import { VaultCreateDialog } from "./VaultCreateDialog";
 import { VaultEnvImportDialog } from "./VaultEnvImportDialog";
 import { VaultItemDetail } from "./VaultItemDetail";
@@ -200,8 +202,23 @@ export function VaultWorkspace({
 
   const filtering = query.length > 0 || family !== "all";
 
+  // ONE menu per pane, wrapped around BOTH presentations, so the /vault page
+  // and the floating Vault window share a single wiring (and the window
+  // therefore mounts its own menu instead of being answered by the page
+  // underneath it). Everything the menu may say about a credential is built in
+  // `VaultContextMenu` — read its header before changing what it emits.
+  const withMenu = (body: ReactNode) => (
+    <VaultContextMenu
+      items={vault.items}
+      definitionsByKey={defsByKey}
+      onOpenItem={setSelectedId}
+    >
+      {body}
+    </VaultContextMenu>
+  );
+
   if (presentation === "full") {
-    return (
+    return withMenu(
       <div className="h-full min-h-0 bg-background">
         <div className="grid h-full min-h-0 overflow-hidden border-t border-border bg-background lg:grid-cols-[14rem_20rem_minmax(0,1fr)] xl:grid-cols-[15rem_22rem_minmax(0,1fr)]">
           <aside className="hidden min-h-0 flex-col border-r border-border bg-muted/20 lg:flex">
@@ -658,11 +675,11 @@ export function VaultWorkspace({
           busy={vault.busy}
           onImport={vault.actions.importEnv}
         />
-      </div>
+      </div>,
     );
   }
 
-  return (
+  return withMenu(
     <div className="space-y-3">
       {scope.kind === "organization" && (
         <div className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/40 p-3 text-xs">
@@ -932,7 +949,7 @@ export function VaultWorkspace({
         busy={vault.busy}
         onImport={vault.actions.importEnv}
       />
-    </div>
+    </div>,
   );
 }
 
@@ -997,6 +1014,10 @@ function VaultWorkspaceListRow({
       type="button"
       role="option"
       aria-selected={selected}
+      // The delegated context menu reads the clicked credential off this
+      // attribute (`VAULT_ITEM_ATTR`) — never off the DOM text, which can hold
+      // a revealed value.
+      data-vault-item-id={item.id}
       onClick={onOpen}
       className={cn(
         "flex w-full min-w-0 items-start gap-2.5 rounded-md border px-2.5 py-2.5 text-left transition-colors",
@@ -1149,6 +1170,7 @@ function VaultItemCard({
       onClick={onOpen}
       className="group relative flex w-full min-w-0 items-start gap-2.5 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       aria-label={`Open ${item.display_name}`}
+      data-vault-item-id={item.id}
     >
       <div className="flex min-w-0 flex-1 items-start gap-2.5">
         <span className={cn(IDENTITY_TILE_CLASS, "mt-0.5 h-9 w-9")}>

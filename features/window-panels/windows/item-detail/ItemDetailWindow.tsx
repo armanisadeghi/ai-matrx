@@ -47,11 +47,18 @@ import {
   tokenFromColumnName,
 } from "@/components/official/entity-ref/doors";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  createItemDetailScope,
+  ITEM_DETAIL_SURFACE_NAME,
+} from "@/features/surfaces/manifests/item-detail.manifest";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   entityTokenForItemType,
   getItemConfig,
 } from "@/features/item-presentation/registry";
 import type { ItemType } from "@/features/item-presentation/types";
+import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
 
 export interface ItemDetailWindowProps {
   isOpen: boolean;
@@ -243,13 +250,53 @@ function ItemDetailWindowInner({
           fkToken: isUuidValue(v) ? tokenFromColumnName(k) : null,
         }))
         .filter(
-          (f): f is {
+          (
+            f,
+          ): f is {
             key: string;
             value: { text: string; mono?: boolean };
             fkToken: string | null;
           } => f.value !== null,
         )
     : [];
+
+  // ── The dossier as readable text ────────────────────────────────────────
+  //
+  // This window is a DOCUMENT ABOUT A RECORD, so Copy-for-AI / Export /
+  // Download-as-Markdown want the thing the user is looking at, in the same
+  // order they are looking at it. Built generically from what the panel
+  // already rendered — never per-type, because the whole point of this window
+  // is that it shows an arbitrary entity.
+  const recordFields: Record<string, string> = {};
+  for (const field of fields)
+    recordFields[titleizeKey(field.key)] = field.value.text;
+
+  const dossierLines: string[] = [
+    `# ${displayTitle}`,
+    `Type: ${config.label}`,
+    ...(itemId ? [`ID: ${itemId}`] : []),
+    ...(initialAbout?.trim() ? ["", initialAbout.trim()] : []),
+    ...(fields.length > 0
+      ? ["", ...fields.map((f) => `${titleizeKey(f.key)}: ${f.value.text}`)]
+      : []),
+  ];
+  const dossierText = dossierLines.join("\n");
+
+  // Live surface scope — read at menu-open / agent-launch time from state the
+  // window already holds (never fetches). The window IS a surface: agents
+  // bound to `matrx-user/item-detail` get the dossier, not a bare uuid.
+  const getScope = () =>
+    createItemDetailScope({
+      item_type: itemType ?? "unknown",
+      item_label: config.label,
+      item_title: displayTitle,
+      record_status: status === "idle" ? "loading" : status,
+      field_count: fields.length,
+      content: dossierText,
+      item_id: itemId ?? undefined,
+      item_about: initialAbout?.trim() || undefined,
+      record_fields: fields.length > 0 ? recordFields : undefined,
+    });
 
   const handleCopyId = () => {
     if (!itemId) return;
@@ -260,148 +307,182 @@ function ItemDetailWindowInner({
   };
 
   return (
-    <WindowPanel
-      id="item-detail-window"
-      overlayId="itemDetailWindow"
-      titleNode={
-        <div className="flex items-center gap-2 min-w-0">
-          <Icon className={cn("h-4 w-4 shrink-0", config.accent.text)} />
-          <span className="truncate text-sm font-medium">{displayTitle}</span>
-          <span
-            className={cn(
-              "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ring-inset",
-              config.accent.bg,
-              config.accent.text,
-              config.accent.ring,
-            )}
-          >
-            {config.label}
-          </span>
-        </div>
-      }
-      actionsRight={
-        itemId ? (
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={handleCopyId}
-              className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors hover:text-foreground"
-              title="Copy ID"
-            >
-              {copied ? (
-                <Check className="h-3 w-3 text-emerald-500" />
-              ) : (
-                <Copy className="h-3 w-3" />
+    <SurfaceRuntimeProvider
+      surfaceName={ITEM_DETAIL_SURFACE_NAME}
+      isEditable={false}
+      getScope={getScope}
+    >
+      <WindowPanel
+        id="item-detail-window"
+        overlayId="itemDetailWindow"
+        titleNode={
+          <div className="flex items-center gap-2 min-w-0">
+            <Icon className={cn("h-4 w-4 shrink-0", config.accent.text)} />
+            <span className="truncate text-sm font-medium">{displayTitle}</span>
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ring-inset",
+                config.accent.bg,
+                config.accent.text,
+                config.accent.ring,
               )}
-              <span className="max-w-[160px] truncate">{itemId}</span>
-            </button>
-            {/* The record's own doors. Controls render as a SIBLING of the copy
+            >
+              {config.label}
+            </span>
+          </div>
+        }
+        actionsRight={
+          itemId ? (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleCopyId}
+                className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors hover:text-foreground"
+                title="Copy ID"
+              >
+                {copied ? (
+                  <Check className="h-3 w-3 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
+                <span className="max-w-[160px] truncate">{itemId}</span>
+              </button>
+              {/* The record's own doors. Controls render as a SIBLING of the copy
                 button, never inside it — and `EntityDoorControls` renders no
                 chrome at all when the token has neither route nor peek, so an
                 unrecognised item type simply keeps the copy chip it had. */}
-            {doorToken ? (
-              <EntityDoorControls
-                token={doorToken}
-                id={itemId}
-                name={displayTitle}
-                alwaysShowActions
-              />
-            ) : null}
-          </div>
-        ) : undefined
-      }
-      onClose={onClose}
-      width={520}
-      height={600}
-      minWidth={360}
-      minHeight={320}
-      bodyClassName="overflow-y-auto"
-    >
-      <div className="flex flex-col">
-        {/* About — agent-provided description (content, can run multi-line). */}
-        {initialAbout?.trim() && (
-          <p className="border-b border-border/60 p-4 text-xs leading-snug text-muted-foreground line-clamp-3">
-            {initialAbout.trim()}
-          </p>
-        )}
-
-        {/* Body states */}
-        <div className="p-4">
-          {status === "loading" && (
-            <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              Loading details…
+              {doorToken ? (
+                <EntityDoorControls
+                  token={doorToken}
+                  id={itemId}
+                  name={displayTitle}
+                  alwaysShowActions
+                />
+              ) : null}
             </div>
-          )}
-
-          {status === "not-found" && (
-            <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <AlertCircle className="h-6 w-6 text-amber-500" />
-              <p className="text-sm text-muted-foreground">
-                {`This ${config.label.toLowerCase()} couldn't be found — it may have been moved, deleted, or isn't shared with you.`}
+          ) : undefined
+        }
+        onClose={onClose}
+        width={520}
+        height={600}
+        minWidth={360}
+        minHeight={320}
+        bodyClassName="overflow-y-auto"
+      >
+        {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without this,
+          a right-click inside the floating dossier is answered by whatever page
+          happens to be underneath — handing the user THAT page's surface,
+          values and agents while they look at this record. Verified live
+          2026-08-24: right-click here produced nothing at all, so the generic
+          peek target of THE DOOR LAW could not even be copied for an AI. */}
+        <NonEditableContextMenu
+          sourceFeature="system"
+          surfaceName={ITEM_DETAIL_SURFACE_NAME}
+          contentSource={{ type: "raw" }}
+          // Attach To / Share need a REGISTERED entity token — `doorToken`
+          // already normalises the item types whose token differs, and an
+          // unrecognised type simply gets a content-only menu rather than a
+          // wrong association edge.
+          {...(itemId && doorToken && isEntityTypeToken(doorToken)
+            ? {
+                entity: {
+                  type: doorToken,
+                  id: itemId,
+                  title: displayTitle,
+                },
+              }
+            : {})}
+          getApplicationScope={getScope}
+        >
+          <div className="flex flex-col">
+            {/* About — agent-provided description (content, can run multi-line). */}
+            {initialAbout?.trim() && (
+              <p className="border-b border-border/60 p-4 text-xs leading-snug text-muted-foreground line-clamp-3">
+                {initialAbout.trim()}
               </p>
-            </div>
-          )}
+            )}
 
-          {status === "error" && (
-            <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <AlertCircle className="h-6 w-6 text-destructive" />
-              <p className="text-sm text-muted-foreground">
-                {`Couldn't load the details for this ${config.label.toLowerCase()}.`}
-              </p>
-            </div>
-          )}
-
-          {status === "none" && (
-            <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <Icon className={cn("h-7 w-7 opacity-30", config.accent.text)} />
-              <p className="text-sm text-muted-foreground">
-                {initialAbout?.trim()
-                  ? "No additional details are available for this item yet."
-                  : `A ${config.label.toLowerCase()} reference. No additional details are available yet.`}
-              </p>
-            </div>
-          )}
-
-          {status === "ready" && (
-            <dl className="grid grid-cols-1 gap-x-4 gap-y-2.5">
-              {fields.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  No additional fields to show.
-                </p>
-              )}
-              {fields.map(({ key, value, fkToken }) => (
-                <div
-                  key={key}
-                  className="flex flex-col gap-0.5 border-b border-border/40 pb-2 last:border-b-0"
-                >
-                  <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    {titleizeKey(key)}
-                  </dt>
-                  <dd
-                    className={cn(
-                      "text-sm text-foreground break-words",
-                      !fkToken &&
-                        value.mono &&
-                        "whitespace-pre-wrap rounded-md bg-muted px-2 py-1 font-mono text-xs",
-                    )}
-                  >
-                    {fkToken ? (
-                      <MatrxUuidCell
-                        value={value.text}
-                        label={titleizeKey(key)}
-                        token={fkToken}
-                      />
-                    ) : (
-                      value.text
-                    )}
-                  </dd>
+            {/* Body states */}
+            <div className="p-4">
+              {status === "loading" && (
+                <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  Loading details…
                 </div>
-              ))}
-            </dl>
-          )}
-        </div>
-      </div>
-    </WindowPanel>
+              )}
+
+              {status === "not-found" && (
+                <div className="flex flex-col items-center gap-2 py-10 text-center">
+                  <AlertCircle className="h-6 w-6 text-amber-500" />
+                  <p className="text-sm text-muted-foreground">
+                    {`This ${config.label.toLowerCase()} couldn't be found — it may have been moved, deleted, or isn't shared with you.`}
+                  </p>
+                </div>
+              )}
+
+              {status === "error" && (
+                <div className="flex flex-col items-center gap-2 py-10 text-center">
+                  <AlertCircle className="h-6 w-6 text-destructive" />
+                  <p className="text-sm text-muted-foreground">
+                    {`Couldn't load the details for this ${config.label.toLowerCase()}.`}
+                  </p>
+                </div>
+              )}
+
+              {status === "none" && (
+                <div className="flex flex-col items-center gap-2 py-10 text-center">
+                  <Icon
+                    className={cn("h-7 w-7 opacity-30", config.accent.text)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {initialAbout?.trim()
+                      ? "No additional details are available for this item yet."
+                      : `A ${config.label.toLowerCase()} reference. No additional details are available yet.`}
+                  </p>
+                </div>
+              )}
+
+              {status === "ready" && (
+                <dl className="grid grid-cols-1 gap-x-4 gap-y-2.5">
+                  {fields.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No additional fields to show.
+                    </p>
+                  )}
+                  {fields.map(({ key, value, fkToken }) => (
+                    <div
+                      key={key}
+                      className="flex flex-col gap-0.5 border-b border-border/40 pb-2 last:border-b-0"
+                    >
+                      <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {titleizeKey(key)}
+                      </dt>
+                      <dd
+                        className={cn(
+                          "text-sm text-foreground break-words",
+                          !fkToken &&
+                            value.mono &&
+                            "whitespace-pre-wrap rounded-md bg-muted px-2 py-1 font-mono text-xs",
+                        )}
+                      >
+                        {fkToken ? (
+                          <MatrxUuidCell
+                            value={value.text}
+                            label={titleizeKey(key)}
+                            token={fkToken}
+                          />
+                        ) : (
+                          value.text
+                        )}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </div>
+          </div>
+        </NonEditableContextMenu>
+      </WindowPanel>
+    </SurfaceRuntimeProvider>
   );
 }

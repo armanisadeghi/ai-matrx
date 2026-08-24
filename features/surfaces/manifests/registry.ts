@@ -152,6 +152,7 @@ import { imageGenerateManifest } from "./image-generate.manifest";
 import { imageEditManifest } from "./image-edit.manifest";
 import { imageAnnotateManifest } from "./image-annotate.manifest";
 import { galleryManifest } from "./gallery.manifest";
+import { itemDetailManifest } from "./item-detail.manifest";
 import { shareManifest } from "./share.manifest";
 import { feedbackManifest } from "./feedback.manifest";
 import { markdownEditorManifest } from "./markdown-editor.manifest";
@@ -361,6 +362,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   imageEditManifest,
   imageAnnotateManifest,
   galleryManifest,
+  itemDetailManifest,
   shareManifest,
   feedbackManifest,
   markdownEditorManifest,

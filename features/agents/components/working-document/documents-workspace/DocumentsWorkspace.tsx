@@ -15,7 +15,21 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { FileText, Lock, PanelLeftOpen, X } from "lucide-react";
+import {
+  FileText,
+  FilePlus2,
+  Lock,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Unlink,
+  X,
+} from "lucide-react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+  type ResolvedContextMenuContext,
+} from "@/features/context-menu-v3/types";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
@@ -26,6 +40,7 @@ import {
 import {
   selectActiveScratchpadId,
   selectWorkingDocBinding,
+  selectWorkingDocContent,
   selectWorkingDocTitle,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
@@ -287,6 +302,70 @@ export function DocumentsWorkspace({
   const openKeys = new Set(tabs.map(tabKey));
   const closableKeys = new Set(tabs.filter((t) => t.closable).map(tabKey));
 
+  // ── The shell's OWN right-click menu (context-menu-v3) ───────────────────
+  // The editor inside a tab is wired (`WorkingDocumentEditor`) and the rail's
+  // rows are wired (`ItemRow` → `ItemContextMenu`), but the chrome BETWEEN
+  // them — the tab strip that decides which document you are looking at — had
+  // no menu at all, so a right-click there fell through to whatever page (or,
+  // in `WorkingDocumentWindow`, whatever page under the window) happened to be
+  // below. This menu owns that pane and only that pane: it is a sibling of the
+  // editor's menu, never nested around it, which is the ONE-MENU-PER-PANE rule.
+  const [clickedTabKey, setClickedTabKey] = useState<string | null>(null);
+  const clickedTab = tabs.find((t) => tabKey(t) === clickedTabKey) ?? null;
+
+  const tabSection: ContextMenuExtraSection = {
+    id: "documents-workspace",
+    label: "Documents",
+    icon: FileText,
+    items: [
+      {
+        kind: "item",
+        id: "dw-open",
+        label: clickedTab
+          ? `Open "${clickedTab.label ?? kindLabel(clickedTab.kind)}"`
+          : "Open document",
+        icon: FileText,
+        description: clickedTab ? undefined : "Right-click a tab to open it",
+        disabled: !clickedTab,
+        onSelect: () => {
+          if (clickedTabKey) setActiveKey(clickedTabKey);
+        },
+      },
+      {
+        kind: "item",
+        id: "dw-detach",
+        label: "Detach this document",
+        icon: Unlink,
+        description: clickedTab?.closable
+          ? "Closes the tab and removes the attachment — the document is kept"
+          : "This conversation's own document can't be detached",
+        disabled: !clickedTab?.closable,
+        destructive: true,
+        onSelect: () => {
+          if (clickedTabKey) closeTab(clickedTabKey);
+        },
+      },
+      { kind: "separator", id: "dw-sep" },
+      {
+        kind: "item",
+        id: "dw-new-scratchpad",
+        label: "New scratchpad",
+        icon: FilePlus2,
+        onSelect: () => {
+          void dispatch(createScratchpadThunk());
+        },
+      },
+      {
+        kind: "checkbox",
+        id: "dw-rail",
+        label: "Show document list",
+        icon: railOpen ? PanelLeftClose : PanelLeftOpen,
+        checked: railOpen,
+        onCheckedChange: setRailOpen,
+      },
+    ],
+  };
+
   return (
     <div className={cn("flex h-full min-h-0", className)}>
       {railOpen && (
@@ -303,7 +382,56 @@ export function DocumentsWorkspace({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Tab strip */}
+        {/* Tab strip — the shell pane that mounts its own context menu. */}
+        <NonEditableContextMenu
+          sourceFeature="working-document"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(target): ResolvedContextMenuContext | null => {
+            const key =
+              target
+                ?.closest<HTMLElement>("[data-doc-tab-key]")
+                ?.getAttribute("data-doc-tab-key") ?? null;
+            setClickedTabKey(key);
+            const tab = tabs.find((t) => tabKey(t) === key) ?? null;
+            if (!tab) {
+              // Empty strip space: the pane itself, which is the list of open
+              // documents. No entity — the strip is not a record.
+              return {
+                content: [
+                  `Open documents (${tabs.length})`,
+                  ...tabs.map(
+                    (t) => `• ${t.label ?? kindLabel(t.kind)} (${t.kind})`,
+                  ),
+                ].join("\n"),
+                [CONTEXT_MENU_ENTITY_KEY]: null,
+              };
+            }
+            // Read the document's real text at click time, so Copy / Export /
+            // Download as Markdown save what the tab actually holds.
+            const title = tab.label ?? kindLabel(tab.kind);
+            const body = selectWorkingDocContent(
+              tab.conversationId,
+              tab.kind,
+            )(store.getState());
+            return {
+              content: body.trim() ? body : `# ${title}\n\n(empty)`,
+              // THE PER-ROW ENTITY RULE — Attach To / Share target the tab the
+              // user right-clicked, never the pane. A base tab whose document
+              // has not materialized yet has no id, so it resolves to null and
+              // the entity actions hide rather than target the wrong record.
+              [CONTEXT_MENU_ENTITY_KEY]: tab.documentId
+                ? {
+                    type: "working_document" as const,
+                    id: tab.documentId,
+                    title,
+                    resourceType: "working_document" as const,
+                  }
+                : null,
+            };
+          }}
+          extraSections={[tabSection]}
+        >
         <div className="flex shrink-0 items-center gap-0.5 border-b border-border bg-card/40 px-1 py-1">
           {!railOpen && (
             <button
@@ -324,6 +452,7 @@ export function DocumentsWorkspace({
               return (
                 <div
                   key={key}
+                  data-doc-tab-key={key}
                   className={cn(
                     "group flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
                     isActive
@@ -361,6 +490,7 @@ export function DocumentsWorkspace({
             })}
           </div>
         </div>
+        </NonEditableContextMenu>
 
         {/* Active document — the existing panel. The header keeps its action
             toolbar but DROPS its title: the tab strip already names the doc, so
