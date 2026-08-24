@@ -120,10 +120,10 @@ DialogContentPrimitive.displayName = "DialogContentPrimitive";
  * on mobile (e.g. a tiny centered spinner). Everything else should keep the default.
  */
 const DIALOG_DESKTOP_CLASSES =
-  "fixed left-[50%] top-[50%] z-[10000] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg";
+  "fixed left-[50%] top-[50%] z-[10000] grid min-w-0 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 overflow-x-clip border bg-background p-6 shadow-lg [overflow-wrap:anywhere] [&>*]:min-w-0 [&>*]:max-w-full duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg";
 
 const DIALOG_MOBILE_SHEET_CLASSES =
-  "fixed inset-x-0 bottom-0 left-0 right-0 top-auto z-[10000] flex flex-col w-full max-w-full max-h-[90dvh] translate-x-0 translate-y-0 gap-4 border-t bg-background p-4 pb-safe shadow-lg duration-200 rounded-t-2xl rounded-b-none overflow-y-auto overscroll-contain data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom";
+  "fixed inset-x-0 bottom-0 left-0 right-0 top-auto z-[10000] flex min-w-0 flex-col w-full max-w-full max-h-[90dvh] translate-x-0 translate-y-0 gap-4 overflow-x-clip border-t bg-background p-4 pb-safe shadow-lg [overflow-wrap:anywhere] [&>*]:min-w-0 [&>*]:max-w-full duration-200 rounded-t-2xl rounded-b-none overflow-y-auto overscroll-contain data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom";
 
 // Re-asserted LAST so the sheet geometry always wins over any caller `className`
 // (e.g. a desktop `max-w-2xl` must not un-fullscreen the mobile sheet).

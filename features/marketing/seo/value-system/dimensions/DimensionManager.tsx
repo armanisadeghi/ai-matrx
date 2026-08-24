@@ -40,6 +40,10 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { FacetCoverage } from "@/features/marketing/seo/value-system/coverage/FacetCoverage";
 import { WhatIsADimension } from "./WhatIsADimension";
+import {
+  DimensionSearchField,
+  DimensionSearchResults,
+} from "./DimensionSearch";
 import { DimensionCard } from "./DimensionCard";
 import { DimensionForm, type DimensionFormValue } from "./DimensionForm";
 import { getFacetDimensionCatalog, upsertFacetDimension } from "./data";
@@ -63,7 +67,7 @@ function CatalogSkeleton() {
 }
 
 export function DimensionManager() {
-  const { site } = useMarketingSite();
+  const { site, brandId } = useMarketingSite();
   const siteId = site.id;
   const queryClient = useQueryClient();
   /**
@@ -79,6 +83,14 @@ export function DimensionManager() {
   const focusMatcher = Boolean(searchParams.get("matcher"));
   const [creating, setCreating] = useState(false);
   const [savingNew, setSavingNew] = useState(false);
+  /**
+   * ONE box over everything this site means. Deliberately NOT a URL param: a
+   * search is a glance, not a place — and the `?dimension=&value=&matcher=`
+   * deep link a result opens has to arrive on the catalogue, not back inside
+   * the search that produced it.
+   */
+  const [query, setQuery] = useState("");
+  const searching = query.trim().length > 0;
 
   const catalogKey = ["marketing", "seo", "facet-dimensions", siteId];
   const catalog = useQuery({
@@ -158,15 +170,18 @@ export function DimensionManager() {
               tomorrow as today — for every person and every agent.
             </p>
           </div>
-          {!creating ? (
-            <Button
-              size="sm"
-              className="h-8 shrink-0"
-              onClick={() => setCreating(true)}
-            >
-              <Plus className="mr-1.5 h-3.5 w-3.5" /> New dimension
-            </Button>
-          ) : null}
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none">
+            <DimensionSearchField value={query} onChange={setQuery} />
+            {!creating ? (
+              <Button
+                size="sm"
+                className="h-8 shrink-0"
+                onClick={() => setCreating(true)}
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" /> New dimension
+              </Button>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -215,7 +230,16 @@ export function DimensionManager() {
             />
           ) : null}
 
-          {catalog.data ? (
+          {catalog.data && searching ? (
+            <DimensionSearchResults
+              query={query}
+              dimensions={dimensions}
+              brandId={brandId}
+              siteId={siteId}
+            />
+          ) : null}
+
+          {catalog.data && !searching ? (
             <>
               <section className="space-y-2">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">

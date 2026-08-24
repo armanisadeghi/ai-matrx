@@ -114,7 +114,9 @@ const KIND_META: Record<
   brand_identity: { label: "Brand identity", icon: Fingerprint, editableHere: false },
 };
 
-function kindMeta(kind: string) {
+/** The ONE display vocabulary for matcher kinds — exported so the Dimensions
+ *  search labels a hit the same way its editor labels the row. */
+export function kindMeta(kind: string) {
   return (
     KIND_META[kind] ?? { label: kind, icon: Tag, editableHere: false }
   );
@@ -275,7 +277,7 @@ function ReachPreviewCard({
 }) {
   const openKeywordWindow = useOpenKeywordWindow();
   return (
-    <div className="space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-2.5">
+    <div className="min-w-0 max-w-full space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-2.5">
       <p className="text-xs font-medium text-foreground">
         Reaches {formatCount(reach.keywords)} search
         {reach.keywords === 1 ? "" : "es"} in the last 28 days —{" "}
@@ -285,9 +287,9 @@ function ReachPreviewCard({
           : ""}
       </p>
       {reach.sample.length > 0 ? (
-        <ul className="flex flex-wrap gap-1">
+        <ul className="flex min-w-0 max-w-full flex-wrap gap-1">
           {reach.sample.map((row) => (
-            <li key={row.keywordId}>
+            <li key={row.keywordId} className="min-w-0 max-w-full">
               <button
                 type="button"
                 onClick={() =>
@@ -381,11 +383,11 @@ function AddMatcherForm({
   });
 
   return (
-    <div className="space-y-2 rounded-md border border-dashed border-border p-2.5">
+    <div className="min-w-0 max-w-full space-y-2 rounded-md border border-dashed border-border p-2.5">
       <p className="text-xs font-semibold text-foreground">
         Add a matcher for “{value.label}”
       </p>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         <Select value={kind} onValueChange={(next) => setKind(next as PatternKind)}>
           <SelectTrigger size="sm" className="h-7 w-[9.5rem] text-xs">
             <SelectValue />
@@ -406,7 +408,7 @@ function AddMatcherForm({
             setReachError(null);
           }}
           placeholder="crt monitor"
-          className="h-7 max-w-[16rem] flex-1 text-xs"
+          className="h-7 min-w-0 max-w-[16rem] flex-1 text-xs"
         />
       </div>
       <p className="text-[11px] leading-4 text-muted-foreground">
@@ -528,7 +530,7 @@ export function MatcherEditor({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[85dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-sm">
             Matchers for “{value.label}”

@@ -105,6 +105,33 @@ describe("Radix dialog accessibility semantics", () => {
     expect(close?.classList.contains("w-10")).toBe(true);
   });
 
+  it("contains long dialog content instead of letting intrinsic width escape", () => {
+    act(() => {
+      root.render(
+        <Dialog defaultOpen>
+          <DialogContent>
+            <DialogTitle>Matcher preview</DialogTitle>
+            <div data-testid="long-content">
+              a-continuous-machine-generated-value-that-must-stay-inside-the-dialog
+            </div>
+          </DialogContent>
+        </Dialog>,
+      );
+    });
+
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+    const content = document.querySelector<HTMLElement>(
+      '[data-testid="long-content"]',
+    );
+
+    expect(dialog?.classList.contains("min-w-0")).toBe(true);
+    expect(dialog?.classList.contains("overflow-x-clip")).toBe(true);
+    expect(dialog?.className).toContain("[overflow-wrap:anywhere]");
+    expect(dialog?.className).toContain("[&>*]:min-w-0");
+    expect(dialog?.className).toContain("[&>*]:max-w-full");
+    expect(content?.parentElement).toBe(dialog);
+  });
+
   it("does not claim modality or hide the background for a non-modal dialog", () => {
     act(() => {
       root.render(

@@ -24481,6 +24481,24 @@ export type Database = {
             }
             Returns: string[]
           }
+      accessible_entity_ids_new: {
+        Args: {
+          p_depth: number
+          p_include_public: boolean
+          p_required: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+        }
+        Returns: string[]
+      }
+      accessible_entity_ids_ref: {
+        Args: {
+          p_depth: number
+          p_include_public: boolean
+          p_required: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+        }
+        Returns: string[]
+      }
       apply_config_rls: {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
@@ -32787,6 +32805,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      _aei_diff: {
+        Row: {
+          incl: boolean
+          n_new: number | null
+          n_ref: number | null
+          new_ms: number | null
+          only_new: number | null
+          only_new_kernel_ok: number | null
+          only_ref: number | null
+          only_ref_kernel_ok: number | null
+          p_type: string
+          ref_ms: number | null
+          uid: string
+        }
+        Insert: {
+          incl: boolean
+          n_new?: number | null
+          n_ref?: number | null
+          new_ms?: number | null
+          only_new?: number | null
+          only_new_kernel_ok?: number | null
+          only_ref?: number | null
+          only_ref_kernel_ok?: number | null
+          p_type: string
+          ref_ms?: number | null
+          uid: string
+        }
+        Update: {
+          incl?: boolean
+          n_new?: number | null
+          n_ref?: number | null
+          new_ms?: number | null
+          only_new?: number | null
+          only_new_kernel_ok?: number | null
+          only_ref?: number | null
+          only_ref_kernel_ok?: number | null
+          p_type?: string
+          ref_ms?: number | null
+          uid?: string
+        }
+        Relationships: []
+      }
+      _aei_proof: {
+        Row: {
+          ids: string[] | null
+          incl: boolean
+          ms: number | null
+          n: number | null
+          p_required: string
+          p_type: string
+          uid: string
+          variant: string
+        }
+        Insert: {
+          ids?: string[] | null
+          incl: boolean
+          ms?: number | null
+          n?: number | null
+          p_required: string
+          p_type: string
+          uid: string
+          variant: string
+        }
+        Update: {
+          ids?: string[] | null
+          incl?: boolean
+          ms?: number | null
+          n?: number | null
+          p_required?: string
+          p_type?: string
+          uid?: string
+          variant?: string
+        }
+        Relationships: []
+      }
+      _aei_timing: {
+        Row: {
+          label: string
+          ms: number | null
+          n: number | null
+        }
+        Insert: {
+          label: string
+          ms?: number | null
+          n?: number | null
+        }
+        Update: {
+          label?: string
+          ms?: number | null
+          n?: number | null
+        }
+        Relationships: []
+      }
       _schema_migrations: {
         Row: {
           applied_at: string
@@ -33733,6 +33844,10 @@ export type Database = {
               type: string
             }[]
           }
+      _aei_probe: {
+        Args: { v_incl: boolean; v_type: string; v_uid: string }
+        Returns: undefined
+      }
       _count_super_admins: { Args: never; Returns: number }
       _d31_impl_add_data_row_to_user_table: {
         Args: { p_data: Json; p_table_id: string }

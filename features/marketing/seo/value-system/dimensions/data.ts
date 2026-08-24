@@ -464,6 +464,45 @@ export async function getValueMatchers(
 }
 
 /**
+ * EVERY matcher this site has written, across every dimension and every value,
+ * in one scoped read — what makes the Dimensions screen searchable.
+ *
+ * WHY ALL OF THEM AT ONCE. Matchers are the only part of this site's meaning
+ * that is not already on screen: they live one interaction deep, inside a
+ * value's matcher door, so "is this term used anywhere in what we built?" was
+ * unanswerable without opening every value one at a time (Arman, 2026-08-24:
+ * *"I wanna see if we're doing anything with, say, e-stewards but I don't have
+ * a quick and easy way of doing that."*). A site's whole matcher set is tens of
+ * rows, not thousands — Data Destruction has 41 — so the honest implementation
+ * is to read them and search in the browser, not to grow a search RPC for a
+ * table this small.
+ *
+ * Same RLS-governed `std_select` as `getValueMatchers` (THE VIEW LAW): listing
+ * what exists is an ordinary scoped read; writes still go only through
+ * `dimension_matcher_upsert` / `_delete`.
+ */
+export async function getSiteMatchers(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<ValueMatcher[]> {
+  const response = await (await seoDb())
+    .from("dimension_value_matcher")
+    .select(
+      "id, site_id, value_id, kind, pattern, place_id, fact_value_id, condition_rule_id, enabled, origin, notes, match_count, last_evaluated_at, created_at",
+    )
+    .eq("site_id", siteId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    "load this site's matchers",
+  ) as RawMatcherRow[];
+  return rows.map(toValueMatcher);
+}
+
+/**
  * How many (enabled or not) matchers each value in a dimension carries, in
  * ONE round trip — what lights up the "N matchers" door on every row in the
  * card without a query per value.

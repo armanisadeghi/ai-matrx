@@ -49,6 +49,8 @@ import {
   formatCount,
   type GscBreakdownRow,
 } from "@/features/marketing/search-console/types";
+import type { GscKeywordValueRow } from "@/features/marketing/search-console/data-insights";
+import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/normalize";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {
@@ -139,7 +141,9 @@ export function MarketingReportsWorkspace() {
   );
   const queryRows = queries.data?.rows ?? [];
   const pageRows = pages.data?.rows ?? [];
-  const queryClasses = useGscKeywordClasses(
+  // KI-026 — Class · Score · Level for the visible top queries, through the
+  // ONE stamp resolver (`gsc_keyword_value_for`), never a re-derived class.
+  const queryClasses = useGscKeywordValueByText(
     selectedSiteId,
     queryRows.map((row) => row.key),
   );
@@ -185,7 +189,7 @@ export function MarketingReportsWorkspace() {
           summary: summaryRow,
           traffic_classes: classRows,
           top_queries: queryRows,
-          query_classes: queryClasses.data ?? [],
+          query_classes: queryClasses.ids ?? [],
           top_pages: pageRows,
         }
       : null;
@@ -214,8 +218,8 @@ export function MarketingReportsWorkspace() {
     ...(summaryRow ? { search_summary: summaryRow } : {}),
     ...(classes.data ? { traffic_class_summary: classes.data } : {}),
     ...(queries.data ? { top_queries: queryRows } : {}),
-    ...(queryClasses.data
-      ? { keyword_class_resolution: queryClasses.data }
+    ...(queryClasses.ids
+      ? { keyword_class_resolution: queryClasses.ids }
       : {}),
     ...(pages.data ? { top_pages: pageRows } : {}),
     ...(clientReport ? { client_report: clientReport } : {}),
@@ -522,16 +526,20 @@ export function MarketingReportsWorkspace() {
                       className="divide-y divide-border"
                     >
                       {queryRows.map((row) => {
-                        const resolved = queryClasses.data?.find(
+                        const resolvedId = queryClasses.ids?.find(
                           (item) => item.query === row.key,
                         );
+                        const keywordId = resolvedId?.keyword_id ?? row.keyword_id;
                         return (
                           <ReportQueryRow
-                            key={`${row.key}-${resolved?.keyword_id ?? row.keyword_id}`}
+                            key={`${row.key}-${keywordId}`}
                             row={row}
-                            keywordId={resolved?.keyword_id ?? row.keyword_id}
-                            trafficClass={resolved?.traffic_class ?? null}
+                            keywordId={keywordId}
+                            value={queryClasses.data.get(
+                              normalizeKeywordPhrase(row.key),
+                            )}
                             siteId={selectedSite.id}
+                            brandId={selectedSite.brand_id}
                           />
                         );
                       })}
@@ -674,15 +682,24 @@ function UnclassifiedDoor({
 function ReportQueryRow({
   row,
   keywordId,
-  trafficClass,
+  value,
   siteId,
+  brandId,
 }: {
   row: GscBreakdownRow;
   keywordId: string;
-  trafficClass: string | null;
+  /** KI-026 — Class · Score · Level, from the ONE resolver, never re-derived. */
+  value: GscKeywordValueRow | undefined;
   siteId: string;
+  brandId: string | null;
 }) {
   const openKeyword = useOpenKeywordWindow();
+  // Reuse the shared column-def cells rather than a local chip — this list
+  // has no MatrxDataTable, so the cells render inline instead of as columns.
+  const [classCol, scoreCol, levelCol] = buildGscValueColumns<GscBreakdownRow>(
+    () => value,
+    { siteId, brandId, keywordOf: (r) => r.key },
+  );
   return (
     <div className="p-3">
       <div className="flex min-w-0 items-start justify-between gap-3">
@@ -696,7 +713,11 @@ function ReportQueryRow({
             className="min-w-0 text-sm font-medium"
             alwaysShowActions
           />
-          <ClassChip trafficClass={trafficClass} />
+          <span className="flex shrink-0 items-center gap-1">
+            {classCol.cell?.(row, 0)}
+            {scoreCol.cell?.(row, 0)}
+            {levelCol.cell?.(row, 0)}
+          </span>
         </div>
         <CopyButtons
           size="xs"
