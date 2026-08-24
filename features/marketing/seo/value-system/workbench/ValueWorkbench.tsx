@@ -141,6 +141,10 @@ import { ClassCell } from "@/features/marketing/seo/keyword-workbench/components
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
 import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { KEYWORD_VALUE_WORKBENCH_SURFACE_NAME } from "@/features/surfaces/manifests/keyword-value-workbench.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
+import { buildKeywordValueScope } from "@/features/marketing/lib/scopes/keyword-value-scope";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   keywordEntityRef,
@@ -298,6 +302,9 @@ function SourceChip({ source }: { source: ValueSource }) {
 export function ValueWorkbench() {
   const { site, brandId } = useMarketingSite();
   const siteId = site.id;
+  // The inherited brand+site half of this surface's scope — built once for the
+  // whole marketing family, never hand-assembled here.
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const openKeywordWindow = useOpenKeywordWindow();
   const [window] = useState(reviewWindow);
@@ -776,16 +783,50 @@ export function ValueWorkbench() {
     },
   ];
 
+  /**
+   * THE SURFACE EMITTER. This page has its own registered surface
+   * (`matrx-user/keyword-value-workbench`) as of 2026-08-24 — before that its
+   * context menu had to omit `surfaceName`, so an agent launched from a
+   * keyword row got no bound agents and no value mappings at all.
+   *
+   * Built at TRIGGER time from live state (never stale React state), nested
+   * inside the site provider so this surface wins while the page is mounted.
+   */
+  const getScope = () =>
+    buildKeywordValueScope({
+      base: getBaseValues(),
+      tableState: table.state,
+      rows,
+      total,
+      loading: review.isLoading,
+      selectedIds,
+      levels: metas,
+      levelsAreTemplate: bandsAreTemplate,
+      window,
+      kpis,
+      verdict,
+      meaningHealth: health.data,
+      rulingCount: rulings.data?.total,
+      activeLevelFilter: bandFilter,
+      activeSourceFilter: sourceFilter,
+    });
+
   return (
-    // The page scrolls; the TABLE does not scroll inside it.
-    //
-    // This was a fixed-viewport pane (`overflow-hidden`, the table bounded by
-    // `flex-1 min-h-0`) when it was one variant among four and carried only a
-    // scoreboard above the table. Converged, it also carries the verdict, the
-    // setup rows and the work-queue callout — and `flex-1` shrinks, so the
-    // table's scroll box collapsed to 8px and rendered 50 rows into nothing.
-    // One scroll surface, at natural height, is what the rest of this family
-    // does (topics, rules, packs) and what a 50-row page wants.
+    <SurfaceRuntimeProvider
+      surfaceName={KEYWORD_VALUE_WORKBENCH_SURFACE_NAME}
+      getScope={getScope}
+    >
+    {/*
+      The page scrolls; the TABLE does not scroll inside it.
+
+      This was a fixed-viewport pane (`overflow-hidden`, the table bounded by
+      `flex-1 min-h-0`) when it was one variant among four and carried only a
+      scoreboard above the table. Converged, it also carries the verdict, the
+      setup rows and the work-queue callout — and `flex-1` shrinks, so the
+      table's scroll box collapsed to 8px and rendered 50 rows into nothing.
+      One scroll surface, at natural height, is what the rest of this family
+      does (topics, rules, packs) and what a 50-row page wants.
+    */}
     <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto bg-textured p-3 sm:p-4">
       {/* HEADER — one line. The window used to be spelled out in a
           sentence under the title; it is a fact, so it is a chip. */}
@@ -1008,14 +1049,12 @@ export function ValueWorkbench() {
       {/* Review table — ONE v3 menu around the whole pane. */}
       <NonEditableContextMenu
         sourceFeature="marketing"
-        // No `surfaceName`: `…/value` has no registered surface of its own yet,
-        // so the menu resolves the route's surface rather than claiming one
-        // that does not exist (a declared-but-unregistered name is a lie the
-        // value-mapping guard would scream about). Registering a real
-        // `keyword-value-workbench` surface is Arman's call — logged as a gap
-        // in projects/keyword-intelligence-convergence/ADOPTION-SWEEP.md.
+        surfaceName={KEYWORD_VALUE_WORKBENCH_SURFACE_NAME}
         contentSource={{ type: "raw" }}
-        contextData={{ content: "" }}
+        // The surface's declared values ride along — the SAME emitter the page
+        // provider uses. A `surfaceName` without them makes the v3
+        // value-mapping guard scream, and it would be right to.
+        contextData={{ ...getScope(), content: "" }}
         resolveContextOnOpen={(target) => {
           const id = target
             ?.closest("[data-row-id]")
@@ -1309,5 +1348,6 @@ export function ValueWorkbench() {
         />
       ) : null}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

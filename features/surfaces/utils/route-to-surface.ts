@@ -368,6 +368,15 @@ function resolveMarketingSurface(stripped: string): string | null {
       ) {
         return "matrx-user/marketing-crawl";
       }
+      // The value LEAF is the Keyword Value Workbench; the family beside it
+      // (`value/topics`, `value/rules`, `value/dimensions`, `value/packs`)
+      // defines the machinery rather than listing keywords and stays on the
+      // site surface until each earns its own.
+      if (vertical === "value") {
+        return segments.length === 6
+          ? "matrx-user/keyword-value-workbench"
+          : "matrx-user/marketing-site";
+      }
       return (
         MARKETING_SITE_VERTICAL_SURFACES[vertical] ??
         "matrx-user/marketing-site"

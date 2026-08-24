@@ -86,6 +86,7 @@ import { marketingSiteManifest } from "./marketing-site.manifest";
 import { marketingSitePagesManifest } from "./marketing-site-pages.manifest";
 import { marketingPageManifest } from "./marketing-page.manifest";
 import { keywordIntelligenceManifest } from "./keyword-intelligence.manifest";
+import { keywordValueWorkbenchManifest } from "./keyword-value-workbench.manifest";
 import { marketingCrawlsManifest } from "./marketing-crawls.manifest";
 import { marketingCrawlManifest } from "./marketing-crawl.manifest";
 import { marketingAuditManifest } from "./marketing-audit.manifest";
@@ -287,6 +288,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   marketingSitePagesManifest,
   marketingPageManifest,
   keywordIntelligenceManifest,
+  keywordValueWorkbenchManifest,
   marketingCrawlsManifest,
   marketingCrawlManifest,
   marketingAuditManifest,
