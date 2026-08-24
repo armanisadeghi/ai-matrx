@@ -76,7 +76,8 @@
  * click away, under the same names.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   keepPreviousData,
   useMutation,
@@ -306,6 +307,19 @@ export function ValueWorkbench() {
   // The by-level tiles: kept, subordinate, and collapsible (see BandScoreboard).
   const [levelsOpen, setLevelsOpen] = useState(true);
   const levelsRef = useRef<HTMLElement | null>(null);
+  /**
+   * The doors other screens open onto this one (reason-links.ts):
+   *   ?kw=<text>    a receipt's "change or clear your ruling"
+   *   ?band=<slug>  a level row in the Traffic quality decomposition
+   *   ?combo=<id>   a receipt's "edit this combination"
+   * Applied once, then the reader owns the view — re-applying on every render
+   * would fight every filter they change afterwards.
+   */
+  const searchParams = useSearchParams();
+  const focusKeyword = searchParams.get("kw");
+  const focusBand = searchParams.get("band");
+  const focusComboId = searchParams.get("combo");
+  const appliedFocusRef = useRef(false);
 
   const vocab = useQuery({
     queryKey: ["marketing", "value", "vocab", siteId, "value_band"],
@@ -374,6 +388,34 @@ export function ValueWorkbench() {
       },
     });
   }
+
+  useEffect(() => {
+    if (appliedFocusRef.current) return;
+    if (!focusKeyword && !focusBand && !focusComboId) return;
+    appliedFocusRef.current = true;
+    if (focusComboId) setMeaningOpen(true);
+    if (focusKeyword || focusBand) {
+      table.onStateChange({
+        ...table.state,
+        page: 1,
+        ...(focusKeyword ? { search: focusKeyword } : {}),
+        columnFilters: {
+          ...table.state.columnFilters,
+          ...(focusBand
+            ? {
+                value_band: {
+                  kind: "select",
+                  value: focusBand,
+                } as ColumnFilterValue,
+              }
+            : {}),
+        },
+      });
+    }
+    // Deliberately keyed on the URL params alone: the ref guard makes this a
+    // once-only seed, and adding the table controller would re-run it every
+    // time the reader changes a filter — undoing their own edit.
+  }, [focusKeyword, focusBand, focusComboId]);
 
   const bandFilter = singleSelectValue(state.columnFilters.value_band);
   const sourceFilter = singleSelectValue(state.columnFilters.value_source);
@@ -1016,6 +1058,7 @@ export function ValueWorkbench() {
           window={window}
           bandMetas={metas}
           bandsAreTemplate={bandsAreTemplate}
+          focusComboId={focusComboId}
           onClose={() => setMeaningOpen(false)}
         />
       ) : null}

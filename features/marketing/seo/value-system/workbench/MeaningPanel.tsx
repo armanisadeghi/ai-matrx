@@ -17,7 +17,7 @@
  * editor with a server-measured live preview; the bench is at ../value/rules.
  */
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
@@ -179,6 +179,7 @@ export function MeaningPanel({
   window,
   bandMetas,
   bandsAreTemplate,
+  focusComboId = null,
   onClose,
 }: {
   siteId: string;
@@ -189,6 +190,12 @@ export function MeaningPanel({
   window: { start: string; end: string };
   bandMetas: BandMeta[];
   bandsAreTemplate: boolean;
+  /**
+   * A value receipt's "edit this combination" sent the reader here — open that
+   * combination as soon as the list arrives, or the link lands them in a panel
+   * with nothing obviously selected.
+   */
+  focusComboId?: string | null;
   onClose: () => void;
 }) {
   const [editing, setEditing] = useState<VocabKind | null>(null);
@@ -202,6 +209,7 @@ export function MeaningPanel({
   const [editingCombo, setEditingCombo] = useState<ValueCombo | null | undefined>(
     undefined,
   );
+  const focusedComboRef = useRef<string | null>(null);
   const { site } = useMarketingSite();
   // The prose doctrine every AI run for this site reads (D35). Read-only here:
   // the document is AUTHORED in the classification workbench, and two editors
@@ -231,6 +239,14 @@ export function MeaningPanel({
     queryFn: ({ signal }) => listValueCombos(siteId, signal),
     staleTime: 5 * 60_000,
   });
+  useEffect(() => {
+    if (!focusComboId || focusedComboRef.current === focusComboId) return;
+    const combo = (combos.data ?? []).find((row) => row.id === focusComboId);
+    if (!combo) return;
+    focusedComboRef.current = focusComboId;
+    setEditingCombo(combo);
+  }, [focusComboId, combos.data]);
+
   const topicValues = useQuery({
     queryKey: ["marketing", "value", "topic-values", siteId],
     queryFn: () => listSiteTopicValues(siteId),
