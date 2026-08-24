@@ -786,62 +786,51 @@ export const ensureFolderPath = createAsyncThunk<
   import("@/features/files/types").EnsureFolderPathArg,
   ThunkApi
 >("cloudFiles/ensureFolderPath", async (arg, { dispatch, getState }) => {
-  const segments = arg.folderPath
+  const normalizedPath = arg.folderPath
     .split("/")
     .map((s) => s.trim())
-    .filter(Boolean);
-  if (segments.length === 0) {
+    .filter(Boolean)
+    .join("/");
+  if (!normalizedPath) {
     throw new Error("folderPath cannot be empty.");
   }
 
-  let parentId: string | null = null;
-  let accumulatedPath = "";
-
-  for (const segment of segments) {
-    accumulatedPath = accumulatedPath
-      ? `${accumulatedPath}/${segment}`
-      : segment;
-
-    // Check live state first — the realtime subscription keeps it current.
-    const state = getState();
-    const existing = Object.values(state.cloudFiles.foldersById).find(
-      (f) =>
-        f.folderPath === accumulatedPath &&
-        !f.deletedAt &&
-        (parentId == null ? f.parentId == null : f.parentId === parentId),
-    );
-    if (existing) {
-      parentId = existing.id;
-      continue;
-    }
-
-    // Not in local state — fall back to a DB lookup (another device may have
-    // created it). This is the path that also handles races on first use.
-    const { data: existingRow } = await filesDb(supabase)
-      .from("folders")
-      .select("*")
-      .eq("folder_path", accumulatedPath)
-      .is("deleted_at", null)
-      .maybeSingle();
-    if (existingRow) {
-      const existingFolder = dbRowToCloudFolder(existingRow);
-      dispatch(upsertFolder(existingFolder));
-      parentId = existingFolder.id;
-      continue;
-    }
-
-    // Still missing — create it.
-    parentId = await dispatch(
-      createFolder({
-        folderName: segment,
-        parentId,
-        visibility: arg.visibility ?? "personal",
-      }),
-    ).unwrap();
+  // Realtime/tree state is the zero-request fast path.
+  const existing = Object.values(getState().cloudFiles.foldersById).find(
+    (folder) => folder.folderPath === normalizedPath && !folder.deletedAt,
+  );
+  if (existing) {
+    return existing.id;
   }
 
-  if (!parentId) throw new Error("Unreachable: ensureFolderPath");
-  return parentId;
+  // The backend owns path traversal and race handling. One atomic request
+  // replaces the obsolete per-segment files.folders PostgREST reads.
+  const requestId = newRequestId();
+  registerRequest({
+    requestId,
+    kind: "folder-create",
+    resourceId: null,
+    resourceType: "folder",
+  });
+  try {
+    const { data: row } = await Folders.ensureFolderPath(
+      normalizedPath,
+      arg.visibility ?? "personal",
+      { requestId },
+    );
+    const folder = dbRowToCloudFolder(row);
+    dispatch(upsertFolder(folder));
+    dispatch(
+      attachChildToFolder({
+        parentFolderId: folder.parentId,
+        kind: "folder",
+        id: folder.id,
+      }),
+    );
+    return folder.id;
+  } finally {
+    releaseRequest(requestId);
+  }
 });
 
 // ---------------------------------------------------------------------------

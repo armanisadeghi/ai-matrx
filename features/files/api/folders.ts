@@ -71,6 +71,31 @@ export async function createFolder(
 }
 
 /**
+ * Ensure a complete logical folder path in one idempotent backend operation.
+ * The server creates missing intermediate segments atomically; callers must
+ * never reproduce that traversal with one PostgREST lookup per segment.
+ */
+export async function ensureFolderPath(
+  folderPath: string,
+  visibility: CreateFolderRequest["visibility"] = "personal",
+  opts: RequestOptions = {},
+): Promise<{ data: CloudFolderRow; meta: ResponseMeta }> {
+  const normalizedPath = folderPath
+    .split("/")
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .join("/");
+  if (!normalizedPath) {
+    throw new Error("folderPath cannot be empty.");
+  }
+
+  return createFolder(
+    { folder_path: normalizedPath, visibility, metadata: null },
+    opts,
+  );
+}
+
+/**
  * Update a folder — rename, move (via `parent_id`), or change visibility.
  * The backend cascades `folder_path` updates to descendants on the server
  * side; we don't replay that on the client.
