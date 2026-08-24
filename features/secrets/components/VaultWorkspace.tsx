@@ -124,8 +124,10 @@ export function VaultWorkspace({
     scope.kind === "organization"
       ? principal.type === "organization"
         ? Boolean(canManage)
-        : activeOrganization?.role === "owner" ||
-          activeOrganization?.role === "admin"
+        : Boolean(
+            activeOrganization?.role === "owner" ||
+            activeOrganization?.role === "admin",
+          )
       : true;
   const viewedPrincipal = scopeToPrincipal(scope) ?? { type: "user" };
   const isShared = scope.kind === "shared";

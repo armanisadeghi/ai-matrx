@@ -17,6 +17,19 @@ const componentSource = [
   .join("\n");
 
 describe("shared vault UI contract", () => {
+  test("exposes every ratified personal Vault scope without following active org", () => {
+    const workspaceSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultWorkspace.tsx"),
+      "utf8",
+    );
+
+    expect(workspaceSource).toContain('label="My credentials"');
+    expect(workspaceSource).toContain('label="Shared with me"');
+    expect(workspaceSource).toContain('label="Organization"');
+    expect(workspaceSource).toContain("useUserOrganizations()");
+    expect(workspaceSource).not.toContain("selectOrganizationId");
+  });
+
   test("keeps full detail metadata complete while compact list rows truncate", () => {
     const detailSource = [
       "SecretValue.tsx",
