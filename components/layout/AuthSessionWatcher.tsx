@@ -107,7 +107,10 @@ export default function AuthSessionWatcher() {
       // drafts are stamped with the account that wrote them, so they are only
       // ever offered back to that user.
       setRescuedDraftCount(snapshotUnsavedWork(booted, current.id));
-      console.error(
+      // This is an intentionally handled security transition, not a failed
+      // application operation. `console.error` is globally persisted to the
+      // system-error repair queue, so keep the operator-visible signal at warn.
+      console.warn(
         "[AuthSessionWatcher] IDENTITY DRIFT: tab booted as",
         booted,
         "but the auth cookie now belongs to",
@@ -144,7 +147,9 @@ export default function AuthSessionWatcher() {
         const current = session?.user;
         if (booted && current && current.id !== booted) {
           setRescuedDraftCount(snapshotUnsavedWork(booted, current.id));
-          console.error(
+          // The blocking overlay is the successful recovery path. Do not send
+          // this expected auth transition to the system-error repair queue.
+          console.warn(
             "[AuthSessionWatcher] IDENTITY DRIFT (auth event):",
             "tab booted as",
             booted,

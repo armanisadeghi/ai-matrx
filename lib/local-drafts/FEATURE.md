@@ -76,6 +76,9 @@ tab, every autosave was RLS-filtered to 0 rows for ~14 hours, and the
   browser buffer; the paths that trigger one also fire `captureError` with
   source `unsaved-work` (never downgrade that tier — the whole point is that
   D132 was ignorable for 14 hours).
+- **A handled identity change is not a system error.** `AuthSessionWatcher`
+  blocks the unsafe tab and warns locally; never emit `console.error`, which
+  persists the successful security transition to the repair queue.
 
 ---
 
@@ -95,6 +98,8 @@ tab, every autosave was RLS-filtered to 0 rows for ~14 hours, and the
 
 ## Change log
 
+- `2026-08-24` — Kept successfully handled auth identity changes out of the
+  system-error queue while preserving the blocking overlay and local warning.
 - `2026-08-09` — Post-review hardening: collectors capture the pre-debounce
   editor buffer, drafts are stamped with the typing account, the notes source
   registers for the store's lifetime, and the store notifies subscribers.
