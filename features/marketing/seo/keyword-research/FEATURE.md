@@ -107,6 +107,14 @@ Management (the ruling's other half — autosave must not become clutter):
   (detach-from-page chips, pre-existing). All archives confirm first
   (`confirm()` dialog) and toast an Undo that calls restore.
 
+**Every keyword row opens the same door, and offers the same actions.** On the
+Performance tab a row click opens the shared Keyword Intelligence dossier and a
+right-click opens the canonical v3 menu whose keyword section comes from
+`features/marketing/seo/keyword/keyword-actions.tsx`. Adding a keyword action
+means editing THAT module so all surfaces gain it at once — never re-declaring
+items inline on a table, and never a bespoke row-detail panel that renders raw
+id columns to a person.
+
 **The canonical per-keyword UI primitive lives in `features/marketing/seo/keyword/`**
 (`KeywordInput`, the Keyword Intelligence window, `buildKeywordBrief`) — it consumes
 this feature's reads, stream hook, and `KeywordMetrics` atoms. Read its FEATURE.md
@@ -256,6 +264,22 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-24 — **Organic keyword performance joined the keyword-intelligence
+  family.** The Performance tab (`SiteKeywordPerformanceWorkspace`) was the
+  ADOPTION-SWEEP's "single most jarring" gap: 4,355 rows with no right-click at
+  all, one tab away from the Keyword Workbench that has the whole menu, and a
+  row click that opened a raw field dump showing a non-technical SME bare
+  `SITE_ID` / `ORGANIZATION_ID` / `KEYWORD_ID` / `TOP_PAGE_ID` UUIDs. Now: ONE
+  `NonEditableContextMenu` around the pane (never one per row) carrying the
+  shared `useKeywordMenuSection` items — set the class, which service, answer a
+  dimension, pin a level, why this score, see pages, open Keyword Intelligence
+  — with the right-clicked row resolved from `data-row-id` and handed to v3
+  under `CONTEXT_MENU_ENTITY_KEY` so **Attach To** targets that keyword rather
+  than the pane. Row click now opens the shared Keyword Intelligence dossier
+  (`detail={{ enabled: false }}` + `onRowOpen`), the same window twelve other
+  surfaces open. No new action, write path, or renderer was introduced — every
+  item delegates to `features/marketing/seo/keyword/keyword-actions.tsx`, the
+  ONE definition of what you can do to a keyword.
 - 2026-08-15 — **The site keyword decision column now explains itself and is
   editable.** Raw `Workflow` / `candidate` / `Not classified` became `SEO
   stage` / `Opportunity` / `Not tracked`, with hover explanations and one-line
