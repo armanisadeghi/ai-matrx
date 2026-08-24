@@ -52900,7 +52900,7 @@ export type Database = {
       }
       dimension_matcher_delete: {
         Args: { p_matcher_id: string }
-        Returns: boolean
+        Returns: Json
       }
       dimension_matcher_upsert: {
         Args: {
@@ -52939,6 +52939,7 @@ export type Database = {
         }
         Returns: {
           facts_dropped: number
+          matchers_removed: number
           values_retired: number
         }[]
       }
@@ -53026,6 +53027,7 @@ export type Database = {
         Returns: {
           facts_dropped: number
           facts_moved: number
+          matchers_removed: number
         }[]
       }
       facet_value_upsert: {
@@ -53492,6 +53494,28 @@ export type Database = {
         Returns: Json
       }
       gsc_geo_area_reconnect: { Args: { p_site_id: string }; Returns: Json }
+      gsc_human_rulings: {
+        Args: {
+          p_dimension_slug: string
+          p_end: string
+          p_limit?: number
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          clicks: number
+          impressions: number
+          keyword: string
+          keyword_id: string
+          pinned: boolean
+          reason: string
+          ruled_at: string
+          ruled_total: number
+          value_id: string
+          value_label: string
+          value_slug: string
+        }[]
+      }
       gsc_ingestion_health: {
         Args: { p_site_id: string }
         Returns: {
@@ -54686,6 +54710,21 @@ export type Database = {
           value_band: string
           value_score: number
           value_source: string
+        }[]
+      }
+      matcher_match_review: {
+        Args: { p_limit?: number; p_matcher_id: string; p_site_id: string }
+        Returns: {
+          clicks: number
+          holding_source: string
+          holding_value: string
+          impressions: number
+          keyword_id: string
+          other_answers: Json
+          outcome: string
+          phrase: string
+          rivals: string[]
+          total_matches: number
         }[]
       }
       multi_location_knob: {

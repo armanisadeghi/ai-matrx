@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -59,6 +60,8 @@ import {
   formatDate,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
+import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingRanksScope } from "@/features/surfaces/manifests/marketing-ranks.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -611,6 +614,20 @@ export function RanksWorkspace() {
   const rows = items;
   const pageLocation = `Marketing — Rank portfolio for ${site.domain}`;
 
+  // KI-026 — Class · Score · Level for the tracked keywords, through the ONE
+  // stamp resolver every other keyword table on the platform uses. Each
+  // `RankPortfolioItem` already carries `keyword_id` — no text resolution
+  // hop needed here (unlike the query-text surfaces). Hook must sit above
+  // every early return below so hook order never changes across renders.
+  const sortedKeywordIds = [...new Set(rows.map((item) => item.keyword_id))].sort();
+  const keywordValues = useQuery({
+    queryKey: ["marketing", "gsc", "keyword-value-for", site.id, sortedKeywordIds],
+    queryFn: ({ signal }) =>
+      getGscKeywordValueFor(site.id, sortedKeywordIds, signal),
+    enabled: sortedKeywordIds.length > 0,
+    staleTime: 60_000,
+  });
+
   // Live drill-in state, reported up by the open history dialog.
   const historySnapshotRef = useRef<HistorySnapshot | null>(null);
   const handleHistorySnapshot = (snapshot: HistorySnapshot) => {
@@ -781,6 +798,13 @@ export function RanksWorkspace() {
     summary: humanRankPortfolio(rows),
     sections: groomerSections(),
   });
+  // KI-026 columns — see the `useQuery` above (kept above the early returns
+  // for hook-order safety); the pure column builder lives down here with the
+  // rest of the column defs.
+  const valueColumns = buildGscValueColumns<RankPortfolioItem>(
+    (item) => keywordValues.data?.get(item.keyword_id),
+    { siteId: site.id, keywordOf: (item) => item.keyword },
+  );
   const portfolioColumns: MatrxColumnDef<RankPortfolioItem>[] = [
     {
       id: "keyword",
@@ -798,6 +822,7 @@ export function RanksWorkspace() {
         </button>
       ),
     },
+    ...valueColumns,
     {
       id: "latest_position",
       accessorKey: "latest_position",

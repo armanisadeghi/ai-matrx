@@ -64,6 +64,8 @@ import {
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
+import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
+import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
@@ -813,6 +815,37 @@ function TheoriesTab({
   brandId: string;
 }) {
   const openKeyword = useOpenKeywordWindow();
+  // KI-026 — Class · Score · Level for each theory's target keyword, through
+  // the ONE stamp resolver every other keyword table on the platform uses.
+  // A theory already carries `keyword_id` directly — no text resolution hop.
+  const siteId = bundle.change.site_id;
+  const theoryKeywordIds = [
+    ...new Set(
+      bundle.theories
+        .map((theory) => theory.keyword_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ].sort();
+  const keywordValues = useQuery({
+    queryKey: [
+      "marketing",
+      "gsc",
+      "keyword-value-for",
+      siteId,
+      theoryKeywordIds,
+    ],
+    queryFn: ({ signal }) =>
+      getGscKeywordValueFor(siteId, theoryKeywordIds, signal),
+    enabled: theoryKeywordIds.length > 0,
+    staleTime: 60_000,
+  });
+  const [classCol, scoreCol, levelCol] = buildGscValueColumns<
+    SeoChangeTheory
+  >((theory) => (theory.keyword_id ? keywordValues.data?.get(theory.keyword_id) : undefined), {
+    siteId,
+    keywordOf: (theory) =>
+      theory.keyword_id ? (bundle.keywordPhrases[theory.keyword_id] ?? null) : null,
+  });
   return (
     <div className="space-y-3 p-4">
       {bundle.theories.map((theory, index) => {
@@ -859,6 +892,11 @@ function TheoriesTab({
                       {phrase}
                       <Target className="ml-2 h-3.5 w-3.5" />
                     </Button>
+                    <span className="mt-1 flex items-center gap-1">
+                      {classCol.cell?.(theory, 0)}
+                      {scoreCol.cell?.(theory, 0)}
+                      {levelCol.cell?.(theory, 0)}
+                    </span>
                   </div>
                 ) : null}
                 {theory.page_id ? (

@@ -363,3 +363,59 @@ export async function proposeKeywordMeaning(input: {
     addressee: row.addressee ?? null,
   };
 }
+
+/* ------------------------------------------------ KI-032: human rulings read */
+
+/** One HUMAN ruling on a dimension — the thing the blind check argues with. */
+export interface HumanRulingRow {
+  keywordId: string;
+  keyword: string;
+  clicks: number;
+  impressions: number;
+  valueId: string;
+  valueSlug: string;
+  valueLabel: string;
+  /** The reason the person typed when they ruled (P24), when they did. */
+  reason: string | null;
+  pinned: boolean;
+  ruledAt: string;
+  ruledTotal: number;
+}
+
+/**
+ * This site's HUMAN rulings on one dimension, demand-ordered — the verify
+ * loop's ONE read (`seo.gsc_human_rulings`, KI-032).
+ */
+export async function listHumanRulings(input: {
+  siteId: string;
+  dimensionSlug: string;
+  start: string;
+  end: string;
+  limit?: number;
+}): Promise<HumanRulingRow[]> {
+  const response = await (await seoDb()).rpc("gsc_human_rulings", {
+    p_site_id: input.siteId,
+    p_dimension_slug: input.dimensionSlug,
+    p_start: input.start,
+    p_end: input.end,
+    ...(input.limit ? { p_limit: input.limit } : {}),
+  });
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    "read your rulings for the blind check",
+  );
+  return (rows ?? []).map((row) => ({
+    keywordId: String(row.keyword_id),
+    keyword: String(row.keyword),
+    clicks: Number(row.clicks ?? 0),
+    impressions: Number(row.impressions ?? 0),
+    valueId: String(row.value_id),
+    valueSlug: String(row.value_slug),
+    valueLabel: String(row.value_label),
+    reason: row.reason == null ? null : String(row.reason),
+    pinned: row.pinned === true,
+    ruledAt: String(row.ruled_at),
+    ruledTotal: Number(row.ruled_total ?? 0),
+  }));
+}

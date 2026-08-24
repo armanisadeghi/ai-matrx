@@ -22,6 +22,7 @@ import {
   ListFilter,
   Lock,
   Pencil,
+  Trash2,
   Plus,
   RefreshCw,
   Tag,
@@ -39,7 +40,10 @@ import { useDigStampMutations } from "@/features/marketing/search-console/hooks/
 import { DimensionForm, type DimensionFormValue } from "./DimensionForm";
 import { ValueForm, type ValueFormValue } from "./ValueForm";
 import { MatcherEditor } from "./MatcherEditor";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
+  archiveFacetDimension,
+  archiveFacetValue,
   getMatcherCounts,
   upsertFacetDimension,
   upsertFacetValue,
@@ -100,6 +104,58 @@ function ValueRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [matchersOpen, setMatchersOpen] = useState(autoOpenMatchers);
+  const remove = useMutation({
+    mutationFn: () =>
+      archiveFacetValue({
+        dimensionSlug,
+        valueKey: value.key,
+        siteId,
+      }),
+    onSuccess: (result) => {
+      toast.success(
+        `“${value.label}” is gone`,
+        {
+          description:
+            result.factsDropped > 0 || result.matchersRemoved > 0
+              ? `Removed ${formatCount(result.matchersRemoved)} match${
+                  result.matchersRemoved === 1 ? "" : "es"
+                } and took the answer off ${formatCount(result.factsDropped)} keyword${
+                  result.factsDropped === 1 ? "" : "s"
+                }.`
+              : "It was not stamped on anything.",
+        },
+      );
+      onSaved();
+      onMatchersChanged();
+    },
+    // A governance refusal is a SENTENCE written for this reader — the
+    // not-clear option, the last answer, a rule still naming it. Never
+    // replaced with a generic message.
+    onError: (error) => toast.error(extractErrorMessage(error)),
+  });
+
+  const askAndDelete = async () => {
+    const stamped = value.keyword_count;
+    const matchers = matcherCount ?? 0;
+    const consequences = [
+      matchers > 0
+        ? `${formatCount(matchers)} match${matchers === 1 ? "" : "es"} that find it`
+        : null,
+      stamped > 0
+        ? `the answer on ${formatCount(stamped)} keyword${stamped === 1 ? "" : "s"}`
+        : null,
+    ].filter(Boolean) as string[];
+    const ok = await confirm({
+      title: `Delete “${value.label}”?`,
+      description:
+        consequences.length > 0
+          ? `This also removes ${consequences.join(" and ")}. It happens in one step — nothing is left behind for you to clean up afterwards.`
+          : "Nothing carries this answer yet, so nothing else changes.",
+      variant: "destructive",
+      confirmLabel: "Delete it",
+    });
+    if (ok) remove.mutate();
+  };
 
   const save = useMutation({
     mutationFn: (draft: ValueFormValue) =>
@@ -217,6 +273,28 @@ function ValueRow({
             <Pencil className="mr-1 h-3 w-3" /> Edit
           </Button>
         ) : null}
+        {/* DELETE IS ONE THING (Arman, 2026-08-24). The confirm states the
+            whole blast radius up front — matchers and stamped keywords — and
+            pressing it removes all of it server-side in one transaction. There
+            is no "now re-run the matchers" step, because a delete that leaves
+            its stamps behind is the bug this replaced. */}
+        {editable ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-destructive"
+            disabled={remove.isPending}
+            title={`Delete “${value.label}” and everything it stamped`}
+            onClick={() => void askAndDelete()}
+          >
+            {remove.isPending ? (
+              <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+            ) : (
+              <Trash2 className="mr-1 h-3 w-3" />
+            )}
+            Delete
+          </Button>
+        ) : null}
       </div>
       {matchersOpen ? (
         <MatcherEditor
@@ -303,6 +381,46 @@ export function DimensionCard({
     },
     onError: (error) => toast.error(extractErrorMessage(error)),
   });
+
+  const removeDimension = useMutation({
+    mutationFn: () =>
+      archiveFacetDimension({ dimensionSlug: dimension.slug, siteId }),
+    onSuccess: (result) => {
+      toast.success(`“${dimension.label}” is retired`, {
+        description: `Removed ${formatCount(result.valuesRetired)} answer${
+          result.valuesRetired === 1 ? "" : "s"
+        }, ${formatCount(result.matchersRemoved)} match${
+          result.matchersRemoved === 1 ? "" : "es"
+        } and ${formatCount(result.factsDropped)} keyword answer${
+          result.factsDropped === 1 ? "" : "s"
+        }.`,
+      });
+      onSaved();
+    },
+    onError: (error) => toast.error(extractErrorMessage(error)),
+  });
+
+  const askAndRetireDimension = async () => {
+    const ok = await confirm({
+      title: `Retire “${dimension.label}”?`,
+      description: `This removes the question, its ${formatCount(
+        dimension.value_count,
+      )} answer${dimension.value_count === 1 ? "" : "s"}, every match that fills them, and the answer currently on ${formatCount(
+        dimension.keyword_count,
+      )} keyword${dimension.keyword_count === 1 ? "" : "s"}. It happens in one step. ${
+        dimension.rule_count > 0
+          ? `${formatCount(dimension.rule_count)} value rule${
+              dimension.rule_count === 1 ? "" : "s"
+            } still read this dimension — point ${
+              dimension.rule_count === 1 ? "it" : "them"
+            } somewhere else first or this will be refused.`
+          : "Nothing about worth points at it, so no rule breaks."
+      }`,
+      variant: "destructive",
+      confirmLabel: "Retire it",
+    });
+    if (ok) removeDimension.mutate();
+  };
 
   const addValue = useMutation({
     mutationFn: (draft: ValueFormValue) =>
@@ -504,6 +622,28 @@ export function DimensionCard({
               onClick={() => setEditingDimension(true)}
             >
               <Pencil className="mr-1 h-3 w-3" /> Edit
+            </Button>
+          ) : null}
+          {/* Retiring a whole question takes every answer, every match and
+              every stamp with it — one confirm, one server transaction. Only
+              offered on a dimension this site owns: a shared one is a fact
+              every site depends on, and the DB refuses it for anyone below
+              super admin anyway. */}
+          {owned && !editingDimension ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-1.5 text-[11px] text-muted-foreground hover:text-destructive"
+              disabled={removeDimension.isPending}
+              title={`Retire “${dimension.label}” and everything under it`}
+              onClick={() => void askAndRetireDimension()}
+            >
+              {removeDimension.isPending ? (
+                <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+              ) : (
+                <Trash2 className="mr-1 h-3 w-3" />
+              )}
+              Delete
             </Button>
           ) : null}
         </div>

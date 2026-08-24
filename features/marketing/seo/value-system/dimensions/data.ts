@@ -362,16 +362,198 @@ export async function upsertDimensionMatcher(
   return row;
 }
 
-/** Retire a matcher. Existing stamps stay until the engine is re-run. */
+/**
+ * THE DELETE CONTRACT (Arman, 2026-08-24): *"delete by default = remove
+ * matches (One thing)."* Every function below removes the thing AND the
+ * answers it was keeping, in ONE server transaction — never "deleted, now go
+ * press Run matchers". Each returns the blast radius it actually caused, so
+ * the UI can report it instead of guessing.
+ *
+ * None of them re-implements "what should be stamped": each re-derives the
+ * touched keywords through `seo.fn_evaluate_matchers_internal`, the one
+ * engine, so a stamp another live matcher still produces survives.
+ */
+export interface MatcherDeleteResult {
+  deleted: boolean;
+  keywordsTouched: number;
+  answersRemoved: number;
+  answersRestamped: number;
+}
+
+/**
+ * Retire a matcher AND unstamp what it alone was keeping.
+ *
+ * Until 2026-08-24 this soft-deleted the row and stopped, leaving every
+ * keyword it had stamped wearing an answer whose only reason no longer
+ * existed — corrected only if someone happened to press "Run matchers now",
+ * and invisible until then.
+ */
 export async function deleteDimensionMatcher(
   matcherId: string,
-): Promise<boolean> {
+): Promise<MatcherDeleteResult> {
   const response = await (await seoDb()).rpc("dimension_matcher_delete", {
     p_matcher_id: matcherId,
   });
-  return Boolean(
-    assertGoverned(response.data, response.error, "remove this matcher"),
-  );
+  const raw = assertGoverned(
+    response.data,
+    response.error,
+    "remove this matcher",
+  ) as unknown as Record<string, unknown>;
+  return {
+    deleted: Boolean(raw?.deleted),
+    keywordsTouched: Number(raw?.keywords_touched ?? 0),
+    answersRemoved: Number(raw?.answers_removed ?? 0),
+    answersRestamped: Number(raw?.answers_restamped ?? 0),
+  };
+}
+
+/**
+ * ONE ROW OF THE MATCH REVIEW — what a matcher did to one keyword.
+ *
+ * `outcome` is the field the whole panel turns on:
+ *   held      — this matcher's answer is the one the keyword wears.
+ *   lost      — it matches, but another matcher's answer holds the dimension.
+ *               The rule fired and changed nothing; `rivals` names who won.
+ *   blocked   — a person's ruling holds it. Matchers never overwrite a human.
+ *   unstamped — matches, and nothing holds the dimension yet.
+ *
+ * "19 keywords matched" in a toast could not tell these apart, which is why
+ * a matcher reading 19 on Data Destruction was actually catching 27.
+ */
+export interface MatcherReviewRow {
+  keywordId: string;
+  phrase: string;
+  clicks: number;
+  impressions: number;
+  outcome: "held" | "lost" | "blocked" | "unstamped";
+  holdingValue: string | null;
+  holdingSource: string | null;
+  /** Other answers on THIS dimension whose matchers also catch the keyword. */
+  rivals: string[];
+  /** What the keyword wears on every OTHER dimension — the overlap context. */
+  otherAnswers: { dimension: string; value: string; source: string | null }[];
+}
+
+export interface MatcherReview {
+  rows: MatcherReviewRow[];
+  /** Total keywords this matcher catches, before the display limit. */
+  totalMatches: number;
+}
+
+/** Read-only: what `seo.matcher_match_review` reports. It never writes. */
+export async function getMatcherReview(
+  siteId: string,
+  matcherId: string,
+  limit = 300,
+  signal?: AbortSignal,
+): Promise<MatcherReview> {
+  const response = await (await seoDb())
+    .rpc("matcher_match_review", {
+      p_site_id: siteId,
+      p_matcher_id: matcherId,
+      p_limit: limit,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const raw = assertGoverned(
+    response.data,
+    response.error,
+    "review what this match caught",
+  ) as unknown as Array<Record<string, unknown>>;
+  const rows = (raw ?? []).map((row) => ({
+    keywordId: String(row.keyword_id),
+    phrase: String(row.phrase ?? ""),
+    clicks: Number(row.clicks ?? 0),
+    impressions: Number(row.impressions ?? 0),
+    outcome: String(row.outcome ?? "unstamped") as MatcherReviewRow["outcome"],
+    holdingValue: (row.holding_value as string | null) ?? null,
+    holdingSource: (row.holding_source as string | null) ?? null,
+    rivals: Array.isArray(row.rivals) ? (row.rivals as string[]) : [],
+    otherAnswers: Array.isArray(row.other_answers)
+      ? (row.other_answers as MatcherReviewRow["otherAnswers"])
+      : [],
+  }));
+  return {
+    rows,
+    totalMatches: Number(raw?.[0]?.total_matches ?? rows.length),
+  };
+}
+
+export interface ValueArchiveResult {
+  factsMoved: number;
+  factsDropped: number;
+  matchersRemoved: number;
+}
+
+/**
+ * Retire ONE answer: its matchers go, its stamps go (or MOVE, if the caller
+ * names an answer they should become instead), and the touched keywords are
+ * re-derived.
+ *
+ * The DB refuses three things with a sentence written for the reader, and the
+ * UI must show it verbatim rather than a generic failure: the honest-decline
+ * ("not clear") option is never deletable, the last real answer on a dimension
+ * is never deletable, and a value a value-rule still names must be pointed
+ * somewhere else first.
+ */
+export async function archiveFacetValue(input: {
+  dimensionSlug: string;
+  valueKey: string;
+  siteId: string;
+  /** Move the answers here instead of dropping them. */
+  reassignToKey?: string | null;
+}): Promise<ValueArchiveResult> {
+  const response = await (await seoDb()).rpc("facet_value_archive", {
+    p_dimension: input.dimensionSlug,
+    p_value: input.valueKey,
+    p_reassign_to: input.reassignToKey ?? undefined,
+    p_drop_facts: true,
+    p_site_id: input.siteId,
+  });
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    "retire this answer",
+  ) as unknown as Array<Record<string, unknown>>;
+  const row = Array.isArray(rows) ? rows[0] : (rows as Record<string, unknown>);
+  return {
+    factsMoved: Number(row?.facts_moved ?? 0),
+    factsDropped: Number(row?.facts_dropped ?? 0),
+    matchersRemoved: Number(row?.matchers_removed ?? 0),
+  };
+}
+
+export interface DimensionArchiveResult {
+  valuesRetired: number;
+  factsDropped: number;
+  matchersRemoved: number;
+}
+
+/**
+ * Retire a WHOLE dimension — every answer, every matcher, every stamp.
+ *
+ * The DB refuses while a value rule still reads the dimension, because a rule
+ * pointed at a retired question stops doing anything and says nothing.
+ */
+export async function archiveFacetDimension(input: {
+  dimensionSlug: string;
+  siteId: string;
+}): Promise<DimensionArchiveResult> {
+  const response = await (await seoDb()).rpc("facet_dimension_archive", {
+    p_dimension: input.dimensionSlug,
+    p_drop_facts: true,
+    p_site_id: input.siteId,
+  });
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    "retire this dimension",
+  ) as unknown as Array<Record<string, unknown>>;
+  const row = Array.isArray(rows) ? rows[0] : (rows as Record<string, unknown>);
+  return {
+    valuesRetired: Number(row?.values_retired ?? 0),
+    factsDropped: Number(row?.facts_dropped ?? 0),
+    matchersRemoved: Number(row?.matchers_removed ?? 0),
+  };
 }
 
 export interface ValueMatcher {
