@@ -309,6 +309,22 @@ global corpus, blows the 8s statement timeout, and renders a skeleton that reads
 "loading". Every reader passes its GSC window. THE SCOPE RULE in the SoR has the
 measurement.
 
+🚨 **And that is only HALF of it — a keyword's facts are resolved once and joined ONCE.**
+`seo.gsc_perf_class_movers` obeyed the scope rule and still took **10 s** on the Insights
+page's own read (page dimension, class pinned to money), which is the
+`[gsc-assists] class movers read failed` a reader saw as an empty panel. Cause: it joined
+TWO map CTEs in sequence, the pin collapsed the first join's row estimate to 25, and
+against a 25-row outer the planner priced rescanning a statistics-less CTE below building
+a hash — 81 M comparisons. The maps now `FULL JOIN` into ONE `kw_facts` row per keyword,
+joined once (page/money 10,008 → 648 ms; page/`unclassified` 45,629 → 780 ms;
+`levels=[unvalued]` 43,149 → 829 ms — the class pin was never the special case). Two more
+settings ride on that function for measured reasons: `plan_cache_mode=force_custom_plan`
+(its plan depends on its arguments, and plpgsql's generic plan cost 11 s from the 6th call
+on a pooled connection) and `work_mem=32MB` (the largest site spilled its group-by to a
+123 MB external merge). THE JOIN-SHAPE RULE in the SoR has every measurement;
+[`migrations/seo_class_movers_one_facts_join.sql`](../../../migrations/seo_class_movers_one_facts_join.sql)
+has the plan. If you write a `gsc_perf_*` read that joins a map per keyword, join it ONCE.
+
 **The vocabularies are editable, and that is the point** (Arman, 2026-08-21: "the rules
 can't live in the agent's head"). Two planes, two paths:
 - **Site bands** — `features/marketing/seo/value-system/vocabulary/BandVocabularyEditor.tsx`,
@@ -732,6 +748,24 @@ deliberately not a Popover (opening one from a closing Radix Select loses
 its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
+
+- 2026-08-24 — **Insights `class movers` 500 fixed — THE JOIN-SHAPE RULE.**
+  `seo.gsc_perf_class_movers` on the page dimension with a class pin took
+  10,008 ms past the 8 s statement timeout, so the assists producer logged
+  `[gsc-assists] class movers read failed` on every Insights load. `EXPLAIN
+  (ANALYZE, BUFFERS)` on the FULL body (its parts each measured under 400 ms
+  and hid it): a nested loop removing **81,094,419** rows, because the function
+  joined two map CTEs in sequence and the pin collapsed the first join's
+  estimate to 25 rows. Fixed by `FULL JOIN`ing the class and value maps into
+  ONE `kw_facts` row per keyword and joining it once — page/money
+  10,008 → 648 ms, page/`unclassified` 45,629 → 780 ms, `levels=[unvalued]`
+  43,149 → 829 ms, query/money 2,521 → 439 ms, and the unfiltered invariants
+  held (page 864 → 786, query 658 → 601). All 15 measured cases byte-identical.
+  Also `plan_cache_mode=force_custom_plan` (plpgsql's generic plan cost 11.1 s
+  from the 6th call on a pooled connection) and `work_mem=32MB` (All Green's
+  group-by spilled 123 MB; page/money 7,408 → 3,513 ms). Verified in the
+  browser: Insights loads clean and Pages + Money movers render.
+  `migrations/seo_class_movers_one_facts_join.sql`.
 
 - 2026-08-23 — **C6 finish: panel drills, the actionable receipt, Insights by
   LEVEL** ([`migrations/seo_value_level_movers_and_topic_receipt.sql`](../../../migrations/seo_value_level_movers_and_topic_receipt.sql)).
