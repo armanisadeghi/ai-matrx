@@ -20760,7 +20760,117 @@ export type Database = {
   }
   graveyard: {
     Tables: {
-      [_ in never]: never
+      user_flashcard_reviews: {
+        Row: {
+          card_index: number
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          result: string
+          reviewed_at: string
+          set_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          card_index: number
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          result: string
+          reviewed_at?: string
+          set_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          card_index?: number
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          result?: string
+          reviewed_at?: string
+          set_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      user_flashcard_sets: {
+        Row: {
+          card_count: number
+          cards: Json
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_archived: boolean
+          last_studied_at: string | null
+          message_id: string | null
+          metadata: Json
+          organization_id: string
+          tags: string[]
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          card_count?: number
+          cards?: Json
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_archived?: boolean
+          last_studied_at?: string | null
+          message_id?: string | null
+          metadata?: Json
+          organization_id: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          card_count?: number
+          cards?: Json
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_archived?: boolean
+          last_studied_at?: string | null
+          message_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -24080,6 +24190,16 @@ export type Database = {
             }
             Returns: boolean
           }
+      has_access_for_base_v2: {
+        Args: {
+          p_id: string
+          p_include_public: boolean
+          p_required: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       has_org_access: { Args: { p_org: string }; Returns: boolean }
       has_org_access_for: {
         Args: { p_org: string; p_user_id: string }
@@ -31147,6 +31267,15 @@ export type Database = {
       }
       entity_row_access_attrs: {
         Args: { p_id: string; p_schema: string; p_table: string }
+        Returns: Record<string, unknown>
+      }
+      entity_row_access_attrs_ext: {
+        Args: {
+          p_fk_columns: string[]
+          p_id: string
+          p_schema: string
+          p_table: string
+        }
         Returns: Record<string, unknown>
       }
       entity_title: { Args: { p_id: string; p_type: string }; Returns: string }
@@ -40888,6 +41017,8 @@ export type Database = {
           chars_in: number
           chunks_reused: number
           chunks_written: number
+          cleanup_calls: number
+          cleanup_cost_usd: number
           cost_is_exact: boolean
           created_at: string
           created_by: string | null
@@ -40931,6 +41062,8 @@ export type Database = {
           chars_in?: number
           chunks_reused?: number
           chunks_written?: number
+          cleanup_calls?: number
+          cleanup_cost_usd?: number
           cost_is_exact?: boolean
           created_at?: string
           created_by?: string | null
@@ -40974,6 +41107,8 @@ export type Database = {
           chars_in?: number
           chunks_reused?: number
           chunks_written?: number
+          cleanup_calls?: number
+          cleanup_cost_usd?: number
           cost_is_exact?: boolean
           created_at?: string
           created_by?: string | null
@@ -52502,6 +52637,18 @@ export type Database = {
           state: string
         }[]
       }
+      gsc_matcher_reach_preview: {
+        Args: {
+          p_end: string
+          p_kind: string
+          p_pattern: string
+          p_sample?: number
+          p_site_id: string
+          p_start: string
+          p_value_id?: string
+        }
+        Returns: Json
+      }
       gsc_perf_breakdown: {
         Args: {
           p_compare_end?: string
@@ -52944,6 +53091,41 @@ export type Database = {
           label: string
           sort: number
           value: string
+        }[]
+      }
+      gsc_ruling_session_matcher_probe: {
+        Args: { p_keyword_ids: string[]; p_site_id: string }
+        Returns: {
+          dimension_label: string
+          dimension_slug: string
+          keyword_id: string
+          matcher_id: string
+          matcher_kind: string
+          matcher_pattern: string
+          value_id: string
+          value_label: string
+          value_slug: string
+        }[]
+      }
+      gsc_ruling_session_queue: {
+        Args: {
+          p_end: string
+          p_exclude?: string[]
+          p_limit?: number
+          p_similarity?: number
+          p_site_id: string
+          p_start: string
+          p_word_overlap?: number
+        }
+        Returns: {
+          clicks: number
+          closest_kept: string
+          considered: number
+          impressions: number
+          keyword: string
+          keyword_id: string
+          unruled_total: number
+          why_distinct: string
         }[]
       }
       gsc_save_value_vocabulary: {
@@ -57557,125 +57739,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_flashcard_reviews: {
-        Row: {
-          card_index: number
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          result: string
-          reviewed_at: string
-          set_id: string
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          card_index: number
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          result: string
-          reviewed_at?: string
-          set_id: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          card_index?: number
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          result?: string
-          reviewed_at?: string
-          set_id?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_flashcard_reviews_set_id_fkey"
-            columns: ["set_id"]
-            isOneToOne: false
-            referencedRelation: "user_flashcard_sets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_flashcard_sets: {
-        Row: {
-          card_count: number
-          cards: Json
-          conversation_id: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          is_archived: boolean
-          last_studied_at: string | null
-          message_id: string | null
-          metadata: Json
-          organization_id: string
-          tags: string[]
-          title: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          card_count?: number
-          cards?: Json
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_archived?: boolean
-          last_studied_at?: string | null
-          message_id?: string | null
-          metadata?: Json
-          organization_id: string
-          tags?: string[]
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          card_count?: number
-          cards?: Json
-          conversation_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_archived?: boolean
-          last_studied_at?: string | null
-          message_id?: string | null
-          metadata?: Json
-          organization_id?: string
-          tags?: string[]
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
       }
       user_follows: {
         Row: {
