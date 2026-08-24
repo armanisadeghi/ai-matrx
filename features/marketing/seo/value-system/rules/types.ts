@@ -245,3 +245,41 @@ export interface ValueComboFormState {
 /** How many values a combination may hold — the DB CHECK says the same. */
 export const COMBO_MIN_VALUES = 2;
 export const COMBO_MAX_VALUES = 4;
+
+// ── Does this area actually change a score? (2026-08-24) ────────────────────
+
+/**
+ * `seo.gsc_geo_area_health` — one row per live service area.
+ *
+ * `state` is the honest answer, not a percentage:
+ *   empty        — nothing inside it: no picked place, no typed word.
+ *   disconnected — full of places and carrying NO matchers, so it changes no
+ *                  score at all. This is the C2 regression state, and the worst
+ *                  one to be in because every other screen shows it as finished.
+ *   no_hits      — wired correctly; no keyword has matched it yet.
+ *   live         — matching keywords and counting in their value.
+ */
+export type GeoAreaState = "empty" | "disconnected" | "no_hits" | "live";
+
+export interface GeoAreaHealthRow {
+  area_id: string;
+  label: string;
+  geo_band: string;
+  places: number;
+  tokens: number;
+  value_id: string | null;
+  matchers: number;
+  stamps: number;
+  state: GeoAreaState;
+}
+
+/** What `seo.gsc_geo_area_reconnect` reports back after re-minting + stamping. */
+export interface GeoAreaReconnectResult {
+  areas_synced: number;
+  scope_keywords: number;
+  matchers: number;
+  stamped: number;
+  removed: number;
+  single_cardinality_conflicts: number;
+  evaluated_at: string;
+}

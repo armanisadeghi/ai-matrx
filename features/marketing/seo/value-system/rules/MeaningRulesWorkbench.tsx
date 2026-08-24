@@ -43,11 +43,14 @@ import {
   MapPin,
   MapPinned,
   Pencil,
+  PlugZap,
   Plus,
   TriangleAlert,
   X,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
+import { toast } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -92,12 +95,15 @@ import { GeoAreaEditor } from "./GeoAreaEditor";
 import { PlaceDetectionStrip } from "./PlaceDetectionStrip";
 import { LocationPanel } from "../locations/LocationPanel";
 import {
+  geoAreaHealthQueryKey,
   geoAreasQueryKey,
   getMeaningUsage,
+  listGeoAreaHealth,
   meaningUsageQueryKey,
+  reconnectGeoAreas,
   valueRulesQueryKey,
 } from "./data";
-import type { MeaningUsageRow } from "./types";
+import type { GeoAreaHealthRow, MeaningUsageRow } from "./types";
 
 /** The honest usage chip: measuring · unavailable · fires on nothing · N keywords. */
 function UsageChip({
@@ -305,6 +311,7 @@ export function MeaningRulesWorkbench() {
    */
   const placeDetectionRef = useRef<HTMLDivElement | null>(null);
   const [flashPlaceDetection, setFlashPlaceDetection] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const goToPlaceDetection = () => {
     placeDetectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     setFlashPlaceDetection(true);
@@ -329,6 +336,17 @@ export function MeaningRulesWorkbench() {
   const areas = useQuery({
     queryKey: geoAreasQueryKey(siteId),
     queryFn: () => listGeoAreas(siteId),
+    staleTime: 60_000,
+  });
+  /**
+   * 🚨 IS EACH AREA ACTUALLY CHANGING A SCORE? Not "does it have places in it"
+   * — that question was already answered yes on every site for months while
+   * geography contributed nothing at all, because the stamp system was never
+   * given the matchers. This read is the one that would have screamed.
+   */
+  const areaHealth = useQuery({
+    queryKey: geoAreaHealthQueryKey(siteId),
+    queryFn: () => listGeoAreaHealth(siteId),
     staleTime: 60_000,
   });
   const usage = useQuery({
@@ -356,6 +374,10 @@ export function MeaningRulesWorkbench() {
   const usageByRule = new Map<string, MeaningUsageRow>(
     (usage.data ?? []).filter((row) => row.kind === "rule").map((row) => [row.ref, row]),
   );
+  const healthByArea = new Map<string, GeoAreaHealthRow>(
+    (areaHealth.data ?? []).map((row) => [row.area_id, row]),
+  );
+  const disconnectedAreas = (areaHealth.data ?? []).filter((row) => row.state === "disconnected");
   const usageByArea = new Map<string, MeaningUsageRow>(
     (usage.data ?? []).filter((row) => row.kind === "geo_area").map((row) => [row.ref, row]),
   );
@@ -430,6 +452,33 @@ export function MeaningRulesWorkbench() {
         await queryClient.invalidateQueries({ queryKey: ["marketing"] });
       },
     };
+  };
+
+  /**
+   * The fix is ONE click and it is server-side: re-mint every area's meaning,
+   * then run the matcher engine so the stamps land before the page refetches.
+   * Nothing the user typed is touched — the places and words on the row are the
+   * input, not the casualty.
+   */
+  const runReconnect = async () => {
+    setReconnecting(true);
+    try {
+      const result = await reconnectGeoAreas(siteId);
+      toast.success(
+        result.stamped > 0
+          ? `Reconnected — ${formatCount(result.stamped)} keywords now carry a service area.`
+          : "Reconnected. No keyword matches these areas yet.",
+      );
+      await queryClient.invalidateQueries({ queryKey: ["seo"] });
+      await queryClient.invalidateQueries({ queryKey: ["marketing"] });
+    } catch (error) {
+      toast.error(
+        extractErrorMessage(error),
+        { description: "Your service areas were not changed." },
+      );
+    } finally {
+      setReconnecting(false);
+    }
   };
 
   // ── filters ──────────────────────────────────────────────────────────────
@@ -730,6 +779,41 @@ export function MeaningRulesWorkbench() {
             </p>
           ) : null}
 
+          {/* 🚨 THE LOUDEST STATE ON THIS PAGE. An area full of places that
+              carries no matchers looks finished everywhere else and changes no
+              score at all — the silence that hid a dead geo system for months.
+              It is stated plainly, and the fix is one button. */}
+          {disconnectedAreas.length > 0 ? (
+            <div className="flex flex-wrap items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2">
+              <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-destructive" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-destructive">
+                  {disconnectedAreas.length} service area
+                  {disconnectedAreas.length === 1 ? "" : "s"} match
+                  {disconnectedAreas.length === 1 ? "es" : ""} nothing, so{" "}
+                  {disconnectedAreas.length === 1 ? "it changes" : "they change"} no score
+                </p>
+                <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                  The places are named — {disconnectedAreas.map((a) => a.label).join(", ")} — but
+                  nothing connects them to your value tiers, so geography counts for nothing in
+                  what any keyword is worth. Reconnecting takes one click and changes nothing you
+                  typed.
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                disabled={reconnecting}
+                onClick={() => void runReconnect()}
+                className="h-7 shrink-0 gap-1 text-xs"
+              >
+                <PlugZap className="h-3.5 w-3.5" aria-hidden />
+                {reconnecting ? "Reconnecting…" : "Reconnect them"}
+              </Button>
+            </div>
+          ) : null}
+
           {incompleteAreas.length > 0 ? (
             <div className="flex flex-wrap items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2">
               <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
@@ -803,6 +887,13 @@ export function MeaningRulesWorkbench() {
                     {areaNeedsPlaces(area) ? (
                       <span className="text-warning">
                         no places yet — this area matches nothing
+                      </span>
+                    ) : healthByArea.get(area.id)?.state === "disconnected" ? (
+                      // Full of places and still inert. Said on the row itself,
+                      // because a banner above a list is not where a person
+                      // looks when they are reading one area.
+                      <span className="text-destructive">
+                        not connected to scoring — this area changes no score
                       </span>
                     ) : (
                       <span>

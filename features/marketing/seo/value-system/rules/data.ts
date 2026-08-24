@@ -37,6 +37,8 @@ import type {
   PlaceDetectionStatus,
   RuleImpact,
   ComboEffect,
+  GeoAreaHealthRow,
+  GeoAreaReconnectResult,
 } from "./types";
 import type { SiteGeoArea, ValueCombo } from "../types";
 
@@ -88,6 +90,8 @@ export const valueCombosQueryKey = (siteId: string) =>
   ["seo", "value-rules", "combos", siteId] as const;
 export const geoPlaceSearchQueryKey = (query: string, kinds: string[]) =>
   ["seo", "value-rules", "geo-places", query, kinds.join("|")] as const;
+export const geoAreaHealthQueryKey = (siteId: string) =>
+  ["seo", "value-rules", "geo-area-health", siteId] as const;
 
 /** Every query key the value workbench keeps in cache for this site. Saving a
  *  rule or an area changes what EVERY one of them says, so they invalidate
@@ -97,6 +101,7 @@ export function valueSurfaceQueryKeys(siteId: string) {
     facetDimensionsQueryKey(siteId),
     valueRulesQueryKey(siteId),
     geoAreasQueryKey(siteId),
+    geoAreaHealthQueryKey(siteId),
     valueCombosQueryKey(siteId),
     // The LIVE workbench ("marketing/value/...") — its review table, summary,
     // band vocabulary and meaning health all hang off this one prefix. It was
@@ -296,6 +301,45 @@ export async function updateGeoArea(
     response.error,
     "update that area",
   ) as unknown as SiteGeoArea;
+}
+
+/**
+ * IS THIS AREA ACTUALLY CHANGING A SCORE?
+ *
+ * 🚨 2026-08-24 — the regression this exists to make impossible. C1 moved every
+ * geo contribution onto stamps and C2 stopped the resolver reading
+ * `seo.site_geo_area` at all, but the authoring path above kept writing plain
+ * rows. For months every service area on every site was FULL of places and
+ * matched nothing: the screen said "11 places from the gazetteer", the Geo
+ * dimension said "0 keywords sorted", and geography changed no score anywhere.
+ *
+ * The trigger on the table now mints the meaning, so `disconnected` should never
+ * be reachable again — which is exactly why it is still read and still shown.
+ * A state that can no longer happen and is no longer watched for is how the
+ * same silence comes back.
+ */
+export async function listGeoAreaHealth(siteId: string): Promise<GeoAreaHealthRow[]> {
+  const response = await (await seoDb()).rpc("gsc_geo_area_health", {
+    p_site_id: siteId,
+  });
+  return assertGoverned(
+    response.data,
+    response.error,
+    "check whether your service areas are changing any scores",
+  ) as unknown as GeoAreaHealthRow[];
+}
+
+/** The one-click fix behind that alarm: re-mint every area's meaning, then run
+ *  the matcher engine so the stamps land immediately. Nothing typed is lost. */
+export async function reconnectGeoAreas(siteId: string): Promise<GeoAreaReconnectResult> {
+  const response = await (await seoDb()).rpc("gsc_geo_area_reconnect", {
+    p_site_id: siteId,
+  });
+  return assertGoverned(
+    response.data,
+    response.error,
+    "reconnect your service areas",
+  ) as unknown as GeoAreaReconnectResult;
 }
 
 /** Archive = soft delete. The resolver stops seeing it the moment it lands. */
