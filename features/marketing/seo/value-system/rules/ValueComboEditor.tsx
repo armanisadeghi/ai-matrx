@@ -52,7 +52,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreatablePicker } from "../pickers/CreatablePicker";
+import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { AddDimensionDialog } from "../pickers/AddDimensionDialog";
 import { useQuickAdd } from "../pickers/useQuickAdd";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";

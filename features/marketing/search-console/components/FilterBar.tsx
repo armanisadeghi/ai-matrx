@@ -55,7 +55,7 @@ import {
 } from "@/features/marketing/search-console/types";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
 import { getValueVocabulary } from "@/features/marketing/seo/value-system/data";
-import { CreatablePicker } from "@/features/marketing/seo/value-system/pickers/CreatablePicker";
+import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { AddDimensionDialog } from "@/features/marketing/seo/value-system/pickers/AddDimensionDialog";
 import { AddLevelDialog } from "@/features/marketing/seo/value-system/pickers/AddLevelDialog";
 import { useQuickAdd } from "@/features/marketing/seo/value-system/pickers/useQuickAdd";

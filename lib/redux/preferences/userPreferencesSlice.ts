@@ -238,13 +238,12 @@ export interface CodingPreferences {
 /**
  * Sandbox defaults — drive every "new sandbox" code path so the user gets
  * the same shape (template + tier + ttl + env + auto-cloned repo) whether
- * the sandbox is auto-provisioned on sign-in (aidream's
- * `ensure_default_sandbox`) or created via the SandboxPanel's "New sandbox"
- * button.
+ * a sandbox is explicitly created from the sandbox page, Code workspace, or
+ * chat picker's "New sandbox" button.
  *
  * Read on both sides — the web bumps `lastSandboxTier` / `lastSandboxTemplate`
  * under `coding` as a 'last used' hint (kept for backward compatibility),
- * but the auto-provision + explicit-create paths look here first.
+ * but every explicit-create path looks here first.
  */
 export interface SandboxPreferences {
   /** Template id the orchestrator will spawn (e.g. "bare", "node-22"). */
@@ -264,8 +263,8 @@ export interface SandboxPreferences {
   /** Env vars exposed in the sandbox shell. Forwarded to the orchestrator as
    * `labels.env_*` and materialised by the entrypoint script. */
   env: Record<string, string>;
-  /** When true and `default_git_repo` is set, the auto-provision flow + the
-   * "New sandbox" button trigger the clone. Off by default — opt-in. */
+  /** When true and `default_git_repo` is set, the "New sandbox" flow triggers
+   * the clone. Off by default — opt-in. */
   auto_clone_on_create: boolean;
 }
 
@@ -974,7 +973,7 @@ export const initializeUserPreferencesState = (
     sandbox: {
       // "slim" = the full coding env without aidream-built-in. Matches what
       // the Sandbox admin page's "New sandbox" button creates by default
-      // and is the template the auto-provision-on-sign-in flow uses.
+      // and is the template every explicit sandbox-create flow uses.
       template: "slim",
       tier: "ec2",
       // null = use the orchestrator's max (24h); user wants "never auto-stop"

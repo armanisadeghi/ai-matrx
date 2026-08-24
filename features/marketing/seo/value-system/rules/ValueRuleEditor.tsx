@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { CreatablePicker } from "../pickers/CreatablePicker";
+import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { AddDimensionDialog } from "../pickers/AddDimensionDialog";
 import { useQuickAdd } from "../pickers/useQuickAdd";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";

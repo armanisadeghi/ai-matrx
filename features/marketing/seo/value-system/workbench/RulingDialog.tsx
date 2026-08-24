@@ -27,7 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/styles/themes/utils";
-import { CreatablePicker } from "../pickers/CreatablePicker";
+import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import type { BandMeta } from "../lib";
 

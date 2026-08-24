@@ -24,6 +24,17 @@
  * so and offers the door instead: `lockedNote` + `lockedAction` render a
  * footer that takes the person to "make this your own dimension".
  *
+ * WHERE THIS LIVES. It started inside the keyword system and was promoted here
+ * because the law is not a keyword-system law: any control offering a set of
+ * choices takes new input, so the shape belongs beside the other primitives and
+ * not inside one feature. `CategorySelect` (features/scopes) is the other
+ * canonical consumer.
+ *
+ * It knows nothing about any vocabulary. The caller supplies the options and
+ * ONE `onCreate` that writes through whatever the canonical path for that
+ * vocabulary already is — this component must never grow a write path of its
+ * own, or it becomes the second one.
+ *
  * SoR: common-docs/systems/marketing/seo/seo-keywords/keyword-system-decisions.md
  * (P23, P11) + value-system.md § THE ASSIGNMENT LAYER.
  */
@@ -85,6 +96,13 @@ export function CreatablePicker({
   lockedNote,
   /** P11: the door out of that refusal — never leave them with only "no". */
   lockedAction,
+  /**
+   * Rendered inside the create footer, above the create button — for the one
+   * extra choice a vocabulary needs at creation time (a category's parent, say).
+   * It is a SLOT, not a second write path: whatever it collects is read by the
+   * caller's own `onCreate`.
+   */
+  createExtra,
   size = "sm",
 }: {
   value: string | null;
@@ -103,6 +121,7 @@ export function CreatablePicker({
   ariaLabel?: string;
   lockedNote?: string;
   lockedAction?: { label: string; onSelect: () => void };
+  createExtra?: ReactNode;
   size?: "sm" | "md";
 }) {
   const [open, setOpen] = useState(false);
@@ -217,7 +236,10 @@ export function CreatablePicker({
           {/* The "+ Add" footer sits OUTSIDE CommandList so the search can
               never hide the one thing the person came here to do (P23). */}
           {canCreate ? (
-            <div className="border-t border-border p-1">
+            <div className="space-y-1 border-t border-border p-1">
+              {createExtra && typed && !exactMatch ? (
+                <div className="px-1 pt-0.5">{createExtra}</div>
+              ) : null}
               <button
                 type="button"
                 disabled={busy}

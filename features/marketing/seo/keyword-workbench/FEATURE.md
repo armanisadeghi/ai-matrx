@@ -48,7 +48,7 @@ context plus the controls. Everything else is table.
 
 - **Turning typed text into a value** → `value-system/quick-add.ts`
   (`quickAddDimensionValue`). One creation path for the whole keyword system.
-- **The picker shape** → `value-system/pickers/CreatablePicker.tsx`.
+- **The picker shape** → `components/ui/creatable-picker.tsx`.
 - **The receipt and its doors** → `value-system/workbench/WhyScore.tsx`
   (`WhyScoreHint`) + `value-system/reason-links.ts` + the
   `gscWhyScoreWindow` opener.

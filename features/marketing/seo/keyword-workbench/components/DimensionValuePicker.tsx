@@ -25,7 +25,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { toast } from "@/lib/toast";
 import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
-import { CreatablePicker } from "@/features/marketing/seo/value-system/pickers/CreatablePicker";
+import { CreatablePicker } from "@/components/ui/creatable-picker";
 import {
   QuickAddRefusal,
   quickAddDimensionValue,
