@@ -74,6 +74,9 @@ BEGIN
 END;
 $function$;
 
+REVOKE ALL ON FUNCTION seo.dimension_matcher_delete(uuid) FROM public;
+GRANT EXECUTE ON FUNCTION seo.dimension_matcher_delete(uuid) TO authenticated, service_role;
+
 -- ── 2. An ANSWER can be deleted at all — and takes its matchers and stamps ──
 -- There was no value-level delete anywhere in the system. A site could add a
 -- qualifier and never remove it.
