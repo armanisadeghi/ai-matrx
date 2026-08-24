@@ -9,6 +9,7 @@
  */
 
 import { apiGet } from "@/lib/api/typed-client";
+import { isJsonObject } from "@/types/json";
 
 export const DISCOVERY_STEP_ORDER = [
   "business_model",
@@ -35,16 +36,51 @@ export interface DiscoveryStatus {
   steps: DiscoveryStepStatus[];
 }
 
-export async function getDiscoveryStatus(siteId: string): Promise<DiscoveryStatus> {
-  // `apiGet` throws on any non-OK response; a resolved call IS the data.
-  const { data } = await apiGet("/seo/keywords/discovery/status", {
-    query: { site_id: siteId },
-  });
-  const parsed = data as unknown as DiscoveryStatus;
-  if (!Array.isArray(parsed?.steps)) {
+function isDiscoveryStepKey(value: unknown): value is DiscoveryStepKey {
+  return (
+    typeof value === "string" &&
+    (DISCOVERY_STEP_ORDER as readonly string[]).includes(value)
+  );
+}
+
+function parseDiscoveryStepStatus(value: unknown): DiscoveryStepStatus {
+  if (!isJsonObject(value) || !isDiscoveryStepKey(value.step)) {
+    throw new Error("Discovery status returned an unexpected step shape");
+  }
+  const artifact = value.artifact;
+  return {
+    step: value.step,
+    implemented: value.implemented === true,
+    run_id: typeof value.run_id === "string" ? value.run_id : null,
+    status: typeof value.status === "string" ? value.status : null,
+    completed_at:
+      typeof value.completed_at === "string" ? value.completed_at : null,
+    artifact: isJsonObject(artifact) ? artifact : null,
+  };
+}
+
+function parseDiscoveryStatus(data: unknown): DiscoveryStatus {
+  if (
+    !isJsonObject(data) ||
+    typeof data.site_id !== "string" ||
+    !Array.isArray(data.steps)
+  ) {
     // A shapeless answer must never render as "nothing has run" — that is
     // the silent-empty class. Scream instead.
     throw new Error("Discovery status returned an unexpected shape");
   }
-  return parsed;
+  return {
+    site_id: data.site_id,
+    steps: data.steps.map(parseDiscoveryStepStatus),
+  };
+}
+
+export async function getDiscoveryStatus(siteId: string): Promise<DiscoveryStatus> {
+  // `apiGet` throws on any non-OK response; a resolved call IS the data.
+  // The OpenAPI contract types this as an open object (`dict[str, Any]`);
+  // field-by-field parse is the ingress, never a whole-payload cast.
+  const { data } = await apiGet("/seo/keywords/discovery/status", {
+    query: { site_id: siteId },
+  });
+  return parseDiscoveryStatus(data);
 }

@@ -29,6 +29,7 @@ import { CmsSiteService } from "@/features/cms/services/cmsService";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import type { components } from "@/types/python-generated/api-types";
+import { isJsonObject } from "@/types/json";
 import {
   coerceEffortTier,
   DEFAULT_EFFORT_TIER,
@@ -152,7 +153,8 @@ function parseShellCheck(value: unknown): ShellCheckSummary | null {
       : [];
   return {
     site: String(data.site ?? ""),
-    pagesChecked: typeof data.pages_checked === "number" ? data.pages_checked : 0,
+    pagesChecked:
+      typeof data.pages_checked === "number" ? data.pages_checked : 0,
     pagesPassed: typeof data.pages_passed === "number" ? data.pages_passed : 0,
     siteIssues: Array.isArray(data.site_issues)
       ? data.site_issues.flatMap((item) => {
@@ -215,17 +217,15 @@ export async function bridgeShellCheck(
     }),
   );
   const parsed = parseShellCheck(requireBody(result, "shell-check"));
-  if (!parsed) throw new Error("The shell check returned an unreadable result.");
+  if (!parsed)
+    throw new Error("The shell check returned an unreadable result.");
   return parsed;
 }
 
 // ── the site-level pipeline (aidream content_plan/site_pipeline.py) ─────────
 
 export type SiteStageState =
-  | "complete"
-  | "in_progress"
-  | "attention"
-  | "not_started";
+  "complete" | "in_progress" | "attention" | "not_started";
 
 export interface SitePipelineStage {
   key: string;
@@ -463,7 +463,9 @@ function parseReport(data: Record<string, unknown>): BridgeReport {
         continue;
       }
     }
-    problems.push("A ghost row from the server had no node_id — it was skipped.");
+    problems.push(
+      "A ghost row from the server had no node_id — it was skipped.",
+    );
   }
   const count = (key: string): number =>
     Array.isArray(data[key]) ? (data[key] as unknown[]).length : 0;
@@ -475,7 +477,8 @@ function parseReport(data: Record<string, unknown>): BridgeReport {
     orphans: count("orphans"),
     conflicts: count("conflicts"),
     retired: count("retired"),
-    linksWritten: typeof data.links_written === "number" ? data.links_written : 0,
+    linksWritten:
+      typeof data.links_written === "number" ? data.links_written : 0,
     warnings: Array.isArray(data.warnings) ? data.warnings.map(String) : [],
     problems,
   };
@@ -621,7 +624,10 @@ export async function bridgeRealize(
       pathParams: { site_id: siteId },
       body: {
         cms_site: options.cmsSite ?? null,
-        actions: nodeIds.map((nodeId) => ({ action: "realize", node_id: nodeId })),
+        actions: nodeIds.map((nodeId) => ({
+          action: "realize",
+          node_id: nodeId,
+        })),
         dry_run: options.dryRun,
       },
     }),
@@ -646,7 +652,10 @@ export async function bridgeAdopt(
       pathParams: { site_id: siteId },
       body: {
         cms_site: options.cmsSite ?? null,
-        actions: pageIds.map((pageId) => ({ action: "adopt", page_id: pageId })),
+        actions: pageIds.map((pageId) => ({
+          action: "adopt",
+          page_id: pageId,
+        })),
         dry_run: options.dryRun,
       },
     }),
@@ -771,7 +780,9 @@ function parseFillEstimate(value: unknown): FillEstimate | null {
   const callsByStep: Record<string, number> = {};
   const raw = record.calls_by_step;
   if (raw && typeof raw === "object") {
-    for (const [step, count] of Object.entries(raw as Record<string, unknown>)) {
+    for (const [step, count] of Object.entries(
+      raw as Record<string, unknown>,
+    )) {
       if (typeof count === "number") callsByStep[step] = count;
     }
   }
@@ -875,10 +886,16 @@ export async function bridgeFillPreview(
       stream: true,
       onStreamEvent: (event) => {
         if (event.event === "error") {
-          streamError = describeBackendFailure(parseStreamError(event.data)).headline;
+          streamError = describeBackendFailure(
+            parseStreamError(event.data),
+          ).headline;
           return;
         }
-        if (event.event !== "data" || !event.data || typeof event.data !== "object") {
+        if (
+          event.event !== "data" ||
+          !event.data ||
+          typeof event.data !== "object"
+        ) {
           return;
         }
         const data = event.data as Record<string, unknown>;
@@ -902,7 +919,9 @@ export async function bridgeFillPreview(
     }),
   );
   if (result.error) {
-    throw new Error(result.error.message || "The cms-fill/preview call failed.");
+    throw new Error(
+      result.error.message || "The cms-fill/preview call failed.",
+    );
   }
   if (streamError) throw new Error(streamError);
   if (!preview) {
@@ -954,9 +973,13 @@ export async function bridgeFillStart(
     jobId: str(data.job_id),
     seeded: typeof data.seeded === "number" ? data.seeded : 0,
     steps: Array.isArray(data.steps) ? data.steps.map(String) : [],
-    estimate:
-      parseFillEstimate(data.estimate) ??
-      { pages: 0, calls: 0, callsByStep: {}, usd: null, basis: "" },
+    estimate: parseFillEstimate(data.estimate) ?? {
+      pages: 0,
+      calls: 0,
+      callsByStep: {},
+      usd: null,
+      basis: "",
+    },
     skipped: Array.isArray(data.skipped) ? data.skipped.map(String) : [],
   };
 }
@@ -1022,13 +1045,15 @@ export async function bridgeFindLogo(
       stream: true,
       onStreamEvent: (event) => {
         if (event.event === "error") {
-          streamError = describeBackendFailure(parseStreamError(event.data)).headline;
+          streamError = describeBackendFailure(
+            parseStreamError(event.data),
+          ).headline;
           return;
         }
-        if (event.event !== "data" || !event.data || typeof event.data !== "object") {
+        if (event.event !== "data" || !isJsonObject(event.data)) {
           return;
         }
-        const data = event.data as Record<string, unknown>;
+        const data = event.data;
         if (data.type !== "cms_logo_found") return;
         outcome = {
           found: data.found === true,
@@ -1040,8 +1065,12 @@ export async function bridgeFindLogo(
           width: typeof data.width === "number" ? data.width : null,
           height: typeof data.height === "number" ? data.height : null,
           candidatesConsidered:
-            typeof data.candidates_considered === "number" ? data.candidates_considered : 0,
-          rejected: Array.isArray(data.rejected) ? data.rejected.map(String) : [],
+            typeof data.candidates_considered === "number"
+              ? data.candidates_considered
+              : 0,
+          rejected: Array.isArray(data.rejected)
+            ? data.rejected.map(String)
+            : [],
         };
       },
     }),
@@ -1253,7 +1282,9 @@ export async function recordCmsLink(args: {
   block.slug = args.cmsSlug;
   settings.cms = block;
 
-  const response = await (await authenticatedWebDb(supabase))
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
     .from("site")
     .update({ settings })
     .eq("id", args.siteId)
