@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -62,8 +63,18 @@ import {
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { buildSiteKeywordsScope } from "@/features/marketing/lib/scopes/site-keywords-scope";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
+import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
+import {
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+} from "@/features/marketing/seo/keyword/keyword-actions";
 import { KeywordCompetitionBadge } from "./KeywordMetrics";
-import { SiteKeywordsWriteTargets } from "./SiteKeywordsWriteTargets";
+import {
+  SITE_KEYWORDS_SURFACE_NAME,
+  SiteKeywordsWriteTargets,
+} from "./SiteKeywordsWriteTargets";
 
 import type { SiteKeywordPerformanceRow } from "../types";
 import { useSiteKeywordPerformance } from "../useSiteKeywordPerformance";
@@ -248,6 +259,51 @@ export function SiteKeywordPerformanceWorkspace() {
     }
   };
 
+  const rows = performance.data?.rows ?? [];
+  const total = performance.data?.total ?? 0;
+
+  /**
+   * THE SCOPE RULE: ask for the keywords being rendered, never the site.
+   * Keyed on the ids on screen so paging/filtering re-reads exactly once.
+   */
+  const keywordIds = [
+    ...new Set(rows.flatMap((row) => (row.keyword_id ? [row.keyword_id] : []))),
+  ];
+  const values = useQuery({
+    queryKey: [
+      "marketing",
+      "gsc",
+      "keyword-value-for",
+      site.id,
+      keywordIds.join(","),
+    ],
+    queryFn: ({ signal }) => getGscKeywordValueFor(site.id, keywordIds, signal),
+    enabled: keywordIds.length > 0,
+    staleTime: 60_000,
+  });
+  const valueFor = values.data ?? new Map();
+
+  const surfaces = useKeywordAssignSurfaces({ siteId: site.id });
+  const clickedRow = useRef<SiteKeywordPerformanceRow | null>(null);
+  const keywordSection = useKeywordMenuSection({
+    siteId: site.id,
+    siteName: site.domain,
+    brandId: site.brand_id,
+    organizationId: site.organization_id,
+    surfaces,
+    getRow: () => {
+      const row = clickedRow.current;
+      if (!row?.query) return null;
+      const value = row.keyword_id ? valueFor.get(row.keyword_id) : undefined;
+      return {
+        phrase: row.query,
+        keywordId: row.keyword_id ?? null,
+        currentLevel: value?.value_band ?? null,
+        levelIsRuling: value?.value_source === "override",
+      };
+    },
+  });
+
   const columns: MatrxColumnDef<SiteKeywordPerformanceRow>[] = [
     {
       id: "provider",
@@ -378,6 +434,15 @@ export function SiteKeywordPerformanceWorkspace() {
           </span>
         ),
     },
+    // C6 — Class · Score · Level for exactly the rows on screen, from the ONE
+    // resolver (`seo.gsc_keyword_value_for`). Identical definition to the
+    // Queries breakdown and Dig Here: `buildGscValueColumns`, never a copy.
+    // Before 2026-08-24 this tab showed 4,355 keywords with none of them,
+    // one tab away from the Keyword Workbench that shows all three.
+    ...buildGscValueColumns<SiteKeywordPerformanceRow>(
+      (row) => (row.keyword_id ? valueFor.get(row.keyword_id) : undefined),
+      { siteId: site.id, brandId: site.brand_id, keywordOf: (row) => row.query },
+    ),
     {
       id: "workflow_status",
       accessorKey: "workflow_status",
@@ -403,8 +468,6 @@ export function SiteKeywordPerformanceWorkspace() {
   ];
 
   const pageLocation = `Marketing — Organic keyword performance for ${site.domain}`;
-  const rows = performance.data?.rows ?? [];
-  const total = performance.data?.total ?? 0;
 
   // A failed read must never be able to render as "there is simply no data".
   // Two separate holes produced exactly that on 2026-08-09, when
@@ -504,7 +567,7 @@ export function SiteKeywordPerformanceWorkspace() {
 
   return (
     <SurfaceRuntimeProvider
-      surfaceName="matrx-user/marketing-site-keywords"
+      surfaceName={SITE_KEYWORDS_SURFACE_NAME}
       getScope={getScope}
     >
     <SiteKeywordsWriteTargets
@@ -585,6 +648,37 @@ export function SiteKeywordPerformanceWorkspace() {
         />
       ) : null}
 
+      {/* The shared assignment surfaces the right-click menu opens. Inline,
+          never inside a Dialog — the value picker portals its own popover. */}
+      {surfaces.isOpen ? surfaces.node : null}
+
+      {/*
+        ONE v3 menu around the whole pane (never one per row). Until
+        2026-08-24 this tab — 4,355 keywords, one tab away from the Keyword
+        Workbench — had no right-click at all, so nothing this system knows
+        about a keyword could be seen or set from here.
+      */}
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        surfaceName={SITE_KEYWORDS_SURFACE_NAME}
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const id = target
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row =
+            (id && rows.find((r) => performanceRowId(r) === id)) || null;
+          clickedRow.current = row;
+          if (!row) return null;
+          return {
+            content: humanKeywordPerformanceRow(row),
+            keyword: row.query ?? "",
+            keyword_id: row.keyword_id ?? "",
+          };
+        }}
+        extraSections={[keywordSection]}
+      >
       <section className="min-h-[36rem] rounded-lg border border-border bg-card p-2">
         <MatrxDataTable<SiteKeywordPerformanceRow>
           data={rows}
@@ -657,9 +751,23 @@ export function SiteKeywordPerformanceWorkspace() {
               </ItemMenu>
             </div>
           )}
-          window={{
-            title: (row) => row.query ?? "Search query",
-          }}
+          /*
+           * NO DEAD ENDS + THE MISMATCH RULE. A row click used to open the
+           * default inspector, which showed a non-technical SME bare
+           * `SITE_ID` / `ORGANIZATION_ID` / `KEYWORD_ID` / `TOP_PAGE_ID`
+           * UUIDs. It now opens the shared Keyword Intelligence dossier —
+           * the same window every other keyword surface opens.
+           */
+          detail={{ enabled: false }}
+          onRowOpen={(row) =>
+            openKeywordWindow({
+              phrase: row.query ?? "",
+              organizationId: site.organization_id,
+              siteId: site.id,
+              brandId: site.brand_id ?? undefined,
+              tab: "overview",
+            })
+          }
           emptyState={
             loadFailed
               ? {
@@ -677,13 +785,9 @@ export function SiteKeywordPerformanceWorkspace() {
                     "Connect GSC or Bing and run a search-performance sync to populate this site.",
                 }
           }
-          detail={{
-            title: (row) => row.query ?? "Search query",
-            description: (row) =>
-              `${integer(row.clicks)} clicks · ${integer(row.impressions)} impressions`,
-          }}
         />
       </section>
+      </NonEditableContextMenu>
     </main>
     </SurfaceRuntimeProvider>
   );

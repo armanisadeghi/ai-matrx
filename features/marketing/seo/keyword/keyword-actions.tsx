@@ -190,18 +190,27 @@ export function useKeywordAssignSurfaces(opts: {
     isOpen: Boolean(assignTarget || serviceTarget || draft),
     openDimension: (row, lockedDimensionSlug) => {
       const target = targetFor(row);
-      if (!target) return refuse();
+      if (!target) {
+        refuse();
+        return;
+      }
       setAssignTarget(
         lockedDimensionSlug ? { ...target, lockedDimensionSlug } : target,
       );
     },
     openService: (row) => {
       const target = targetFor(row);
-      if (!target) return refuse();
+      if (!target) {
+        refuse();
+        return;
+      }
       setServiceTarget(target);
     },
     openLevel: (row) => {
-      if (!row.keywordId) return refuse();
+      if (!row.keywordId) {
+        refuse();
+        return;
+      }
       setDraft({
         keywordIds: [row.keywordId],
         label: `“${row.phrase}”`,
