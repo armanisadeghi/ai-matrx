@@ -19,6 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAssistRunner } from "../runtime/useAssistRunner";
 import { AssistCard } from "./AssistCard";
 import { ASSIST_URGENCY_ICON } from "./urgency-icon";
@@ -42,6 +43,7 @@ export function AssistChip({
   ambient?: boolean;
 }) {
   const { dismissAssist } = useAssistRunner();
+  const isMobile = useIsMobile();
   // Urgency changes how the chip LOOKS, never what it does: expand only.
   const urgency = urgencyFromPriority(assist.priority);
   const urgencyMeta = ASSIST_URGENCY_META[urgency];
@@ -65,22 +67,22 @@ export function AssistChip({
   }, []);
   const cancelClose = useCallback(() => clearTimer(), []);
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <div
-          onMouseEnter={hoverOpen}
-          onMouseLeave={hoverClose}
-          onClick={(event) => event.stopPropagation()}
-          className={cn(
-            "group flex max-w-full items-center gap-1.5 rounded-full border py-1 pl-2 pr-1 text-xs shadow-sm",
-            ambient
-              ? "border-primary/20 bg-card text-foreground"
-              : urgencyMeta.chipClass,
-            open && "invisible md:visible",
-            className,
-          )}
-        >
+  const collapsedChip = (
+    <div
+      onMouseEnter={isMobile ? undefined : hoverOpen}
+      onMouseLeave={isMobile ? undefined : hoverClose}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (isMobile) setOpen(true);
+      }}
+      className={cn(
+        "group flex max-w-full items-center gap-1.5 rounded-full border py-1 pl-2 pr-1 text-xs shadow-sm",
+        ambient
+          ? "border-primary/20 bg-card text-foreground"
+          : urgencyMeta.chipClass,
+        className,
+      )}
+    >
           {/* Click is handled by the PopoverTrigger itself (expand only —
               THE INTENTIONAL-ACTION LAW). The wrapper only stops clickable
               table rows from opening their detail panel over this card. */}
@@ -114,8 +116,29 @@ export function AssistChip({
               <X className="h-3 w-3" />
             </button>
           )}
-        </div>
-      </PopoverTrigger>
+    </div>
+  );
+
+  // A portalled Popover is outside the mobile drawer's scroll chain. When the
+  // keyboard shortened the visual viewport, that left the expanded card
+  // clipped and unreachable. Mobile expands inline so the drawer owns the one
+  // scroll surface and the original chip disappears naturally while open.
+  if (isMobile) {
+    return open ? (
+      <div
+        className="w-full max-w-full overflow-hidden rounded-lg border border-border bg-card"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <AssistCard assist={assist} onClose={() => setOpen(false)} />
+      </div>
+    ) : (
+      collapsedChip
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{collapsedChip}</PopoverTrigger>
       <PopoverContent
         align="end"
         sideOffset={6}

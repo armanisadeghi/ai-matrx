@@ -48,6 +48,7 @@ import {
   selectAssistsLoaded,
 } from "@/features/assists/redux/assistsSlice";
 import { useAssistRunner } from "@/features/assists/runtime/useAssistRunner";
+import { getAssistActionTextEditor } from "@/features/assists/runtime/action-editing";
 import type { Assist } from "@/features/assists/types";
 import {
   PROPOSAL_KIND_LABEL,
@@ -75,6 +76,7 @@ interface Row {
   headline: string;
   writePath: string;
   agent: string | null;
+  requiresIndividualReview: boolean;
 }
 
 function toRows(assists: Assist[]): Row[] {
@@ -89,6 +91,8 @@ function toRows(assists: Assist[]): Row[] {
         headline: described.headline,
         writePath: described.writePath,
         agent: provenance.agentName ?? null,
+        requiresIndividualReview:
+          getAssistActionTextEditor(assist.action) !== null,
       },
     ];
   });
@@ -134,8 +138,12 @@ export function KeywordMeaningSuggestions({
 
   if (rows.length === 0) return null;
 
-  const selectedRows = rows.filter((r) => selected.has(r.assist.id));
-  const allSelected = selectedRows.length === rows.length;
+  const selectableRows = rows.filter((row) => !row.requiresIndividualReview);
+  const selectedRows = selectableRows.filter((row) =>
+    selected.has(row.assist.id),
+  );
+  const allSelected =
+    selectableRows.length > 0 && selectedRows.length === selectableRows.length;
 
   const toggle = (id: string) => {
     const next = new Set(selected);
@@ -145,7 +153,11 @@ export function KeywordMeaningSuggestions({
   };
 
   const toggleAll = () => {
-    setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.assist.id)));
+    setSelected(
+      allSelected
+        ? new Set()
+        : new Set(selectableRows.map((row) => row.assist.id)),
+    );
   };
 
   const runApprovals = async (batch: Row[]) => {
@@ -262,12 +274,14 @@ export function KeywordMeaningSuggestions({
               checked={allSelected}
               onCheckedChange={toggleAll}
               aria-label="Select every suggestion"
-              disabled={busy}
+              disabled={busy || selectableRows.length === 0}
             />
             <span className="text-xs text-muted-foreground">
               {selectedRows.length > 0
                 ? `${selectedRows.length} of ${rows.length} selected`
-                : "Select all"}
+                : selectableRows.length > 0
+                  ? "Select all one-click suggestions"
+                  : "Text changes are reviewed individually"}
             </span>
             {selectedRows.length > 0 && (
               <div className="ml-auto flex items-center gap-1.5">
@@ -309,7 +323,7 @@ export function KeywordMeaningSuggestions({
                   checked={selected.has(row.assist.id)}
                   onCheckedChange={() => toggle(row.assist.id)}
                   aria-label={`Select: ${row.headline}`}
-                  disabled={busy}
+                  disabled={busy || row.requiresIndividualReview}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -329,15 +343,21 @@ export function KeywordMeaningSuggestions({
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-2 text-xs"
-                    disabled={busy}
-                    onClick={() => void confirmApprove([row])}
-                  >
-                    Approve
-                  </Button>
+                  {row.requiresIndividualReview ? (
+                    <span className="max-w-24 text-right text-[11px] leading-tight text-muted-foreground">
+                      Review exact text in its chip
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-xs"
+                      disabled={busy}
+                      onClick={() => void confirmApprove([row])}
+                    >
+                      Approve
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"

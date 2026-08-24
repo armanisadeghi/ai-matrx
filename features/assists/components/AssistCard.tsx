@@ -130,6 +130,7 @@ export function AssistCard({
   const [silenceReason, setSilenceReason] = useState("");
   const actionEditor = getAssistActionTextEditor(assist.action);
   const [actionEditOpen, setActionEditOpen] = useState(false);
+  const [actionReviewed, setActionReviewed] = useState(false);
   const [actionDraft, setActionDraft] = useState(
     actionEditor ? actionEditor.value : "",
   );
@@ -145,8 +146,17 @@ export function AssistCard({
       ? actionEditor.apply(actionDraft)
       : assist.action;
 
+  const openActionEditor = () => {
+    setActionReviewed(true);
+    setActionEditOpen(true);
+  };
+
   const run = async () => {
     if (busy) return;
+    if (actionEditor && !actionReviewed) {
+      openActionEditor();
+      return;
+    }
     setBusy("run");
     try {
       const outcome = await acceptAssist({ ...assist, action: actionToRun });
@@ -267,7 +277,7 @@ export function AssistCard({
         assist.reasoning ||
         assist.evidence ||
         assist.decisionNote) && (
-        <div className="max-h-64 overflow-y-auto px-3 py-2 text-sm">
+        <div className="px-3 py-2 text-sm md:max-h-64 md:overflow-y-auto">
           {assist.body && (
             <Suspense
               fallback={
@@ -307,7 +317,10 @@ export function AssistCard({
             open={actionEditOpen}
             disabled={busy !== null}
             onChange={setActionDraft}
-            onOpenChange={setActionEditOpen}
+            onOpenChange={(open) => {
+              if (open) setActionReviewed(true);
+              setActionEditOpen(open);
+            }}
             onReset={() => setActionDraft(actionEditor.value)}
           />
         )}
@@ -327,13 +340,19 @@ export function AssistCard({
             onClick={run}
             disabled={!descriptor || busy !== null || Boolean(actionValidation)}
             className="min-h-11 min-w-0 gap-1 px-1 text-[11px] md:h-7 md:min-h-0 md:px-3 md:text-xs"
-            title={descriptor?.verb}
+            title={
+              actionEditor && !actionReviewed
+                ? "Review the exact text before approving"
+                : descriptor?.verb
+            }
           >
             {busy === "run" && (
               <Loader2 className="mr-1 h-3 w-3 animate-spin" />
             )}
             <span className="truncate">
-              {descriptor?.verb ?? "Unavailable"}
+              {actionEditor && !actionReviewed
+                ? "Review text"
+                : (descriptor?.verb ?? "Unavailable")}
             </span>
           </Button>
           <Button

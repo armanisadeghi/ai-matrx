@@ -44,10 +44,10 @@ export function getAssistActionTextEditor(
   }
 
   return {
-    triggerLabel: "Edit before approving",
-    label: "Guideline wording",
+    triggerLabel: "Review or edit exact text",
+    label: "Exact text that will be saved",
     description:
-      "This is the complete guideline document that will replace the current one.",
+      "The headline summarizes the change. Approval replaces the full guideline document with exactly this text.",
     value: action.proposal.proposedText,
     maxLength: KEYWORD_GUIDELINES_MAX_LENGTH,
     validate: (value) => {

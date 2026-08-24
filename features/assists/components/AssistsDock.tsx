@@ -234,7 +234,15 @@ export default function AssistsDock() {
         </button>
 
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="h-[85dvh] max-h-[85dvh] overflow-hidden">
+          <DrawerContent
+            className="overflow-hidden"
+            style={{
+              height:
+                "min(85dvh, var(--visual-viewport-height, 85dvh))",
+              maxHeight:
+                "min(85dvh, var(--visual-viewport-height, 85dvh))",
+            }}
+          >
             <DrawerHeader className="flex shrink-0 flex-row items-center gap-2 border-b border-border px-3 py-2 text-left">
               <DrawerClose asChild>
                 <Button
