@@ -23,6 +23,29 @@
  * hatch is `ALTER EVENT TRIGGER ddl_guard DISABLE; <DDL>; ... ENABLE;` inside
  * ONE transaction, so a guard left disabled at rest is a mistake, not a state.
  *
+ * SECOND DETECTOR — THE PLANNER MUST NEVER RUN THE ACCESS WALK.
+ *
+ * On 2026-08-24 every authenticated read of `files.folders` and `files.files`
+ * returned HTTP 500 / SQLSTATE 57014 (statement timeout). Nothing was slow to
+ * EXECUTE — a bare `EXPLAIN` (plan only, zero rows touched) took 14,254 ms and
+ * read 296,867 buffers, while execution took 4.7 ms. The cause: the generated
+ * RLS policy carried its parent-cascade arms as
+ *
+ *     <fk> in (select unnest(iam.accessible_entity_ids('<type>', ...)))
+ *     <fk> = any(iam.accessible_entity_ids('<type>', ...))
+ *
+ * `unnest` has a planner support function, and `= ANY (array)` is costed by
+ * scalararraysel; BOTH call estimate_expression_value(), which deliberately
+ * const-folds STABLE functions. So Postgres EXECUTED the recursive, security-
+ * definer access walk during PLANNING of every single statement — including the
+ * overwhelming case where the row's own `created_by = auth.uid()` arm short-
+ * circuits first and those subplans are never executed at all.
+ *
+ * The fix routes the array through `iam.unnest_uuids`, a set-returning function
+ * with NO support function, so the planner cannot reach inside it. This detector
+ * asserts no policy ever goes back. It is a POLICY-SHAPE check, not a timing
+ * check: it is deterministic, cheap, and cannot false-positive on a slow day.
+ *
  *   pnpm check:db-guards            # loud, non-blocking (exit 0)
  *   pnpm check:db-guards --strict   # exit 1 when a guard is missing/disabled
  *
@@ -133,6 +156,59 @@ const QUERY = `
   order by t.evtname
 `;
 
+/**
+ * Any RLS policy expression that hands a STABLE access-walk call to the planner
+ * in a position the planner pre-evaluates. Both forms are checked; the sanctioned
+ * shape is `in (select iam.unnest_uuids(<call>))`, which this deliberately does
+ * NOT match (the `unnest(` form below requires the bare `unnest(` spelling).
+ */
+const PLANNER_TRAP_QUERY = `
+  select p.schemaname || '.' || p.tablename as relation,
+         p.policyname,
+         case
+           when coalesce(p.qual,'') || coalesce(p.with_check,'') like '%unnest(iam.accessible%'
+             then 'unnest(<stable fn>) — array_unnest_support pre-evaluates the argument'
+           else '= ANY (<stable fn>) — scalararraysel pre-evaluates the array'
+         end as form
+  from pg_catalog.pg_policies p
+  where coalesce(p.qual,'') || coalesce(p.with_check,'') like '%unnest(iam.accessible%'
+     or lower(coalesce(p.qual,'') || coalesce(p.with_check,'')) like '%any (iam.accessible%'
+  order by 1, 2
+`;
+
+interface PlannerTrapRow {
+  relation: string;
+  policyname: string;
+  form: string;
+}
+
+/**
+ * Reports policies that would make the planner execute the access walk.
+ * Returns the number of offending policies (0 = clean).
+ */
+function reportPlannerTraps(rows: PlannerTrapRow[]): number {
+  console.log("");
+  console.log(
+    `${C.bold}RLS planner traps${C.reset} ${C.dim}(no policy may hand the access walk to the planner)${C.reset}`,
+  );
+  if (!rows.length) {
+    console.log(
+      `${TAG.ok}No policy pre-evaluates iam.accessible_entity_ids at plan time.`,
+    );
+    return 0;
+  }
+  for (const r of rows) {
+    console.log(`  ${TAG.fail}${r.relation} ${C.dim}(${r.policyname})${C.reset} — ${r.form}`);
+  }
+  console.log(
+    `${TAG.warn}${rows.length} policy expression(s) will be EXECUTED BY THE PLANNER on every` +
+      ` statement against those tables — the 2026-08-24 files.folders 57014 outage exactly.` +
+      ` Route the array through iam.unnest_uuids (fix the emitter in iam.entity_read_expr /` +
+      ` iam._apply_rls_unchecked, then re-run iam.apply_rls for each table), never hand-edit the policy.`,
+  );
+  return rows.length;
+}
+
 async function main(): Promise<number> {
   const strict = process.argv.includes("--strict");
   const env = loadEnv();
@@ -182,11 +258,25 @@ async function main(): Promise<number> {
     );
   }
 
+  let trapRows: PlannerTrapRow[];
+  try {
+    const { data, error } = await supabase.rpc("execute_admin_query", {
+      query: PLANNER_TRAP_QUERY,
+    });
+    if (error) throw new Error(error.message);
+    trapRows = unwrapRows(data) as unknown as PlannerTrapRow[];
+  } catch (err) {
+    console.error(`${TAG.fail}Planner-trap check: query failed — ${String(err)}`);
+    return 2;
+  }
+  const traps = reportPlannerTraps(trapRows);
+
   if (!missing.length && !disabled.length) {
+    console.log("");
     console.log(
       `${TAG.ok}All ${EXPECTED.length} platform event triggers are bound and enabled.`,
     );
-    return 0;
+    return traps > 0 && strict ? 1 : 0;
   }
 
   console.log("");

@@ -28,9 +28,9 @@ export default async function CloudFilesAllLayout({
   children,
   params,
 }: LayoutProps) {
-  const { isAuthenticated } = await getServerAuth();
+  const { isAuthenticated, user } = await getServerAuth();
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     redirect("/files");
   }
 
@@ -40,9 +40,16 @@ export default async function CloudFilesAllLayout({
 
   let initialFolderId: string | null = null;
   if (folderPath) {
+    // Scoped to the viewer's OWN folder. `folder_path` is not globally unique
+    // — `files.folders` has a UNIQUE index on (created_by, folder_path), and 15
+    // separate users own a folder called "system-files". Without `created_by`
+    // this lookup (a) matched every RLS-visible namesake, so `maybeSingle()`
+    // returned PGRST116 and silently dropped the folder id, and (b) could not
+    // use the composite index because its leading column was absent.
     const { data } = await filesDb(supabase)
       .from("folders")
       .select("id")
+      .eq("created_by", user.id)
       .eq("folder_path", folderPath)
       .is("deleted_at", null)
       .maybeSingle();
