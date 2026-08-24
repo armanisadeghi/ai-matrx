@@ -346,6 +346,9 @@ encodes:
   Open it in the studio · All Masterworks from this Rulebook · See what it was
   built from — and the canonical `TryMasterworkBox` right inside the panel, so
   the Expert runs the thing they just built without leaving the moment.
+- **The deliverable description follows the API contract.** `BuildWindow`
+  exposes the server's 500-character boundary with a live count and prevents
+  an oversized request from reaching `POST /masterworks/build`.
 
 The Build is a durable run (`platform.masterwork_run`, surface `build`), so
 opening the window after a reload restores the finished Masterwork off the
@@ -920,6 +923,9 @@ same computation feeds both halves of the page:
    presented as complete is the defect that contract exists to kill.
 
 ## Change log
+
+- 2026-08-23 — Quick Build exposes and enforces the build API's 500-character
+  deliverable boundary before launch, with a shared contract helper and regression test.
 
 - **2026-08-19 — ONE expert corpus, nine lanes, both readers.** `getExpertCorpus` stopped
   assembling: it calls `GET /masterworks/{rulebook_id}/corpus` (aidream

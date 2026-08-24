@@ -18,6 +18,11 @@ import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { getRulebook } from "../service";
 import type { Rulebook } from "../types";
 import { emitBuildEvent } from "./callbacks";
+import {
+  buildDeliverableValue,
+  isBuildDeliverableValid,
+  MASTERWORK_DELIVERABLE_MAX_LENGTH,
+} from "./contract";
 import { useBuildRun, type MasterworkKind } from "./useBuildRun";
 
 /**
@@ -151,6 +156,7 @@ function BuildWindowInner({
 
   const run = useBuildRun(rulebookId, runLabel);
   const { running, result, progress, error } = run;
+  const deliverableIsValid = isBuildDeliverableValid(deliverable);
 
   // The Rulebook page's Masterworks list must reflect a Build that finished
   // while the Expert was on another page — not only one they watched finish.
@@ -189,7 +195,7 @@ function BuildWindowInner({
         masterwork_kind: chosenKind,
         name: name.trim() || undefined,
         deliverable:
-          chosenKind === "generate" ? deliverable.trim() || undefined : undefined,
+          chosenKind === "generate" ? buildDeliverableValue(deliverable) : undefined,
       },
       runLabel,
     );
@@ -357,9 +363,13 @@ function BuildWindowInner({
                 id="masterwork-deliverable"
                 value={deliverable}
                 onChange={(e) => setDeliverable(e.target.value)}
+                maxLength={MASTERWORK_DELIVERABLE_MAX_LENGTH}
                 placeholder="e.g. the primary keyword and supporting keywords for one page of content"
                 rows={3}
               />
+              <p className="text-right text-xs text-muted-foreground">
+                {deliverable.length}/{MASTERWORK_DELIVERABLE_MAX_LENGTH}
+              </p>
             </div>
           ) : null}
         </div>
@@ -400,7 +410,12 @@ function BuildWindowInner({
             size="sm"
             className="h-7"
             onClick={build}
-            disabled={running || !rulebook || approvedCount === 0}
+            disabled={
+              running ||
+              !rulebook ||
+              approvedCount === 0 ||
+              (chosenKind === "generate" && !deliverableIsValid)
+            }
           >
             <Hammer className="h-3.5 w-3.5" />
             {running ? "Building…" : "Build the Masterwork"}
