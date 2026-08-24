@@ -26,7 +26,9 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAssistRunner } from "../runtime/useAssistRunner";
 import { describeAssistAction } from "../runtime/action-descriptors";
+import { getAssistActionTextEditor } from "../runtime/action-editing";
 import { formatAssistSourceLabel } from "../source-suppression";
+import { AssistActionTextEditor } from "./AssistActionTextEditor";
 import { ASSIST_URGENCY_ICON } from "./urgency-icon";
 import {
   ASSIST_URGENCY_META,
@@ -126,18 +128,26 @@ export function AssistCard({
   const [note, setNote] = useState("");
   const [silenceOpen, setSilenceOpen] = useState(false);
   const [silenceReason, setSilenceReason] = useState("");
+  const actionEditor = getAssistActionTextEditor(assist.action);
+  const [actionEditOpen, setActionEditOpen] = useState(false);
+  const [actionDraft, setActionDraft] = useState(actionEditor?.value ?? "");
   const descriptor = describeAssistAction(assist.action);
   const urgency = urgencyFromPriority(assist.priority);
   const urgencyMeta = ASSIST_URGENCY_META[urgency];
   const UrgencyIcon = ASSIST_URGENCY_ICON[urgency];
   const compactMeta = compactMetaLine(assist);
   const sourceLabel = formatAssistSourceLabel(assist.sourceKey);
+  const actionValidation = actionEditor?.validate(actionDraft) ?? null;
+  const actionToRun =
+    actionEditor && !actionValidation
+      ? actionEditor.apply(actionDraft)
+      : assist.action;
 
   const run = async () => {
     if (busy) return;
     setBusy("run");
     try {
-      const outcome = await acceptAssist(assist);
+      const outcome = await acceptAssist({ ...assist, action: actionToRun });
       if (outcome.ok) {
         if (descriptor) toast.success(descriptor.receipt);
         onClose();
@@ -288,6 +298,17 @@ export function AssistCard({
       )}
 
       <div className="border-t border-border/60 px-3 py-2">
+        {actionEditor && (
+          <AssistActionTextEditor
+            definition={actionEditor}
+            value={actionDraft}
+            open={actionEditOpen}
+            disabled={busy !== null}
+            onChange={setActionDraft}
+            onOpenChange={setActionEditOpen}
+            onReset={() => setActionDraft(actionEditor.value)}
+          />
+        )}
         {descriptor ? (
           <p className="mb-2 text-xs text-muted-foreground">
             {descriptor.explainer}
@@ -302,7 +323,7 @@ export function AssistCard({
           <Button
             size="sm"
             onClick={run}
-            disabled={!descriptor || busy !== null}
+            disabled={!descriptor || busy !== null || Boolean(actionValidation)}
             className="min-h-11 min-w-0 gap-1 px-1 text-[11px] md:h-7 md:min-h-0 md:px-3 md:text-xs"
             title={descriptor?.verb}
           >
