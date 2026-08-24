@@ -2,7 +2,7 @@
 
 **Status:** `in-progress` (core production lifecycle accepted; provider-account acceptance remains)
 **Tier:** `1`
-**Last updated:** `2026-08-21`
+**Last updated:** `2026-08-24`
 
 > Frontend for the **Persistent Cloud Browser** program (WS-8). A real browser that
 > lives on our servers, stays signed in to a user's accounts, and lets an agent do
@@ -206,6 +206,12 @@ login is explicitly enabled; automatic TOTP additionally requires its own toggle
 The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
+
+- **2026-08-24 — duplicate-start regression is falsifiable:**
+  `service.startRun.test.ts` now drives two concurrent `loadSnapshot()` calls
+  through a held network boundary and proves they share exactly one
+  `POST /browser-manager/runs`. The prior test never entered `startRun()` and
+  could pass if the in-flight fence were deleted.
 
 - **2026-08-23 — takeover survives panel reopen:** derive `HandoffReason`
   directly from the generated Python API contract and accept its
