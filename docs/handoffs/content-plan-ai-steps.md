@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-20
+updated: 2026-08-25
 repos: [matrx-frontend, aidream]
 scope: feature
 feature: Content Planning
@@ -19,7 +19,8 @@ steps, and the per-page pipeline artifacts that turn a site idea into an ordered
 
 ("Content Plan AI Steps" was a slice name and is retired. This doc is the whole feature.)
 
-🚨 **READ THE CLUSTER DOC FIRST:
+🚨 **START AT [`common-docs/projects/content-engine/HANDOFF.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/HANDOFF.md)**
+— the cluster's take-over handoff. Then the cluster STATE:
 [`common-docs/projects/content-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md)** — merged
 vision, verified state, question ledger, and this feature's pending list in pipeline context.
 
@@ -31,6 +32,13 @@ Setup AI steps and their grounding in resources we already have.**
 
 Full detail, with file paths and evidence, in **STATE.md §4.2**. In priority order:
 
+0. ✅ **Per-page research SHIPPED 2026-08-25.** Attach any research topic to a page (the
+   `AssociationList` on the Research tab) or start a small one from the page itself
+   ("Run research for this page" window panel — topic name and the page's target keyword
+   pre-filled, 1-2 keywords, auto-attached on create). Every agent on that page now reads the
+   attached topics PLUS the company's site-level research as baseline
+   (`aidream/services/content_plan/research_context.py`). Still open: the deep-research workflow
+   as the per-topic depth option (cluster STATE §4.2 item 2c).
 1. **Generalize the grounding strip beyond research** — competitor URLs, pasted content, free-text
    guidance. None persist in `setup/draft.ts`; `reference_material` has zero hits in either repo.
 2. **Names + information, not names alone.** *Narrower than long assumed:* the Family Namer agent

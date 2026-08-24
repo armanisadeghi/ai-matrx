@@ -20,7 +20,9 @@ multi-page website through many specialized agent steps.
 **Sister program: Growth Loop** ([growth-loop.md](./growth-loop.md)). Factory is idea → a website;
 Growth Loop is that site, then measure → improve. Staff or groom one, read the other.
 
-🚨 **READ THE CLUSTER DOC FIRST:
+🚨 **START AT [`common-docs/projects/content-engine/HANDOFF.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/HANDOFF.md)**
+— the cluster's take-over handoff (orientation, real vs not, traps, ordered next steps).
+Then the cluster STATE:
 [`common-docs/projects/content-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md)** — merged
 vision, verified state, question ledger, and this program's pending list in context.
 
