@@ -522,8 +522,8 @@ for once:
   not kill the queue as it used to. The Error Inspector capture deliberately
   stays red: a queue serving members nobody can work is a real data problem.
 - **Known limits:** dialing is a `tel:` handoff (no telephony integration);
-  member table search/status filter are server-side but member columns don't
-  sort.
+  member table search/status filter are server-side (search waits 300 ms after
+  typing stops) but member columns don't sort.
 
 ## Suppression, and its reverse
 
@@ -809,6 +809,9 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-24 — Outreach-list member search keeps the input immediate and
+  debounces the server-paged read by 300 ms; it no longer fetches once per
+  character. The main party/deal lists already debounce in their list hooks.
 - 2026-08-21 — **The 2026-08-20 adversarial-pass defects worked (D218–D228).**
   D218: `MatrxColumnDef.filterSingle` (new shared-table option) makes the
   record-class / expert / date-bucket facets single-choice — the discovered

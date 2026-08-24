@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
@@ -235,9 +236,10 @@ const CLASSIFICATION_LAYERED_FIELDS: readonly LayeredFilterField[] = [
  *  belong to the page underneath. */
 function useLocalTableState() {
   const [state, setState] = useState<MatrxDataTableQueryState>(DEFAULT_STATE);
+  const queryState = useDebounce(state, 250);
   return {
     state,
-    queryState: state,
+    queryState,
     onStateChange: setState,
   };
 }

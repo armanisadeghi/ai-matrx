@@ -30,6 +30,7 @@ import { trackPage } from "@/features/marketing/search-console/data-launch";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
@@ -139,9 +140,10 @@ export function GscDimensionTable({
   const sortId = query.sort?.id && SORTABLE.has(query.sort.id)
     ? (query.sort.id as GscSortKey)
     : "clicks";
+  const debouncedSearch = useDebounce(query.search, 300);
   const breakdown = useGscBreakdown(siteId, periods, filters, {
     dimension,
-    search: query.search,
+    search: debouncedSearch,
     sort: sortId,
     sortDir: query.sort?.direction ?? "desc",
     page: query.page,

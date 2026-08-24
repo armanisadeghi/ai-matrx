@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
@@ -103,6 +104,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState<MemberStatus | "all">("all");
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -145,7 +147,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
         page,
         pageSize: PAGE_SIZE,
         status: statusFilter,
-        search,
+        search: debouncedSearch,
       });
       setMembers(rows);
       setTotal(t);
@@ -156,7 +158,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       setIsFetching(false);
       setIsLoading(false);
     }
-  }, [listId, page, statusFilter, search]);
+  }, [debouncedSearch, listId, page, statusFilter]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadHeader(), 0);

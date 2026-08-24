@@ -24,7 +24,7 @@
  * context plus the controls. Everything else is table.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -59,6 +59,7 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { toast } from "@/lib/toast";
+import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import { cn } from "@/styles/themes/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
@@ -153,6 +154,32 @@ export function KeywordWorkbench() {
 
   const state = parseWorkbenchState(params);
   /**
+   * Search has two clocks. The draft is what the input shows RIGHT NOW; the
+   * URL/server value changes only after the person pauses. Binding the input
+   * straight to URL state used to call router.push + the breakdown RPC for
+   * every character, so a large site could interrupt the next keystroke.
+   */
+  const [searchDraft, setSearchDraft] = useState(state.search);
+  const [urlSearchAtDraftSync, setUrlSearchAtDraftSync] = useState(
+    state.search,
+  );
+  const [pendingSearchCommit, setPendingSearchCommit] = useState<string | null>(
+    null,
+  );
+  const lastSearchCommit = useRef(state.search);
+  if (state.search !== urlSearchAtDraftSync) {
+    setUrlSearchAtDraftSync(state.search);
+    if (pendingSearchCommit === state.search) {
+      // This is the router acknowledging our own debounced write. Preserve a
+      // newer draft the person may already have typed while navigation ran.
+      setPendingSearchCommit(null);
+    } else {
+      setPendingSearchCommit(null);
+      setSearchDraft(state.search);
+    }
+  }
+  const debouncedSearch = useDebounce(searchDraft, 300);
+  /**
    * THE BACK BUTTON IS UNDO (2026-08-24). Every write here is a discrete user
    * action — a filter, a dimension column, a saved view, a page — so it PUSHES
    * a history entry and Back walks back exactly one step. `router.replace` used
@@ -168,7 +195,22 @@ export function KeywordWorkbench() {
     else router.push(href, { scroll: false });
   };
   const patch = (partial: Partial<WorkbenchState>) =>
-    push({ ...state, page: 1, ...partial });
+    push({ ...state, search: searchDraft, page: 1, ...partial });
+
+  useEffect(() => {
+    if (debouncedSearch === state.search) {
+      lastSearchCommit.current = state.search;
+      return;
+    }
+    if (lastSearchCommit.current === debouncedSearch) return;
+    lastSearchCommit.current = debouncedSearch;
+    setPendingSearchCommit(debouncedSearch);
+    const next = { ...state, page: 1, search: debouncedSearch };
+    const href = `${sitePath}/keywords?${workbenchSearchParams(next).toString()}`;
+    // Free text is one evolving search session, not one Back-stack entry per
+    // pause. Discrete table decisions still use push() above.
+    router.replace(href, { scroll: false });
+  }, [debouncedSearch, router, sitePath, state]);
 
   /* ---------------------------------------------------------------- periods */
   const freshness = useGscFreshness(site.id);
@@ -534,7 +576,7 @@ export function KeywordWorkbench() {
           label: option.depth > 0 ? `${option.rootName} › ${option.name}` : option.name,
         })),
       ],
-      width: 210,
+      width: 300,
       accessorFn: (row) => serviceFor(row)?.topicName ?? "",
       cell: (row) => {
         if (!row.keyword_id) {
@@ -680,9 +722,14 @@ export function KeywordWorkbench() {
   const tableQuery: MatrxDataTableQueryState = {
     page: state.page,
     pageSize: state.pageSize,
-    search: state.search,
+    search: searchDraft,
     anyOf: "",
-    columnFilters: {},
+    // The Keyword header filter and the toolbar search are two doors to the
+    // same server query. Mirroring the live draft here keeps either input
+    // stable while typing instead of clearing the header popover on rerender.
+    columnFilters: searchDraft
+      ? { key: { kind: "text", value: searchDraft } }
+      : {},
     sort: { id: state.sort, direction: state.sortDir },
   };
 
@@ -713,6 +760,17 @@ export function KeywordWorkbench() {
       });
 
   const onQueryStateChange = (next: MatrxDataTableQueryState) => {
+    if (next.search !== searchDraft) {
+      setSearchDraft(next.search ?? "");
+      return;
+    }
+    const keywordFilter = next.columnFilters.key;
+    const keywordFilterText =
+      keywordFilter?.kind === "text" ? keywordFilter.value : "";
+    if (keywordFilterText !== searchDraft) {
+      setSearchDraft(keywordFilterText);
+      return;
+    }
     const sortId = next.sort?.id ?? "clicks";
     // Column filters on a dimension are REAL filters — they become the
     // server-side `stamps` filter rather than sieving the page in the browser.
@@ -738,7 +796,7 @@ export function KeywordWorkbench() {
       ...state,
       page: next.page,
       pageSize: next.pageSize,
-      search: next.search ?? "",
+      search: searchDraft,
       sort: sortId,
       sortDir: next.sort?.direction ?? "desc",
     });

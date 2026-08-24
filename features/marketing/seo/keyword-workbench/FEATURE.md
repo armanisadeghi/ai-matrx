@@ -162,6 +162,11 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
   keywords the person can no longer see.
 - **Never imply totality.** When the id sweep caps, the panel says how many it
   took and that there are more.
+- **Controlled search has two clocks.** The input draft updates immediately;
+  the URL and server query update after a 300 ms pause. Sending every character
+  through `router.push` made large sites interrupt typing and filled the
+  browser history. The Keyword header filter and toolbar search now share this
+  one draft/query path.
 - **P11 is a door, never a grey-out.** Class is platform-shared; the dropdown
   says so and offers "make it your own dimension" rather than a list with no
   way out. `pnpm check:picker-add` catches the omission.
@@ -183,6 +188,13 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
 
 ## Change log
 
+- **2026-08-24** — Made controlled keyword search usable on large sites: text
+  stays immediate in both the toolbar and Keyword column filter, while URL and
+  RPC work is debounced into one replace; widened Service from 210 px to 300 px
+  so the service and its root remain readable. Audited every controlled
+  `MatrxDataTable` consumer and repaired the three other remote-search paths
+  that bypassed their canonical debounced state owner (GSC dimensions,
+  classification window, outreach-list members).
 - **2026-08-24** — **THE SERVICE COLUMN** (Arman's "that's gone"). Service is a
   first-class column next to the keyword; the cell places, the picker invents,
   bulk places the checked rows and everything-matching with a reason, and the

@@ -91,7 +91,8 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   gap-preserving day walk (missing days never draw connected lines).
 - `GscDimensionTable` — THE generic table: one MatrxDataTable
   (**controlled** mode; search/sort/pagination push down to
-  `gsc_perf_breakdown`) parameterized by dimension; serves every tab, both
+  `gsc_perf_breakdown`; typed search stays immediate but the RPC waits for a
+  300 ms pause) parameterized by dimension; serves every tab, both
   overview top-10 tables, AND every floating panel. Full `copy` config
   (row + view Copy/JSON/Copy-for-AI + CSV export). Δ columns appear when a
   compare period is active.
@@ -749,6 +750,10 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-24 — Debounced the two controlled Search Console paths that did not
+  use `useMarketingTableState`: `GscDimensionTable` waits 300 ms before its
+  breakdown read, and the classification WindowPanel's local state waits 250
+  ms. Inputs remain immediate; server reads no longer fire per character.
 - 2026-08-24 — **Insights `class movers` 500 fixed — THE JOIN-SHAPE RULE.**
   `seo.gsc_perf_class_movers` on the page dimension with a class pin took
   10,008 ms past the 8 s statement timeout, so the assists producer logged
