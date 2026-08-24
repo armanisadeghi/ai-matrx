@@ -2,8 +2,8 @@
 type: Feature
 title: "Keyword Workbench"
 description: "The one surface where a subject-matter expert finds exactly the keywords they mean and tells the system what those keywords ARE — with the reason, in their own words, at the moment they decide."
-tags: [seo, keywords, stamps, assignment, gsc]
-timestamp: 2026-08-23
+tags: [seo, keywords, stamps, assignment, gsc, topics, services]
+timestamp: 2026-08-24
 ---
 
 # Keyword Workbench (C14)
@@ -31,6 +31,46 @@ Plus one negative requirement that shapes the layout more than any of them:
 I don't like pages where there are novels written."* The top is ONE line of
 context plus the controls. Everything else is table.
 
+## THE SERVICE COLUMN (2026-08-24)
+
+Arman: *"What I've lost is my ability to set the service or product or main
+thing that this relates to. That's gone."* And: *"when I look at all green
+electronics recycling, the first thing I wanna know is what service they map
+to… I wanna know what maps to e-waste recycling, what maps to ITAD, and what
+maps to data destruction."*
+
+**Service** is the second column, right after the keyword — the order a person
+reads: the phrase, what it is FOR, how we classify it, the dimensions, the
+numbers. It is the keyword's PRIMARY TOPIC: the name, with its root under it
+("Data Destruction Services" / "IT Asset Disposition (ITAD)"), an `AI` badge
+when a machine placed it, and **"Not placed yet"** — never a blank — when
+nobody has.
+
+The topic tree is the ONE declared hierarchical exception in the stamp model
+(**P19**), so this column reads and writes `seo.keyword_topic` rather than a
+dimension+value pair. Everything else about it is the same contract as a stamp:
+
+| Gesture | How |
+|---|---|
+| Place one keyword | The cell IS the control (same doctrine as Class) — click, pick, done. No dialog. |
+| Invent a service | The picker's `Create "…"` plus ONE extra choice: its own root, or under an existing topic (**P23**). Creating and placing is one gesture. |
+| Place the checked rows | **Service…** in the selection bar → `ServiceAssignPanel`, with the reason box. |
+| Place everything matching | **Service for all N** in the toolbar. Honest when the server caps the sweep — the same sentence the stamp panel uses, from the shared `AssignTargetHeadline`. |
+| Say WHY (**P24**) | One reason per placement, stored ON the placement (`seo.keyword_topic.notes`). |
+| Find everything under a service | The **Service** filter (its own control beside the filter bar), the hover Filter icon in any cell, or the column's own filter. All three write ONE server filter. |
+| Sort by service | Server-side (`p_sort = 'topic'`). A paged table sorted in the browser would sort 50 of 4,471 rows and say nothing about it. |
+
+Two deliberate choices worth knowing:
+
+- **A service filter means the service AND its whole subtree.** Filtering
+  "ITAD" answers "what maps to this branch", which is the question. `none`
+  selects the unplaced — that is the work queue.
+- **The filter's control lives here, not in the shared `FilterBar`.** The URL
+  dialect (`tp=`) is shared so a pasted link means the same thing everywhere,
+  but only this surface holds the topic catalog, and a chip reading
+  `tp: 47a36caa-…` is not a filter a person can understand (**P22** — shared
+  machinery never obligates a shared UI).
+
 ## What it is made of
 
 | File | Job |
@@ -41,6 +81,11 @@ context plus the controls. Everything else is table.
 | `components/ColumnChooser.tsx` | Every dimension this site sees, offered as a column (P26). |
 | `components/SavedViewTabs.tsx` | Saved views as tabs — rename, share, reorder, delete, and "keep these changes". |
 | `components/cells.tsx` | The Class dropdown that ASSIGNS (with P11's door in it), and the stamp cell that assigns and filters. |
+| `components/ServiceCell.tsx` | THE SERVICE COLUMN's cell — the name, its root, who placed it, and the picker behind it. |
+| `components/ServicePicker.tsx` | The tree-shaped, creatable service picker shared by the cell, the bulk panel, and the filter. |
+| `components/ServiceAssignPanel.tsx` | Bulk placement + the reason, over the ONE placement write. |
+| `components/ServiceFilterControl.tsx` | The Service filter chip and picker (the shared bar cannot name a topic). |
+| `hooks/useSiteServices.ts` | The site's topic tree, flattened parent → child for a picker. Shares the topic screen's query keys. |
 | `state.ts` | The URL state. A saved view IS this state, stored verbatim. |
 | `data.ts` | The RPC callers. **No write path of its own** — see below. |
 
@@ -57,6 +102,15 @@ context plus the controls. Everything else is table.
   link means the same thing on the dashboard and here.
 - **Class / Score / Level** → `seo.gsc_keyword_value_for` via
   `getGscKeywordValueFor`.
+- **The topic tree itself** → `value-system/topics/` — its reads
+  (`listAllTopics`, `listTopicWorth`, `getTopicStats`), its tree math
+  (`buildTopicTree`, `flattenTree`, `lineageOf`), its create
+  (`saveTopic` → `gsc_topic_save`) and its root vocabulary (`ROOT_TYPE_META`).
+  This feature owns no second topic catalog, no second tree walk, and no
+  second way to invent a service.
+- **The trigger's compact display** → `CreatablePicker`'s `renderSelected`
+  (added 2026-08-24). A dense cell shows one line; the option row it came from
+  is indented and annotated. Same selection, two jobs, one component.
 - **The table** → `MatrxDataTable` (controlled mode + its selection primitive).
 - **The date window** → `search-console/components/RangeCompareControl.tsx`,
   which already owns custom ranges and compare. The hand-rolled preset list
@@ -64,7 +118,15 @@ context plus the controls. Everything else is table.
   failure in a control nobody thinks of as a picker.
 
 The ONE human write for a stamp is `seo.gsc_set_keyword_stamps` — single row,
-right-click quick-assign, and a bulk of thousands all land there.
+right-click quick-assign, and a bulk of thousands all land there. The ONE human
+write for a PLACEMENT is `seo.gsc_set_keyword_topic`, the same way.
+
+> **Known duplication, deliberate and dated.** The topic tree screen has its
+> own thinner wrapper over that same RPC
+> (`value-system/topics/data.ts` → `setKeywordPrimaryTopic`, no reason field).
+> Two client wrappers, ONE write path; collapse them into
+> `keyword-workbench/data.ts` → `setKeywordService` when that file is next
+> touched.
 
 ## Server contract
 
@@ -77,9 +139,16 @@ right-click quick-assign, and a bulk of thousands all land there.
 | `seo.gsc_quick_add_value` | P23 (via `quickAddDimensionValue`). |
 | `seo.gsc_set_keyword_stamps` | P24. Human stamps are pinned. |
 | `seo.gsc_saved_views` / `gsc_save_view` / `gsc_delete_saved_view` | Saved views (site-editor guarded). |
+| `seo.gsc_keyword_topics_for` | THE SERVICE COLUMN's data — name, root, lineage, who placed it, which ancestor its worth comes from. THE SCOPE RULE: ≤2,000 ids. |
+| `seo.gsc_topic_keyword_set` | Every keyword placed anywhere in a topic's subtree — what the service filter means. |
+| `seo.gsc_set_keyword_topic` | THE placement write, now carrying `p_notes` (P24). Answers with the band each keyword lands in AFTER the change, from the resolver. |
 
-Migration: `migrations/seo_keyword_workbench_c14.sql` (builds on C13's
-`seo_stamp_assignment_layer.sql`).
+Migrations: `migrations/seo_keyword_workbench_c14.sql` (builds on C13's
+`seo_stamp_assignment_layer.sql`) and
+`migrations/seo_keyword_workbench_service_column.sql` (the Service column:
+`keyword_topic.notes`, the two reads above, `p_notes`, and the `topic` filter
+key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
+`gsc_breakdown_keyword_ids`).
 
 ## Traps this surface already fell into
 
@@ -97,8 +166,34 @@ Migration: `migrations/seo_keyword_workbench_c14.sql` (builds on C13's
   says so and offers "make it your own dimension" rather than a list with no
   way out. `pnpm check:picker-add` catches the omission.
 
+## Traps the SERVICE column added to the list
+
+- **An added DEFAULT parameter creates a SECOND function.** `gsc_set_keyword_topic`
+  had to be dropped and recreated to take `p_notes`; leaving both overloads
+  live hands PostgREST an ambiguous call. Callers passing three named
+  arguments keep working.
+- **A `topic` filter with no group is not group-neutral.** `FilterBar` derives
+  the active dimension profile from which keys are set; a key it did not know
+  made `activeGroup` answer "appearance" and the whole Add-filter menu
+  vanished. The key is declared in the query/page group and skipped for
+  rendering — `SKIPPED_KEYS`, not omission.
+- **Three pieces of text on one dense line truncate all three.** The first cut
+  of the cell read "Data Dest… IT Asset Di… AI". The name gets the width; the
+  root sits under it in the size of a footnote.
+
 ## Change log
 
+- **2026-08-24** — **THE SERVICE COLUMN** (Arman's "that's gone"). Service is a
+  first-class column next to the keyword; the cell places, the picker invents,
+  bulk places the checked rows and everything-matching with a reason, and the
+  column filters AND sorts server-side. Live-verified on Data Destruction
+  (4,471 keywords): sorted by service on the server; filtered to one service
+  subtree and to "Not placed yet"; a single placement and a bulk placement with
+  a reason confirmed in `seo.keyword_topic` (`assigned_by='human'`, notes
+  stored) and the receipt's band re-resolved; test placements removed.
+  ⚠️ All Green Recycling could NOT be verified in the UI: its site
+  (`d0aff5b6-…`, org `5dc930e9-…`) refuses `gsc_assert_site_access` for
+  `admin@admin.com`, a pre-existing access gap unrelated to this work.
 - **2026-08-23** — Built (C14). Live-verified on Data Destruction: whole-word
   filter 4,471 → 90; a new dimension + value invented by typing, bulk-assigned
   to 7 keywords with a reason, confirmed in `seo.keyword_facet` with

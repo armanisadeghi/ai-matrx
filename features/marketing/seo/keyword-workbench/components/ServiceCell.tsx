@@ -82,21 +82,27 @@ export function ServiceCell({
         unplacedLabel={placement ? "Take it off the tree" : undefined}
         placeholder="Not placed yet"
         ariaLabel="Service this keyword maps to"
-        className="h-6 border-0 px-1 shadow-none hover:bg-accent"
+        className="h-auto min-h-6 border-0 px-1 py-0.5 shadow-none hover:bg-accent"
         renderSelected={
           placement ? (
-            <span className="flex min-w-0 items-baseline gap-1">
-              <span className="min-w-0 truncate text-[11px] text-foreground">
-                {placement.topicName}
+            // TWO LINES, deliberately: the service is the first thing Arman
+            // reads, and three pieces of text on one line truncated all three
+            // to "Data Dest… IT Asset Di… AI". The name gets the width; the
+            // root sits under it in the size of a footnote.
+            <span className="flex min-w-0 flex-col items-start leading-tight">
+              <span className="flex min-w-0 max-w-full items-baseline gap-1">
+                <span className="min-w-0 truncate text-[11px] text-foreground">
+                  {placement.topicName}
+                </span>
+                {hint ? (
+                  <span className="shrink-0 text-[10px] text-muted-foreground">
+                    {hint}
+                  </span>
+                ) : null}
               </span>
               {placement.rootName && placement.rootName !== placement.topicName ? (
-                <span className="min-w-0 shrink truncate text-[10px] text-muted-foreground">
+                <span className="min-w-0 max-w-full truncate text-[10px] text-muted-foreground">
                   {placement.rootName}
-                </span>
-              ) : null}
-              {hint ? (
-                <span className="shrink-0 text-[10px] text-muted-foreground">
-                  {hint}
                 </span>
               ) : null}
             </span>

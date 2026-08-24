@@ -534,7 +534,7 @@ export function KeywordWorkbench() {
           label: option.depth > 0 ? `${option.rootName} › ${option.name}` : option.name,
         })),
       ],
-      width: 190,
+      width: 210,
       accessorFn: (row) => serviceFor(row)?.topicName ?? "",
       cell: (row) => {
         if (!row.keyword_id) {
