@@ -68,11 +68,40 @@ function kitMembers(rows: GeneratedArtifact[]): GeneratedArtifact[] {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-/** The kit's display name: the name written on its edges, else its newest artifact. */
+/**
+ * The kit's display name.
+ *
+ * A kit named at generation time carries `sourceTitle` on every edge — use it.
+ * Kits generated BEFORE naming existed have no `sourceTitle`, and their members
+ * were each titled independently, so the fallback picks the most human of them
+ * rather than whichever happens to be newest. That matters in practice: a
+ * pre-naming kit typically holds eight artifacts called `MatterandMeasurements`
+ * and one called "Matter and Measurements" — the raw filename wins on
+ * frequency and on recency, and loses on being readable, which is the only
+ * axis a learner cares about.
+ *
+ * Display only. Nothing is rewritten; the artifacts keep their own titles.
+ */
 function kitName(members: GeneratedArtifact[]): string {
   const named = members.find((m) => m.sourceTitle && m.sourceTitle.trim());
   if (named?.sourceTitle) return named.sourceTitle;
-  return members[0]?.title ?? "Study material";
+
+  const counts = new Map<string, number>();
+  for (const m of members) {
+    const t = m.title?.trim();
+    if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
+  }
+  if (counts.size === 0) return "Study material";
+
+  const readable = (t: string) => (/\s/.test(t) ? 1 : 0);
+  return [...counts.entries()].sort((a, b) => {
+    // Readable first, then the one most artifacts agree on, then the shortest
+    // (a longer variant is usually a subtitle of the same thing).
+    const r = readable(b[0]) - readable(a[0]);
+    if (r !== 0) return r;
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].length - b[0].length;
+  })[0][0];
 }
 
 /**
