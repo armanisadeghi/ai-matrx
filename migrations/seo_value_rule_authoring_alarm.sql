@@ -438,9 +438,14 @@ BEGIN
            (SELECT count(*) FROM seo.dimension_value_matcher dm
              WHERE dm.site_id = p_site_id AND dm.deleted_at IS NULL
                AND dm.metadata->>'rule_id' = v.id::text) AS n_matchers,
+           -- Counted for the CLASS shape alone. A rule is very often both a
+           -- class rule and a qualifier rule, and its qualifier matcher is
+           -- always live; counting them together would let one live matcher
+           -- hide a classification half that is switched off.
            (SELECT count(*) FROM seo.dimension_value_matcher dm
              WHERE dm.site_id = p_site_id AND dm.deleted_at IS NULL AND dm.enabled
-               AND dm.metadata->>'rule_id' = v.id::text) AS n_enabled,
+               AND dm.metadata->>'rule_id' = v.id::text
+               AND dm.metadata->>'rule_shape' = 'class') AS n_enabled,
            (SELECT count(*) FROM seo.site_value_worth w
              WHERE w.site_id = p_site_id AND w.deleted_at IS NULL
                AND w.metadata->>'rule_id' = v.id::text) AS n_worth,
@@ -477,7 +482,9 @@ BEGIN
            WHEN (c.is_class OR c.is_qual) AND c.n_matchers = 0 THEN 'disconnected'
            WHEN (c.is_qual OR c.is_facet) AND c.n_worth = 0 THEN 'disconnected'
            -- Deliberately held back, not broken: a class rule that is not
-           -- auto_apply mints its matcher disabled by the C1 ruling.
+           -- auto_apply mints its matcher disabled by the C1 ruling. Decided on
+           -- the CLASS matcher alone, so a dual-shape rule still reports that
+           -- its classification half is waiting even while its multiplier bites.
            WHEN c.is_class AND NOT c.auto_apply AND c.n_enabled = 0 THEN 'held'
            WHEN c.n_stamps = 0 THEN 'no_hits'
            ELSE 'live'

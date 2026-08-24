@@ -289,7 +289,9 @@ export interface GeoAreaHealthRow {
  *   shadowed     — another live rule already scores that value; the incumbent
  *                  wins and this one is inert, for an honest reason.
  *   disconnected — complete and minting nothing. The regression class.
- *   held         — a class rule waiting on auto_apply, deliberately not live.
+ *   held         — the rule's CLASS half is waiting on auto_apply, deliberately
+ *                  not live. Decided on the class matcher alone, so a rule that
+ *                  is both a class and a value rule still reports it.
  *   no_hits      — wired correctly; no keyword has matched it yet.
  *   live         — matching keywords and counting in their value.
  */

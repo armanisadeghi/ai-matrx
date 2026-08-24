@@ -190,9 +190,9 @@ function RuleStateChip({ health }: { health: ValueRuleHealthRow | undefined }) {
       warn: true,
     },
     held: {
-      label: "waiting on auto-apply",
+      label: "classifying is off",
       title:
-        "A classification rule stays switched off until you turn auto-apply on, so it can never reclassify your keywords behind your back.",
+        "The multiplier on this rule counts, but its classification half stays switched off until you turn auto-apply on, so it can never reclassify your keywords behind your back.",
       className: "border-border bg-muted/40 text-muted-foreground",
       warn: false,
     },
