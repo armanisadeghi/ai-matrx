@@ -244,6 +244,12 @@ export const MARKETING_SITE_SUBVIEWS = [
         label: "Industry packs",
         purpose: "Start from your industry's defaults instead of a blank page.",
       },
+      {
+        id: "discovery",
+        label: "Discovery",
+        purpose:
+          "AI reads your site cold and proposes your business model, customers, Offerings and their worth — you rule each step.",
+      },
     ],
     hrefStyle: "path",
   },
