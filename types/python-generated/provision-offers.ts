@@ -693,13 +693,9 @@ export interface GrowthLoopStageQualityOffer {
   __kind?: "growth_loop.stage_quality.offer";
   stage: string;
   artifact_kind: string;
-  artifact: unknown;
+  artifact_json: unknown;
   rubric: string;
-  loop_run_id: string;
-  site_id: string;
-  cycle: number;
-  attempt: number;
-  label?: string;
+  loop_context: unknown;
 }
 
 /** Offered shape of provision `hindsight.crystallizer` (kind `hindsight.crystallizer.offer`). */
@@ -1065,7 +1061,7 @@ export interface NerEntityCanonicalizerOffer {
 /** Offered shape of provision `ner.finisher_batch` (kind `ner.finisher_batch.offer`). */
 export interface NerFinisherBatchOffer {
   __kind?: "ner.finisher_batch.offer";
-  entities: unknown;
+  entities_json: unknown;
 }
 
 /** Offered shape of provision `ner.item_proposal` (kind `ner.item_proposal.offer`). */
@@ -1650,7 +1646,7 @@ export interface SeoCoverageAnalysisOffer {
 /** Offered shape of provision `seo.finding_fix` (kind `seo.finding_fix.offer`). */
 export interface SeoFindingFixOffer {
   __kind?: "seo.finding_fix.offer";
-  fix_context: {
+  fix_context_json: {
   page: unknown;
   site: unknown;
   __kind: "seo_finding_fix_context";
@@ -1691,8 +1687,8 @@ export interface SeoLandscapeBriefOffer {
 /** Offered shape of provision `seo.page_analysis` (kind `seo.page_analysis.offer`). */
 export interface SeoPageAnalysisOffer {
   __kind?: "seo.page_analysis.offer";
-  site_context: unknown;
-  page_location: unknown;
+  site_context?: unknown;
+  page_location?: unknown;
   declared_target_keyword?: string;
   page_url: string;
   page_title?: string;
@@ -1701,16 +1697,22 @@ export interface SeoPageAnalysisOffer {
   gsc_queries?: unknown;
   analyzer_version: string;
   page_content: string;
+  gsc_queries_json: unknown;
+  page_location_json: unknown;
+  site_context_json: unknown;
 }
 
 /** Offered shape of provision `seo.page_keyword_mapping` (kind `seo.page_keyword_mapping.offer`). */
 export interface SeoPageKeywordMappingOffer {
   __kind?: "seo.page_keyword_mapping.offer";
   topic_slug: string;
-  cluster_keywords: unknown;
-  existing_pages: unknown;
-  site_constraints: unknown;
+  cluster_keywords?: unknown;
+  existing_pages?: unknown;
+  site_constraints?: unknown;
   mapper_version: string;
+  cluster_keywords_json: unknown;
+  existing_pages_json: unknown;
+  site_constraints_json: unknown;
 }
 
 /** Offered shape of provision `seo.press_source_request` (kind `seo.press_source_request.offer`). */

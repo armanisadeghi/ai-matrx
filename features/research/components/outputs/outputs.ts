@@ -10,7 +10,23 @@
 // this index points at them so the Studio can show status without re-querying
 // every domain.
 
-export type OutputKind = "podcast" | "blog" | "slides" | "seo";
+/**
+ * PUBLISHING kinds (podcast/blog/slides/seo) come from the Outputs Studio
+ * cards; DOMAIN kinds are the six Context-Builder reports (D5: they used to be
+ * side effects — generated, streamed, and never persisted anywhere). Each
+ * domain output's kind is declared on its `DomainOutputDefinition`.
+ */
+export type OutputKind =
+  | "podcast"
+  | "blog"
+  | "slides"
+  | "seo"
+  | "brand_profile"
+  | "reputation_business"
+  | "reputation_personal"
+  | "gap_analysis"
+  | "literature_review"
+  | "competitive_landscape";
 
 export type OutputStatus = "generating" | "ready" | "failed" | "stale";
 
@@ -31,12 +47,9 @@ export interface OutputAsset {
   meta?: Record<string, unknown>;
 }
 
-export interface ResearchOutputs {
-  podcast?: { assets: OutputAsset[] };
-  blog?: { assets: OutputAsset[] };
-  slides?: { assets: OutputAsset[] };
-  seo?: { assets: OutputAsset[] };
-}
+export type ResearchOutputs = Partial<
+  Record<OutputKind, { assets: OutputAsset[] }>
+>;
 
 /**
  * The podcast asset's persisted `meta`. EVERY media URL the episode produced is
@@ -81,7 +94,18 @@ export function podcastMediaFrom(asset: OutputAsset): PodcastMedia {
   };
 }
 
-export const OUTPUT_KINDS: OutputKind[] = ["podcast", "blog", "slides", "seo"];
+export const OUTPUT_KINDS: OutputKind[] = [
+  "podcast",
+  "blog",
+  "slides",
+  "seo",
+  "brand_profile",
+  "reputation_business",
+  "reputation_personal",
+  "gap_analysis",
+  "literature_review",
+  "competitive_landscape",
+];
 
 function isAsset(v: unknown): v is OutputAsset {
   if (!v || typeof v !== "object") return false;
