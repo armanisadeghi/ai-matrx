@@ -59,7 +59,6 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
-import FloatingSheet from "@/components/official/FloatingSheet";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
@@ -119,7 +118,9 @@ import { ClassCell, RangePicker, StampCell } from "./cells";
 import { ColumnChooser } from "./ColumnChooser";
 import type { PickedValue } from "./DimensionValuePicker";
 import { SavedViewTabs } from "./SavedViewTabs";
-import { WhyBody, WhyPopover } from "./WhyPopover";
+import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
+import { useOpenGscWhyScoreWindow } from "@/features/overlays/openers/gscWhyScoreWindow";
+
 
 /** Server-sortable ids. Anything else sorts the rows on screen — and says so. */
 const SERVER_SORTABLE = new Set([
@@ -136,6 +137,7 @@ export function KeywordWorkbench() {
   const params = useSearchParams();
   const queryClient = useQueryClient();
   const openDrilldown = useOpenGscDrilldownWindow();
+  const openWhyScore = useOpenGscWhyScoreWindow();
 
   const state = parseWorkbenchState(params);
   const push = (next: WorkbenchState) => {
@@ -232,8 +234,6 @@ export function KeywordWorkbench() {
   const [selectingAll, setSelectingAll] = useState(false);
   const [viewsBusy, setViewsBusy] = useState(false);
   const [renaming, setRenaming] = useState<SavedView | null>(null);
-  /** The row whose receipt the right-click menu asked to see in full. */
-  const [whyRow, setWhyRow] = useState<GscBreakdownRow | null>(null);
   const [savingNew, setSavingNew] = useState(false);
   const clickedRow = useRef<GscBreakdownRow | null>(null);
 
@@ -519,17 +519,16 @@ export function KeywordWorkbench() {
             >
               {value.value_band ? humanizeSlug(value.value_band) : "—"}
             </span>
-            <WhyPopover
-              reasons={value.reasons}
-              source={
-                value.value_source === "override"
-                  ? "override"
-                  : value.value_source === "computed"
-                    ? "computed"
-                    : "unvalued"
-              }
-              brandId={brandId}
-              siteId={site.id}
+            <WhyScoreHint
+              subject={{
+                keywordId: row.keyword_id,
+                keyword: row.key,
+                valueBand: value.value_band,
+                valueScore: value.value_score,
+                valueSource: value.value_source,
+                reasons: value.reasons,
+              }}
+              context={{ brandId, siteId: site.id, keyword: row.key }}
             />
           </span>
         );
@@ -971,14 +970,19 @@ export function KeywordWorkbench() {
                       "The full receipt, with a door to every rule behind it",
                     onSelect: () => {
                       const row = clickedRow.current;
-                      const value = row ? valueFor(row) : undefined;
-                      if (!value) {
+                      if (!row?.keyword_id) {
                         toast.error(
-                          "No score has been worked out for that row yet.",
+                          "Right-click a keyword row to see its receipt.",
                         );
                         return;
                       }
-                      setWhyRow(row);
+                      openWhyScore({
+                        siteId: site.id,
+                        siteName: site.domain,
+                        brandId,
+                        keywordId: row.keyword_id,
+                        keyword: row.key,
+                      });
                     },
                   },
                   {
@@ -998,44 +1002,6 @@ export function KeywordWorkbench() {
           </NonEditableContextMenu>
         )}
       </div>
-
-      {whyRow ? (
-        <FloatingSheet
-          isOpen
-          onClose={() => setWhyRow(null)}
-          title="Why this score"
-          description={whyRow.key}
-          position="right"
-          width="md"
-        >
-          <div className="p-4">
-            {(() => {
-              const value = valueFor(whyRow);
-              if (!value) {
-                return (
-                  <p className="text-xs text-muted-foreground">
-                    No score has been worked out for this keyword yet.
-                  </p>
-                );
-              }
-              return (
-                <WhyBody
-                  reasons={value.reasons}
-                  source={
-                    value.value_source === "override"
-                      ? "override"
-                      : value.value_source === "computed"
-                        ? "computed"
-                        : "unvalued"
-                  }
-                  brandId={brandId}
-                  siteId={site.id}
-                />
-              );
-            })()}
-          </div>
-        </FloatingSheet>
-      ) : null}
 
       {savingNew ? (
         <TextInputDialog
