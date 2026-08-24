@@ -53,6 +53,7 @@ import {
   withResolvedChoices,
 } from "@/lib/field-formats/choices";
 import { defaultFormatForBase } from "@/lib/field-formats/registry";
+import { useTableViewUrlState } from "@/features/data-tables/hooks/useTableViewUrlState";
 import {
   useTableRealtime,
   type TableRealtimeEvent,
@@ -317,14 +318,33 @@ const UserTableViewer = ({
     sharedEditorGrant.granted;
 
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+  // ─── View state lives in the URL ─────────────────────────────────────────
+  //
+  // Search, sort, column filters, page and page size are all query parameters,
+  // so a refresh reproduces exactly what was on screen, a copied link shows a
+  // colleague the same view, and Back/Forward walk the user's own decisions
+  // rather than only the route. Same parameter vocabulary (`q` `sort` `f` `p`
+  // `ps`) every other table surface in the app uses.
+  const {
+    searchTerm,
+    setSearchTerm,
+    sortField,
+    setSortField,
+    sortDirection,
+    setSortDirection,
+    columnFilters,
+    setColumnFilters,
+    currentPage,
+    setCurrentPage,
+    limit,
+    setLimit,
+    resetView,
+    isViewCustomized,
+  } = useTableViewUrlState({ defaultPageSize: 20, resetKey: tableId });
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
   // Sorting state
-  const [sortField, setSortField] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [savedSortField, setSavedSortField] = useState<string | null>(null);
   const [savedSortDirection, setSavedSortDirection] = useState<
     "asc" | "desc" | null
@@ -332,13 +352,11 @@ const UserTableViewer = ({
   const [savingSortPreference, setSavingSortPreference] = useState(false);
 
   // Search state
-  const [searchTerm, setSearchTerm] = useState("");
 
   // Per-column filter state. Maps field_name -> a STRUCTURED filter (pick
   // values / match text / range) — never a bare substring again. See
   // `features/data-tables/column-filters.ts` for why, and for the one place a
   // row is tested against a filter.
-  const [columnFilters, setColumnFilters] = useState<ColumnFilterMap>({});
   /** Set when a filter ran over a capped subset — never left implicit. */
   const [filterTruncatedAt, setFilterTruncatedAt] = useState<number | null>(null);
   /** Set when the rows a filter needs could not be loaded at all. */
