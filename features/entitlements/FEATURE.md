@@ -457,6 +457,17 @@ real (F6, 2026-07-13).
 
 ## Change Log
 
+- **2026-08-22** — **THE EDUCATION FLIP (Q2, ruled 2026-08-19).** All 16 `education.*`
+  capabilities are `enforced: true` — registry AND `billing.capability` rows flipped
+  together. Live-verified both ways in the same session: a fresh (free-tier) user
+  resolves 2 real windows per capability (rolling burst + monthly, e.g.
+  `generate_cards` 10/5h + 30/month) with `allowed`/`cap_reached` semantics; every
+  current account (336 complimentary-premium `user_plan` rows) has NO premium limit
+  rows and resolves UNLIMITED — the cap lands after the aha-moment by construction and
+  no existing user is touched. D-5 unbroken (core practice never metered — all 16 are
+  AI generation/grading); suite 19/19, with the two "un-enforced example" fixtures
+  repointed from `education.generate_cards` to `platform.points`.
+
 - **2026-08-21** — Stripe credential resolution selects test/live by deployment identity and refuses cross-account fallback.
 
 - **2026-08-20** — **The first tests this feature has ever had, and D-5 written down.**

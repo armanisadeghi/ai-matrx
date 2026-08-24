@@ -22,8 +22,9 @@ jest.mock("@/utils/supabase/client", () => ({
 
 /** An enforced capability — the only kind that can reach the resolver. */
 const ENFORCED = "outreach.send_volume" as const;
-/** An un-enforced one — every education capability is in this state today. */
-const UNENFORCED = "education.generate_cards" as const;
+/** An un-enforced one (education flipped to enforced 2026-08-22, Q2 ruling —
+ *  platform.points is the surviving live un-enforced example). */
+const UNENFORCED = "platform.points" as const;
 
 beforeEach(() => {
   rpc.mockReset();

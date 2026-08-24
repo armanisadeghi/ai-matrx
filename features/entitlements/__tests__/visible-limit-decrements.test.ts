@@ -31,9 +31,11 @@ jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({ schema: () => ({ rpc: (...a: unknown[]) => rpc(...a) }) }),
 }));
 
-// An UN-ENFORCED capability on purpose — that is the live state of all 16
-// education capabilities, and the case a short-circuit would break.
-const CAP = "education.generate_cards" as const;
+// An UN-ENFORCED capability on purpose — the case a short-circuit would
+// break. Was education.generate_cards until the 2026-08-22 Q2 flip enforced
+// all 16 education capabilities; platform.points is the surviving live
+// un-enforced example (real users spend it today, limits visible, no cap).
+const CAP = "platform.points" as const;
 
 const asState = (e: unknown) => ({ entitlements: e }) as unknown as RootState;
 

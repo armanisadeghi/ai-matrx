@@ -19,10 +19,16 @@
 //   EVERY registered capability, enforced or not — F1), and the hook/meter read
 //   those. Keeping a limit here too would be a second source of truth; don't.
 //
-// The exact free-tier numbers get one FYI-with-veto look from Arman before any
-// capability is enforced (brief Deliverable 5). Until then every capability
-// ships `enforced: false` — nothing is silently capped, but the limits ARE now
-// visible in-product ahead of the cap (TRUST mandate).
+// FLIPPED 2026-08-22 (education): all 16 `education.*` capabilities are
+// `enforced: true`, per Arman's Q2 ruling (2026-08-19 — "$5–8/mo billed
+// annually, on the GENEROUS staged variant already in billing.capability_limit,
+// core practice never metered"). Limits exist ONLY for tier `free`
+// (monthly quota + rolling burst per capability); any higher tier has no
+// limit rows and resolves UNLIMITED — so pre-launch complimentary-Pro
+// accounts are untouched, and the caps land after the aha-moment by
+// construction. D-5 stays law: nothing here meters studying — every
+// enforced key is AI generation/grading depth (guarded by
+// __tests__/core-practice-never-metered.test.ts).
 
 import type { EntitlementPeriod, EntitlementTier } from "./types";
 
@@ -227,7 +233,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've used your flashcard generations this month. Upgrade for unlimited decks.",
   }),
@@ -239,7 +245,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've used your card image searches this month. Upgrade to keep illustrating your decks.",
   }),
@@ -251,7 +257,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've used your card image generations this month. Upgrade for more verified images.",
   }),
@@ -263,7 +269,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've used your card enrichments this month. Upgrade for unlimited enrichment.",
   }),
@@ -274,7 +280,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "day",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've reached today's tutor messages. Upgrade for unlimited tutoring.",
   }),
@@ -285,7 +291,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've used your audio generations this month. Upgrade for more.",
   }),
@@ -296,7 +302,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've used your quiz generations this month. Upgrade for unlimited quizzes.",
   }),
@@ -307,7 +313,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've used your practice tests this month. Upgrade for unlimited exams.",
   }),
@@ -318,7 +324,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've used your mind maps this month. Upgrade for unlimited maps.",
   }),
@@ -330,7 +336,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've used your memory-aid generations this month. Upgrade for unlimited aids.",
   }),
@@ -341,7 +347,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've used your note generations this month. Upgrade for more.",
   }),
@@ -353,7 +359,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "day",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've reached today's live gradings. Upgrade for unlimited AI grading.",
   }),
@@ -365,7 +371,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "day",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've reached today's spoken practice sessions. Upgrade for unlimited oral exam, interview, and debate practice.",
   }),
@@ -377,7 +383,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "day",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've reached today's handwritten-work gradings. Upgrade for unlimited photo grading.",
   }),
@@ -391,7 +397,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     // (brief Coordinates: P10). Free rooms are large.
     defaultFreeLimit: 50,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage: "Upgrade to host larger game rooms.",
   }),
   "education.ingest_document": def({
@@ -402,7 +408,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
-    enforced: false,
+    enforced: true,
     upgradeMessage:
       "You've used your document uploads this month. Upgrade for more.",
   }),
