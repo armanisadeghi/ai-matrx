@@ -809,6 +809,20 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-24 — **Right-click context menu (v3) on the four CRM tables.**
+  `features/crm/components/crm-row-actions.tsx` is the ONE definition of what
+  you can do to a CRM row (`useCrmRowMenu` + the per-kind target builders);
+  `/crm`, `/crm/deals`, `/crm/outreach-lists` and
+  `/crm/outreach-lists/[listId]` each wrap their `MatrxDataTable` in ONE
+  `NonEditableContextMenu` and delegate per row via `data-row-id`. Attach To
+  targets the RIGHT-CLICKED record (`CONTEXT_MENU_ENTITY_KEY` → `party` /
+  `crm_deal` / `crm_outreach_list`; an outreach member attaches as its party),
+  and the row's existing "…" verbs are reused verbatim through
+  `itemMenuConfigToExtraSections` — no page re-implements a write. Deals also
+  gained a real "Move to stage" submenu on both affordances, writing through
+  the same `moveDealToStage` the board drag uses. `/crm/deals` passes no
+  `surfaceName` because no deals surface manifest exists yet.
+
 - 2026-08-24 — Outreach-list member search keeps the input immediate and
   debounces the server-paged read by 300 ms; it no longer fetches once per
   character. The main party/deal lists already debounce in their list hooks.

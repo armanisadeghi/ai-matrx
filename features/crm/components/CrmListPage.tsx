@@ -104,6 +104,8 @@ import {
   PARTY_TEXT_FILTER_KEYS,
 } from "../types";
 import { PARTY_COLUMNS } from "./columns";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { partyMenuTarget, useCrmRowMenu } from "./crm-row-actions";
 import { AddToOutreachListDialog } from "./outreach-lists/AddToOutreachListDialog";
 import { useOpenCrmCreatePartyWindow } from "@/features/overlays/openers/crmCreatePartyWindow";
 import { CRM_CREATE_NAME_PARAM, CRM_CREATE_PARAM } from "../routes";
@@ -466,7 +468,10 @@ export function CrmListPage({
   const createHandled = useRef(false);
   useEffect(() => {
     if (createHandled.current) return;
-    if (requestedCreateKind !== "person" && requestedCreateKind !== "organization") {
+    if (
+      requestedCreateKind !== "person" &&
+      requestedCreateKind !== "organization"
+    ) {
       return;
     }
     createHandled.current = true;
@@ -557,7 +562,9 @@ export function CrmListPage({
       await action(ids);
       setSelectedIds([]);
       list.refresh();
-      toast.success(`${label} · ${ids.length.toLocaleString()} record${ids.length === 1 ? "" : "s"}`);
+      toast.success(
+        `${label} · ${ids.length.toLocaleString()} record${ids.length === 1 ? "" : "s"}`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : `${label} failed`);
     } finally {
@@ -801,6 +808,31 @@ export function CrmListPage({
       ],
     });
   };
+
+  // ONE right-click menu for the whole pane — the row is resolved from the
+  // DOM at open (`data-row-id`), and the row's OWN "…" config rides in as
+  // extra sections, so both affordances offer exactly the same verbs.
+  const rowMenu = useCrmRowMenu<PartyListRow>({
+    rows: () => list.rows,
+    toTarget: partyMenuTarget,
+    rowMenu: menuFor,
+    extraItems: (target) =>
+      inTrash
+        ? []
+        : [
+            {
+              kind: "item",
+              id: "crm-add-to-outreach-list",
+              label: "Add to an outreach list",
+              icon: Megaphone,
+              description: "Enroll this record without leaving the list",
+              onSelect: () => {
+                setSelectedIds([target.id]);
+                setAddToOutreachListOpen(true);
+              },
+            },
+          ],
+  });
 
   const onTableState = (next: MatrxDataTableQueryState) => {
     const nextSort = next.sort?.id ?? prefs.sort;
@@ -1093,115 +1125,127 @@ export function CrmListPage({
         </div>
 
         <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
-          <MatrxDataTable<PartyListRow>
-            data={list.rows}
-            columns={PARTY_COLUMNS}
-            getRowId={(row) => row.id}
-            isLoading={list.isLoading}
-            isFetching={list.isFetching}
-            zebra
-            pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
-            className={cn(
-              prefs.density === "compact" && "text-xs [&_td]:py-1 [&_th]:py-1",
-            )}
-            query={{
-              mode: "controlled",
-              totalItems: list.total,
-              state: {
-                page: list.query.page,
-                pageSize: prefs.pageSize,
-                search: list.query.search,
-                anyOf: "",
-                columnFilters: toTableFilters(list.query.filters),
-                sort: { id: prefs.sort, direction: prefs.direction },
-              },
-              onStateChange: onTableState,
-            }}
-            toolbar={{
-              search: true,
-              searchPlaceholder: "Search CRM records…",
-              facets: [
-                {
-                  type: "button-group",
-                  id: "kind",
-                  value: list.query.kind,
-                  defaultValue: "all",
-                  options: [
-                    { value: "all", label: "All" },
+          <NonEditableContextMenu
+            sourceFeature="crm"
+            surfaceName={surfaceName}
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={rowMenu.resolveContextOnOpen}
+            extraSections={rowMenu.sections}
+          >
+            <div className="flex h-full min-h-0 flex-col">
+              <MatrxDataTable<PartyListRow>
+                data={list.rows}
+                columns={PARTY_COLUMNS}
+                getRowId={(row) => row.id}
+                isLoading={list.isLoading}
+                isFetching={list.isFetching}
+                zebra
+                pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
+                className={cn(
+                  prefs.density === "compact" &&
+                    "text-xs [&_td]:py-1 [&_th]:py-1",
+                )}
+                query={{
+                  mode: "controlled",
+                  totalItems: list.total,
+                  state: {
+                    page: list.query.page,
+                    pageSize: prefs.pageSize,
+                    search: list.query.search,
+                    anyOf: "",
+                    columnFilters: toTableFilters(list.query.filters),
+                    sort: { id: prefs.sort, direction: prefs.direction },
+                  },
+                  onStateChange: onTableState,
+                }}
+                toolbar={{
+                  search: true,
+                  searchPlaceholder: "Search CRM records…",
+                  facets: [
                     {
-                      value: "person",
-                      label: "People",
-                      icon: <Contact className="h-3.5 w-3.5" />,
-                    },
-                    {
-                      value: "organization",
-                      label: "Companies",
-                      icon: <Building2 className="h-3.5 w-3.5" />,
+                      type: "button-group",
+                      id: "kind",
+                      value: list.query.kind,
+                      defaultValue: "all",
+                      options: [
+                        { value: "all", label: "All" },
+                        {
+                          value: "person",
+                          label: "People",
+                          icon: <Contact className="h-3.5 w-3.5" />,
+                        },
+                        {
+                          value: "organization",
+                          label: "Companies",
+                          icon: <Building2 className="h-3.5 w-3.5" />,
+                        },
+                      ],
+                      onChange: (value) => {
+                        if (
+                          value === "all" ||
+                          value === "person" ||
+                          value === "organization"
+                        ) {
+                          list.setQuery({ kind: value });
+                        }
+                      },
                     },
                   ],
-                  onChange: (value) => {
-                    if (
-                      value === "all" ||
-                      value === "person" ||
-                      value === "organization"
-                    ) {
-                      list.setQuery({ kind: value });
-                    }
-                  },
-                },
-              ],
-            }}
-            // Row click opens the record; the "…" menu is the ONE row affordance.
-            detail={{ enabled: false }}
-            window={{ enabled: false }}
-            onRowOpen={openRow}
-            selection={{
-              selectedIds,
-              onSelectedIdsChange: setSelectedIds,
-              noun: "record",
-              // The trash gets its own verbs (D226): restore + purge in bulk.
-              actions: inTrash ? trashBulkActions : bulkActions,
-            }}
-            rowActions={(row) => (
-              <ItemMenu config={menuFor(row)} align="end">
-                <button
-                  type="button"
-                  aria-label={`Actions for ${row.display_name}`}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </button>
-              </ItemMenu>
-            )}
-            copy={{
-              label: "CRM record",
-              listLabel: "CRM records",
-              location: "/crm",
-              rowKind: "crm-party",
-              listKind: "crm-party-list",
-              humanRow: (row) =>
-                `${row.display_name} (${row.party_kind === "person" ? "person" : "company"})${row.job_title ? ` — ${row.job_title}` : ""}${row.employer ? ` @ ${row.employer.display_name}` : ""}`,
-              showRow: false,
-              showToolbar: false,
-            }}
-            emptyState={
-              inTrash
-                ? {
-                    icon: <Trash2 className="h-5 w-5" />,
-                    title: "Trash is empty",
-                    description:
-                      "Deleted records land here and can be restored or permanently deleted.",
-                  }
-                : {
-                    icon: <Plus className="h-5 w-5" />,
-                    title: "No records here",
-                    description:
-                      "Nothing matches this scope and filter combination. Create the first one.",
-                    action: newButtons,
-                  }
-            }
-          />
+                }}
+                // Row click opens the record; the "…" menu is the ONE row affordance.
+                detail={{ enabled: false }}
+                window={{ enabled: false }}
+                onRowOpen={openRow}
+                selection={{
+                  selectedIds,
+                  onSelectedIdsChange: setSelectedIds,
+                  noun: "record",
+                  // The trash gets its own verbs (D226): restore + purge in bulk.
+                  actions: inTrash ? trashBulkActions : bulkActions,
+                }}
+                rowActions={(row) => (
+                  <ItemMenu config={menuFor(row)} align="end">
+                    <button
+                      type="button"
+                      aria-label={`Actions for ${row.display_name}`}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </ItemMenu>
+                )}
+                copy={{
+                  label: "CRM record",
+                  listLabel: "CRM records",
+                  location: "/crm",
+                  rowKind: "crm-party",
+                  listKind: "crm-party-list",
+                  humanRow: (row) =>
+                    `${row.display_name} (${row.party_kind === "person" ? "person" : "company"})${row.job_title ? ` — ${row.job_title}` : ""}${row.employer ? ` @ ${row.employer.display_name}` : ""}`,
+                  showRow: false,
+                  showToolbar: false,
+                }}
+                emptyState={
+                  inTrash
+                    ? {
+                        icon: <Trash2 className="h-5 w-5" />,
+                        title: "Trash is empty",
+                        description:
+                          "Deleted records land here and can be restored or permanently deleted.",
+                      }
+                    : {
+                        icon: <Plus className="h-5 w-5" />,
+                        title: "No records here",
+                        description:
+                          "Nothing matches this scope and filter combination. Create the first one.",
+                        action: newButtons,
+                      }
+                }
+              />
+            </div>
+          </NonEditableContextMenu>
         </div>
 
         <AddToOutreachListDialog

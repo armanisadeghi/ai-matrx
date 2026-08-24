@@ -27,6 +27,9 @@ import type {
   MatrxDataTableQueryState,
 } from "@/components/official/matrx-data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
+import type { ItemMenuConfig } from "@/components/official/item/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { dealMenuTarget, useCrmRowMenu } from "../crm-row-actions";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -40,6 +43,7 @@ import { useOrgMembers } from "../../deals/useOrgMembers";
 import {
   deleteDeal,
   fetchBoardDeals,
+  moveDealToStage,
   restoreDeal,
 } from "../../deals/service";
 import type {
@@ -84,7 +88,11 @@ function fromTableFilters(state: ColumnFiltersState): DealListFilters {
       const values = f.values?.length ? f.values : f.value ? [f.value] : [];
       if (values.length === 0) continue;
       if (id === "stage_id") out.stage_id = values;
-      else if (id === "expected_close_date" || id === "updated_at" || id === "created_at") {
+      else if (
+        id === "expected_close_date" ||
+        id === "updated_at" ||
+        id === "created_at"
+      ) {
         const bucket = values.find((v) =>
           (DEAL_DATE_BUCKET_VALUES as readonly string[]).includes(v),
         );
@@ -106,7 +114,10 @@ function toTableFilters(filters: DealListFilters): ColumnFiltersState {
       values: filters.stage_id,
     };
   if (filters.expected_close_date)
-    out.expected_close_date = { kind: "select", value: filters.expected_close_date };
+    out.expected_close_date = {
+      kind: "select",
+      value: filters.expected_close_date,
+    };
   if (filters.updated_at)
     out.updated_at = { kind: "select", value: filters.updated_at };
   if (filters.created_at)
@@ -133,8 +144,13 @@ export function DealsPage() {
     direction: prefs.direction as DealSortDirection,
     pageSize: prefs.pageSize,
   });
-  const { pipelines, stageById, pipelineById, isLoading: pipelinesLoading, error: pipelinesError } =
-    usePipelines();
+  const {
+    pipelines,
+    stageById,
+    pipelineById,
+    isLoading: pipelinesLoading,
+    error: pipelinesError,
+  } = usePipelines();
   const memberOrgIds = useMemo(() => list.ctx?.orgIds ?? [], [list.ctx]);
   const { memberById } = useOrgMembers(memberOrgIds);
 
@@ -145,8 +161,7 @@ export function DealsPage() {
   const inTrash = list.query.view === "trash";
 
   // Board narrows to ONE pipeline; default to the query's, else the first.
-  const boardPipelineId =
-    list.query.pipelineId ?? pipelines[0]?.id ?? null;
+  const boardPipelineId = list.query.pipelineId ?? pipelines[0]?.id ?? null;
   const boardPipeline = boardPipelineId
     ? (pipelineById.get(boardPipelineId) ?? null)
     : null;
@@ -167,7 +182,8 @@ export function DealsPage() {
     void (async () => {
       try {
         const { rows, total } = await fetchBoardDeals(boardPipelineId, ctx);
-        if (!cancelled) setBoard({ rows, total, isLoading: false, error: null });
+        if (!cancelled)
+          setBoard({ rows, total, isLoading: false, error: null });
       } catch (e) {
         if (!cancelled)
           setBoard((prev) => ({
@@ -204,10 +220,14 @@ export function DealsPage() {
     null;
 
   const onTableState = (state: MatrxDataTableQueryState) => {
-    if (state.sort && (state.sort.id !== prefs.sort || state.sort.direction !== prefs.direction)) {
+    if (
+      state.sort &&
+      (state.sort.id !== prefs.sort || state.sort.direction !== prefs.direction)
+    ) {
       setPrefs({ sort: state.sort.id, direction: state.sort.direction });
     }
-    if (state.pageSize !== prefs.pageSize) setPrefs({ pageSize: state.pageSize });
+    if (state.pageSize !== prefs.pageSize)
+      setPrefs({ pageSize: state.pageSize });
     list.setQuery({
       page: state.page,
       search: state.search,
@@ -225,7 +245,9 @@ export function DealsPage() {
         stageById,
         pipeline: list.query.pipelineId
           ? (pipelineById.get(list.query.pipelineId) ?? null)
-          : (pipelines.length === 1 ? pipelines[0] : null),
+          : pipelines.length === 1
+            ? pipelines[0]
+            : null,
         memberById,
       }),
     [stageById, pipelineById, pipelines, list.query.pipelineId, memberById],
@@ -249,6 +271,102 @@ export function DealsPage() {
       toast.error(e instanceof Error ? e.message : "Delete failed");
     }
   };
+
+  /**
+   * ONE definition of a deal row's verbs, used by BOTH the row's "…" button
+   * and the pane's right-click menu (`useCrmRowMenu` converts it). A deal's
+   * stage is its authority — the DB derives status/closed_at from the move —
+   * so "Move to stage" writes through the same `moveDealToStage` the board's
+   * drag uses, never a second path.
+   */
+  const menuFor =
+    (row: DealListRow): (() => ItemMenuConfig) =>
+    () => {
+      if (inTrash) {
+        return {
+          sections: [
+            {
+              id: "main",
+              items: [
+                {
+                  id: "restore",
+                  label: "Restore",
+                  onSelect: async () => {
+                    try {
+                      await restoreDeal(row.id);
+                      list.removeRow(row.id);
+                      toast.success(`"${row.name}" restored`);
+                    } catch (e) {
+                      toast.error(
+                        e instanceof Error ? e.message : "Restore failed",
+                      );
+                    }
+                  },
+                },
+              ],
+            },
+          ],
+        };
+      }
+      const stages =
+        pipelines.find((p) => p.stages.some((st) => st.id === row.stage_id))
+          ?.stages ?? [];
+      return {
+        sections: [
+          {
+            id: "main",
+            items: [
+              {
+                id: "open",
+                label: "Open",
+                onSelect: () => router.push(`/crm/deals/${row.id}`),
+              },
+              {
+                id: "delete",
+                label: "Delete",
+                tone: "destructive" as const,
+                onSelect: () => void onDelete(row),
+              },
+            ],
+          },
+          ...(stages.length > 0
+            ? [
+                {
+                  id: "stage",
+                  label: "Move to stage",
+                  items: stages
+                    .filter((stage) => stage.id !== row.stage_id)
+                    .map((stage) => ({
+                      id: `stage-${stage.id}`,
+                      label: stage.name,
+                      onSelect: async () => {
+                        try {
+                          await moveDealToStage({
+                            dealId: row.id,
+                            stageId: stage.id,
+                          });
+                          list.refresh();
+                          refreshBoard();
+                          toast.success(`"${row.name}" → ${stage.name}`);
+                        } catch (e) {
+                          toast.error(
+                            e instanceof Error ? e.message : "Move failed",
+                          );
+                        }
+                      },
+                    })),
+                },
+              ]
+            : []),
+        ],
+      };
+    };
+
+  const rowMenu = useCrmRowMenu<DealListRow>({
+    rows: () => list.rows,
+    toTarget: (row) => dealMenuTarget(row, stageById.get(row.stage_id)?.name),
+    rowMenu: menuFor,
+  });
 
   const pipelineFacetOptions = [
     { value: "all", label: "All pipelines" },
@@ -388,7 +506,11 @@ export function DealsPage() {
                   ...prev,
                   rows: prev.rows.map((r) =>
                     r.id === dealId
-                      ? { ...r, stage_id: stageId, stage_entered_at: new Date().toISOString() }
+                      ? {
+                          ...r,
+                          stage_id: stageId,
+                          stage_entered_at: new Date().toISOString(),
+                        }
                       : r,
                   ),
                 }));
@@ -406,139 +528,109 @@ export function DealsPage() {
             </div>
           )
         ) : (
-          <MatrxDataTable<DealListRow>
-            data={list.rows}
-            columns={columns}
-            getRowId={(row) => row.id}
-            isLoading={list.isLoading}
-            isFetching={list.isFetching}
-            zebra
-            pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
-            query={{
-              mode: "controlled",
-              totalItems: list.total,
-              state: {
-                page: list.query.page,
-                pageSize: prefs.pageSize,
-                search: list.query.search,
-                anyOf: "",
-                columnFilters: toTableFilters(list.query.filters),
-                sort: {
-                  id: prefs.sort,
-                  direction: prefs.direction as DealSortDirection,
-                },
-              },
-              onStateChange: onTableState,
-            }}
-            toolbar={{
-              search: true,
-              searchPlaceholder: "Search deals by name or description…",
-              facets: [
-                {
-                  type: "button-group",
-                  id: "status",
-                  label: "Status",
-                  value: statusFacetValue,
-                  defaultValue: "open",
-                  options: DEAL_STATUS_FILTERS.map((s) => ({
-                    value: s,
-                    label: DEAL_STATUS_FILTER_LABEL[s],
-                  })),
-                  onChange: (value) =>
-                    list.setQuery({
-                      filters: {
-                        ...list.query.filters,
-                        status: value as DealStatusFilter,
-                      },
-                    }),
-                },
-              ],
-            }}
-            detail={{ enabled: false }}
-            window={{ enabled: false }}
-            onRowOpen={(row) => router.push(`/crm/deals/${row.id}`)}
-            rowActions={(row) => (
-              <ItemMenu
-                align="end"
-                config={() => ({
-                  sections: [
+          <NonEditableContextMenu
+            sourceFeature="crm"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={rowMenu.resolveContextOnOpen}
+            extraSections={rowMenu.sections}
+          >
+            <div className="flex h-full min-h-0 flex-col">
+              <MatrxDataTable<DealListRow>
+                data={list.rows}
+                columns={columns}
+                getRowId={(row) => row.id}
+                isLoading={list.isLoading}
+                isFetching={list.isFetching}
+                zebra
+                pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
+                query={{
+                  mode: "controlled",
+                  totalItems: list.total,
+                  state: {
+                    page: list.query.page,
+                    pageSize: prefs.pageSize,
+                    search: list.query.search,
+                    anyOf: "",
+                    columnFilters: toTableFilters(list.query.filters),
+                    sort: {
+                      id: prefs.sort,
+                      direction: prefs.direction as DealSortDirection,
+                    },
+                  },
+                  onStateChange: onTableState,
+                }}
+                toolbar={{
+                  search: true,
+                  searchPlaceholder: "Search deals by name or description…",
+                  facets: [
                     {
-                      id: "main",
-                      items: inTrash
-                        ? [
-                            {
-                              id: "restore",
-                              label: "Restore",
-                              onSelect: async () => {
-                                try {
-                                  await restoreDeal(row.id);
-                                  list.removeRow(row.id);
-                                  toast.success(`"${row.name}" restored`);
-                                } catch (e) {
-                                  toast.error(
-                                    e instanceof Error ? e.message : "Restore failed",
-                                  );
-                                }
-                              },
-                            },
-                          ]
-                        : [
-                            {
-                              id: "open",
-                              label: "Open",
-                              onSelect: () => router.push(`/crm/deals/${row.id}`),
-                            },
-                            {
-                              id: "delete",
-                              label: "Delete",
-                              tone: "destructive" as const,
-                              onSelect: () => void onDelete(row),
-                            },
-                          ],
+                      type: "button-group",
+                      id: "status",
+                      label: "Status",
+                      value: statusFacetValue,
+                      defaultValue: "open",
+                      options: DEAL_STATUS_FILTERS.map((s) => ({
+                        value: s,
+                        label: DEAL_STATUS_FILTER_LABEL[s],
+                      })),
+                      onChange: (value) =>
+                        list.setQuery({
+                          filters: {
+                            ...list.query.filters,
+                            status: value as DealStatusFilter,
+                          },
+                        }),
                     },
                   ],
-                })}
-              >
-                <button
-                  type="button"
-                  aria-label={`Actions for ${row.name}`}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreVertical className="h-3.5 w-3.5" />
-                </button>
-              </ItemMenu>
-            )}
-            copy={{
-              label: "Deal",
-              listLabel: "Deals",
-              location: "/crm/deals",
-              rowKind: "crm-deal",
-              listKind: "crm-deal-list",
-              humanRow: (row) =>
-                `${row.name} — ${stageById.get(row.stage_id)?.name ?? "unknown stage"}`,
-              showRow: false,
-              showToolbar: false,
-            }}
-            emptyState={{
-              icon: <Handshake className="h-6 w-6 text-muted-foreground" />,
-              title: inTrash
-                ? "The trash is empty"
-                : list.query.search ||
-                    Object.keys(list.query.filters).length > 1
-                  ? "No deals match these filters"
-                  : "No deals yet",
-              description: inTrash
-                ? undefined
-                : "Create the first one and work it across the board.",
-              action: !inTrash ? (
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
-                  <Plus className="mr-1 h-3.5 w-3.5" />
-                  New deal
-                </Button>
-              ) : undefined,
-            }}
-          />
+                }}
+                detail={{ enabled: false }}
+                window={{ enabled: false }}
+                onRowOpen={(row) => router.push(`/crm/deals/${row.id}`)}
+                rowActions={(row) => (
+                  <ItemMenu align="end" config={menuFor(row)}>
+                    <button
+                      type="button"
+                      aria-label={`Actions for ${row.name}`}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </button>
+                  </ItemMenu>
+                )}
+                copy={{
+                  label: "Deal",
+                  listLabel: "Deals",
+                  location: "/crm/deals",
+                  rowKind: "crm-deal",
+                  listKind: "crm-deal-list",
+                  humanRow: (row) =>
+                    `${row.name} — ${stageById.get(row.stage_id)?.name ?? "unknown stage"}`,
+                  showRow: false,
+                  showToolbar: false,
+                }}
+                emptyState={{
+                  icon: <Handshake className="h-6 w-6 text-muted-foreground" />,
+                  title: inTrash
+                    ? "The trash is empty"
+                    : list.query.search ||
+                        Object.keys(list.query.filters).length > 1
+                      ? "No deals match these filters"
+                      : "No deals yet",
+                  description: inTrash
+                    ? undefined
+                    : "Create the first one and work it across the board.",
+                  action: !inTrash ? (
+                    <Button size="sm" onClick={() => setCreateOpen(true)}>
+                      <Plus className="mr-1 h-3.5 w-3.5" />
+                      New deal
+                    </Button>
+                  ) : undefined,
+                }}
+              />
+            </div>
+          </NonEditableContextMenu>
         )}
       </div>
 

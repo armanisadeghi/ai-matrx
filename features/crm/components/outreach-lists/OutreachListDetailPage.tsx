@@ -41,6 +41,8 @@ import type {
   MatrxDataTableQueryState,
 } from "@/components/official/matrx-data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { outreachMemberMenuTarget, useCrmRowMenu } from "../crm-row-actions";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
@@ -583,6 +585,15 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       ],
     });
 
+  // ONE menu for the members pane. Attach To targets the PARTY behind the
+  // clicked member (the join row is plumbing), and the member's own verbs
+  // arrive from the SAME `memberMenu` config the "…" button uses.
+  const rowMenu = useCrmRowMenu<OutreachListMemberWithParty>({
+    rows: () => members,
+    toTarget: (row) => outreachMemberMenuTarget(row, list?.name),
+    rowMenu: memberMenu,
+  });
+
   const onTableState = (next: MatrxDataTableQueryState) => {
     if (next.search !== search) {
       setSearch(next.search);
@@ -856,78 +867,89 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
         </div>
       ) : (
         <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
-          <MatrxDataTable<OutreachListMemberWithParty>
-            data={members}
-            columns={memberColumns}
-            getRowId={(row) => row.id}
-            isLoading={isLoading}
-            isFetching={isFetching}
-            zebra
-            detail={{ enabled: false }}
-            window={{ enabled: false }}
-            onRowOpen={(row) => {
-              if (row.party) router.push(`/crm/${row.party.id}`);
-            }}
-            query={{
-              mode: "controlled",
-              totalItems: total,
-              state: {
-                page,
-                pageSize: PAGE_SIZE,
-                search,
-                anyOf: "",
-                columnFilters: {},
-                sort: { id: "created_at", direction: "asc" },
-              },
-              onStateChange: onTableState,
-            }}
-            toolbar={{ search: true, searchPlaceholder: "Search members…" }}
-            rowActions={(row) => (
-              <ItemMenu config={memberMenu(row)} align="end">
-                <button
-                  type="button"
-                  aria-label={`Actions for ${row.party?.display_name ?? "member"}`}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </button>
-              </ItemMenu>
-            )}
-            copy={{
-              label: "Outreach list member",
-              listLabel: "Outreach list members",
-              location: `/crm/outreach-lists/${listId}`,
-              rowKind: "crm-outreach-list-member",
-              listKind: "crm-outreach-list-member-list",
-              humanRow: (row) =>
-                `${row.party?.display_name ?? row.party_id} — ${row.status}, ${row.attempt_count} attempts`,
-              showRow: false,
-              showToolbar: false,
-            }}
-            emptyState={{
-              icon: <ListPlus className="h-5 w-5" />,
-              title:
-                statusFilter === "all"
-                  ? "No members yet"
-                  : `No ${statusFilter.replace(/_/g, " ")} members`,
-              description:
-                statusFilter === "all"
-                  ? "Add members from the CRM list (select rows → Add to list) or enroll everyone matching a filter."
-                  : "Pick another status chip above, or clear the filter.",
-              action:
-                statusFilter === "all" ? (
-                  <Button
-                    size="sm"
-                    className="h-7 gap-1 px-2 text-xs"
-                    onClick={() => setAddOpen(true)}
-                  >
-                    <ListPlus className="h-3.5 w-3.5" />
-                    Add members
-                  </Button>
-                ) : undefined,
-            }}
-          />
+          <NonEditableContextMenu
+            sourceFeature="crm"
+            surfaceName={CRM_OUTREACH_LISTS_SURFACE_NAME}
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={rowMenu.resolveContextOnOpen}
+            extraSections={rowMenu.sections}
+          >
+            <div className="flex h-full min-h-0 flex-col">
+              <MatrxDataTable<OutreachListMemberWithParty>
+                data={members}
+                columns={memberColumns}
+                getRowId={(row) => row.id}
+                isLoading={isLoading}
+                isFetching={isFetching}
+                zebra
+                detail={{ enabled: false }}
+                window={{ enabled: false }}
+                onRowOpen={(row) => {
+                  if (row.party) router.push(`/crm/${row.party.id}`);
+                }}
+                query={{
+                  mode: "controlled",
+                  totalItems: total,
+                  state: {
+                    page,
+                    pageSize: PAGE_SIZE,
+                    search,
+                    anyOf: "",
+                    columnFilters: {},
+                    sort: { id: "created_at", direction: "asc" },
+                  },
+                  onStateChange: onTableState,
+                }}
+                toolbar={{ search: true, searchPlaceholder: "Search members…" }}
+                rowActions={(row) => (
+                  <ItemMenu config={memberMenu(row)} align="end">
+                    <button
+                      type="button"
+                      aria-label={`Actions for ${row.party?.display_name ?? "member"}`}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </ItemMenu>
+                )}
+                copy={{
+                  label: "Outreach list member",
+                  listLabel: "Outreach list members",
+                  location: `/crm/outreach-lists/${listId}`,
+                  rowKind: "crm-outreach-list-member",
+                  listKind: "crm-outreach-list-member-list",
+                  humanRow: (row) =>
+                    `${row.party?.display_name ?? row.party_id} — ${row.status}, ${row.attempt_count} attempts`,
+                  showRow: false,
+                  showToolbar: false,
+                }}
+                emptyState={{
+                  icon: <ListPlus className="h-5 w-5" />,
+                  title:
+                    statusFilter === "all"
+                      ? "No members yet"
+                      : `No ${statusFilter.replace(/_/g, " ")} members`,
+                  description:
+                    statusFilter === "all"
+                      ? "Add members from the CRM list (select rows → Add to list) or enroll everyone matching a filter."
+                      : "Pick another status chip above, or clear the filter.",
+                  action:
+                    statusFilter === "all" ? (
+                      <Button
+                        size="sm"
+                        className="h-7 gap-1 px-2 text-xs"
+                        onClick={() => setAddOpen(true)}
+                      >
+                        <ListPlus className="h-3.5 w-3.5" />
+                        Add members
+                      </Button>
+                    ) : undefined,
+                }}
+              />
+            </div>
+          </NonEditableContextMenu>
         </div>
       )}
 
