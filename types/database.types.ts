@@ -44975,7 +44975,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      system_schedule_alarms: {
+        Args: { p_overdue_grace_minutes?: number }
+        Returns: {
+          alarm: string
+          consecutive_failures: number
+          detail: string
+          enabled: boolean
+          last_run_at: string
+          next_due_at: string
+          severity: string
+          suspended_at: string
+          task_id: string
+          title: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

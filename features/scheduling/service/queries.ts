@@ -237,3 +237,38 @@ export function stripTriggerType(
   const { type: _type, ...rest } = trigger;
   return rest;
 }
+
+/**
+ * SYSTEM SCHEDULE ALARMS — the schedules that need a human.
+ *
+ * `scheduler.sch_task` carries only the canonical std_* policies (D140), so a
+ * console read shows the VIEWER'S OWN schedules and a service-owned system
+ * schedule is invisible. On 2026-08-23 that let an APPROVED nightly be
+ * repeat-guard-suspended and sit unread for a day. This is the super-admin
+ * SECURITY DEFINER read that makes it visible without touching RLS —
+ * `scheduler.system_schedule_alarms` returns ONLY rows needing a human
+ * (suspended / overdue past grace / last run failed), so it can never become
+ * wallpaper. A non-super-admin caller is refused by the function itself.
+ */
+export interface SystemScheduleAlarm {
+  task_id: string;
+  title: string;
+  alarm: "suspended" | "overdue" | "failing";
+  severity: "critical" | "warning";
+  detail: string;
+  enabled: boolean;
+  next_due_at: string | null;
+  last_run_at: string | null;
+  suspended_at: string | null;
+  consecutive_failures: number | null;
+}
+
+export async function fetchSystemScheduleAlarms(
+  overdueGraceMinutes = 90,
+): Promise<SystemScheduleAlarm[]> {
+  const { data, error } = await schedulerDb(supabase).rpc("system_schedule_alarms", {
+    p_overdue_grace_minutes: overdueGraceMinutes,
+  });
+  if (error) throw pgErrorToError(error);
+  return (data ?? []) as SystemScheduleAlarm[];
+}

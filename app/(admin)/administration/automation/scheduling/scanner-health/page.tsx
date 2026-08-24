@@ -19,8 +19,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { getStatus } from "@/features/scheduling/service/schedulerClient";
+import {
+  fetchSystemScheduleAlarms,
+  type SystemScheduleAlarm,
+} from "@/features/scheduling/service/queries";
 import type { ScannerStatusResponse } from "@/features/scheduling/service/schedulerApi.types";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   definedOnly,
   useAdminSchedulingScopeSlice,
@@ -30,6 +35,16 @@ export default function ScannerHealthPage() {
   const [status, setStatus] = useState<ScannerStatusResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  /**
+   * THE ALARM NOBODY READS (2026-08-24). A running scanner is not a healthy
+   * schedule: on 2026-08-23 the scanner was fine and an APPROVED nightly was
+   * repeat-guard-suspended, recorded perfectly, and read by no one for a day.
+   * These rows are the schedules that need a human — and they are read through
+   * a super-admin SECURITY DEFINER function because `sch_task` has no admin RLS
+   * clause, so a system schedule is invisible to an ordinary console read.
+   */
+  const [alarms, setAlarms] = useState<SystemScheduleAlarm[] | null>(null);
+  const [alarmError, setAlarmError] = useState<string | null>(null);
 
   // Everything the poll returns, plus why the poll failed if it did. The
   // scanner's OWN error and an unreachable backend are different facts, so
@@ -54,14 +69,32 @@ export default function ScannerHealthPage() {
   const load = async () => {
     setLoading(true);
     setError(null);
-    try {
-      const data = await getStatus();
-      setStatus(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
+    // The scanner status and the schedule alarms are DIFFERENT facts: the
+    // scanner can be perfectly healthy while an approved schedule is off. One
+    // failing must never hide the other, so they settle independently.
+    const [statusResult, alarmResult] = await Promise.allSettled([
+      getStatus(),
+      fetchSystemScheduleAlarms(),
+    ]);
+    if (statusResult.status === "fulfilled") setStatus(statusResult.value);
+    else
+      setError(
+        statusResult.reason instanceof Error
+          ? statusResult.reason.message
+          : String(statusResult.reason),
+      );
+    if (alarmResult.status === "fulfilled") {
+      setAlarms(alarmResult.value);
+      setAlarmError(null);
+    } else {
+      setAlarms(null);
+      setAlarmError(
+        alarmResult.reason instanceof Error
+          ? alarmResult.reason.message
+          : String(alarmResult.reason),
+      );
     }
+    setLoading(false);
   };
 
   // Live status poll — but only while this admin tab is actually visible.
@@ -121,6 +154,72 @@ export default function ScannerHealthPage() {
           Refresh
         </Button>
       </div>
+
+      {/* Schedules that need a human. First on the page, because a green
+          scanner told nobody that an approved nightly had switched itself off. */}
+      {alarms && alarms.length > 0 ? (
+        <div className="space-y-2" data-surface-value="schedule_alarms">
+          {alarms.map((alarm) => (
+            <Alert
+              key={alarm.task_id}
+              variant={alarm.severity === "critical" ? "destructive" : "default"}
+              className={cn(
+                alarm.severity === "critical"
+                  ? undefined
+                  : "border-warning/50 bg-warning/10",
+              )}
+            >
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle className="flex flex-wrap items-center gap-2">
+                <span>
+                  {alarm.alarm === "suspended"
+                    ? "Switched off by the repeat guard"
+                    : alarm.alarm === "overdue"
+                      ? "Enabled but overdue"
+                      : "Last run failed"}
+                </span>
+                {/* THE DOOR LAW: a named schedule opens. `href` is explicit
+                    because these are scheduled tasks, whose record route is
+                    /schedules/<id> — never the workspace task route. */}
+                <EntityRef
+                  token="scheduled_task"
+                  id={alarm.task_id}
+                  name={alarm.title}
+                  href={`/schedules/${alarm.task_id}`}
+                />
+              </AlertTitle>
+              <AlertDescription>
+                <div className="text-xs leading-5">{alarm.detail}</div>
+                <div className="mt-1 text-[11px] text-muted-foreground">
+                  {alarm.alarm === "suspended"
+                    ? "Nothing will run until a person re-enables it."
+                    : alarm.next_due_at
+                      ? `Due ${humanizeRelative(alarm.next_due_at)}.`
+                      : "No next run is scheduled."}
+                  {alarm.consecutive_failures
+                    ? ` ${alarm.consecutive_failures} identical failures in a row.`
+                    : ""}
+                </div>
+              </AlertDescription>
+            </Alert>
+          ))}
+        </div>
+      ) : null}
+      {alarms && alarms.length === 0 ? (
+        <p className="text-xs text-muted-foreground" data-surface-value="schedule_alarms_clear">
+          No schedule needs attention — nothing suspended, overdue, or failing.
+        </p>
+      ) : null}
+      {alarmError ? (
+        <Alert variant="destructive" data-surface-value="schedule_alarms_error">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Schedule alarms could not be read</AlertTitle>
+          <AlertDescription className="text-xs">
+            {alarmError}. A suspended or failing schedule would not be visible
+            here until this read works, so treat this as unknown, not healthy.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {error && (
         <Alert
