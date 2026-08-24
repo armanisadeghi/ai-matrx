@@ -40,7 +40,7 @@ context plus the controls. Everything else is table.
 | `components/DimensionValuePicker.tsx` | The two-step dimension→value **composition** over the canonical `CreatablePicker`. |
 | `components/ColumnChooser.tsx` | Every dimension this site sees, offered as a column (P26). |
 | `components/SavedViewTabs.tsx` | Saved views as tabs — rename, share, reorder, delete, and "keep these changes". |
-| `components/cells.tsx` | The Class dropdown that ASSIGNS, the stamp cell that assigns and filters, the range picker. |
+| `components/cells.tsx` | The Class dropdown that ASSIGNS (with P11's door in it), and the stamp cell that assigns and filters. |
 | `state.ts` | The URL state. A saved view IS this state, stored verbatim. |
 | `data.ts` | The RPC callers. **No write path of its own** — see below. |
 
@@ -58,6 +58,10 @@ context plus the controls. Everything else is table.
 - **Class / Score / Level** → `seo.gsc_keyword_value_for` via
   `getGscKeywordValueFor`.
 - **The table** → `MatrxDataTable` (controlled mode + its selection primitive).
+- **The date window** → `search-console/components/RangeCompareControl.tsx`,
+  which already owns custom ranges and compare. The hand-rolled preset list
+  that replaced it for a day silently refused a custom window — the same P23
+  failure in a control nobody thinks of as a picker.
 
 The ONE human write for a stamp is `seo.gsc_set_keyword_stamps` — single row,
 right-click quick-assign, and a bulk of thousands all land there.
@@ -89,6 +93,9 @@ Migration: `migrations/seo_keyword_workbench_c14.sql` (builds on C13's
   keywords the person can no longer see.
 - **Never imply totality.** When the id sweep caps, the panel says how many it
   took and that there are more.
+- **P11 is a door, never a grey-out.** Class is platform-shared; the dropdown
+  says so and offers "make it your own dimension" rather than a list with no
+  way out. `pnpm check:picker-add` catches the omission.
 
 ## Change log
 
