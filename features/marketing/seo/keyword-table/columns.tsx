@@ -29,6 +29,7 @@ import { ClassCell, StampCell } from "@/features/marketing/seo/keyword-workbench
 import { ServiceCell } from "@/features/marketing/seo/keyword-workbench/components/ServiceCell";
 import { SERVICE_UNPLACED } from "@/features/marketing/seo/keyword-workbench/components/ServicePicker";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
+import { LocationCell } from "@/features/marketing/seo/value-system/locations/LocationCell";
 import type { KeywordCoreColumnId } from "./state";
 import type { KeywordRowsResult } from "./useKeywordRows";
 
@@ -52,6 +53,13 @@ export interface KeywordColumnHandlers {
   ) => void;
   /** Toggle one dimension:value pair in the server-side stamp filter. */
   onFilterByStamp: (dimensionSlug: string, valueKey: string) => void;
+  /**
+   * C10 — filter the whole list to one business location, or to the
+   * `unresolved` / `not_local` bucket. Server-side, like every other filter
+   * here: "the searches this branch owns" over 45,385 keywords must mean all
+   * of them, not the fifty the browser is holding.
+   */
+  onFilterByLocation: (value: string | undefined) => void;
 }
 
 export interface BuildKeywordColumnsInput {
@@ -74,7 +82,15 @@ export function buildKeywordColumns({
   hasCompare,
   handlers,
 }: BuildKeywordColumnsInput): MatrxColumnDef<GscBreakdownRow>[] {
-  const { stampFor, valueFor, serviceFor, classDimension, services } = data;
+  const {
+    stampFor,
+    valueFor,
+    serviceFor,
+    locationFor,
+    locationsReady,
+    classDimension,
+    services,
+  } = data;
   const shown = new Set<string>(visible);
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [];
 
@@ -174,6 +190,48 @@ export function buildKeywordColumns({
             // will create a dimension of their own from whatever they type.
             handlers.onAssign(row.keyword_id, row.key);
           }}
+        />
+      ),
+    });
+  }
+
+  if (shown.has("location")) {
+    /**
+     * C10 — WHICH BRANCH. Options are the brand's real locations plus the two
+     * buckets the Which-location panel already names, so the filter and the
+     * panel cannot disagree about what "unresolved" means.
+     *
+     * With no locations recorded the column still earns its width: every row
+     * reads "No location" or "Not local", which is the honest state and the
+     * reason to go add one — never a silent dash over a missing feature.
+     */
+    columns.push({
+      id: "location",
+      header: "Location",
+      sortable: true,
+      filter: "select",
+      filterSingle: true,
+      filterOptions: [
+        ...data.brandLocations.map((location) => ({
+          value: location.id,
+          label: location.locality
+            ? `${location.name} — ${location.locality}`
+            : location.name,
+        })),
+        { value: "unresolved", label: "Local — no location yet" },
+        { value: "not_local", label: "Not location-specific" },
+      ],
+      width: 180,
+      accessorFn: (row) => {
+        const hit = locationFor(row);
+        if (!hit) return "";
+        return hit.decided_by === "unresolved" ? "~unresolved" : hit.location_name;
+      },
+      cell: (row) => (
+        <LocationCell
+          attribution={locationFor(row)}
+          ready={locationsReady}
+          onFilter={handlers.onFilterByLocation}
         />
       ),
     });

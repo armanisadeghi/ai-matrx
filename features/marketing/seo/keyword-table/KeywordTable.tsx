@@ -81,6 +81,7 @@ import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/com
 import { ColumnChooser } from "./ColumnChooser";
 import { buildKeywordColumns } from "./columns";
 import {
+  liveSearchParams,
   mergeKeywordTableParams,
   parseKeywordTableState,
   toggleCoreColumn,
@@ -257,11 +258,9 @@ export function KeywordTable({
      * (asc → desc) silently did nothing — the exact class of quiet lie this
      * table exists to stop. `window.location.search` cannot be stale.
      */
-    const live =
-      typeof window === "undefined"
-        ? params
-        : new URLSearchParams(window.location.search);
-    const merged = mergeKeywordTableParams(live, next, { prefix });
+    const merged = mergeKeywordTableParams(liveSearchParams(params), next, {
+      prefix,
+    });
     const qs = merged.toString();
     const href = qs ? `${pathname}?${qs}` : pathname;
     if (options.history === "replace") router.replace(href, { scroll: false });
@@ -302,6 +301,7 @@ export function KeywordTable({
 
   const data = useKeywordRows({
     siteId,
+    brandId,
     periods,
     filters: effectiveFilters,
     search: state.search,
@@ -406,6 +406,19 @@ export function KeywordTable({
     patch({ filters });
   };
 
+  /**
+   * C10 — WHICH BRANCH. A server filter (`lo=`) like the service filter, never
+   * a page-local one: "everything the San Diego yard owns" has to mean the
+   * whole list. Clicking the location you are already filtered to clears it,
+   * so the cell is a toggle and never a dead end.
+   */
+  const filterByLocation = (location: string | undefined) => {
+    const filters: GscFilters = { ...state.filters };
+    if (!location || location === state.filters.location) delete filters.location;
+    else filters.location = location;
+    patch({ filters });
+  };
+
   const stampPairs = parseStampFilter(state.filters.stamps);
   const filterByStamp = (dimensionSlug: string, valueKey: string) => {
     const pair = { dimension: dimensionSlug, value: valueKey };
@@ -437,6 +450,7 @@ export function KeywordTable({
         onPlaceService: (keywordId, topicId, keyword) =>
           void placeService(keywordId, topicId, keyword),
         onFilterByService: filterByService,
+        onFilterByLocation: filterByLocation,
         onQuickAssign: (ids, picked) => void quickAssign(ids, picked),
         onAssign: (keywordId, keyword, lockedDimensionSlug, initial) =>
           setAssignTarget({
@@ -458,6 +472,12 @@ export function KeywordTable({
   }
   if (state.filters.topic) {
     tableColumnFilters.topic = { kind: "select", value: state.filters.topic };
+  }
+  if (state.filters.location) {
+    tableColumnFilters.location = {
+      kind: "select",
+      value: state.filters.location,
+    };
   }
   const levels = parseLevelFilter(state.filters.levels);
   if (levels.length > 0) {
@@ -569,6 +589,17 @@ export function KeywordTable({
     const nextTopic = selectedValue("topic");
     if (nextTopic !== state.filters.topic) {
       filterByService(nextTopic);
+      return;
+    }
+
+    // C10 — LOCATION is a server filter (`lo=`) too. Picking it from the
+    // column header and clicking it in a cell are the same write.
+    const nextLocation = selectedValue("location");
+    if (nextLocation !== state.filters.location) {
+      const filters: GscFilters = { ...state.filters };
+      if (!nextLocation) delete filters.location;
+      else filters.location = nextLocation;
+      patch({ filters });
       return;
     }
 
