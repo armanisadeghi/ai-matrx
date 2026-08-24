@@ -46,11 +46,17 @@ import {
   type ShapeFinding,
 } from "../../features/content-ir/registry/shape-doctor";
 import {
+  DB_KIND_COMPONENT_KEY,
+  GENERIC_STRUCTURED_COMPONENT_KEY,
+} from "@ai-matrx/content-ir-react";
+import {
   artifactKindSlugsFromText,
   compiledKindSlugsFromText,
   extractDetectorTokensFromTexts,
+  extractDispatchKeysFromText,
   extractHostSurfaceTokensFromTexts,
   type DetectorExtractFailure,
+  type DispatchKeyExtraction,
   type HostSurfaceExtraction,
 } from "../../features/content-ir/registry/shape-doctor-extract";
 import { readAllRows } from "../../lib/supabase/readAllRows";
@@ -75,6 +81,10 @@ const SPLITTER_PATH = resolve(
 const ARTIFACT_REGISTRY_PATH = resolve(
   ROOT,
   "features/canvas/artifact-types/artifact-type-registry.ts",
+);
+const BLOCK_DISPATCH_PATH = resolve(
+  ROOT,
+  "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx",
 );
 
 const C = {
@@ -125,6 +135,19 @@ function compiledKindSlugs(): string[] {
 
 function artifactRegistryKindSlugs(): string[] {
   return artifactKindSlugsFromText(readFileSync(ARTIFACT_REGISTRY_PATH, "utf8"));
+}
+
+/**
+ * Every block type `resolveBlockDispatch` can answer — the code side of the
+ * dangling-`component_key` gate. The two computed keys are passed as IMPORTED
+ * constants, so renaming either one fails extraction loudly instead of
+ * silently shrinking the key set.
+ */
+function dispatchKeys(): DispatchKeyExtraction {
+  return extractDispatchKeysFromText(readFileSync(BLOCK_DISPATCH_PATH, "utf8"), {
+    DB_KIND_COMPONENT_KEY,
+    GENERIC_STRUCTURED_COMPONENT_KEY,
+  });
 }
 
 // ─── Coverage-gate inputs (generated crosswalk + aidream contract manifest) ─
@@ -236,6 +259,8 @@ interface KindComponentRow {
   platform: string;
   role: string;
   component_key: string;
+  source: string;
+  is_active: boolean;
 }
 interface KindSurfaceRow {
   id: string;
@@ -310,7 +335,10 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
           supabase
             .schema("content_ir")
             .from("kind_component")
-            .select("id,kind_definition_id,platform,role,component_key", { count: "exact" })
+            .select(
+              "id,kind_definition_id,platform,role,component_key,source,is_active",
+              { count: "exact" },
+            )
             .is("deleted_at", null)
             .order("id", { ascending: true })
             .range(from, to),
@@ -407,6 +435,8 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
         platform: r.platform,
         role: r.role,
         componentKey: r.component_key,
+        source: r.source,
+        isActive: r.is_active,
       }),
     ),
     surfaces: surfaceRows.map(
@@ -705,6 +735,8 @@ async function main(): Promise<number> {
   const { tokens: detectorTokens, failures: extractFailures } = extractDetectorTokens();
   const { tokens: hostSurfaceTokens, failures: hostExtractFailures } = extractHostSurfaceTokens();
   extractFailures.push(...hostExtractFailures);
+  const { keys: blockDispatchKeys, failures: dispatchFailures } = dispatchKeys();
+  extractFailures.push(...dispatchFailures);
   const crosswalk = loadCrosswalkNames();
   const manifest = loadContractManifest();
 
@@ -714,6 +746,9 @@ async function main(): Promise<number> {
     codeRenderPaths: {
       compiledKinds: compiledKindSlugs(),
       artifactKinds: artifactRegistryKindSlugs(),
+      // Omitted when extraction failed — the check goes quiet, and the
+      // detector-extract-failed red below says so.
+      ...(dispatchFailures.length === 0 ? { dispatchKeys: blockDispatchKeys } : null),
     },
     crosswalkNames: crosswalk.names,
     hostSurfaceTokens,
@@ -737,7 +772,7 @@ async function main(): Promise<number> {
     report.findings.unshift({
       severity: "red",
       code: "detector-extract-failed",
-      message: `could not extract the ${f.literal} literal from ${f.file} — the detector census is blind; update scripts/shape/check-shapes.ts extraction`,
+      message: `could not extract the ${f.literal} literal from ${f.file} — that code-derived census (detector tokens / dispatch keys) is blind; update features/content-ir/registry/shape-doctor-extract.ts`,
     });
     report.totals.red += 1;
   }

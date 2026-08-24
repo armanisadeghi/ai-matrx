@@ -193,6 +193,11 @@ export interface DoctorKindComponent {
   platform: string;
   role: string;
   componentKey: string;
+  /** `bundled` (the key must resolve in the host's dispatch table) or `db`
+   * (the key is a LABEL — the row's own `component_source` is compiled
+   * in-page, so it never reaches dispatch). */
+  source: string;
+  isActive: boolean;
 }
 
 export interface DoctorKindSurface {
@@ -227,11 +232,27 @@ export interface DoctorDetectorToken {
   source: string;
 }
 
+/**
+ * The R6 generic fallback's key — a `kind_component` row may legitimately name
+ * it, and the route handles it explicitly (`generic-row`), so it is never a
+ * dangling dispatch key. Mirrors GENERIC_STRUCTURED_COMPONENT_KEY in
+ * @ai-matrx/content-ir-react (not imported: this module stays dependency-free).
+ */
+const GENERIC_STRUCTURED_KEY = "generic_structured";
+
 export interface DoctorCodeRenderPaths {
   /** Kinds with a compiled bridge/component facet (system-kinds.ts). */
   compiledKinds: string[];
   /** Kinds referenced by artifact-type-registry `kinds:` facades. */
   artifactKinds: string[];
+  /**
+   * Every block type `resolveBlockDispatch` can answer (block-dispatch.tsx,
+   * via `extractDispatchKeysFromText`). When provided, every ACTIVE
+   * `source='bundled'` web/output `kind_component` row's key MUST appear here
+   * — a miss is a RED `dangling-component-key`. Omit only when the source is
+   * unreadable; the caller then loses the check and must say so.
+   */
+  dispatchKeys?: readonly string[];
 }
 
 /** One aidream generated-contract manifest entry (slim view the doctor needs). */
@@ -592,6 +613,11 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
 
   const compiledKinds = new Set(input.codeRenderPaths.compiledKinds);
   const artifactKinds = new Set(input.codeRenderPaths.artifactKinds);
+  // null = the caller could not read the dispatch table; the check is skipped
+  // (and the caller owes its own loud degrade), never quietly passed.
+  const dispatchKeys = input.codeRenderPaths.dispatchKeys
+    ? new Set(input.codeRenderPaths.dispatchKeys)
+    : null;
   const surfaceTokens = new Set(input.surfaces.map((s) => s.token));
 
   // Nesting graph: child kind id → slugs of the OTHER kinds that embed it.
@@ -752,9 +778,43 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
       });
     }
 
+    // red: an ACTIVE bundled web/output row naming a component the host's
+    // dispatch table does not have. NOTHING catches this at runtime — a kind
+    // carrying a `legacyBlockType` facet routes through the compiled bridge
+    // ALWAYS, so the block renders and the registry keeps claiming a component
+    // that does not exist (proven 2026-08-23 by sabotaging `rating`'s row).
+    // `source='db'` rows are exempt: those re-type to `db_kind_component` and
+    // compile their own `component_source` in-page, so the key is a LABEL, not
+    // a dispatch entry. `generic_structured` is the sanctioned R6 fallback.
+    const danglingComponents =
+      dispatchKeys === null
+        ? []
+        : componentRows.filter(
+            (c) =>
+              c.isActive &&
+              c.source === "bundled" &&
+              c.platform === "web" &&
+              c.role === "output" &&
+              c.componentKey !== GENERIC_STRUCTURED_KEY &&
+              !dispatchKeys.has(c.componentKey),
+          );
+    for (const row of danglingComponents) {
+      reds.push({
+        severity: "red",
+        code: "dangling-component-key",
+        kind: kind.kind,
+        message: `ACTIVE bundled kind_component for "${kind.kind}" names component_key "${row.componentKey}", which resolveBlockDispatch (block-dispatch.tsx) does not know — the registry advertises a renderer that does not exist; register the key or repair the row`,
+      });
+    }
+
     // component — kind_component (platform web) or a compiled/legacy render path.
     // `n/a` only ever replaces the missing/warn branch — never a positive.
-    const webComponents = componentRows.filter((c) => c.platform === "web");
+    // A dangling row is NOT evidence of a component, so it cannot make the cell
+    // green (that is exactly the lie the red above names).
+    const danglingIds = new Set(danglingComponents.map((c) => c.id));
+    const webComponents = componentRows.filter(
+      (c) => c.platform === "web" && !danglingIds.has(c.id),
+    );
     let component: AssetCell;
     if (webComponents.length > 0) {
       component = {

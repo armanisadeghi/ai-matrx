@@ -43,6 +43,21 @@ CREATE OR REPLACE FUNCTION seo.gsc_perf_class_movers(p_site_id uuid, p_dimension
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO 'seo', 'platform', 'pg_temp'
+ -- THE SECOND HAZARD, measured the same day: this body's right plan DEPENDS on
+ -- the parameter values (which dimension, whether a class is pinned, whether a
+ -- level filter is set), so the generic plan plpgsql switches to on the 6th
+ -- execution of a pooled connection is wrong by construction. Measured on the
+ -- fixed function: calls 1-5 ran 445-870 ms, then the query dimension with no
+ -- class pin jumped to 11.1 s on calls 8 and 10 and stayed there. Planning this
+ -- body costs ~3 ms against 600 ms of execution -- always re-plan.
+ SET plan_cache_mode TO 'force_custom_plan'
+ -- THE THIRD COST, on the fleet's largest site: All Green Recycling's 56-day
+ -- query_page window is 478,035 rows, and `bucketed`'s group-by spilled to an
+ -- external merge (123 MB of temp) at the 16 MB default. Doubling work_mem for
+ -- this ONE read lets it hash instead: page/money 7,408 ms -> 3,513 ms and
+ -- page/all 5,773 ms -> 4,969 ms, measured. 64 MB bought nothing more
+ -- (3,595 / 4,984 ms), so 32 MB is the whole win at the smallest cost.
+ SET work_mem TO '32MB'
 AS $function$
 DECLARE
   v_profile text;
@@ -179,3 +194,48 @@ BEGIN
   LIMIT p_limit OFFSET p_offset;
 END;
 $function$;
+
+-- ----------------------------------------------------------------------------
+-- VERIFIED LIVE 2026-08-24, site 38eff4c9-b021-451a-b995-7d9b3d17db5e,
+-- window 2026-07-25..2026-08-21 vs 2026-06-27..2026-07-24, limit 200.
+-- Every case returns byte-identical rows to the pre-change function (md5 of the
+-- ordered, fully-concatenated result set).
+--
+--   case                                  before        after
+--   page/money/loss                       10,008 ms  ->    648 ms
+--   page/money/gain                        9,873 ms  ->    602 ms
+--   page/all/loss                            864 ms  ->    786 ms
+--   page/all/gain                            809 ms  ->    782 ms
+--   query/money/loss                       2,521 ms  ->    439 ms
+--   query/money/gain                       2,500 ms  ->    450 ms
+--   query/all/loss                           658 ms  ->    601 ms
+--   query/educational/loss                 1,347 ms  ->    440 ms
+--   page/unclassified/loss                45,629 ms  ->    780 ms
+--   page/all/loss levels=[unvalued]       43,149 ms  ->    829 ms
+--   page/money/loss limit 50 offset 50     9,814 ms  ->    617 ms
+--   query/brand/loss                         508 ms  ->    438 ms
+--
+-- Note page/unclassified (45.6 s) and the levels filter (43.1 s): the class pin
+-- was never the special case. ANY filter that collapses the planner's estimate
+-- for `classed` triggered the same nested loop. That is why the fix is the join
+-- SHAPE and not a pin-specific special case.
+--
+-- The generic-plan hazard, measured on the fixed body BEFORE the
+-- plan_cache_mode SET: 12 consecutive calls on one connection ran
+-- 834/613/608/605/782/448/872/**11118**/619/**11079**/870/445 ms -- the cliff
+-- lands exactly where plpgsql stops re-planning. With the SET, 16 consecutive
+-- calls ran 440-838 ms with no cliff. PostgREST connections are pooled and
+-- long-lived, so this was a production hazard, not a lab artifact.
+--
+-- ALL GREEN RECYCLING (d0aff5b6..., 1,199,815 query_page rows in the same
+-- window -- 5x Data Destruction). The old two-join shape did not complete
+-- within 120 s there at all; the new one, with work_mem at 32 MB:
+--   page/money   3,513 ms      page/all   4,969 ms      query/all  2,987 ms
+-- Still the slowest site in the fleet and still worth more work -- the `winner`
+-- CTE alone costs 978 ms because it reads all 1.2 M window rows through an
+-- incremental sort to pick 56 run ids. A covering index
+-- (site_id, dimension_profile, date, created_at DESC, run_id DESC)
+-- WHERE provider='gsc' plus a per-date LATERAL would make that ~5 ms, at the
+-- cost of roughly 1 GB on a 10 GB table. Not taken here: it is a separate
+-- decision from this defect, and every path is now inside the 8 s timeout.
+-- ----------------------------------------------------------------------------

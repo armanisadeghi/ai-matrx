@@ -259,3 +259,80 @@ export function artifactKindSlugsFromText(registryText: string): string[] {
   }
   return [...slugs].sort();
 }
+
+// ─── Render-block dispatch keys (the render leg's LAST mile) ────────────────
+
+/**
+ * The four classification tables that make up `BLOCK_DISPATCH`
+ * (components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx).
+ * Each opens `const <NAME> = {` and closes `\n} satisfies` at column 0.
+ */
+const DISPATCH_TABLE_NAMES = [
+  "PROTOCOL_BLOCK_DISPATCH",
+  "SCALAR_GENERIC_BLOCK_DISPATCH",
+  "SHAPE_BLOCK_DISPATCH",
+  "OPAQUE_BLOCK_DISPATCH",
+] as const;
+
+export interface DispatchKeyExtraction {
+  keys: string[];
+  failures: DetectorExtractFailure[];
+}
+
+/**
+ * Every block type `resolveBlockDispatch` can answer, from block-dispatch.tsx
+ * TEXT — the code side of the dangling-`component_key` check.
+ *
+ * Why it matters: a `content_ir.kind_component` row naming a key this table
+ * does NOT hold is invisible at runtime for every kind carrying a
+ * `legacyBlockType` facet, because `applyIrKindRoute` routes those through the
+ * compiled bridge regardless of the row. The block still renders, and the
+ * registry keeps advertising a component that does not exist (proven
+ * 2026-08-23 by sabotaging `rating`'s row: nothing moved).
+ *
+ * Text, not import, for the reason the rest of this module is: the dispatch
+ * table pulls the whole lazy React component tree behind it.
+ *
+ * Computed keys (`[DB_KIND_COMPONENT_KEY]:`) are resolved through
+ * `computedKeyValues` — the caller passes the imported constants, so a rename
+ * cannot silently shrink the key set. An unresolved identifier is a FAILURE,
+ * never a dropped key.
+ */
+export function extractDispatchKeysFromText(
+  dispatchText: string,
+  computedKeyValues: Readonly<Record<string, string>>,
+): DispatchKeyExtraction {
+  const keys = new Set<string>();
+  const failures: DetectorExtractFailure[] = [];
+  const file =
+    "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx";
+
+  for (const name of DISPATCH_TABLE_NAMES) {
+    const start = dispatchText.indexOf(`const ${name} = {`);
+    const end = start < 0 ? -1 : dispatchText.indexOf("\n} satisfies", start);
+    if (start < 0 || end < 0) {
+      failures.push({ literal: name, file });
+      continue;
+    }
+    const body = dispatchText.slice(start, end);
+    let found = 0;
+    // Top-level entries only: exactly two spaces of indent (entry bodies are
+    // indented four or more).
+    for (const m of body.matchAll(/\n {2}"?([A-Za-z_][A-Za-z0-9_]*)"?:/g)) {
+      keys.add(m[1]);
+      found += 1;
+    }
+    for (const m of body.matchAll(/\n {2}\[([A-Za-z_][A-Za-z0-9_]*)\]:/g)) {
+      const value = computedKeyValues[m[1]];
+      if (!value) {
+        failures.push({ literal: `${name}[${m[1]}]`, file });
+        continue;
+      }
+      keys.add(value);
+      found += 1;
+    }
+    if (found === 0) failures.push({ literal: name, file });
+  }
+
+  return { keys: [...keys].sort(), failures };
+}
