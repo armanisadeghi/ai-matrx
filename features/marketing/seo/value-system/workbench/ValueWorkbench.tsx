@@ -1006,7 +1006,12 @@ export function ValueWorkbench() {
       {/* Review table — ONE v3 menu around the whole pane. */}
       <NonEditableContextMenu
         sourceFeature="marketing"
-        surfaceName="matrx-user/keyword-value-workbench"
+        // No `surfaceName`: `…/value` has no registered surface of its own yet,
+        // so the menu resolves the route's surface rather than claiming one
+        // that does not exist (a declared-but-unregistered name is a lie the
+        // value-mapping guard would scream about). Registering a real
+        // `keyword-value-workbench` surface is Arman's call — logged as a gap
+        // in projects/keyword-intelligence-convergence/ADOPTION-SWEEP.md.
         contentSource={{ type: "raw" }}
         contextData={{ content: "" }}
         resolveContextOnOpen={(target) => {
