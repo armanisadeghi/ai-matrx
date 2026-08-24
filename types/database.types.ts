@@ -36897,7 +36897,12 @@ export type Database = {
       }
       get_database_schema_json: { Args: never; Returns: Json }
       get_dm_conversations_with_details: {
-        Args: { p_user_id: string }
+        Args: {
+          p_before_conversation_id?: string
+          p_before_sort_at?: string
+          p_limit?: number
+          p_user_id: string
+        }
         Returns: {
           conversation_created_at: string
           conversation_id: string
@@ -52502,7 +52507,11 @@ export type Database = {
         }[]
       }
       gsc_keyword_locations: {
-        Args: { p_keyword_ids?: string[]; p_site_id: string }
+        Args: {
+          p_include_unplaced?: boolean
+          p_keyword_ids?: string[]
+          p_site_id: string
+        }
         Returns: {
           decided_by: string
           distance_km: number

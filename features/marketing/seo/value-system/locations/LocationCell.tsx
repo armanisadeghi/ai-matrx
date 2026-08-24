@@ -29,16 +29,19 @@ import { cn } from "@/styles/themes/utils";
 import { decidedByChip, explainDecidedBy, type KeywordLocationRow } from "./types";
 
 export function LocationCell({
+  /**
+   * The server's row for this keyword, read with `includeUnplaced`. Absent
+   * means the keyword names no place at all; present with
+   * `decided_by === "unresolved"` means it names one and resolved to no
+   * branch. The discriminator is the server's word, not a flag computed here.
+   */
   attribution,
-  /** True when this keyword names a place at all — the gazetteer's answer. */
-  isLocal,
   /** False while the attribution read is still in flight. */
   ready,
   /** Filter the whole list to this location (or to the unresolved bucket). */
   onFilter,
 }: {
   attribution: KeywordLocationRow | undefined;
-  isLocal: boolean;
   ready: boolean;
   onFilter?: (value: string) => void;
 }) {
@@ -48,7 +51,7 @@ export function LocationCell({
     return <span className="text-[11px] text-muted-foreground/50">·</span>;
   }
 
-  if (attribution) {
+  if (attribution && attribution.decided_by !== "unresolved") {
     const where = [attribution.locality, attribution.region]
       .filter(Boolean)
       .join(", ");
@@ -83,7 +86,7 @@ export function LocationCell({
     );
   }
 
-  if (isLocal) {
+  if (attribution) {
     // THE WORK LIST. This search names a place and earns money somewhere, and
     // nothing in the system yet says where. Said in words, and clickable,
     // because it is the one state the reader can actually act on.
