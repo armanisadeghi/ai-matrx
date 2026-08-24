@@ -10,8 +10,20 @@
 // `categoriesService`, its dimension is added here.
 
 export const CATEGORY_DIMENSIONS = {
-  /** Agent shortcut groupings (was `shortcut_categories`). */
-  agentShortcut: "agent-shortcut",
+  /**
+   * Agent shortcut groupings (was the `shortcut_categories` table; migrated
+   * onto platform.categories, and 65 of the 66 live rows still carry
+   * `metadata.legacy_table = "shortcut_categories"` from that move).
+   *
+   * 🚨 THE VALUE IS `shortcut`, NOT `agent-shortcut`. This constant said
+   * `agent-shortcut` until 2026-08-24 — a dimension with ZERO rows in it. No
+   * caller had used it yet, so it never broke anything; the first one to wire
+   * the canonical picker to it would have got a silently empty dropdown and no
+   * error, which is the worst way for a name to be wrong. Verified live:
+   * `shortcut` = 66 rows and all 207 shortcuts point into it, `agent-shortcut`
+   * = 0.
+   */
+  agentShortcut: "shortcut",
   /** Agent skill taxonomy (was `skill.category`). */
   skill: "skill",
   /** Industry verticals for context templates (was hardcoded INDUSTRY_CATEGORIES). */
