@@ -70,7 +70,11 @@ interface FormState {
   triggerConfig: Record<string, unknown>;
 }
 
-function makeDefault(task?: AgendaTask): FormState {
+function makeDefault(
+  task?: AgendaTask,
+  initialAgentId?: string | null,
+  initialPrompt?: string,
+): FormState {
   if (task) {
     const t = task.triggers[0];
     return {
@@ -95,8 +99,8 @@ function makeDefault(task?: AgendaTask): FormState {
     description: "",
     surfaces: ["any"],
     tags: [],
-    prompt: "",
-    agentId: null,
+    prompt: initialPrompt ?? "",
+    agentId: initialAgentId ?? null,
     variables: {},
     persistentConversationId: "",
     authMode: "ask",
@@ -126,15 +130,24 @@ function fromLocalDateTime(value: string): string {
 interface Props {
   /** Provided in edit mode. */
   task?: AgendaTask;
+  /**
+   * Prefill values for create mode — e.g. a handoff from AI Work's
+   * "Schedule this" link (`/schedules/new?agentId=...&prompt=...`).
+   * Ignored in edit mode (the saved task always wins).
+   */
+  initialAgentId?: string | null;
+  initialPrompt?: string;
 }
 
-export function ScheduleForm({ task }: Props) {
+export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [pending, startTransition] = useTransition();
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [form, setForm] = useState<FormState>(() => makeDefault(task));
+  const [form, setForm] = useState<FormState>(() =>
+    makeDefault(task, initialAgentId, initialPrompt),
+  );
   const [tagInput, setTagInput] = useState("");
 
   const patch = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -402,7 +415,8 @@ export function ScheduleForm({ task }: Props) {
       <Section title="What to run">
         <AgentListDropdown
           onSelect={(id) => patch("agentId", id)}
-          label="Select the agent"
+          activeAgentId={form.agentId}
+          label={form.agentId ? undefined : "Select the agent"}
         />
         <Field label="Prompt" htmlFor="prompt" error={errors.prompt}>
           <Textarea

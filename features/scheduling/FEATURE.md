@@ -206,6 +206,7 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-08-24** — Claude: `/schedules/new` now consumes the `agentId`/`prompt` query params AI Work's composer has always sent (`features/ai-work/compose/components/AiWorkComposer.tsx`'s `scheduleHref`) — previously dropped on the floor, a documented-but-false prefill claim. The page reads them with `useSearchParams` and passes `initialAgentId`/`initialPrompt` into `ScheduleForm`, which seed `FormState.agentId`/`prompt` in `makeDefault` for create mode only (edit mode always uses the saved task). Also fixed `AgentListDropdown`'s label on this form: it previously hardcoded `"Select the agent"` regardless of state, so a prefilled (or already-chosen) agent was invisible; it now passes `activeAgentId={form.agentId}` and only overrides the label when nothing is selected, so the dropdown's own pinned-agent name shows once one is set. Honest fallback: an unrecognized `agentId` leaves the picker empty and the form behaves exactly as it does with no params.
 - **2026-08-20** — Linked the production reliability work order for approved cadence governance,
   complete failure visibility, and repair/re-enable controls.
 
