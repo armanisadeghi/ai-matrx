@@ -13,6 +13,9 @@
  *
  *   pnpm check:shapes            # loud report + committed-snapshot drift check, exit 0
  *   pnpm check:shapes:strict     # exit 1 when any RED finding exists (CI gate)
+ *   pnpm check:shapes:components # BLOCKING gate: every ACTIVE bundled web/output
+ *                                #   kind_component key resolves in block-dispatch
+ *                                #   (--gate=<code> exits 1 on those reds ALONE)
  *   pnpm check:shapes:refresh    # rewrite scripts/shape/shapes-status.json +
  *                                #   features/content-ir/docs/SHAPES_STATUS.md
  *   tsx … --verbose              # every finding line (default groups yellows)
@@ -728,6 +731,17 @@ function printFindings(findings: ShapeFinding[], verbose: boolean): void {
 async function main(): Promise<number> {
   const argv = process.argv.slice(2);
   const strict = argv.includes("--strict");
+  // Gate mode: exit 1 on the NAMED red codes only, and print nothing else.
+  // The full report carries a large, tracked backlog of other reds, so
+  // `--strict` can never sit in the release gates; a single code with a zero
+  // backlog can (`--gate=dangling-component-key`).
+  const gateCodes = new Set(
+    argv
+      .filter((a) => a.startsWith("--gate="))
+      .flatMap((a) => a.slice("--gate=".length).split(","))
+      .map((c) => c.trim())
+      .filter(Boolean),
+  );
   const refresh = argv.includes("--refresh");
   const verbose = argv.includes("--verbose");
 
@@ -775,6 +789,34 @@ async function main(): Promise<number> {
       message: `could not extract the ${f.literal} literal from ${f.file} — that code-derived census (detector tokens / dispatch keys) is blind; update features/content-ir/registry/shape-doctor-extract.ts`,
     });
     report.totals.red += 1;
+  }
+
+  if (gateCodes.size > 0) {
+    const gated = report.findings.filter(
+      (f) => f.severity === "red" && gateCodes.has(f.code),
+    );
+    // Blind is not green: an extraction failure means the gated check could not
+    // run at all, which fails exactly like a violation.
+    const blind = gateCodes.has("dangling-component-key") && dispatchFailures.length > 0;
+    for (const f of gated) {
+      console.error(`  ${C.red}${C.bold}[${f.code}]${C.reset} ${f.message}`);
+    }
+    if (blind) {
+      console.error(
+        `  ${C.red}${C.bold}[dispatch-extract-failed]${C.reset} could not read the block-dispatch tables (${dispatchFailures
+          .map((f) => f.literal)
+          .join(", ")}) — the dangling-component-key gate is BLIND`,
+      );
+    }
+    const label = [...gateCodes].join(", ");
+    if (gated.length === 0 && !blind) {
+      console.log(`${C.green}${C.bold}✓ check:shapes gate${C.reset} ${label}: clean`);
+      return 0;
+    }
+    console.error(
+      `\n${C.red}${C.bold}check:shapes gate${C.reset} ${label}: ${gated.length + (blind ? 1 : 0)} failure(s)`,
+    );
+    return 1;
   }
 
   const core = buildSnapshotCore(report);

@@ -153,6 +153,7 @@
     "check:shapes": "tsx scripts/shape/check-shapes.ts",
     "check:shapes:strict": "tsx scripts/shape/check-shapes.ts --strict",
     "check:shapes:refresh": "tsx scripts/shape/check-shapes.ts --refresh",
+    "check:shapes:components": "tsx scripts/shape/check-shapes.ts --gate=dangling-component-key",
     "check:shapes:crosswalk": "tsx scripts/shape/generate-content-vocab-crosswalk.ts --check",
     "check:shapes:crosswalk:refresh": "tsx scripts/shape/generate-content-vocab-crosswalk.ts",
     "check:shapes:manifest:refresh": "tsx scripts/shape/refresh-contract-manifest.ts",

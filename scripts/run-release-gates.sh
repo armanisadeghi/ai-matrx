@@ -142,6 +142,18 @@ if $STRICT; then
         # jobs; this is where the frontend half is enforced, because this repo
         # deliberately has no commit-time hook and no CI (CLAUDE.md).
         "Kind-surface detector table vs live registry|pnpm check:shapes:surfaces"
+        # DANGLING kind_component KEYS: an ACTIVE source='bundled' web/output row
+        # may name a component `resolveBlockDispatch` (block-dispatch.tsx) does
+        # not have, and NOTHING catches it at runtime — every kind carrying a
+        # `legacyBlockType` facet routes through the compiled bridge regardless,
+        # so the block renders while the registry advertises a component that
+        # does not exist (proven 2026-08-23 by sabotaging `rating`'s row: the
+        # render did not move). BLOCKING in both modes: the live backlog is ZERO
+        # and the fix is either registering the key or repairing the row. This is
+        # the ONE red code from the shape doctor that gates (`--gate=`); the full
+        # `check:shapes:strict` report carries a large tracked backlog and stays
+        # out of the gates. source='db' rows and `generic_structured` are exempt.
+        "Dangling kind_component keys|pnpm check:shapes:components"
         # GENERATED KIND TYPES are the fourth consumer surface (conversion-
         # campaigns.md Law 2 §4): a stale `.gen.ts` COMPILES FINE AND LIES. The
         # generator reads content_ir.kind_definition.emitted_json_schema live and
@@ -288,6 +300,18 @@ else
         # jobs; this is where the frontend half is enforced, because this repo
         # deliberately has no commit-time hook and no CI (CLAUDE.md).
         "Kind-surface detector table vs live registry|pnpm check:shapes:surfaces"
+        # DANGLING kind_component KEYS: an ACTIVE source='bundled' web/output row
+        # may name a component `resolveBlockDispatch` (block-dispatch.tsx) does
+        # not have, and NOTHING catches it at runtime — every kind carrying a
+        # `legacyBlockType` facet routes through the compiled bridge regardless,
+        # so the block renders while the registry advertises a component that
+        # does not exist (proven 2026-08-23 by sabotaging `rating`'s row: the
+        # render did not move). BLOCKING in both modes: the live backlog is ZERO
+        # and the fix is either registering the key or repairing the row. This is
+        # the ONE red code from the shape doctor that gates (`--gate=`); the full
+        # `check:shapes:strict` report carries a large tracked backlog and stays
+        # out of the gates. source='db' rows and `generic_structured` are exempt.
+        "Dangling kind_component keys|pnpm check:shapes:components"
         # GENERATED KIND TYPES are the fourth consumer surface (conversion-
         # campaigns.md Law 2 §4): a stale `.gen.ts` COMPILES FINE AND LIES. The
         # generator reads content_ir.kind_definition.emitted_json_schema live and
