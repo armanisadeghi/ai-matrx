@@ -13,6 +13,7 @@
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import type {
   GscCompareMode,
+  GscDimension,
   GscDateRange,
   GscFilters,
   GscInsightKind,
@@ -66,9 +67,46 @@ const FILTER_PARAMS: Array<[keyof GscFilters, string]> = [
   ["search_appearance", "appearance"],
   ["stamps", "st"],
   ["levels", "lv"],
+  ["query_word", "qw"],
+  ["clicks_min", "cmin"],
+  ["clicks_max", "cmax"],
+  ["impressions_min", "imin"],
+  ["impressions_max", "imax"],
+  ["position_min", "pmin"],
+  ["position_max", "pmax"],
 ];
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Read the filter bag out of ANY search params, with the same short param
+ * names everywhere. Exported so a second keyword surface (the C14 Keyword
+ * Workbench) speaks the identical URL dialect instead of inventing `clicks_min=`
+ * beside this file's `cmin=` — two spellings of one filter is how a shared
+ * link stops meaning what its author saw.
+ */
+export function parseGscFilters(
+  params: ReadonlyURLSearchParams | URLSearchParams,
+): GscFilters {
+  const filters: GscFilters = {};
+  for (const [key, param] of FILTER_PARAMS) {
+    const value = params.get(param);
+    if (value && value.trim() !== "") filters[key] = value;
+  }
+  return filters;
+}
+
+/** Write a filter bag into `params` using those same names (mutates). */
+export function applyGscFilters(
+  params: URLSearchParams,
+  filters: GscFilters,
+): void {
+  for (const [key, param] of FILTER_PARAMS) {
+    const value = filters[key];
+    if (value && value.trim() !== "") params.set(param, value);
+    else params.delete(param);
+  }
+}
 
 export function parseSearchConsoleUrl(
   params: ReadonlyURLSearchParams | URLSearchParams,
@@ -96,11 +134,7 @@ export function parseSearchConsoleUrl(
   const compareParam = params.get("compare");
   const compare: GscCompareMode =
     compareParam === "prev" || compareParam === "yoy" ? compareParam : "none";
-  const filters: GscFilters = {};
-  for (const [key, param] of FILTER_PARAMS) {
-    const value = params.get(param);
-    if (value && value.trim() !== "") filters[key] = value;
-  }
+  const filters = parseGscFilters(params);
   const rule = params.get("rule");
   const insightParam = params.get("insight");
   const insight: GscInsightKind | null =
@@ -260,21 +294,60 @@ export function resolveGscDataThrough(
   return dates.length > 0 ? ([...dates].sort().at(-1) ?? null) : null;
 }
 
+/**
+ * C14 — filters that belong to NO dimension group: the metric ranges are
+ * applied after aggregation, so they mean the same thing on a query row, a
+ * page row, or a country row. They ride along with whichever group is active
+ * instead of forcing one.
+ */
+const PROFILE_NEUTRAL_FILTER_KEYS: readonly (keyof GscFilters)[] = [
+  "clicks_min",
+  "clicks_max",
+  "impressions_min",
+  "impressions_max",
+  "position_min",
+  "position_max",
+];
+
 /** The filter keys each tab's dimension group can serve (RPC profile rule). */
 const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   "query_contains",
   "query_eq",
   "query_neq",
+  // C14: whole-word query match
+  "query_word",
   "page_contains",
   "page_eq",
   // C6: dimension stamps + levels are keyword-level — the query/page group
   "stamps",
   "levels",
+  ...PROFILE_NEUTRAL_FILTER_KEYS,
 ];
 const COUNTRY_DEVICE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   "country",
   "device",
+  ...PROFILE_NEUTRAL_FILTER_KEYS,
 ];
+
+/**
+ * The same filter groups, addressed by DIMENSION rather than by tab — what a
+ * floating drill-down panel needs, because a panel has a dimension and no tab.
+ * ONE definition of the groups; this is a second door onto it, never a copy.
+ */
+export function allowedFilterKeysForDimension(
+  dimension: GscDimension,
+): readonly (keyof GscFilters)[] {
+  switch (dimension) {
+    case "query":
+    case "page":
+      return QUERY_PAGE_FILTER_KEYS;
+    case "country":
+    case "device":
+      return COUNTRY_DEVICE_FILTER_KEYS;
+    case "search_appearance":
+      return ["search_appearance", ...PROFILE_NEUTRAL_FILTER_KEYS];
+  }
+}
 
 export function allowedFilterKeysForTab(
   tab: GscTab,
@@ -293,7 +366,7 @@ export function allowedFilterKeysForTab(
     case "devices":
       return COUNTRY_DEVICE_FILTER_KEYS;
     case "appearance":
-      return ["search_appearance"];
+      return ["search_appearance", ...PROFILE_NEUTRAL_FILTER_KEYS];
     case "digs":
     case "insights":
     case "watchlist":
@@ -318,11 +391,16 @@ export function sanitizeFilterGroups(filters: GscFilters): GscFilters {
       const value = filters[k];
       return typeof value === "string" && value.trim() !== "";
     });
-  const keep: readonly (keyof GscFilters)[] = present(QUERY_PAGE_FILTER_KEYS)
+  // Group detection reads only the keys that BELONG to a group — a metric
+  // range is profile-neutral, so letting it vote would make "clicks ≥ 10 on
+  // the Countries tab" silently drop the country filter.
+  const distinctive = (keys: readonly (keyof GscFilters)[]) =>
+    present(keys.filter((k) => !PROFILE_NEUTRAL_FILTER_KEYS.includes(k)));
+  const keep: readonly (keyof GscFilters)[] = distinctive(QUERY_PAGE_FILTER_KEYS)
     ? QUERY_PAGE_FILTER_KEYS
-    : present(COUNTRY_DEVICE_FILTER_KEYS)
+    : distinctive(COUNTRY_DEVICE_FILTER_KEYS)
       ? COUNTRY_DEVICE_FILTER_KEYS
-      : ["search_appearance"];
+      : ["search_appearance", ...PROFILE_NEUTRAL_FILTER_KEYS];
   const next: GscFilters = {};
   for (const key of keep) {
     const value = filters[key];
@@ -337,8 +415,23 @@ export function sanitizeFilterGroups(filters: GscFilters): GscFilters {
  * instead of hard-raising `gsc_filter_combination_unsupported`. Also reduces
  * hostile URLs to a single filter group.
  */
+/** The dimension-addressed twin, for floating panels (which have no tab). */
+export function pruneFiltersForDimension(
+  dimension: GscDimension,
+  filters: GscFilters,
+): GscFilters {
+  return pruneToAllowed(allowedFilterKeysForDimension(dimension), filters);
+}
+
 export function pruneFiltersForTab(tab: GscTab, filters: GscFilters): GscFilters {
-  const allowed = new Set<string>(allowedFilterKeysForTab(tab));
+  return pruneToAllowed(allowedFilterKeysForTab(tab), filters);
+}
+
+function pruneToAllowed(
+  allowedKeys: readonly (keyof GscFilters)[],
+  filters: GscFilters,
+): GscFilters {
+  const allowed = new Set<string>(allowedKeys);
   const next: GscFilters = {};
   for (const [key, value] of Object.entries(sanitizeFilterGroups(filters))) {
     if (allowed.has(key) && typeof value === "string" && value.trim() !== "") {

@@ -12,6 +12,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import {
+  GSC_RANGE_FILTERS,
   parseLevelFilter,
   parseStampFilter,
 } from "@/features/marketing/search-console/types";
@@ -35,7 +36,17 @@ async function seoDb() {
 
 const assertData = makeAssertData("reach your Search Console data");
 
-function cleanFilters(filters: GscFilters): Json {
+const RANGE_FILTER_KEYS = new Set<string>(
+  GSC_RANGE_FILTERS.flatMap((r) => [r.min as string, r.max as string]),
+);
+
+/**
+ * The filter bag as the RPCs want it. Exported because the C14 Keyword
+ * Workbench calls `gsc_breakdown_keyword_ids` with the SAME bag — two
+ * translations of one filter set is how "select all matching" quietly stops
+ * matching what the table shows.
+ */
+export function cleanGscFilters(filters: GscFilters): Json {
   const out: Record<string, Json> = {};
   for (const [key, value] of Object.entries(filters)) {
     if (typeof value !== "string" || value.trim() === "") continue;
@@ -51,6 +62,13 @@ function cleanFilters(filters: GscFilters): Json {
     if (key === "levels") {
       const levels = parseLevelFilter(value);
       if (levels.length > 0) out.levels = levels;
+      continue;
+    }
+    // C14 metric ranges: a bound that is not a number is dropped rather than
+    // sent — the RPC casts blindly, and `NaN` there is a 500, not a filter.
+    if (RANGE_FILTER_KEYS.has(key)) {
+      const n = Number(value.trim());
+      if (Number.isFinite(n)) out[key] = String(n);
       continue;
     }
     out[key] = value.trim();
@@ -83,7 +101,7 @@ export async function getGscSummary(
     .rpc("gsc_perf_summary", {
       p_site_id: siteId,
       ...periodParams(periods),
-      p_filters: cleanFilters(filters),
+      p_filters: cleanGscFilters(filters),
     })
     .abortSignal(signal ?? new AbortController().signal);
   const rows = assertData(response.data, response.error);
@@ -102,7 +120,7 @@ export async function getGscTimeseries(
     .rpc("gsc_perf_timeseries", {
       p_site_id: siteId,
       ...periodParams(periods),
-      p_filters: cleanFilters(filters),
+      p_filters: cleanGscFilters(filters),
     })
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error);
@@ -127,7 +145,7 @@ export async function getGscBreakdown(
       p_site_id: siteId,
       p_dimension: query.dimension,
       ...periodParams(periods),
-      p_filters: cleanFilters(filters),
+      p_filters: cleanGscFilters(filters),
       ...(query.search.trim() !== "" ? { p_search: query.search.trim() } : {}),
       p_sort: query.sort,
       p_sort_dir: query.sortDir,

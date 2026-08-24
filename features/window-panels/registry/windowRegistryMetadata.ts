@@ -157,6 +157,37 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "notes" },
   },
 
+  // ── Search Console drill-down + Why this score ────────────────────────────
+  // P25 (never lose the view): both are panels you open BESIDE the table you
+  // built, several at a time. On mobile there is no beside, so they become
+  // bottom sheets — swipe down and the table you were reading is still there,
+  // exactly as you left it. A fullscreen takeover would be the very loss of
+  // context these panels exist to prevent.
+  //
+  // Ephemeral: each carries a slice (site + dimension + filters + period, or
+  // site + keyword) whose caller-side context cannot survive a reload, so they
+  // are never restored into a page that no longer has that context.
+  {
+    slug: "gsc-drilldown-window",
+    overlayId: "gscDrilldownWindow",
+    kind: "window",
+    label: "Search Console Drill-down",
+    defaultData: {},
+    ephemeral: true,
+    mobilePresentation: "drawer",
+    instanceMode: "multi",
+  },
+  {
+    slug: "gsc-why-score-window",
+    overlayId: "gscWhyScoreWindow",
+    kind: "window",
+    label: "Why This Score",
+    defaultData: {},
+    ephemeral: true,
+    mobilePresentation: "drawer",
+    instanceMode: "multi",
+  },
+
   // ── Note Info ─────────────────────────────────────────────────────────────
   // Per-note metadata + context inspector. Opened from the note tab's info
   // icon; tied to a specific note so it's ephemeral (nothing to restore).

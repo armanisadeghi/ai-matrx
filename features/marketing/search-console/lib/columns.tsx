@@ -13,6 +13,7 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
 import type { GscKeywordValueRow } from "@/features/marketing/search-console/data-insights";
+import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
 import type { GscDimension } from "@/features/marketing/search-console/types";
 import {
   countryLabel,
@@ -316,6 +317,17 @@ export function gscMetricCopyLines(
  */
 export function buildGscValueColumns<T>(
   valueFor: (row: T) => GscKeywordValueRow | undefined,
+  /**
+   * The receipt's link context + how to read a row's keyword text. Present =
+   * the Level cell carries its (i) hover receipt, and every step in that
+   * receipt links to the screen where it is changed. Omit only where no site
+   * context exists (there is no such caller today).
+   */
+  why?: {
+    siteId: string;
+    brandId?: string | null;
+    keywordOf: (row: T) => string | null;
+  },
 ): MatrxColumnDef<T>[] {
   return [
     {
@@ -371,17 +383,35 @@ export function buildGscValueColumns<T>(
               ? "text-muted-foreground"
               : "text-foreground";
         return (
-          <span
-            className={`rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium ${tone}`}
-            title={
-              v.value_source === "override"
-                ? "Your ruling"
-                : v.value_source === "computed"
-                  ? "Computed from your dimensions and worth"
-                  : "No worth reaches this keyword yet"
-            }
-          >
-            {humanizeSlug(v.value_band)}
+          <span className="inline-flex min-w-0 items-center gap-1">
+            <span
+              className={`rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium ${tone}`}
+              title={
+                v.value_source === "override"
+                  ? "Your ruling"
+                  : v.value_source === "computed"
+                    ? "Computed from your dimensions and worth"
+                    : "No worth reaches this keyword yet"
+              }
+            >
+              {humanizeSlug(v.value_band)}
+            </span>
+            {why ? (
+              <WhyScoreHint
+                subject={{
+                  keyword: why.keywordOf(row),
+                  valueBand: v.value_band,
+                  valueScore: v.value_score,
+                  valueSource: v.value_source,
+                  reasons: v.reasons,
+                }}
+                context={{
+                  brandId: why.brandId ?? null,
+                  siteId: why.siteId,
+                  keyword: why.keywordOf(row),
+                }}
+              />
+            ) : null}
           </span>
         );
       },

@@ -80,7 +80,43 @@ export interface GscFilters {
   stamps?: string;
   /** C6 — value LEVELS, encoded `level|level` (`lv=`); RPC `levels: [...]`. */
   levels?: string;
+  /**
+   * C14 — WHOLE-WORD query match (`qw=`). "cost" must not drag in "costume"
+   * when the expert meant the word; a contains-filter can never say that.
+   */
+  query_word?: string;
+  /**
+   * C14 — METRIC RANGES, applied by the RPC AFTER aggregation (they describe
+   * the row on screen, not one day's slice of it). Each bound is independent:
+   * a min with no max is an open-ended "at least this much".
+   */
+  clicks_min?: string;
+  clicks_max?: string;
+  impressions_min?: string;
+  impressions_max?: string;
+  position_min?: string;
+  position_max?: string;
 }
+
+/**
+ * C14 — the three metric ranges, as the UI presents them: ONE filter with two
+ * bounds, not two filters that happen to share a word. Declared once here so
+ * the chip bar, the URL, and the RPC cannot disagree about what "Clicks"
+ * means.
+ */
+export const GSC_RANGE_FILTERS: readonly {
+  id: "clicks" | "impressions" | "position";
+  label: string;
+  min: keyof GscFilters;
+  max: keyof GscFilters;
+  /** Position is a rank (1 is best) and never an integer count. */
+  step: number;
+  hint: string;
+}[] = [
+  { id: "clicks", label: "Clicks", min: "clicks_min", max: "clicks_max", step: 1, hint: "Clicks in the current period" },
+  { id: "impressions", label: "Impressions", min: "impressions_min", max: "impressions_max", step: 1, hint: "Impressions in the current period" },
+  { id: "position", label: "Position", min: "position_min", max: "position_max", step: 0.1, hint: "Average position — 1 is the top of page one" },
+];
 
 export type GscFilterKey = keyof GscFilters;
 
@@ -95,6 +131,13 @@ export const GSC_FILTER_KEYS: readonly GscFilterKey[] = [
   "search_appearance",
   "stamps",
   "levels",
+  "query_word",
+  "clicks_min",
+  "clicks_max",
+  "impressions_min",
+  "impressions_max",
+  "position_min",
+  "position_max",
 ];
 
 export interface GscStampFilter {

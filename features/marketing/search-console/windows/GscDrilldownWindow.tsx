@@ -16,6 +16,9 @@ import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilld
 import { KpiBand } from "@/features/marketing/search-console/components/KpiBand";
 import { PerformanceChart } from "@/features/marketing/search-console/components/PerformanceChart";
 import { GscDimensionTable } from "@/features/marketing/search-console/components/GscDimensionTable";
+import { FilterBar } from "@/features/marketing/search-console/components/FilterBar";
+import { GscPeriodStrip } from "@/features/marketing/search-console/components/PeriodStrip";
+import type { RangeCompareValue } from "@/features/marketing/search-console/components/RangeCompareControl";
 import {
   useGscFreshness,
   useGscSummary,
@@ -23,6 +26,8 @@ import {
 } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { gscSummaryCopy } from "@/features/marketing/search-console/lib/copy-payloads";
 import {
+  allowedFilterKeysForDimension,
+  pruneFiltersForDimension,
   resolveGscDataThrough,
   resolvePeriods,
 } from "@/features/marketing/search-console/lib/url-state";
@@ -82,18 +87,32 @@ export default function GscDrilldownWindow({
     "clicks",
     "impressions",
   ]);
+  /**
+   * A PANEL IS A COMPLETE VIEW, not a frozen screenshot (P25). It owns its own
+   * period and its own filter chips, seeded from the slice it was opened with
+   * and changed freely from here — narrowing a panel never touches the table
+   * it came from, and two panels can sit on two different periods at once.
+   */
+  const [panelRange, setPanelRange] = useState<RangeCompareValue>({
+    range,
+    customFrom,
+    customTo,
+    compare,
+  });
+  const [panelFilters, setPanelFilters] = useState<GscFilters>(filters);
+  const allowedKeys = allowedFilterKeysForDimension(dimension);
+
   const freshness = useGscFreshness(siteId);
   const dataThrough = useMemo(
     () => resolveGscDataThrough(freshness.data),
     [freshness.data],
   );
   const periods = useMemo(
-    () =>
-      resolvePeriods({ range, customFrom, customTo, compare }, new Date(), dataThrough),
-    [range, customFrom, customTo, compare, dataThrough],
+    () => resolvePeriods(panelRange, new Date(), dataThrough),
+    [panelRange, dataThrough],
   );
-  const summary = useGscSummary(siteId, periods, filters);
-  const timeseries = useGscTimeseries(siteId, periods, filters);
+  const summary = useGscSummary(siteId, periods, panelFilters);
+  const timeseries = useGscTimeseries(siteId, periods, panelFilters);
 
   const panelTitle =
     title ??
@@ -102,7 +121,7 @@ export default function GscDrilldownWindow({
     siteId,
     siteName,
     periods,
-    filters,
+    filters: panelFilters,
     summary: summary.data ?? null,
   });
 
@@ -134,7 +153,7 @@ export default function GscDrilldownWindow({
           json={() => ({
             site_id: siteId,
             dimension,
-            filters,
+            filters: panelFilters,
             period: periods,
             summary: summary.data ?? null,
           })}
@@ -143,11 +162,30 @@ export default function GscDrilldownWindow({
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
       <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden bg-background p-2">
+        {/* This panel's OWN period and OWN chips. Changing either re-queries
+            this panel alone. */}
+        <GscPeriodStrip
+          periods={periods}
+          value={panelRange}
+          onChange={setPanelRange}
+        />
+        {allowedKeys.length > 0 ? (
+          <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-2">
+            <FilterBar
+              filters={panelFilters}
+              allowedKeys={allowedKeys}
+              siteId={siteId}
+              onChange={(next) =>
+                setPanelFilters(pruneFiltersForDimension(dimension, next))
+              }
+            />
+          </div>
+        ) : null}
         <KpiBand
           siteId={siteId}
           siteName={siteName}
           periods={periods}
-          filters={filters}
+          filters={panelFilters}
           summary={summary.data}
           isLoading={summary.isLoading}
           isFetching={summary.isFetching}
@@ -167,7 +205,7 @@ export default function GscDrilldownWindow({
           siteId={siteId}
           siteName={siteName}
           periods={periods}
-          filters={filters}
+          filters={panelFilters}
           rows={timeseries.data ?? []}
           visibleMetrics={visibleMetrics}
           height={150}
@@ -178,7 +216,7 @@ export default function GscDrilldownWindow({
             siteName={siteName}
             dimension={dimension}
             periods={periods}
-            filters={filters}
+            filters={panelFilters}
             copySurface={`Search Console — drill-down panel (${DIMENSION_TITLES[dimension]})`}
             pageSize={25}
             watch
@@ -188,16 +226,13 @@ export default function GscDrilldownWindow({
                 siteId,
                 siteName,
                 dimension: drill.dimension,
-                filters: { ...filters, ...drill.filters },
-                range,
-                customFrom,
-                customTo,
-                compare,
+                filters: { ...panelFilters, ...drill.filters },
+                ...panelRange,
                 title: drill.label,
               });
             }}
             drillHint="Click a row to open its breakdown in another panel"
-            panelRange={{ range, customFrom, customTo, compare }}
+            panelRange={panelRange}
           />
         </div>
       </div>

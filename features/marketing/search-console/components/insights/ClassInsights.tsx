@@ -10,7 +10,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Scale, Tags } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Gem, Scale, Tags } from "lucide-react";
 import { useOpenKeywordClassificationWindow } from "@/features/overlays/openers/keywordClassificationWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -46,6 +47,112 @@ import {
   formatCount,
 } from "@/features/marketing/search-console/types";
 import { ClassChip } from "./ClassChip";
+import {
+  getValueSummary,
+  getValueVocabulary,
+} from "@/features/marketing/seo/value-system/data";
+import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
+import { levelVocabularyHref } from "@/features/marketing/seo/value-system/reason-links";
+import type { ValueSummaryRow } from "@/features/marketing/seo/value-system/types";
+
+/**
+ * C6 — ONE LEVEL ROW: `seo.gsc_perf_value_summary` returns a row per
+ * (band, source), so the same level arrives split between "computed" and
+ * "your ruling". A reader asking "how did Platinum do" means the level, not
+ * the provenance of the level — so the sources are summed here and the
+ * provenance stays where it belongs, on the keyword's receipt.
+ */
+interface LevelRow {
+  value_band: string;
+  clicks: number;
+  impressions: number;
+  queries: number;
+  cmp_clicks: number;
+  cmp_impressions: number;
+  cmp_queries: number;
+}
+
+function rollUpLevels(rows: ValueSummaryRow[]): LevelRow[] {
+  const byBand = new Map<string, LevelRow>();
+  for (const row of rows) {
+    const existing = byBand.get(row.value_band);
+    if (existing) {
+      existing.clicks += row.clicks;
+      existing.impressions += row.impressions;
+      existing.queries += row.queries;
+      existing.cmp_clicks += row.cmp_clicks ?? 0;
+      existing.cmp_impressions += row.cmp_impressions ?? 0;
+      existing.cmp_queries += row.cmp_queries ?? 0;
+    } else {
+      byBand.set(row.value_band, {
+        value_band: row.value_band,
+        clicks: row.clicks,
+        impressions: row.impressions,
+        queries: row.queries,
+        cmp_clicks: row.cmp_clicks ?? 0,
+        cmp_impressions: row.cmp_impressions ?? 0,
+        cmp_queries: row.cmp_queries ?? 0,
+      });
+    }
+  }
+  return [...byBand.values()].sort((a, b) => b.clicks - a.clicks);
+}
+
+function pct(current: number, compare: number): number | null {
+  if (compare === 0) return current === 0 ? 0 : null;
+  return ((current - compare) / compare) * 100;
+}
+
+/**
+ * THE HEADLINE Arman reads weekly: "the site is flat while Platinum fell."
+ * A site-level number that hides a collapse in the traffic that pays is the
+ * exact failure the value system exists to catch — so when the totals barely
+ * move and one level moves hard, that divergence IS the story, said in one
+ * sentence. When nothing diverges, the sentence stays honest and says so.
+ */
+function levelHeadline(
+  levels: LevelRow[],
+  labelOf: (band: string) => string,
+): { text: string; tone: "alarm" | "calm" } | null {
+  const totals = levels.reduce(
+    (acc, row) => ({
+      clicks: acc.clicks + row.clicks,
+      cmp: acc.cmp + row.cmp_clicks,
+    }),
+    { clicks: 0, cmp: 0 },
+  );
+  if (totals.clicks === 0 && totals.cmp === 0) return null;
+  const sitePct = pct(totals.clicks, totals.cmp);
+  // "Real" levels only — `unvalued` is the absence of a verdict, so a swing in
+  // it is a meaning gap, not a business signal, and it never leads.
+  const ranked = levels
+    .filter(
+      (row) =>
+        row.value_band !== "unvalued" && (row.clicks > 0 || row.cmp_clicks > 0),
+    )
+    .map((row) => ({ row, delta: pct(row.clicks, row.cmp_clicks) }))
+    .filter((entry) => entry.delta !== null)
+    .sort((a, b) => Math.abs(b.delta as number) - Math.abs(a.delta as number));
+  const worst = ranked[0];
+  if (!worst) return null;
+  const worstPct = worst.delta as number;
+  const label = labelOf(worst.row.value_band);
+  const move = `${worstPct >= 0 ? "up" : "down"} ${Math.abs(Math.round(worstPct))}%`;
+  const siteMove =
+    sitePct === null
+      ? "Overall clicks have no comparable period"
+      : Math.abs(sitePct) < 5
+        ? `Clicks are flat overall (${sitePct >= 0 ? "+" : ""}${Math.round(sitePct)}%)`
+        : `Clicks are ${sitePct >= 0 ? "up" : "down"} ${Math.abs(Math.round(sitePct))}% overall`;
+  const diverges =
+    sitePct !== null && Math.abs(sitePct) < 5 && Math.abs(worstPct) >= 15;
+  return {
+    text: diverges
+      ? `${siteMove} — but ${label} is ${move}.`
+      : `${siteMove}. ${label} moved the most: ${move}.`,
+    tone: diverges || worstPct <= -15 ? "alarm" : "calm",
+  };
+}
 
 function num(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
@@ -86,15 +193,51 @@ export function QualityView({
   const [trafficClass, setTrafficClass] = useState<GscTrafficClass | null>(
     null,
   );
+  // C6 — the second decomposition. Class says what KIND of traffic; level says
+  // what it is WORTH. Both filter the same movers list, independently.
+  const [valueLevel, setValueLevel] = useState<string | null>(null);
   const [direction, setDirection] = useState<"gain" | "loss">("loss");
   const openClassificationWindow = useOpenKeywordClassificationWindow();
   const summary = useGscClassSummary(siteId, periods);
+  const valueSummary = useQuery({
+    queryKey: [
+      "marketing",
+      "gsc",
+      "value-summary",
+      siteId,
+      periods.current.start,
+      periods.current.end,
+      periods.compare?.start ?? null,
+      periods.compare?.end ?? null,
+    ],
+    queryFn: ({ signal }) =>
+      getValueSummary(
+        siteId,
+        periods.current.start,
+        periods.current.end,
+        periods.compare?.start ?? null,
+        periods.compare?.end ?? null,
+        signal,
+      ),
+    staleTime: 60_000,
+  });
+  const vocabulary = useQuery({
+    queryKey: ["marketing", "gsc", "value-vocabulary", siteId],
+    queryFn: ({ signal }) => getValueVocabulary(siteId, "value_band", signal),
+    staleTime: 5 * 60_000,
+  });
+  const levelLabel = (band: string) =>
+    (vocabulary.data ?? []).find((def) => def.value === band)?.label ??
+    humanizeSlug(band);
+  const levelRows = rollUpLevels(valueSummary.data ?? []);
+  const headline = levelHeadline(levelRows, levelLabel);
   const movers = useGscClassMovers(
     siteId,
     periods,
     dimension,
     trafficClass,
     direction,
+    valueLevel ? [valueLevel] : [],
   );
   const moverRows = movers.data?.rows ?? [];
   const moverTotal = movers.data?.total ?? moverRows.length;
@@ -131,6 +274,29 @@ export function QualityView({
       filter: false,
       accessorFn: (row) => row.traffic_class,
       cell: (row) => <ClassChip trafficClass={row.traffic_class} />,
+    },
+    {
+      // The row's dominant level, resolved server-side by the one resolver.
+      id: "value_band",
+      header: "Level",
+      sortable: false,
+      filter: false,
+      width: 110,
+      accessorFn: (row) => row.value_band ?? "",
+      cell: (row) => (
+        <span
+          className={cn(
+            "rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium",
+            row.value_band === "negative"
+              ? "text-destructive"
+              : row.value_band === "unvalued"
+                ? "text-muted-foreground"
+                : "text-foreground",
+          )}
+        >
+          {row.value_band ? levelLabel(row.value_band) : "—"}
+        </span>
+      ),
     },
     {
       id: "delta_clicks",
@@ -242,6 +408,80 @@ export function QualityView({
     },
   ];
 
+  const levelTotals = levelRows.reduce(
+    (acc, row) => ({
+      clicks: acc.clicks + row.clicks,
+      cmp: acc.cmp + row.cmp_clicks,
+    }),
+    { clicks: 0, cmp: 0 },
+  );
+  const levelColumns: MatrxColumnDef<LevelRow>[] = [
+    {
+      id: "value_band",
+      accessorKey: "value_band",
+      header: "Level",
+      filter: "select",
+      cell: (row) => (
+        <span
+          className={cn(
+            "rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium",
+            row.value_band === "negative"
+              ? "text-destructive"
+              : row.value_band === "unvalued"
+                ? "text-muted-foreground"
+                : "text-foreground",
+          )}
+        >
+          {levelLabel(row.value_band)}
+        </span>
+      ),
+    },
+    {
+      id: "clicks",
+      accessorKey: "clicks",
+      header: "Clicks",
+      filter: "number",
+      align: "right",
+      cell: (row) => num(row.clicks),
+    },
+    {
+      id: "click_delta",
+      accessorFn: (row) => row.clicks - row.cmp_clicks,
+      header: "Click change",
+      filter: "number",
+      align: "right",
+      cell: (row) => deltaSpan(row.clicks, row.cmp_clicks),
+    },
+    {
+      id: "click_share",
+      accessorFn: (row) =>
+        levelTotals.clicks > 0 ? row.clicks / levelTotals.clicks : 0,
+      header: "Click share",
+      filter: "number",
+      align: "right",
+      cell: (row) =>
+        levelTotals.clicks > 0
+          ? `${((row.clicks / levelTotals.clicks) * 100).toFixed(0)}%`
+          : "—",
+    },
+    {
+      id: "impressions",
+      accessorKey: "impressions",
+      header: "Impressions",
+      filter: "number",
+      align: "right",
+      cell: (row) => num(row.impressions),
+    },
+    {
+      id: "queries",
+      accessorKey: "queries",
+      header: "Keywords",
+      filter: "number",
+      align: "right",
+      cell: (row) => num(row.queries),
+    },
+  ];
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
       {/* The evaluated windows live in the tab-level GscPeriodStrip — ONE
@@ -261,6 +501,20 @@ export function QualityView({
           <Tags className="h-3 w-3" /> Classify in panel
         </button>
       </div>
+      {headline ? (
+        // The weekly read, in one sentence, in the place Arman already looks.
+        <p
+          className={cn(
+            "flex shrink-0 items-start gap-1.5 rounded-md border px-2.5 py-1.5 text-xs",
+            headline.tone === "alarm"
+              ? "border-warning/40 bg-warning/10 text-foreground"
+              : "border-border bg-card text-muted-foreground",
+          )}
+        >
+          <Gem className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0">{headline.text}</span>
+        </p>
+      ) : null}
       <div className="shrink-0 overflow-hidden rounded-md border border-border p-2">
         <MatrxDataTable
           urlState={{ id: "gsc-class-summary", selectedRow: false }}
@@ -303,6 +557,53 @@ export function QualityView({
             · {num(totals.queries)} queries
           </p>
         ) : null}
+      </div>
+      {/* BY LEVEL — the decomposition beside the class one, same shape, same
+          click-to-filter behaviour. Class and Level answer different questions
+          and are never merged into one table. */}
+      <div className="shrink-0 overflow-hidden rounded-md border border-border p-2">
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <p className="text-[11px] font-medium text-foreground">By level</p>
+          <Link
+            href={levelVocabularyHref({ brandId: null, siteId })}
+            className="text-[11px] text-primary hover:underline"
+            title="Levels are your words and your thresholds — edit them"
+          >
+            Edit the level vocabulary →
+          </Link>
+        </div>
+        {valueSummary.isError ? (
+          <ErrorPanel error={valueSummary.error} />
+        ) : (
+          <MatrxDataTable<LevelRow>
+            urlState={{ id: "gsc-value-summary", selectedRow: false }}
+            data={levelRows}
+            columns={levelColumns}
+            getRowId={(row) => row.value_band}
+            isLoading={valueSummary.isLoading}
+            isFetching={valueSummary.isFetching}
+            pageSize={10}
+            selectedId={valueLevel}
+            onRowOpen={(row) =>
+              setValueLevel((current) =>
+                current === row.value_band ? null : row.value_band,
+              )
+            }
+            rowActions={(row) => (
+              <Link
+                href={`/marketing/sites/${siteId}/value?band=${encodeURIComponent(row.value_band)}`}
+                className="whitespace-nowrap text-[11px] text-primary hover:underline"
+                title={`Review the keywords sitting at ${levelLabel(row.value_band)}`}
+              >
+                Review →
+              </Link>
+            )}
+            emptyState={{
+              title: "No level data",
+              description: `No keyword carries a level ${describeGscWindow(periods.current)}. Give a topic worth, or rule a level directly, and this fills in.`,
+            }}
+          />
+        )}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         <div className="flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
@@ -347,11 +648,21 @@ export function QualityView({
           >
             Class: {trafficClass} ✕
           </button>
-        ) : (
+        ) : null}
+        {valueLevel ? (
+          <button
+            type="button"
+            className="rounded border border-border bg-card px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => setValueLevel(null)}
+          >
+            Level: {levelLabel(valueLevel)} ✕
+          </button>
+        ) : null}
+        {!trafficClass && !valueLevel ? (
           <span className="text-xs text-muted-foreground">
-            Click a class row above to filter the movers.
+            Click a class or level row above to filter the movers.
           </span>
-        )}
+        ) : null}
       </div>
       <div className="min-h-[20rem] flex-1">
         {movers.isError ? (

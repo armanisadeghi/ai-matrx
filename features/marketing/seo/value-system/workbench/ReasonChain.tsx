@@ -12,6 +12,7 @@
  * other empty chain screams as the data defect it is.
  */
 
+import Link from "next/link";
 import {
   AlertTriangle,
   CircleHelp,
@@ -19,6 +20,7 @@ import {
   Landmark,
   Layers2,
   MapPin,
+  PencilLine,
   SlidersHorizontal,
   Timer,
   TreePine,
@@ -27,6 +29,7 @@ import { cn } from "@/styles/themes/utils";
 import { formatRelativeTime } from "@/utils/datetime";
 import type { ValueReason, ValueSource } from "../types";
 import { humanizeSlug } from "../lib";
+import { reasonEditorLink, type ReasonLinkContext } from "../reason-links";
 
 function multiplierText(multiplier: number): string {
   return `×${Number.isInteger(multiplier) ? multiplier : multiplier.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}`;
@@ -226,13 +229,22 @@ export function ReasonChainInline({
   );
 }
 
-/** The full arithmetic, one step per line, for the row detail panel. */
+/**
+ * The full arithmetic, one step per line, for the row detail panel.
+ *
+ * Pass `linkContext` and every step gains the door to the screen where THAT
+ * step is changed (reason-links.ts) — the loop that turns an explanation into
+ * something the reader can act on. Without it the chain still renders; it just
+ * explains without offering the edit.
+ */
 export function ReasonChainDetail({
   reasons,
   source,
+  linkContext,
 }: {
   reasons: ValueReason[];
   source: ValueSource;
+  linkContext?: ReasonLinkContext;
 }) {
   if (!reasons || reasons.length === 0) {
     if (source === "unvalued") {
@@ -267,6 +279,7 @@ export function ReasonChainDetail({
       {reasons.map((reason, index) => {
         const view = reasonView(reason);
         const Icon = view.icon;
+        const door = linkContext ? reasonEditorLink(reason, linkContext) : null;
         return (
           <li key={index} className="flex items-start gap-2 text-xs">
             <Icon
@@ -278,6 +291,15 @@ export function ReasonChainDetail({
             <span className="min-w-0">
               <span className={cn("font-medium", view.tone)}>{view.text}</span>
               <span className="block text-muted-foreground">{view.detail}</span>
+              {door ? (
+                <Link
+                  href={door.href}
+                  className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                >
+                  <PencilLine className="h-3 w-3 shrink-0" />
+                  {door.label}
+                </Link>
+              ) : null}
             </span>
           </li>
         );

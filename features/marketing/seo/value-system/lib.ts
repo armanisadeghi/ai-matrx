@@ -440,3 +440,74 @@ function ordinalFraction(n: number): string {
   };
   return words[n] ?? `${n}th`;
 }
+
+// ── The KPI band ────────────────────────────────────────────────────────────
+
+/**
+ * The four numbers the workbench opens with, all derived from ONE query the
+ * page already makes (`gsc_perf_value_summary`) plus the ruling counter.
+ *
+ * They were chosen because they MOVE and because a person can move them:
+ *  • `clicks`        — the business number. It moves on its own, and it is the
+ *                      denominator every other number is judged against.
+ *  • `valuedClicks`  — clicks carried by keywords that have a level. This is
+ *                      the one that gamifies: it rises when valued traffic
+ *                      grows AND when the expert rules another keyword, so
+ *                      classifying work shows up in a number the same day.
+ *  • `unvalued`      — the work queue, in both currencies (keywords, and the
+ *                      clicks they carry). The clicks are why it is urgent.
+ *  • rulings         — counted separately (`getRulingCounts`), because it is
+ *                      the only number here that arithmetic cannot move.
+ *
+ * A share is only computed where there is a denominator; nothing is claimed
+ * where nothing is measured (P14).
+ */
+export interface ValueKpis {
+  clicks: number;
+  clicksDelta: Delta;
+  valuedClicks: number;
+  valuedClicksDelta: Delta;
+  /** Share of window clicks carried by keywords that have a level, or null. */
+  valuedShare: number | null;
+  unvaluedQueries: number;
+  unvaluedClicks: number;
+  totalQueries: number;
+  /** Share of GSC-active keywords that carry a level, or null when none. */
+  coverage: number | null;
+}
+
+export function buildKpis(rows: ValueSummaryRow[]): ValueKpis {
+  let clicks = 0;
+  let cmpClicks = 0;
+  let valuedClicks = 0;
+  let cmpValuedClicks = 0;
+  let unvaluedQueries = 0;
+  let unvaluedClicks = 0;
+  let totalQueries = 0;
+  for (const row of rows) {
+    clicks += row.clicks;
+    cmpClicks += row.cmp_clicks;
+    totalQueries += row.queries;
+    if (row.value_band === "unvalued") {
+      unvaluedQueries += row.queries;
+      unvaluedClicks += row.clicks;
+    } else {
+      valuedClicks += row.clicks;
+      cmpValuedClicks += row.cmp_clicks;
+    }
+  }
+  return {
+    clicks,
+    clicksDelta: computeDelta(clicks, cmpClicks),
+    valuedClicks,
+    valuedClicksDelta: computeDelta(valuedClicks, cmpValuedClicks),
+    valuedShare: clicks > 0 ? (valuedClicks / clicks) * 100 : null,
+    unvaluedQueries,
+    unvaluedClicks,
+    totalQueries,
+    coverage:
+      totalQueries > 0
+        ? ((totalQueries - unvaluedQueries) / totalQueries) * 100
+        : null,
+  };
+}

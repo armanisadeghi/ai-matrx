@@ -268,8 +268,11 @@ export function useGscClassMovers(
   dimension: "query" | "page",
   trafficClass: GscTrafficClass | null,
   direction: "gain" | "loss",
+  /** C6 — narrow to one or more value levels (`seo.keyword_value_map` slugs). */
+  levels: readonly string[] = [],
   options: { enabled?: boolean } = {},
 ) {
+  const levelKey = [...levels].sort().join("|");
   return useQuery({
     queryKey: [
       "marketing",
@@ -280,6 +283,7 @@ export function useGscClassMovers(
       dimension,
       trafficClass,
       direction,
+      levelKey,
     ],
     queryFn: ({ signal }) => {
       if (!siteId) throw new Error("No site selected");
@@ -289,6 +293,7 @@ export function useGscClassMovers(
         dimension,
         trafficClass,
         direction,
+        levels,
         signal,
       );
     },

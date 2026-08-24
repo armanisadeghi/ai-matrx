@@ -308,6 +308,11 @@ const GscDrilldownWindow = lazyOverlay(
     import("@/features/marketing/search-console/windows/GscDrilldownWindow"),
   { ssr: false },
 );
+const GscWhyScoreWindow = lazyOverlay(
+  () =>
+    import("@/features/marketing/search-console/windows/GscWhyScoreWindow"),
+  { ssr: false },
+);
 const ReviewWalkWindow = lazyOverlay(
   () => import("@/features/review-walk/components/ReviewWalkWindow"),
   { ssr: false },
@@ -1835,6 +1840,9 @@ export default function OverlayController() {
     ),
     fullScreenEditor: useAppSelector((s) =>
       selectOpenInstances(s, "fullScreenEditor"),
+    ),
+    gscWhyScoreWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "gscWhyScoreWindow"),
     ),
     gscDrilldownWindow: useAppSelector((s) =>
       selectOpenInstances(s, "gscDrilldownWindow"),
@@ -5251,6 +5259,39 @@ export default function OverlayController() {
                 : "none") as import("@/features/marketing/search-console/types").GscCompareMode
             }
             title={typeof data.title === "string" ? data.title : undefined}
+          />
+        );
+      })}
+
+      {/* gscWhyScoreWindow — multi-instance */}
+      {instancesById.gscWhyScoreWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        if (
+          typeof data?.siteId !== "string" ||
+          typeof data?.keywordId !== "string"
+        ) {
+          return null;
+        }
+        return (
+          <GscWhyScoreWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            stackIndex={
+              typeof data.stackIndex === "number" ? data.stackIndex : 0
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "gscWhyScoreWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            siteId={data.siteId}
+            siteName={typeof data.siteName === "string" ? data.siteName : null}
+            brandId={typeof data.brandId === "string" ? data.brandId : null}
+            keywordId={data.keywordId}
+            keyword={typeof data.keyword === "string" ? data.keyword : null}
           />
         );
       })}

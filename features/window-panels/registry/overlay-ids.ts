@@ -104,6 +104,7 @@ export const OVERLAY_IDS = [
   "fullScreenEditor",
   "galleryWindow",
   "gscDrilldownWindow",
+  "gscWhyScoreWindow",
   "hierarchyCreationWindow",
   "hindsightFindingWindow",
   "htmlPreview",

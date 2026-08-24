@@ -455,6 +455,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  gscWhyScoreWindow: {
+    label: "Why This Score",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   reviewWalkWindow: {
     label: "Review Walk",
     instanceMode: "multi",

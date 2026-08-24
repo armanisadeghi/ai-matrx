@@ -21,6 +21,7 @@ import type {
   GscTrendRow,
 } from "@/features/marketing/search-console/types";
 import { makeAssertData } from "@/utils/errors";
+import type { ValueReason } from "@/features/marketing/seo/value-system/types";
 
 const INSIGHT_ROW_LIMIT = 200;
 
@@ -143,12 +144,18 @@ export async function getGscKeywordClassesByText(
   return assertData(response.data, response.error);
 }
 
+/**
+ * C6 — movers, optionally narrowed to one or more value LEVELS. Levels resolve
+ * server-side through `seo.keyword_value_map` (the ONE resolver) and arrive
+ * back on each row as `value_band`, so Class and Level read the same way.
+ */
 export async function getGscClassMovers(
   siteId: string,
   periods: GscResolvedPeriods,
   dimension: "query" | "page",
   trafficClass: GscTrafficClass | null,
   direction: "gain" | "loss",
+  levels: readonly string[] = [],
   signal?: AbortSignal,
 ): Promise<GscInsightResult<GscClassMoverRow>> {
   const compare = requireCompare(periods);
@@ -162,6 +169,7 @@ export async function getGscClassMovers(
       p_compare_end: compare.end,
       ...(trafficClass ? { p_class: trafficClass } : {}),
       p_direction: direction,
+      ...(levels.length > 0 ? { p_filters: { levels: [...levels] } } : {}),
       p_limit: INSIGHT_ROW_LIMIT,
       p_offset: 0,
     })
@@ -247,6 +255,12 @@ export interface GscKeywordValueRow {
   value_score: number | null;
   value_band: string | null;
   value_source: string | null;
+  /**
+   * THE RECEIPT. A tier never renders without its why (value-system.md), so
+   * the same call that gives a table its Level column gives it the reasons
+   * behind that level — no second round trip for the (i) popover.
+   */
+  reasons: ValueReason[];
 }
 
 export async function getGscKeywordValueFor(
@@ -258,6 +272,18 @@ export async function getGscKeywordValueFor(
   const response = await (await seoDb())
     .rpc("gsc_keyword_value_for", { p_site_id: siteId, p_keyword_ids: keywordIds })
     .abortSignal(signal ?? new AbortController().signal);
-  const rows = assertData(response.data, response.error) as GscKeywordValueRow[];
-  return new Map(rows.map((r) => [r.keyword_id, r]));
+  const rows = assertData(response.data, response.error) as Array<
+    Omit<GscKeywordValueRow, "reasons"> & { reasons: unknown }
+  >;
+  return new Map(
+    rows.map((row) => [
+      row.keyword_id,
+      {
+        ...row,
+        reasons: Array.isArray(row.reasons)
+          ? (row.reasons as ValueReason[])
+          : [],
+      },
+    ]),
+  );
 }

@@ -16,9 +16,11 @@
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  BarChart3,
   Columns2,
   Eye,
   Filter,
+  Info,
   PanelTop,
   Rocket,
   SearchX,
@@ -48,7 +50,11 @@ import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-
 import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
-import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
+import {
+  panelDrillFor,
+  rowScopeDrillFor,
+} from "@/features/marketing/search-console/lib/drills";
+import { useOpenGscWhyScoreWindow } from "@/features/overlays/openers/gscWhyScoreWindow";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type {
   GscBreakdownRow,
@@ -195,14 +201,16 @@ export function GscDimensionTable({
       title: `${labels.column} — ${siteName ?? "Search Console"}`,
     });
   };
-  const openRowDrillPanel = () => {
-    const row = clickedRowRef.current;
+  /**
+   * THE PANEL RULE (P25): every one of these opens a NEW floating panel and
+   * leaves this table untouched — its filters, its sort and its scroll survive.
+   * Panels are keyed on their slice by the opener, so the same drill twice
+   * focuses the panel already open and two different rows float side by side.
+   */
+  const openPanelFor = (
+    drill: { dimension: GscDimension; filters: Partial<GscFilters>; label: string },
+  ) => {
     if (!panelRange) return;
-    if (!row) {
-      toast.error("Right-click a data row to drill into it.");
-      return;
-    }
-    const drill = panelDrillFor(dimension, row);
     openDrilldown({
       siteId,
       siteName,
@@ -213,6 +221,42 @@ export function GscDimensionTable({
       customTo: panelRange.customTo,
       compare: panelRange.compare,
       title: drill.label,
+    });
+  };
+  /** The clicked row, or a sentence saying what to right-click instead. */
+  const clickedRow = (what: string): GscBreakdownRow | null => {
+    const row = clickedRowRef.current;
+    if (!row) {
+      toast.error(`Right-click a data row to ${what}.`);
+      return null;
+    }
+    return row;
+  };
+  const openRowDrillPanel = () => {
+    const row = clickedRow("drill into it");
+    if (!row) return;
+    openPanelFor(panelDrillFor(dimension, row));
+  };
+  const openRowScopePanel = () => {
+    const row = clickedRow("see its Search Console data");
+    if (!row) return;
+    openPanelFor(rowScopeDrillFor(dimension, row));
+  };
+  const openWhyScore = useOpenGscWhyScoreWindow();
+  const openRowWhyScore = () => {
+    const row = clickedRow("see why it scores what it does");
+    if (!row) return;
+    if (!row.keyword_id) {
+      toast.error(
+        "This row has no keyword record yet, so there is no score to explain.",
+      );
+      return;
+    }
+    openWhyScore({
+      siteId,
+      siteName,
+      keywordId: row.keyword_id,
+      keyword: row.key,
     });
   };
 
@@ -245,17 +289,22 @@ export function GscDimensionTable({
         : null,
     ),
     ...(dimension === "query"
-      ? buildGscValueColumns<GscBreakdownRow>(valueFor)
+      ? buildGscValueColumns<GscBreakdownRow>(valueFor, {
+          siteId,
+          keywordOf: (row) => row.key,
+        })
       : []),
     ...buildGscMetricColumns<GscBreakdownRow>(hasCompare, "clicks-only"),
   ];
 
+  // The right-click vocabulary, in the reader's words. Each opens a panel;
+  // none of them re-filters the table underneath.
   const PANEL_DRILL_LABELS: Record<GscDimension, string> = {
-    query: "Pages for this query — floating panel",
-    page: "Queries for this page — floating panel",
-    country: "Devices in this country — floating panel",
-    device: "Countries on this device — floating panel",
-    search_appearance: "This appearance type — floating panel",
+    query: "See pages for this keyword",
+    page: "See queries for this page",
+    country: "See devices in this country",
+    device: "See countries on this device",
+    search_appearance: "See this appearance type",
   };
 
   const table = (
@@ -356,9 +405,31 @@ export function GscDimensionTable({
               label: PANEL_DRILL_LABELS[dimension],
               icon: PanelTop,
               description:
-                "Open this row's breakdown in a floating panel you can keep beside others",
+                "Opens a floating panel beside this table — your filters, sort and scroll stay exactly as they are",
               onSelect: openRowDrillPanel,
             },
+            {
+              kind: "item",
+              id: "gsc-row-scope-panel",
+              label: "See this row's Search Console data",
+              icon: BarChart3,
+              description:
+                "Clicks, impressions and the trend chart for this one row, in its own panel",
+              onSelect: openRowScopePanel,
+            },
+            ...(dimension === "query"
+              ? [
+                  {
+                    kind: "item" as const,
+                    id: "gsc-why-score",
+                    label: "Why this score",
+                    icon: Info,
+                    description:
+                      "The receipt behind this keyword's level — every step links to where you change it",
+                    onSelect: openRowWhyScore,
+                  },
+                ]
+              : []),
             {
               kind: "item",
               id: "gsc-view-panel",

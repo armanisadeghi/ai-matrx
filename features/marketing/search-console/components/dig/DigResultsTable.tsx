@@ -174,7 +174,10 @@ export function DigResultsTable({
     // class/level-pinned page digs) — an all-null trio is noise. The class
     // shown is the resolver's, the same one `gsc_perf_dig` filtered on.
     ...(rowKeywordIds.length > 0
-      ? buildGscValueColumns<GscDigResultRow>(valueFor)
+      ? buildGscValueColumns<GscDigResultRow>(valueFor, {
+          siteId,
+          keywordOf: (row) => (dimension === "query" ? row.key : null),
+        })
       : []),
     ...buildGscMetricColumns<GscDigResultRow>(hasCompare, "all"),
     ...(hasCompare
