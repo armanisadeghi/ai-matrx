@@ -90,6 +90,7 @@ import {
   type StageReadiness,
 } from "../../../readiness";
 import { addKeywords } from "../../../service";
+import { CoverageAuditCard } from "../CoverageAuditCard";
 import { evaluateKeywordQuota, type QuotaVerdict } from "../../../keywordQuota";
 import { KeywordQuotaDialog } from "../../keywords/KeywordQuotaDialog";
 
@@ -426,21 +427,32 @@ export function PipelineGraph() {
     [topicId, refresh, refreshProgress],
   );
 
-  const handleAddKeyword = useCallback(async () => {
-    const kw = newKeyword.trim();
-    if (!kw) return;
-    // Same gate as the keywords page — the caps are enforced by the backend
-    // either way, so the ONE thing that must never happen is enforcing them
-    // without telling the user (see `keywordQuota.ts`).
-    if (topic) {
-      const verdict = evaluateKeywordQuota(topic, keywordCount + 1);
-      if (verdict.shortfalls.length > 0) {
-        setQuotaPrompt({ keyword: kw, verdict });
-        return;
+  /**
+   * Quota-gated add — shared by the Add-Keyword modal and the coverage
+   * audit's per-gap "Add as keyword" action (D6). Same gate as the keywords
+   * page: the caps are enforced by the backend either way, so the ONE thing
+   * that must never happen is enforcing them without telling the user
+   * (see `keywordQuota.ts`).
+   */
+  const requestAddKeyword = useCallback(
+    async (kw: string) => {
+      if (!kw) return;
+      if (topic) {
+        const verdict = evaluateKeywordQuota(topic, keywordCount + 1);
+        if (verdict.shortfalls.length > 0) {
+          setQuotaPrompt({ keyword: kw, verdict });
+          return;
+        }
       }
-    }
-    await commitAddKeyword(kw);
-  }, [newKeyword, topic, keywordCount, commitAddKeyword]);
+      await commitAddKeyword(kw);
+    },
+    [topic, keywordCount, commitAddKeyword],
+  );
+
+  const handleAddKeyword = useCallback(
+    () => requestAddKeyword(newKeyword.trim()),
+    [newKeyword, requestAddKeyword],
+  );
 
   // ── Loading + empty topic ───────────────────────────────────────────────
 
@@ -1168,6 +1180,16 @@ export function PipelineGraph() {
           variant="cold"
         />
       )}
+
+      {/* ── Coverage audit (D6) — the pipeline's persisted "did we get what
+          the intent needs?" verdict, rendered through the registered kind
+          component with per-gap add-as-keyword recovery actions. Renders
+          nothing when no audit is stored on the topic. */}
+      <CoverageAuditCard
+        metadata={topic.metadata}
+        onAddKeyword={requestAddKeyword}
+        disabled={addingKeyword || stream.isStreaming}
+      />
 
       {/* Empty-state hint when nothing has been done yet */}
       {p.total_keywords === 0 && !stream.isStreaming && (

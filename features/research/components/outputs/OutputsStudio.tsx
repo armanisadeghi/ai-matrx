@@ -47,11 +47,13 @@ import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWind
 import {
   coercePresentationDeck,
   coerceSeoPackage,
+  extractMarkdownTitle,
   type PresentationDeck,
 } from "./parsers";
 import {
   parseOutputs,
   assetsFor,
+  type ResearchOutputs,
   podcastMediaFrom,
   type OutputAsset,
   type OutputKind,
@@ -72,12 +74,6 @@ import { resolveBundle } from "../../resources/resolve";
 const BLOG_MANDATE = "research_client.output_blog";
 const SLIDES_MANDATE = "research_client.output_slides";
 const SEO_MANDATE = "research_client.output_seo";
-
-/** First H1 in a markdown doc, for an asset title. */
-function extractMarkdownTitle(md: string): string | null {
-  const m = md.match(/^#\s+(.+?)\s*$/m);
-  return m ? m[1].trim() : null;
-}
 
 /** Build the generator's declared variables. Structured content (the report)
  *  and the Voice & Lens note travel as named variables, never as user_input —
@@ -202,7 +198,7 @@ export default function OutputsStudio() {
           </span>
         </div>
 
-        <DomainReportsCard topicId={topicId} />
+        <DomainReportsCard topicId={topicId} outputs={outputs} />
 
         {bundleFallback && (
           <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
@@ -307,7 +303,23 @@ export default function OutputsStudio() {
  * would be a second run path whose inputs are invisible — precisely the problem
  * this whole system exists to fix.
  */
-function DomainReportsCard({ topicId }: { topicId: string }) {
+function DomainReportsCard({
+  topicId,
+  outputs,
+}: {
+  topicId: string;
+  outputs: ResearchOutputs;
+}) {
+  // Generated domain reports persist into `rs_topic.outputs` under each
+  // definition's `outputKind` (D5 — the Context Builder's run appends them via
+  // the same row-locked RPC the publishing cards use), so they re-render here
+  // on a cold load instead of existing only in the run window that wrote them.
+  const [viewing, setViewing] = useState<OutputAsset | null>(null);
+  const viewingMarkdown =
+    typeof viewing?.meta?.markdown === "string"
+      ? (viewing.meta.markdown as string)
+      : "";
+
   return (
     <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
       <div className="flex items-start gap-2 px-3 py-2.5 border-b border-border/50">
@@ -325,31 +337,88 @@ function DomainReportsCard({ topicId }: { topicId: string }) {
         </div>
       </div>
       <div className="divide-y divide-border/50">
-        {DOMAIN_OUTPUTS.map((def) => (
-          <div
-            key={def.slug}
-            className="flex items-center gap-2 px-3 py-2 hover:bg-accent/40 transition-colors"
-          >
-            <Link
-              href={contextBuilderHref(topicId, def.bundleSlug)}
-              className="flex min-w-0 flex-1 items-center gap-2"
+        {DOMAIN_OUTPUTS.map((def) => {
+          const existing = assetsFor(outputs, def.outputKind);
+          return (
+            <div
+              key={def.slug}
+              className="px-3 py-2 hover:bg-accent/40 transition-colors"
             >
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-medium text-foreground">
-                  {def.label}
-                </div>
-                <div className="text-[11px] text-muted-foreground line-clamp-2">
-                  {def.description}
-                </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={contextBuilderHref(topicId, def.bundleSlug)}
+                  className="flex min-w-0 flex-1 items-center gap-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-foreground">
+                      {def.label}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground line-clamp-2">
+                      {def.description}
+                    </div>
+                  </div>
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                </Link>
+                {existing.length > 0 && (
+                  <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+                    {existing.length} generated
+                  </span>
+                )}
+                {/* Which agent writes this output — the same mandate the Context
+                    Builder runs through, so a rebind here changes the run there. */}
+                <MandateAgentPicker mandateKey={def.mandateKey} className="shrink-0" />
               </div>
-              <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            </Link>
-            {/* Which agent writes this output — the same mandate the Context
-                Builder runs through, so a rebind here changes the run there. */}
-            <MandateAgentPicker mandateKey={def.mandateKey} className="shrink-0" />
-          </div>
-        ))}
+              {existing.length > 0 && (
+                <div className="mt-1.5 space-y-1">
+                  {existing.map((a) => (
+                    <button
+                      key={a.id}
+                      onClick={() =>
+                        setViewing((v) => (v?.id === a.id ? null : a))
+                      }
+                      className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5 text-left hover:bg-accent/40 transition-colors"
+                    >
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-[11px] font-medium truncate flex-1">
+                        {a.title}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                        {new Date(a.created_at).toLocaleDateString()}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+      {viewing && (
+        <div className="border-t border-border/50">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
+            <span className="text-xs font-medium flex-1 truncate">
+              {viewing.title}
+            </span>
+            <button
+              onClick={() => setViewing(null)}
+              className="text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              Close
+            </button>
+          </div>
+          <div className="px-3 py-3 max-h-[460px] overflow-y-auto">
+            <MarkdownStream content={viewingMarkdown} />
+            <div className="flex justify-end mt-2">
+              <ContentActionBar
+                content={viewingMarkdown}
+                title={viewing.title}
+                instanceKey={`research-domain-${viewing.id}`}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

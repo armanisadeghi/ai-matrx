@@ -31,7 +31,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import {
   selectLiveAgents,
@@ -46,7 +46,13 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import type { ManagedAgentOptions } from "@/features/agents/types/instance.types";
 import { useMandate } from "@/features/agents/mandates/useMandate";
 import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
-import { domainOutputForBundleSlug } from "../outputs/outputDefinitions";
+import { adoptHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  DOMAIN_OUTPUTS,
+  domainOutputForBundleSlug,
+} from "../outputs/outputDefinitions";
+import { extractMarkdownTitle } from "../outputs/parsers";
+import { appendTopicOutput } from "../../service";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
   bundleDeliveries,
@@ -99,11 +105,20 @@ export default function ContextBuilder() {
     ? (domainOutputForBundleSlug(loaded.slug)?.mandateKey ?? null)
     : null;
   const [mandateAgentId, setMandateAgentId] = useState<string | null>(null);
-  /** What a save persists and the runner uses: the user's pick, else the
-   *  mandate's resolution (never the row's mirror when a mandate governs),
-   *  else the bundle's own agent. */
+  /** What the RUNNER uses: the user's pick, else the mandate's resolution
+   *  (never the row's mirror when a mandate governs), else the bundle's own
+   *  agent. */
   const agentId =
     pickedAgentId ?? (mandateKey ? mandateAgentId : suggestedAgentId);
+  /**
+   * What a SAVE persists (D13): on a mandated bundle the row's `agent_id` is a
+   * SEED MIRROR of the mandate's resolution — persisting an ad-hoc
+   * AgentListDropdown pick there would quietly turn a session experiment into
+   * the bundle's recorded agent while the mandate (the real identity) still
+   * points elsewhere. The pick stays session-local; only non-mandated user
+   * bundles save the picked agent (D106).
+   */
+  const persistedAgentId = mandateKey ? mandateAgentId : agentId;
 
   const searchParams = useSearchParams();
   const requestedSlug = searchParams.get("bundle");
@@ -165,13 +180,16 @@ export default function ContextBuilder() {
     });
     // Bindings are compared too: switching a kind between inject and lazy
     // context changes only the binding, and that IS an unsaved edit. So is
-    // picking a different agent — the agent is saved with the bundle.
-    if (pickedAgentId !== null && pickedAgentId !== loaded.agentId) return true;
+    // picking a different agent — the agent is saved with the bundle. On a
+    // MANDATED bundle the pick is session-local and never persisted (D13), so
+    // it must not mark the bundle edited.
+    if (!mandateKey && pickedAgentId !== null && pickedAgentId !== loaded.agentId)
+      return true;
     return (
       JSON.stringify([builder.draft.selectors, builder.draft.bindings]) !==
       JSON.stringify([normalized.selectors, normalized.bindings])
     );
-  }, [loaded, builder.draft.selectors, builder.draft.bindings, selectionCount, topicId, pickedAgentId]);
+  }, [loaded, builder.draft.selectors, builder.draft.bindings, selectionCount, topicId, pickedAgentId, mandateKey]);
 
   const applyBundle = (bundle: ContextBundle) => {
     builder.setSelection(bundleToSelection(bundle));
@@ -206,7 +224,7 @@ export default function ContextBuilder() {
         selectors: builder.draft.selectors,
         bindings: builder.draft.bindings,
         budget: builder.draft.budget,
-        agentId,
+        agentId: persistedAgentId,
       });
       setLoaded(saved);
       setPickedAgentId(null);
@@ -229,7 +247,7 @@ export default function ContextBuilder() {
         selectors: builder.draft.selectors,
         bindings: builder.draft.bindings,
         budget: builder.draft.budget,
-        agentId,
+        agentId: persistedAgentId,
         organizationId: topic?.organization_id ?? null,
       });
       setLoaded(saved);
@@ -497,6 +515,7 @@ function AgentRunnerBody({
   onResetAgent,
 }: AgentRunnerProps & { mandate: RunnerMandate | null }) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const { topicId } = useTopicContext();
   const { launchAgent, launchMandate } = useAgentLauncher();
   const liveAgents = useAppSelector(selectLiveAgents);
@@ -570,10 +589,57 @@ function AgentRunnerBody({
           surfaceName: RESEARCH_SURFACE_NAME,
         },
       };
-      if (mandate && runsViaMandate) {
-        await launchMandate(mandate.key, launchOptions);
-      } else {
-        await launchAgent(agentId, launchOptions);
+      const launched =
+        mandate && runsViaMandate
+          ? await launchMandate(mandate.key, launchOptions)
+          : await launchAgent(agentId, launchOptions);
+
+      // D5 — a domain report is an ARTIFACT, not a side effect. When this run
+      // IS one of the six domain outputs, its finished markdown is appended
+      // into `rs_topic.outputs` (the same row-locked RPC the Outputs Studio
+      // cards use), so it survives the panel instead of existing only in the
+      // conversation that wrote it. The adopt call reuses THE canonical wait
+      // machinery + persistence seam; `keepInstance` because the flexible
+      // panel owns this conversation's lifecycle, not us.
+      const domainOutput = mandate
+        ? (DOMAIN_OUTPUTS.find((d) => d.mandateKey === mandate.key) ?? null)
+        : null;
+      if (domainOutput && launched.requestId) {
+        await adoptHeadlessAgentJson(dispatch, store.getState, {
+          requestId: launched.requestId,
+          conversationId: launched.conversationId,
+          surfaceKey: `research-context:${topicId}`,
+          agentRef: mandate?.key,
+          expect: "text",
+          keepInstance: true,
+          onResult: async (result) => {
+            if (
+              !result.success ||
+              typeof result.data !== "string" ||
+              !result.data.trim()
+            ) {
+              return;
+            }
+            const markdown = result.data;
+            await appendTopicOutput(topicId, domainOutput.outputKind, {
+              id: crypto.randomUUID(),
+              kind: domainOutput.outputKind,
+              title:
+                extractMarkdownTitle(markdown) ??
+                `${domainOutput.label} — ${new Date().toLocaleDateString()}`,
+              status: "ready",
+              created_at: new Date().toISOString(),
+              meta: {
+                markdown,
+                mandate_key: domainOutput.mandateKey,
+                bundle_slug: domainOutput.bundleSlug,
+              },
+            });
+            toast.success(
+              `${domainOutput.label} saved to this topic's outputs`,
+            );
+          },
+        });
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "The run failed");
@@ -644,16 +710,26 @@ function AgentRunnerBody({
         </div>
       )}
 
+      {/* D13 — the bypass is LOUD: an ad-hoc pick runs `launchAgent` directly,
+          which skips the mandate's binding entirely, settings half included.
+          The pick is session-local and is never saved onto the bundle. */}
       {mandate && !runsViaMandate && (
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <span>Running your one-off pick instead of this output&apos;s agent.</span>
-          <button
-            type="button"
-            className="underline underline-offset-2 hover:text-foreground"
-            onClick={onResetAgent}
-          >
-            Use the output&apos;s agent
-          </button>
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="min-w-0 text-[11px] text-amber-700 dark:text-amber-400">
+            <span>
+              Running your one-off pick instead of this output&apos;s agent —
+              the mandate&apos;s configuration overrides (model, settings) are
+              NOT applied, and this pick lasts only for this session.
+            </span>{" "}
+            <button
+              type="button"
+              className="underline underline-offset-2 hover:text-foreground"
+              onClick={onResetAgent}
+            >
+              Use the output&apos;s agent
+            </button>
+          </div>
         </div>
       )}
 

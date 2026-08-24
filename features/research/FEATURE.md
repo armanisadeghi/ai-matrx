@@ -314,6 +314,30 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-23 — **Wave-4 frontend pass (agent-manifest campaign, step 4).** (1) The three
+  fabricated kick phrases died: blog/slides/SEO send NO `user_input` — the rebuilt
+  publishing agents (v5/v6/v6) carry their own authored conversational user turn, verified
+  live with variables-only runs on all three. (2) ONE invocation shape (D12): `BlogOutputCard`
+  left `useMandateRunner` for the same `useMandate` + `useLiveAgentRun` posture as
+  slides/SEO (`expect:"text"` — markdown IS the product), streaming in the floating
+  `LiveRunWindow`; the shared coercers moved to pure `outputs/parsers.ts`
+  (`coercePresentationDeck` / `coerceSeoPackage` / `extractMarkdownTitle`) with unit tests;
+  dead `parseJsonLoose` + `GeneratingNote` deleted. (3) Coverage audit surfaced (D6):
+  `CoverageAuditCard` on the topic overview renders `rs_topic.metadata.coverage_audit`
+  through the registered `research_coverage_audit` kind (`overview/coverage-values.ts`
+  pure mirror + `KindInstanceRender variant="bare"`), with a bespoke per-gap
+  "Add as keyword" rail wired into the page's quota-gated `requestAddKeyword` flow —
+  the manual twin of the server's auto-recovery. (4) Domain reports persist (D5): the
+  Context Builder's mandated domain runs adopt the finished stream
+  (`adoptHeadlessAgentJson`, persistence seam) and append the markdown into
+  `rs_topic.outputs` under each definition's new `outputKind`; the Outputs tab's Domain
+  reports card lists and replays them. (5) ContextBuilder bypass made loud (D13): an ad-hoc
+  dropdown pick now shows an amber note that the mandate's config overrides are NOT
+  applied, and the pick is session-local — a mandated bundle's saved `agent_id` persists
+  the mandate's resolution (seed mirror), never the pick. (6) cx-chat's research response
+  mode repointed to its own conversational mandate `chat.response_mode_research`
+  (agent "Research Mode Companion"); `research.report` is a pure pipeline stage again
+  (aidream flipped `accepts_user_input=False`).
 - 2026-08-22 — **Domain outputs run through MANDATES (ROLLOUT F8, research batch).** `DOMAIN_OUTPUTS[].agentId` (6 raw UUIDs) became `mandateKey` (`research_client.output_*`); the Context Builder's runner resolves the mandate for a loaded domain system bundle (`useMandate`, gated: unresolved = disabled + the message) and runs `launchMandate(key)`; an ad-hoc dropdown pick still runs directly and a save-as stamps the agent it was born under. `<MandateAgentPicker>` beside each Domain reports row (`OutputsStudio`) and in the runner. `domainOutputForBundleSlug` is the slug→mandate seam.
 - 2026-08-18 — **THE USER-INPUT LAW fix: OutputsStudio's blog/slides/SEO generators stopped concatenating the Voice & Lens note and the full research report into `user_input`.** `buildGeneratorInput()` (string concat) replaced with `buildGeneratorVariables()`, sending `report_markdown` and `voice_lens` as named variables to all three call sites (`BlogOutputCard`, `SlidesOutputCard`, `SeoOutputCard`) — `research_client.output_blog` / `output_slides` / `output_seo` already declare and template-consume both, so no DB change was needed. These generator runs have no human turn at all; `user_input` is now empty on all three. SoR: `common-docs/systems/agents/agent-variable-binding/FEATURE.md` § THE USER-INPUT LAW.
 - 2026-08-17 — **Selected YouTube analyses dispatch the whole batch.** The

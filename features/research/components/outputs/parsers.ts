@@ -12,6 +12,12 @@
  * research cluster's parsers previously lived inline in JSX with zero tests).
  */
 
+/** First H1 in a markdown doc, for an asset title. */
+export function extractMarkdownTitle(md: string): string | null {
+  const m = md.match(/^#\s+(.+?)\s*$/m);
+  return m ? m[1].trim() : null;
+}
+
 export interface PresentationDeck {
   title?: string;
   theme?: Record<string, unknown>;
