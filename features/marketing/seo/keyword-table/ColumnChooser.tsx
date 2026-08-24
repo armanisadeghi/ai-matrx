@@ -16,7 +16,8 @@
  */
 
 import { useState } from "react";
-import { Columns3, Search } from "lucide-react";
+import { Columns3, Plus, Search } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -76,6 +77,7 @@ export function ColumnChooser({
   onSelectedChange,
   coreVisible,
   onToggleCore,
+  newDimensionHref,
 }: {
   dimensions: FacetDimension[];
   loading?: boolean;
@@ -91,6 +93,12 @@ export function ColumnChooser({
    */
   coreVisible?: readonly KeywordCoreColumnId[];
   onToggleCore?: (id: KeywordCoreColumnId) => void;
+  /**
+   * P23 — every picker takes new input. A person who cannot find the column
+   * they want here needs to invent the dimension, and this is where they are
+   * standing when they realise it. Pass the site's dimensions screen.
+   */
+  newDimensionHref?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -203,6 +211,16 @@ export function ColumnChooser({
             </p>
           ) : null}
         </div>
+        {newDimensionHref ? (
+          <Link
+            href={newDimensionHref}
+            onClick={() => setOpen(false)}
+            className="mt-1 flex items-center gap-1.5 border-t border-border px-1.5 pt-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add a dimension
+          </Link>
+        ) : null}
       </PopoverContent>
     </Popover>
   );

@@ -1246,6 +1246,7 @@ export function ValueWorkbench() {
                 loading={catalog.isLoading}
                 selected={dimensionColumns}
                 onSelectedChange={setDimensionColumns}
+                newDimensionHref={`/marketing/brands/${brandId}/sites/${siteId}/value/dimensions`}
               />
             ),
           }}
