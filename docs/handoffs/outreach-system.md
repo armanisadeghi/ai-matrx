@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-17
+updated: 2026-08-23
 repos: [matrx-frontend, aidream]
 ---
 
@@ -957,10 +957,12 @@ renamed agent slots to Mandates across these docs).
 1. **The five human gates** — see the status block above. All guided by
    `/crm/sending-identities`. Gate 1 (named mailbox + TXT) is the critical path: it starts the
    28-day warmup clock.
-2. **Scaled open-registry media ingestion** — the one remaining WP3 build, deliberately spun off
-   rather than half-built (chip `task_b58614bd` DIED in a sub-agent failure; superseded by chip `task_d59200f5`, 2026-08-19): source/licence ledger → Wikidata slices → the
-   DOAJ/Crossref/OpenAlex/ORCID spine → a candidate-review queue. Allowlisted, candidate-only,
-   resumable. Nothing blocks it.
+2. ~~Scaled open-registry media ingestion~~ — ✅ **LANDED 2026-08-19, re-verified 2026-08-23**:
+   `aidream/services/registry_ingestion/` (see §G2b above). Live proof 30/30 fresh on 2026-08-23
+   (`aidream/scripts/_verify_registry_ingestion.py` — 17-row ledger with 5 allowlisted / 8
+   prohibited, real Wikidata slice landed 2 discovered parties with 0 reachable contact points,
+   idempotent re-run, lease reclaim, ORCID person, probe rows removed) + 18 offline
+   parser/cursor tests (`aidream/tests/test_registry_ingestion_passes.py`).
 3. **The link-gap "Start outreach" door** — the last prospecting surface without one, deliberately
    unbuilt because `seo.link_gap_domain` is 0 rows until Arman confirms competitors per site. A
    door onto an empty room is worse than no door. The fold producer and provenance renderer already
