@@ -80,33 +80,37 @@ export function ReadyDefaultsBanner() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-md border border-info/40 bg-info/10 px-3 py-2">
-      <BadgeCheck className="h-4 w-4 shrink-0 text-info" aria-hidden />
-      <p className="min-w-0 flex-1 text-xs text-foreground">
-        <span className="font-semibold">Your industry defaults are ready.</span>{" "}
-        <span className="text-muted-foreground">
-          {ready.name} — {ready.rule_count} rules, {ready.topic_count} topic worths,{" "}
-          {ready.value_band_count + ready.geo_band_count} bands — expert-ratified for{" "}
-          {ready.industry_name ?? ready.industry}. Nothing is applied until you look and
-          accept; take all of it or just the parts you want.
-        </span>
-      </p>
-      <Link
-        href={packReviewHref(brandId, siteId, ready.id)}
-        className="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-      >
-        Review &amp; accept
-        <ChevronRight className="h-3 w-3" aria-hidden />
-      </Link>
-      <button
-        type="button"
-        onClick={dismiss}
-        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        title="Hide this on this browser. The pack stays listed under Industry packs."
-      >
-        <X className="h-3 w-3" aria-hidden />
-        Not now
-      </button>
+    <div className="flex flex-col gap-2 rounded-md border border-info/40 bg-info/10 px-3 py-2 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="flex min-w-0 flex-1 items-start gap-2 sm:items-center">
+        <BadgeCheck className="mt-px h-4 w-4 shrink-0 text-info sm:mt-0" aria-hidden />
+        <p className="min-w-0 flex-1 text-xs text-foreground">
+          <span className="font-semibold">Your industry defaults are ready.</span>{" "}
+          <span className="text-muted-foreground">
+            {ready.name} — {ready.rule_count} rules, {ready.topic_count} topic worths,{" "}
+            {ready.value_band_count + ready.geo_band_count} bands — expert-ratified for{" "}
+            {ready.industry_name ?? ready.industry}. Nothing is applied until you look and
+            accept; take all of it or just the parts you want.
+          </span>
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <Link
+          href={packReviewHref(brandId, siteId, ready.id)}
+          className="inline-flex flex-1 items-center justify-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:flex-none sm:py-1"
+        >
+          Review &amp; accept
+          <ChevronRight className="h-3 w-3" aria-hidden />
+        </Link>
+        <button
+          type="button"
+          onClick={dismiss}
+          className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-border bg-card px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:flex-none sm:py-1"
+          title="Hide this on this browser. The pack stays listed under Industry packs."
+        >
+          <X className="h-3 w-3" aria-hidden />
+          Not now
+        </button>
+      </div>
     </div>
   );
 }
