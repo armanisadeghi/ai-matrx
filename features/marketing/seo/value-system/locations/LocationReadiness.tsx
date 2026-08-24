@@ -170,9 +170,19 @@ export function LocationReadiness({
                 )}
               >
                 {row.headline}
-                {row.count_value > 0 &&
+                {/*
+                  Only where the number adds something. A healthy row spells its
+                  own count out ("One location") and "One location (1)" is the
+                  kind of noise that makes a reader stop trusting the numbers
+                  that DO matter.
+                */}
+                {row.state !== "ok" &&
+                row.count_value > 0 &&
                 !row.headline.includes(String(row.count_value)) ? (
-                  <span className="ml-1 font-normal tabular-nums text-muted-foreground">
+                  <span
+                    className="ml-1 font-normal tabular-nums text-muted-foreground"
+                    title="Keywords with Search Console traffic in the last 90 days that this affects"
+                  >
                     ({formatCount(Number(row.count_value))})
                   </span>
                 ) : null}

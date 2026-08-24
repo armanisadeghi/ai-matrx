@@ -1,0 +1,21 @@
+-- ============================================================================
+-- C10 FIX — SCOPE THE BY-LOCATION READS TO KEYWORDS THAT HAVE A PLACE
+-- (2026-08-23, found on live data while building the UI)
+--
+-- `seo.gsc_perf_location_summary` asked `seo.gsc_keyword_locations` about EVERY
+-- keyword with traffic in the window. On datadestruction.com that is 5,860
+-- keywords, and the attribution RPC deliberately refuses more than 5,000 — so
+-- the decomposition raised `gsc_too_many_keywords` on any real-sized site and
+-- the panel never resolved. It looked like slowness; it was a hard error behind
+-- a retrying query.
+--
+-- The right scope was always narrower. Attribution can only ever answer for a
+-- keyword that has a DETECTED PLACE, so ask about exactly those: 261 keywords
+-- instead of 5,860 on the same site. Keywords with no place still appear in the
+-- output — they fall into the "Not location-specific" / unresolved buckets via
+-- the LEFT JOIN, exactly as before. Nothing about the answer changes; only the
+-- size of the question.
+--
+-- Both functions are re-declared here in full (idempotent CREATE OR REPLACE)
+-- so this file, not a diff in someone's memory, is the record of what runs.
+-- ============================================================================

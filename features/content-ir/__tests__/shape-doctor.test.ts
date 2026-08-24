@@ -17,6 +17,7 @@ import {
   attributeSkillsToKinds,
   classifyExemption,
   stripKindFromJsonSchema,
+  type DoctorKindComponent,
   type DoctorKindDefinition,
   type ShapeDoctorInput,
 } from "../registry/shape-doctor";

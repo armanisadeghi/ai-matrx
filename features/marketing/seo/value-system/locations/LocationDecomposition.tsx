@@ -99,6 +99,8 @@ function LocationKeywords({
   locationName,
   start,
   end,
+  windowLabel,
+  comparedKeywords,
 }: {
   siteId: string;
   brandId: string;
@@ -107,6 +109,9 @@ function LocationKeywords({
   locationName: string;
   start: string;
   end: string;
+  windowLabel: string;
+  /** Keywords this row had in the COMPARE window — see the empty state below. */
+  comparedKeywords: number;
 }) {
   const [page, setPage] = useState(1);
   const openWhy = useOpenGscWhyScoreWindow();
@@ -151,9 +156,16 @@ function LocationKeywords({
 
   const { rows, total } = keywords.data;
   if (total === 0) {
+    // A row can be listed on compare traffic alone — its location earned
+    // searches last month and none this month. "No keyword lands here" would
+    // read as a bug; the real news is that the traffic STOPPED.
     return (
       <p className="px-2.5 py-2.5 text-[11px] text-muted-foreground">
-        No keyword in this window lands here.
+        {comparedKeywords > 0
+          ? `No keyword lands here in ${windowLabel}. In the 28 days before that, ${formatCount(
+              comparedKeywords,
+            )} did — this location's search demand has stopped, which is why the row is still here.`
+          : `No keyword in ${windowLabel} lands here.`}
       </p>
     );
   }
@@ -383,6 +395,8 @@ export function LocationDecomposition({
                   locationName={row.location_name}
                   start={window.start}
                   end={window.end}
+                  windowLabel={windowLabel}
+                  comparedKeywords={Number(row.cmp_queries)}
                 />
               </div>
             ) : null}
