@@ -5,7 +5,6 @@
  * These flashcard sets are auto-generated from chat and linked to cx_message/cx_conversation.
  */
 
-import type { Database } from "@/types/database.types";
 import type { GradeResult } from "@/features/education/trust/types";
 
 // ============================================================================
@@ -27,10 +26,8 @@ export type ReviewResult = GradeResult;
 // Database row types
 // ============================================================================
 
-export type FlashcardSetRow =
-  Database["users"]["Tables"]["user_flashcard_sets"]["Row"];
-export type FlashcardReviewRow =
-  Database["users"]["Tables"]["user_flashcard_reviews"]["Row"];
+// (The legacy users.user_flashcard_sets/reviews row aliases lived here until
+// 2026-08-22 — tables ported to education.fc_set and moved to graveyard, Q3.)
 
 // ============================================================================
 // Insert types
@@ -62,12 +59,6 @@ export interface CardReviewStats {
   totalReviews: number;
   lastReviewedAt: string | null;
   lastResult: ReviewResult | null;
-}
-
-export interface FlashcardSetWithStats extends FlashcardSetRow {
-  cardStats: CardReviewStats[];
-  totalReviews: number;
-  masteryPercent: number; // 0-100
 }
 
 // Spaced repetition lives in ONE place: the FSRS scheduler (`lib/srs/fsrs.ts`),

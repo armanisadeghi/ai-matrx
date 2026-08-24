@@ -24190,16 +24190,6 @@ export type Database = {
             }
             Returns: boolean
           }
-      has_access_for_base_v2: {
-        Args: {
-          p_id: string
-          p_include_public: boolean
-          p_required: Database["public"]["Enums"]["permission_level"]
-          p_type: string
-          p_user_id: string
-        }
-        Returns: boolean
-      }
       has_org_access: { Args: { p_org: string }; Returns: boolean }
       has_org_access_for: {
         Args: { p_org: string; p_user_id: string }
@@ -31269,15 +31259,6 @@ export type Database = {
         Args: { p_id: string; p_schema: string; p_table: string }
         Returns: Record<string, unknown>
       }
-      entity_row_access_attrs_ext: {
-        Args: {
-          p_fk_columns: string[]
-          p_id: string
-          p_schema: string
-          p_table: string
-        }
-        Returns: Record<string, unknown>
-      }
       entity_title: { Args: { p_id: string; p_type: string }; Returns: string }
       entity_type_has_shareable_ancestor: {
         Args: { p_type: string }
@@ -36554,6 +36535,7 @@ export type Database = {
         Returns: Json
       }
       fn_kg_cost_summary: { Args: never; Returns: Json }
+      fn_kg_cost_unit_economics: { Args: { p_days?: number }; Returns: Json }
       fork_processed_document: {
         Args: { p_source_id: string }
         Returns: string
