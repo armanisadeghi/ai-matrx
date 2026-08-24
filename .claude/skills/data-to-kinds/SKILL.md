@@ -367,11 +367,10 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
    **Rule now: paste the script output, then hand-classify the code hits into true consumers vs
    substring collisions and record BOTH numbers.** A raw blocking count is not a blast radius.
    (Script fixes owed: word-boundary matching, and skip `tmp/`.)
-7. **`category` is undocumented and unsettable.** The vocabulary section says data kinds are
-   `category: data`, but `content_ir.kind_definition` has **no `category` column** — it is
-   `metadata->>'category'`, and nothing in `@kind(...)` sets it. Measured live: `data`, `pure`,
-   and `null` all occur. Either the decorator gains the argument or the skill stops implying it
-   is something you choose.
+7. **`category` is a decorator argument, not a column — say so.** `@kind(..., category="data")`
+   exists and accepts `data`|`runtime` only; it lands in `metadata->>'category'`, and
+   `content_ir.kind_definition` has **no `category` column**. Measured live: `data`, `pure` and
+   `null` all occur, so a registry query cannot filter on it reliably.
 8. **A.3 "check what already exists" ships no query** — every other step gives a command. Use:
    ```sql
    select kind, label, is_active, version, metadata->>'maturity' as maturity,
@@ -408,6 +407,51 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
     fix what you find. **Rule now: file it with evidence, name it in the ledger's findings, and
     hand the repair to Stage D so the node is edited exactly once — do not fix a live emitter in
     Stage A.**
+
+### Friction from replication run 1, round 2 — building the models (2026-08-23)
+
+14. **The source can change UNDER YOU mid-run, and a stale measurement becomes a false drop
+    reason.** A peer landed a parser fix (AD192) between the capture step and the adapter step
+    here, turning a measured "this field is always null on 7 of 7 captures" into a lie that was
+    already written into the DROPPED register as its justification. **Rule: re-verify every
+    measured finding against LIVE code immediately before it becomes a drop reason, and
+    re-capture the fixtures if the engine moved.** In a shared checkout this is normal, not
+    exceptional.
+15. **The compatibility gate refuses a `default` on `__kind`, which makes a whole class of live
+    rows un-evolvable.** `_field_compatible` compares non-`$ref` fields by literal equality after
+    stripping only `description`/`title`/`examples`. Every `@kind` model emits
+    `{"const": …, "default": …}` for `__kind`; a live row patched by the `__kind` campaign has
+    `{"const": …}` with no default. So the gate reports "changes the type/constraints of field
+    '__kind'" when nothing about validation changed — `default` is annotation-only in JSON Schema
+    (2020-12 §9.2) and cannot make an old payload stop validating. Until it is fixed, expect to
+    reach for `--breaking` on any curated slug the campaign touched.
+16. **Stage A publishing BREAKS matrx-frontend's release gate, and the skill puts the fix in
+    Stage B.** The publisher re-versions rows, and `pnpm check:kind-types` fails from that moment
+    — a red gate in a repo Stage A never opens. **Rule: Stage A finishes with
+    `pnpm shape:types` + commit `features/content-ir/kinds/generated/kinds.generated.ts` in
+    matrx-frontend.** The publisher already prints this; the skill should too.
+17. **Arman will ask to SEE the data before approving the shape — and Stage A has no page.** The
+    stages assume he rules on tables, then Stage B renders. In practice the sane order is the
+    reverse, so Stage A needs a data-review page: kept / hidden / raw as tabs, no canonical
+    components. Three undocumented things stand between you and a working link:
+    `/demos/*` is PARKED unless the preview server runs as
+    `MATRX_PREVIEW_PROFILE=user pnpm preview:start`; the frontend calls PRODUCTION aidream unless
+    `localStorage["matrx.apiConfig.v1"]` sets `{"activeServer":"localhost"}`; and the browser
+    needs a session from `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/demos/<family>`.
+18. **THE SHOW-WHAT-YOU-HIDE LAW (Arman, 2026-08-23 — standing, all families).** *"On anything at
+    all that you choose to remove or ignore, on the first demo that I see, you still have to
+    capture them, and you have to render them for me in a separate tab so that I can see exactly
+    what we are hiding from the user."* A DROPPED register that lists key names cannot answer
+    "should this be dropped?" — only the data can. **Every adapter's DROPPED register must record
+    the VALUE (bounded preview + honest full size) beside the reason, and every family's first
+    demo must have a tab that renders them.** Reference: `audit.DroppedValue` +
+    `matrx_scraper_adapter.py` in `aidream/services/scraper_kinds/`.
+19. **A drop is not the only way to lose data — and the thing our own pipeline strips can be the
+    most valuable thing on the page.** Arman on the scraper's noise remover: *"in some cases we
+    have good stuff that ends up in here… when we're trying to analyze an 'owned' site for SEO,
+    the things the scraper hides or considers noise are the things YOU MUST see because they're
+    your call to action."* **Rule: when a source reports what IT discarded, that report is
+    first-class data for a power-user/admin surface, never plumbing to drop.**
 
 ## Chip prompts (standalone — paste as the chip body, fill the ⟨⟩)
 
