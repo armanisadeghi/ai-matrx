@@ -238,6 +238,7 @@ Personal and organization credentials render through the same
 | [`vault-service.ts`](./vault-service.ts)                                       | THE service: `/api/vault/*` client + direct-Supabase masked reads + catalog definition loader.                                                                                                                                                                                                   |
 | [`vault-hooks.ts`](./vault-hooks.ts)                                           | THE hook set: `useVault` (list + all mutations + toasts/busy), `useVaultDefinitions`, `useVaultAudit`, `useTransientSecret`.                                                                                                                                                                     |
 | [`components/VaultWorkspace.tsx`](./components/VaultWorkspace.tsx)             | Full three-pane route workspace plus compact embedded presentation, both sharing the same list/search/family filters, detail, create, and import flows (Credenza = Dialog/Drawer responsive).                                                                                                    |
+| [`components/VaultContextMenu.tsx`](./components/VaultContextMenu.tsx)         | THE right-click menu for the vault (v3 `NonEditableContextMenu`), mounted once by `VaultWorkspace` so `/vault` and the floating Vault window share it. Builds the menu payload by hand from non-secret metadata and passes it as `getApplicationScope`, which bypasses the shell's DOM-text fallback; `selection` is forced empty. See invariant 8.                        |
 | [`components/VaultHandlingControl.tsx`](./components/VaultHandlingControl.tsx) | Shared Standard / Restricted / Automation-only protection selector and current-state presentation for fields and protected files.                                                                                                                                                                |
 | [`components/SecretValue.tsx`](./components/SecretValue.tsx)                   | Canonical masked value row with audited reveal, direct copy, compact icon actions, and transient plaintext countdown/auto-clear.                                                                                                                                                                 |
 | [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx)       | The one create form for Vault and Authenticator: basic-purpose picker/full catalog, progressive website login parts, TOTP, recovery codes, secure notes, protected files, local password generation, and Custom builder.                                                                         |
@@ -289,6 +290,7 @@ the sealed setup seed has no reveal path at any privilege.
 5. Definitions come only from the catalog; `credentialDefinitionSchema` is imported from `features/admin/applications/catalogs/schemas.ts`, never redeclared. Adding a provider is catalog data, not React code.
 6. Access never depends on the active organization — the viewed principal is an explicit prop.
 7. Every mutation surfaces its error via toast; catalog rows failing schema validation are skipped LOUDLY (`console.error`).
+8. **The context menu never carries a secret.** A revealed `SecretValue` puts plaintext in the DOM, so the vault menu must never let the v3 shell self-resolve `content` from the subtree and must never carry the user's `selection` — it passes an explicit `getApplicationScope` built from names, type, provider, host, status, tags and FIELD KEYS only. Never a field value, never `notes`, never a non-secret custom field's value (a user can and does paste a secret into a free-text box). No `entity` is passed either, so Attach To / Share stay hidden: a credential is not agent context.
 
 ## MCP connections (Phase 4 cutover, 2026-07-23)
 
@@ -317,6 +319,16 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-08-24** — Vault gained its canonical v3 right-click menu
+  (`components/VaultContextMenu.tsx`), mounted by `VaultWorkspace` so `/vault`,
+  the org embed and the floating Vault window all get it from ONE wiring — and
+  the window therefore stops being answered by the page underneath it. Rows
+  carry a `data-vault-item-id` anchor; the menu resolves the clicked credential
+  from that attribute, never from DOM text. Invariant 8 records the security
+  contract. Live-verified on `/vault`: right-clicking a credential produced
+  `Name / Type / Status / Access / Tags / Fields` and nothing else, and a text
+  selection over the detail pane did not become the menu's payload.
 
 - **2026-08-23** — Restored the ratified Organization destination on the main
   Vault and its floating window. The user chooses an organization explicitly
