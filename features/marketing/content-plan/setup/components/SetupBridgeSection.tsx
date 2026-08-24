@@ -66,7 +66,11 @@ import { extractErrorMessage } from "@/utils/errors";
 
 import { planKeys } from "../../data/hooks";
 import { marketingKeys } from "@/features/marketing/data/hooks";
+import { BrainCircuit } from "lucide-react";
+
 import { Textarea } from "@/components/ui/textarea";
+import { AdminDocHint } from "@/features/admin/components/AdminDocHint";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 
 import {
   fetchFreshSite,
@@ -312,6 +316,10 @@ export function SetupBridgeSection({
     try {
       await saveSiteDesignGuidance(site.id, designGuidance);
       savedGuidanceRef.current = designGuidance;
+      // The textarea initializes from the CACHED site row — without this, a
+      // remount shows the pre-save value and the owner reads "my text was
+      // lost" (found live by a UI test agent, 2026-08-24).
+      void queryClient.invalidateQueries({ queryKey: marketingKeys.siteOptions() });
     } catch (error) {
       toast.error(`Could not save the design direction: ${extractErrorMessage(error)}`);
     } finally {
@@ -618,6 +626,9 @@ export function SetupBridgeSection({
     setSavingTier(true);
     try {
       await saveSiteEffortTier(site.id, next);
+      // Same stale-cache class as the design direction: the select initializes
+      // from the cached site row, so a remount would show the OLD tier.
+      void queryClient.invalidateQueries({ queryKey: marketingKeys.siteOptions() });
     } catch (error) {
       setEffortTier(previous);
       toast.error(`Could not save the effort tier: ${extractErrorMessage(error)}`);
@@ -848,6 +859,23 @@ export function SetupBridgeSection({
                 ? "Saving…"
                 : "Every page the factory builds honors this. Individual pages can add their own note on their Build tab."}
             </p>
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 gap-1 px-2 text-[11px]"
+                onClick={() =>
+                  void announceComingSoon("content-plan.design-vision-agent")
+                }
+              >
+                <BrainCircuit className="h-3 w-3" />
+                Generate a design vision
+              </Button>
+              <AdminDocHint
+                docPath="common-docs/projects/content-engine/STATE.md §4.3.3 + matrx-frontend/docs/handoffs/website-factory-vision.md (design beyond v1)"
+                note="The design-vision AGENT pass: generated palette/typography/section rationale, not hand-typed direction."
+              />
+            </div>
           </div>
         </Rung>
 

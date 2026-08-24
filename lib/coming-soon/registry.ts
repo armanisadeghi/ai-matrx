@@ -455,6 +455,15 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "The live Stripe checkout endpoint returns 503 until Education Premium billing is configured.",
     surfaces: ["/pricing Premium plan action"],
   },
+  "content-plan.design-vision-agent": {
+    id: "content-plan.design-vision-agent",
+    label: "Generate a design vision",
+    owner: "content-plan",
+    promise:
+      "An agent studies your brand and research, then proposes the site's whole look — palette rationale, typography, section choices — instead of you typing a design direction by hand.",
+    stage: "planned",
+    surfaces: ["Content Plan Setup — Site shell rung"],
+  },
 };
 
 export function getComingSoon(id: string): ComingSoonEntry | undefined {
