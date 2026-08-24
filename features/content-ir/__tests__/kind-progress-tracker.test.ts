@@ -316,20 +316,20 @@ describe("progress_tracker — legacy bridge (toLegacyServerData)", () => {
     ).toBe(true);
 
     expect(serverData.title).toBe("Learning Progress");
-    const categories = serverData.categories as Array<
-      Record<string, unknown> & { items: Record<string, unknown>[] }
+    const phases = serverData.phases as Array<
+      Record<string, unknown> & { steps: Record<string, unknown>[] }
     >;
-    expect(categories).toHaveLength(2);
+    expect(phases).toHaveLength(2);
     // Synthesized ids use the legacy parser's exact scheme.
-    expect(categories[0].id).toBe("category-1");
-    expect(categories[1].id).toBe("category-2");
-    expect(categories[0].items[0].id).toBe("item-1");
-    expect(categories[1].items[0].id).toBe("item-6");
-    expect(categories[0].completionPercentage).toBe(60);
+    expect(phases[0].id).toBe("category-1");
+    expect(phases[1].id).toBe("category-2");
+    expect(phases[0].steps[0].id).toBe("item-1");
+    expect(phases[1].steps[0].id).toBe("item-6");
+    expect(phases[0].completion_percentage).toBe(60);
     // Computed totals mirror parseProgressMarkdown.
-    expect(serverData.totalItems).toBe(9);
-    expect(serverData.completedItems).toBe(4);
-    expect(serverData.overallProgress).toBe(44);
+    expect(serverData.total_items).toBe(9);
+    expect(serverData.completed_items).toBe(4);
+    expect(serverData.overall_progress).toBe(44);
   });
 
   it("maps the FULL union — notes, timestamps, priorities, hours, optional, authored ids/totals", () => {
@@ -346,32 +346,32 @@ describe("progress_tracker — legacy bridge (toLegacyServerData)", () => {
     expect(serverData.description).toBe(
       "Everything required to ship the platform by end of quarter.",
     );
-    expect(serverData.startDate).toBe("2026-10-01");
-    expect(serverData.targetDate).toBe("2026-12-19");
+    expect(serverData.start_date).toBe("2026-10-01");
+    expect(serverData.target_date).toBe("2026-12-19");
     // Authored totals win over computed ones.
-    expect(serverData.overallProgress).toBe(33);
-    expect(serverData.totalItems).toBe(6);
-    expect(serverData.completedItems).toBe(2);
+    expect(serverData.overall_progress).toBe(33);
+    expect(serverData.total_items).toBe(6);
+    expect(serverData.completed_items).toBe(2);
 
-    const categories = serverData.categories as Array<
-      Record<string, unknown> & { items: Record<string, unknown>[] }
+    const phases = serverData.phases as Array<
+      Record<string, unknown> & { steps: Record<string, unknown>[] }
     >;
-    expect(categories[0].id).toBe("phase-build");
-    expect(categories[0].description).toBe(
+    expect(phases[0].id).toBe("phase-build");
+    expect(phases[0].description).toBe(
       "Engineering workstream for the launch-blocking features.",
     );
-    expect(categories[0].color).toBe("from-blue-500 to-blue-600");
+    expect(phases[0].color).toBe("from-blue-500 to-blue-600");
 
-    const item = categories[0].items[2];
+    const item = phases[0].steps[2];
     expect(item).toMatchObject({
       id: "step-realtime",
       text: "Realtime sync hardening",
       completed: false,
       priority: "medium",
-      estimatedHours: 16,
+      estimated_hours: 16,
       category: "Infrastructure",
     });
-    expect(categories[0].items[3].optional).toBe(true);
+    expect(phases[0].steps[3].optional).toBe(true);
   });
 
   it("complete-only law: a streaming envelope yields no serverData", () => {
@@ -485,15 +485,15 @@ describe("progress_tracker — toMarkdown round-trip", () => {
     const reparsed = parseProgressMarkdown(markdown);
     expect(validateProgressTracker(reparsed)).toBe(true);
     expect(reparsed.title).toBe("Q4 Platform Launch");
-    expect(reparsed.categories).toHaveLength(2);
-    expect(reparsed.categories[0].items).toHaveLength(4);
-    expect(reparsed.categories[0].items[2]).toMatchObject({
+    expect(reparsed.phases).toHaveLength(2);
+    expect(reparsed.phases[0].steps).toHaveLength(4);
+    expect(reparsed.phases[0].steps[2]).toMatchObject({
       text: "Realtime sync hardening",
       completed: false,
       priority: "medium",
-      estimatedHours: 16,
+      estimated_hours: 16,
       category: "Infrastructure",
     });
-    expect(reparsed.categories[0].items[3].optional).toBe(true);
+    expect(reparsed.phases[0].steps[3].optional).toBe(true);
   });
 });

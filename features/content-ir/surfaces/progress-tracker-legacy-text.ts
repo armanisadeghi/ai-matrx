@@ -12,7 +12,7 @@
  * the SAME shape a `__kind` JSON arrival carries (THE KEYSTONE).
  *
  * The parser's synthesized ids (`category-N` / `item-N`) and computed totals
- * (`overallProgress` / `totalItems` / `completedItems`) travel into the
+ * (`overall_progress` / `total_items` / `completed_items`) travel into the
  * canonical value: they are part of the component's ProgressTrackerData
  * contract (interaction state is keyed by item id), they are deterministic
  * for a given region text, and the envelope fingerprint hashes the value —
@@ -60,12 +60,12 @@ export function progressTrackerLegacyTextToKindValue(
   const value: Record<string, unknown> = {
     [KIND_KEY]: "progress_tracker",
     title: tracker.title,
-    phases: tracker.categories.map((category) => {
+    phases: tracker.phases.map((category) => {
       const phase: Record<string, unknown> = {
         [KIND_KEY]: "progress_phase",
         id: category.id,
         name: category.name,
-        steps: category.items.map((item) => {
+        steps: category.steps.map((item) => {
           const step: Record<string, unknown> = {
             [KIND_KEY]: "progress_step",
             id: item.id,
@@ -74,8 +74,8 @@ export function progressTrackerLegacyTextToKindValue(
           };
           if (item.optional === true) step.optional = true;
           if (item.priority !== undefined) step.priority = item.priority;
-          if (item.estimatedHours !== undefined) {
-            step.estimated_hours = item.estimatedHours;
+          if (item.estimated_hours !== undefined) {
+            step.estimated_hours = item.estimated_hours;
           }
           if (item.category !== undefined) step.category = item.category;
           return step;
@@ -85,8 +85,8 @@ export function progressTrackerLegacyTextToKindValue(
         phase.description = category.description;
       }
       if (category.color !== undefined) phase.color = category.color;
-      if (category.completionPercentage !== undefined) {
-        phase.completion_percentage = category.completionPercentage;
+      if (category.completion_percentage !== undefined) {
+        phase.completion_percentage = category.completion_percentage;
       }
       return phase;
     }),
@@ -95,12 +95,12 @@ export function progressTrackerLegacyTextToKindValue(
   if (tracker.description !== undefined) {
     value.description = tracker.description;
   }
-  if (tracker.overallProgress !== undefined) {
-    value.overall_progress = tracker.overallProgress;
+  if (tracker.overall_progress !== undefined) {
+    value.overall_progress = tracker.overall_progress;
   }
-  if (tracker.totalItems !== undefined) value.total_items = tracker.totalItems;
-  if (tracker.completedItems !== undefined) {
-    value.completed_items = tracker.completedItems;
+  if (tracker.total_items !== undefined) value.total_items = tracker.total_items;
+  if (tracker.completed_items !== undefined) {
+    value.completed_items = tracker.completed_items;
   }
 
   return value;

@@ -18,8 +18,8 @@
  *
  * Authored fields are snake_case (the kind convention — quiz `correct_answer`
  * precedent); the bridge derives the component's exact camelCase
- * `ProgressTrackerData` (`categories[].items[]`, `completionPercentage`,
- * `estimatedHours`, `overallProgress`, `startDate`, `targetDate`,
+ * `ProgressTrackerData` (`phases[].steps[]`, `completion_percentage`,
+ * `estimated_hours`, `overall_progress`, `start_date`, `target_date`,
  * `totalItems`, `completedItems`). ProgressArtifact passes serverData
  * straight through as the `tracker` prop — zero component changes.
  *
@@ -132,8 +132,9 @@ function mapStep(
   if (step.optional === true) item.optional = true;
   const priority = readPriority(step.priority);
   if (priority) item.priority = priority;
-  const estimatedHours = readFiniteNumber(step.estimated_hours);
-  if (estimatedHours !== undefined) item.estimatedHours = estimatedHours;
+  const estimatedHours =
+    readFiniteNumber(step.estimated_hours) ?? readFiniteNumber(step.estimatedHours);
+  if (estimatedHours !== undefined) item.estimated_hours = estimatedHours;
   const category = readNonEmptyString(step.category);
   if (category) item.category = category;
 
@@ -178,7 +179,7 @@ export const progressTrackerServerDataFromEnvelope = makeCompleteEnvelopeBridge(
       const category: Record<string, unknown> = {
         id: readNonEmptyString(phase.id) ?? `category-${categories.length + 1}`,
         name,
-        items,
+        steps: items,
       };
       const description = readNonEmptyString(phase.description);
       if (description) category.description = description;
@@ -188,7 +189,7 @@ export const progressTrackerServerDataFromEnvelope = makeCompleteEnvelopeBridge(
         phase.completion_percentage,
       );
       if (completionPercentage !== undefined) {
-        category.completionPercentage = completionPercentage;
+        category.completion_percentage = completionPercentage;
       }
       for (const [key, extra] of Object.entries(phase)) {
         if (PHASE_KNOWN_KEYS.includes(key) || key in category) continue;
@@ -202,7 +203,7 @@ export const progressTrackerServerDataFromEnvelope = makeCompleteEnvelopeBridge(
 
     // Authored totals win; otherwise compute exactly like the legacy parser.
     const allItems = categories.flatMap(
-      (category) => category.items as Record<string, unknown>[],
+      (category) => category.steps as Record<string, unknown>[],
     );
     const computedTotal = allItems.length;
     const computedCompleted = allItems.filter(
@@ -220,17 +221,17 @@ export const progressTrackerServerDataFromEnvelope = makeCompleteEnvelopeBridge(
 
     const serverData: Record<string, unknown> = {
       title,
-      categories,
-      overallProgress,
-      totalItems,
-      completedItems,
+      phases: categories,
+      overall_progress: overallProgress,
+      total_items: totalItems,
+      completed_items: completedItems,
     };
     const description = readNonEmptyString(value.description);
     if (description) serverData.description = description;
     const startDate = readNonEmptyString(value.start_date);
-    if (startDate) serverData.startDate = startDate;
+    if (startDate) serverData.start_date = startDate;
     const targetDate = readNonEmptyString(value.target_date);
-    if (targetDate) serverData.targetDate = targetDate;
+    if (targetDate) serverData.target_date = targetDate;
 
     for (const [key, extra] of Object.entries(value)) {
       if (TRACKER_KNOWN_KEYS.includes(key) || key in serverData) continue;
@@ -267,7 +268,7 @@ function stepLine(step: Record<string, unknown>): string {
 
   const line = parts.join(" ");
   const extras = extrasList(
-    collectExtras(step, [...STEP_KNOWN_KEYS, "estimatedHours"]),
+    collectExtras(step, [...STEP_KNOWN_KEYS, "estimated_hours"]),
   );
   // Indented bullets stay readable and are inert to the legacy parser.
   return extras ? `${line}\n${extras.replace(/^- /gm, "  - ")}` : line;

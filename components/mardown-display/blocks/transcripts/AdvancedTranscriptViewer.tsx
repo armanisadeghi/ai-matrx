@@ -1,3 +1,6 @@
+// THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
+// re-declares a registered kind's fields (`check:kind-type-twins`).
+import type { TranscriptSegment as TranscriptSegmentKind } from "@/features/content-ir/kinds/generated/kinds.generated";
 import { useState, useEffect, useRef } from "react";
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,11 +66,10 @@ import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
 // Define TypeScript types
-export type TranscriptSegment = {
-  id: string;
-  timecode: string;
-  seconds: number;
-  text: string;
+export type TranscriptSegment = Omit<
+  TranscriptSegmentKind,
+  "__kind" | "speaker" | "isHighlighted"
+> & {
   speaker?: string;
   isHighlighted?: boolean;
 };

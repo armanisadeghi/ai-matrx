@@ -2,26 +2,20 @@
 // Converters to transform various AI-generated content into task format
 
 import type { TaskItemType } from '@/components/mardown-display/blocks/tasks/TaskChecklist';
+import type {
+  ProgressCategory,
+  ProgressItem,
+} from '@/components/mardown-display/blocks/progress/parseProgressMarkdown';
 
 /**
- * Convert Progress Tracker items to task format
+ * Convert Progress Tracker items to task format. THE SHAPES COME FROM THE
+ * REGISTRY, via the parser that produces them — this converter never
+ * re-declares them (`check:kind-type-twins`).
  */
-export interface ProgressItem {
-  id: string;
-  text: string;
-  completed: boolean;
-  optional?: boolean;
-  priority?: 'low' | 'medium' | 'high';
-  estimatedHours?: number;
-  category?: string;
-}
-
-export interface ProgressCategory {
-  id: string;
-  name: string;
-  description?: string;
-  items: ProgressItem[];
-}
+export type {
+  ProgressCategory,
+  ProgressItem,
+} from '@/components/mardown-display/blocks/progress/parseProgressMarkdown';
 
 export function convertProgressToTasks(
   title: string,
@@ -31,7 +25,7 @@ export function convertProgressToTasks(
 
   categories.forEach((category, catIndex) => {
     // Add items as subtasks
-    const children: TaskItemType[] = category.items.map((item, itemIndex) => ({
+    const children: TaskItemType[] = category.steps.map((item, itemIndex) => ({
       id: `subtask-${catIndex}-${itemIndex}-${item.id}`,
       title: item.text + (item.optional ? ' (optional)' : ''),
       type: 'subtask',
@@ -44,7 +38,7 @@ export function convertProgressToTasks(
       title: category.name,
       type: 'task',
       bold: true,
-      checked: category.items.every(item => item.completed),
+      checked: category.steps.every(item => item.completed),
       children,
     };
 

@@ -1,3 +1,10 @@
+// THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
+// re-declares a registered kind's fields (`check:kind-type-twins`).
+import type {
+  ProgressCategory,
+  ProgressItem,
+  ProgressTrackerData,
+} from "./parseProgressMarkdown";
 "use client";
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import {
@@ -38,35 +45,8 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import ImportTasksModal from "@/features/tasks/components/ImportTasksModal";
 import { convertProgressToTasks } from "@/features/tasks/utils/importConverters";
 
-interface ProgressItem {
-  id: string;
-  text: string;
-  completed: boolean;
-  optional?: boolean;
-  priority?: "low" | "medium" | "high";
-  estimatedHours?: number;
-  category?: string;
-}
 
-interface ProgressCategory {
-  id: string;
-  name: string;
-  description?: string;
-  color?: string;
-  items: ProgressItem[];
-  completionPercentage?: number;
-}
 
-interface ProgressTrackerData {
-  title: string;
-  description?: string;
-  categories: ProgressCategory[];
-  overallProgress?: number;
-  startDate?: string;
-  targetDate?: string;
-  totalItems?: number;
-  completedItems?: number;
-}
 
 export interface ProgressTrackerState {
   completed: string[];
@@ -75,7 +55,7 @@ export interface ProgressTrackerState {
 interface ProgressTrackerBlockProps {
   tracker: ProgressTrackerData;
   taskId?: string; // Task ID for canvas deduplication
-  /** Seed the completed-items set from persisted state (optional). */
+  /** Seed the completed-steps set from persisted state (optional). */
   initialState?: ProgressTrackerState;
   /** Called whenever the user changes interaction state (optional). */
   onStateChange?: (state: ProgressTrackerState) => void;
@@ -110,14 +90,14 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const { open: openCanvas } = useCanvas();
 
-  // Initialize completedItems from persisted state when available, otherwise from tracker data.
-  const [completedItems, setCompletedItems] = useState<Set<string>>(() => {
+  // Initialize completed_items from persisted state when available, otherwise from tracker data.
+  const [completed_items, setCompletedItems] = useState<Set<string>>(() => {
     if (initialState) {
       return new Set(initialState.completed);
     }
     const initialCompleted = new Set<string>();
-    tracker.categories.forEach((category) => {
-      category.items.forEach((item) => {
+    tracker.phases.forEach((category) => {
+      category.steps.forEach((item) => {
         if (item.completed) {
           initialCompleted.add(item.id);
         }
@@ -134,10 +114,10 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
 
   // Convert progress tracker to tasks format
   const convertedTasks = useMemo(() => {
-    return convertProgressToTasks(tracker.title, tracker.categories);
+    return convertProgressToTasks(tracker.title, tracker.phases);
   }, [tracker]);
 
-  // Build checkbox state from completed items
+  // Build checkbox state from completed steps
   const checkboxState = useMemo(() => {
     const state: Record<string, boolean> = {};
     convertedTasks.forEach((task) => {
@@ -155,19 +135,19 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
   const onStateChangeRef = useRef(onStateChange);
   onStateChangeRef.current = onStateChange;
 
-  /** Update completedItems and emit the new state to the persistence layer. */
+  /** Update completed_items and emit the new state to the persistence layer. */
   const applyCompletedItems = useCallback((next: Set<string>) => {
     setCompletedItems(next);
     onStateChangeRef.current?.({ completed: Array.from(next) });
   }, []);
 
-  // Update completedItems when tracker data changes (in case the component receives new data).
+  // Update completed_items when tracker data changes (in case the component receives new data).
   // Only reset from tracker when there is no persisted state driving the component.
   React.useEffect(() => {
     if (initialState) return; // persisted state owns the source of truth
     const newCompleted = new Set<string>();
-    tracker.categories.forEach((category) => {
-      category.items.forEach((item) => {
+    tracker.phases.forEach((category) => {
+      category.steps.forEach((item) => {
         if (item.completed) {
           newCompleted.add(item.id);
         }
@@ -179,19 +159,19 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
 
   // Calculate dynamic progress
   const progressStats = useMemo(() => {
-    const totalItems = tracker.categories.reduce(
-      (sum, cat) => sum + cat.items.length,
+    const total_items = tracker.phases.reduce(
+      (sum, cat) => sum + cat.steps.length,
       0,
     );
-    const completedCount = completedItems.size;
+    const completedCount = completed_items.size;
     const overallPercentage =
-      totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
+      total_items > 0 ? Math.round((completedCount / total_items) * 100) : 0;
 
-    const categoryStats = tracker.categories.map((category) => {
-      const categoryCompleted = category.items.filter((item) =>
-        completedItems.has(item.id),
+    const categoryStats = tracker.phases.map((category) => {
+      const categoryCompleted = category.steps.filter((item) =>
+        completed_items.has(item.id),
       ).length;
-      const categoryTotal = category.items.length;
+      const categoryTotal = category.steps.length;
       const categoryPercentage =
         categoryTotal > 0
           ? Math.round((categoryCompleted / categoryTotal) * 100)
@@ -206,15 +186,15 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
     });
 
     return {
-      totalItems,
+      total_items,
       completedCount,
       overallPercentage,
-      categories: categoryStats,
+      phases: categoryStats,
     };
-  }, [tracker.categories, completedItems]);
+  }, [tracker.phases, completed_items]);
 
   const toggleItem = (itemId: string) => {
-    const newCompleted = new Set(completedItems);
+    const newCompleted = new Set(completed_items);
     if (newCompleted.has(itemId)) {
       newCompleted.delete(itemId);
     } else {
@@ -234,20 +214,20 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
   };
 
   const toggleAllInCategory = (categoryId: string) => {
-    const category = tracker.categories.find((cat) => cat.id === categoryId);
+    const category = tracker.phases.find((cat) => cat.id === categoryId);
     if (!category) return;
 
-    const newCompleted = new Set(completedItems);
-    const allCompleted = category.items.every((item) =>
-      completedItems.has(item.id),
+    const newCompleted = new Set(completed_items);
+    const allCompleted = category.steps.every((item) =>
+      completed_items.has(item.id),
     );
 
     if (allCompleted) {
-      // Uncheck all items in category
-      category.items.forEach((item) => newCompleted.delete(item.id));
+      // Uncheck all steps in category
+      category.steps.forEach((item) => newCompleted.delete(item.id));
     } else {
-      // Check all items in category
-      category.items.forEach((item) => newCompleted.add(item.id));
+      // Check all steps in category
+      category.steps.forEach((item) => newCompleted.add(item.id));
     }
 
     applyCompletedItems(newCompleted);
@@ -321,20 +301,20 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
     return Target;
   };
 
-  // Filter items based on current filters
+  // Filter steps based on current filters
   const getFilteredCategories = () => {
-    return progressStats.categories
+    return progressStats.phases
       .map((category) => ({
         ...category,
-        items: category.items.filter((item) => {
+        steps: category.steps.filter((item) => {
           const matchesPriority =
             selectedPriority === "all" || item.priority === selectedPriority;
           const matchesCompletion =
-            !showCompletedOnly || completedItems.has(item.id);
+            !showCompletedOnly || completed_items.has(item.id);
           return matchesPriority && matchesCompletion;
         }),
       }))
-      .filter((category) => category.items.length > 0);
+      .filter((category) => category.steps.length > 0);
   };
 
   const filteredCategories = getFilteredCategories();
@@ -350,15 +330,15 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
       )}
 
       <div
-        className={`w-full ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-4" : "py-6"}`}
+        className={`w-full ${isFullScreen ? "fixed inset-0 z-50 flex steps-center justify-center p-4" : "py-6"}`}
       >
         <div
           className={`max-w-6xl mx-auto ${isFullScreen ? "bg-textured rounded-2xl shadow-2xl h-full max-h-[95dvh] w-full flex flex-col overflow-hidden" : ""}`}
         >
           {/* Fullscreen Header */}
           {isFullScreen && (
-            <div className="flex-shrink-0 px-6 py-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
-              <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 px-6 py-4 border-b border-border flex steps-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+              <div className="flex steps-center gap-3">
                 <BarChart3 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">
                   Progress Tracker
@@ -366,7 +346,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
               </div>
               <button
                 onClick={() => setIsFullScreen(false)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-all shadow-sm"
+                className="flex steps-center gap-2 px-4 py-2 rounded-lg bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-all shadow-sm"
               >
                 <Minimize2 className="h-4 w-4" />
                 <span>Exit</span>
@@ -379,8 +359,8 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
             <div className="p-6 space-y-6">
               {/* Header Section */}
               <div className="bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-purple-950/40 rounded-2xl p-6 shadow-lg border-2 border-blue-200 dark:border-blue-800/50">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
-                  <div className="flex items-start gap-4">
+                <div className="flex flex-col lg:flex-row lg:steps-start lg:justify-between gap-4 mb-6">
+                  <div className="flex steps-start gap-4">
                     <div className="p-3 bg-blue-500 dark:bg-blue-600 rounded-xl shadow-md">
                       <BarChart3 className="h-8 w-8 text-white" />
                     </div>
@@ -397,10 +377,10 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                   </div>
 
                   {!isFullScreen && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex steps-center gap-2">
                       <button
                         onClick={() => setIsImportModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-green-500 dark:bg-green-600 text-white text-sm font-semibold shadow-md hover:bg-green-600 dark:hover:bg-green-700 hover:shadow-lg transform hover:scale-105 transition-all"
+                        className="flex steps-center gap-2 px-4 py-2.5 rounded-lg bg-green-500 dark:bg-green-600 text-white text-sm font-semibold shadow-md hover:bg-green-600 dark:hover:bg-green-700 hover:shadow-lg transform hover:scale-105 transition-all"
                       >
                         <Upload className="h-4 w-4" />
                         <span>Import to Tasks</span>
@@ -416,21 +396,21 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                             },
                           })
                         }
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all"
+                        className="flex steps-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all"
                       >
                         <ExternalLink className="h-4 w-4" />
                         <span>Canvas</span>
                       </button>
                       <button
                         onClick={handlePrint}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-semibold shadow-md hover:bg-slate-600 dark:hover:bg-slate-700 hover:shadow-lg transform hover:scale-105 transition-all"
+                        className="flex steps-center gap-2 px-4 py-2.5 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-semibold shadow-md hover:bg-slate-600 dark:hover:bg-slate-700 hover:shadow-lg transform hover:scale-105 transition-all"
                       >
                         <Printer className="h-4 w-4" />
                         <span>Print</span>
                       </button>
                       <button
                         onClick={() => setIsFullScreen(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-500 dark:bg-blue-600 text-white text-sm font-semibold shadow-md hover:bg-blue-600 dark:hover:bg-blue-700 hover:shadow-lg transform hover:scale-105 transition-all"
+                        className="flex steps-center gap-2 px-4 py-2.5 rounded-lg bg-blue-500 dark:bg-blue-600 text-white text-sm font-semibold shadow-md hover:bg-blue-600 dark:hover:bg-blue-700 hover:shadow-lg transform hover:scale-105 transition-all"
                       >
                         <Maximize2 className="h-4 w-4" />
                         <span>Focus</span>
@@ -441,20 +421,20 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
 
                 {/* Overall Progress */}
                 <div className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
+                  <div className="flex steps-center justify-between mb-3">
+                    <div className="flex steps-center gap-3">
                       <Trophy className="h-6 w-6 text-yellow-500 dark:text-yellow-400" />
                       <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                         Overall Progress
                       </span>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex steps-center gap-4">
                       <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         {progressStats.overallPercentage}%
                       </span>
                       <span className="text-sm text-gray-600 dark:text-gray-400">
                         {progressStats.completedCount}/
-                        {progressStats.totalItems} tasks
+                        {progressStats.total_items} tasks
                       </span>
                     </div>
                   </div>
@@ -464,7 +444,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                       style={{ width: `${progressStats.overallPercentage}%` }}
                     >
                       {progressStats.overallPercentage > 15 && (
-                        <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="absolute inset-0 flex steps-center justify-center">
                           <Flame className="h-3 w-3 text-white animate-pulse" />
                         </div>
                       )}
@@ -475,16 +455,16 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                 {/* Stats Grid */}
                 <div className="grid md:grid-cols-4 gap-4 mb-6">
                   <div className="bg-textured/50 rounded-lg p-3 border border-blue-200 dark:border-blue-800/50">
-                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
+                    <div className="flex steps-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
                       <Target className="h-4 w-4" />
                       <span className="text-xs font-medium">Total Goals</span>
                     </div>
                     <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {progressStats.totalItems}
+                      {progressStats.total_items}
                     </div>
                   </div>
                   <div className="bg-textured/50 rounded-lg p-3 border border-green-200 dark:border-green-800/50">
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-1">
+                    <div className="flex steps-center gap-2 text-green-600 dark:text-green-400 mb-1">
                       <CheckCircle2 className="h-4 w-4" />
                       <span className="text-xs font-medium">Completed</span>
                     </div>
@@ -493,27 +473,27 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                     </div>
                   </div>
                   <div className="bg-textured/50 rounded-lg p-3 border border-orange-200 dark:border-orange-800/50">
-                    <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 mb-1">
+                    <div className="flex steps-center gap-2 text-orange-600 dark:text-orange-400 mb-1">
                       <Clock className="h-4 w-4" />
                       <span className="text-xs font-medium">Remaining</span>
                     </div>
                     <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {progressStats.totalItems - progressStats.completedCount}
+                      {progressStats.total_items - progressStats.completedCount}
                     </div>
                   </div>
                   <div className="bg-textured/50 rounded-lg p-3 border border-purple-200 dark:border-purple-800/50">
-                    <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-1">
+                    <div className="flex steps-center gap-2 text-purple-600 dark:text-purple-400 mb-1">
                       <TrendingUp className="h-4 w-4" />
                       <span className="text-xs font-medium">Categories</span>
                     </div>
                     <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {tracker.categories.length}
+                      {tracker.phases.length}
                     </div>
                   </div>
                 </div>
 
                 {/* Controls */}
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div className="flex flex-col sm:flex-row gap-4 steps-center justify-between">
                   <div className="flex flex-wrap gap-2">
                     <select
                       value={selectedPriority}
@@ -541,7 +521,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                   <div className="flex gap-2">
                     <button
                       onClick={resetProgress}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-colors"
+                      className="flex steps-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-colors"
                     >
                       <RotateCcw className="h-4 w-4" />
                       <span>Reset</span>
@@ -563,8 +543,8 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                     categoryIndex,
                   );
                   const isExpanded = expandedCategories.has(category.id);
-                  const allItemsCompleted = category.items.every((item) =>
-                    completedItems.has(item.id),
+                  const allItemsCompleted = category.steps.every((item) =>
+                    completed_items.has(item.id),
                   );
 
                   return (
@@ -574,10 +554,10 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                     >
                       <div className="p-4">
                         {/* Category Header */}
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex steps-center justify-between mb-4">
                           <button
                             onClick={() => toggleCategory(category.id)}
-                            className="flex items-center gap-3 flex-1 text-left hover:opacity-80 transition-opacity"
+                            className="flex steps-center gap-3 flex-1 text-left hover:opacity-80 transition-opacity"
                           >
                             <div
                               className={`p-2 bg-gradient-to-br ${gradientColor} rounded-lg shadow-md`}
@@ -594,7 +574,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                                 </p>
                               )}
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex steps-center gap-3">
                               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                                 {category.completedCount}/{category.totalCount}
                               </span>
@@ -612,7 +592,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
 
                         {/* Category Progress Bar */}
                         <div className="mb-4">
-                          <div className="flex justify-between items-center mb-2">
+                          <div className="flex justify-between steps-center mb-2">
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                               Progress
                             </span>
@@ -634,13 +614,13 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                         {/* Category Items */}
                         {isExpanded && (
                           <div className="space-y-2">
-                            {category.items.map((item) => {
-                              const isCompleted = completedItems.has(item.id);
+                            {category.steps.map((item) => {
+                              const isCompleted = completed_items.has(item.id);
                               return (
                                 <button
                                   key={item.id}
                                   onClick={() => toggleItem(item.id)}
-                                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
+                                  className={`w-full flex steps-center gap-3 p-3 rounded-lg border transition-all text-left ${
                                     isCompleted
                                       ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/30"
                                       : "bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800/50"
@@ -665,7 +645,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                                       {item.text}
                                     </span>
 
-                                    <div className="flex items-center gap-2 mt-1">
+                                    <div className="flex steps-center gap-2 mt-1">
                                       {item.priority && (
                                         <span
                                           className={`px-2 py-0.5 text-xs font-medium rounded-full ${getPriorityColor(item.priority)}`}
@@ -678,10 +658,10 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                                           optional
                                         </span>
                                       )}
-                                      {item.estimatedHours && (
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                      {item.estimated_hours && (
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 flex steps-center gap-1">
                                           <Clock className="h-3 w-3" />
-                                          {item.estimatedHours}h
+                                          {item.estimated_hours}h
                                         </span>
                                       )}
                                     </div>
@@ -700,7 +680,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
               {/* Completion Celebration */}
               {progressStats.overallPercentage === 100 && (
                 <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30 rounded-xl p-6 border-2 border-yellow-300 dark:border-yellow-700 shadow-lg">
-                  <div className="flex flex-col items-center text-center gap-4">
+                  <div className="flex flex-col steps-center text-center gap-4">
                     <div className="relative">
                       <div className="p-4 bg-yellow-500 dark:bg-yellow-600 rounded-full shadow-lg">
                         <Trophy className="h-12 w-12 text-white" />
@@ -710,7 +690,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                       </div>
                     </div>
                     <div>
-                      <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="flex steps-center justify-center gap-2 mb-2">
                         <PartyPopper className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
                         <h3 className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
                           Congratulations!
@@ -720,7 +700,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                       <p className="text-yellow-700 dark:text-yellow-300 text-lg">
                         You've completed all tasks in {tracker.title}!
                       </p>
-                      <div className="flex items-center justify-center gap-2 mt-2">
+                      <div className="flex steps-center justify-center gap-2 mt-2">
                         <Award className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                         <p className="text-sm text-yellow-600 dark:text-yellow-400">
                           Amazing work! Time to celebrate your achievement!
