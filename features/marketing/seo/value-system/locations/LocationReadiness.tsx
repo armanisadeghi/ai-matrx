@@ -33,7 +33,6 @@ import {
 import { cn } from "@/styles/themes/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
-import { formatCount } from "@/features/marketing/search-console/types";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { AddLocationDialog } from "./AddLocationDialog";
 import { getLocationReadiness, locationReadinessQueryKey } from "./data";
@@ -169,23 +168,15 @@ export function LocationReadiness({
                       : "text-foreground",
                 )}
               >
-                {row.headline}
                 {/*
-                  Only where the number adds something. A healthy row spells its
-                  own count out ("One location") and "One location (1)" is the
-                  kind of noise that makes a reader stop trusting the numbers
-                  that DO matter.
+                  The headline carries its own number wherever a number belongs
+                  ("2,043 keyword(s) with traffic…", "One location"). A count
+                  appended here could only ever be that same number again, or —
+                  worse — a number whose unit the reader has to guess, since one
+                  row counts locations and the next counts keywords. So: no
+                  chip. The server says it once, in words.
                 */}
-                {row.state !== "ok" &&
-                row.count_value > 0 &&
-                !row.headline.includes(String(row.count_value)) ? (
-                  <span
-                    className="ml-1 font-normal tabular-nums text-muted-foreground"
-                    title="Keywords with Search Console traffic in the last 90 days that this affects"
-                  >
-                    ({formatCount(Number(row.count_value))})
-                  </span>
-                ) : null}
+                {row.headline}
               </p>
               <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
                 {row.detail}

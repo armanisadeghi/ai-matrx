@@ -134,10 +134,10 @@ BEGIN
     RETURN QUERY SELECT 'ok', 'One location',
       'Every local keyword is attributed to it. Add more locations and the system starts telling you which one each keyword belongs to.', v_locs, 'manage_locations';
   ELSE
-    RETURN QUERY SELECT 'ok', v_locs || ' locations', 'Local keywords are attributed to whichever one their place matches.', v_locs, 'manage_locations';
+    RETURN QUERY SELECT 'ok', to_char(v_locs, 'FM999,999,999') || ' locations', 'Local keywords are attributed to whichever one their place matches.', v_locs, 'manage_locations';
   END IF;
   IF v_no_city > 0 THEN
-    RETURN QUERY SELECT 'gap', v_no_city || ' location(s) have no city or state',
+    RETURN QUERY SELECT 'gap', to_char(v_no_city, 'FM999,999,999') || ' location(s) have no city or state',
       'Without a city or state there is nothing for a detected place to match — those locations can never win a keyword.', v_no_city, 'fill_city_state';
   END IF;
   IF v_no_coords = v_locs THEN
@@ -157,13 +157,13 @@ BEGIN
       RETURN QUERY SELECT 'inert', 'No keyword has been read for a place yet',
         'Attribution can only see places the gazetteer has detected. Run place detection on this site''s keywords and locations start winning traffic.', v_windowed, 'run_place_detection';
     ELSIF v_windowed > 0 AND v_placed < v_windowed THEN
-      RETURN QUERY SELECT 'gap', (v_windowed - v_placed) || ' keyword(s) with traffic carry no detected place',
+      RETURN QUERY SELECT 'gap', to_char(v_windowed - v_placed, 'FM999,999,999') || ' keyword(s) with traffic carry no detected place',
         'Those keywords can never be attributed to a location until place detection has read them.', (v_windowed - v_placed), 'run_place_detection';
     END IF;
   END;
 
   IF v_areas > 0 AND v_bound = 0 THEN
-    RETURN QUERY SELECT 'gap', v_areas || ' service area(s), none bound to a location',
+    RETURN QUERY SELECT 'gap', to_char(v_areas, 'FM999,999,999') || ' service area(s), none bound to a location',
       'Binding an area to a location is the strongest signal — it beats every guess the system would otherwise make.', v_areas, 'bind_area';
   END IF;
 END $fn$;
