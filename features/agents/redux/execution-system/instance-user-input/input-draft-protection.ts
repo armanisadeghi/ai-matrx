@@ -129,6 +129,9 @@ export function reportPreInitInputCapture(
     conversationId,
     callSite: "instance-user-input.slice.setUserInputText",
     details: `textLength=${textLength}`,
+    // This is successful loss-prevention, not an unresolved incident. Keep it
+    // in the local inspector without filing a durable system_error.
+    durable: false,
   });
 }
 

@@ -124,6 +124,7 @@ async function flush(): Promise<void> {
   const pending: CapturedError[] = [];
   for (const entry of getSnapshot()) {
     if (
+      entry.durable === false ||
       !shouldPersistCapturedTier({
         tier: entry.tier,
         isGuest: !isAuthenticated || isGuest,
@@ -165,6 +166,7 @@ async function flush(): Promise<void> {
     const e = getSnapshot().find((entry) => entry.id === candidate.id);
     if (
       !e ||
+      e.durable === false ||
       !shouldPersistCapturedTier({
         tier: e.tier,
         isGuest: !isAuthenticated || isGuest,

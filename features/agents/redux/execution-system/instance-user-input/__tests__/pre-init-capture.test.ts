@@ -51,6 +51,7 @@ describe("pre-init keystroke capture", () => {
         source: "unsaved-work",
         code: "smart-input-pre-init-capture",
         conversationId: CID,
+        durable: false,
       }),
     );
   });

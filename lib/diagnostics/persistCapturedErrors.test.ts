@@ -62,6 +62,18 @@ describe("captured error persistence settlement", () => {
     );
   });
 
+  it("keeps explicitly local recovery diagnostics out of system_error", async () => {
+    captureError({
+      source: "unsaved-work",
+      message: "draft was preserved",
+      durable: false,
+    });
+
+    await jest.advanceTimersByTimeAsync(1_500);
+
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("keeps a denial local when AccessGate resolves during the grace window", async () => {
     const error = recordUnavailable({
       entity: "brand",

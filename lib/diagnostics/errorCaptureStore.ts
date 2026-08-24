@@ -277,6 +277,9 @@ export interface CapturedError {
   /** Full JSON-safe dump of the original error object — future-proof. */
   raw?: unknown;
 
+  /** False keeps an expected recovery visible locally without filing a system_error. */
+  durable?: boolean;
+
   // ── Visibility tier (assigned by the store via classifyTier) ─────────────
   /** red (loud) · orange (dot) · yellow (silent). Default red. */
   tier: ErrorTier;
@@ -317,6 +320,8 @@ export interface CaptureInput {
   stack?: string;
   callSite?: string;
   raw?: unknown;
+  /** Set false only for expected, successfully handled diagnostics. Default true. */
+  durable?: boolean;
 }
 
 export interface CapturedErrorStats {
@@ -536,6 +541,7 @@ export function captureError(input: CaptureInput): string {
     stack: input.stack,
     callSite: input.callSite,
     raw: input.raw,
+    durable: input.durable ?? true,
     dedupeKey: sig,
     // Classified below; seeded to the default so the object is well-typed.
     tier: "red",
