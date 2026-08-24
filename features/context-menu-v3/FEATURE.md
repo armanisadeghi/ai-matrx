@@ -212,6 +212,44 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 
 Both take: `sourceFeature` (required — attribution), `surfaceName` (registry surface → AI actions + bound agents + value mappings), `getApplicationScope` / `contextData` (values), `contentSource` (rich-document source → Copy-as/Export/Convert), `entity` (`{type,id,title,resourceType?,isOwner?}` → Attach To + Share), `placementMode`, `addedContexts`/`excludedContexts`, `extraSections` (surface passthrough), history props, `scope`/`scopeId`, `enableFloatingIcon`. Types: `types.ts`.
 
+### THE PER-ROW ENTITY — one menu, N rows, the RIGHT record
+
+`entity` is a menu-level prop, and a table wires ONE menu for the whole pane
+(`resolveContextOnOpen`). Until 2026-08-24 that meant a delegated table menu
+could not offer a correct **Attach To / Share**: the actions targeted the
+pane's entity, or nothing at all, whichever row was clicked. The fix lives in
+the primitive, not in any surface: `resolveContextOnOpen` may return the
+reserved key `CONTEXT_MENU_ENTITY_KEY` (`"__entity"`) alongside its values, and
+the shell rebuilds the entity-bound actions from it.
+
+```tsx
+resolveContextOnOpen={(target) => {
+  const row = rowFor(target);
+  if (!row) return null;                       // key absent → the prop stands
+  return {
+    content: row.text,
+    [CONTEXT_MENU_ENTITY_KEY]: entityRefFor(row), // this row owns Attach/Share
+  };
+}}
+```
+
+| resolved value | effect |
+|---|---|
+| key ABSENT | the menu-level `entity` prop stands — every existing caller unchanged |
+| a `ContextMenuEntityRef` | that row's entity wins for this open |
+| `null` | this target has no entity — Attach/Share HIDE rather than target the wrong record |
+| malformed (no string `type` + `id`) | falls back to the prop and SCREAMS in dev |
+
+The key never reaches the `ApplicationScope` (`SKIP_MERGE_KEYS`): it is not a
+value. Resolution lives in `utils/per-row-entity.ts` — kept out of
+`value-resolution.ts` on purpose, because the INERT SHELL imports it and
+value-resolution pulls the surface-manifest registry. Tests:
+`utils/per-row-entity.test.ts`.
+
+No `resourceType` on the row's ref = **Share stays hidden**, which is correct
+for a record that is not a shareable resource (a keyword) — an absent item,
+never a fake one.
+
 ---
 
 ## Reuse, never fork — what the menu consumes
@@ -318,6 +356,8 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 ---
 
 ## Change Log
+
+- `2026-08-24` — **Per-row `entity` for delegated menus (the primitive, not a fork).** `resolveContextOnOpen` may now return `CONTEXT_MENU_ENTITY_KEY` (`"__entity"`) and the shell resolves the EFFECTIVE entity for that open (`utils/per-row-entity.ts`: absent → the prop stands, a ref → the row wins, `null` → the entity actions hide, malformed → fall back and scream). The key is stripped from `contextData` and skipped in `value-resolution.ts`, so it never lands in the scope as a value. Adopted on the Value Workbench and the Performance tab (rows attach as `seo_keyword`; Share correctly stays hidden) and on user-lists (an item attaches as `udt_structured_list_items`, empty space still attaches the list). Live-verified on Data Destruction and All Green Recycling: two different rows opened "Organize — <that row's keyword>", and on `/lists/[id]` the item vs the pane resolved to two different records. Tests: `utils/per-row-entity.test.ts`.
 
 - `2026-08-22` (final) — **Command is the platform default; footer → surface submenu; filter placeholder smaller.** `DEFAULT_MENU_LAYOUT = "command"`. The version footer is deleted from the shell; the engine's new `surfaceSection` (surface label → location / Surface Context / Surface Context Admin / Agents on this page + Bind / Related surfaces / revision) renders last on desktop (all layouts) and mobile. `CANONICAL_MENU_VERSION_V3` moved to `types.ts` and bumped to 2. Live-verified on /notes.
 

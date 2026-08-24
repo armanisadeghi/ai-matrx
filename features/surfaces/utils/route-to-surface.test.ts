@@ -67,6 +67,19 @@ describe("surfaceFromPathname — marketing tree", () => {
     }
   });
 
+  it("resolves the value LEAF to the Keyword Value Workbench, and its family to the site", () => {
+    expect(surfaceFromPathname(`${SITE}/value`)).toBe(
+      "matrx-user/keyword-value-workbench",
+    );
+    // Topics / rules / dimensions / packs define the machinery rather than
+    // listing keywords — they stay on the site surface until each earns one.
+    for (const tail of ["topics", "rules", "dimensions", "packs"]) {
+      expect(surfaceFromPathname(`${SITE}/value/${tail}`)).toBe(
+        "matrx-user/marketing-site",
+      );
+    }
+  });
+
   it("resolves page detail (and its snapshots subtree) to marketing-page", () => {
     expect(surfaceFromPathname(`${SITE}/pages/${P}`)).toBe(
       "matrx-user/marketing-page",
