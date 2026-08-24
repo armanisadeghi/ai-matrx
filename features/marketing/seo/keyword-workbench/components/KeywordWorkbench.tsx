@@ -371,6 +371,10 @@ export function KeywordWorkbench() {
           .map((v) => ({ value: v.key, label: v.label })),
         filterSingle: true,
         width: 150,
+        // An INTENTIONAL phone column set: keyword, class, clicks, level. A
+        // phone that opens onto eight columns of horizontal scroll is a phone
+        // nobody reads the meaning columns on anyway.
+        mobileHidden: true,
         accessorFn: (row) => stampFor(row, slug)?.valueLabel ?? "",
         cell: (row) => {
           const stamp = stampFor(row, slug);
@@ -482,6 +486,7 @@ export function KeywordWorkbench() {
       filter: false,
       align: "right",
       width: 76,
+      mobileHidden: true,
       accessorFn: (row) => valueFor(row)?.value_score ?? null,
       cell: (row) => {
         const value = valueFor(row);
