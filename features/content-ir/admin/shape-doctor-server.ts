@@ -28,10 +28,6 @@ import "server-only";
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  DB_KIND_COMPONENT_KEY,
-  GENERIC_STRUCTURED_COMPONENT_KEY,
-} from "@ai-matrx/content-ir-react";
 import { createClient } from "@/utils/supabase/server";
 import type { Json } from "@/types/database.types";
 import committedSnapshot from "@/scripts/shape/shapes-status.json";
@@ -61,6 +57,18 @@ import {
   extractHostSurfaceTokensFromTexts,
   type HostSurfaceTokens,
 } from "@/features/content-ir/registry/shape-doctor-extract";
+
+/**
+ * Keep the server-only doctor out of the React renderer package. These are the
+ * two computed dispatch-table keys consumed by the source-text extractor;
+ * importing @ai-matrx/content-ir-react here evaluates its client provider and
+ * error-boundary graph during Next's server configuration pass.
+ *
+ * Equality with the renderer-owned constants is enforced by the same dispatch
+ * extraction and Content IR tests that gate the registry.
+ */
+const DB_KIND_COMPONENT_KEY = "db_kind_component";
+const GENERIC_STRUCTURED_COMPONENT_KEY = "generic_structured";
 
 // ─── Code-derived inputs (fs, loud-degrade) ─────────────────────────────────
 
