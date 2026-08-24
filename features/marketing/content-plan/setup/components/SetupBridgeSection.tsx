@@ -388,6 +388,13 @@ export function SetupBridgeSection({
       fillStatus.steps.every((row) => row.step === "p7_publish");
     if (isPublishJob) {
       void queryClient.invalidateQueries({ queryKey: planKeys.nodes(site.id) });
+      // Refresh the rung's numbers from truth — a re-run dry preview says what
+      // (if anything) still has pending changes, instead of a stale count.
+      void bridgePublish(dispatch, site.id, { dryRun: true, cmsSite: knownCmsSite })
+        .then(setPublishResult)
+        .catch(() => {
+          // The next manual "See what would go live" recovers; never toast here.
+        });
       const live = publishStep.succeeded + publishStep.skipped;
       if (fillStatus.failed > 0 || fillStatus.deadLetter > 0) {
         toast.error(
@@ -672,6 +679,10 @@ export function SetupBridgeSection({
       });
       for (const line of started.skipped) toast.info(line);
       toast.success(`Publishing ${started.estimate.pages} page(s) — progress below…`);
+      // The preview that gated this click is now HISTORY — a stale
+      // `wouldPublish` would keep labeling the button with the pre-publish
+      // count. Cleared here; the end-of-run effect refreshes it from truth.
+      setPublishResult(null);
       setFillStatus(await bridgeFillStatus(dispatch, site.id));
     } catch (error) {
       toast.error(`Publish failed to start: ${extractErrorMessage(error)}`);
@@ -802,8 +813,8 @@ export function SetupBridgeSection({
             </Button>
             {activeHeaderFooter ? (
               <span className="text-[11px] text-muted-foreground">
-                Re-running replaces the current styles, header, and footer — it
-                will ask before it does.
+                Re-running replaces the current styles, header, and footer, and
+                adds any missing library sections — it will ask before it does.
               </span>
             ) : (
               <span className="text-[11px] text-muted-foreground">
@@ -1100,6 +1111,9 @@ export function SetupBridgeSection({
               disabled={
                 !linked ||
                 busy !== null ||
+                // One active job per site is the server's law — clicking
+                // Publish mid-build would only bounce off it with an error.
+                fillRunning ||
                 publishPending === null ||
                 publishPending === 0
               }
