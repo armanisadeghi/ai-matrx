@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 426 active entity tokens. A token here is FK-valid for
+// 429 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -234,6 +234,9 @@ export type EntityTypeToken =
   | "ner_shadow"
   | "note"
   | "note_folder"
+  | "notification"
+  | "notification_event_type"
+  | "notification_preference"
   | "ops_issue_event"
   | "organization"
   | "output_feedback"
@@ -940,6 +943,9 @@ export type ScopeableEntityToken =
   | "ner_shadow"
   | "note"
   | "note_folder"
+  | "notification"
+  | "notification_event_type"
+  | "notification_preference"
   | "ops_issue_event"
   | "organization"
   | "output_feedback"
@@ -1423,6 +1429,9 @@ export const ENTITY_TYPE_METADATA = {
   "ner_shadow": { token: "ner_shadow", schema: "rag", table: "ner_canonicalizer_shadow", label: "NER Shadow", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "note": { token: "note", schema: "workbench", table: "notes", label: "Note", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Sources & Outputs", referencePickable: true, titleColumn: "label", contentRole: "hybrid", referenceCategory: null },
   "note_folder": { token: "note_folder", schema: "workbench", table: "note_folders", label: "Note Folder", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
+  "notification": { token: "notification", schema: "communication", table: "notification", label: "Notification", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "notification_event_type": { token: "notification_event_type", schema: "communication", table: "notification_event_type", label: "Notification Event Type", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "notification_preference": { token: "notification_preference", schema: "communication", table: "notification_preference", label: "Notification Preference", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "ops_issue_event": { token: "ops_issue_event", schema: "ops", table: "ops_issue_event", label: "Ops Issue Event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "organization": { token: "organization", schema: "iam", table: "organizations", label: "Organization", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "output_feedback": { token: "output_feedback", schema: "platform", table: "output_feedback", label: "Output Feedback", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1853,6 +1862,9 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "ner_shadow",
   "note",
   "note_folder",
+  "notification",
+  "notification_event_type",
+  "notification_preference",
   "ops_issue_event",
   "organization",
   "output_feedback",
