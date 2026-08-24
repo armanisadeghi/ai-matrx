@@ -101,26 +101,30 @@ export function PendingExamplesPanel({
           return (
             <div
               key={`${ex.kind}-${ex.id}`}
-              className="flex flex-wrap items-center gap-2 rounded-md border border-border px-2 py-1"
+              className="min-w-0 space-y-2 rounded-md border border-border px-2 py-1.5"
             >
-              <span className="font-mono text-[11px] text-muted-foreground">
-                {ex.kind} {ex.id.slice(0, 8)}
-              </span>
-              <span className="text-[11px] text-muted-foreground">
-                {fmtDate(ex.at)}
-              </span>
-              {!ex.settled && (
-                <span className="rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
-                  settling
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="font-mono text-[11px] text-muted-foreground">
+                  {ex.kind} {ex.id.slice(0, 8)}
                 </span>
-              )}
-              <span className="ml-auto flex items-center gap-1.5">
-                {door && <DoorLink size="xs" door={door} />}
+                <span className="text-[11px] text-muted-foreground">
+                  {fmtDate(ex.at)}
+                </span>
+                {!ex.settled && (
+                  <span className="rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                    settling
+                  </span>
+                )}
+              </div>
+              <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
+                {door && (
+                  <DoorLink size="xs" door={door} className="max-w-full" />
+                )}
                 {focusable && (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-6 px-2 text-[11px]"
+                    className="h-6 max-w-full px-2 text-[11px]"
                     disabled={reviewRunning}
                     onClick={() => onReviewExample(ex.id)}
                     title="Review exactly this run now — bypasses the settle window, never advances the queue"
@@ -129,7 +133,7 @@ export function PendingExamplesPanel({
                     Review just this
                   </Button>
                 )}
-              </span>
+              </div>
             </div>
           );
         })}
