@@ -94,6 +94,13 @@ export const smartExecute = createAsyncThunk<
     try {
       let state = getState();
 
+      // A queued click/keypress can outlive the conversation it targeted when
+      // navigation or fresh-chat cleanup removes the browser-local instance.
+      // That is a cancelled UI intent, not an organization failure and not a
+      // product error: drop it before the organization guard emits a toast or
+      // console error. The finally block still releases the admission claim.
+      if (!state.conversations.byConversationId[conversationId]) return;
+
       // Organization is a hard execution boundary. A personal organization is
       // not an implicit substitute for an empty picker: keep the draft intact,
       // show the person the one-click corrective action, and make no request.
