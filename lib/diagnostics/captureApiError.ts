@@ -35,6 +35,18 @@ export function captureApiError(
   ctx: ApiErrorContext,
 ): void {
   try {
+    // Missing explicit organization context is a local preflight refusal: the
+    // request never reached aidream. The caller still receives the typed error
+    // and can ask the person to select an organization, but persisting it as a
+    // backend incident creates an unactionable system_error row.
+    if (
+      error.type === "validation_error" &&
+      (error.code === "organization_context_required" ||
+        error.name === "OrganizationContextError")
+    ) {
+      return;
+    }
+
     const isNetwork =
       error.type === "network_error" ||
       error.type === "abort_error" ||

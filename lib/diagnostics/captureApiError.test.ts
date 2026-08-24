@@ -10,6 +10,26 @@ describe("captureApiError", () => {
     window.history.replaceState({}, "", "/");
   });
 
+  it("keeps a missing organization preflight refusal out of persistence", () => {
+    window.history.replaceState({}, "", "/administration/agents/mandates");
+
+    captureApiError(
+      {
+        type: "validation_error",
+        code: "organization_context_required",
+        name: "OrganizationContextError",
+        message: "Select an organization before sending this request.",
+      },
+      {
+        url: "https://server.app.matrxserver.com/mandates/code-truth",
+        method: "GET",
+        path: "/mandates/code-truth",
+      },
+    );
+
+    expect(getSnapshot()).toEqual([]);
+  });
+
   it.each([
     "/audio/transcribe",
     "/audio/transcribe-url",

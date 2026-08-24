@@ -53,7 +53,9 @@ still be preloading its process-stable source inventory. Failure remains visible
 in the amber stale-data banner and local yellow `callApi` diagnostic; the
 route-and-endpoint-scoped tier rule keeps this retryable read outage out of
 `system_error`. The console uses `console.warn`, never a duplicate captured
-`console.error`.
+`console.error`. A missing explicit organization is a local preflight refusal:
+`callApi` returns it to the console without sending the request or persisting a
+fake backend incident.
 
 - **A code/agent mismatch ships the complete choice, not a scolding:** map onto an existing agent variable when one exists; use a real agent default when the server reports one; spill to `user_input` with a permanent caution; open the agent builder to declare the variable; choose another agent; or copy the full source-aware fix brief. Unavailable options stay visible and say why.
 - **The rebind guard consumes the same live truth.** Every `computeRebindImpact` call receives `codeSuppliedVariables`; `buildRebindFixBrief` receives the runner class, source line, bound declarations, user-input fact, and every discovered call site.
@@ -83,6 +85,9 @@ The page is the `matrx-admin/mandates` surface (`features/surfaces/manifests/man
 The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate` (`ui`, handled on the console's own provider, which owns `selectedId`) and `mandate_exemplar_draft` (`draft`, registered by `MandateTestBench` via `useSurfaceWriteHandlers`). Both are `applyPolicy: "ask"`. Read the JUDGMENT BAR block at the top of the manifest before adding a third: rebind, enable/disable, the per-principal overrides, Run all, and every health/roll-up value are deliberately NOT writable, and each has its reason written down there.
 
 ## Change Log
+
+- 2026-08-24 — Kept missing-organization preflight refusals local to `callApi`;
+  unsent code-truth reads no longer enter `system_error` as backend incidents.
 
 - 2026-08-23 — Made the intact dotted mandate key part of canonical table
   search without merging the separately sortable/filterable Feature and
