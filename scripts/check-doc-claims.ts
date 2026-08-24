@@ -388,7 +388,7 @@ const claims: Claim[] = [
   },
   {
     id: "per-pr-ci",
-    claim: "per-PR CI runs the marker law, type-check, and the content-IR + workflow-runtime suites",
+    claim: "per-PR CI runs the marker law, the one-type law, type-check, and the content-IR + workflow-runtime suites",
     where: "CLAUDE.md § Repo doctrine (Nothing runs at commit time)",
     check: () => {
       // The claim in CLAUDE.md is now the opposite of what it used to be: for
@@ -401,6 +401,8 @@ const claims: Claim[] = [
       }
       const required = [
         "check:kind-marker-law",
+        "check:kind-type-twins",
+        "check:kind-types",
         "pnpm type-check",
         "test:content-ir",
         "test:workflow-runtime",

@@ -6,7 +6,7 @@ name: CI
 # workflow-runtime contracts could therefore sit on `main` undetected until
 # somebody happened to cut a release. This closes that window.
 #
-# SCOPE, deliberately: this is NOT the release gate. It runs the four checks
+# SCOPE, deliberately: this is NOT the release gate. It runs the few checks
 # that must never regress silently and that are cheap enough to run on every
 # push. The full gate (migrations, schema drift, access matrices, the ~40 other
 # `check:*` scripts) stays where it belongs — in `run-release-gates.sh`, owned
@@ -49,12 +49,52 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: THE `__kind` MARKER LAW — no stripping outside the lawful doors
         run: pnpm check:kind-marker-law
+      - name: THE ONE-TYPE LAW — no hand-written twin of a registered kind
+        # A kind's shape is written down ONCE, in the generated artifact
+        # (`pnpm shape:types`). A hand-written interface beside a bridge or a
+        # renderer is a second source of truth that drifts silently and shows
+        # up as a blank field on a user's screen, never as a compile error.
+        # Offline: it reads the committed artifact, not the registry — the
+        # registry-freshness half runs in the `kind-registry` job below, which
+        # needs credentials. KINDS_EVERYWHERE_PLAN §10g GAP 1.
+        run: pnpm check:kind-type-twins
       - name: CLAUDE.md's machine-checkable claims still hold
-        # Includes the claim that THIS workflow runs the four gates below.
+        # Includes the claim that THIS workflow runs the gates named in it.
         # Without it here, deleting a step from this file would silently make
         # CLAUDE.md promise a gate that no longer runs — and an agent that
         # trusts the promise skips its own verification.
         run: pnpm check:doc-claims --strict
+
+  # ---------------------------------------------------------------------------
+  # kind-registry — the FRESHNESS half of the one-type law. The generated kind
+  # types are only "the only types" if they still match the live registry: a
+  # kind whose schema changed while the artifact did not is a type that lies.
+  # This needs registry credentials, so it runs only where the secret is
+  # configured; it SKIPS LOUDLY rather than passing quietly, because a gate
+  # that silently no-ops is worse than one that is absent.
+  # ---------------------------------------------------------------------------
+  kind-registry:
+    name: generated kind types match the live registry
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Generated kind types vs content_ir.kind_definition
+        run: |
+          if [ -z "$SUPABASE_SECRET_KEY" ]; then
+            echo "::warning title=kind registry freshness NOT verified::SUPABASE_SECRET_KEY is not configured for this repo, so pnpm check:kind-types could not run. The generated kind types may be stale against the live registry. Configure the secret to close this gap."
+            exit 0
+          fi
+          pnpm check:kind-types
 
   # ---------------------------------------------------------------------------
   # type-check — `next.config.js` sets `ignoreBuildErrors: true`, so a green
