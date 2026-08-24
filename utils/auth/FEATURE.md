@@ -90,6 +90,10 @@ sales page after signing in.
 - **The recovery hop is the one place `/reset-password` is a legal target** —
   `/auth/callback` and `/auth/confirm` apply it as the next HOP, with the user's
   real destination nested inside it as its own param.
+- **Social OAuth returns to the origin where it started.**
+  [`request-origin.ts`](./request-origin.ts) derives `/auth/callback` from the
+  request, including the localhost port; every local origin must also exist in
+  Supabase Auth's Redirect URLs allowlist.
 - **The middleware destination check runs BEFORE the authed login/sign-up
   bounce.** That bounce sends every authenticated visitor to `landing`; ordered
   the other way it eats the destination.
@@ -118,12 +122,17 @@ sales page after signing in.
 [`__tests__/auth-destination.test.ts`](./__tests__/auth-destination.test.ts) —
 the rules. [`__tests__/auth-flow.e2e.test.ts`](./__tests__/auth-flow.e2e.test.ts)
 — full journeys hop by hop (wrong-then-right password, the reset odyssey, OAuth,
-50-hop walks, open-redirect refusal). `auth-entrypoints.test.ts` scans every
-tracked and untracked source file and rejects raw internal login links and the
-nonexistent `/signup` route. `pnpm check:auth-destinations` runs the complete
-auth suite and is part of both release-gate modes.
+50-hop walks, open-redirect refusal). `request-origin.test.ts` locks OAuth to
+the initiating localhost port or deployment origin. `auth-entrypoints.test.ts`
+scans every tracked and untracked source file and rejects raw internal login
+links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
+the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-08-24** — Social OAuth callbacks now preserve the initiating request
+  origin, including localhost ports 3000/3001/3002; added origin-validation and
+  proxy-authority regressions.
 
 - **2026-08-20** — Closed the signed-out product-error and lost-return-route
   classes platform-wide: protected routes stop before data resolution; header,

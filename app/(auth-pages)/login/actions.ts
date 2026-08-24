@@ -9,22 +9,15 @@ import {
   preserveAuthDestination,
   readAuthDestination,
 } from "@/utils/auth/auth-destination";
+import { requestOrigin } from "@/utils/auth/request-origin";
 import { stashGuestFingerprintForOAuth } from "@/lib/services/guest-oauth-transfer";
 
-// Dynamic baseUrl that works with Vercel deployments (including preview branches)
+// Preserve the exact origin where OAuth began (including the localhost port),
+// with deployment metadata only as a no-request-context fallback.
 const getBaseUrl = async () => {
-  if (process.env.NODE_ENV === "development") {
-    return "http://localhost:3000";
-  }
-
-  // Get the current request headers to determine the host
   const headersList = await headers();
-  const host = headersList.get("host");
-
-  if (host) {
-    // Use the actual host from the request
-    return `https://${host}`;
-  }
+  const currentOrigin = requestOrigin(headersList);
+  if (currentOrigin) return currentOrigin;
 
   // Fallback to environment variables if no host header
   const vercelUrl =
@@ -38,8 +31,7 @@ const getBaseUrl = async () => {
     return `https://${deploymentUrl}`;
   }
 
-  // Final fallback to production domain
-  return "https://aimatrx.com";
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://aimatrx.com";
 };
 
 export async function login(redirectToArg: string, formData: FormData) {
