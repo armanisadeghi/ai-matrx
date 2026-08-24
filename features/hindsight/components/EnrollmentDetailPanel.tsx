@@ -273,6 +273,7 @@ export function EnrollmentDetailPanel({
         <PendingExamplesPanel
           className="mt-3"
           enrollmentId={enrollmentId}
+          subjectKind={enrollment.subject_kind}
           audience={audience}
           reviewRunning={runReview.isPending}
           onReviewExample={(id) => runReview.mutate([id])}

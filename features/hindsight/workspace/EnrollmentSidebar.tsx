@@ -198,6 +198,7 @@ export function EnrollmentSidebar({
 
         <PendingExamplesPanel
           enrollmentId={enrollment.id}
+          subjectKind={enrollment.subject_kind}
           audience="product"
           reviewRunning={runReview.isPending}
           onReviewExample={(id) => runReview.mutate([id])}

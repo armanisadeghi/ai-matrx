@@ -23,18 +23,28 @@ import { cn } from "@/lib/utils";
 
 import { getPendingExamples } from "../api";
 import { exampleDoor, type DoorAudience } from "../subject-doors";
-import type { PendingExample } from "../types";
+import type { PendingExample, SubjectKind } from "../types";
 import { DoorLink } from "./DoorLink";
 import { fmtDate } from "./tokens";
 
+/**
+ * The server's focused-review door (`example_ids`) exists only for these
+ * subject kinds (`fetch_focused_examples` refuses the rest BY NAME). Gating on
+ * the EXAMPLE kind would be wrong: a tool enrollment's examples are
+ * conversations, but focusing one is still refused.
+ */
+const FOCUSABLE_SUBJECT_KINDS: SubjectKind[] = ["agent", "orchestra", "workflow"];
+
 export function PendingExamplesPanel({
   enrollmentId,
+  subjectKind,
   audience,
   onReviewExample,
   reviewRunning,
   className,
 }: {
   enrollmentId: string;
+  subjectKind: SubjectKind;
   audience: DoorAudience;
   /** Runs the focused "review THIS conversation" door for one example id. */
   onReviewExample: (exampleId: string) => void;
@@ -44,13 +54,27 @@ export function PendingExamplesPanel({
   const pending = useQuery({
     queryKey: ["hindsight", "pending-examples", enrollmentId],
     queryFn: () => getPendingExamples(enrollmentId),
+    // "What's pending" tolerates a minute of staleness; the query does real
+    // DB scans server-side and this panel mounts on every enrollment view.
+    staleTime: 60_000,
   });
 
+  // A fetch failure must NOT render as "nothing pending, all settled" — that
+  // silent blank is the exact blind spot this panel exists to close.
+  if (pending.isError) {
+    return (
+      <p className={cn("text-xs text-destructive", className)}>
+        Could not load what the next review would read — the settle-window
+        warning is unavailable right now.
+      </p>
+    );
+  }
   const data = pending.data;
   const examples: PendingExample[] = data?.examples ?? [];
   if (!data || examples.length === 0) return null;
 
   const unsettled = data.unsettled_count ?? 0;
+  const focusable = FOCUSABLE_SUBJECT_KINDS.includes(subjectKind);
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -74,7 +98,6 @@ export function PendingExamplesPanel({
       <div className="space-y-1">
         {examples.map((ex) => {
           const door = ex.id ? exampleDoor(ex.kind, ex.id, audience) : null;
-          const focusable = ex.kind === "conversation" || ex.kind === "wf_run";
           return (
             <div
               key={`${ex.kind}-${ex.id}`}
