@@ -175,7 +175,7 @@ function buildMetadata(input: {
         label: home.label,
       })),
     },
-  } as unknown as Json;
+  };
 }
 
 function shortcuts() {
@@ -253,7 +253,7 @@ export async function createSavedRequest(
     .update({
       description: input.description,
       default_user_input: input.requestText,
-      enabled_features: [] as unknown as Json,
+      enabled_features: [],
       display_mode: "chat-assistant",
       allow_chat: true,
       metadata: buildMetadata(input),

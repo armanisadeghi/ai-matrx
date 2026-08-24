@@ -10118,6 +10118,133 @@
     "title": "PlanCmsFillPreviewData",
     "type": "object"
   },
+  "CmsLogoFoundData": {
+    "additionalProperties": false,
+    "description": "Terminal event of the CMS logo finder (POST\n/content-plan/sites/{id}/find-logo): what was stored, or an honest miss.\n\n``found=False`` is a NORMAL outcome — ``message`` says what was tried and\n``rejected`` lists every downloaded candidate and why it lost, so \"no logo\nfound\" is never a shrug.",
+    "properties": {
+      "type": {
+        "const": "cms_logo_found",
+        "default": "cms_logo_found",
+        "title": "Type",
+        "type": "string"
+      },
+      "site_id": {
+        "title": "Site Id",
+        "type": "string"
+      },
+      "found": {
+        "title": "Found",
+        "type": "boolean"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "asset_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Asset Id"
+      },
+      "asset_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Asset Url"
+      },
+      "source": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Source"
+      },
+      "source_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Source Url"
+      },
+      "width": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Width"
+      },
+      "height": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Height"
+      },
+      "mime_type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Mime Type"
+      },
+      "candidates_considered": {
+        "default": 0,
+        "title": "Candidates Considered",
+        "type": "integer"
+      },
+      "rejected": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Rejected",
+        "type": "array"
+      }
+    },
+    "required": [
+      "site_id",
+      "found",
+      "message"
+    ],
+    "title": "CmsLogoFoundData",
+    "type": "object"
+  },
   "PlanSetupAgentResultData": {
     "additionalProperties": false,
     "description": "Terminal event of the three whole-plan content-plan Setup passes\n(keyword strategy, entity attachment, plan review).\n\nThe COMPLETE proposal is already persisted on\n`web.site.settings.content_plan.*` and on the run's `chat.agent_run` row\nwhen this fires — the client re-reads the site rather than treating this\npayload as the only copy. This event carries just enough to say what\nhappened and where to find it.",

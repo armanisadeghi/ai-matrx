@@ -62,7 +62,7 @@ function mergeMetadata(
     updated_at: new Date().toISOString(),
   };
   return {
-    metadata: { ...handle.metadata, auto_create: progress as unknown as Json },
+    metadata: { ...handle.metadata, auto_create: progress },
     progress,
   };
 }
@@ -136,7 +136,7 @@ export async function createGenerationDraft(
       // This is the one legitimate draft state: the paid generation is not
       // complete yet. finalizeDraft atomically makes it public.
       ...agentAppPublicationPatch(false),
-      metadata: { auto_create: progress as unknown as Json },
+      metadata: { auto_create: progress },
     })
     .select("id, metadata")
     .single();

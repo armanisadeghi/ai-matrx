@@ -267,7 +267,7 @@ function applyTruncation(
       const note = trimmed
         ? `...[showing ${items.length} of ${val.length} items — depth limited]`
         : `...[${val.length} item${val.length !== 1 ? "s" : ""} — depth limited]`;
-      return note as unknown as JsonValue;
+      return note;
     }
 
     const mapped = items.map((item, i) =>
@@ -283,7 +283,7 @@ function applyTruncation(
     if (trimmed) {
       const removed = val.length - items.length;
       mapped.push(
-        `...[${removed} more item${removed !== 1 ? "s" : ""} removed]` as unknown as JsonValue,
+        `...[${removed} more item${removed !== 1 ? "s" : ""} removed]`,
       );
     }
     return mapped;
@@ -292,7 +292,7 @@ function applyTruncation(
   if (val !== null && typeof val === "object") {
     if (depthExceeded) {
       const keys = Object.keys(val as object);
-      return `...{${keys.length} key${keys.length !== 1 ? "s" : ""} — depth limited}` as unknown as JsonValue;
+      return `...{${keys.length} key${keys.length !== 1 ? "s" : ""} — depth limited}`;
     }
     const result: { [k: string]: JsonValue } = {};
     for (const key of Object.keys(val)) {

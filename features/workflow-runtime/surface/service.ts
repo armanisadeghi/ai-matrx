@@ -153,7 +153,7 @@ export async function createSurface(
       schema_version: SURFACE_SCHEMA_VERSION,
       // RunSurfaceConfig is a plain JSON document by construction; the cast
       // bridges TS's structural Json type, not a runtime transformation.
-      config: args.config as unknown as Json,
+      config: args.config,
     })
     .select(SURFACE_COLUMNS)
     .single();
@@ -204,7 +204,7 @@ export async function saveSurfaceConfig(
     applyUpdate: ({ expectedVersion, nextVersion }) =>
       surfaceTable()
         .update({
-          config: args.config as unknown as Json,
+          config: args.config,
           schema_version: SURFACE_SCHEMA_VERSION,
           version: nextVersion,
           ...(args.meta?.name !== undefined ? { name: args.meta.name } : {}),

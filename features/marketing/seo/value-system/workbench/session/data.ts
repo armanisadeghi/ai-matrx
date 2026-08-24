@@ -337,13 +337,13 @@ export async function proposeKeywordMeaning(input: {
 }): Promise<SuggestionReceipt> {
   const response = await (await seoDb()).rpc("keyword_meaning_suggest", {
     p_site_id: input.siteId,
-    p_proposal: input.proposal as unknown as Json,
+    p_proposal: input.proposal,
     p_title: input.title,
     ...(input.body ? { p_body: input.body } : {}),
     ...(input.reasoning ? { p_reasoning: input.reasoning } : {}),
     ...(input.confidence != null ? { p_confidence: input.confidence } : {}),
     ...(input.provenance
-      ? { p_provenance: input.provenance as unknown as Json }
+      ? { p_provenance: input.provenance }
       : {}),
   });
   const rows = assertGoverned(

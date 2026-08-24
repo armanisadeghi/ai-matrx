@@ -14,7 +14,7 @@
  * See `features/data-tables/FEATURE.md`.
  */
 import { supabase } from "@/utils/supabase/client";
-import type { Json } from "@/types/database.types";
+
 import { addColumn } from "@/utils/user-table-utls/table-utils";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import {
@@ -58,7 +58,7 @@ export async function fetchExistingRows(
     },
   );
   if (error) throw error;
-  const rows = unwrapGetUserTableDataPaginatedRows(data as unknown as Json);
+  const rows = unwrapGetUserTableDataPaginatedRows(data);
   return rows.filter(isPaginatedDataRow);
 }
 

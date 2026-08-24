@@ -434,7 +434,7 @@ export async function createShapeFromPlan(
     organization_id: organizationId,
     authoring_owner: "ts",
     // The transform's ordered element list IS the ts-owned source of truth.
-    data: k.data as unknown as Json,
+    data: k.data,
     emitted_block_schema: k.emittedBlockSchema as Json,
     emitted_json_schema: k.emittedJsonSchema as Json,
     emitted_fingerprint: k.emittedFingerprint,

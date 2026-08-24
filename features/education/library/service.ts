@@ -8,7 +8,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import type { Json } from "@/types/database.types";
+
 import type {
   EntityFacets,
   EntityListPage,
@@ -40,7 +40,7 @@ export async function fetchEducationLibraryPage(
     p_search: query.search.trim() || undefined,
     p_sort: sort.sort,
     p_dir: sort.direction,
-    p_filters: query.filters as unknown as Json,
+    p_filters: query.filters,
     p_limit: sort.pageSize,
     p_offset: (query.page - 1) * sort.pageSize,
   });
@@ -54,7 +54,7 @@ export async function fetchEducationLibraryCounts(
 ): Promise<EntityScopeCounts> {
   const { data, error } = await supabase.rpc("edu_library_scope_counts", {
     p_search: query.search.trim() || undefined,
-    p_filters: query.filters as unknown as Json,
+    p_filters: query.filters,
   });
   if (error) throw pgError(error);
   const counts: EntityScopeCounts = { byKind: {}, narrow: {} };

@@ -3993,7 +3993,7 @@ export async function addDiscoveredPublisher(
       sort_rank: input.sortRank,
       organization_id: SYSTEM_ORGANIZATION_ID,
       visibility: "public",
-      metadata: input.metadata as unknown as Json,
+      metadata: input.metadata,
     })
     .select(LISTING_PUBLISHER_COLUMNS)
     .single();

@@ -61,6 +61,7 @@ import { EditHistoryDialog } from "../message-options/EditHistoryDialog";
 import { extractErrorMessage } from "@/utils/errors";
 import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
+import { MessageTimestamp } from "../MessageTimestamp";
 
 // The canonical convert-source dialog (features/education/convert — the ONE
 // dispatch for "turn this content into study artifacts"). Heavy (entitlement
@@ -254,13 +255,7 @@ export function AssistantActionBar({
   // match what the user reads on screen).
   const copySpeakContent = aggregatedContent ?? content;
   const editTarget = useMemo(
-    () =>
-      resolveAssistantEditTarget(
-        groupMessageIds,
-        byId,
-        messageId,
-        content,
-      ),
+    () => resolveAssistantEditTarget(groupMessageIds, byId, messageId, content),
     [groupMessageIds, byId, messageId, content],
   );
 
@@ -390,69 +385,72 @@ export function AssistantActionBar({
             "opacity-0 group-hover/assistant-msg:opacity-100 focus-within:opacity-100",
         )}
       >
-        <TapTargetButtonGroup>
-          <ThumbsUpTapButton
-            variant="group"
-            onClick={() => handleVerdict("positive")}
-            ariaLabel="Like message"
-            className={
-              verdict === "positive"
-                ? "text-green-500 dark:text-green-400"
-                : "text-muted-foreground"
-            }
-          />
-
-          <ThumbsDownTapButton
-            variant="group"
-            onClick={() => handleVerdict("negative")}
-            ariaLabel="Dislike message"
-            className={
-              verdict === "negative"
-                ? "text-red-500 dark:text-red-400"
-                : "text-muted-foreground"
-            }
-          />
-
-          {isCopied ? (
-            <CheckTapButton
+        <div className="flex items-center gap-2">
+          <TapTargetButtonGroup>
+            <ThumbsUpTapButton
               variant="group"
-              onClick={handleCopy}
-              ariaLabel="Copied"
-              className="text-blue-500 dark:text-blue-400"
+              onClick={() => handleVerdict("positive")}
+              ariaLabel="Like message"
+              className={
+                verdict === "positive"
+                  ? "text-green-500 dark:text-green-400"
+                  : "text-muted-foreground"
+              }
             />
-          ) : (
-            <CopyTapButton
+
+            <ThumbsDownTapButton
               variant="group"
-              onClick={handleCopy}
-              ariaLabel="Copy message"
-              className="text-muted-foreground"
+              onClick={() => handleVerdict("negative")}
+              ariaLabel="Dislike message"
+              className={
+                verdict === "negative"
+                  ? "text-red-500 dark:text-red-400"
+                  : "text-muted-foreground"
+              }
             />
-          )}
 
-          <StreamingSpeakerButton
-            text={copySpeakContent}
-            getTextOverride={getSpeakSelection}
-            variant="group"
-          />
-
-          <PencilTapButton
-            variant="group"
-            onClick={handleEdit}
-            ariaLabel="Edit message"
-            className="text-muted-foreground"
-          />
-
-          {showOptions && (
-            <div ref={moreOptionsButtonRef}>
-              <MoreHorizontalTapButton
+            {isCopied ? (
+              <CheckTapButton
                 variant="group"
-                onClick={() => setShowOptionsMenu(true)}
-                ariaLabel="More options"
+                onClick={handleCopy}
+                ariaLabel="Copied"
+                className="text-blue-500 dark:text-blue-400"
+              />
+            ) : (
+              <CopyTapButton
+                variant="group"
+                onClick={handleCopy}
+                ariaLabel="Copy message"
                 className="text-muted-foreground"
               />
-            </div>
-          )}
-        </TapTargetButtonGroup>
+            )}
+
+            <StreamingSpeakerButton
+              text={copySpeakContent}
+              getTextOverride={getSpeakSelection}
+              variant="group"
+            />
+
+            <PencilTapButton
+              variant="group"
+              onClick={handleEdit}
+              ariaLabel="Edit message"
+              className="text-muted-foreground"
+            />
+
+            {showOptions && (
+              <div ref={moreOptionsButtonRef}>
+                <MoreHorizontalTapButton
+                  variant="group"
+                  onClick={() => setShowOptionsMenu(true)}
+                  ariaLabel="More options"
+                  className="text-muted-foreground"
+                />
+              </div>
+            )}
+          </TapTargetButtonGroup>
+          <MessageTimestamp timestamp={record?.createdAt} />
+        </div>
 
         {/* Negative-verdict follow-up strip — renders only while a negative
             verdict exists on this message: [Diagnose] opens the drill-down

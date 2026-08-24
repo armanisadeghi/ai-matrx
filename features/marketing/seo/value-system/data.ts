@@ -292,8 +292,8 @@ export async function saveValueVocabulary(
   const response = await (await seoDb()).rpc("gsc_save_value_vocabulary", {
     p_site_id: siteId,
     p_kind: kind,
-    p_rows: rows as unknown as Json,
-    p_reassign: reassign as unknown as Json,
+    p_rows: rows,
+    p_reassign: reassign,
   });
   return assertGoverned(response.data, response.error, "save that vocabulary") as ValueBandDef[];
 }
@@ -307,7 +307,7 @@ export async function resetValueVocabulary(
   const response = await (await seoDb()).rpc("gsc_reset_value_vocabulary", {
     p_site_id: siteId,
     p_kind: kind,
-    p_reassign: reassign as unknown as Json,
+    p_reassign: reassign,
   });
   return assertGoverned(response.data, response.error, "restore the platform defaults") as ValueBandDef[];
 }
@@ -327,7 +327,7 @@ export async function previewValueBands(
   const response = await (await seoDb())
     .rpc("gsc_value_band_preview", {
       p_site_id: siteId,
-      p_rows: rows as unknown as Json,
+      p_rows: rows,
       p_start: start,
       p_end: end,
     })
@@ -558,10 +558,10 @@ export async function adoptStarterPack(
     site_id: siteId,
     ...(parts && parts.length ? { include: parts } : {}),
     ...(geoPlaces && Object.keys(geoPlaces).length
-      ? { geo_places: geoPlaces as unknown as Json }
+      ? { geo_places: geoPlaces }
       : {}),
     ...(geoPlaceIds && Object.keys(geoPlaceIds).length
-      ? { geo_place_ids: geoPlaceIds as unknown as Json }
+      ? { geo_place_ids: geoPlaceIds }
       : {}),
     ...(itemIds ? { item_ids: itemIds } : {}),
     ...(ruleIds ? { rule_ids: ruleIds } : {}),

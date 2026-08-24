@@ -9,7 +9,7 @@
 // (THE VIEW LAW: a bare RLS-filtered list read is a defect).
 
 import { supabase } from "@/utils/supabase/client";
-import type { Json } from "@/types/database.types";
+
 import type {
   EntityFacets,
   EntityListPage,
@@ -41,7 +41,7 @@ export async function fetchInboxListPage(
     p_deep: query.deep,
     p_sort: sort.sort,
     p_dir: sort.direction,
-    p_filters: query.filters as unknown as Json,
+    p_filters: query.filters,
     p_limit: sort.pageSize,
     p_offset: (query.page - 1) * sort.pageSize,
   });
@@ -58,7 +58,7 @@ export async function fetchInboxScopeCounts(
   const { data, error } = await supabase.rpc("crm_inbox_list_scope_counts", {
     p_search: query.search.trim() || undefined,
     p_deep: query.deep,
-    p_filters: query.filters as unknown as Json,
+    p_filters: query.filters,
   });
 
   if (error) throw pgError(error);

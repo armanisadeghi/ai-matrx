@@ -16,7 +16,6 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { makeAssertData } from "@/utils/errors";
-import type { Json } from "@/types/database.types";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -86,8 +85,73 @@ export async function setValueSettings(input: {
     ...(input.baseline === undefined || input.baseline === null
       ? {}
       : { p_baseline: input.baseline }),
-    ...(input.levels === undefined ? {} : { p_levels: input.levels as unknown as Json }),
+    ...(input.levels === undefined ? {} : { p_levels: input.levels }),
     p_clear: input.clear ?? [],
   });
   return assertData(response.data, response.error) as unknown as ValueSettingsScopePayload;
+}
+
+// ── Copying meaning to a sibling site (KI-043) ──────────────────────────────
+// Meaning belongs to the SITE and is never inherited from a brand or an org.
+// Where two sites of one business genuinely share it, this copies it ONCE, on
+// demand, additively — it never overwrites what the target already decided.
+
+export interface MeaningCopySource {
+  site_id: string;
+  label: string;
+  domain: string | null;
+  same_brand: boolean;
+  /** How much meaning this site has to give — matchers + worth + geo + topics. */
+  meaning_rows: number;
+}
+
+export type MeaningCopyPart =
+  | "matchers"
+  | "worth"
+  | "geo"
+  | "topics"
+  | "combos"
+  | "guidelines";
+
+export interface MeaningCopyResult {
+  dry_run: boolean;
+  from: { id: string; label: string };
+  to: { id: string; label: string };
+  parts: Array<{
+    part: MeaningCopyPart;
+    copied: number;
+    skipped_existing: number;
+  }>;
+  total_copied: number;
+  total_skipped: number;
+  next_step: string;
+}
+
+export async function getMeaningCopySources(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<MeaningCopySource[]> {
+  const response = await (await seoDb())
+    .rpc("site_meaning_copy_sources", { p_to_site: siteId })
+    .abortSignal(signal ?? new AbortController().signal);
+  return (assertData(response.data, response.error) ?? []) as MeaningCopySource[];
+}
+
+/**
+ * `dryRun` walks the identical server path and rolls back, so the preview can
+ * never disagree with what the write actually does.
+ */
+export async function copySiteMeaning(input: {
+  fromSiteId: string;
+  toSiteId: string;
+  parts: MeaningCopyPart[];
+  dryRun: boolean;
+}): Promise<MeaningCopyResult> {
+  const response = await (await seoDb()).rpc("site_meaning_copy", {
+    p_from_site: input.fromSiteId,
+    p_to_site: input.toSiteId,
+    p_parts: input.parts,
+    p_dry_run: input.dryRun,
+  });
+  return assertData(response.data, response.error) as unknown as MeaningCopyResult;
 }

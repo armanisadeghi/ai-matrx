@@ -38,7 +38,7 @@ function pgError(error: { message?: string; code?: string }): Error {
 
 /** The filter bag as the RPC wants it. Empty object = no column filters. */
 function filtersJson(query: EntityListQuery): Json {
-  return query.filters as unknown as Json;
+  return query.filters;
 }
 
 export async function fetchWorkflowBrowsePage(

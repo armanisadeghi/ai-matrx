@@ -27,7 +27,7 @@ import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage, makeAssertData } from "@/utils/errors";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
-import type { Json } from "@/types/database.types";
+
 import type {
   FacetDimension,
   GeoAreaDraft,
@@ -229,7 +229,7 @@ export async function previewGeoArea(
       p_site_id: input.siteId,
       p_start: input.start,
       p_end: input.end,
-      p_tokens: input.tokens as unknown as Json,
+      p_tokens: input.tokens,
       p_place_ids: input.placeIds,
       p_geo_band: input.geoBand,
       p_area_id: input.areaId ?? undefined,
@@ -253,7 +253,7 @@ function geoAreaWriteColumns(draft: GeoAreaDraft, siteId: string) {
     site_id: siteId,
     label: draft.label.trim(),
     area_kind: draft.areaKind,
-    match_tokens: draft.tokens as unknown as Json,
+    match_tokens: draft.tokens,
     place_ids: draft.placeIds,
     // C10 — the binding a human made. Written as an empty array rather than
     // NULL so "unbound" is a state the row states, not one it omits.

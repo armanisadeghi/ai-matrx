@@ -101,7 +101,7 @@ export interface PackCorePatch {
 
 export async function savePack(patch: PackCorePatch): Promise<AdminPackRecord> {
   const response = await (await seoDb()).rpc("starter_pack_save", {
-    p_pack: patch as unknown as Json,
+    p_pack: patch,
   });
   return assertData(response.data, response.error, "save the pack") as unknown as AdminPackRecord;
 }
@@ -151,7 +151,7 @@ export interface PackItemPatch {
 
 export async function savePackItem(item: PackItemPatch): Promise<Record<string, unknown>> {
   const response = await (await seoDb()).rpc("starter_pack_item_save", {
-    p_item: item as unknown as Json,
+    p_item: item,
   });
   return assertData(response.data, response.error, "save the pack item") as Record<string, unknown>;
 }
@@ -178,7 +178,7 @@ export interface PackRulePatch {
 
 export async function savePackRule(rule: PackRulePatch): Promise<Record<string, unknown>> {
   const response = await (await seoDb()).rpc("starter_pack_rule_save", {
-    p_rule: rule as unknown as Json,
+    p_rule: rule,
   });
   return assertData(response.data, response.error, "save the rule") as Record<string, unknown>;
 }
@@ -261,9 +261,9 @@ export async function packFromProposal(input: {
   sourceSiteIds?: string[];
 }): Promise<AdminPackRecord> {
   const response = await (await seoDb()).rpc("starter_pack_from_proposal", {
-    p_proposal: input.proposal as unknown as Json,
+    p_proposal: input.proposal,
     ...(input.industryId ? { p_industry_id: input.industryId } : {}),
-    ...(input.sourceCorpus ? { p_source_corpus: input.sourceCorpus as unknown as Json } : {}),
+    ...(input.sourceCorpus ? { p_source_corpus: input.sourceCorpus } : {}),
     ...(input.sourceSiteIds?.length ? { p_source_site_ids: input.sourceSiteIds } : {}),
   });
   return assertData(response.data, response.error, "land the proposal as a draft pack") as unknown as AdminPackRecord;

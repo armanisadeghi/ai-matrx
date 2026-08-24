@@ -36,7 +36,7 @@ function pgError(error: { message?: string; code?: string }): Error {
 }
 
 function filtersJson(query: EntityListQuery): Json {
-  return query.filters as unknown as Json;
+  return query.filters;
 }
 
 export async function fetchConversationPage(

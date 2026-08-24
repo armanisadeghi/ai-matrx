@@ -412,7 +412,7 @@ export const studyService = {
         if (artifact.kind === "progressNarrative") {
           return {
             ...current,
-            ai: { ...ai, progressNarrative: artifact.entry as unknown as Json },
+            ai: { ...ai, progressNarrative: artifact.entry },
           };
         }
         // The review-run handle is a POINTER to one run, not a log — a second
@@ -420,7 +420,7 @@ export const studyService = {
         if (artifact.kind === "reviewRun") {
           return {
             ...current,
-            ai: { ...ai, reviewRun: artifact.entry as unknown as Json },
+            ai: { ...ai, reviewRun: artifact.entry },
           };
         }
         const key = artifact.kind === "coachTip" ? "coachTips" : "helpAnswers";
@@ -431,7 +431,7 @@ export const studyService = {
             ...ai,
             // Capped: a long sitting must not grow the row without bound. The
             // newest N are what any surface reads back.
-            [key]: [...prior, artifact.entry as unknown as Json].slice(
+            [key]: [...prior, artifact.entry].slice(
               -SESSION_JOURNAL_CAP,
             ),
           },

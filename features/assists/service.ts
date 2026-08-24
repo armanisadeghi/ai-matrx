@@ -130,7 +130,7 @@ export async function emitAssist(
     source_key: input.sourceKey,
     title: input.title,
     body: input.body ?? null,
-    action: input.action as unknown as Json,
+    action: input.action,
     surface_name: input.surfaceName ?? null,
     entity_type: input.entityType ?? null,
     entity_id: input.entityId ?? null,

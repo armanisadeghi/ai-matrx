@@ -442,6 +442,22 @@ export interface ClaudeManagedWarningData {
   session_id: string;
 }
 
+export interface CmsLogoFoundData {
+  type?: "cms_logo_found";
+  site_id: string;
+  found: boolean;
+  message: string;
+  asset_id?: string | null;
+  asset_url?: string | null;
+  source?: string | null;
+  source_url?: string | null;
+  width?: number | null;
+  height?: number | null;
+  mime_type?: string | null;
+  candidates_considered?: number;
+  rejected?: string[];
+}
+
 export interface ContextChangedData {
   type?: "context_changed";
   key: string;
@@ -1702,6 +1718,7 @@ export type TypedDataPayload =
   | CategorizationResultData
   | ClaudeManagedSdkMessageData
   | ClaudeManagedWarningData
+  | CmsLogoFoundData
   | ContextChangedData
   | ContextConflictData
   | ContextDeltaData

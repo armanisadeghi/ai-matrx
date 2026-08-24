@@ -9,6 +9,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { isJsonObject } from "@/types/json";
 import type { OrgRole } from "../types";
 import type {
   OrgAdminAuditEntry,
@@ -21,7 +22,9 @@ import type {
   ReassignResult,
 } from "./types";
 
-type Json = Record<string, unknown>;
+function asRecord(data: unknown): Record<string, unknown> {
+  return isJsonObject(data) ? data : {};
+}
 
 function num(v: unknown): number {
   const n = typeof v === "number" ? v : Number(v ?? 0);
@@ -75,7 +78,7 @@ export async function listOrgMembers(orgId: string): Promise<OrgAdminMember[]> {
 export async function getOrgOverview(orgId: string): Promise<OrgAdminOverview> {
   const { data, error } = await supabase.rpc("org_admin_overview", { p_org_id: orgId });
   if (error) throw pgErrorToError(error);
-  const o = (data ?? {}) as unknown as Json;
+  const o = asRecord(data);
   return {
     totalMembers: num(o.total_members),
     admins: num(o.admins),
@@ -97,7 +100,7 @@ export async function getOrgMember(orgId: string, userId: string): Promise<OrgAd
     p_user_id: userId,
   });
   if (error) throw pgErrorToError(error);
-  const row = (data ?? {}) as unknown as Record<string, unknown>;
+  const row = asRecord(data);
   if (!row.user_id) {
     throw recordUnavailable({
       entity: "member",
@@ -191,7 +194,7 @@ export async function removeMember(
     p_reassign_to: reassignTo ?? undefined,
   });
   if (error) throw pgErrorToError(error);
-  const out = (data ?? {}) as unknown as Json;
+  const out = asRecord(data);
   const reassigned = Array.isArray(out.reassigned)
     ? (out.reassigned as Record<string, unknown>[]).map((row) => ({
         resourceType: row.resource_type as string,
@@ -220,7 +223,7 @@ export async function listOrgAdminAudit(
       targetUserId: (row.target_user_id as string) ?? null,
       targetEmail: (row.target_email as string) ?? null,
       action: row.action as string,
-      detail: (row.detail as Record<string, unknown>) ?? {},
+      detail: asRecord(row.detail),
       createdAt: row.created_at as string,
     };
   });

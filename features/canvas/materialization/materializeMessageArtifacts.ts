@@ -17,7 +17,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import type { Json } from "@/types/database.types";
+
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
 import { materializeBlocks, type PersistRewrite } from "./materializeBlocks";
 
@@ -63,7 +63,7 @@ export function cxMessageContentRewriter(messageId: string): PersistRewrite {
     }
     const { error } = await supabase.rpc("cx_message_set_content", {
       p_message_id: messageId,
-      p_new_content: rewritten as unknown as Json,
+      p_new_content: rewritten,
     });
     if (!error) return { ok: true };
     if (error.message?.includes(TOOL_GRAPH_GUARD)) {

@@ -220,7 +220,7 @@ export async function saveSiteMediaStandards(input: {
       slots: input.standards.slots,
       notes: input.standards.notes,
     },
-  } as unknown as Json;
+  };
   const response = await db
     .from("site")
     .update({ settings: nextSettings })

@@ -559,7 +559,7 @@ function proofJson(items: readonly ProofSeed[], malformed = 0): Json {
   const broken = Array.from({ length: malformed }, (_, index) => ({
     legacy_requirement_id: index + 1,
   }));
-  return [...parsed, ...broken] as unknown as Json;
+  return [...parsed, ...broken];
 }
 
 function gapJson(items: readonly GapSeed[]): Json {
@@ -569,7 +569,7 @@ function gapJson(items: readonly GapSeed[]): Json {
     how_to_get,
     owner,
     effort,
-  })) as unknown as Json;
+  }));
 }
 
 function evidenceJson(items: readonly EvidenceSeed[], now: number): Json {
@@ -579,7 +579,7 @@ function evidenceJson(items: readonly EvidenceSeed[], now: number): Json {
     source,
     url,
     captured_at: new Date(now - (index + 2) * DAY).toISOString(),
-  })) as unknown as Json;
+  }));
 }
 
 function buildAngles(now: number): StoryAngle[] {
@@ -611,19 +611,19 @@ function buildAngles(now: number): StoryAngle[] {
       evidence_quality: evidenceQuality,
       recommended_action: seed.action,
       action_reason: seed.actionReason,
-      facts: seed.facts.map((statement) => ({ statement })) as unknown as Json,
-      inferences: [] as unknown as Json,
+      facts: seed.facts.map((statement) => ({ statement })),
+      inferences: [],
       evidence_refs: evidenceJson(seed.evidence, now),
       proof_required: proofJson(seed.proof, seed.malformedProof ?? 0),
       missing_evidence: gapJson(seed.missing),
       contradictions: (seed.contradictions ?? []).map(([statement, detail]) => ({
         statement,
         detail,
-      })) as unknown as Json,
-      analysis: {} as unknown as Json,
+      })),
+      analysis: {},
       human_ruling: (seed.humanRuled
         ? { ruled_action: seed.action, note: seed.actionReason }
-        : {}) as unknown as Json,
+        : {}),
       evidence_fingerprint: null,
       analysis_version: "sample",
       // Backend fact 1: anything that is not `pitch_now` came back needing a
@@ -644,7 +644,7 @@ function buildAngles(now: number): StoryAngle[] {
       updated_at: analyzedAt,
       deleted_at: null,
       version: 1,
-      metadata: {} as unknown as Json,
+      metadata: {},
       visibility: "internal",
     } satisfies StoryAngle;
   });
@@ -807,7 +807,7 @@ function buildRequests(now: number, angles: readonly StoryAngle[]): SourceReques
     beat: seed.beat,
     requirements: seed.requirements.map((text) => ({
       label: text,
-    })) as unknown as Json,
+    })),
     deadline_at: iso(now + seed.hoursOut * HOUR),
     match_score: seed.matchScore,
     match_reason: seed.matchReason,
@@ -822,7 +822,7 @@ function buildRequests(now: number, angles: readonly StoryAngle[]): SourceReques
     updated_at: iso(now - 2 * HOUR),
     deleted_at: null,
     version: 1,
-    metadata: {} as unknown as Json,
+    metadata: {},
     visibility: "internal",
   })) satisfies SourceRequest[];
 }
@@ -905,14 +905,14 @@ function buildCoverage(now: number, angles: readonly StoryAngle[]): CoverageMent
       capture_status: "captured",
       alerted_at: null,
       analyzed_at: publishedAt,
-      analysis: {} as unknown as Json,
+      analysis: {},
       links_to_site: seed.linksToSite,
       link_urls: seed.linksToSite ? ["https://allgreenrecycling.com/"] : [],
       sentiment: "positive",
       sentiment_score: 72,
       prominence: seed.prominence,
       prominence_score: seed.prominenceScore,
-      topics: [{ label: "ITAD" }] as unknown as Json,
+      topics: [{ label: "ITAD" }],
       key_quote: seed.quote,
       is_competitor: false,
       competitor_key: null,
@@ -922,7 +922,7 @@ function buildCoverage(now: number, angles: readonly StoryAngle[]): CoverageMent
       outcome_event_id: null,
       external_id: null,
       language: "en",
-      source_capture: {} as unknown as Json,
+      source_capture: {},
       created_at: publishedAt,
       updated_at: publishedAt,
       deleted_at: null,
@@ -933,7 +933,7 @@ function buildCoverage(now: number, angles: readonly StoryAngle[]): CoverageMent
       metadata: {
         story_angle_id:
           seed.angleIndex === null ? null : (angles[seed.angleIndex]?.id ?? null),
-      } as unknown as Json,
+      },
     } satisfies CoverageMention;
   });
 }

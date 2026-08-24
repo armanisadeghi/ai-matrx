@@ -15,7 +15,6 @@
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
-import type { Json } from "@/types/database.types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Contract types — mirror the agent payload exactly
@@ -211,7 +210,7 @@ export async function createProjectFromJson(
     const resolvedOrganizationId = await ensureOrgId(organizationId);
 
     const { data, error } = await supabase.rpc("create_project_from_json", {
-      p_payload: payload as unknown as Json,
+      p_payload: payload,
       p_organization_id: resolvedOrganizationId,
     });
 

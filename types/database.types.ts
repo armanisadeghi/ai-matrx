@@ -54733,6 +54733,25 @@ export type Database = {
           workflow_status: string
         }[]
       }
+      site_meaning_copy: {
+        Args: {
+          p_dry_run?: boolean
+          p_from_site: string
+          p_parts?: string[]
+          p_to_site: string
+        }
+        Returns: Json
+      }
+      site_meaning_copy_sources: {
+        Args: { p_to_site: string }
+        Returns: {
+          domain: string
+          label: string
+          meaning_rows: number
+          same_brand: boolean
+          site_id: string
+        }[]
+      }
       site_value_worth_upsert: {
         Args: {
           p_amount?: number

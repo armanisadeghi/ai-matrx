@@ -19,7 +19,6 @@
 //      and a member with no dialable number is marked `suppressed`, never
 //      silently dialed.
 
-import type { Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
@@ -369,7 +368,7 @@ export async function addMembersByPartyIds(args: {
       organization_id: args.list.organization_id,
       contact_point_id: contactPoints.get(partyId) ?? null,
       ...(args.metadata && Object.keys(args.metadata).length
-        ? { metadata: args.metadata as unknown as Json }
+        ? { metadata: args.metadata }
         : {}),
     }));
     const { error } = await crm().from("outreach_list_member").insert(batch);

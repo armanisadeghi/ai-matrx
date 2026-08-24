@@ -362,9 +362,9 @@ export async function bindAgentToSurface(
     metadata,
     payloadKind: "surface_binding",
     payload: {
-      value_mappings: valueMappings as unknown as Json,
+      value_mappings: valueMappings,
       ...(writePolicies && Object.keys(writePolicies).length > 0
-        ? { write_policies: writePolicies as unknown as Json }
+        ? { write_policies: writePolicies }
         : {}),
     },
   });

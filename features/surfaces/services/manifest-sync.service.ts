@@ -251,7 +251,7 @@ function manifestClientToolRowFor(
     name: t.name,
     label: t.label,
     description: t.description,
-    input_schema: t.inputSchema as unknown as Json,
+    input_schema: t.inputSchema,
     // Omitted mode reads as "ui" (ephemeral view state) — the safe reading,
     // written explicitly so a tool never drifts into a stronger mode by
     // omission. Matches the DB column default.
@@ -1149,7 +1149,7 @@ export async function remediateBrokenMapping(
     .from("associations")
     .update({
       payload_kind: "surface_binding",
-      payload: { ...payload, value_mappings: next } as unknown as Json,
+      payload: { ...payload, value_mappings: next },
     })
     .eq("id", bindingId);
   if (writeErr) throw writeErr;
@@ -1429,7 +1429,7 @@ export async function applyManifestSync(
           client_name: clientName ?? "matrx-user",
           description: "",
           label: m.label,
-          value_groups: (m.groups ?? []) as unknown as Json,
+          value_groups: (m.groups ?? []),
           ...(urlPattern ? { url_pattern: urlPattern } : {}),
           ...(m.intro?.trim() ? { intro: m.intro.trim() } : {}),
         };
@@ -1544,7 +1544,7 @@ export async function applyManifestSync(
       .from("ui_surface")
       .update({
         label: manifest.label,
-        value_groups: (manifest.groups ?? []) as unknown as Json,
+        value_groups: (manifest.groups ?? []),
         readiness: manifest.readiness,
         readiness_note: manifest.readinessNote ?? null,
         ...(manifest.overlayId ? { overlay_id: manifest.overlayId } : {}),

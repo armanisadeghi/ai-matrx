@@ -7,6 +7,7 @@
  */
 
 import { useParams } from "next/navigation";
+import { CopyMeaningFromSite } from "@/features/marketing/seo/value-system/settings/CopyMeaningFromSite";
 import { ValueSettingsEditor } from "@/features/marketing/seo/value-system/settings/ValueSettingsEditor";
 
 export default function SiteValueSettingsPage() {
@@ -15,7 +16,10 @@ export default function SiteValueSettingsPage() {
   if (!siteId) return null;
   return (
     <div className="h-full overflow-y-auto p-4">
-      <ValueSettingsEditor scope="site" id={siteId} className="mx-auto max-w-4xl" />
+      <div className="mx-auto max-w-4xl space-y-4">
+        <ValueSettingsEditor scope="site" id={siteId} />
+        <CopyMeaningFromSite siteId={siteId} />
+      </div>
     </div>
   );
 }

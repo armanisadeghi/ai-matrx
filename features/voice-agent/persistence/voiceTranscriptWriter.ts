@@ -120,7 +120,7 @@ export async function ensureConversation(
     // and the xAI Realtime model isn't registered there. The model slug lives
     // in metadata.voice.model above.
     metadata: { voice: metadataVoice } as Json,
-    overrides: { tools: opts.tools } as unknown as Json,
+    overrides: { tools: opts.tools },
     message_count: 0,
   };
 
@@ -185,7 +185,7 @@ export async function persistTurns(
           : PERSISTENCE_MESSAGE_SOURCE_ASSISTANT,
       content: [
         { type: "text", text: turn.text || "" },
-      ] as unknown as Json,
+      ],
       // Voice-turn metadata now lives in the dedicated top-level `voice` jsonb
       // column on cx_message (was previously nested under `metadata.voice`).
       voice: voiceMeta as Json,

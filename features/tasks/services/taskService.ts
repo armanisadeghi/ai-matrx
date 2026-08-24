@@ -76,9 +76,9 @@ export interface TaskReminder {
   channel?: "inapp" | "email" | "sms";
 }
 
-/** Boundary cast: TaskReminder[] is structurally valid Json. */
+/** Json is `unknown` — a reminder list is already assignable. */
 function toJson(reminders: TaskReminder[]): Json {
-  return reminders as unknown as Json;
+  return reminders;
 }
 
 export interface CreateTaskOptions {

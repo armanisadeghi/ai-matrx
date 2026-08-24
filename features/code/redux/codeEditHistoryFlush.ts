@@ -24,7 +24,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
 import { createClient } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
-import type { Json } from "@/types/database.types";
+
 import {
   markPersisted,
   markWriteError,
@@ -174,7 +174,7 @@ export function flushHistoryThunk(
             run: async () => {
               const { data, error } = await supabase.rpc(
                 "cx_code_history_upsert",
-                { p_payload: payload as unknown as Json },
+                { p_payload: payload },
               );
               if (error) throw error;
               const response = data as unknown as RpcResponse | null;

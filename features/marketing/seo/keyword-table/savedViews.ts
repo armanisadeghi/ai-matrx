@@ -110,7 +110,7 @@ export async function saveView(input: {
   const response = await (await seoDb()).rpc("gsc_save_view", {
     p_site_id: input.siteId,
     p_name: input.name,
-    p_state: input.state as unknown as Json,
+    p_state: input.state,
     p_surface: input.surface ?? KEYWORD_WORKBENCH_VIEW_SURFACE,
     ...(input.id ? { p_id: input.id } : {}),
     ...(input.position != null ? { p_position: input.position } : {}),
