@@ -17,12 +17,15 @@ import {
   getGscClassMovers,
   getGscClassSummary,
   getGscKeywordClassesByText,
+  getGscKeywordValueFor,
   getGscPageClassSummary,
   getGscCtrGap,
   getGscJuice,
   getGscShifts,
   getGscTrend,
+  type GscKeywordValueRow,
 } from "@/features/marketing/search-console/data-insights";
+import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/normalize";
 import type {
   GscBreakdownQuery,
   GscFilters,
@@ -246,13 +249,24 @@ export function useGscClassSummary(
   });
 }
 
-export function useGscKeywordClasses(
+/**
+ * C6/P28 — Class · Score · Level for a set of RAW QUERY STRINGS, keyed by
+ * normalized phrase. Surfaces that only have GSC query text (no `keyword_id`
+ * on the row — the `search_performance_daily` readers on the page workspace
+ * and the reports dashboard) still resolve through the ONE stamp resolver
+ * (`gsc_keyword_value_for`), not a re-derived local class. Two RPC round
+ * trips, not two data paths: `gsc_keyword_class_by_text` only resolves TEXT
+ * to `keyword_id` (there is no by-text stamp RPC), then every stamp — Class,
+ * Score, Level, the receipt — comes from the same resolver every other
+ * keyword table on the platform uses.
+ */
+export function useGscKeywordValueByText(
   siteId: string | null,
   queries: readonly string[],
 ) {
   const queryKey = [...queries].sort().join("\u0000");
-  return useQuery({
-    queryKey: ["marketing", "gsc", "keyword-classes-by-text", siteId, queryKey],
+  const ids = useQuery({
+    queryKey: ["marketing", "gsc", "keyword-ids-by-text", siteId, queryKey],
     queryFn: ({ signal }) => {
       if (!siteId) throw new Error("No site selected");
       return getGscKeywordClassesByText(siteId, queries, signal);
@@ -260,6 +274,34 @@ export function useGscKeywordClasses(
     enabled: !!siteId && queries.length > 0,
     staleTime: STALE_MS,
   });
+
+  const keywordIds = (ids.data ?? []).map((row) => row.keyword_id);
+  const idsKey = [...keywordIds].sort().join("\u0000");
+
+  const values = useQuery({
+    queryKey: ["marketing", "gsc", "keyword-value-by-text", siteId, idsKey],
+    queryFn: ({ signal }) => {
+      if (!siteId) throw new Error("No site selected");
+      return getGscKeywordValueFor(siteId, keywordIds, signal);
+    },
+    enabled: !!siteId && keywordIds.length > 0,
+    staleTime: STALE_MS,
+  });
+
+  const byQuery = new Map<string, GscKeywordValueRow>();
+  for (const row of ids.data ?? []) {
+    const value = values.data?.get(row.keyword_id);
+    if (value) byQuery.set(normalizeKeywordPhrase(row.query), value);
+  }
+
+  return {
+    data: byQuery,
+    /** The raw text→id resolution, for a caller that also needs it verbatim. */
+    ids: ids.data,
+    isLoading: ids.isLoading || values.isLoading,
+    isError: ids.isError || values.isError,
+    error: ids.error ?? values.error,
+  };
 }
 
 export function useGscClassMovers(

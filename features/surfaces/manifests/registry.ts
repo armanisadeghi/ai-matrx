@@ -158,6 +158,8 @@ import { feedbackManifest } from "./feedback.manifest";
 import { markdownEditorManifest } from "./markdown-editor.manifest";
 import { listManagerManifest } from "./list-manager.manifest";
 import { canvasViewerManifest } from "./canvas-viewer.manifest";
+import { tableViewerManifest } from "./table-viewer.manifest";
+import { documentsWorkspaceManifest } from "./documents-workspace.manifest";
 import { voicePadManifest } from "./voice-pad.manifest";
 import { transcriptStudioManifest } from "./transcript-studio.manifest";
 import { observationalMemoryManifest } from "./observational-memory.manifest";
@@ -368,6 +370,8 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   markdownEditorManifest,
   listManagerManifest,
   canvasViewerManifest,
+  tableViewerManifest,
+  documentsWorkspaceManifest,
   voicePadManifest,
   transcriptStudioManifest,
   observationalMemoryManifest,

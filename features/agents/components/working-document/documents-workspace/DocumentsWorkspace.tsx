@@ -30,6 +30,11 @@ import {
   type ContextMenuExtraSection,
   type ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  DOCUMENTS_WORKSPACE_SURFACE_NAME,
+  createDocumentsWorkspaceScope,
+} from "@/features/surfaces/manifests/documents-workspace.manifest";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
@@ -313,6 +318,48 @@ export function DocumentsWorkspace({
   const [clickedTabKey, setClickedTabKey] = useState<string | null>(null);
   const clickedTab = tabs.find((t) => tabKey(t) === clickedTabKey) ?? null;
 
+  // ── The shell's OWN surface (`matrx-user/documents-workspace`) ───────────
+  // Wiring a menu was only half the fix: with no `surfaceName` the menu's
+  // surface submenu and bound-agent resolution still fell through to
+  // `detectActiveSurface()`, which reads the pathname — so inside the floating
+  // `workingDocumentWindow` it named the page underneath. This shell could not
+  // borrow the working-document/scratchpad manifest either: those declare the
+  // document's PARTS, which the strip cannot emit, and the value-mapping guard
+  // would (rightly) scream. So the shell declares its own list-shaped
+  // vocabulary and emits it here.
+  //
+  // ONE builder, both consumers: the provider below (header Agents Run) and the
+  // tab-strip menu. Reads the store at trigger time, never stale state.
+  const buildScope = () => {
+    const activeTab = tabs.find((t) => tabKey(t) === activeKey) ?? tabs[0];
+    const activeTitle = activeTab.label ?? kindLabel(activeTab.kind);
+    const body = selectWorkingDocContent(
+      activeTab.conversationId,
+      activeTab.kind,
+    )(store.getState());
+    return createDocumentsWorkspaceScope({
+      open_documents: tabs.map((t) => ({
+        title: t.label ?? kindLabel(t.kind),
+        kind: t.kind,
+        document_id: t.documentId ?? null,
+        closable: t.closable,
+      })),
+      open_document_count: tabs.length,
+      rail_open: railOpen,
+      active_document_title: activeTitle,
+      active_document_kind: activeTab.kind,
+      active_document_scope: activeTab.conversationId,
+      active_document_id: activeTab.documentId,
+      active_document_content: body.trim() ? body : undefined,
+      conversation_id: conversationId,
+      active_scratchpad_id: activeScratchId ?? undefined,
+      context: {
+        surface: "documents workspace",
+        viewing: activeTitle,
+      },
+    });
+  };
+
   const tabSection: ContextMenuExtraSection = {
     id: "documents-workspace",
     label: "Documents",
@@ -367,6 +414,16 @@ export function DocumentsWorkspace({
   };
 
   return (
+    // The shell's emitter. The active tab's editor mounts its OWN provider for
+    // `matrx-user/working-document` / `matrx-user/scratchpad` deeper in this
+    // tree, and deepest wins by design — inside the text, the text's surface is
+    // the right answer. This one is the shell's honest declaration and the
+    // fallback whenever no editor is mounted.
+    <SurfaceRuntimeProvider
+      surfaceName={DOCUMENTS_WORKSPACE_SURFACE_NAME}
+      getScope={buildScope}
+      isEditable={false}
+    >
     <div className={cn("flex h-full min-h-0", className)}>
       {railOpen && (
         <DocumentsListRail
@@ -385,8 +442,12 @@ export function DocumentsWorkspace({
         {/* Tab strip — the shell pane that mounts its own context menu. */}
         <NonEditableContextMenu
           sourceFeature="working-document"
+          surfaceName={DOCUMENTS_WORKSPACE_SURFACE_NAME}
           contentSource={{ type: "raw" }}
-          contextData={{ content: "" }}
+          // The manifest's values, and deliberately NOT `getApplicationScope`:
+          // that wins outright over the per-tab merge below
+          // (`value-resolution.ts`) and would erase the right-clicked tab.
+          contextData={buildScope()}
           resolveContextOnOpen={(target): ResolvedContextMenuContext | null => {
             const key =
               target
@@ -519,5 +580,6 @@ export function DocumentsWorkspace({
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

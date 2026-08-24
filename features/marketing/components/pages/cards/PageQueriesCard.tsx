@@ -27,8 +27,8 @@ import { useUpdatePageIntent } from "@/features/marketing/data/hooks";
 import { usePageTopQueries } from "@/features/marketing/seo/keyword/hooks";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import type { MarketingPage } from "@/features/marketing/types";
-import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
-import { useGscKeywordClasses } from "@/features/marketing/search-console/hooks/useGscQuery";
+import { useGscKeywordValueByText } from "@/features/marketing/search-console/hooks/useGscQuery";
+import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 
 export function PageQueriesCard({ page }: { page: MarketingPage }) {
@@ -40,16 +40,23 @@ export function PageQueriesCard({ page }: { page: MarketingPage }) {
   const [adopting, setAdopting] = useState<string | null>(null);
 
   const rows = queries.data ?? [];
-  const queryClasses = useGscKeywordClasses(
+  const keywordValues = useGscKeywordValueByText(
     site.id,
     rows.map((row) => row.query),
   );
-  const classByQuery = new Map(
-    (queryClasses.data ?? []).map((row) => [
-      normalizeKeywordPhrase(row.query),
-      row.traffic_class,
-    ]),
-  );
+  // KI-026 — Class · Score · Level for exactly the queries on screen, from the
+  // ONE resolver (`gsc_keyword_value_for`). Reuses the shared column-def
+  // cells (`buildGscValueColumns`) rather than re-deriving a chip locally —
+  // this list has no `MatrxDataTable`, so the cells render inline instead of
+  // as table columns, but they are the SAME cells the Queries breakdown, Dig
+  // Here, and the site performance tab already use.
+  const [classCol, scoreCol, levelCol] = buildGscValueColumns<
+    (typeof rows)[number]
+  >((row) => keywordValues.data.get(normalizeKeywordPhrase(row.query)), {
+    siteId: site.id,
+    brandId,
+    keywordOf: (row) => row.query,
+  });
 
   const adopt = async (query: string) => {
     setAdopting(query);
@@ -123,12 +130,11 @@ export function PageQueriesCard({ page }: { page: MarketingPage }) {
             <span className="min-w-0 flex-1 basis-52 truncate text-xs text-foreground">
               {row.query}
             </span>
-            <ClassChip
-              trafficClass={
-                classByQuery.get(normalizeKeywordPhrase(row.query)) ??
-                "unclassified"
-              }
-            />
+            <span className="flex shrink-0 items-center gap-1">
+              {classCol.cell?.(row, 0)}
+              {scoreCol.cell?.(row, 0)}
+              {levelCol.cell?.(row, 0)}
+            </span>
             <span className="shrink-0 tabular-nums text-[11px] text-muted-foreground">
               {row.clicks} clicks · {row.impressions.toLocaleString()} impr
               {row.position === null ? "" : ` · pos ${row.position.toFixed(1)}`}

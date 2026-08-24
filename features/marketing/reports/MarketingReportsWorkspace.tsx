@@ -27,7 +27,6 @@ import { humanLines, webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
 import { GscPortfolioClassBar } from "@/features/marketing/search-console/components/ambassador/GscPortfolioClassBar";
-import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
 import {
   SiteSwitcher,
   siteHasGscBinding,
@@ -37,9 +36,10 @@ import {
   useGscBreakdown,
   useGscClassSummary,
   useGscFreshness,
-  useGscKeywordClasses,
+  useGscKeywordValueByText,
   useGscSummary,
 } from "@/features/marketing/search-console/hooks/useGscQuery";
+import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
 import { formatGscWindow } from "@/features/marketing/search-console/lib/format";
 import {
   resolveGscDataThrough,

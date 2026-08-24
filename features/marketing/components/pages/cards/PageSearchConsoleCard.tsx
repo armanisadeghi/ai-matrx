@@ -41,8 +41,8 @@ import {
 import type { PageQueryStat } from "@/features/marketing/seo/keyword/types";
 import type { MarketingPage } from "@/features/marketing/types";
 import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
-import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
-import { useGscKeywordClasses } from "@/features/marketing/search-console/hooks/useGscQuery";
+import { useGscKeywordValueByText } from "@/features/marketing/search-console/hooks/useGscQuery";
+import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
 
 function formatCtr(ctr: number | null): string {
   return ctr === null ? "—" : `${(ctr * 100).toFixed(2)}%`;
@@ -76,15 +76,12 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
     GSC_RANGES.find((entry) => entry.key === range)?.label ?? range;
   const targetNormalized = normalizeKeywordPhrase(page.target_keyword ?? "");
   const rows = orderWithTarget(queries.data?.stats ?? [], targetNormalized);
-  const queryClasses = useGscKeywordClasses(
+  // KI-026 — Class · Score · Level for exactly the queries on screen, through
+  // the ONE stamp resolver (`gsc_keyword_value_for`), never a re-derived
+  // local class.
+  const keywordValues = useGscKeywordValueByText(
     site.id,
     rows.map((row) => row.query),
-  );
-  const classByQuery = new Map(
-    (queryClasses.data ?? []).map((row) => [
-      normalizeKeywordPhrase(row.query),
-      row.traffic_class,
-    ]),
   );
   const truncated = Boolean(totals.data?.truncated || queries.data?.truncated);
   const isLoading = totals.isLoading || queries.isLoading;
@@ -119,22 +116,13 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
         );
       },
     },
-    {
-      id: "traffic_class",
-      accessorFn: (row) =>
-        classByQuery.get(normalizeKeywordPhrase(row.query)) ?? "unclassified",
-      header: "Class",
-      filter: false,
-      sortable: false,
-      cell: (row) => (
-        <ClassChip
-          trafficClass={
-            classByQuery.get(normalizeKeywordPhrase(row.query)) ??
-            "unclassified"
-          }
-        />
-      ),
-    },
+    // KI-026 — the shared Class · Score · Level cells (`buildGscValueColumns`),
+    // resolved through `gsc_keyword_value_for` for exactly these rows — the
+    // same definition the Queries breakdown and Dig Here use, not a copy.
+    ...buildGscValueColumns<PageQueryStat>(
+      (row) => keywordValues.data.get(normalizeKeywordPhrase(row.query)),
+      { siteId: site.id, brandId: site.brand_id, keywordOf: (row) => row.query },
+    ),
     {
       id: "clicks",
       accessorKey: "clicks",

@@ -17,6 +17,15 @@
 // `resolveContextOnOpen`, which is the ONE-MENU-PER-PANE rule; the renderer's
 // existing `data-cell-row` / `data-cell-col` attributes are the row anchors,
 // so nothing in the renderer changed.
+//
+// 🚨 AND IT OWNS ITS OWN SURFACE (`matrx-user/table-viewer`, surface-authoring
+// SKILL). The menu alone was not enough: with no `surfaceName`, the bound-agent
+// and surface-submenu resolution still fell through to `detectActiveSurface()`,
+// which reads the pathname — so a right-click in this window reported the page
+// underneath ("Notes", while the user was inside a table). The nested
+// `SurfaceRuntimeProvider` below out-depths the host page's provider while this
+// window is open, and the menu is handed the same values, so the window answers
+// for itself in BOTH the header Agents chrome and the right-click menu.
 
 import React, { Suspense, lazy, useState } from "react";
 import { Braces, Rows3, Sheet } from "lucide-react";
@@ -33,6 +42,11 @@ import {
 } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { toast } from "@/lib/toast";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  TABLE_VIEWER_SURFACE_NAME,
+  createTableViewerScope,
+} from "@/features/surfaces/manifests/table-viewer.manifest";
 
 const StreamingTableRenderer = lazy(() =>
   import("@/components/mardown-display/blocks/table/StreamingTableRenderer").then(
@@ -92,6 +106,28 @@ function TableViewerWindowInner({
       formatJson: false,
       onSuccess: () => toast.success(`${what} copied`),
       onError: () => toast.error(`Could not copy ${what.toLowerCase()}`),
+    });
+  };
+
+  // ONE scope builder for both consumers of this surface: the header Agents
+  // Run button (via `SurfaceRuntimeProvider`, which passes no row — Run is not
+  // a right-click) and the menu below (which passes the clicked row).
+  const buildScope = (rowIndex: number | null) => {
+    const row =
+      rowIndex !== null ? parsed?.normalizedData[rowIndex] : undefined;
+    return createTableViewerScope({
+      table_title: title ?? "Table",
+      table_headers: parsed?.headers.map(cleanTableHeaderKey) ?? [],
+      table_row_count: parsed?.rows.length ?? 0,
+      table_rows: parsed?.normalizedData ?? [],
+      table_markdown: typeof content === "string" ? content : undefined,
+      active_row_index: row ? (rowIndex as number) : undefined,
+      active_row: row,
+      content: typeof content === "string" ? content : "",
+      context: {
+        surface: "table viewer window",
+        viewing: parsed ? `a ${parsed.rows.length}-row table` : "an empty window",
+      },
     });
   };
 
@@ -166,16 +202,15 @@ function TableViewerWindowInner({
     >
       <NonEditableContextMenu
         sourceFeature="ai-results"
+        surfaceName={TABLE_VIEWER_SURFACE_NAME}
         contentSource={{ type: "raw" }}
         // No `entity`: a markdown table rendered from a message is not a
         // record, so Attach To / Share correctly stay hidden rather than
         // targeting the wrong thing.
-        contextData={{
-          content: typeof content === "string" ? content : "",
-          context: parsed
-            ? { columns: parsed.headers.map(cleanTableHeaderKey), row_count: parsed.rows.length }
-            : {},
-        }}
+        // The manifest's values, not a hand-rolled bag — and deliberately NOT
+        // `getApplicationScope`, which wins outright over the per-row merge
+        // below (`value-resolution.ts`) and would erase the clicked row.
+        contextData={buildScope(null)}
         resolveContextOnOpen={(target): ResolvedContextMenuContext | null => {
           const cell = target?.closest<HTMLElement>("[data-cell-row]");
           const raw = cell?.getAttribute("data-cell-row");
@@ -189,10 +224,24 @@ function TableViewerWindowInner({
           if (rowIndex === null) return null; // whole-table content stands
           const lines = rowLines(rowIndex);
           if (lines.length === 0) return null;
-          return { content: lines.join("\n") };
+          return {
+            content: lines.join("\n"),
+            // The two row values the manifest declares — merged OVER the
+            // whole-table scope so a row right-click acts on that row.
+            active_row_index: rowIndex,
+            active_row: parsed?.normalizedData[rowIndex],
+          };
         }}
         extraSections={[tableSection]}
       >
+        {/* Nested overlay emitter — while this window is open its scope
+            out-depths the host page's provider (deepest wins), so the header
+            Agents chrome runs against the TABLE, not the page behind it. */}
+        <SurfaceRuntimeProvider
+          surfaceName={TABLE_VIEWER_SURFACE_NAME}
+          getScope={() => buildScope(null)}
+          isEditable={false}
+        >
         <div className="flex min-h-0 flex-1 flex-col">
           {content ? (
             <Suspense fallback={<MatrxMiniLoader />}>
@@ -212,6 +261,7 @@ function TableViewerWindowInner({
             </div>
           )}
         </div>
+        </SurfaceRuntimeProvider>
       </NonEditableContextMenu>
     </WindowPanel>
   );
