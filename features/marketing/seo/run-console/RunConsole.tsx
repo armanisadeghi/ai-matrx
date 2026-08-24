@@ -600,10 +600,20 @@ export function RunConsole({
                         >
                           {outcome.siteName}
                         </button>
-                        <span className="text-[11px] tabular-nums text-muted-foreground">
-                          placed {formatCount(outcome.placed)} of{" "}
-                          {formatCount(outcome.claimed)} claimed
-                        </span>
+                        {outcome.claimed === 0 && !outcome.error ? (
+                          // A zero-claim pass is a real answer, not a failure —
+                          // say what it means or the run reads as a dead click
+                          // (the "blank window on Blanca" incident, 2026-08-24).
+                          <span className="text-[11px] text-muted-foreground">
+                            nothing to place — this brand has no unplaced
+                            keywords with Search Console demand yet
+                          </span>
+                        ) : (
+                          <span className="text-[11px] tabular-nums text-muted-foreground">
+                            placed {formatCount(outcome.placed)} of{" "}
+                            {formatCount(outcome.claimed)} claimed
+                          </span>
+                        )}
                         {outcome.proposed > 0 ? (
                           <span className="inline-flex items-center gap-1 rounded border border-warning/50 bg-warning/10 px-1 py-px text-[10px] tabular-nums text-warning">
                             <UserCheck className="h-3 w-3" />
