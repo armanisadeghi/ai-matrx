@@ -57,13 +57,20 @@ async function connection(): Promise<
 }
 
 function failure(error: unknown): SendToGoogleResult {
-  const message =
-    error instanceof BackendApiError
-      ? error.detail || error.userMessage
-      : error instanceof Error
-        ? error.message
-        : "Google did not accept the request.";
-  return { ok: false, reason: "failed", message };
+  if (error instanceof BackendApiError) {
+    // Already screamed by the API layer's capture; here we only translate it
+    // into the typed result the caller can show.
+    return { ok: false, reason: "failed", message: error.detail || error.userMessage };
+  }
+  // Anything else is a programming bug wearing a soft result — scream before
+  // degrading (console.error is captured into the Error Inspector).
+  console.error("[sendToGoogle] non-API failure while creating a Google file", error);
+  return {
+    ok: false,
+    reason: "failed",
+    message:
+      error instanceof Error ? error.message : "Google did not accept the request.",
+  };
 }
 
 export async function sendContentToGoogleDoc(

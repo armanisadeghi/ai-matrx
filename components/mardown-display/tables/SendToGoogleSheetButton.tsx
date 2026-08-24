@@ -45,10 +45,18 @@ export function SendToGoogleSheetButton({
       const { sendRowsToGoogleSheet } = await import(
         "@/features/google-workspace/export/sendToGoogle"
       );
+      // Duplicate header names must stay distinct columns — Object.fromEntries
+      // would silently keep only the last one, losing data the Workbook path
+      // keeps. Suffix repeats: "Name", "Name (2)", …
+      const seen = new Map<string, number>();
+      const columnNames = headers.map((header, i) => {
+        const base = header || `Column ${i + 1}`;
+        const count = (seen.get(base) ?? 0) + 1;
+        seen.set(base, count);
+        return count === 1 ? base : `${base} (${count})`;
+      });
       const records = rows.map((row) =>
-        Object.fromEntries(
-          headers.map((header, i) => [header || `Column ${i + 1}`, row[i] ?? ""]),
-        ),
+        Object.fromEntries(columnNames.map((col, i) => [col, row[i] ?? ""])),
       );
       const result = await sendRowsToGoogleSheet(records, sheetName);
       if (!result.ok && result.reason === "failed") {
@@ -89,10 +97,7 @@ export function SendToGoogleSheetButton({
       size="sm"
       onClick={handleClick}
       disabled={pushing}
-      className={
-        className ??
-        "flex items-center gap-2 hover:bg-green-100 dark:hover:bg-green-800/30"
-      }
+      className={className ?? "flex items-center gap-2"}
     >
       {pushing ? (
         <Loader2 className="h-4 w-4 animate-spin" />

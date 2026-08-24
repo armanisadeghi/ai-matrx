@@ -42,3 +42,19 @@ export function googleConnectedIds(rows: readonly ScopeRow[]): ConnectorId[] {
     (id) => googleConnectionFor(id, rows) !== undefined,
   );
 }
+
+/**
+ * A connection that once held the scope but is no longer healthy — the
+ * "reconnect this account" state, distinct from never-connected. Only
+ * meaningful when `googleConnectionFor` returned nothing.
+ */
+export function googleStaleConnectionFor<Row extends ScopeRow>(
+  id: GoogleConnectorId,
+  rows: readonly Row[],
+): Row | undefined {
+  return rows.find(
+    (row) =>
+      row.health !== "connected" &&
+      row.scopes.includes(GOOGLE_CONNECTOR_SCOPES[id]),
+  );
+}

@@ -8,7 +8,8 @@
  * are the directory presence for the connectors registry's Google entries,
  * which have no MCP server. Status comes from the same Google connection
  * inventory the chat strip uses, through the shared scope mapping in
- * `google-status.ts`.
+ * `google-status.ts` — including the "reconnect" state, where a connection
+ * holds the scope but its grant went stale.
  *
  * Connect actions stay honest about where each grant actually happens:
  * Docs/Sheets and Gmail open the floating Google connect window (whose OAuth
@@ -18,16 +19,18 @@
  */
 
 import Link from "next/link";
-import { Check, ExternalLink, Lock } from "lucide-react";
+import { Check, ExternalLink, Lock, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { connectorsFor } from "./registry";
 import {
   googleConnectionFor,
+  googleStaleConnectionFor,
   isGoogleConnectorId,
   type GoogleConnectorId,
 } from "./google-status";
@@ -38,8 +41,6 @@ const CONNECT_REASON: Record<GoogleConnectorId, string | null> = {
   "google-search-console": null, // connects on /marketing/connections/google
 };
 
-const SEARCH_CONSOLE_CONNECT_HREF = "/marketing/connections/google";
-
 export function DirectoryConnectorCards({ className }: { className?: string }) {
   const inventory = useGoogleConnectionInventory();
   const openGoogleConnect = useOpenGoogleConnectWindow();
@@ -48,6 +49,10 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
     isGoogleConnectorId(connector.id),
   );
   if (connectors.length === 0) return null;
+
+  // While the inventory loads, every card would flash "Not Connected" at a
+  // user who has already connected — same rule as ChatConnectorStrip: wait.
+  if (inventory.isLoading) return null;
 
   const rows = inventory.data?.connections ?? [];
 
@@ -61,16 +66,24 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
       {connectors.map((connector) => {
         const id = connector.id as GoogleConnectorId;
         const connection = googleConnectionFor(id, rows);
+        const stale = connection ? undefined : googleStaleConnectionFor(id, rows);
         const connected = connection !== undefined;
         const Logo = connector.logo;
         const reason = CONNECT_REASON[id];
+        const accountEmail =
+          connection?.account_email ?? stale?.account_email ?? null;
+
+        const connectHref =
+          reason === null ? marketingRoutes.connectionsGoogle() : null;
+        const connectLabel = stale ? "Reconnect" : "Connect";
+        const ConnectIcon = stale ? RefreshCw : Lock;
 
         return (
           <Card
             key={connector.id}
             className={cn(
               "transition-all duration-150",
-              connected && "ring-1 ring-green-500/30 bg-green-500/[0.02]",
+              connected && "ring-1 ring-success/30 bg-success/[0.02]",
             )}
           >
             <CardContent className="p-4">
@@ -83,19 +96,25 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
                     {connector.name}
                   </h3>
                   <p className="text-xs text-muted-foreground truncate">
-                    {connected
-                      ? (connection.account_email ?? "Connected")
-                      : "Google"}
+                    {accountEmail ?? "Google"}
                   </p>
                 </div>
                 <div className="shrink-0">
                   {connected ? (
                     <Badge
                       variant="outline"
-                      className="text-[10px] px-1.5 py-0 gap-1 bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/20"
+                      className="text-[10px] px-1.5 py-0 gap-1 bg-success/15 text-success border-success/20"
                     >
                       <Check className="h-3 w-3" />
                       Connected
+                    </Badge>
+                  ) : stale ? (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] px-1.5 py-0 gap-1 bg-warning/15 text-warning border-warning/20"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      Reconnect
                     </Badge>
                   ) : (
                     <Badge
@@ -127,21 +146,21 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
                       </Link>
                     </Button>
                   ) : null
-                ) : reason !== null ? (
+                ) : connectHref ? (
+                  <Button size="sm" className="h-7 text-xs flex-1" asChild>
+                    <Link href={connectHref}>
+                      <ConnectIcon className="h-3 w-3 mr-1" />
+                      {connectLabel}
+                    </Link>
+                  </Button>
+                ) : (
                   <Button
                     size="sm"
                     className="h-7 text-xs flex-1"
-                    onClick={() => openGoogleConnect({ reason })}
+                    onClick={() => openGoogleConnect({ reason: reason ?? undefined })}
                   >
-                    <Lock className="h-3 w-3 mr-1" />
-                    Connect
-                  </Button>
-                ) : (
-                  <Button size="sm" className="h-7 text-xs flex-1" asChild>
-                    <Link href={SEARCH_CONSOLE_CONNECT_HREF}>
-                      <Lock className="h-3 w-3 mr-1" />
-                      Connect
-                    </Link>
+                    <ConnectIcon className="h-3 w-3 mr-1" />
+                    {connectLabel}
                   </Button>
                 )}
               </div>

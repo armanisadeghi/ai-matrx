@@ -11,6 +11,7 @@
 
 import { SearchCheck } from "lucide-react";
 import { GOOGLE_WORKSPACE_SETTINGS_HREF } from "@/features/google-workspace/connection";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { GmailMark, GoogleMark, NotionMark, lucideMark } from "./marks";
 import type {
   ConnectorDefinition,
@@ -52,7 +53,7 @@ export const CONNECTORS: ConnectorDefinition[] = [
     surfaces: ["directory"],
     // Its OAuth grant and property management live on the marketing surface,
     // not the Workspace settings page.
-    manageHref: "/marketing/connections/google",
+    manageHref: marketingRoutes.connectionsGoogle(),
   },
 ];
 

@@ -56,21 +56,37 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
 3. **AI-generated Office files are born with an icon thumbnail** (aidream — filed in
    `aidream/FOUND_DEFECTS.md`, 2026-08-09). Files created via `generate_office_asset` →
    `save_media_envelope_async` get a mime icon at creation even on a LibreOffice host; the same
-   bytes re-render fine afterwards, so it's the creation-time render, not the codec. Healable with
-   `thumbnail_backfill --office --force-rerender`.
-4. **Backfill `page1_url` + PDF derivatives for pre-existing Office masters** (ops, one run on a
-   LibreOffice host): `python -m aidream.cli.thumbnail_backfill --office --force-rerender` now
-   also emits the new Office `page1_url` variant; the PDF derivative warms lazily on first
-   preview, so no backfill is strictly required for it.
-5. **xlsx "extract" parity note:** xlsx previews client-side via SheetJS (good); the office
+   bytes re-render fine afterwards, so it's the creation-time render, not the codec. Existing
+   rows were healed by the 2026-08-24 backfill (below); the creation-time defect itself remains.
+4. **xlsx "extract" parity note:** xlsx previews client-side via SheetJS (good); the office
    markdown endpoint also handles xlsx if a text view is ever wanted.
-6. **Follow-up (efficiency, not correctness):** an Office upload now runs LibreOffice up to
-   three times (baseline thumb raster, `page1_url` variant, PDF-derivative warm) — consolidate
-   to one conversion feeding all three lanes inside `thumbnails.py::_process_source` when it
-   matters. All three are background, idempotent, and bounded.
+5. **Follow-up (efficiency, not correctness):** a DECK upload now runs LibreOffice up to three
+   times (baseline thumb raster, `page1_url` variant, PDF-derivative warm; Word/Excel skip the
+   warm since 2026-08-24) — consolidate to one conversion feeding all three lanes inside
+   `thumbnails.py::_process_source` when it matters. Also at that time: give the bounded-memory
+   (>64 MiB) path a real Office `page1_url` lane (today it loud-skips, matching the large-PDF
+   posture).
+6. **Follow-up (race hardening, LOW):** two concurrent cache-miss converts can both write a
+   `pdf_conversion` (or `audio_extracted`) derivative — readers converge on the oldest row, so
+   this is waste, not corruption. Close with per-kind partial unique indexes on
+   `(parent_file_id, derivation_kind, derivation_metadata->>'<kind>_key') where deleted_at is
+   null` — mind the soft-delete/unique-constraint law in `packages/matrx-files/CLAUDE.md`.
 
 ## Done
 
+- **2026-08-24 — Adversarial-review fixes + full backfill.** Sonnet adversarial pass over the
+  visual-preview ship confirmed one HIGH: the `pdf_conversion` derivative write hand-rolled its
+  metadata and never inherited the parent's org → an org-owned deck's PDF would land in the
+  uploader's PERSONAL org (silent 403s for co-members once decks default to visual). Fixed by
+  routing `office_pdf.py` AND `audio_extract.py` (same latent defect) through
+  `inherit_derived_file_policy`; pinned by `test_derivative_inherits_parent_org_and_visibility`;
+  live DB checked — zero wrong-org rows existed. Also: upload warm now fires for DECKS only
+  (Word/Excel convert lazily on first click); the >64 MiB path loud-skips Office `page1_url`
+  like it does PDFs; the LibreOffice-gated conversion test ran for the first time (LibreOffice
+  now on the dev Mac) and exposed a wrong page-count expectation (the generator's `title=` adds
+  a title slide) — test fixed to measure via the codec. **Backfill executed** (was Remaining
+  item 4): all 24 pending Office masters now carry fresh baseline thumbs + the full-res
+  `page1_url` (`seen=25 processed=24 noop=1 failed=0`).
 - **2026-08-21 — Visual-fidelity preview SHIPPED (was item 4).** The LibreOffice→PDF render lane
   is live end to end: new `matrx_files/office_pdf.py` creates the cached `pdf_conversion` files
   derivative (idempotent per source revision, `parent_file_id` lineage, page/slide count in

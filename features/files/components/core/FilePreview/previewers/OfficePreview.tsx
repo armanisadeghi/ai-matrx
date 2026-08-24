@@ -88,7 +88,14 @@ function isDeckFileName(fileName: string | undefined): boolean {
  * leading "Slide N: <title>" heading is dropped when it would repeat it —
  * defensively, leaving any heading that carries real content in place.
  */
-function SlideCard({ slide }: { slide: OfficePortion }) {
+function SlideCard({
+  slide,
+  onView,
+}: {
+  slide: OfficePortion;
+  /** Jump to this slide in the visual mode (extracted text ↔ source link). */
+  onView?: (slideNumber: number) => void;
+}) {
   const body = stripDuplicatePortionHeading(slide.markdown, {
     label: "Slide",
     number: slide.number,
@@ -96,7 +103,7 @@ function SlideCard({ slide }: { slide: OfficePortion }) {
   }).trim();
 
   return (
-    <section className="rounded-lg border border-border bg-background/40 px-5 py-4">
+    <section className="group rounded-lg border border-border bg-background/40 px-5 py-4">
       <div className="mb-2 flex items-baseline gap-2 border-b border-border/60 pb-1.5">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Slide {slide.number}
@@ -105,6 +112,18 @@ function SlideCard({ slide }: { slide: OfficePortion }) {
           <span className="truncate text-xs font-medium text-foreground">
             {slide.title}
           </span>
+        )}
+        {onView && (
+          <button
+            type="button"
+            onClick={() => onView(slide.number)}
+            aria-label={`View slide ${slide.number}`}
+            title="View this slide"
+            className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-md border bg-background px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+          >
+            <Presentation className="h-3 w-3" />
+            View
+          </button>
         )}
       </div>
       {body ? (
@@ -147,6 +166,7 @@ export function OfficePreview({
     mode: ViewMode;
     pdfRef: OfficeFileRef | null;
     pdfError: string | null;
+    page: number;
   }>(() => ({
     fileId,
     extraction: peekOfficeExtraction(fileId),
@@ -154,6 +174,7 @@ export function OfficePreview({
     mode: deck ? "visual" : "text",
     pdfRef: peekOfficePdf(fileId),
     pdfError: null,
+    page: 1,
   }));
   if (state.fileId !== fileId) {
     setState({
@@ -163,6 +184,7 @@ export function OfficePreview({
       mode: deck ? "visual" : "text",
       pdfRef: peekOfficePdf(fileId),
       pdfError: null,
+      page: 1,
     });
   }
   const [copied, setCopied] = useState(false);
@@ -242,6 +264,17 @@ export function OfficePreview({
 
   const setMode = useCallback((next: ViewMode) => {
     setState((s) => (s.mode === next ? s : { ...s, mode: next }));
+  }, []);
+
+  // Extracted text ↔ source link (the same connection PDFs keep): a slide
+  // card in Text mode jumps to that slide in the visual render. Slide
+  // number ↔ PDF page is 1:1 for decks — the conversion is page-per-slide.
+  const viewSlide = useCallback((slideNumber: number) => {
+    setState((s) => ({ ...s, mode: "visual", page: slideNumber }));
+  }, []);
+
+  const onPageChange = useCallback((page: number) => {
+    setState((s) => (s.page === page ? s : { ...s, page }));
   }, []);
 
   const onCopy = useCallback(async () => {
@@ -429,7 +462,12 @@ export function OfficePreview({
               </div>
             }
           >
-            <PdfPreview fileId={pdfRef.file_id} className="flex-1 min-h-0" />
+            <PdfPreview
+              fileId={pdfRef.file_id}
+              className="flex-1 min-h-0"
+              pageNumber={state.fileId === fileId ? state.page : 1}
+              onPageChange={onPageChange}
+            />
           </Suspense>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-2">
@@ -451,7 +489,7 @@ export function OfficePreview({
           {isDeck && slides.length > 0 ? (
             <div className="space-y-6">
               {slides.map((slide) => (
-                <SlideCard key={slide.index} slide={slide} />
+                <SlideCard key={slide.index} slide={slide} onView={viewSlide} />
               ))}
             </div>
           ) : (
