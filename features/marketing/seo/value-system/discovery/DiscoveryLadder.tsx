@@ -342,6 +342,27 @@ function StepArtifact({
       {step === "money_map" ? <MoneyMapView a={artifact} /> : null}
       {step === "offerings" ? <OfferingsView a={artifact} /> : null}
       {step === "offering_values" ? <OfferingValuesView a={artifact} /> : null}
+      {step === "guidelines_draft" ? <GuidelinesDraftView a={artifact} /> : null}
+    </div>
+  );
+}
+
+/**
+ * The drafted document, as it will read to every agent. The rung wrote NOTHING
+ * — this is the text of a proposal sitting in the approval queue, and the only
+ * way it becomes the site's guidelines is a person approving it there (P12).
+ */
+function GuidelinesDraftView({ a }: { a: Record<string, unknown> }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-muted-foreground">{String(a.summary ?? "")}</p>
+      <pre className="max-h-80 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-2 font-sans text-[11px] leading-4 text-foreground scrollbar-thin">
+        {String(a.guidelines_text ?? "")}
+      </pre>
+      <p className="text-[11px] text-muted-foreground">
+        Nothing was saved. This is waiting for you in the approval queue on the
+        Business guidelines screen — approve it, or edit it there first.
+      </p>
     </div>
   );
 }
