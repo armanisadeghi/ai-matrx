@@ -25,6 +25,7 @@ import {
   recomputeTrayPositions,
   clampAllWindowRects,
 } from "@/lib/redux/slices/windowManagerSlice";
+import { safeViewportDims } from "./utils/rectClamp";
 
 const DEBOUNCE_MS = 500;
 
@@ -37,11 +38,18 @@ export function WindowTraySync() {
     const handleResize = () => {
       if (timer !== null) clearTimeout(timer);
       timer = setTimeout(() => {
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        dispatch(recomputeTrayPositions({ viewportWidth, viewportHeight }));
-        dispatch(clampAllWindowRects({ viewportWidth, viewportHeight }));
         timer = null;
+        // A resize that measures 0×0 is a hidden/undisplayed tab or a
+        // display:none ancestor, never a real screen. Bail WITHOUT dispatching:
+        // reacting to it would rewrite every window rect and every tray slot
+        // against invented dimensions, and the next real measurement would
+        // then have to undo it. No measurement, no write.
+        const { vw, vh, degenerate } = safeViewportDims();
+        if (degenerate) return;
+        dispatch(
+          recomputeTrayPositions({ viewportWidth: vw, viewportHeight: vh }),
+        );
+        dispatch(clampAllWindowRects({ viewportWidth: vw, viewportHeight: vh }));
       }, DEBOUNCE_MS);
     };
 

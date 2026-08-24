@@ -5,6 +5,8 @@
 
 // Import WordPress utility function
 import { markdownToWordPressHTML } from '@/features/html-pages/utils/markdown-wordpress-utils';
+// Last-resort manual-copy dialog (pure-TS opener; the host mounts in Providers)
+import { showManualCopy } from '@/components/dialogs/clipboard-fallback/manualCopyOpener';
 
 interface LinkPlaceholder {
   placeholder: string;
@@ -397,7 +399,14 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
         onSuccess();
         return true;
       } catch (fallbackErr) {
-        onError(fallbackErr);
+        // The clipboard API is blocked outright (embedded browser, iframe
+        // permission policy, non-HTTPS). A "Copy failed" toast is a dead end —
+        // put the text in front of the user, selected, for a manual Cmd/Ctrl+C.
+        // Deliberately NOT onSuccess: nothing has been copied yet, and the
+        // caller's "Copied" toast/state would be a lie.
+        console.error("Copy fallback also failed; opening manual-copy dialog:", fallbackErr);
+        const manualText = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+        showManualCopy({ text: manualText });
         return false;
       }
     }

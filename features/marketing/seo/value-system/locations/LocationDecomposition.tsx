@@ -68,14 +68,20 @@ const PAGE_SIZE = 25;
  * being a hole in the column.
  */
 const DECIDED_BY_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
-  "bound_area",
-  "place_match",
-  "state_match",
-  "nearest_place",
-  "single_location",
-  "unresolved",
-  "not_local",
-].map((value) => ({ value, label: decidedByChip(value) }));
+  ...[
+    "bound_area",
+    "place_match",
+    "state_match",
+    "nearest_place",
+    "single_location",
+    "unresolved",
+    "not_local",
+  ].map((value) => ({ value, label: decidedByChip(value) })),
+  /* The null bucket, offered by name. Most rows in the two explicit buckets
+     carry no `decided_by` at all, and a filter that cannot express the value
+     the column is FULL of is a control that does nothing. */
+  { value: "unattributed", label: "no answer yet" },
+];
 
 const SORTABLE: Record<string, LocationKeywordSort> = {
   keyword: "keyword",
@@ -254,6 +260,14 @@ function LocationKeywords({
 
   const rows = keywords.data?.rows ?? [];
   const total = keywords.data?.total ?? 0;
+  /** Did the reader narrow this list? Decides which empty state is honest. */
+  const narrowed =
+    view.search.trim() !== "" ||
+    view.decidedBy.length > 0 ||
+    view.clicksMin !== null ||
+    view.clicksMax !== null ||
+    view.impressionsMin !== null ||
+    view.impressionsMax !== null;
 
   const columns: MatrxColumnDef<LocationKeywordRow>[] = [
     {
@@ -358,14 +372,23 @@ function LocationKeywords({
           `${row.keyword} — ${formatCount(Number(row.clicks))} clicks, ${formatCount(Number(row.impressions))} impressions${row.decided_by ? ` (${decidedByChip(row.decided_by)})` : ""}`,
       }}
       emptyState={{
-        title: `No keyword in ${windowLabel} lands here`,
+        /**
+         * Empty because the LIST is empty, or empty because the reader narrowed
+         * it? Only the first is news about this location. Telling someone whose
+         * filter matched nothing that "search demand has stopped" would be a
+         * false report about their business.
+         */
+        title: narrowed
+          ? "Nothing matches these filters"
+          : `No keyword in ${windowLabel} lands here`,
         // A row can be listed on compare traffic alone — its location earned
         // searches last month and none this month. "No keyword lands here"
         // would read as a bug; the real news is that the traffic STOPPED.
-        description:
-          comparedKeywords > 0 && view.search === "" && total === 0
+        description: narrowed
+          ? "Clear a filter, or search for a different phrase."
+          : comparedKeywords > 0
             ? `In the 28 days before that, ${formatCount(comparedKeywords)} did — this location's search demand has stopped, which is why the row is still here.`
-            : "Nothing matches the filters on this list.",
+            : "No search in this window lands on this row.",
       }}
     />
   );

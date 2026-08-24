@@ -372,13 +372,12 @@ export function useWindowPanel(
           // was unavailable), pull the window back so its header stays
           // grabbable. The clamp reducer is a no-op when rect is already
           // in bounds, so this is cheap to dispatch unconditionally.
-          dispatch(
-            clampWindowRect({
-              id,
-              viewportWidth: window.innerWidth,
-              viewportHeight: window.innerHeight,
-            }),
-          );
+          const { vw, vh, degenerate } = safeViewportDims();
+          if (!degenerate) {
+            dispatch(
+              clampWindowRect({ id, viewportWidth: vw, viewportHeight: vh }),
+            );
+          }
         }
         // Suppress unused-var lint on lastClientX/Y — they're tracked for
         // potential future telemetry (drag distance, exit edge, etc.)
@@ -458,12 +457,9 @@ export function useWindowPanel(
     [dispatch, id],
   );
   const onMinimize = useCallback(() => {
+    const { vw, vh } = safeViewportDims();
     dispatch(
-      minimizeWindow({
-        id,
-        viewportWidth: window.innerWidth,
-        viewportHeight: window.innerHeight,
-      }),
+      minimizeWindow({ id, viewportWidth: vw, viewportHeight: vh }),
     );
   }, [dispatch, id]);
   const onToggleMaximize = useCallback(() => {

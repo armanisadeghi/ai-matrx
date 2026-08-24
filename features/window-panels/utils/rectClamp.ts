@@ -36,39 +36,79 @@ let warnedDegenerateViewport = false;
 const FALLBACK_VIEWPORT_W = 1280;
 const FALLBACK_VIEWPORT_H = 800;
 
-let warnedDegenerateMeasurement = false;
+/**
+ * Once-per-page latch for the degenerate-measurement scream. Parked on
+ * `globalThis` rather than in module scope: this module can be instantiated
+ * more than once (separate chunks, a Fast Refresh re-evaluation), and a
+ * per-instance flag then screams once *per copy* — which reads as "repeating"
+ * in the console even though each copy warned exactly once.
+ */
+const DEGENERATE_WARNED = Symbol.for(
+  "matrx.windowPanels.degenerateViewportWarned",
+);
+
+function screamOnceAboutDegenerateMeasurement(
+  rawW: number,
+  rawH: number,
+): void {
+  const host = globalThis as unknown as Record<symbol, unknown>;
+  if (host[DEGENERATE_WARNED]) return;
+  host[DEGENERATE_WARNED] = true;
+  console.error(
+    "[window-panels] degenerate viewport measurement",
+    { innerWidth: rawW, innerHeight: rawH },
+    "— using fallback dimensions so window geometry cannot collapse to zero. " +
+      "Logged once per page; state writers bail out instead of persisting invented dims.",
+  );
+}
+
+export interface ViewportDims {
+  vw: number;
+  vh: number;
+  /**
+   * True when the measurement was unusable (0, negative, non-finite, or SSR)
+   * and `vw`/`vh` are invented fallbacks rather than a real screen.
+   *
+   * **Anything that WRITES geometry state from a viewport read must check this
+   * and bail without writing.** Inventing 1280×800 is right for "give me
+   * something to render against"; it is wrong for "persist this as the user's
+   * geometry", because the invented value then has to be undone by the next
+   * real measurement — and a write per measurement is how a
+   * measure → write → re-measure cycle starts.
+   */
+  degenerate: boolean;
+}
 
 /**
  * Viewport dimensions that are safe to derive or judge window geometry from.
  *
  * `window.innerWidth/innerHeight` can measure 0 (hidden or prerendered page,
- * pre-layout read, headless run). Deriving an initial rect from that turns
- * "90vw" into width 0 — the window registers a 0×0 rect, renders as nothing,
- * and stays invisible until something re-clamps it (the "window opens
- * invisible" class, watchdog reason: zero-size). Judging visibility against a
- * 0×0 viewport is just as wrong — every on-screen rect reads as off-screen.
- * A degenerate measurement is never a real screen: fall back to sane
- * dimensions and scream once.
+ * a background/undisplayed tab, pre-layout read, headless run). Deriving an
+ * initial rect from that turns "90vw" into width 0 — the window registers a
+ * 0×0 rect, renders as nothing, and stays invisible until something
+ * re-clamps it (the "window opens invisible" class, watchdog reason:
+ * zero-size). Judging visibility against a 0×0 viewport is just as wrong:
+ * every on-screen rect reads as off-screen. A degenerate measurement is never
+ * a real screen — fall back to sane dimensions, scream once, and tell the
+ * caller so writers can stand down (`degenerate`).
  */
-export function safeViewportDims(): { vw: number; vh: number } {
+export function safeViewportDims(): ViewportDims {
   if (typeof window === "undefined") {
-    return { vw: FALLBACK_VIEWPORT_W, vh: FALLBACK_VIEWPORT_H };
+    return {
+      vw: FALLBACK_VIEWPORT_W,
+      vh: FALLBACK_VIEWPORT_H,
+      degenerate: true,
+    };
   }
   const rawW = window.innerWidth;
   const rawH = window.innerHeight;
   const degenerate =
     !Number.isFinite(rawW) || !Number.isFinite(rawH) || rawW <= 0 || rawH <= 0;
-  if (degenerate && !warnedDegenerateMeasurement) {
-    warnedDegenerateMeasurement = true;
-    console.error(
-      "[window-panels] degenerate viewport measurement",
-      { innerWidth: rawW, innerHeight: rawH },
-      "— using fallback dimensions so window geometry cannot collapse to zero.",
-    );
-  }
+  if (degenerate) screamOnceAboutDegenerateMeasurement(rawW, rawH);
   return {
     vw: Number.isFinite(rawW) && rawW > 0 ? rawW : FALLBACK_VIEWPORT_W,
     vh: Number.isFinite(rawH) && rawH > 0 ? rawH : FALLBACK_VIEWPORT_H,
+    degenerate,
   };
 }
 
@@ -170,8 +210,13 @@ export function clampRectToCurrentViewport(
   rect: WindowRectLike,
 ): WindowRectLike {
   if (typeof window === "undefined") return rect;
-  return clampRectToViewport(rect, {
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
+  const { vw, vh } = safeViewportDims();
+  return clampRectToViewport(rect, { width: vw, height: vh });
+}
+
+/** Exact rect equality. Used to skip no-op geometry writes. */
+export function rectsEqual(a: WindowRectLike, b: WindowRectLike): boolean {
+  return (
+    a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height
+  );
 }

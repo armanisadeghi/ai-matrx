@@ -22,6 +22,7 @@ import { Check, Copy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export interface ClipboardFallbackDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The text the user needs — a URL, or any content (multi-line is fine). */
   url: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -56,7 +58,10 @@ export function ClipboardFallbackDialog({
   description = "Press Cmd/Ctrl+C to copy, or use the Copy button below.",
 }: ClipboardFallbackDialogProps) {
   const isMobile = useIsMobile();
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  // Long or multi-line content gets a textarea; a one-line URL keeps the
+  // compact input. Both auto-select so Cmd/Ctrl+C just works.
+  const multiline = url.includes("\n") || url.length > 120;
+  const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const [copied, setCopied] = React.useState(false);
 
   // Focus + select on open so Cmd/Ctrl+C just works. The setTimeout
@@ -85,9 +90,18 @@ export function ClipboardFallbackDialog({
     }
   };
 
-  const body = (
+  const body = multiline ? (
+    <Textarea
+      ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+      value={url}
+      readOnly
+      rows={8}
+      className="max-h-[45dvh] resize-none font-mono text-sm"
+      onFocus={(event) => event.currentTarget.select()}
+    />
+  ) : (
     <Input
-      ref={inputRef}
+      ref={inputRef as React.RefObject<HTMLInputElement>}
       value={url}
       readOnly
       className="font-mono text-base"

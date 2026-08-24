@@ -63,6 +63,7 @@ import {
   type WindowPersistenceDiagnostic,
 } from "./persistence/windowSessionSerialization";
 import { registerWindowPersistenceFlusher } from "./persistence/windowPersistenceCloseMiddleware";
+import { safeViewportDims } from "./utils/rectClamp";
 
 const SAVE_DEBOUNCE_MS = 250;
 
@@ -356,12 +357,14 @@ export default function WindowPersistenceCore({
       >["workspace"],
     ) => {
       if (cancelled || identityRef.current?.key !== identity.key) return;
+      // Restore against sanitized dims: hydration commonly runs before first
+      // paint, on a background tab, or behind a display:none ancestor, where
+      // window.innerWidth measures 0 — and every restored rect would then be
+      // clamped into garbage that gets persisted straight back.
+      const { vw: hydrateVw, vh: hydrateVh } = safeViewportDims();
       const result = hydrateWindowWorkspace(
         workspace,
-        {
-          width: window.innerWidth,
-          height: window.innerHeight,
-        },
+        { width: hydrateVw, height: hydrateVh },
         workspaceId,
       );
       reportDiagnostics(result.diagnostics);
@@ -376,8 +379,8 @@ export default function WindowPersistenceCore({
       dispatch(
         hydrateWindowSessions({
           sessions: sessionsToRestore,
-          viewportWidth: window.innerWidth,
-          viewportHeight: window.innerHeight,
+          viewportWidth: hydrateVw,
+          viewportHeight: hydrateVh,
         }),
       );
       sessionsToRestore.forEach((session) => {

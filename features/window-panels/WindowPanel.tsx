@@ -57,6 +57,7 @@ import {
   arrangeActiveWindows,
 } from "@/lib/redux/slices/windowManagerSlice";
 import type { GlobalLayoutType } from "./utils/windowArrangements";
+import { safeViewportDims } from "./utils/rectClamp";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { getStaticEntryByOverlayId } from "./registry/windowRegistryMetadata";
@@ -813,72 +814,57 @@ export function WindowPanel({
 
   // ── Snap helpers (Move & Resize menu) ───────────────────────────────────
   const snapLeft = useCallback(() => {
+    const { vw, vh } = safeViewportDims();
     dispatch(
       updateWindowRect({
         id,
-        rect: {
-          x: 0,
-          y: 0,
-          width: Math.round(window.innerWidth / 2),
-          height: window.innerHeight,
-        },
+        rect: { x: 0, y: 0, width: Math.round(vw / 2), height: vh },
       }),
     );
   }, [dispatch, id]);
 
   const snapRight = useCallback(() => {
-    const half = Math.round(window.innerWidth / 2);
+    const { vw, vh } = safeViewportDims();
+    const half = Math.round(vw / 2);
     dispatch(
       updateWindowRect({
         id,
-        rect: {
-          x: half,
-          y: 0,
-          width: window.innerWidth - half,
-          height: window.innerHeight,
-        },
+        rect: { x: half, y: 0, width: vw - half, height: vh },
       }),
     );
   }, [dispatch, id]);
 
   const snapTop = useCallback(() => {
+    const { vw, vh } = safeViewportDims();
     dispatch(
       updateWindowRect({
         id,
-        rect: {
-          x: 0,
-          y: 0,
-          width: window.innerWidth,
-          height: Math.round(window.innerHeight / 2),
-        },
+        rect: { x: 0, y: 0, width: vw, height: Math.round(vh / 2) },
       }),
     );
   }, [dispatch, id]);
 
   const snapBottom = useCallback(() => {
-    const half = Math.round(window.innerHeight / 2);
+    const { vw, vh } = safeViewportDims();
+    const half = Math.round(vh / 2);
     dispatch(
       updateWindowRect({
         id,
-        rect: {
-          x: 0,
-          y: half,
-          width: window.innerWidth,
-          height: window.innerHeight - half,
-        },
+        rect: { x: 0, y: half, width: vw, height: vh - half },
       }),
     );
   }, [dispatch, id]);
 
   const snapCentre = useCallback(() => {
-    const w = Math.min(rect.width, window.innerWidth);
-    const h = Math.min(rect.height, window.innerHeight);
+    const { vw, vh } = safeViewportDims();
+    const w = Math.min(rect.width, vw);
+    const h = Math.min(rect.height, vh);
     dispatch(
       updateWindowRect({
         id,
         rect: {
-          x: Math.round((window.innerWidth - w) / 2),
-          y: Math.round((window.innerHeight - h) / 2),
+          x: Math.round((vw - w) / 2),
+          y: Math.round((vh - h) / 2),
           width: w,
           height: h,
         },
@@ -888,11 +874,12 @@ export function WindowPanel({
 
   const arrangeAll = useCallback(
     (layout: GlobalLayoutType) => {
+      const { vw, vh } = safeViewportDims();
       dispatch(
         arrangeActiveWindows({
           layout,
-          viewportWidth: window.innerWidth,
-          viewportHeight: window.innerHeight,
+          viewportWidth: vw,
+          viewportHeight: vh,
         }),
       );
     },
@@ -1091,12 +1078,14 @@ export function WindowPanel({
     prevStateRef.current = windowState;
     prevPopoutModeRef.current = popoutMode;
     if (wasNonWindowed && isNowWindowed) {
+      // Never rescue against an invented viewport: on a hidden tab or a
+      // display:none ancestor the measurement is 0×0, and clamping to the
+      // 1280×800 fallback would rewrite the user's real geometry from a
+      // number no screen ever had. Skip — the next real measurement clamps.
+      const { vw, vh, degenerate } = safeViewportDims();
+      if (degenerate) return;
       dispatch(
-        clampWindowRect({
-          id,
-          viewportWidth: window.innerWidth,
-          viewportHeight: window.innerHeight,
-        }),
+        clampWindowRect({ id, viewportWidth: vw, viewportHeight: vh }),
       );
     }
   }, [dispatch, id, windowState, popoutMode]);

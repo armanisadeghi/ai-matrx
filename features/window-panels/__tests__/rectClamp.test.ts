@@ -170,7 +170,7 @@ describe("safeViewportDims", () => {
 
   it("returns the real measurement when it is sane", () => {
     Object.assign(window, { innerWidth: 1440, innerHeight: 900 });
-    expect(safeViewportDims()).toEqual({ vw: 1440, vh: 900 });
+    expect(safeViewportDims()).toEqual({ vw: 1440, vh: 900, degenerate: false });
   });
 
   it("falls back when the viewport measures 0×0 (hidden/prerendered page)", () => {

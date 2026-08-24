@@ -10,6 +10,7 @@ import {
 import {
   centerRectInViewport,
   clampRectToViewport,
+  rectsEqual,
 } from "@/features/window-panels/utils/rectClamp";
 import type { DockWindowPayload } from "@/features/window-panels/popout/dockWindowPayload";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
@@ -675,10 +676,11 @@ const windowManagerSlice = createSlice({
         win.state = "windowed";
       }
       if (win.state === "windowed") {
-        win.windowed = clampRectToViewport(win.windowed, {
+        const clamped = clampRectToViewport(win.windowed, {
           width: viewportWidth,
           height: viewportHeight,
         });
+        if (!rectsEqual(win.windowed, clamped)) win.windowed = clamped;
       }
       win.zIndex = state.nextZIndex++;
     },
@@ -790,10 +792,14 @@ const windowManagerSlice = createSlice({
       if (!win) return;
       if (win.state !== "windowed") return; // skip min/max
       if (win.popoutMode !== null) return; // skip popped-out
-      win.windowed = clampRectToViewport(win.windowed, {
+      const clamped = clampRectToViewport(win.windowed, {
         width: viewportWidth,
         height: viewportHeight,
       });
+      // Only write when the geometry actually moved. An unconditional assign
+      // hands every subscriber a fresh object on every clamp, so a caller that
+      // clamps on each measurement churns the whole window desktop for nothing.
+      if (!rectsEqual(win.windowed, clamped)) win.windowed = clamped;
     },
 
     /**
@@ -811,10 +817,11 @@ const windowManagerSlice = createSlice({
       Object.values(state.windows).forEach((win) => {
         if (win.state !== "windowed") return;
         if (win.popoutMode !== null) return;
-        win.windowed = clampRectToViewport(win.windowed, {
+        const clamped = clampRectToViewport(win.windowed, {
           width: viewportWidth,
           height: viewportHeight,
         });
+        if (!rectsEqual(win.windowed, clamped)) win.windowed = clamped;
       });
     },
 
@@ -873,6 +880,18 @@ const windowManagerSlice = createSlice({
       action: PayloadAction<{ viewportWidth: number; viewportHeight: number }>,
     ) {
       const { viewportWidth, viewportHeight } = action.payload;
+      // A degenerate measurement (hidden tab, display:none ancestor, pre-layout
+      // read) is not a resize. Storing it would poison `trayViewport` for every
+      // LATER recompute — minimize/restore/register all reuse it — and park
+      // every tray chip at a garbage position long after the tab is visible.
+      if (
+        !Number.isFinite(viewportWidth) ||
+        !Number.isFinite(viewportHeight) ||
+        viewportWidth <= 0 ||
+        viewportHeight <= 0
+      ) {
+        return;
+      }
       state.trayViewport = { width: viewportWidth, height: viewportHeight };
       const minimized = Object.values(state.windows).filter(
         (w) => w.state === "minimized" && w.traySlot !== null,

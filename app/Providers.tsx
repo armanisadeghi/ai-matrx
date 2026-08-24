@@ -78,6 +78,7 @@ import { CloudFilesPickerHost } from "@/features/files/components/pickers/CloudF
 import { CloudFilesRealtimeProvider } from "@/features/files/providers/CloudFilesRealtimeProvider";
 import { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ClipboardFallbackHost } from "@/components/dialogs/clipboard-fallback/ClipboardFallbackHost";
 // ONE auth sync for the whole app (authed session + guest fingerprint).
 // Guests are first-class users — without this mount their backend calls go
 // out with no X-Fingerprint-ID header and the server can't identify them.
@@ -167,6 +168,15 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   global replacement for `window.confirm`.
                                   See components/dialogs/confirm/. */}
                                 <ConfirmDialogHost />
+                                {/* Imperative manual-copy host. When
+                                  `navigator.clipboard` refuses to write
+                                  (embedded browser, permission policy),
+                                  `copyToClipboard` falls back to
+                                  `showManualCopy(...)` — the text opens
+                                  selected for a manual Cmd/Ctrl+C instead
+                                  of a dead "Copy failed" toast.
+                                  See components/dialogs/clipboard-fallback/. */}
+                                <ClipboardFallbackHost />
                                 {/* Imperative sandbox pre-send gate host.
                                   Exposes `openSandboxGate({conversationId})` —
                                   a bound-but-unreachable sandbox blocks the send

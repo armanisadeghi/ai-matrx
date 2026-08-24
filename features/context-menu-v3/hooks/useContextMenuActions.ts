@@ -18,6 +18,7 @@
 // launched from the menu can stream `widget_text_*` edits into the surface.
 
 import { useEffect } from "react";
+import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import {
   AppWindow,
   Braces,
@@ -424,7 +425,10 @@ export function useContextMenuActions(
     try {
       await navigator.clipboard.writeText(actionText.text);
     } catch (err) {
+      // Blocked clipboard (embedded browser, permission policy). Never a
+      // silent swallow — hand the text over for a manual Cmd/Ctrl+C.
       console.error("[ContextMenuV3] copy failed", err);
+      showManualCopy({ text: actionText.text });
     }
   };
 
@@ -448,7 +452,10 @@ export function useContextMenuActions(
         spliceInputValue(element, start, end, "");
       }
     } catch (err) {
+      // The text was NOT cut (the splice above never ran) — offer it for a
+      // manual copy instead of losing the gesture.
       console.error("[ContextMenuV3] cut failed", err);
+      showManualCopy({ text: cutText, title: "Copy manually (cut was blocked)" });
     }
   };
 
@@ -524,6 +531,7 @@ export function useContextMenuActions(
         toast({ title: "Copied", description: "JSON copied to clipboard." });
       } catch (err) {
         console.error("[ContextMenuV3] json copy failed", err);
+        showManualCopy({ text: next });
       }
     },
   });
@@ -795,7 +803,7 @@ export function useContextMenuActions(
   const copyText = (text: string) => {
     void navigator.clipboard?.writeText(text).then(
       () => toast({ title: "Copied", description: text }),
-      () => toast({ title: "Copy failed", variant: "destructive" }),
+      () => showManualCopy({ text }),
     );
   };
   const surfaceAgentItems: ContextMenuExtraItem[] = [];
