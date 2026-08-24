@@ -52121,6 +52121,11 @@ export type Database = {
         Args: { p_keyword_ids?: string[]; p_site_id: string }
         Returns: Json
       }
+      fn_evaluate_matchers_internal: {
+        Args: { p_keyword_ids?: string[]; p_site_id: string }
+        Returns: Json
+      }
+      fn_geo_area_sync_meaning: { Args: { p_area_id: string }; Returns: Json }
       fn_ingest_keyword_research: {
         Args: {
           p_language?: string
@@ -52412,6 +52417,20 @@ export type Database = {
           value_label: string
         }[]
       }
+      gsc_geo_area_health: {
+        Args: { p_site_id: string }
+        Returns: {
+          area_id: string
+          geo_band: string
+          label: string
+          matchers: number
+          places: number
+          stamps: number
+          state: string
+          tokens: number
+          value_id: string
+        }[]
+      }
       gsc_geo_area_preview: {
         Args: {
           p_area_id?: string
@@ -52425,6 +52444,7 @@ export type Database = {
         }
         Returns: Json
       }
+      gsc_geo_area_reconnect: { Args: { p_site_id: string }; Returns: Json }
       gsc_ingestion_health: {
         Args: { p_site_id: string }
         Returns: {
