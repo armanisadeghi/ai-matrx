@@ -218,7 +218,7 @@ function BandCell({
             "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors hover:brightness-110",
             meta.chip,
           )}
-          title={`${meta.description ?? meta.label}\nClick to rule this keyword's tier yourself.`}
+          title={`${meta.description ?? meta.label}\nClick to rule this keyword's level yourself.`}
         >
           {meta.label}
           <ChevronDown className="h-3 w-3 opacity-60" />
@@ -591,7 +591,7 @@ export function ValueWorkbench() {
     {
       id: "value_band",
       accessorKey: "value_band",
-      header: "Tier",
+      header: "Level",
       sortable: false,
       filter: "select",
       filterSingle: true,
@@ -650,7 +650,7 @@ export function ValueWorkbench() {
     },
     {
       id: "why",
-      header: "Why this tier",
+      header: "Why this level",
       sortable: false,
       filter: false,
       className: "min-w-[260px] max-w-[420px]",
@@ -1129,7 +1129,7 @@ export function ValueWorkbench() {
                   </div>
                   <div>
                     <p className="mb-1.5 text-xs font-semibold text-foreground">
-                      Why this tier
+                      Why this level
                     </p>
                     <ReasonChainDetail
                       reasons={row.reasons}
