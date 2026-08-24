@@ -353,6 +353,28 @@ export function SetupBridgeSection({
     const ended = current !== null && current !== "pending" && current !== "processing";
     if (!wasRunning || !ended) return;
     void invalidateCms();
+    // A publish job speaks in "live", not "built" — and its finish is the
+    // moment the automatic rendered-page inspection runs (the queue path's
+    // equivalent of the one-shot publish's server-side shell check).
+    const publishStep = fillStatus?.steps.find((row) => row.step === "p7_publish");
+    const isPublishJob =
+      publishStep != null &&
+      fillStatus != null &&
+      fillStatus.steps.every((row) => row.step === "p7_publish");
+    if (isPublishJob) {
+      void queryClient.invalidateQueries({ queryKey: planKeys.nodes(site.id) });
+      const live = publishStep.succeeded + publishStep.skipped;
+      if (fillStatus.failed > 0 || fillStatus.deadLetter > 0) {
+        toast.error(
+          `Publish finished: ${live} of ${publishStep.total} page(s) live, ` +
+            `${fillStatus.failed + fillStatus.deadLetter} failed — see the rows below.`,
+        );
+      } else if (current === "completed") {
+        toast.success(`Published — ${live} page(s) are live. Inspecting the rendered pages…`);
+      }
+      if (current === "completed") void handleShellCheck();
+      return;
+    }
     if (fillStatus && (fillStatus.failed > 0 || fillStatus.deadLetter > 0)) {
       toast.error(
         `Content build finished: ${fillStatus.pagesBuilt} of ${fillStatus.pages} page(s) built, ` +
@@ -585,49 +607,49 @@ export function SetupBridgeSection({
     }
   };
 
-  // ── rung 5: publish — dry-run preview, then destructive-confirmed apply ───
+  // ── rung 5: publish — dry-run preview, then a destructive-confirmed QUEUE
+  // job. Apply used to be one giant /cms-publish request that walked the whole
+  // site inside a single HTTP call — it died at the gateway timeout at page 9
+  // of the first real 29-page publish. Now it seeds `steps=["p7_publish"]` on
+  // the same durable fill queue every other step runs on: crash-safe,
+  // resumable, one item per page, progress in the same rows below.
   const handlePublish = async (dryRun: boolean) => {
-    if (!dryRun) {
-      const pending = publishResult?.wouldPublish ?? 0;
-      const ok = await confirm({
-        title: `Publish ${pending} page${pending === 1 ? "" : "s"}?`,
-        description:
-          `Every listed page on CMS site "${cms?.link.cmsSlug ?? ""}" goes LIVE on the public site. ` +
-          `Pages fail or succeed individually — one bad page never blocks the rest.`,
-        confirmLabel: "Publish site",
-        variant: "destructive",
-      });
-      if (!ok) return;
-    }
-    startBusy(dryRun ? "publishPreview" : "publishApply");
-    try {
-      const outcome = await bridgePublish(dispatch, site.id, {
-        dryRun,
-        cmsSite: knownCmsSite,
-      });
-      setPublishResult(outcome);
-      if (!dryRun) {
-        await Promise.all([
-          invalidateCms(),
-          queryClient.invalidateQueries({ queryKey: planKeys.nodes(site.id) }),
-        ]);
-        if (outcome.failed > 0) {
-          toast.error(
-            `Published ${outcome.published} page(s); ${outcome.failed} failed — see the rows below.`,
-          );
-        } else if (outcome.published > 0) {
-          toast.success(`Published ${outcome.published} page(s) — the site is live.`);
-        } else {
-          toast.info("Nothing had pending changes — the live site is already current.");
-        }
-        if (outcome.remainingCandidates > 0) {
-          toast.info(
-            `${outcome.remainingCandidates} more page(s) still pending — run Publish again to continue.`,
-          );
-        }
+    if (dryRun) {
+      startBusy("publishPreview");
+      try {
+        setPublishResult(
+          await bridgePublish(dispatch, site.id, { dryRun: true, cmsSite: knownCmsSite }),
+        );
+      } catch (error) {
+        toast.error(`Publish preview failed: ${extractErrorMessage(error)}`);
+      } finally {
+        endBusy();
       }
+      return;
+    }
+    const pending = publishResult?.wouldPublish ?? 0;
+    const ok = await confirm({
+      title: `Publish ${pending} page${pending === 1 ? "" : "s"}?`,
+      description:
+        `Every listed page on CMS site "${cms?.link.cmsSlug ?? ""}" goes LIVE on the public site, ` +
+        `one durable step per page — pages fail or succeed individually, and the job ` +
+        `survives restarts (you can leave this page). The rendered pages are inspected ` +
+        `for site-level problems when it finishes.`,
+      confirmLabel: "Publish site",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    startBusy("publishApply");
+    try {
+      const started = await bridgeFillStart(dispatch, site.id, {
+        cmsSite: knownCmsSite,
+        steps: ["p7_publish"],
+      });
+      for (const line of started.skipped) toast.info(line);
+      toast.success(`Publishing ${started.estimate.pages} page(s) — progress below…`);
+      setFillStatus(await bridgeFillStatus(dispatch, site.id));
     } catch (error) {
-      toast.error(`Publish failed: ${extractErrorMessage(error)}`);
+      toast.error(`Publish failed to start: ${extractErrorMessage(error)}`);
     } finally {
       endBusy();
     }
