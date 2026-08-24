@@ -80,6 +80,19 @@ function ArtifactCard({ artifact }: { artifact: GeneratedArtifact }) {
   );
 }
 
+/** The kit's primary action — resolved once, not twice. */
+function StudyActionButton({ study }: { study: KitStudyState }) {
+  const { href, label } = kitStudyAction(study);
+  return (
+    <Button asChild size="lg" className="gap-1.5">
+      <Link href={href}>
+        <GraduationCap className="h-4 w-4" />
+        {label}
+      </Link>
+    </Button>
+  );
+}
+
 export function KitHub({
   sourceId,
   sourceType = "file",
@@ -89,24 +102,34 @@ export function KitHub({
 }) {
   const [kit, setKit] = useState<StudyKit | null>(null);
   const [study, setStudy] = useState<KitStudyState | null>(null);
+  // Separate from `study` so "still reading" and "this kit has no deck to
+  // study" are distinguishable — they render differently, and collapsing them
+  // is what makes a bar pop in and shove the page down after paint.
+  const [studyLoading, setStudyLoading] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setStudy(null);
+    setStudyLoading(true);
     void readKit(sourceType, sourceId).then(async (result) => {
       if (!active) return;
       setKit(result);
       setLoading(false);
       // The study bar is a SECOND, slower read (deck cards + mastery). It lands
       // after the kit renders rather than holding the whole page behind it.
-      if (!result) return;
+      if (!result) {
+        setStudyLoading(false);
+        return;
+      }
       const setIds = result.artifacts
         .filter((a) => a.artifactType === "fc_set")
         .map((a) => a.artifactId);
       const state = await readKitStudyState(setIds);
-      if (active) setStudy(state);
+      if (!active) return;
+      setStudy(state);
+      setStudyLoading(false);
     });
     return () => {
       active = false;
@@ -196,8 +219,11 @@ export function KitHub({
         </div>
 
         {/* STUDY FIRST — the kit exists to be studied, so where the learner
-            stands and their next tap sit above the contents, not below. */}
-        {study && (
+            stands and their next tap sit above the contents, not below.
+            The slot RESERVES its height while the (slower) spine read lands, so
+            the artifact grid never jumps down after paint. */}
+        {studyLoading && <Skeleton className="h-[104px] w-full rounded-xl" />}
+        {!studyLoading && study && (
           <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
@@ -217,12 +243,7 @@ export function KitHub({
                 {study.dueCount > 0 && ` · ${study.dueCount} due for review`}
               </p>
             </div>
-            <Button asChild size="lg" className="gap-1.5">
-              <Link href={kitStudyAction(study).href}>
-                <GraduationCap className="h-4 w-4" />
-                {kitStudyAction(study).label}
-              </Link>
-            </Button>
+            <StudyActionButton study={study} />
           </div>
         )}
 
