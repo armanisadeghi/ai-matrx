@@ -8,246 +8,192 @@
  * `confidence_floor` knob is a ruling; below it, the keyword still lands on the
  * tree (a candidate an expert can correct beats an empty tree) but it is
  * flagged here until someone confirms it or replaces it. Confirming stamps the
- * placement as the site's own; "Place under a topic…" writes
+ * placement as the site's own; "Move to another topic…" writes
  * `assigned_by='human'` through the EXISTING write, which takes the keyword off
  * the agent's list forever.
  *
- * Same shape as the auto-applied class rules' unconfirmed chip
- * (`site_keyword_value.metadata.classification` → `gsc_confirm_keyword_class`) —
- * one confirmation pattern in this product, never two.
+ * P25 — ONE TABLE. This was a hand-rolled row list with unsortable numbers. It
+ * is now the canonical keyword table, configured by ONE base filter
+ * (`placement: "proposed"`), which is why that filter exists on
+ * `seo.gsc_perf_breakdown` at all: a surface is a configuration, never a second
+ * query with a poorer contract.
  */
 
-import { useEffect, useState } from "react";
-import { Check, Search, UserCheck } from "lucide-react";
+import { Check, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/styles/themes/utils";
-import { formatCount } from "@/features/marketing/search-console/types";
-import { bandMetaFor, type BandMeta } from "../lib";
-import type { ProposedKeywordRow } from "./types";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { toast } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
+import type { GscBreakdownRow } from "@/features/marketing/search-console/types";
+import {
+  KeywordTable,
+  type KeywordTableSurface,
+} from "@/features/marketing/seo/keyword-table/KeywordTable";
+import type { KeywordRowsResult } from "@/features/marketing/seo/keyword-table/useKeywordRows";
+import { confirmKeywordTopics } from "./data";
+
+const SURFACE: KeywordTableSurface = {
+  id: "seo-proposed-queue",
+  label: "Proposed placement",
+  listLabel: "Placements awaiting confirmation",
+  location: "Marketing — Topic tree — Proposals",
+  prefix: "pq",
+  defaultColumns: ["key", "topic", "clicks", "impressions", "value_band"],
+  baseFilters: { placement: "proposed" },
+  // The service filter would fight the base filter for meaning here; the
+  // Service COLUMN still filters, which is the same door.
+  showFilterBar: false,
+};
+
+/**
+ * How sure the assigner was. It rides the SHARED placement read
+ * (`gsc_keyword_topics_for`) that the Service column already needs, so this
+ * column costs no extra query.
+ */
+function confidenceColumn(
+  data: KeywordRowsResult,
+): MatrxColumnDef<GscBreakdownRow> {
+  return {
+    id: "confidence",
+    header: "How sure",
+    sortable: true,
+    filter: false,
+    align: "right",
+    width: 110,
+    mobileHidden: true,
+    accessorFn: (row) => data.serviceFor(row)?.confidence ?? null,
+    cell: (row) => {
+      const confidence = data.serviceFor(row)?.confidence;
+      if (confidence == null) {
+        return (
+          <span className="rounded border border-warning/40 px-1 py-px text-[10px] text-warning">
+            none given
+          </span>
+        );
+      }
+      return (
+        <span className="text-[11px] tabular-nums text-muted-foreground">
+          {confidence}% sure
+        </span>
+      );
+    },
+  };
+}
 
 export function ProposedQueue({
-  rows,
-  total,
-  metas,
-  loading,
-  page,
-  pageSize,
-  search,
-  onSearch,
-  onPage,
-  onConfirm,
-  onPlace,
-  busy,
+  siteId,
+  siteDomain,
+  brandId,
+  onChanged,
 }: {
-  rows: ProposedKeywordRow[];
-  total: number;
-  metas: BandMeta[];
-  loading: boolean;
-  page: number;
-  pageSize: number;
-  search: string;
-  onSearch: (next: string) => void;
-  onPage: (next: number) => void;
-  onConfirm: (keywordIds: string[], label: string) => void;
-  onPlace: (keywordIds: string[], label: string) => void;
-  busy: boolean;
+  siteId: string;
+  siteDomain: string;
+  brandId: string;
+  onChanged: () => void;
 }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [searchInput, setSearchInput] = useState(search);
-
-  useEffect(() => {
-    const handle = setTimeout(() => onSearch(searchInput.trim()), 300);
-    return () => clearTimeout(handle);
-  }, [onSearch, searchInput]);
-
-  // Nothing waiting is the goal state, and an empty box on a screen that is
-  // already long is noise — so the section simply is not there.
-  if (!loading && total === 0 && !search) return null;
-
-  const toggle = (id: string) => {
-    const next = new Set(selected);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelected(next);
+  const confirm = async (keywordIds: string[], refresh: () => Promise<void>) => {
+    try {
+      const results = await confirmKeywordTopics(siteId, keywordIds);
+      await refresh();
+      onChanged();
+      toast.success(
+        `${results.length} placement${results.length === 1 ? "" : "s"} confirmed`,
+        {
+          description:
+            "The assigner will not revisit them, and they now read as your ruling.",
+        },
+      );
+    } catch (error) {
+      toast.error("Could not confirm those placements", {
+        description: extractErrorMessage(error),
+      });
+    }
   };
 
-  const pageIds = rows.map((row) => row.keyword_id);
-  const allSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
-  const lastPage = Math.max(0, Math.ceil(total / pageSize) - 1);
-  const label = (ids: string[]) =>
-    ids.length === 1
-      ? (rows.find((row) => row.keyword_id === ids[0])?.phrase ?? "1 keyword")
-      : `${ids.length} keywords`;
-
   return (
-    <section className="flex shrink-0 flex-col rounded-lg border border-warning/40 bg-card">
+    <section className="flex min-h-[24rem] flex-col rounded-lg border border-warning/40 bg-card">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <UserCheck className="h-4 w-4 shrink-0 text-warning" />
         <h2 className="text-sm font-semibold text-foreground">
           The assigner placed these — is it right?
         </h2>
-        <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-px text-[11px] tabular-nums text-warning">
-          {formatCount(total)}
-        </span>
-        <div className="relative ml-auto w-full sm:w-56">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search these keywords…"
-            className="h-8 pl-7 text-sm"
-          />
-        </div>
+        <p className="hidden text-[11px] text-muted-foreground sm:block">
+          They are already on the tree. Confirming makes them yours.
+        </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-1.5">
-        <Checkbox
-          checked={allSelected}
-          onCheckedChange={(checked) => {
-            const next = new Set(selected);
-            for (const id of pageIds) {
-              if (checked) next.add(id);
-              else next.delete(id);
-            }
-            setSelected(next);
+      <div className="flex min-h-0 flex-1 flex-col p-2">
+        <KeywordTable
+          siteId={siteId}
+          siteDomain={siteDomain}
+          brandId={brandId}
+          surface={SURFACE}
+          onWrite={onChanged}
+          extraColumns={(data) => [confidenceColumn(data)]}
+          emptyState={{
+            title: "Nothing is waiting for you",
+            description:
+              "Every placement on this site is either your own ruling or one the assigner was sure enough about.",
           }}
-          aria-label="Select every proposal on this page"
-        />
-        <span className="text-[11px] text-muted-foreground">
-          {selected.size > 0
-            ? `${selected.size} selected`
-            : "These are on the tree already — confirming makes them yours"}
-        </span>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 gap-1 text-xs"
-          disabled={busy || selected.size === 0}
-          onClick={() => {
-            onConfirm([...selected], label([...selected]));
-            setSelected(new Set());
-          }}
-        >
-          <Check className="h-3 w-3" />
-          Confirm
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 text-xs"
-          disabled={busy || selected.size === 0}
-          onClick={() => onPlace([...selected], label([...selected]))}
-        >
-          Move to another topic…
-        </Button>
-      </div>
-
-      <div className="max-h-[40vh] overflow-y-auto">
-        {loading ? (
-          <p className="p-6 text-center text-sm text-muted-foreground">
-            Reading what is waiting for you…
-          </p>
-        ) : rows.length === 0 ? (
-          <p className="p-6 text-center text-sm text-muted-foreground">
-            {search
-              ? `Nothing awaiting confirmation matches “${search}”.`
-              : "Nothing is waiting for you."}
-          </p>
-        ) : (
-          rows.map((row) => {
-            const meta = bandMetaFor(metas, row.value_band);
-            return (
-              <div
-                key={row.keyword_id}
-                className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border px-3 py-1.5 text-sm last:border-b-0 hover:bg-muted/40"
+          rowActions={(row, controls) =>
+            row.keyword_id ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-[11px]"
+                onClick={() =>
+                  void confirm([row.keyword_id as string], controls.refresh)
+                }
               >
-                <Checkbox
-                  checked={selected.has(row.keyword_id)}
-                  onCheckedChange={() => toggle(row.keyword_id)}
-                  aria-label={`Select ${row.phrase}`}
-                />
-                <span className="min-w-[8rem] flex-1 truncate text-foreground">
-                  {row.phrase}
-                </span>
-                <span className="truncate text-[11px] text-muted-foreground">
-                  → {row.topic_name}
-                </span>
-                <span className="ml-auto flex shrink-0 items-center gap-2">
-                  {row.confidence === null ? (
-                    <span className="rounded border border-warning/40 px-1 py-px text-[10px] text-warning">
-                      no confidence given
-                    </span>
-                  ) : (
-                    <span className="text-[11px] tabular-nums text-muted-foreground">
-                      {row.confidence}% sure
-                    </span>
-                  )}
-                  <span
-                    className={cn(
-                      "rounded border px-1 py-px text-[10px] leading-tight",
-                      meta.chip,
-                    )}
-                  >
-                    {meta.label}
-                  </span>
-                  <span className="text-right text-[11px] tabular-nums text-muted-foreground">
-                    {formatCount(row.clicks)} clk
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-2 text-[11px]"
-                    disabled={busy}
-                    onClick={() => onConfirm([row.keyword_id], row.phrase)}
-                  >
-                    Confirm
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-2 text-[11px]"
-                    disabled={busy}
-                    onClick={() => onPlace([row.keyword_id], row.phrase)}
-                  >
-                    Move…
-                  </Button>
-                </span>
-              </div>
-            );
-          })
-        )}
+                Confirm
+              </Button>
+            ) : null
+          }
+          selectionActions={({
+            keywordIds,
+            openServiceAssign,
+            refresh,
+            clear,
+          }) => (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Button
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                disabled={keywordIds.length === 0}
+                onClick={() => {
+                  void confirm(keywordIds, refresh);
+                  clear();
+                }}
+              >
+                <Check className="h-3.5 w-3.5" />
+                Confirm
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                disabled={keywordIds.length === 0}
+                onClick={() =>
+                  openServiceAssign(
+                    keywordIds,
+                    `${keywordIds.length.toLocaleString()} keyword${keywordIds.length === 1 ? "" : "s"}`,
+                  )
+                }
+              >
+                <Network className="h-3.5 w-3.5" />
+                Move to another topic…
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-muted-foreground"
+                onClick={clear}
+              >
+                Clear {keywordIds.length}
+              </Button>
+            </div>
+          )}
+        />
       </div>
-
-      {total > pageSize ? (
-        <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
-          <span className="tabular-nums">
-            {page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)} of{" "}
-            {formatCount(total)}
-          </span>
-          <span className="flex gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 px-2 text-[11px]"
-              disabled={page === 0 || loading}
-              onClick={() => onPage(page - 1)}
-            >
-              Previous
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 px-2 text-[11px]"
-              disabled={page >= lastPage || loading}
-              onClick={() => onPage(page + 1)}
-            >
-              Next
-            </Button>
-          </span>
-        </div>
-      ) : null}
     </section>
   );
 }

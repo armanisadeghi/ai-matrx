@@ -90,6 +90,16 @@ export interface GscFilters {
    */
   topic?: string;
   /**
+   * P25 — WHOSE RULING the keyword's placement is (`pl=`). `proposed` is an
+   * agent placement below the confidence floor still waiting for a person;
+   * `agent` / `human` are the two authors. Keyword-level, so it rides the
+   * query / query_page profiles exactly like the service filter.
+   *
+   * This key exists so the topic tree's proposals queue is a CONFIGURATION of
+   * the one keyword table rather than a second RPC with a poorer contract.
+   */
+  placement?: string;
+  /**
    * C14 — WHOLE-WORD query match (`qw=`). "cost" must not drag in "costume"
    * when the expert meant the word; a contains-filter can never say that.
    */

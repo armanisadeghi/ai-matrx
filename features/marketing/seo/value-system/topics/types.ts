@@ -23,15 +23,6 @@ export interface OfferingSplitRow {
   impressions: number;
 }
 
-export interface UnassignedKeywordRow {
-  keyword_id: string;
-  phrase: string;
-  clicks: number;
-  impressions: number;
-  value_band: string;
-  total_count: number;
-}
-
 /**
  * `seo.topic_placement_status` — the ONE server-state read the placement strip
  * renders. Clicks first: 8,455 keywords and 457 clicks are both true numbers,
@@ -59,19 +50,6 @@ export interface TopicPlacementStatus {
   demand_as_of: string | null;
   queue_refreshed_at: string | null;
   last_placed_at: string | null;
-}
-
-/** One agent placement waiting for a human — `seo.gsc_topic_proposed_keywords`. */
-export interface ProposedKeywordRow {
-  keyword_id: string;
-  phrase: string;
-  topic_id: string;
-  topic_name: string;
-  confidence: number | null;
-  clicks: number;
-  impressions: number;
-  value_band: string;
-  total_count: number;
 }
 
 /** What one bounded placement pass did — aidream's `PlacementPassResult`. */

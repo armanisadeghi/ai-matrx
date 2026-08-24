@@ -22,128 +22,64 @@
  * "the current page is far too busy at the top with things that add no value…
  * I don't like pages where there are novels written." The top is ONE line of
  * context plus the controls. Everything else is table.
+ *
+ * WHAT THIS FILE IS NOW (P25 — ONE TABLE, 2026-08-24): the workbench's chrome.
+ * The grid itself, its data access, its columns and its URL dialect all moved
+ * to `features/marketing/seo/keyword-table/`, because the topic tree's keyword
+ * queues had been built as hand-rolled lists and lost every one of them. What
+ * stays here is what is genuinely the workbench's: saved-view tabs, the
+ * right-click menu, and "assign everything these filters match".
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  BrainCircuit,
-  Info,
-  Loader2,
-  Network,
-  PanelTop,
-  SearchX,
-  Tag,
-} from "lucide-react";
+import { BrainCircuit, Info, Loader2, Network, PanelTop, Tag } from "lucide-react";
 
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type {
-  ColumnFiltersState,
-  MatrxColumnDef,
-  MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { toast } from "@/lib/toast";
-import { useDebounce } from "@/hooks/usehooks/useDebounce";
-import { cn } from "@/styles/themes/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
+import { useOpenGscWhyScoreWindow } from "@/features/overlays/openers/gscWhyScoreWindow";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
-import { FilterBar } from "@/features/marketing/search-console/components/FilterBar";
-import { RangeCompareControl } from "@/features/marketing/search-console/components/RangeCompareControl";
-import {
-  useGscBreakdown,
-  useGscFreshness,
-} from "@/features/marketing/search-console/hooks/useGscQuery";
-import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
-import {
-  buildGscMetricColumns,
-  gscMetricCopyLines,
-} from "@/features/marketing/search-console/lib/columns";
-import {
-  humanLines,
-  webLocation,
-} from "@/features/marketing/lib/copy-payloads";
-import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
+import { gscMetricCopyLines } from "@/features/marketing/search-console/lib/columns";
+import { humanLines } from "@/features/marketing/lib/copy-payloads";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
+import type { GscBreakdownRow } from "@/features/marketing/search-console/types";
+import { formatCount } from "@/features/marketing/search-console/types";
 import {
-  allowedFilterKeysForTab,
-  resolveGscDataThrough,
-  resolvePeriods,
-} from "@/features/marketing/search-console/lib/url-state";
-import type {
-  GscBreakdownRow,
-  GscFilters,
-  GscSortKey,
-} from "@/features/marketing/search-console/types";
+  KeywordTable,
+  type KeywordTableSurface,
+  type KeywordTableView,
+} from "@/features/marketing/seo/keyword-table/KeywordTable";
 import {
-  GSC_RANGE_PRESETS,
-  encodeStampFilter,
-  formatCount,
-  parseStampFilter,
-} from "@/features/marketing/search-console/types";
-import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
-import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
-import {
-  deleteSavedView,
-  getKeywordServices,
-  getKeywordStamps,
-  getMatchingKeywordIds,
-  listSavedViews,
-  saveView,
-  setKeywordService,
-  setKeywordStamps,
-  type SavedView,
-} from "@/features/marketing/seo/keyword-workbench/data";
-import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
-import {
-  parseWorkbenchState,
+  WORKBENCH_DEFAULT_COLUMNS,
+  mergeKeywordTableParams,
+  parseKeywordTableState,
   stateFromViewState,
   viewStateFor,
   viewStateMatches,
-  workbenchSearchParams,
-  type WorkbenchState,
-} from "@/features/marketing/seo/keyword-workbench/state";
-import { AssignPanel, type AssignTarget } from "./AssignPanel";
-import { ServiceAssignPanel } from "./ServiceAssignPanel";
-import { ServiceCell } from "./ServiceCell";
-import { ServiceFilterControl } from "./ServiceFilterControl";
-import { SERVICE_UNPLACED } from "./ServicePicker";
-import { ClassCell, StampCell } from "./cells";
-import { ColumnChooser } from "./ColumnChooser";
-import type { PickedValue } from "./DimensionValuePicker";
+} from "@/features/marketing/seo/keyword-table/state";
+import {
+  deleteSavedView,
+  getMatchingKeywordIds,
+  listSavedViews,
+  saveView,
+  type SavedView,
+} from "@/features/marketing/seo/keyword-workbench/data";
 import { SavedViewTabs } from "./SavedViewTabs";
-import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
-import { useOpenGscWhyScoreWindow } from "@/features/overlays/openers/gscWhyScoreWindow";
 
-
-/** Server-sortable ids. Anything else sorts the rows on screen — and says so. */
-const SERVER_SORTABLE = new Set([
-  "key",
-  "clicks",
-  "impressions",
-  "ctr",
-  "position",
-  // THE SERVICE COLUMN sorts on the server or it lies: the browser holds one
-  // page, and "sort by service" over 4,471 keywords must mean all of them.
-  "topic",
-]);
+const SURFACE: KeywordTableSurface = {
+  id: "keyword-workbench",
+  label: "Keyword",
+  listLabel: "Keyword workbench",
+  location: "Marketing — Keyword workbench",
+  // The workbench owns its route, so it keeps the bare (unprefixed) dialect —
+  // which is also what every saved view already written stores.
+  defaultColumns: WORKBENCH_DEFAULT_COLUMNS,
+};
 
 export function KeywordWorkbench() {
   const { site, brandId, sitePath } = useMarketingSite();
@@ -153,137 +89,7 @@ export function KeywordWorkbench() {
   const openDrilldown = useOpenGscDrilldownWindow();
   const openWhyScore = useOpenGscWhyScoreWindow();
 
-  const state = parseWorkbenchState(params);
-  /**
-   * Search has two clocks. The draft is what the input shows RIGHT NOW; the
-   * URL/server value changes only after the person pauses. Binding the input
-   * straight to URL state used to call router.push + the breakdown RPC for
-   * every character, so a large site could interrupt the next keystroke.
-   */
-  const [searchDraft, setSearchDraft] = useState(state.search);
-  const [urlSearchAtDraftSync, setUrlSearchAtDraftSync] = useState(
-    state.search,
-  );
-  const [pendingSearchCommit, setPendingSearchCommit] = useState<string | null>(
-    null,
-  );
-  const lastSearchCommit = useRef(state.search);
-  if (state.search !== urlSearchAtDraftSync) {
-    setUrlSearchAtDraftSync(state.search);
-    if (pendingSearchCommit === state.search) {
-      // This is the router acknowledging our own debounced write. Preserve a
-      // newer draft the person may already have typed while navigation ran.
-      setPendingSearchCommit(null);
-    } else {
-      setPendingSearchCommit(null);
-      setSearchDraft(state.search);
-    }
-  }
-  const debouncedSearch = useDebounce(searchDraft, 300);
-  /**
-   * THE BACK BUTTON IS UNDO (2026-08-24). Every write here is a discrete user
-   * action — a filter, a dimension column, a saved view, a page — so it PUSHES
-   * a history entry and Back walks back exactly one step. `router.replace` used
-   * to overwrite it, which left Back exiting the workbench entirely.
-   * `history: "replace"` stays available for programmatic corrections.
-   */
-  const push = (
-    next: WorkbenchState,
-    options: { history?: "push" | "replace" } = {},
-  ) => {
-    const href = `${sitePath}/keywords?${workbenchSearchParams(next).toString()}`;
-    if (options.history === "replace") router.replace(href, { scroll: false });
-    else router.push(href, { scroll: false });
-  };
-  const patch = (partial: Partial<WorkbenchState>) =>
-    push({ ...state, search: searchDraft, page: 1, ...partial });
-
-  useEffect(() => {
-    if (debouncedSearch === state.search) {
-      lastSearchCommit.current = state.search;
-      return;
-    }
-    if (lastSearchCommit.current === debouncedSearch) return;
-    lastSearchCommit.current = debouncedSearch;
-    setPendingSearchCommit(debouncedSearch);
-    const next = { ...state, page: 1, search: debouncedSearch };
-    const href = `${sitePath}/keywords?${workbenchSearchParams(next).toString()}`;
-    // Free text is one evolving search session, not one Back-stack entry per
-    // pause. Discrete table decisions still use push() above.
-    router.replace(href, { scroll: false });
-  }, [debouncedSearch, router, sitePath, state]);
-
-  /* ---------------------------------------------------------------- periods */
-  const freshness = useGscFreshness(site.id);
-  const dataThrough = resolveGscDataThrough(freshness.data, [
-    "query",
-    "query_page",
-  ]);
-  const periods = resolvePeriods(state, new Date(), dataThrough);
-
-  /* ------------------------------------------------------------------- data */
-  const breakdown = useGscBreakdown(site.id, periods, state.filters, {
-    dimension: "query",
-    search: state.search,
-    sort: SERVER_SORTABLE.has(state.sort)
-      ? (state.sort as GscSortKey)
-      : "clicks",
-    sortDir: state.sortDir,
-    page: state.page,
-    pageSize: state.pageSize,
-  });
-  const rows = breakdown.data?.rows ?? [];
-  const total = breakdown.data?.total ?? 0;
-  const keywordIds = rows
-    .map((r) => r.keyword_id)
-    .filter((id): id is string => !!id);
-
-  const catalog = useQuery({
-    queryKey: ["marketing", "seo", "dimension-catalog", site.id],
-    queryFn: ({ signal }) => getFacetDimensionCatalog(site.id, signal),
-    staleTime: 5 * 60_000,
-  });
-  const dimensions = catalog.data ?? [];
-  const classDimension = dimensions.find((d) => d.slug === "traffic_class");
-
-  const values = useQuery({
-    queryKey: ["marketing", "gsc", "keyword-value-for", site.id, keywordIds],
-    queryFn: ({ signal }) => getGscKeywordValueFor(site.id, keywordIds, signal),
-    enabled: keywordIds.length > 0,
-    staleTime: 60_000,
-  });
-
-  /**
-   * THE SERVICE COLUMN's two reads. The catalog (the site's topic tree) is
-   * shared with the topic-tree screen under its own query keys; the placements
-   * are asked for the page on screen only (THE SCOPE RULE).
-   */
-  const services = useSiteServices(
-    site.id,
-    periods.current.start,
-    periods.current.end,
-  );
-  const placements = useQuery({
-    queryKey: ["marketing", "seo", "keyword-services", site.id, keywordIds],
-    queryFn: ({ signal }) => getKeywordServices(site.id, keywordIds, signal),
-    enabled: keywordIds.length > 0,
-    staleTime: 60_000,
-  });
-
-  const stamps = useQuery({
-    queryKey: [
-      "marketing",
-      "seo",
-      "keyword-stamps",
-      site.id,
-      keywordIds,
-      state.dimensions,
-    ],
-    queryFn: ({ signal }) =>
-      getKeywordStamps(site.id, keywordIds, state.dimensions, signal),
-    enabled: keywordIds.length > 0 && state.dimensions.length > 0,
-    staleTime: 60_000,
-  });
+  const state = parseKeywordTableState(params);
 
   const views = useQuery({
     queryKey: ["marketing", "seo", "keyword-views", site.id],
@@ -293,145 +99,27 @@ export function KeywordWorkbench() {
   const activeView =
     (views.data ?? []).find((v) => v.id === state.viewId) ?? null;
 
-  /* -------------------------------------------------------------- selection */
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  /**
-   * A selection belongs to the result set it was made in. Changing the
-   * filters, the window, or the saved view produces a DIFFERENT set of rows,
-   * and carrying "7 keywords selected" across that boundary invites a bulk
-   * assignment onto keywords the person can no longer see — the exact mistake
-   * a bulk tool must never make. Reset-on-scope-change, the render-time way.
-   */
-  const selectionScope = `${JSON.stringify(state.filters)}|${state.search}|${state.range}|${state.customFrom}|${state.customTo}|${state.viewId}`;
-  const [scopeAtSelection, setScopeAtSelection] = useState(selectionScope);
-  if (scopeAtSelection !== selectionScope) {
-    setScopeAtSelection(selectionScope);
-    if (selectedIds.length > 0) setSelectedIds([]);
-  }
-  const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
-  /** The same three gestures, aimed at the topic tree instead of a stamp. */
-  const [serviceTarget, setServiceTarget] = useState<AssignTarget | null>(null);
-  const [lastUsed, setLastUsed] = useState<PickedValue | null>(null);
-  const [selectingAll, setSelectingAll] = useState(false);
   const [viewsBusy, setViewsBusy] = useState(false);
   const [renaming, setRenaming] = useState<SavedView | null>(null);
   const [savingNew, setSavingNew] = useState(false);
+  const [selectingAll, setSelectingAll] = useState(false);
   const clickedRow = useRef<GscBreakdownRow | null>(null);
-
-  const rowById = new Map(rows.map((r) => [r.key, r]));
-  const selectedKeywordIds = selectedIds
-    .map((key) => rowById.get(key)?.keyword_id)
-    .filter((id): id is string => !!id);
-
-  const refreshMeaning = async () => {
-    await queryClient.invalidateQueries({
-      queryKey: ["marketing", "seo", "keyword-stamps", site.id],
-    });
-    await queryClient.invalidateQueries({
-      queryKey: ["marketing", "gsc", "keyword-value-for", site.id],
-    });
-    await queryClient.invalidateQueries({
-      queryKey: ["marketing", "seo", "dimension-catalog", site.id],
-    });
-    await queryClient.invalidateQueries({
-      queryKey: ["marketing", "seo", "keyword-services", site.id],
-    });
-    // The topic tree screen counts these placements — never leave it stale.
-    await queryClient.invalidateQueries({ queryKey: ["seo", "topics"] });
-  };
+  /** The live table, for chrome that renders outside it (the right-click menu). */
+  const view = useRef<KeywordTableView | null>(null);
 
   /**
-   * Place one keyword on a service straight from the cell — one gesture, no
-   * dialog, the same doctrine as the Class cell. The reason box lives in the
-   * bulk panel for the times the WHY matters (P24); a single quick placement
-   * that demanded a paragraph would stop being one gesture.
+   * THE BACK BUTTON IS UNDO. Opening a saved view is a discrete decision, so it
+   * PUSHES — `router.replace` used to overwrite the entry, which left Back
+   * exiting the workbench entirely.
    */
-  const placeService = async (
-    keywordId: string,
-    topicId: string | null,
-    keyword: string,
-  ) => {
-    try {
-      await setKeywordService({
-        siteId: site.id,
-        keywordIds: [keywordId],
-        topicId,
-      });
-      await refreshMeaning();
-      const name = topicId
-        ? (services.byId.get(topicId)?.name ?? "that service")
-        : null;
-      toast.success(
-        name
-          ? `“${keyword}” maps to ${name}.`
-          : `“${keyword}” is off the tree — it maps to no service now.`,
-      );
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not place that.",
-      );
-    }
-  };
-
-  /** Quick-assign: one click, the value you last used, no dialog (P23 story). */
-  const quickAssign = async (targetIds: string[], picked: PickedValue) => {
-    try {
-      const result = await setKeywordStamps({
-        siteId: site.id,
-        keywordIds: targetIds,
-        valueId: picked.valueId,
-      });
-      await refreshMeaning();
-      toast.success(
-        `${picked.dimensionLabel}: ${picked.valueLabel} — ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}.`,
-      );
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not save that.",
-      );
-    }
-  };
-
-  const selectAllMatching = async (intent: "stamp" | "service" = "stamp") => {
-    setSelectingAll(true);
-    try {
-      const match = await getMatchingKeywordIds(
-        site.id,
-        periods,
-        state.filters,
-        state.search,
-      );
-      if (match.keywordIds.length === 0) {
-        toast.info("Nothing matches these filters yet.");
-        return;
-      }
-      const target: AssignTarget = {
-        keywordIds: match.keywordIds,
-        label: `${match.keywordIds.length.toLocaleString()} keywords`,
-        fromFilters: true,
-        capped: match.capped,
-      };
-      if (intent === "service") setServiceTarget(target);
-      else setAssignTarget(target);
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Could not work out everything your filters match.",
-      );
-    } finally {
-      setSelectingAll(false);
-    }
-  };
-
-  /* ------------------------------------------------------------ saved views */
   const openView = (view: SavedView | null) => {
-    if (!view) {
-      push({ ...parseWorkbenchState(new URLSearchParams()), viewId: null });
-      return;
-    }
-    push({ ...stateFromViewState(view.state, state), viewId: view.id });
+    const next = view
+      ? { ...stateFromViewState(view.state, state), viewId: view.id }
+      : { ...parseKeywordTableState(new URLSearchParams()), viewId: null };
+    const qs = mergeKeywordTableParams(params, next).toString();
+    router.push(`${sitePath}/keywords${qs ? `?${qs}` : ""}`, { scroll: false });
   };
+
   const runViewWrite = async (fn: () => Promise<unknown>, done: string) => {
     setViewsBusy(true);
     try {
@@ -449,407 +137,41 @@ export function KeywordWorkbench() {
     }
   };
 
-  /* ---------------------------------------------------------------- columns */
-  const stampFor = (row: GscBreakdownRow, slug: string) =>
-    row.keyword_id ? stamps.data?.get(row.keyword_id)?.get(slug) : undefined;
-  const valueFor = (row: GscBreakdownRow) =>
-    row.keyword_id ? values.data?.get(row.keyword_id) : undefined;
-  const serviceFor = (row: GscBreakdownRow) =>
-    row.keyword_id ? placements.data?.get(row.keyword_id) : undefined;
-  const filterByService = (topic: string | undefined) => {
-    const filters: GscFilters = { ...state.filters };
-    if (!topic) delete filters.topic;
-    else filters.topic = topic;
-    patch({ filters });
-  };
-
-  const stampPairs = parseStampFilter(state.filters.stamps);
-  const filterByStamp = (dimensionSlug: string, valueKey: string) => {
-    const pair = { dimension: dimensionSlug, value: valueKey };
-    const exists = stampPairs.some(
-      (p) => p.dimension === pair.dimension && p.value === pair.value,
-    );
-    const next = exists
-      ? stampPairs.filter(
-          (p) => !(p.dimension === pair.dimension && p.value === pair.value),
-        )
-      : [...stampPairs, pair];
-    const filters: GscFilters = { ...state.filters };
-    if (next.length === 0) delete filters.stamps;
-    else filters.stamps = encodeStampFilter(next);
-    patch({ filters });
-  };
-
-  const dimensionColumns: MatrxColumnDef<GscBreakdownRow>[] =
-    state.dimensions.map((slug) => {
-      const dimension = dimensions.find((d) => d.slug === slug);
-      // A site dimension's slug carries a `site_<8 hex>_` prefix that exists
-      // so two sites can both own "Buyer stage". It is plumbing, and a header
-      // that reads "SITE 38EFF4C9 BUYER STAGE" for the second the catalog is
-      // still loading is plumbing on the user's screen.
-      const label =
-        dimension?.label ??
-        humanizeSlug(slug.replace(/^site_[0-9a-f]{8}_/, ""));
-      return {
-        id: `dim:${slug}`,
-        header: label,
-        sortable: true,
-        filter: "select",
-        filterOptions: (dimension?.values ?? [])
-          .filter((v) => !v.abstain)
-          .map((v) => ({ value: v.key, label: v.label })),
-        filterSingle: true,
-        width: 150,
-        // An INTENTIONAL phone column set: keyword, class, clicks, level. A
-        // phone that opens onto eight columns of horizontal scroll is a phone
-        // nobody reads the meaning columns on anyway.
-        mobileHidden: true,
-        accessorFn: (row) => stampFor(row, slug)?.valueLabel ?? "",
-        cell: (row) => {
-          const stamp = stampFor(row, slug);
-          if (!row.keyword_id) {
-            return <span className="text-[11px] text-muted-foreground">—</span>;
-          }
-          return (
-            <StampCell
-              label={stamp?.valueLabel ?? null}
-              source={stamp?.source ?? null}
-              notes={stamp?.notes ?? null}
-              onAssign={() =>
-                setAssignTarget({
-                  keywordIds: [row.keyword_id as string],
-                  label: `“${row.key}”`,
-                  lockedDimensionSlug: slug,
-                  initial:
-                    stamp && dimension
-                      ? {
-                          dimensionId: dimension.dimension_id,
-                          dimensionSlug: dimension.slug,
-                          dimensionLabel: dimension.label,
-                          valueId: stamp.valueId,
-                          valueLabel: stamp.valueLabel,
-                        }
-                      : null,
-                })
-              }
-              onFilter={
-                stamp ? () => filterByStamp(slug, stamp.value) : undefined
-              }
-            />
-          );
-        },
-      };
-    });
-
-  const columns: MatrxColumnDef<GscBreakdownRow>[] = [
-    {
-      id: "key",
-      header: "Keyword",
-      sortable: true,
-      filter: "text",
-      accessorKey: "key",
-      // NEVER truncated — Arman found keywords cut off on the bench they
-      // replaced, and a keyword you cannot read is a row you cannot judge.
-      cell: (row) => (
-        <span className="block break-words text-xs text-foreground">
-          {row.key}
-        </span>
-      ),
-    },
-    {
-      /**
-       * THE SERVICE COLUMN — "the first thing I wanna know is what service
-       * they map to". It sits next to the keyword because that is the order a
-       * person reads: the phrase, then what it is FOR, then how we classify
-       * it, then the dimensions, then the numbers.
-       */
-      id: "topic",
-      header: "Service",
-      sortable: true,
-      filter: "select",
-      filterSingle: true,
-      // P26 — every column filters. This one's filter is the same server
-      // filter the toolbar control writes, so both doors lead to one truth.
-      filterOptions: [
-        { value: SERVICE_UNPLACED, label: "Not placed yet" },
-        ...services.options.map((option) => ({
-          value: option.topicId,
-          label: option.depth > 0 ? `${option.rootName} › ${option.name}` : option.name,
-        })),
-      ],
-      width: 300,
-      accessorFn: (row) => serviceFor(row)?.topicName ?? "",
-      cell: (row) => {
-        if (!row.keyword_id) {
-          return <span className="text-[11px] text-muted-foreground">—</span>;
-        }
-        return (
-          <ServiceCell
-            siteId={site.id}
-            services={services}
-            placement={serviceFor(row)}
-            onPlace={(topicId) =>
-              void placeService(row.keyword_id as string, topicId, row.key)
-            }
-            onFilter={(topicId) => filterByService(topicId)}
-          />
-        );
-      },
-    },
-    {
-      id: "traffic_class",
-      header: "Class",
-      sortable: true,
-      filter: "select",
-      filterSingle: true,
-      filterOptions: (classDimension?.values ?? [])
-        .filter((v) => !v.abstain)
-        .map((v) => ({ value: v.key, label: v.label })),
-      width: 140,
-      accessorFn: (row) => valueFor(row)?.traffic_class ?? "",
-      cell: (row) => (
-        <ClassCell
-          current={valueFor(row)?.traffic_class ?? null}
-          source={valueFor(row)?.class_source ?? null}
-          options={(classDimension?.values ?? []).filter((v) => !v.abstain)}
-          disabled={!row.keyword_id}
-          onPick={(value) => {
-            if (!row.keyword_id || !classDimension) return;
-            const picked: PickedValue = {
-              dimensionId: classDimension.dimension_id,
-              dimensionSlug: classDimension.slug,
-              dimensionLabel: classDimension.label,
-              valueId: value.value_id,
-              valueLabel: value.label,
-            };
-            setLastUsed(picked);
-            void quickAssign([row.keyword_id], picked);
-          }}
-          onAssignWithReason={() => {
-            if (!row.keyword_id) return;
-            setAssignTarget({
-              keywordIds: [row.keyword_id],
-              label: `“${row.key}”`,
-              lockedDimensionSlug: "traffic_class",
-            });
-          }}
-          onMakeYourOwn={() => {
-            if (!row.keyword_id) return;
-            // No locked dimension: the picker opens on the whole catalog and
-            // will create a dimension of their own from whatever they type.
-            setAssignTarget({
-              keywordIds: [row.keyword_id],
-              label: `“${row.key}”`,
-            });
-          }}
-        />
-      ),
-    },
-    ...dimensionColumns,
-    ...buildGscMetricColumns<GscBreakdownRow>(
-      periods.compare !== null,
-      "clicks-only",
-    ).filter((column) => {
-      // CTR and Position are opt-in: clicks and impressions are what a person
-      // scans, and two more numeric columns push the meaning columns off a
-      // laptop screen.
-      if (column.id === "ctr") return state.optional.includes("ctr");
-      if (column.id === "position") return state.optional.includes("position");
-      return true;
-    }),
-    {
-      id: "value_score",
-      header: "Score",
-      sortable: true,
-      filter: false,
-      align: "right",
-      width: 76,
-      mobileHidden: true,
-      accessorFn: (row) => valueFor(row)?.value_score ?? null,
-      cell: (row) => {
-        const value = valueFor(row);
-        return (
-          <span className="text-xs tabular-nums text-foreground">
-            {value?.value_score == null
-              ? "—"
-              : Math.round(Number(value.value_score)).toLocaleString()}
-          </span>
-        );
-      },
-    },
-    {
-      id: "value_band",
-      header: "Level",
-      sortable: true,
-      filter: false,
-      width: 130,
-      accessorFn: (row) => valueFor(row)?.value_band ?? "",
-      cell: (row) => {
-        const value = valueFor(row);
-        if (!value)
-          return <span className="text-[11px] text-muted-foreground">—</span>;
-        return (
-          <span className="flex items-center gap-1">
-            <span
-              className={cn(
-                "rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium",
-                value.value_band === "negative"
-                  ? "text-destructive"
-                  : value.value_band === "unvalued"
-                    ? "text-muted-foreground"
-                    : "text-foreground",
-              )}
-            >
-              {value.value_band ? humanizeSlug(value.value_band) : "—"}
-            </span>
-            <WhyScoreHint
-              subject={{
-                keywordId: row.keyword_id,
-                keyword: row.key,
-                valueBand: value.value_band,
-                valueScore: value.value_score,
-                valueSource: value.value_source,
-                reasons: value.reasons,
-              }}
-              context={{ brandId, siteId: site.id, keyword: row.key }}
-            />
-          </span>
-        );
-      },
-    },
-  ];
-
-  /* ------------------------------------------------------------- table state */
-  const tableColumnFilters: ColumnFiltersState = {};
-  if (searchDraft) {
-    tableColumnFilters.key = { kind: "text", value: searchDraft };
-  }
-  if (state.filters.topic) {
-    tableColumnFilters.topic = {
-      kind: "select",
-      value: state.filters.topic,
-    };
-  }
-  for (const pair of stampPairs) {
-    const id =
-      pair.dimension === "traffic_class"
-        ? "traffic_class"
-        : `dim:${pair.dimension}`;
-    const existing = tableColumnFilters[id];
-    const values =
-      existing?.kind === "select"
-        ? [...(existing.values ?? [existing.value]), pair.value]
-        : [pair.value];
-    tableColumnFilters[id] = {
-      kind: "select",
-      value: values[0],
-      values,
-    };
-  }
-
-  const tableQuery: MatrxDataTableQueryState = {
-    page: state.page,
-    pageSize: state.pageSize,
-    search: searchDraft,
-    anyOf: "",
-    // Every URL-owned filter is mirrored back into the controlled table. If a
-    // filter is omitted here, the table correctly emits the click but the next
-    // controlled render immediately paints the old value again.
-    columnFilters: tableColumnFilters,
-    sort: { id: state.sort, direction: state.sortDir },
-  };
-
   /**
-   * A dimension column has no server sort (the RPC sorts search metrics), so
-   * it sorts what is on screen and the header says exactly that. Sorting
-   * 20,000 rows by a stamp the browser never fetched is the kind of quiet lie
-   * this system exists to stop.
+   * "Assign all 4,471 matching" — the ONE place a bulk write escapes the page
+   * on screen. It asks the server which keywords the live filters match rather
+   * than assuming the fifty in the browser are all of them.
    */
-  const displayRows = SERVER_SORTABLE.has(state.sort)
-    ? rows
-    : [...rows].sort((a, b) => {
-        const read = (row: GscBreakdownRow) =>
-          state.sort.startsWith("dim:")
-            ? (stampFor(row, state.sort.slice(4))?.valueLabel ?? "")
-            : state.sort === "traffic_class"
-              ? (valueFor(row)?.traffic_class ?? "")
-              : state.sort === "value_band"
-                ? (valueFor(row)?.value_band ?? "")
-                : String(valueFor(row)?.value_score ?? "");
-        const av = read(a);
-        const bv = read(b);
-        const cmp =
-          state.sort === "value_score"
-            ? Number(av || 0) - Number(bv || 0)
-            : av.localeCompare(bv);
-        return state.sortDir === "asc" ? cmp : -cmp;
-      });
-
-  const onQueryStateChange = (next: MatrxDataTableQueryState) => {
-    if (next.search !== searchDraft) {
-      setSearchDraft(next.search ?? "");
-      return;
+  const selectAllMatching = async (
+    view: KeywordTableView,
+    intent: "stamp" | "service",
+  ) => {
+    setSelectingAll(true);
+    try {
+      const match = await getMatchingKeywordIds(
+        site.id,
+        view.periods,
+        view.filters,
+        view.search,
+      );
+      if (match.keywordIds.length === 0) {
+        toast.info("Nothing matches these filters yet.");
+        return;
+      }
+      const label = `${match.keywordIds.length.toLocaleString()} keywords`;
+      if (intent === "service") view.openServiceAssign(match.keywordIds, label);
+      else view.openAssign(match.keywordIds, label);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not work out everything your filters match.",
+      );
+    } finally {
+      setSelectingAll(false);
     }
-    const keywordFilter = next.columnFilters.key;
-    const keywordFilterText =
-      keywordFilter?.kind === "text" ? keywordFilter.value : "";
-    if (keywordFilterText !== searchDraft) {
-      setSearchDraft(keywordFilterText);
-      return;
-    }
-    const sortId = next.sort?.id ?? "clicks";
-    const selectedValue = (id: string) => {
-      const filter = next.columnFilters[id];
-      if (!filter || filter.kind !== "select") return undefined;
-      return (filter.values?.length ? filter.values[0] : filter.value) ||
-        undefined;
-    };
-
-    const nextTopic = selectedValue("topic");
-    if (nextTopic !== state.filters.topic) {
-      filterByService(nextTopic);
-      return;
-    }
-
-    // Column filters on a dimension are REAL filters — replace that
-    // dimension's server-side stamp pair rather than trying to interpret the
-    // typed ColumnFilterValue as the legacy raw string/array shape.
-    const stampColumnIds = [
-      "traffic_class",
-      ...state.dimensions.map((slug) => `dim:${slug}`),
-    ];
-    for (const id of stampColumnIds) {
-      const slug = id.startsWith("dim:") ? id.slice(4) : "traffic_class";
-      const current = stampPairs.find((pair) => pair.dimension === slug)?.value;
-      const picked = selectedValue(id);
-      if (picked === current) continue;
-
-      const nextPairs = stampPairs.filter((pair) => pair.dimension !== slug);
-      if (picked) nextPairs.push({ dimension: slug, value: picked });
-      const filters: GscFilters = { ...state.filters };
-      if (nextPairs.length === 0) delete filters.stamps;
-      else filters.stamps = encodeStampFilter(nextPairs);
-      patch({ filters });
-      return;
-    }
-    push({
-      ...state,
-      page: next.page,
-      pageSize: next.pageSize,
-      search: searchDraft,
-      sort: sortId,
-      sortDir: next.sort?.direction ?? "desc",
-    });
   };
 
-  /* ---------------------------------------------------------- context menu */
-  const resolveRowContext = (target: HTMLElement | null) => {
-    const key = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
-    const row = key ? (rows.find((r) => r.key === key) ?? null) : null;
-    clickedRow.current = row;
-    if (!row) return null;
-    return { content: humanLines(gscMetricCopyLines("Keyword", "query", row)) };
-  };
   const openPagesPanel = () => {
     const row = clickedRow.current;
     if (!row) {
@@ -870,390 +192,230 @@ export function KeywordWorkbench() {
     });
   };
 
-  const rangeLabel =
-    state.range === "custom" && state.customFrom && state.customTo
-      ? `${state.customFrom} → ${state.customTo}`
-      : (GSC_RANGE_PRESETS.find((r) => r.key === state.range)?.label ??
-        "Last 28 days");
-
-  /* ------------------------------------------------------------------ render */
-  // The context menu's trigger renders `asChild`, so its child MUST be a real
-  // DOM element — handing `asChild` a component that does not forward props
-  // drops the right-click handler on the floor, silently and with no error.
-  // (It did. That is why this div is not decorative.)
-  const table = (
-    <div className="flex h-full min-h-0 flex-col">
-      <MatrxDataTable<GscBreakdownRow>
-        data={displayRows}
-        columns={columns}
-        getRowId={(row) => row.key}
-        isLoading={breakdown.isLoading}
-        isFetching={
-          breakdown.isFetching ||
-          values.isFetching ||
-          stamps.isFetching ||
-          placements.isFetching
-        }
-        query={{
-          mode: "controlled",
-          totalItems: total,
-          state: tableQuery,
-          onStateChange: onQueryStateChange,
-        }}
-        selection={{
-          selectedIds,
-          onSelectedIdsChange: setSelectedIds,
-          noun: "keyword",
-          isRowSelectable: (row) => !!row.keyword_id,
-          actions: (_selected, ids) => (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Button
-                size="sm"
-                className="h-7 gap-1 text-xs"
-                disabled={selectedKeywordIds.length === 0}
-                onClick={() =>
-                  setAssignTarget({
-                    keywordIds: selectedKeywordIds,
-                    label: `${selectedKeywordIds.length.toLocaleString()} keyword${selectedKeywordIds.length === 1 ? "" : "s"}`,
-                  })
-                }
-              >
-                <Tag className="h-3.5 w-3.5" />
-                Assign…
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1 text-xs"
-                disabled={selectedKeywordIds.length === 0}
-                onClick={() =>
-                  setServiceTarget({
-                    keywordIds: selectedKeywordIds,
-                    label: `${selectedKeywordIds.length.toLocaleString()} keyword${selectedKeywordIds.length === 1 ? "" : "s"}`,
-                  })
-                }
-              >
-                <Network className="h-3.5 w-3.5" />
-                Service…
-              </Button>
-              {lastUsed ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 gap-1 text-xs"
-                  disabled={selectedKeywordIds.length === 0}
-                  onClick={() => void quickAssign(selectedKeywordIds, lastUsed)}
-                >
-                  {lastUsed.valueLabel}
-                </Button>
-              ) : null}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs text-muted-foreground"
-                onClick={() => setSelectedIds([])}
-              >
-                Clear {ids.length}
-              </Button>
-            </div>
-          ),
-        }}
-        toolbar={{
-          searchPlaceholder: "Search keywords…",
-          leading:
-            total > rows.length ? (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 gap-1 whitespace-nowrap text-xs"
-                  onClick={() => void selectAllMatching("stamp")}
-                  disabled={selectingAll}
-                >
-                  {selectingAll ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Tag className="h-3.5 w-3.5" />
-                  )}
-                  Assign all {formatCount(total)} matching
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 gap-1 whitespace-nowrap text-xs"
-                  onClick={() => void selectAllMatching("service")}
-                  disabled={selectingAll}
-                >
-                  <Network className="h-3.5 w-3.5" />
-                  Service for all {formatCount(total)}
-                </Button>
-              </div>
-            ) : undefined,
-        }}
-        copy={{
-          label: "Keyword",
-          listLabel: "Keyword workbench",
-          location: webLocation("Marketing — Keyword workbench"),
-          rowKind: "web-keyword-workbench-row",
-          listKind: "web-keyword-workbench-table",
-          rowDescription:
-            "One keyword's search performance, class, score, level and stamped dimensions for this site.",
-          listDescription:
-            "The visible keyword workbench rows (respecting search, filters, sort and pagination).",
-          humanRow: (row) =>
-            humanLines(gscMetricCopyLines("Keyword", "query", row)),
-          rowAttributes: (row) => ({
-            ...gscScopeAttributes(site.id, site.domain, periods, state.filters),
-            key: row.key,
-            keyword_id: row.keyword_id ?? "",
-          }),
-          listAttributes: (visible) => ({
-            ...gscScopeAttributes(site.id, site.domain, periods, state.filters),
-            visible_rows: visible.length,
-            total_rows: total,
-            dimension_columns: state.dimensions.join(","),
-          }),
-        }}
-        detail={{ enabled: false }}
-        window={{ enabled: false }}
-        pageSize={state.pageSize}
-        emptyState={{
-          icon: <SearchX className="h-8 w-8 text-muted-foreground" />,
-          title: "No keywords match",
-          description:
-            "Nothing in this window carries every filter you set. Widen the date range, drop a filter chip, or clear the search.",
-        }}
-        className="flex-1"
-      />
-    </div>
-  );
-
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 bg-textured p-3">
       {/* THE THIN TOP — one line of context, then controls. Nothing else. */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <SavedViewTabs
-          views={views.data ?? []}
-          loading={views.isLoading}
-          activeId={state.viewId}
-          dirty={!!activeView && !viewStateMatches(state, activeView.state)}
-          busy={viewsBusy}
-          onOpen={openView}
-          onSaveNew={() => setSavingNew(true)}
-          onUpdate={(view) =>
-            void runViewWrite(
-              () =>
-                saveView({
-                  siteId: site.id,
-                  id: view.id,
-                  name: view.name,
-                  state: viewStateFor(state),
-                  shared: view.shared,
-                }),
-              `“${view.name}” now opens on this arrangement.`,
-            )
-          }
-          onRename={(view) => setRenaming(view)}
-          onToggleShared={(view) =>
-            void runViewWrite(
-              () =>
+      <SavedViewTabs
+        views={views.data ?? []}
+        loading={views.isLoading}
+        activeId={state.viewId}
+        dirty={!!activeView && !viewStateMatches(state, activeView.state)}
+        busy={viewsBusy}
+        onOpen={openView}
+        onSaveNew={() => setSavingNew(true)}
+        onUpdate={(view) =>
+          void runViewWrite(
+            () =>
+              saveView({
+                siteId: site.id,
+                id: view.id,
+                name: view.name,
+                state: viewStateFor(state),
+                shared: view.shared,
+              }),
+            `“${view.name}” now opens on this arrangement.`,
+          )
+        }
+        onRename={(view) => setRenaming(view)}
+        onToggleShared={(view) =>
+          void runViewWrite(
+            () =>
+              saveView({
+                siteId: site.id,
+                id: view.id,
+                name: view.name,
+                state: view.state as Record<string, string>,
+                shared: !view.shared,
+              }),
+            view.shared
+              ? `“${view.name}” is yours again.`
+              : `“${view.name}” is shared with your team.`,
+          )
+        }
+        onMove={(view, direction) => {
+          const ordered = [...(views.data ?? [])];
+          const index = ordered.findIndex((v) => v.id === view.id);
+          const swap = ordered[index + direction];
+          if (!swap) return;
+          void runViewWrite(
+            () =>
+              Promise.all([
                 saveView({
                   siteId: site.id,
                   id: view.id,
                   name: view.name,
                   state: view.state as Record<string, string>,
-                  shared: !view.shared,
+                  shared: view.shared,
+                  position: swap.position ?? index + direction + 1,
                 }),
-              view.shared
-                ? `“${view.name}” is yours again.`
-                : `“${view.name}” is shared with your team.`,
-            )
-          }
-          onMove={(view, direction) => {
-            const ordered = [...(views.data ?? [])];
-            const index = ordered.findIndex((v) => v.id === view.id);
-            const swap = ordered[index + direction];
-            if (!swap) return;
-            void runViewWrite(
-              () =>
-                Promise.all([
-                  saveView({
-                    siteId: site.id,
-                    id: view.id,
-                    name: view.name,
-                    state: view.state as Record<string, string>,
-                    shared: view.shared,
-                    position: swap.position ?? index + direction + 1,
-                  }),
-                  saveView({
-                    siteId: site.id,
-                    id: swap.id,
-                    name: swap.name,
-                    state: swap.state as Record<string, string>,
-                    shared: swap.shared,
-                    position: view.position ?? index + 1,
-                  }),
-                ]),
-              "Reordered.",
+                saveView({
+                  siteId: site.id,
+                  id: swap.id,
+                  name: swap.name,
+                  state: swap.state as Record<string, string>,
+                  shared: swap.shared,
+                  position: view.position ?? index + 1,
+                }),
+              ]),
+            "Reordered.",
+          );
+        }}
+        onDelete={(view) => {
+          void (async () => {
+            const ok = await confirm({
+              title: `Delete “${view.name}”?`,
+              description:
+                "The view goes away. The keywords, stamps and reasons behind it are untouched.",
+              confirmLabel: "Delete view",
+              variant: "destructive",
+            });
+            if (!ok) return;
+            await runViewWrite(
+              () => deleteSavedView(site.id, view.id),
+              `“${view.name}” deleted.`,
             );
-          }}
-          onDelete={(view) => {
-            void (async () => {
-              const ok = await confirm({
-                title: `Delete “${view.name}”?`,
-                description:
-                  "The view goes away. The keywords, stamps and reasons behind it are untouched.",
-                confirmLabel: "Delete view",
-                variant: "destructive",
-              });
-              if (!ok) return;
-              await runViewWrite(
-                () => deleteSavedView(site.id, view.id),
-                `“${view.name}” deleted.`,
-              );
-              if (state.viewId === view.id) openView(null);
-            })();
-          }}
-        />
-        <div className="flex items-center gap-1.5">
-          {/* The canonical range + compare control — it already owns custom
-              date ranges, which a hand-rolled preset list silently refuses. */}
-          <RangeCompareControl
-            value={{
-              range: state.range,
-              customFrom: state.customFrom,
-              customTo: state.customTo,
-              compare: state.compare,
-            }}
-            onChange={(next) =>
-              patch({
-                range: next.range,
-                customFrom: next.customFrom,
-                customTo: next.customTo,
-                compare: next.compare,
-              })
-            }
-          />
-          <ColumnChooser
-            dimensions={dimensions}
-            loading={catalog.isLoading}
-            selected={state.dimensions}
-            onSelectedChange={(next) => patch({ dimensions: next })}
-            optional={state.optional}
-            onOptionalChange={(next) => patch({ optional: next })}
-          />
-        </div>
-      </div>
+            if (state.viewId === view.id) openView(null);
+          })();
+        }}
+      />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <FilterBar
-          filters={state.filters}
-          onChange={(filters) => patch({ filters })}
-          allowedKeys={allowedFilterKeysForTab("queries")}
-          siteId={site.id}
-        />
-        {/* The service filter's own control — the shared bar has no topic
-            catalog, and a chip reading a raw uuid is not a filter. */}
-        <ServiceFilterControl
-          siteId={site.id}
-          services={services}
-          value={state.filters.topic}
-          onChange={filterByService}
-        />
-        <span className="ml-auto whitespace-nowrap text-[11px] text-muted-foreground">
-          {formatCount(total)} keywords · {rangeLabel}
-          {dataThrough ? ` · through ${dataThrough}` : ""}
-        </span>
-      </div>
-
-      {assignTarget ? (
-        <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
-          <AssignPanel
-            siteId={site.id}
-            dimensions={dimensions}
-            dimensionsLoading={catalog.isLoading}
-            target={assignTarget}
-            onCancel={() => setAssignTarget(null)}
-            onDone={(result, picked) => {
-              setLastUsed(picked);
-              setAssignTarget(null);
-              toast.success(
-                result.cleared > 0
-                  ? `Removed ${picked.valueLabel} from ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`
-                  : `${picked.dimensionLabel}: ${picked.valueLabel} on ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}${result.notesSaved ? " — your reason is saved with them." : "."}`,
-              );
-              if (
-                result.written > 0 &&
-                !state.dimensions.includes(picked.dimensionSlug)
-              ) {
-                // You just gave these keywords a meaning; you should be able
-                // to SEE it without hunting for the column chooser.
-                patch({
-                  dimensions: [...state.dimensions, picked.dimensionSlug],
-                });
+      <KeywordTable
+        siteId={site.id}
+        siteDomain={site.domain}
+        brandId={brandId}
+        surface={SURFACE}
+        className="flex min-h-0 flex-1 flex-col gap-2"
+        viewRef={view}
+        toolbarLeading={(live) =>
+          live.total > live.rows.length ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 whitespace-nowrap text-xs"
+                onClick={() => void selectAllMatching(live, "stamp")}
+                disabled={selectingAll}
+              >
+                {selectingAll ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Tag className="h-3.5 w-3.5" />
+                )}
+                Assign all {formatCount(live.total)} matching
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 whitespace-nowrap text-xs"
+                onClick={() => void selectAllMatching(live, "service")}
+                disabled={selectingAll}
+              >
+                <Network className="h-3.5 w-3.5" />
+                Service for all {formatCount(live.total)}
+              </Button>
+            </div>
+          ) : null
+        }
+        selectionActions={({
+          keywordIds,
+          openAssign,
+          openServiceAssign,
+          quickAssign,
+          lastUsed,
+          clear,
+        }) => (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Button
+              size="sm"
+              className="h-7 gap-1 text-xs"
+              disabled={keywordIds.length === 0}
+              onClick={() =>
+                openAssign(
+                  keywordIds,
+                  `${keywordIds.length.toLocaleString()} keyword${keywordIds.length === 1 ? "" : "s"}`,
+                )
               }
-            }}
-          />
-        </div>
-      ) : null}
-
-      {serviceTarget ? (
-        <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
-          <ServiceAssignPanel
-            siteId={site.id}
-            services={services}
-            target={serviceTarget}
-            onCancel={() => setServiceTarget(null)}
-            onDone={(result, placed) => {
-              setServiceTarget(null);
-              toast.success(
-                placed.topicId
-                  ? `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} now map to ${placed.name}.`
-                  : `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} taken off the tree.`,
-              );
-            }}
-          />
-        </div>
-      ) : null}
-
-      <div className="flex min-h-0 flex-1 flex-col">
-        {breakdown.isError ? (
-          <div className="flex h-full items-center justify-center rounded-md border border-destructive/40 bg-destructive/5 p-4">
-            <p className="max-w-lg text-center text-xs text-destructive">
-              {breakdown.error instanceof Error
-                ? breakdown.error.message
-                : String(breakdown.error)}
-            </p>
+            >
+              <Tag className="h-3.5 w-3.5" />
+              Assign…
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1 text-xs"
+              disabled={keywordIds.length === 0}
+              onClick={() =>
+                openServiceAssign(
+                  keywordIds,
+                  `${keywordIds.length.toLocaleString()} keyword${keywordIds.length === 1 ? "" : "s"}`,
+                )
+              }
+            >
+              <Network className="h-3.5 w-3.5" />
+              Service…
+            </Button>
+            {lastUsed ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                disabled={keywordIds.length === 0}
+                onClick={() => quickAssign(keywordIds, lastUsed)}
+              >
+                {lastUsed.valueLabel}
+              </Button>
+            ) : null}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-muted-foreground"
+              onClick={clear}
+            >
+              Clear {keywordIds.length}
+            </Button>
           </div>
-        ) : (
+        )}
+        wrapTable={(table) => (
           <NonEditableContextMenu
             sourceFeature="marketing"
             contextData={{ content: "" }}
-            resolveContextOnOpen={resolveRowContext}
+            resolveContextOnOpen={(target) => {
+              const key = target
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row =
+                (key && view.current?.rows.find((r) => r.key === key)) || null;
+              clickedRow.current = row;
+              if (!row) return null;
+              return {
+                content: humanLines(gscMetricCopyLines("Keyword", "query", row)),
+              };
+            }}
             extraSections={[
               {
                 id: "keyword-workbench",
                 label: "This keyword",
                 anchor: "after-compare",
                 items: [
-                  ...(lastUsed
+                  ...(view.current?.lastUsed
                     ? [
                         {
                           kind: "item" as const,
                           id: "kw-quick-assign",
-                          label: `${lastUsed.dimensionLabel}: ${lastUsed.valueLabel}`,
+                          label: `${view.current.lastUsed.dimensionLabel}: ${view.current.lastUsed.valueLabel}`,
                           icon: Tag,
                           description:
                             "Assign the value you used last — one click, no dialog",
                           onSelect: () => {
                             const row = clickedRow.current;
-                            if (!row?.keyword_id) {
+                            const picked = view.current?.lastUsed;
+                            if (!row?.keyword_id || !picked) {
                               toast.error(
                                 "Right-click a keyword row to assign it.",
                               );
                               return;
                             }
-                            void quickAssign([row.keyword_id], lastUsed);
+                            view.current?.quickAssign([row.keyword_id], picked);
                           },
                         },
                       ]
@@ -1267,14 +429,14 @@ export function KeywordWorkbench() {
                       "Pick a dimension and value — or type a new one — and say why",
                     onSelect: () => {
                       const row = clickedRow.current;
-                      if (!row?.keyword_id) {
+                      if (!row?.keyword_id || !view.current) {
                         toast.error("Right-click a keyword row to assign it.");
                         return;
                       }
-                      setAssignTarget({
-                        keywordIds: [row.keyword_id],
-                        label: `“${row.key}”`,
-                      });
+                      view.current.openAssign(
+                        [row.keyword_id],
+                        `“${row.key}”`,
+                      );
                     },
                   },
                   {
@@ -1286,16 +448,16 @@ export function KeywordWorkbench() {
                       "Place this keyword under the service, product or thing it is really about",
                     onSelect: () => {
                       const row = clickedRow.current;
-                      if (!row?.keyword_id) {
+                      if (!row?.keyword_id || !view.current) {
                         toast.error(
                           "Right-click a keyword row to place it on a service.",
                         );
                         return;
                       }
-                      setServiceTarget({
-                        keywordIds: [row.keyword_id],
-                        label: `“${row.key}”`,
-                      });
+                      view.current.openServiceAssign(
+                        [row.keyword_id],
+                        `“${row.key}”`,
+                      );
                     },
                   },
                   {
@@ -1335,10 +497,11 @@ export function KeywordWorkbench() {
               },
             ]}
           >
-            {table}
+            {/* `asChild` needs a real DOM element to hang the handler on. */}
+            <div className="flex h-full min-h-0 flex-col">{table}</div>
           </NonEditableContextMenu>
         )}
-      </div>
+      />
 
       {savingNew ? (
         <TextInputDialog
@@ -1358,7 +521,13 @@ export function KeywordWorkbench() {
                 name,
                 state: viewStateFor(state),
               });
-              push({ ...state, viewId: created.id });
+              const qs = mergeKeywordTableParams(params, {
+                ...state,
+                viewId: created.id,
+              }).toString();
+              router.push(`${sitePath}/keywords${qs ? `?${qs}` : ""}`, {
+                scroll: false,
+              });
             }, `“${name}” saved.`);
           }}
         />

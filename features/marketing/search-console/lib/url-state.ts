@@ -68,6 +68,7 @@ const FILTER_PARAMS: Array<[keyof GscFilters, string]> = [
   ["stamps", "st"],
   ["levels", "lv"],
   ["topic", "tp"],
+  ["placement", "pl"],
   ["query_word", "qw"],
   ["clicks_min", "cmin"],
   ["clicks_max", "cmax"],
@@ -324,6 +325,8 @@ const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   "levels",
   // The SERVICE filter — one topic subtree, or "none" for the unplaced.
   "topic",
+  // P25 — whose ruling the placement is (proposed / agent / human).
+  "placement",
   ...PROFILE_NEUTRAL_FILTER_KEYS,
 ];
 const COUNTRY_DEVICE_FILTER_KEYS: readonly (keyof GscFilters)[] = [

@@ -30,10 +30,8 @@ import { readAllRows } from "@/lib/supabase/readAllRows";
 import type { SiteTopicValue, TopicNode } from "../types";
 import type {
   OfferingSplitRow,
-  ProposedKeywordRow,
   TopicPlacementStatus,
   TopicStatRow,
-  UnassignedKeywordRow,
   KeywordTopicResult,
 } from "./types";
 
@@ -130,28 +128,6 @@ export async function getOfferingSplit(
     })
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error) as OfferingSplitRow[];
-}
-
-/** The unplaced work queue, demand-ordered. */
-export async function getUnassignedKeywords(
-  siteId: string,
-  start: string,
-  end: string,
-  query: { search?: string | null; limit?: number; offset?: number } = {},
-  signal?: AbortSignal,
-): Promise<{ rows: UnassignedKeywordRow[]; total: number }> {
-  const response = await (await seoDb())
-    .rpc("gsc_topic_unassigned_keywords", {
-      p_site_id: siteId,
-      p_start: start,
-      p_end: end,
-      p_search: query.search ?? undefined,
-      p_limit: query.limit ?? 50,
-      p_offset: query.offset ?? 0,
-    })
-    .abortSignal(signal ?? new AbortController().signal);
-  const rows = assertData(response.data, response.error) as UnassignedKeywordRow[];
-  return { rows, total: rows[0]?.total_count ?? 0 };
 }
 
 // ── Writes (all SECURITY DEFINER, all gsc_assert_site_editor) ───────────────
@@ -267,31 +243,6 @@ export async function getTopicPlacementStatus(
   const rows = assertData(response.data, response.error, "read the placement status");
   const row = Array.isArray(rows) ? rows[0] : rows;
   return row as TopicPlacementStatus;
-}
-
-/**
- * Agent placements the confidence floor left unconfirmed. They ARE on the tree
- * — the queue exists so a machine ruling is never mistaken for an expert one.
- */
-export async function getProposedKeywords(
-  siteId: string,
-  start: string,
-  end: string,
-  query: { search?: string | null; limit?: number; offset?: number } = {},
-  signal?: AbortSignal,
-): Promise<{ rows: ProposedKeywordRow[]; total: number }> {
-  const response = await (await seoDb())
-    .rpc("gsc_topic_proposed_keywords", {
-      p_site_id: siteId,
-      p_start: start,
-      p_end: end,
-      p_search: query.search ?? undefined,
-      p_limit: query.limit ?? 50,
-      p_offset: query.offset ?? 0,
-    })
-    .abortSignal(signal ?? new AbortController().signal);
-  const rows = assertData(response.data, response.error) as ProposedKeywordRow[];
-  return { rows, total: rows[0]?.total_count ?? 0 };
 }
 
 /**

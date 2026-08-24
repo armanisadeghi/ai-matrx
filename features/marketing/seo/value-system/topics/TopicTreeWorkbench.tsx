@@ -22,8 +22,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListTree, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/styles/themes/utils";
@@ -31,14 +31,12 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { getValueVocabulary } from "../data";
 import { buildBandMeta, reviewWindow } from "../lib";
 import {
-  confirmKeywordTopics,
   getOfferingSplit,
-  getProposedKeywords,
   getTopicStats,
-  getUnassignedKeywords,
   listAllTopics,
   listTopicWorth,
   saveTopic,
@@ -64,13 +62,10 @@ import { TopicWorthDialog } from "./TopicWorthDialog";
 import { TopicPickerDialog, type TopicPickerRequest } from "./TopicPickerDialog";
 import { UnplacedQueue } from "./UnplacedQueue";
 
-const PAGE_SIZE = 50;
-
 export function TopicTreeWorkbench() {
-  const params = useParams<{ brandId: string; siteId: string }>();
+  const { site, brandId } = useMarketingSite();
   const searchParams = useSearchParams();
-  const siteId = params.siteId;
-  const brandId = params.brandId;
+  const siteId = site.id;
   /**
    * `?topic=<id>[&worth=1]` — the door every value receipt points at when the
    * reader asks where a topic's worth comes from. The link lands ON the node:
@@ -90,10 +85,6 @@ export function TopicTreeWorkbench() {
   const [editDraft, setEditDraft] = useState<TopicEditDraft | null>(null);
   const [worthNode, setWorthNode] = useState<TopicTreeNode | null>(null);
   const [picker, setPicker] = useState<TopicPickerRequest | null>(null);
-  const [queueSearch, setQueueSearch] = useState("");
-  const [queuePage, setQueuePage] = useState(0);
-  const [proposedSearch, setProposedSearch] = useState("");
-  const [proposedPage, setProposedPage] = useState(0);
 
   // ── Reads ─────────────────────────────────────────────────────────────────
   const topics = useQuery({
@@ -118,54 +109,6 @@ export function TopicTreeWorkbench() {
     queryKey: ["seo", "value", "vocab", siteId, "value_band"],
     queryFn: ({ signal }) => getValueVocabulary(siteId, "value_band", signal),
   });
-  const queue = useQuery({
-    queryKey: [
-      "seo",
-      "topics",
-      "unplaced",
-      siteId,
-      window28.start,
-      window28.end,
-      queueSearch,
-      queuePage,
-    ],
-    queryFn: ({ signal }) =>
-      getUnassignedKeywords(
-        siteId,
-        window28.start,
-        window28.end,
-        { search: queueSearch || null, limit: PAGE_SIZE, offset: queuePage * PAGE_SIZE },
-        signal,
-      ),
-    placeholderData: keepPreviousData,
-  });
-
-  const proposed = useQuery({
-    queryKey: [
-      "seo",
-      "topics",
-      "proposed",
-      siteId,
-      window28.start,
-      window28.end,
-      proposedSearch,
-      proposedPage,
-    ],
-    queryFn: ({ signal }) =>
-      getProposedKeywords(
-        siteId,
-        window28.start,
-        window28.end,
-        {
-          search: proposedSearch || null,
-          limit: PAGE_SIZE,
-          offset: proposedPage * PAGE_SIZE,
-        },
-        signal,
-      ),
-    placeholderData: keepPreviousData,
-  });
-
   const refreshTree = () => {
     void queryClient.invalidateQueries({ queryKey: ["seo", "topics"] });
   };
@@ -265,29 +208,11 @@ export function TopicTreeWorkbench() {
     onError: failed("place those keywords"),
   });
 
-  // The human half of P12: a proposal becomes this site's own ruling.
-  const confirmPlacements = useMutation({
-    mutationFn: (input: { keywordIds: string[] }) =>
-      confirmKeywordTopics(siteId, input.keywordIds),
-    onSuccess: (results) => {
-      refreshTree();
-      toast.success(
-        `${results.length} placement${results.length === 1 ? "" : "s"} confirmed`,
-        {
-          description:
-            "The assigner will not revisit them, and they now read as your ruling.",
-        },
-      );
-    },
-    onError: failed("confirm those placements"),
-  });
-
   const busy =
     pinParent.isPending ||
     upsertTopic.isPending ||
     saveWorth.isPending ||
-    placeKeywords.isPending ||
-    confirmPlacements.isPending;
+    placeKeywords.isPending;
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const loadingTree = topics.isPending || worth.isPending || stats.isPending;
@@ -517,41 +442,20 @@ export function TopicTreeWorkbench() {
         onPassFinished={refreshTree}
       />
 
+      {/* P25 — ONE TABLE. The tree above is legitimately a TREE; these two
+          keyword lists are TABLES, and they are the canonical one. */}
       <ProposedQueue
-        rows={proposed.data?.rows ?? []}
-        total={proposed.data?.total ?? 0}
-        metas={metas}
-        loading={proposed.isPending}
-        page={proposedPage}
-        pageSize={PAGE_SIZE}
-        search={proposedSearch}
-        onSearch={(next) => {
-          setProposedSearch(next);
-          setProposedPage(0);
-        }}
-        onPage={setProposedPage}
-        onConfirm={(keywordIds) => confirmPlacements.mutate({ keywordIds })}
-        onPlace={openKeywordPicker}
-        busy={busy}
+        siteId={siteId}
+        siteDomain={site.domain}
+        brandId={brandId}
+        onChanged={refreshTree}
       />
 
       <UnplacedQueue
-        rows={queue.data?.rows ?? []}
-        total={queue.data?.total ?? 0}
-        metas={metas}
-        loading={queue.isPending}
-        page={queuePage}
-        pageSize={PAGE_SIZE}
-        search={queueSearch}
-        onSearch={(next) => {
-          setQueueSearch(next);
-          setQueuePage(0);
-        }}
-        onPage={setQueuePage}
-        onPlace={openKeywordPicker}
-        onAgentFinished={refreshTree}
-        busy={busy}
-        siteName={siteId}
+        siteId={siteId}
+        siteDomain={site.domain}
+        brandId={brandId}
+        onChanged={refreshTree}
       />
 
       {editDraft ? (

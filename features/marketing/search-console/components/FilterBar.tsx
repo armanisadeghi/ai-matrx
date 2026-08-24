@@ -79,6 +79,10 @@ const FILTER_LABELS: Record<GscFilterKey, string> = {
   // catalog, so it never offers the key and never renders a raw uuid chip for
   // it — see SKIPPED_KEYS below.
   topic: "Service",
+  // WHOSE RULING a placement is. Like the service filter, it is set by the
+  // surface it MAKES (the topic tree's proposals queue), never chosen here —
+  // see SKIPPED_KEYS below.
+  placement: "Placement",
   clicks_min: "Clicks",
   clicks_max: "Clicks",
   impressions_min: "Impressions",
@@ -139,7 +143,7 @@ const MULTI_KEYS: GscFilterKey[] = ["stamps", "levels"];
  * surface owns the control AND the chip, because only that surface can turn
  * the stored id into a name a person recognises.
  */
-const SKIPPED_KEYS: GscFilterKey[] = ["topic"];
+const SKIPPED_KEYS: GscFilterKey[] = ["topic", "placement"];
 
 function activeGroup(
   filters: GscFilters,
