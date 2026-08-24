@@ -89,6 +89,28 @@ function kitName(members: GeneratedArtifact[]): string {
  * So `study_media` members are re-read from the table and their title/detail
  * replaced with what is true now. One query per kit, only when it has media.
  */
+function liveDetail(
+  row: { status: string | null; media_kind: string; duration_seconds: number | null },
+  frozen: string | null,
+): string | null {
+  if (row.status === "generating") return "Still being produced";
+  if (row.status === "error") return "Didn't finish — open it to try again";
+  // FINISHED. The frozen detail of an artifact that STARTS pending is a
+  // start-state message ("Starting — audio is still being produced"), so it is
+  // a lie the moment the render completes — replace it with something true.
+  // A detail written at completion (a summary's "42 key points") never changes
+  // and is kept.
+  if (row.media_kind === "audio") {
+    const secs = row.duration_seconds;
+    if (secs != null && secs > 0) {
+      const mins = Math.max(1, Math.round(secs / 60));
+      return `${mins} min listen`;
+    }
+    return "Ready to play";
+  }
+  return frozen;
+}
+
 async function refreshMediaMembers(
   members: GeneratedArtifact[],
 ): Promise<GeneratedArtifact[]> {
@@ -107,13 +129,7 @@ async function refreshMediaMembers(
     return {
       ...m,
       title: row.title?.trim() ? row.title : m.title,
-      // Only a genuinely unfinished artifact still says so.
-      detail:
-        row.status === "generating"
-          ? "Still being produced"
-          : row.status === "error"
-            ? "Didn't finish — open it to try again"
-            : m.detail,
+      detail: liveDetail(row, m.detail),
     };
   });
 }
