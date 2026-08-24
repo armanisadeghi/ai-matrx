@@ -8,7 +8,7 @@
  * once in the browser (canonical first) and shares them with the Preview and
  * Gate tabs.
  *
- * Code-splitting: the Gate tab (ajv + dual gate), the Inputs tab (ajv, plus
+ * Code-splitting: the Code tab (Monaco + agent workspace), the Gate tab (ajv + dual gate), the Inputs tab (ajv, plus
  * the whole production agent-input stack via VariableInputComponent →
  * ProTextarea), and the Try-input tab (KindInputForm — same heavy stack) are
  * each `next/dynamic({ ssr: false })` behind their tab condition. The Preview tab is a light shell whose heavy renderer is ALREADY
@@ -26,7 +26,6 @@ import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import KindPreviewTab from "@/features/content-ir/admin/KindPreviewTab";
 import KindSchemaTab from "@/features/content-ir/admin/KindSchemaTab";
 import KindAssetsTab from "@/features/content-ir/admin/KindAssetsTab";
-import KindComponentCodeTab from "@/features/content-ir/admin/KindComponentCodeTab";
 import KindExampleManager from "@/features/content-ir/studio/components/KindExampleManager";
 import KindAgentButton from "@/features/content-ir/studio/components/KindAgentButton";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -41,6 +40,19 @@ const KindGateTab = dynamic(
       <div className="flex items-center gap-2 py-10 text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
         <span className="text-sm">Loading gate runner</span>
+      </div>
+    ),
+  },
+);
+
+const KindComponentCodeTab = dynamic(
+  () => import("@/features/content-ir/admin/KindComponentCodeTab"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center gap-2 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="text-sm">Loading component editor</span>
       </div>
     ),
   },
