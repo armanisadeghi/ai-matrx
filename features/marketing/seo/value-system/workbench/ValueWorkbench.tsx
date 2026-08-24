@@ -136,12 +136,6 @@ import {
   reviewWindow,
   type BandMeta,
 } from "../lib";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
 import { ClassCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
 import {
@@ -957,6 +951,34 @@ export function ValueWorkbench() {
           it renders nothing at all when the queue is empty. */}
       <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
 
+      {/* ONE assignment surface, borrowed whole from the Keyword Workbench —
+          never a second implementation of "assign a class with a reason".
+          MOUNTED INLINE, not in a Dialog: the value picker inside it opens its
+          own portalled popover, and a Radix Dialog reads that click as an
+          outside interaction and closes itself mid-assignment. Caught in the
+          live pass on 2026-08-24 — if you move this into an overlay, that bug
+          comes straight back. */}
+      {assignTarget ? (
+        <div className="shrink-0 rounded-lg border border-border bg-card p-3 shadow-sm">
+          <AssignPanel
+            siteId={siteId}
+            dimensions={dimensions}
+            dimensionsLoading={catalog.isLoading}
+            target={assignTarget}
+            onCancel={() => setAssignTarget(null)}
+            onDone={(result, picked) => {
+              setAssignTarget(null);
+              void refreshAfterStamp();
+              toast.success(
+                result.cleared > 0
+                  ? `Removed ${picked.valueLabel} from ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`
+                  : `${picked.dimensionLabel}: ${picked.valueLabel} on ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}${result.notesSaved ? " — your reason is saved with them." : "."}`,
+              );
+            }}
+          />
+        </div>
+      ) : null}
+
       {/* Review table */}
       <div className="flex flex-col rounded-lg border border-border bg-card p-2">
         {review.isError ? (
@@ -1192,39 +1214,6 @@ export function ValueWorkbench() {
           onClose={() => setMeaningOpen(false)}
         />
       ) : null}
-
-      {/* ONE assignment surface, borrowed whole from the Keyword Workbench —
-          never a second implementation of "assign a class with a reason". */}
-      <Dialog
-        open={assignTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setAssignTarget(null);
-        }}
-      >
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-sm">Set the class</DialogTitle>
-          </DialogHeader>
-          {assignTarget ? (
-            <AssignPanel
-              siteId={siteId}
-              dimensions={dimensions}
-              dimensionsLoading={catalog.isLoading}
-              target={assignTarget}
-              onCancel={() => setAssignTarget(null)}
-              onDone={(result, picked) => {
-                setAssignTarget(null);
-                void refreshAfterStamp();
-                toast.success(
-                  result.cleared > 0
-                    ? `Removed ${picked.valueLabel} from ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`
-                    : `${picked.dimensionLabel}: ${picked.valueLabel} on ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}${result.notesSaved ? " — your reason is saved with them." : "."}`,
-                );
-              }}
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
 
       {addingLevel !== null ? (
         <AddLevelDialog
