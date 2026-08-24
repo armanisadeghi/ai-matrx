@@ -50,12 +50,15 @@ retraction: STATE.md §2.4.
 
 Full detail, with evidence and row counts, in **STATE.md §4.3**. In priority order:
 
-1. **Publish-seam defects from the 2026-08-21 p1→p7 proof** (detail: STATE.md §4.3.1):
-   (a) bulk `/cms-publish` must STREAM — 29 pages exceeds the gateway timeout and the request died
-   mid-loop; (b) 🚨 `live_url` lies for un-activated custom domains — post-publish inspection
-   fetched the client's REAL external site; verify on `/c/{slug}` until activation is proven;
-   (c) content leakage — `/certified-hard-drive-destruction` (All Green) published inside the
-   med-spa plan; (d) ~~one page (`b51cad8d`) unpublished~~ **CLOSED 2026-08-22** — the page had all
+1. ✅ **Publish-seam defects — ALL CLOSED 2026-08-24** (detail: STATE.md §4.3.1):
+   (a) publish is now a durable QUEUE step (`p7_publish` on `cms_fill`, opt-in, Setup rung 5
+   seeds `steps=["p7_publish"]`) — no more gateway-timed mega-request; (b) `live_url` fails
+   CLOSED on unverified domains (both twins) AND the `/__matrx-domain-verification` marker now
+   exists in my-matrx, so the CMS's verify_domain flow can genuinely activate a domain;
+   plus THE EMPTINESS GATE on `page_service.publish` and auto-selection never offering a
+   plan-retired page (both live-proven the same day); (c) the "leakage" was a stray
+   hand-created node, retired 2026-08-22 — no client content crossed; (d) ~~one page
+   (`b51cad8d`) unpublished~~ **CLOSED 2026-08-22** — the page had all
    four artifacts and a successful `p6_build`; the bulk publish had simply run BEFORE its build
    finished. A second `/cms-publish {only_plan_linked:true}` published it (`requested 1,
    published 1, remaining_candidates 0`) — idempotent re-run is the correct fix, no code change.
@@ -84,8 +87,13 @@ Full detail, with evidence and row counts, in **STATE.md §4.3**. In priority or
    a payload variable, never a routing key. Needs no pipeline change — DB agents plus a routing
    seam. Decide the seam (per-page-type mandate binding vs a dispatcher agent) before authoring the
    fleet.
-4. **Site design system (S3) — the reusable block library.** `starter_kit` seeds global CSS, one
-   header, one footer and navigation. There is no section/block catalog. Offered, never imposed.
+4. ✅ **v1 DONE 2026-08-24 — Site design system (S3).** `starter_kit.SECTION_LIBRARY` seeds five
+   section components (hero, CTA, cards, FAQ, testimonials; `.matrx-*` classes, theme-token
+   styled, never overwritten on re-runs); the P6 builder receives `design_guidance`
+   (site `settings.content_plan.design_guidance` + per-page `node.metadata.design_notes`) and
+   `section_library` as offered provision values, and its DB definition (v7) renders both;
+   site textarea + per-page note shipped and live-proven. Beyond v1: a design-vision AGENT
+   pass, more section variants (pricing, team, gallery), screenshot-judged visual inspection.
 5. **Plan-UI remainder** — whole-page "run the rest of the pipeline"; bulk run-step across a tree
    multi-selection.
 6. **Streaming-capable assists** (platform gap) — `AssistAction` is a closed union of 5 kinds and
