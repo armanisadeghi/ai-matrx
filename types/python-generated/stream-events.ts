@@ -442,22 +442,6 @@ export interface ClaudeManagedWarningData {
   session_id: string;
 }
 
-export interface CmsLogoFoundData {
-  type?: "cms_logo_found";
-  site_id: string;
-  found: boolean;
-  message: string;
-  asset_id?: string | null;
-  asset_url?: string | null;
-  source?: string | null;
-  source_url?: string | null;
-  width?: number | null;
-  height?: number | null;
-  mime_type?: string | null;
-  candidates_considered?: number;
-  rejected?: string[];
-}
-
 export interface ContextChangedData {
   type?: "context_changed";
   key: string;
@@ -1718,7 +1702,6 @@ export type TypedDataPayload =
   | CategorizationResultData
   | ClaudeManagedSdkMessageData
   | ClaudeManagedWarningData
-  | CmsLogoFoundData
   | ContextChangedData
   | ContextConflictData
   | ContextDeltaData
@@ -2450,7 +2433,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -2460,7 +2443,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -2512,7 +2495,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];
@@ -2522,7 +2505,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];
