@@ -339,7 +339,12 @@ can't live in the agent's head"). Two planes, two paths:
   `…/value/settings` (sub-view `value:settings`). ONE write path
   (`seo.set_value_settings`) carries the permission gate for every scope, and
   `p_clear` hands a setting back up the ladder — never copy a parent's number
-  down, which looks identical and freezes the child forever.
+  down, which looks identical and freezes the child forever. **The reserved
+  `negative` level always travels with the set and carries `min_score: null`**
+  because it is a guard, not a score range. Compact editor rows normalize to
+  the canonical vocabulary shape only inside `set_value_settings`; the
+  terminal resolver reads `fn_value_levels`, so scoring and the editor cannot
+  resolve different ladders.
   🚨 **This is platform doctrine for EVERY marketing setting, not just this
   one:** `../../../common-docs/policies/settings-ladder.md`. Read it before
   adding any configurable number, threshold or default anywhere in marketing.
@@ -745,6 +750,15 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-24 — Repaired the settings-ladder contract exposed by the first
+  platform save (`gsc_vocab_missing_negative`): reads keep the threshold-less
+  reserved guard; the editor prevents its removal and validates drafts before
+  save; governed database sentences survive the shared error adapter;
+  `set_value_settings` normalizes compact rows before canonical validation/site
+  storage and uses the guarded reset path; the obsolete pre-baseline 0–100
+  ceiling is gone; and `keyword_value_map` consumes `fn_value_levels`, making
+  org/brand settings reach the terminal score. Migration:
+  `migrations/seo_value_settings_contract_repair.sql`.
 - 2026-08-24 — **KI-043: brand_aliases fact→meaning sync (the geo pattern,
   applied to brand identity).** `migrations/seo_brand_identity_fact_to_meaning_sync.sql`
   — `seo.fn_brand_identity_sync_meaning(site_id)` mints/revives/retires a

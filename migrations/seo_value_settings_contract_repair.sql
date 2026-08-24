@@ -14,6 +14,8 @@
 -- path, keep negative as a threshold-less guard, allow the non-negative score
 -- scale introduced by KI-048, and make the resolver consume fn_value_levels.
 
+SET LOCAL lock_timeout = '8s';
+
 CREATE OR REPLACE FUNCTION seo.gsc_assert_vocabulary_coherent(p_kind text, p_rows jsonb)
 RETURNS void
 LANGUAGE plpgsql STABLE
