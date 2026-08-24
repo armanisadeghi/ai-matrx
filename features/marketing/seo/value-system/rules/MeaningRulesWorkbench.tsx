@@ -378,6 +378,25 @@ export function MeaningRulesWorkbench() {
     (areaHealth.data ?? []).map((row) => [row.area_id, row]),
   );
   const disconnectedAreas = (areaHealth.data ?? []).filter((row) => row.state === "disconnected");
+  const geoBandMultiplier = (value: string): number | null => {
+    const band = (geoBands.data ?? []).find((b) => b.value === value);
+    const raw = band?.config?.multiplier;
+    return typeof raw === "number" ? raw : null;
+  };
+  /** Matching real searches, and its band is the neutral one (×1) so the
+   *  receipt — which is what the usage read measures — never mentions it. */
+  const matchesButNeutral = (areaId: string): boolean => {
+    const health = healthByArea.get(areaId);
+    // A disconnected area's leftover stamps are about to be swept; saying
+    // "matches 62" beside "changes no score" would be two truths that read as
+    // a contradiction. The alarm owns that row.
+    if (!health || health.state === "disconnected" || health.stamps <= 0) return false;
+    if (usage.isPending || usage.isError) return false;
+    const area = (areas.data ?? []).find((a) => a.id === areaId);
+    if (!area) return false;
+    if ((usageByArea.get(area.label)?.keywords ?? 0) > 0) return false;
+    return (geoBandMultiplier(area.geo_band) ?? 1) === 1;
+  };
   const usageByArea = new Map<string, MeaningUsageRow>(
     (usage.data ?? []).filter((row) => row.kind === "geo_area").map((row) => [row.ref, row]),
   );
@@ -873,11 +892,30 @@ export function MeaningRulesWorkbench() {
                       {area.label}
                     </span>
                     {chipFor(area.id, area.metadata)}
-                    <UsageChip
-                      usage={usageByArea.get(area.label)}
-                      loading={usage.isPending}
-                      failed={usage.isError}
-                    />
+                    {/* "Fires on nothing" measures the RECEIPT, and a band that
+                        multiplies by ×1 never reaches the receipt — so an area
+                        matching 62 searches perfectly was reading "fires on
+                        nothing", which is how a working thing gets deleted. Both
+                        facts are stated; neither is decided here. */}
+                    {matchesButNeutral(area.id) ? (
+                      <span
+                        className="inline-flex shrink-0 items-center rounded border border-border bg-muted/30 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                        title={`This area matches ${formatCount(
+                          healthByArea.get(area.id)?.stamps ?? 0,
+                        )} searches. Its geo band multiplies value by ×${String(
+                          geoBandMultiplier(area.geo_band) ?? 1,
+                        )}, so matching it does not change what any of them is worth — the band is the neutral one. Change the band, or leave it as your baseline.`}
+                      >
+                        matches {formatCount(healthByArea.get(area.id)?.stamps ?? 0)} · band
+                        changes no score
+                      </span>
+                    ) : (
+                      <UsageChip
+                        usage={usageByArea.get(area.label)}
+                        loading={usage.isPending}
+                        failed={usage.isError}
+                      />
+                    )}
                     <span className="shrink-0 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] text-foreground">
                       {humanizeSlug(area.geo_band)}
                     </span>

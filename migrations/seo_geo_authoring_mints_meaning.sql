@@ -387,19 +387,61 @@ COMMENT ON FUNCTION seo.gsc_geo_area_health(uuid) IS
   'Per service area: does it actually change a score? empty = nothing inside it; disconnected = it has places/words but no matchers, so it is inert (the C2 regression class); no_hits = wired but no keyword has matched yet; live = stamping. Fix for disconnected is seo.gsc_geo_area_reconnect.';
 
 -- The one-click fix behind the alarm.
+-- The reconnect button must finish inside a web request. Building the engine's
+-- default scope means a sequential scan of seo.search_performance_daily (14M
+-- rows; measured 37s on All Green Recycling), so this RPC never asks for it:
+-- it hands the engine exactly the keywords this site's GEO matchers can reach —
+-- places through the indexed seo.keyword_place, words through one pass over
+-- seo.keyword, plus everything already carrying one of these geo stamps so
+-- removals still happen. Same engine, bounded input.
 CREATE OR REPLACE FUNCTION seo.gsc_geo_area_reconnect(p_site_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 SET search_path TO 'pg_catalog', 'public'
 AS $fn$
-DECLARE r record; v_areas int := 0; v_result jsonb;
+DECLARE r record; v_areas int := 0; v_result jsonb; v_ids uuid[]; v_values uuid[];
 BEGIN
   PERFORM seo.gsc_assert_site_editor(p_site_id);
+
   FOR r IN SELECT id FROM seo.site_geo_area WHERE site_id = p_site_id LOOP
     PERFORM seo.fn_geo_area_sync_meaning(r.id);
     v_areas := v_areas + 1;
   END LOOP;
-  v_result := seo.fn_evaluate_matchers_internal(p_site_id, NULL);
+
+  SELECT array_agg(c.id) INTO v_values
+  FROM platform.categories c
+  JOIN platform.categories d ON d.id = c.parent_id AND d.deleted_at IS NULL
+  WHERE c.dimension = 'seo_facet' AND c.deleted_at IS NULL
+    AND (d.metadata->>'site_id')::uuid = p_site_id
+    AND COALESCE(d.metadata->>'standard_key','') = 'geo';
+
+  IF v_values IS NULL THEN
+    RETURN jsonb_build_object('areas_synced', v_areas, 'scope_keywords', 0, 'stamped', 0,
+                              'removed', 0, 'matchers', 0, 'single_cardinality_conflicts', 0,
+                              'evaluated_at', now());
+  END IF;
+
+  SELECT array_agg(DISTINCT x.kw) INTO v_ids FROM (
+    SELECT kp.keyword_id AS kw
+      FROM seo.dimension_value_matcher dm
+      JOIN seo.keyword_place kp ON kp.place_id = dm.place_id AND kp.deleted_at IS NULL
+     WHERE dm.site_id = p_site_id AND dm.deleted_at IS NULL AND dm.enabled
+       AND dm.kind = 'place' AND dm.value_id = ANY(v_values)
+    UNION
+    SELECT k.id
+      FROM seo.keyword k
+      JOIN seo.dimension_value_matcher dm
+        ON dm.site_id = p_site_id AND dm.deleted_at IS NULL AND dm.enabled
+       AND dm.value_id = ANY(v_values) AND dm.kind = 'word'
+       AND k.normalized_phrase ~ ('\m' || dm.pattern || '\M')
+     WHERE k.deleted_at IS NULL
+    UNION
+    SELECT kf.keyword_id
+      FROM seo.keyword_facet kf
+     WHERE kf.site_id = p_site_id AND kf.deleted_at IS NULL AND kf.category_id = ANY(v_values)
+  ) x WHERE x.kw IS NOT NULL;
+
+  v_result := seo.fn_evaluate_matchers_internal(p_site_id, COALESCE(v_ids, '{}'::uuid[]));
   RETURN jsonb_build_object('areas_synced', v_areas) || v_result;
 END $fn$;
 
