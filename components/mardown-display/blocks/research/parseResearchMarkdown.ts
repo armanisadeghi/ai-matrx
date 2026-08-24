@@ -1,36 +1,38 @@
-interface ResearchFinding {
-  id: string;
-  title: string;
-  primarySource: string;
-  additionalSources: string[];
-  urls: string[];
-  keyDetails: string;
-  significance: string;
-  futureImplications: string;
-  confidenceLevel: 'HIGH' | 'MEDIUM' | 'LOW';
-}
+import type {
+  ResearchChallenge as ResearchChallengeKind,
+  ResearchFinding as ResearchFindingKind,
+  ResearchRecommendation as ResearchRecommendationKind,
+  ResearchSection as ResearchSectionKind,
+} from "@/features/content-ir/kinds/generated/kinds.generated";
 
-interface ResearchSection {
+/**
+ * THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`). The markdown parser
+ * adds only `id` — a render key the wire format has no reason to carry.
+ * Nothing here re-declares a registry field (`check:kind-type-twins`).
+ */
+export type ResearchFinding = Omit<ResearchFindingKind, "__kind"> &
+  Required<
+    Pick<
+      ResearchFindingKind,
+      | "primarySource"
+      | "additionalSources"
+      | "urls"
+      | "significance"
+      | "futureImplications"
+      | "confidenceLevel"
+    >
+  > & { id: string };
+
+export type ResearchSection = Omit<ResearchSectionKind, "__kind" | "findings"> & {
   id: string;
-  title: string;
-  subtitle?: string;
   findings: ResearchFinding[];
-}
+};
 
-interface ResearchChallenge {
-  id: string;
-  title: string;
-  description: string;
-  currentSolutions?: string;
-  researchGaps?: string;
-  category: 'technical' | 'ethical' | 'regulatory' | 'other';
-}
+export type ResearchChallenge = Omit<ResearchChallengeKind, "__kind"> &
+  Required<Pick<ResearchChallengeKind, "category">> & { id: string };
 
-interface ResearchRecommendation {
-  id: string;
-  recommendation: string;
-  target: 'researchers' | 'industry' | 'policymakers' | 'general';
-}
+export type ResearchRecommendation = Omit<ResearchRecommendationKind, "__kind"> &
+  Required<Pick<ResearchRecommendationKind, "target">> & { id: string };
 
 interface UnrecognizedSection {
   id: string;

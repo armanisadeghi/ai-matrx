@@ -1,13 +1,12 @@
+// THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
+// re-declares a registered kind's fields (`check:kind-type-twins`).
+import type { RecipeStep as RecipeStepKind } from "@/features/content-ir/kinds/generated/kinds.generated";
 export interface Ingredient {
   amount: string;
   item: string;
 }
 
-export interface RecipeStep {
-  action: string;
-  description: string;
-  time?: string;
-}
+export type RecipeStep = Omit<RecipeStepKind, "__kind">;
 
 export interface RecipeData {
   title: string;

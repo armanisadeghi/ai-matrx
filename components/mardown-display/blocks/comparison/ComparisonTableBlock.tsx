@@ -1,3 +1,9 @@
+// THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
+// re-declares a registered kind's fields (`check:kind-type-twins`).
+import type {
+  ComparisonCriterion as ComparisonCriterionKind,
+  ComparisonSet,
+} from "@/features/content-ir/kinds/generated/kinds.generated";
 "use client";
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import {
@@ -27,20 +33,19 @@ import {
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import IconButton from "@/components/official/IconButton";
 
-interface ComparisonCriterion {
-  name: string;
+export type ComparisonCriterion = Omit<
+  ComparisonCriterionKind,
+  "__kind" | "values" | "type"
+> & {
+  /** A cell is whatever the author wrote — the registry types the wire form. */
   values: (string | number | boolean)[];
   type: "cost" | "rating" | "text" | "boolean";
-  weight?: number;
-  higherIsBetter?: boolean;
-}
+};
 
-interface ComparisonTableData {
-  title: string;
-  description?: string;
-  items: string[];
-  criteria: ComparisonCriterion[];
-}
+export type ComparisonTableData = Omit<
+  ComparisonSet,
+  "__kind" | "criteria" | "additionalDetails"
+> & { criteria: ComparisonCriterion[] };
 
 type SortDirection = "asc" | "desc" | null;
 

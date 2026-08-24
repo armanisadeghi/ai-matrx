@@ -1,22 +1,20 @@
-interface TimelineEvent {
-  id: string;
-  title: string;
-  date: string;
-  description: string;
-  status?: 'completed' | 'in-progress' | 'pending';
-  category?: string;
-}
+import type {
+  Timeline as TimelineKind,
+  TimelineEvent as TimelineEventKind,
+  TimelinePeriod as TimelinePeriodKind,
+} from "@/features/content-ir/kinds/generated/kinds.generated";
 
-interface TimelinePeriod {
-  period: string;
+/** THE SHAPES COME FROM THE REGISTRY; the parser only guarantees the render key. */
+export type TimelineEvent = Omit<TimelineEventKind, "__kind" | "id"> &
+  Required<Pick<TimelineEventKind, "date" | "description">> & { id: string };
+
+export type TimelinePeriod = Omit<TimelinePeriodKind, "__kind" | "events"> & {
   events: TimelineEvent[];
-}
+};
 
-interface TimelineData {
-  title: string;
-  description?: string;
+export type TimelineData = Omit<TimelineKind, "__kind" | "periods"> & {
   periods: TimelinePeriod[];
-}
+};
 
 export const parseTimelineMarkdown = (content: string): TimelineData | null => {
   try {

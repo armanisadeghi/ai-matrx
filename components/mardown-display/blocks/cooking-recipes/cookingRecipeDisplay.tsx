@@ -1,3 +1,6 @@
+// THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
+// re-declares a registered kind's fields (`check:kind-type-twins`).
+import type { RecipeStep } from "./parseRecipeMarkdown";
 "use client";
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import {
@@ -25,11 +28,6 @@ interface Ingredient {
   item: string;
 }
 
-interface RecipeStep {
-  action: string;
-  description: string;
-  time?: string;
-}
 
 interface RecipeData {
   title: string;

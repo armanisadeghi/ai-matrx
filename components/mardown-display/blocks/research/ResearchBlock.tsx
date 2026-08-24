@@ -1,3 +1,11 @@
+// THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
+// this renderer never re-declares them (`check:kind-type-twins`).
+import type {
+  ResearchFinding,
+  ResearchSection,
+  ResearchChallenge,
+  ResearchRecommendation,
+} from "./parseResearchMarkdown";
 "use client";
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { 
@@ -7,40 +15,6 @@ import {
   BarChart3, Users, Briefcase, Scale, Clock, Star, Printer
 } from 'lucide-react';
 import { useCanvas } from '@/features/canvas/hooks/useCanvas';
-
-interface ResearchFinding {
-  id: string;
-  title: string;
-  primarySource: string;
-  additionalSources: string[];
-  urls: string[];
-  keyDetails: string;
-  significance: string;
-  futureImplications: string;
-  confidenceLevel: 'HIGH' | 'MEDIUM' | 'LOW';
-}
-
-interface ResearchSection {
-  id: string;
-  title: string;
-  subtitle?: string;
-  findings: ResearchFinding[];
-}
-
-interface ResearchChallenge {
-  id: string;
-  title: string;
-  description: string;
-  currentSolutions?: string;
-  researchGaps?: string;
-  category: 'technical' | 'ethical' | 'regulatory' | 'other';
-}
-
-interface ResearchRecommendation {
-  id: string;
-  recommendation: string;
-  target: 'researchers' | 'industry' | 'policymakers' | 'general';
-}
 
 interface UnrecognizedSection {
   id: string;

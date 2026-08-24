@@ -1,3 +1,10 @@
+// THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
+// this renderer never re-declares them (`check:kind-type-twins`).
+import type {
+  TroubleshootingStep,
+  TroubleshootingSolution,
+  TroubleshootingIssue,
+} from "./parseTroubleshootingMarkdown";
 "use client";
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import {
@@ -32,36 +39,6 @@ import {
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import ImportTasksModal from "@/features/tasks/components/ImportTasksModal";
 import { convertTroubleshootingToTasks } from "@/features/tasks/utils/importConverters";
-
-interface TroubleshootingStep {
-  id: string;
-  title: string;
-  description: string;
-  commands?: string[];
-  links?: { title: string; url: string }[];
-  difficulty?: "easy" | "medium" | "hard";
-  estimatedTime?: string;
-}
-
-interface TroubleshootingSolution {
-  id: string;
-  title: string;
-  description?: string;
-  steps: TroubleshootingStep[];
-  priority?: "low" | "medium" | "high";
-  successRate?: number;
-  tags?: string[];
-}
-
-interface TroubleshootingIssue {
-  id: string;
-  symptom: string;
-  description?: string;
-  causes: string[];
-  solutions: TroubleshootingSolution[];
-  relatedIssues?: string[];
-  severity?: "low" | "medium" | "high" | "critical";
-}
 
 interface TroubleshootingData {
   title: string;

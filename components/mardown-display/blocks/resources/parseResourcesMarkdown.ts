@@ -1,29 +1,22 @@
-interface ResourceItem {
-  id: string;
-  title: string;
-  url: string;
-  description: string;
-  type: 'documentation' | 'tool' | 'video' | 'article' | 'course' | 'book' | 'tutorial' | 'other';
-  duration?: string;
-  difficulty?: 'beginner' | 'intermediate' | 'advanced';
-  rating?: number;
-  isFavorite?: boolean;
-  isCompleted?: boolean;
-  tags?: string[];
-}
+import type {
+  ResourceCategory as ResourceCategoryKind,
+  ResourceCollection,
+  ResourceItem as ResourceItemKind,
+} from "@/features/content-ir/kinds/generated/kinds.generated";
 
-interface ResourceCategory {
-  id: string;
-  name: string;
-  description?: string;
-  resources: ResourceItem[];
-}
+/** THE SHAPES COME FROM THE REGISTRY; the parser only guarantees the render key. */
+export type ResourceItem = Omit<ResourceItemKind, "__kind" | "id"> &
+  Required<Pick<ResourceItemKind, "description" | "type">> & { id: string };
 
-interface ResourceCollectionData {
-  title: string;
-  description?: string;
-  categories: ResourceCategory[];
-}
+export type ResourceCategory = Omit<
+  ResourceCategoryKind,
+  "__kind" | "id" | "resources"
+> & { id: string; resources: ResourceItem[] };
+
+export type ResourceCollectionData = Omit<
+  ResourceCollection,
+  "__kind" | "categories"
+> & { categories: ResourceCategory[] };
 
 /**
  * Parses markdown content into structured resource collection data

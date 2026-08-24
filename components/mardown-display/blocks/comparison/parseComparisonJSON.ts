@@ -1,17 +1,22 @@
-interface ComparisonCriterion {
-  name: string;
+// THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
+// re-declares a registered kind's fields (`check:kind-type-twins`).
+import type {
+  ComparisonCriterion as ComparisonCriterionKind,
+  ComparisonSet,
+} from "@/features/content-ir/kinds/generated/kinds.generated";
+export type ComparisonCriterion = Omit<
+  ComparisonCriterionKind,
+  "__kind" | "values" | "type"
+> & {
+  /** A cell is whatever the author wrote — the registry types the wire form. */
   values: (string | number | boolean)[];
-  type: 'cost' | 'rating' | 'text' | 'boolean';
-  weight?: number;
-  higherIsBetter?: boolean;
-}
+  type: "cost" | "rating" | "text" | "boolean";
+};
 
-interface ComparisonTableData {
-  title: string;
-  description?: string;
-  items: string[];
-  criteria: ComparisonCriterion[];
-}
+export type ComparisonTableData = Omit<
+  ComparisonSet,
+  "__kind" | "criteria" | "additionalDetails"
+> & { criteria: ComparisonCriterion[] };
 
 // Shape of a single criterion as it arrives from unvalidated user/LLM JSON —
 // values are genuinely unknown until normalizeValues() type-guards them.

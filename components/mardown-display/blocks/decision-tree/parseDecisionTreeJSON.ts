@@ -1,21 +1,25 @@
-interface DecisionNode {
+// THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
+// re-declares a registered kind's fields (`check:kind-type-twins`).
+import type {
+  DecisionNode as DecisionNodeKind,
+  DecisionTree,
+} from "@/features/content-ir/kinds/generated/kinds.generated";
+export type DecisionNode = Omit<
+  DecisionNodeKind,
+  "__kind" | "yes" | "no" | "priority"
+> & {
+  /** A render key the wire format has no reason to carry. */
   id: string;
-  question?: string;
-  action?: string;
-  description?: string;
   yes?: DecisionNode;
   no?: DecisionNode;
-  type?: 'question' | 'action' | 'info';
-  priority?: 'low' | 'medium' | 'high';
-  category?: string;
-  estimatedTime?: string;
-}
+  priority?: "low" | "medium" | "high";
+  type?: "question" | "action" | "info";
+};
 
-interface DecisionTreeData {
-  title: string;
-  description?: string;
-  root: DecisionNode;
-}
+export type DecisionTreeData = Omit<
+  DecisionTree,
+  "__kind" | "root" | "additionalDetails"
+> & { root: DecisionNode };
 
 /**
  * Parses JSON content into structured decision tree data

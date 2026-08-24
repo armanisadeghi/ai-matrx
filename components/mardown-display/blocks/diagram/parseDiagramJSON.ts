@@ -1,3 +1,9 @@
+// THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
+// re-declares a registered kind's fields (`check:kind-type-twins`).
+import type {
+  DiagramEdge as DiagramEdgeKind,
+  DiagramNode as DiagramNodeKind,
+} from "@/features/content-ir/kinds/generated/kinds.generated";
 import {
   DEFAULT_DIAGRAM_RENDER_HINTS,
   DIAGRAM_BACKGROUNDS,
@@ -12,68 +18,26 @@ import {
   type DiagramNodeShape,
 } from "./diagram-visual-defaults";
 
-export interface DiagramNode {
-  id: string;
-  label: string;
-  type?: string;
+export type DiagramNode = Omit<DiagramNodeKind, "__kind"> & {
+  /** Layout/presentation the RENDERER owns — never part of the wire kind. */
   nodeType?: string;
-  description?: string;
-  details?: string;
-  position?: { x: number; y: number };
-  /** True when this item is a visual section that contains other boxes. */
+  metadata?: Record<string, unknown>;
   isGroup?: boolean;
-  /** Parent section id. Positions are relative to the section when present. */
   parentId?: string;
-  /** Persisted size. Ordinary boxes gain these values after a manual resize. */
   width?: number;
   height?: number;
-  /** Border treatment for a visual section. */
-  groupStyle?: "solid" | "dashed" | "dotted";
-  // Pedigree-specific fields
-  gender?: "male" | "female" | "unknown";
-  affected?: boolean;
-  deceased?: boolean;
-  proband?: boolean;
-  birthYear?: string;
-  deathYear?: string;
-  generation?: number;
-  // Generic metadata bag for future diagram types
-  metadata?: Record<string, unknown>;
-  // Visual overrides
-  color?: string;
-  icon?: string;
-  shape?: DiagramNodeShape;
-  borderStyle?: DiagramBorderStyle;
-  textAlign?: "left" | "center";
-}
+  groupStyle?: string;
+  shape?: string;
+  borderStyle?: string;
+  textAlign?: string;
+};
 
-export interface DiagramEdge {
-  id: string;
-  source: string;
-  target: string;
-  label?: string;
-  type?: string;
-  color?: string;
-  dashed?: boolean;
-  /** Richer replacement for `dashed`; legacy diagrams may still use either. */
-  lineStyle?: "solid" | "dashed" | "dotted";
-  strokeWidth?: number;
-  // Semantic relationship type (used for rendering decisions)
-  relationship?:
-    | "parent"
-    | "child"
-    | "marriage"
-    | "divorced"
-    | "adopted"
-    | "biological"
-    | "consanguineous"
-    | string;
-  // Whether to show an arrowhead
-  arrow?: boolean;
-  /** Marker placement. Supersedes `arrow` while preserving it for legacy data. */
-  marker?: DiagramEdgeMarker;
-  animated?: boolean;
-}
+export type DiagramEdge = Omit<DiagramEdgeKind, "__kind"> &
+  Required<Pick<DiagramEdgeKind, "id">> & {
+  /** Presentation the RENDERER owns — never part of the wire kind. */
+  lineStyle?: string;
+  marker?: string;
+};
 
 export interface DiagramData {
   title: string;

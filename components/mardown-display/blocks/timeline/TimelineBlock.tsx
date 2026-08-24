@@ -1,3 +1,9 @@
+// THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
+// this renderer never re-declares them (`check:kind-type-twins`).
+import type {
+  TimelineEvent,
+  TimelineData,
+} from "./parseTimelineMarkdown";
 "use client";
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import {
@@ -21,24 +27,9 @@ import BlockHeaderWrapper from "@/components/mardown-display/blocks/common/Block
 import IconButton from "@/components/official/IconButton";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 
-interface TimelineEvent {
-  id: string;
-  title: string;
-  date: string;
-  description: string;
-  status?: "completed" | "in-progress" | "pending";
-  category?: string;
-}
-
 interface TimelinePeriod {
   period: string;
   events: TimelineEvent[];
-}
-
-interface TimelineData {
-  title: string;
-  description?: string;
-  periods: TimelinePeriod[];
 }
 
 interface TimelineBlockProps {

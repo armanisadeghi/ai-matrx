@@ -1,38 +1,46 @@
-interface TroubleshootingStep {
+import type {
+  TroubleshootingGuide,
+  TroubleshootingIssue as TroubleshootingIssueKind,
+  TroubleshootingSolution as TroubleshootingSolutionKind,
+  TroubleshootingStep as TroubleshootingStepKind,
+} from "@/features/content-ir/kinds/generated/kinds.generated";
+
+/**
+ * THE SHAPES COME FROM THE REGISTRY. The parser adds `id` (a render key) and
+ * narrows the registry's free-text `difficulty`/`priority`/`severity` to the
+ * vocabularies this renderer actually draws — a narrowing, never a re-declaration.
+ */
+export type TroubleshootingStep = Omit<
+  TroubleshootingStepKind,
+  "__kind" | "links" | "difficulty"
+> & {
   id: string;
-  title: string;
-  description: string;
-  commands?: string[];
   links?: { title: string; url: string }[];
-  difficulty?: 'easy' | 'medium' | 'hard';
-  estimatedTime?: string;
-}
+  difficulty?: "easy" | "medium" | "hard";
+};
 
-interface TroubleshootingSolution {
+export type TroubleshootingSolution = Omit<
+  TroubleshootingSolutionKind,
+  "__kind" | "steps" | "priority"
+> & {
   id: string;
-  title: string;
-  description?: string;
   steps: TroubleshootingStep[];
-  priority?: 'low' | 'medium' | 'high';
-  successRate?: number;
-  tags?: string[];
-}
+  priority?: "low" | "medium" | "high";
+};
 
-interface TroubleshootingIssue {
+export type TroubleshootingIssue = Omit<
+  TroubleshootingIssueKind,
+  "__kind" | "solutions" | "severity"
+> & {
   id: string;
-  symptom: string;
-  description?: string;
-  causes: string[];
   solutions: TroubleshootingSolution[];
-  relatedIssues?: string[];
-  severity?: 'low' | 'medium' | 'high' | 'critical';
-}
+  severity?: "low" | "medium" | "high" | "critical";
+};
 
-interface TroubleshootingData {
-  title: string;
-  description?: string;
-  issues: TroubleshootingIssue[];
-}
+export type TroubleshootingData = Omit<
+  TroubleshootingGuide,
+  "__kind" | "issues"
+> & { issues: TroubleshootingIssue[] };
 
 /**
  * Parses markdown content into structured troubleshooting data

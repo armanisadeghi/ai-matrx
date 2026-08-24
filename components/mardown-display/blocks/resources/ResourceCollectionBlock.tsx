@@ -1,3 +1,10 @@
+// THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
+// this renderer never re-declares them (`check:kind-type-twins`).
+import type {
+  ResourceItem,
+  ResourceCategory,
+  ResourceCollectionData,
+} from "./parseResourcesMarkdown";
 "use client";
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import {
@@ -26,41 +33,6 @@ import {
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import IconButton from "@/components/official/IconButton";
 import { matchesSearch as matchesSearchScoring } from "@/utils/search-scoring";
-
-interface ResourceItem {
-  id: string;
-  title: string;
-  url: string;
-  description: string;
-  type:
-    | "documentation"
-    | "tool"
-    | "video"
-    | "article"
-    | "course"
-    | "book"
-    | "tutorial"
-    | "other";
-  duration?: string;
-  difficulty?: "beginner" | "intermediate" | "advanced";
-  rating?: number;
-  isFavorite?: boolean;
-  isCompleted?: boolean;
-  tags?: string[];
-}
-
-interface ResourceCategory {
-  id: string;
-  name: string;
-  description?: string;
-  resources: ResourceItem[];
-}
-
-interface ResourceCollectionData {
-  title: string;
-  description?: string;
-  categories: ResourceCategory[];
-}
 
 interface ResourceCollectionBlockProps {
   collection: ResourceCollectionData;
