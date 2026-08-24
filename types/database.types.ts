@@ -53577,6 +53577,38 @@ export type Database = {
           kw_id: string
         }[]
       }
+      gsc_topic_delete: {
+        Args: {
+          p_replacement_topic_id?: string
+          p_site_id: string
+          p_topic_id: string
+        }
+        Returns: {
+          affected_organizations: number
+          associated_keywords: number
+          child_topics_promoted: number
+          keyword_links_reassigned: number
+          keyword_links_removed: number
+          site_worth_rulings_removed: number
+          starter_pack_items_removed: number
+          topic_id: string
+          topic_name: string
+        }[]
+      }
+      gsc_topic_delete_impact: {
+        Args: { p_site_id: string; p_topic_id: string }
+        Returns: {
+          affected_organizations: number
+          associated_keywords: number
+          child_topics: number
+          keyword_links: number
+          primary_keyword_links: number
+          site_worth_rulings: number
+          starter_pack_items: number
+          topic_id: string
+          topic_name: string
+        }[]
+      }
       gsc_topic_keyword_set: {
         Args: { p_topic_id: string }
         Returns: {
