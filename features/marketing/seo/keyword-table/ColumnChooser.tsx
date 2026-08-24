@@ -82,9 +82,15 @@ export function ColumnChooser({
   /** Dimension slugs currently shown. */
   selected: string[];
   onSelectedChange: (next: string[]) => void;
-  /** Core column ids currently shown on this surface. */
-  coreVisible: readonly KeywordCoreColumnId[];
-  onToggleCore: (id: KeywordCoreColumnId) => void;
+  /**
+   * Core column ids currently shown on this surface. OMIT on a surface that
+   * does not render the core keyword table (KI-026 gave the Value Workbench
+   * the site's dimensions as columns; its other columns are that page's own
+   * ruled layout, not the shared core set). Omitting hides the core half —
+   * it never invents core columns a surface does not have.
+   */
+  coreVisible?: readonly KeywordCoreColumnId[];
+  onToggleCore?: (id: KeywordCoreColumnId) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -95,9 +101,11 @@ export function ColumnChooser({
   );
   const yours = matches.filter((d) => d.scope === "site");
   const shared = matches.filter((d) => d.scope !== "site");
-  const coreMatches = KEYWORD_CORE_COLUMNS.filter((c) =>
-    term === "" ? true : c.label.toLowerCase().includes(term),
-  );
+  const coreMatches = coreVisible
+    ? KEYWORD_CORE_COLUMNS.filter((c) =>
+        term === "" ? true : c.label.toLowerCase().includes(term),
+      )
+    : [];
 
   const toggle = (slug: string) =>
     onSelectedChange(
@@ -117,7 +125,7 @@ export function ColumnChooser({
           <Columns3 className="h-3.5 w-3.5" />
           Columns
           <span className="ml-0.5 rounded-full bg-muted px-1 text-[10px] text-foreground">
-            {coreVisible.length + selected.length}
+            {(coreVisible?.length ?? 0) + selected.length}
           </span>
         </Button>
       </PopoverTrigger>
@@ -146,8 +154,8 @@ export function ColumnChooser({
                     column.id === KEYWORD_REQUIRED_COLUMN ? "always" : undefined
                   }
                   disabled={column.id === KEYWORD_REQUIRED_COLUMN}
-                  checked={coreVisible.includes(column.id)}
-                  onToggle={() => onToggleCore(column.id)}
+                  checked={coreVisible?.includes(column.id) ?? false}
+                  onToggle={() => onToggleCore?.(column.id)}
                 />
               ))}
             </div>

@@ -77,7 +77,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   keepPreviousData,
   useMutation,
@@ -123,6 +123,7 @@ import {
   getValueVocabulary,
   getRulingCounts,
   setKeywordValue,
+  getSuggestedDimensionColumns,
 } from "../data";
 import type { ValueReviewRow, ValueSource } from "../types";
 import {
@@ -137,9 +138,13 @@ import {
   type BandMeta,
 } from "../lib";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
-import { ClassCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
+import { ClassCell, StampCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
+import { ColumnChooser } from "@/features/marketing/seo/keyword-table/ColumnChooser";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
-import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
+import {
+  getKeywordStamps,
+  setKeywordStamps,
+} from "@/features/marketing/seo/keyword-workbench/data";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { KEYWORD_VALUE_WORKBENCH_SURFACE_NAME } from "@/features/surfaces/manifests/keyword-value-workbench.manifest";
@@ -225,7 +230,7 @@ function BandCell({
             "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors hover:brightness-110",
             meta.chip,
           )}
-          title={`${meta.description ?? meta.label}\nClick to rule this keyword's level yourself.`}
+          title={`${meta.description ?? meta.label}\nThis level is worked out from the answers below. You can overrule it, but that replaces the score rather than teaching the system anything.`}
         >
           {meta.label}
           <ChevronDown className="h-3 w-3 opacity-60" />
@@ -237,7 +242,12 @@ function BandCell({
         onClick={(event) => event.stopPropagation()}
       >
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          Rule “{row.keyword}” — your ruling beats the arithmetic.
+          Overrule “{row.keyword}”
+        </DropdownMenuLabel>
+        <DropdownMenuLabel className="whitespace-normal pt-0 text-[10px] font-normal leading-4 text-warning">
+          This pins a level and drops the score — the keyword stops being worked
+          out and stays put when anything else changes. Answering its dimensions
+          instead teaches every keyword like it.
         </DropdownMenuLabel>
         {rulable.map((option) => (
           <DropdownMenuItem
@@ -334,6 +344,56 @@ export function ValueWorkbench() {
    * would fight every filter they change afterwards.
    */
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  /**
+   * KI-026 — THE SITE'S OWN DIMENSIONS, as columns, on the worth screen.
+   *
+   * Class · Score · Level have always been here; the answers the site itself
+   * authored ("Buyer stage: ready to buy") were only readable one route away
+   * on the Keyword Workbench, so the page where a person forms an opinion
+   * about worth could not show what the keyword actually IS.
+   *
+   * Same dialect as the keyword table: the chosen slugs live in the URL under
+   * `cols`, so a link carries the columns. Same chooser component, same stamp
+   * read (`seo.gsc_keyword_stamps_for`), same assign path — nothing about
+   * dimensions is implemented twice.
+   */
+  const urlDimensionColumns = (searchParams.get("cols") ?? "")
+    .split(",")
+    .map((slug) => slug.trim())
+    .filter(Boolean);
+
+  /**
+   * THE SCREEN OPENS ON THE QUESTIONS, NOT THE ANSWER.
+   *
+   * Arman, 2026-08-25: the page "immediately tries to force you to select the
+   * level… the exact opposite of what we just worked our asses off doing."
+   * Dimension columns existed here but were opt-in through `?cols=`, so with a
+   * bare URL the only editable thing on the row was the LEVEL — the output.
+   *
+   * With no `cols` in the URL the server picks the questions worth asking
+   * (`seo.gsc_suggested_dimension_columns`: worth-carrying dimensions first,
+   * emptiest first within that). The moment a person chooses their own columns
+   * the URL wins and this default stops applying — a suggestion, never a lock.
+   */
+  const suggestedColumns = useQuery({
+    queryKey: ["seo", "suggested-dimension-columns", siteId],
+    queryFn: ({ signal }) => getSuggestedDimensionColumns(siteId as string, 3, signal),
+    enabled: !!siteId && urlDimensionColumns.length === 0,
+    staleTime: 5 * 60 * 1000,
+  });
+  const dimensionColumns =
+    urlDimensionColumns.length > 0
+      ? urlDimensionColumns
+      : (suggestedColumns.data ?? []).map((entry) => entry.slug);
+  const setDimensionColumns = (next: string[]) => {
+    const params = new URLSearchParams(searchParams.toString());
+    next.length > 0 ? params.set("cols", next.join(",")) : params.delete("cols");
+    // P27 — adding or removing a column is a discrete change, so Back undoes
+    // exactly it.
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
   const focusKeyword = searchParams.get("kw");
   const focusBand = searchParams.get("band");
   const focusComboId = searchParams.get("combo");
@@ -568,6 +628,29 @@ export function ValueWorkbench() {
   const rows = review.data?.rows ?? [];
   const total = review.data?.total ?? 0;
 
+  /**
+   * The dimension stamps for EXACTLY the rows on screen (THE SCOPE RULE —
+   * never the whole site from the browser), through the same RPC the keyword
+   * table reads. The query key matches the one `refreshAfterStamp`
+   * invalidates, so a stamp landed from this page repaints its own column.
+   */
+  const visibleKeywordIds = rows.map((row) => row.keyword_id);
+  const stamps = useQuery({
+    queryKey: [
+      "marketing",
+      "seo",
+      "keyword-stamps",
+      siteId,
+      dimensionColumns,
+      visibleKeywordIds,
+    ],
+    queryFn: ({ signal }) =>
+      getKeywordStamps(siteId, visibleKeywordIds, dimensionColumns, signal),
+    enabled:
+      visibleKeywordIds.length > 0 && dimensionColumns.length > 0,
+    staleTime: 60_000,
+  });
+
   const ruling = useMutation({
     mutationFn: (input: {
       keywordIds: string[];
@@ -629,6 +712,52 @@ export function ValueWorkbench() {
         </span>
       ),
     },
+    // THE QUESTIONS COME FIRST (Arman, 2026-08-25). These sat after Clicks
+    // and Impressions, which put them off the right edge of the screen — so
+    // the page still read as "set the level" even once the columns defaulted
+    // on. The answers a person is meant to give now sit beside the keyword,
+    // and the LEVEL they produce follows them.
+    //
+    // KI-026 — the site's own dimensions, in the order they were picked. The
+    // SAME `StampCell` the Keyword Workbench renders, and the SAME assign
+    // path (`surfaces.openDimension`), so a value set here is a value set
+    // there. Filtering is deliberately off: this table's server query is the
+    // value-review RPC, which does not speak the stamp filter, and a filter
+    // that silently only knew this page would be the quiet lie P28 exists to
+    // stop.
+    ...dimensionColumns.map((slug): MatrxColumnDef<ValueReviewRow> => {
+      const dimension = dimensions.find((d) => d.slug === slug);
+      // A site dimension's slug carries a `site_<8 hex>_` prefix that is
+      // plumbing — it never reaches a header.
+      const label =
+        dimension?.label ?? humanizeSlug(slug.replace(/^site_[0-9a-f]{8}_/, ""));
+      return {
+        id: `dim:${slug}`,
+        header: label,
+        sortable: false,
+        filter: false,
+        width: 150,
+        mobileHidden: true,
+        accessorFn: (row) =>
+          stamps.data?.get(row.keyword_id)?.get(slug)?.valueLabel ?? "",
+        cell: (row) => {
+          const stamp = stamps.data?.get(row.keyword_id)?.get(slug);
+          return (
+            <StampCell
+              label={stamp?.valueLabel ?? null}
+              source={stamp?.source ?? null}
+              notes={stamp?.notes ?? null}
+              onAssign={() =>
+                surfaces.openDimension(
+                  { phrase: row.keyword, keywordId: row.keyword_id },
+                  slug,
+                )
+              }
+            />
+          );
+        },
+      };
+    }),
     {
       id: "value_band",
       accessorKey: "value_band",
@@ -1107,6 +1236,18 @@ export function ValueWorkbench() {
           }}
           toolbar={{
             searchPlaceholder: "Search keywords…",
+            // KI-026 — the site's own dimensions, offered as columns. Same
+            // chooser the Keyword Workbench uses; its core-column half is
+            // omitted because this page's other columns are its own ruled
+            // layout, not the shared core set.
+            actions: (
+              <ColumnChooser
+                dimensions={dimensions}
+                loading={catalog.isLoading}
+                selected={dimensionColumns}
+                onSelectedChange={setDimensionColumns}
+              />
+            ),
           }}
           selection={{
             selectedIds,

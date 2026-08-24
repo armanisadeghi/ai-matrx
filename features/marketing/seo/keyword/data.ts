@@ -626,3 +626,30 @@ export async function listSitePerformanceForKeyword(
   if (response.error) throw response.error;
   return (response.data ?? []) as SiteKeywordPerformanceRow[];
 }
+
+/**
+ * The phrases behind a set of keyword ids, keyed by id.
+ *
+ * KI-026 — a surface that stores a keyword as an id (a content-plan node's
+ * `primary_keyword_id`, a change theory's `keyword_id`) must be able to NAME
+ * the keyword rather than print "Bound", and it needs the phrase for the Why
+ * receipt's link context. Bounded by the explicit id list, so no cap applies.
+ */
+export async function getKeywordPhrasesByIds(
+  keywordIds: readonly string[],
+  signal?: AbortSignal,
+): Promise<Map<string, string>> {
+  const ids = [...new Set(keywordIds.filter(Boolean))];
+  if (ids.length === 0) return new Map();
+  const response = await (
+    await seoDb()
+  )
+    .from("keyword")
+    .select("id, phrase")
+    .in("id", ids)
+    .abortSignal(signal ?? new AbortController().signal);
+  if (response.error) throw response.error;
+  return new Map(
+    (response.data ?? []).map((row) => [row.id as string, row.phrase as string]),
+  );
+}

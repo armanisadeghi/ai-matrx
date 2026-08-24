@@ -15,6 +15,7 @@
  * persist.
  */
 import { useMemo, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Columns3 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
+import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
+import { getKeywordPhrasesByIds } from "@/features/marketing/seo/keyword/data";
+import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { filterAndSortRows } from "@/components/official/matrx-data-table/filter-engine";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
@@ -59,7 +64,7 @@ import { PipelineProgressBadge } from "./PipelineProgressBadge";
 
 /** Bump `version` when a column is added/removed (lib/list-views backfill contract). */
 const SURFACE_PREFS: Partial<ListViewPrefs> = {
-  version: 4,
+  version: 5,
   sort: "route",
   direction: "asc",
   hiddenColumns: ["reviewer"],
@@ -72,6 +77,9 @@ const COLUMN_LABELS: Record<string, string> = {
   status: "Status",
   priority: "Priority",
   keyword: "Keyword",
+  traffic_class: "Class",
+  value_score: "Score",
+  value_band: "Level",
   pipeline: "Pipeline",
   page: "Page",
   alignment: "Alignment",
@@ -83,6 +91,8 @@ const COLUMN_LABELS: Record<string, string> = {
 };
 
 export interface PlanNodesTableProps {
+  /** The marketing site this plan belongs to — the scope of every stamp. */
+  siteId: string;
   nodes: PlanNodeRow[];
   isLoading: boolean;
   isFetching: boolean;
@@ -110,6 +120,7 @@ export interface PlanNodesTableProps {
 }
 
 export function PlanNodesTable({
+  siteId,
   nodes,
   isLoading,
   isFetching,
@@ -141,6 +152,54 @@ export function PlanNodesTable({
       : null,
   }));
 
+  /**
+   * KI-026 — a plan node names a keyword, so the table SAYS which keyword and
+   * what the site thinks it is worth: the phrase, then Class · Score · Level
+   * through the ONE stamp resolver (`seo.gsc_keyword_value_for`) every other
+   * keyword table on the platform reads. Never a locally-derived class.
+   *
+   * Scope: every BOUND keyword in the plan, not just the visible page. This
+   * table filters and sorts locally over the whole plan (`filterAndSortRows`),
+   * so a Class or Level filter that only knew fifty rows would quietly lie.
+   * The set is bounded by the plan's own size, and both reads take an explicit
+   * id list.
+   */
+  const boundKeywordIds = useMemo(
+    () =>
+      [
+        ...new Set(
+          nodes
+            .map((row) => row.primary_keyword_id)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ].sort(),
+    [nodes],
+  );
+  const keywordPhrases = useQuery({
+    queryKey: ["marketing", "keyword", "phrases-by-id", boundKeywordIds],
+    queryFn: ({ signal }) => getKeywordPhrasesByIds(boundKeywordIds, signal),
+    enabled: boundKeywordIds.length > 0,
+    staleTime: 300_000,
+  });
+  const keywordValues = useQuery({
+    queryKey: [
+      "marketing",
+      "gsc",
+      "keyword-value-for",
+      siteId,
+      boundKeywordIds,
+    ],
+    queryFn: ({ signal }) =>
+      getGscKeywordValueFor(siteId, boundKeywordIds, signal),
+    enabled: !!siteId && boundKeywordIds.length > 0,
+    staleTime: 60_000,
+  });
+  const phraseOf = (row: PlanNodeRow) =>
+    row.primary_keyword_id
+      ? (keywordPhrases.data?.get(row.primary_keyword_id) ?? null)
+      : null;
+  const openKeywordIntel = useOpenKeywordWindow();
+
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
   });
@@ -162,9 +221,6 @@ export function PlanNodesTable({
     const statusCounts = countBy(nodes, statusName);
     const priorityCounts = countBy(nodes, (row) =>
       row.priority == null ? "" : String(row.priority),
-    );
-    const keywordCounts = countBy(nodes, (row) =>
-      row.primary_keyword_id ? "Bound" : "Missing",
     );
     const pipelineCounts = countBy(
       nodes,
@@ -286,32 +342,57 @@ export function PlanNodesTable({
         align: "center",
       },
       {
+        // KI-026 — "Bound" told nobody WHICH keyword. The cell now names the
+        // phrase and opens its dossier (THE DOOR LAW); a node with no target
+        // still says so, because that is the plan's most common gap.
         id: "keyword",
         header: "Keyword",
-        accessorFn: (row) => (row.primary_keyword_id ? "Bound" : "Missing"),
-        filter: "select",
-        filterOptions: withCounts(
-          [
-            { value: "Bound", label: "Bound" },
-            { value: "Missing", label: "Missing" },
-          ],
-          keywordCounts,
-        ),
-        cell: (row) =>
-          row.primary_keyword_id ? (
-            <Badge variant="secondary" className="px-1.5 text-[11px]">
-              Bound
-            </Badge>
-          ) : (
-            <Badge
-              variant="outline"
-              className="px-1.5 text-[11px] text-muted-foreground"
+        accessorFn: (row) => phraseOf(row) ?? "",
+        filter: "text",
+        cell: (row) => {
+          if (!row.primary_keyword_id) {
+            return (
+              <Badge
+                variant="outline"
+                className="px-1.5 text-[11px] text-muted-foreground"
+              >
+                No target keyword
+              </Badge>
+            );
+          }
+          const phrase = phraseOf(row);
+          if (!phrase) {
+            return (
+              <span className="text-xs text-muted-foreground">
+                {keywordPhrases.isLoading ? "Loading…" : "Keyword not found"}
+              </span>
+            );
+          }
+          return (
+            <button
+              type="button"
+              className="max-w-full truncate text-left text-xs font-medium text-foreground underline-offset-2 hover:underline"
+              title={`Open “${phrase}” — Keyword Intelligence`}
+              onClick={(event) => {
+                event.stopPropagation();
+                openKeywordIntel({ phrase, siteId });
+              }}
             >
-              Missing
-            </Badge>
-          ),
-        width: 90,
+              {phrase}
+            </button>
+          );
+        },
+        width: 200,
       },
+      // The SHARED Class · Score · Level cells — `buildGscValueColumns`, never
+      // a second rendering of the same three facts.
+      ...buildGscValueColumns<PlanNodeRow>(
+        (row) =>
+          row.primary_keyword_id
+            ? keywordValues.data?.get(row.primary_keyword_id)
+            : undefined,
+        { siteId, keywordOf: phraseOf },
+      ),
       {
         id: "page",
         header: "Page",
@@ -509,6 +590,7 @@ export function PlanNodesTable({
     ];
   }, [
     nodes,
+    siteId,
     statusCategories.categories,
     statusMetaById,
     cmsPageById,
@@ -516,6 +598,10 @@ export function PlanNodesTable({
     measureByWebPageId,
     pipelineByNodeId,
     drift,
+    keywordPhrases.data,
+    keywordPhrases.isLoading,
+    keywordValues.data,
+    openKeywordIntel,
   ]);
 
   const hiddenColumns = prefs.hiddenColumns ?? [];

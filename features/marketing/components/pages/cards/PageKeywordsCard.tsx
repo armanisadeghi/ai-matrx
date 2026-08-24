@@ -35,6 +35,8 @@ import {
   removePageKeyword,
   type PageKeywordBoardEntry,
 } from "@/features/marketing/data/page-keywords";
+import { useGscKeywordValueByText } from "@/features/marketing/search-console/hooks/useGscQuery";
+import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
 import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import type { KeywordSuggestion } from "@/features/marketing/seo/keyword/types";
@@ -72,6 +74,36 @@ export function PageKeywordsCard({
   const primaryNormalized = primaryPhrase.toLowerCase();
   const supporting = keywords.filter(
     (entry) => entry.phrase.toLowerCase() !== primaryNormalized,
+  );
+
+  /**
+   * KI-026 — this batch names keywords, so it says what the site thinks they
+   * are worth. Volume and competition are UNIVERSAL facts about a phrase;
+   * Class and Level are what THIS site decided, and a batch that shows only
+   * the first is a page you cannot judge.
+   *
+   * The ONE by-text resolver (`useGscKeywordValueByText` → `gsc_keyword_value_for`)
+   * and the SHARED cells (`buildGscValueColumns`), rendered inline because a
+   * chip row is not a table — never a second chip built from a raw class.
+   */
+  const batchPhrases = [
+    ...(primaryPhrase ? [primaryPhrase] : []),
+    ...supporting.map((entry) => entry.phrase),
+  ];
+  const keywordValues = useGscKeywordValueByText(page.site_id, batchPhrases);
+  const [classCol, , levelCol] = buildGscValueColumns<{ phrase: string }>(
+    (row) => keywordValues.data.get(normalizeKeywordPhrase(row.phrase)),
+    {
+      siteId: page.site_id,
+      brandId: brandId ?? undefined,
+      keywordOf: (row) => row.phrase,
+    },
+  );
+  const stampCells = (phrase: string) => (
+    <>
+      {classCol.cell?.({ phrase }, 0)}
+      {levelCol.cell?.({ phrase }, 0)}
+    </>
   );
 
   const addMutation = useMutation({
@@ -228,6 +260,7 @@ export function PageKeywordsCard({
           {primaryPhrase ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-xs font-medium text-foreground">
               {primaryPhrase}
+              {stampCells(primaryPhrase)}
               <button
                 type="button"
                 aria-label={`Open Keyword Intelligence for ${primaryPhrase}`}
@@ -282,6 +315,7 @@ export function PageKeywordsCard({
                     className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground"
                   >
                     {entry.phrase}
+                    {stampCells(entry.phrase)}
                     {entry.volume !== null ? (
                       <span className="tabular-nums text-[10px] text-muted-foreground">
                         {formatSearchVolume(entry.volume)}/mo

@@ -617,3 +617,24 @@ export async function getRulingCounts(
   if (week.error) throw week.error;
   return { total: all.count ?? 0, thisWeek: week.count ?? 0 };
 }
+
+/**
+ * The dimension columns the value screen opens with when the URL names none.
+ *
+ * The screen used to land with only the LEVEL editable — the output — which
+ * taught people to hand-set answers instead of answering the questions that
+ * produce them. The server picks the questions worth asking here: dimensions
+ * that carry worth on this site first, emptiest first within that.
+ */
+export async function getSuggestedDimensionColumns(
+  siteId: string,
+  limit = 3,
+  signal?: AbortSignal,
+): Promise<Array<{ slug: string; label: string; has_worth: boolean; answered: number; total: number; why: string }>> {
+  const response = await (await seoDb())
+    .rpc("gsc_suggested_dimension_columns", { p_site_id: siteId, p_limit: limit })
+    .abortSignal(signal ?? new AbortController().signal);
+  return (assertData(response.data, response.error) ?? []) as Array<{
+    slug: string; label: string; has_worth: boolean; answered: number; total: number; why: string;
+  }>;
+}

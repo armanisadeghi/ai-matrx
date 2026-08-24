@@ -67,7 +67,11 @@ import {
 } from "./CompetitorIdentification";
 import { GroundTruthQueue } from "./GroundTruthQueue";
 import { LandscapeBriefCard } from "./LandscapeBriefCard";
-import { discoverCompetitors } from "./landscapeBrief";
+import {
+  discoverCompetitors,
+  discoverLocalCompetitors,
+  type LocalCompetitorSearchResult,
+} from "./landscapeBrief";
 
 type Artifact = {
   executive_verdict?: string;
@@ -195,6 +199,10 @@ export default function CompetitorAutopsyWorkspace() {
   );
   const selectedSite = sites.data?.find((site) => site.id === resolvedSiteId) ?? null;
   const [discovering, setDiscovering] = useState(false);
+  const [localKeyword, setLocalKeyword] = useState("");
+  const [localArea, setLocalArea] = useState("");
+  const [localSearching, setLocalSearching] = useState(false);
+  const [localResult, setLocalResult] = useState<LocalCompetitorSearchResult | null>(null);
   const [activeTab, setActiveTab] = useState("competitors");
 
   useEffect(() => {
@@ -260,6 +268,35 @@ export default function CompetitorAutopsyWorkspace() {
       );
     } finally {
       setDiscovering(false);
+    }
+  };
+
+  /** Search Google's local pack for a keyword in a place — the primary
+   *  discovery path for LOCAL businesses. Every business with a website lands
+   *  as a proposal in the ruling queue below; the whole pack renders inline. */
+  const findLocalCompetitors = async () => {
+    if (!resolvedSiteId || !localKeyword.trim() || !localArea.trim()) return;
+    setLocalSearching(true);
+    try {
+      const result = await discoverLocalCompetitors(
+        resolvedSiteId,
+        localKeyword.trim(),
+        localArea.trim(),
+        dispatch,
+      );
+      setLocalResult(result);
+      await refresh();
+      toast.success(
+        result.count
+          ? `${result.businesses.length} businesses in the pack — ${result.count} proposed for your ruling.`
+          : `${result.businesses.length} businesses in the pack — nothing new to propose.`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Local competitor search failed",
+      );
+    } finally {
+      setLocalSearching(false);
     }
   };
 
@@ -917,6 +954,115 @@ export default function CompetitorAutopsyWorkspace() {
                 Pulls real rivals out of your own search results and proposes what
                 each one is. Nothing counts until you say so.
               </span>
+            </div>
+            <div className="rounded-md border border-border bg-card p-3">
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="flex min-w-44 flex-1 flex-col gap-1">
+                  <Label htmlFor="local-search-keyword" className="text-xs">
+                    What would a customer search for?
+                  </Label>
+                  <Input
+                    id="local-search-keyword"
+                    value={localKeyword}
+                    placeholder="e.g. electronics recycling"
+                    onChange={(event) => setLocalKeyword(event.target.value)}
+                  />
+                </div>
+                <div className="flex min-w-44 flex-1 flex-col gap-1">
+                  <Label htmlFor="local-search-area" className="text-xs">
+                    Where?
+                  </Label>
+                  <Input
+                    id="local-search-area"
+                    value={localArea}
+                    placeholder="e.g. Tustin, CA"
+                    onChange={(event) => setLocalArea(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") void findLocalCompetitors();
+                    }}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  disabled={
+                    !selectedSite ||
+                    localSearching ||
+                    !localKeyword.trim() ||
+                    !localArea.trim()
+                  }
+                  onClick={() => void findLocalCompetitors()}
+                >
+                  {localSearching ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <MapPin className="size-3.5" />
+                  )}
+                  Find local competitors
+                </Button>
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Runs the real local search a customer would run and shows who Google
+                puts on the map for it. For local businesses this is the truest
+                competitor list there is — each one lands below as a proposal.
+              </p>
+              {localResult ? (
+                <div className="mt-3 space-y-1">
+                  <p className="text-xs font-medium">
+                    “{localResult.keyword}” in {localResult.canonical_location}
+                  </p>
+                  {localResult.businesses.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      Google showed no local pack for this search — try a service
+                      keyword a customer would actually type.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border rounded-md border border-border">
+                      {localResult.businesses.map((business, index) => (
+                        <li
+                          key={`${business.name}-${index}`}
+                          className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-2.5 py-1.5 text-sm"
+                        >
+                          <span className="w-5 shrink-0 text-xs tabular-nums text-muted-foreground">
+                            {business.position ?? "—"}
+                          </span>
+                          <span className="font-medium">{business.name}</span>
+                          {business.is_own ? (
+                            <Badge variant="secondary">Your listing</Badge>
+                          ) : business.competitor_id ? (
+                            <Badge variant="outline">Proposed below</Badge>
+                          ) : business.domain ? null : (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              No website
+                            </Badge>
+                          )}
+                          {business.rating != null ? (
+                            <span className="text-xs text-muted-foreground">
+                              ★ {business.rating}
+                              {business.reviews != null ? ` (${business.reviews})` : ""}
+                            </span>
+                          ) : null}
+                          {business.domain ? (
+                            <a
+                              href={business.website ?? `https://${business.domain}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                            >
+                              {business.domain}
+                            </a>
+                          ) : null}
+                          {business.address ? (
+                            <span className="ml-auto truncate text-xs text-muted-foreground">
+                              {business.address}
+                            </span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ) : null}
             </div>
             <GroundTruthQueue
               competitors={data?.competitors ?? []}

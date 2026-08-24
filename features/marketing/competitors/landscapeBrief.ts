@@ -153,6 +153,48 @@ export async function ruleOnLandscapeBrief(
   });
 }
 
+export interface LocalBusinessResult {
+  position: number | null;
+  name: string;
+  domain: string | null;
+  website: string | null;
+  address: string | null;
+  phone: string | null;
+  category: string | null;
+  rating: number | null;
+  reviews: number | null;
+  is_own: boolean;
+  competitor_id: string | null;
+}
+
+export interface LocalCompetitorSearchResult {
+  keyword: string;
+  canonical_location: string;
+  businesses: LocalBusinessResult[];
+  competitor_ids: string[];
+  count: number;
+}
+
+/** Search Google's local pack for a keyword in a geographic area and propose
+ *  every business with a website as a competitor. The primary discovery path
+ *  for local businesses — the literal map-pack rivals, not keyword overlap. */
+export async function discoverLocalCompetitors(
+  siteId: string,
+  keyword: string,
+  location: string,
+  dispatch: AppDispatch,
+): Promise<LocalCompetitorSearchResult> {
+  const result = await dispatch(callApi({
+    path: "/seo/sites/{site_id}/competitors/discover-local",
+    method: "POST",
+    pathParams: { site_id: siteId },
+    body: { keyword, location },
+  }));
+  if (result.error)
+    throw new Error(result.error.message ?? "Local competitor search failed");
+  return result.data as LocalCompetitorSearchResult;
+}
+
 /** Find the rivals and classify them — without buying a full page-crawl autopsy. */
 export async function discoverCompetitors(
   siteId: string,

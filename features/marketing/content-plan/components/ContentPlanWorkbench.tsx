@@ -919,6 +919,7 @@ export function ContentPlanWorkbench({
             />
           ) : view === "table" ? (
             <PlanNodesTable
+              siteId={siteId}
               nodes={nodeRows}
               isLoading={nodes.isLoading}
               isFetching={nodes.isFetching}

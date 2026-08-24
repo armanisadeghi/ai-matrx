@@ -13,6 +13,7 @@
  * SoR: common-docs/systems/marketing/seo/seo-keywords/REGISTER.md (KI-046).
  */
 
+import { z } from "zod";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { makeGovernedDataAsserter } from "@/utils/errors";
@@ -27,37 +28,45 @@ const assertData = makeGovernedDataAsserter(
   /^(gsc_vocab_[a-z_]+|gsc_bad_vocab_kind|seo_settings_[a-z_]+):\s*/,
 );
 
-export type SettingsScope = "platform" | "org" | "brand" | "site";
+const settingsScopeSchema = z.enum(["platform", "org", "brand", "site"]);
+export type SettingsScope = z.infer<typeof settingsScopeSchema>;
 
-export interface ValueLevel {
-  value: string;
-  label?: string | null;
+const valueLevelSchema = z.object({
+  value: z.string().min(1),
+  label: z.string().nullable().optional(),
   /** Null only for the reserved `negative` guard, which is not a score range. */
-  min_score: number | null;
+  min_score: z.number().nullable(),
   /** Present on inherited rows: which tier it came from. */
-  source?: SettingsScope;
-}
+  source: settingsScopeSchema.optional(),
+});
+export type ValueLevel = z.infer<typeof valueLevelSchema>;
 
-export interface ValueSettingsSide {
-  baseline: number | null;
-  levels: ValueLevel[] | null;
-}
+const valueSettingsSideSchema = z.object({
+  baseline: z.number().nullable(),
+  levels: z.array(valueLevelSchema).nullable(),
+});
+export type ValueSettingsSide = z.infer<typeof valueSettingsSideSchema>;
 
-export interface ValueSettingsScopePayload {
-  scope: SettingsScope;
-  id: string | null;
-  label: string | null;
-  may_edit: boolean;
-  parent: { scope: SettingsScope; id?: string; label: string } | null;
-  /** How many sites this scope's numbers reach. */
-  sites_affected: number;
-  /** What this scope has said itself — null fields mean "inherits". */
-  own: ValueSettingsSide;
-  /** What it would use if it said nothing. */
-  inherited: ValueSettingsSide;
-  /** own ?? inherited — what actually applies today. */
-  effective: ValueSettingsSide;
-}
+const valueSettingsScopePayloadSchema = z.object({
+  scope: settingsScopeSchema,
+  id: z.string().uuid().nullable(),
+  label: z.string().nullable(),
+  may_edit: z.boolean(),
+  parent: z
+    .object({
+      scope: settingsScopeSchema,
+      id: z.string().uuid().optional(),
+      label: z.string(),
+    })
+    .nullable(),
+  sites_affected: z.number(),
+  own: valueSettingsSideSchema,
+  inherited: valueSettingsSideSchema,
+  effective: valueSettingsSideSchema,
+});
+export type ValueSettingsScopePayload = z.infer<
+  typeof valueSettingsScopePayloadSchema
+>;
 
 export async function getValueSettings(
   scope: SettingsScope,
@@ -69,10 +78,8 @@ export async function getValueSettings(
   )
     .rpc("value_settings_scope", { p_scope: scope, p_id: id ?? undefined })
     .abortSignal(signal ?? new AbortController().signal);
-  return assertData(
-    response.data,
-    response.error,
-  ) as unknown as ValueSettingsScopePayload;
+  const data = assertData(response.data, response.error);
+  return valueSettingsScopePayloadSchema.parse(data);
 }
 
 /**
@@ -99,11 +106,12 @@ export async function setValueSettings(input: {
     ...(input.levels === undefined ? {} : { p_levels: input.levels }),
     p_clear: input.clear ?? [],
   });
-  return assertData(
+  const data = assertData(
     response.data,
     response.error,
     "save these value settings",
-  ) as unknown as ValueSettingsScopePayload;
+  );
+  return valueSettingsScopePayloadSchema.parse(data);
 }
 
 // ── Copying meaning to a sibling site (KI-043) ──────────────────────────────
