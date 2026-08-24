@@ -39,6 +39,7 @@ import {
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
+  ColumnFiltersState,
   MatrxColumnDef,
   MatrxDataTableQueryState,
 } from "@/components/official/matrx-data-table/types";
@@ -719,17 +720,42 @@ export function KeywordWorkbench() {
   ];
 
   /* ------------------------------------------------------------- table state */
+  const tableColumnFilters: ColumnFiltersState = {};
+  if (searchDraft) {
+    tableColumnFilters.key = { kind: "text", value: searchDraft };
+  }
+  if (state.filters.topic) {
+    tableColumnFilters.topic = {
+      kind: "select",
+      value: state.filters.topic,
+    };
+  }
+  for (const pair of stampPairs) {
+    const id =
+      pair.dimension === "traffic_class"
+        ? "traffic_class"
+        : `dim:${pair.dimension}`;
+    const existing = tableColumnFilters[id];
+    const values =
+      existing?.kind === "select"
+        ? [...(existing.values ?? [existing.value]), pair.value]
+        : [pair.value];
+    tableColumnFilters[id] = {
+      kind: "select",
+      value: values[0],
+      values,
+    };
+  }
+
   const tableQuery: MatrxDataTableQueryState = {
     page: state.page,
     pageSize: state.pageSize,
     search: searchDraft,
     anyOf: "",
-    // The Keyword header filter and the toolbar search are two doors to the
-    // same server query. Mirroring the live draft here keeps either input
-    // stable while typing instead of clearing the header popover on rerender.
-    columnFilters: searchDraft
-      ? { key: { kind: "text", value: searchDraft } }
-      : {},
+    // Every URL-owned filter is mirrored back into the controlled table. If a
+    // filter is omitted here, the table correctly emits the click but the next
+    // controlled render immediately paints the old value again.
+    columnFilters: tableColumnFilters,
     sort: { id: state.sort, direction: state.sortDir },
   };
 
@@ -772,25 +798,39 @@ export function KeywordWorkbench() {
       return;
     }
     const sortId = next.sort?.id ?? "clicks";
-    // Column filters on a dimension are REAL filters — they become the
-    // server-side `stamps` filter rather than sieving the page in the browser.
-    const columnFilterEntries = Object.entries(next.columnFilters ?? {});
-    for (const [id, raw] of columnFilterEntries) {
-      if (id === "topic") {
-        const picked = Array.isArray(raw) ? raw[0] : raw;
-        if (typeof picked === "string" && picked !== "") {
-          filterByService(picked);
-          return;
-        }
-        continue;
-      }
-      if (!id.startsWith("dim:") && id !== "traffic_class") continue;
+    const selectedValue = (id: string) => {
+      const filter = next.columnFilters[id];
+      if (!filter || filter.kind !== "select") return undefined;
+      return (filter.values?.length ? filter.values[0] : filter.value) ||
+        undefined;
+    };
+
+    const nextTopic = selectedValue("topic");
+    if (nextTopic !== state.filters.topic) {
+      filterByService(nextTopic);
+      return;
+    }
+
+    // Column filters on a dimension are REAL filters — replace that
+    // dimension's server-side stamp pair rather than trying to interpret the
+    // typed ColumnFilterValue as the legacy raw string/array shape.
+    const stampColumnIds = [
+      "traffic_class",
+      ...state.dimensions.map((slug) => `dim:${slug}`),
+    ];
+    for (const id of stampColumnIds) {
       const slug = id.startsWith("dim:") ? id.slice(4) : "traffic_class";
-      const picked = Array.isArray(raw) ? raw[0] : raw;
-      if (typeof picked === "string" && picked !== "") {
-        filterByStamp(slug, picked);
-        return;
-      }
+      const current = stampPairs.find((pair) => pair.dimension === slug)?.value;
+      const picked = selectedValue(id);
+      if (picked === current) continue;
+
+      const nextPairs = stampPairs.filter((pair) => pair.dimension !== slug);
+      if (picked) nextPairs.push({ dimension: slug, value: picked });
+      const filters: GscFilters = { ...state.filters };
+      if (nextPairs.length === 0) delete filters.stamps;
+      else filters.stamps = encodeStampFilter(nextPairs);
+      patch({ filters });
+      return;
     }
     push({
       ...state,

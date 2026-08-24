@@ -167,6 +167,11 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
   through `router.push` made large sites interrupt typing and filled the
   browser history. The Keyword header filter and toolbar search now share this
   one draft/query path.
+- **Controlled column filters round-trip typed state.** The table emits
+  `ColumnFilterValue` objects, not raw strings. Service, Class, and dimension
+  filters are translated into the URL/server contract and mirrored back into
+  `columnFilters`; otherwise a valid click appears to do nothing on the next
+  controlled render.
 - **P11 is a door, never a grey-out.** Class is platform-shared; the dropdown
   says so and offers "make it your own dimension" rather than a list with no
   way out. `pnpm check:picker-add` catches the omission.
@@ -194,7 +199,9 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
   so the service and its root remain readable. Audited every controlled
   `MatrxDataTable` consumer and repaired the three other remote-search paths
   that bypassed their canonical debounced state owner (GSC dimensions,
-  classification window, outreach-list members).
+  classification window, outreach-list members). Repaired the workbench's
+  stale raw-value column-filter adapter too: Service, Class, and dimension
+  options now select, clear, and remain selected through URL navigation.
 - **2026-08-24** — **THE SERVICE COLUMN** (Arman's "that's gone"). Service is a
   first-class column next to the keyword; the cell places, the picker invents,
   bulk places the checked rows and everything-matching with a reason, and the
