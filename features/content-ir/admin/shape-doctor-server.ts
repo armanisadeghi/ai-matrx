@@ -28,6 +28,10 @@ import "server-only";
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+  DB_KIND_COMPONENT_KEY,
+  GENERIC_STRUCTURED_COMPONENT_KEY,
+} from "@ai-matrx/content-ir-react";
 import { createClient } from "@/utils/supabase/server";
 import type { Json } from "@/types/database.types";
 import committedSnapshot from "@/scripts/shape/shapes-status.json";
@@ -53,6 +57,7 @@ import {
   artifactKindSlugsFromText,
   compiledKindSlugsFromText,
   extractDetectorTokensFromTexts,
+  extractDispatchKeysFromText,
   extractHostSurfaceTokensFromTexts,
   type HostSurfaceTokens,
 } from "@/features/content-ir/registry/shape-doctor-extract";
@@ -66,6 +71,8 @@ const SOURCE_FILES = {
     "components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts",
   systemKinds: "features/content-ir/registry/system-kinds.ts",
   artifactRegistry: "features/canvas/artifact-types/artifact-type-registry.ts",
+  blockDispatch:
+    "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx",
 } as const;
 
 function readSource(relPath: string): string | null {
@@ -86,6 +93,9 @@ interface CodeInputs {
   hostSurfaceTokens: HostSurfaceTokens | null;
   compiledKinds: string[];
   artifactKinds: string[];
+  /** Block types resolveBlockDispatch answers; null when block-dispatch.tsx is
+   * unreadable here (the dangling-component-key check goes quiet, loudly). */
+  dispatchKeys: string[] | null;
   /** Columns whose live value depends on unavailable sources — excluded from
    * the snapshot diff so degraded runtimes never report fake drift. */
   excludedFromDrift: AssetColumn[];
@@ -141,11 +151,37 @@ function gatherCodeInputs(): CodeInputs {
     );
   }
 
+  // Dispatch keys — the code side of the dangling-component_key red. Unreadable
+  // (or an extraction failure) means the check CANNOT run: it is skipped and
+  // the Component column leaves the drift diff, never silently passed.
+  const dispatchText = readSource(SOURCE_FILES.blockDispatch);
+  let dispatchKeys: string[] | null = null;
+  if (dispatchText) {
+    const extraction = extractDispatchKeysFromText(dispatchText, {
+      DB_KIND_COMPONENT_KEY,
+      GENERIC_STRUCTURED_COMPONENT_KEY,
+    });
+    if (extraction.failures.length === 0) {
+      dispatchKeys = extraction.keys;
+    } else {
+      warnings.push(
+        // access-errors: ok — admin shape-doctor census warning about source-code literals, developer-facing
+        `Dispatch table literal(s) ${extraction.failures.map((f) => f.literal).join(", ")} not found in ${SOURCE_FILES.blockDispatch} — the dangling-component_key check is blind (run pnpm check:shapes for the CLI red).`,
+      );
+    }
+  } else {
+    warnings.push(
+      "block-dispatch.tsx unreadable in this runtime — the dangling-component_key check is omitted; run pnpm check:shapes locally.",
+    );
+  }
+  if (!dispatchKeys) excluded.add("component");
+
   return {
     detectorTokens,
     hostSurfaceTokens,
     compiledKinds,
     artifactKinds,
+    dispatchKeys,
     excludedFromDrift: [...excluded],
     warnings,
   };
@@ -398,6 +434,7 @@ export async function runLiveShapeDoctor(): Promise<LiveDoctorRun> {
     codeRenderPaths: {
       compiledKinds: code.compiledKinds,
       artifactKinds: code.artifactKinds,
+      ...(code.dispatchKeys ? { dispatchKeys: code.dispatchKeys } : null),
     },
     // Coverage-gate inputs — bundled committed snapshots (same source the CLI
     // reads from disk), so the board raises the same vocab-unclassified /

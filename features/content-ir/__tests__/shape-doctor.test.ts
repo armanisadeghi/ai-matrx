@@ -103,8 +103,6 @@ describe("shape doctor", () => {
             componentKey: "FlashcardsBlock",
             source: "bundled",
             isActive: true,
-            source: "bundled",
-            isActive: true,
           },
         ],
         surfaces: [
@@ -562,8 +560,6 @@ describe("shape doctor — n/a classification", () => {
             componentKey: "FlashcardBlock",
             source: "bundled",
             isActive: true,
-            source: "bundled",
-            isActive: true,
           },
         ],
         edges: [edge("root", "child", "cards")],
@@ -687,13 +683,78 @@ describe("shape doctor — n/a classification", () => {
             componentKey: "JsonBlock",
             source: "bundled",
             isActive: true,
-            source: "bundled",
-            isActive: true,
           },
         ],
       }),
     );
     expect(report.findings.some((f) => f.code === "component-without-schema")).toBe(true);
+  });
+
+  describe("dangling component_key (the render leg's last mile)", () => {
+    const componentRow = (overrides: Partial<DoctorKindComponent> = {}): DoctorKindComponent => ({
+      id: "c1",
+      kindDefinitionId: "k1",
+      platform: "web",
+      role: "output",
+      componentKey: "GhostBlock",
+      source: "bundled",
+      isActive: true,
+      ...overrides,
+    });
+    const withKeys = (components: DoctorKindComponent[]) =>
+      runShapeDoctor(
+        baseInput({
+          kinds: [makeKind({ id: "k1", kind: "flashcard_set", isActive: true })],
+          components,
+          codeRenderPaths: {
+            compiledKinds: [],
+            artifactKinds: [],
+            dispatchKeys: ["flashcards", "generic_structured"],
+          },
+        }),
+      );
+    const isDangling = (f: { code: string }) => f.code === "dangling-component-key";
+
+    it("REDS an active bundled web/output row the dispatch table cannot answer", () => {
+      const report = withKeys([componentRow()]);
+      const red = report.findings.find(isDangling);
+      expect(red?.kind).toBe("flashcard_set");
+      expect(red?.message).toContain("GhostBlock");
+      // and the row stops counting as component evidence — the lie this kills.
+      expect(report.rows[0].assets.component.status).not.toBe("ok");
+    });
+
+    it("passes a key the dispatch table holds", () => {
+      const report = withKeys([componentRow({ componentKey: "flashcards" })]);
+      expect(report.findings.some(isDangling)).toBe(false);
+      expect(report.rows[0].assets.component.status).toBe("ok");
+    });
+
+    it("exempts source='db' rows (the key is a label, compiled in-page)", () => {
+      const report = withKeys([componentRow({ source: "db" })]);
+      expect(report.findings.some(isDangling)).toBe(false);
+    });
+
+    it("exempts generic_structured and inactive / non-web-output rows", () => {
+      for (const row of [
+        componentRow({ componentKey: "generic_structured" }),
+        componentRow({ isActive: false }),
+        componentRow({ role: "input" }),
+        componentRow({ platform: "desktop" }),
+      ]) {
+        expect(withKeys([row]).findings.some(isDangling)).toBe(false);
+      }
+    });
+
+    it("goes QUIET (never falsely green) when the caller has no dispatch keys", () => {
+      const report = runShapeDoctor(
+        baseInput({
+          kinds: [makeKind({ id: "k1", kind: "flashcard_set", isActive: true })],
+          components: [componentRow()],
+        }),
+      );
+      expect(report.findings.some(isDangling)).toBe(false);
+    });
   });
 
   it("classifyExemption encodes the exact predicate", () => {

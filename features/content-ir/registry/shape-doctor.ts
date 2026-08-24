@@ -332,6 +332,7 @@ export type FindingCode =
   | "active-gate-fail"
   | "duplicate-skill"
   | "component-without-schema"
+  | "dangling-component-key" // a bundled kind_component key resolveBlockDispatch lacks
   | "detector-extract-failed" // emitted by the CLI when a frozen literal vanished
   | "snapshot-drift" // emitted by the CLI on committed-vs-live drift
   | "vocab-unclassified" // a kind/detector/surface name missing from the crosswalk
