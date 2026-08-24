@@ -36,9 +36,9 @@
  *                                 schema, samples, and (owner only) the
  *                                 activation verdict
  *   - ShapeSurfaceRuntime.tsx   → the thin server-loaded shell wrapping the
- *                                 Schema, Instances, and Test ROUTES with kind
- *                                 identity + schema. On Instances and Test the
- *                                 tab below it nests DEEPER and wins.
+ *                                 Schema, Instances, Test, and Stream ROUTES
+ *                                 with kind identity + schema. On Instances and
+ *                                 Test the tab below it nests DEEPER and wins.
  *   - ShapeInstancesTab.tsx     → kind identity + instances + focused instance
  *   - ShapeTestTab.tsx          → kind identity + the live draft + save state
  *   - NewShapeClient.tsx        → the draft intent/sample, studio_tab "new"
@@ -422,7 +422,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "studio_tab",
     label: "Active studio tab",
     description:
-      "Where the user is: `list`, `preview`, `schema`, `instances`, `test`, or `new`. Always emitted by every studio route's emitter.",
+      "Where the user is: `list`, `preview`, `schema`, `instances`, `test`, `stream`, or `new`. Always emitted by every studio route's emitter.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,

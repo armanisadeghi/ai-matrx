@@ -4,7 +4,7 @@
  * Thin client shell that publishes the `matrx-user/shapes` surface scope for a
  * SERVER-rendered Shape Studio route.
  *
- * The Preview, Instances, and Test tabs are already client components and mount
+ * The Preview, Instances, Test, and Stream tabs are already client components and mount
  * their own richer providers. The Schema route is not: `KindSchemaTab` is a
  * shared read-only view (the admin console renders it too), so wrapping THAT
  * component would leak a user-surface emitter into admin. This shell wraps the
@@ -22,7 +22,7 @@ import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest
 
 interface ShapeSurfaceRuntimeProps {
   /** Which studio route this is — mirrors the manifest's `studio_tab`. */
-  studioTab: "schema" | "instances" | "test";
+  studioTab: "schema" | "instances" | "test" | "stream";
   kind: string;
   label: string;
   kindDefinitionId: string;

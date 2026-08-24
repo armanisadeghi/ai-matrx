@@ -13,6 +13,7 @@ import {
   FlaskConical,
   Pencil,
   PencilRuler,
+  Radio,
 } from "lucide-react";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import {
@@ -21,6 +22,7 @@ import {
   shapeDetailHref,
   shapeInstancesHref,
   shapeSchemaHref,
+  shapeStreamHref,
   shapeTestHref,
 } from "@/features/content-ir/studio/constants";
 
@@ -42,6 +44,7 @@ export default function ShapeDetailHeader({
       modes={[
         { name: "Preview", href: shapeDetailHref(kind), icon: Eye },
         { name: "Test", href: shapeTestHref(kind), icon: FlaskConical },
+        { name: "Stream", href: shapeStreamHref(kind), icon: Radio },
         { name: "Instances", href: shapeInstancesHref(kind), icon: Boxes },
         { name: "Schema", href: shapeSchemaHref(kind), icon: FileJson },
       ]}
