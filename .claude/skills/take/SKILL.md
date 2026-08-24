@@ -38,12 +38,25 @@ itself, TODOs. *"Docs go stale, code doesn't"* — verify the load-bearing claim
 live code and the live DB before building on them. Note in a few lines each: done /
 pending / documented-but-not-built / built-but-not-documented. Then move.
 
+**THE VISION SWEEP — your node's kit is the starting point, never the boundary.** Arman's
+deepest words about your subject often live inside ANOTHER node's vision docs — a component
+of yours specified at length in a bigger system's vision, or the reverse. Before building,
+search the whole bundle (and repo doc trees) for your subject's names, components, and
+aliases; wherever his words live, **the richest treatment governs** — a thin mention in
+your own VISION.md never outranks a detailed vision elsewhere. If two visions disagree, or
+your kit under-states what a bigger doc demands, STOP and bring him the gap before building
+to the lesser version — and leave pointer lines in both kits so the next taker can't miss
+it. This rule exists because it failed: the Steward was specified in depth in the workflow
+system's agent-graph-v2 vision set, Masterwork's docs referenced it thinly, and the
+Masterwork build followed the thin version — nobody reached across, noticed, or told him.
+
 ## The doctrine — Arman's rules, in force verbatim
 
 1. **"Bias to action. Read enough to be correct, then build. Reviewing, planning, and
    reporting are checkpoints — not the work. I would much rather see real, testable code
    progress than a thorough analysis of what could be done."**
-2. **His vision is the definition of done.** The node's VISION.md and his instructions to
+2. **His vision is the definition of done.** The node's VISION.md, **every vision anywhere
+   that speaks about your subject (the vision sweep above)**, and his instructions to
    you. Instructions outrank docs — conflict gets flagged, his words win. Vision unclear on
    a point → *"make the call that best serves the stated direction, note the assumption,
    and keep going."* `VISION MISSING` → do NOT invent one; work the listed items and put
@@ -136,6 +149,10 @@ remembers nothing of this conversation and reads none of the documentation — e
 
 # Changelog
 
+- 2026-08-24 — THE VISION SWEEP added (Arman's ruling after the Steward failure): the node
+  kit is the starting point, never the boundary; the richest vision treatment of your
+  subject governs wherever it lives; a cross-node vision gap stops the build and goes to
+  him; pointer lines get left in both kits.
 - 2026-08-21 — Contract rule 8 added: every response ends with one of three explicit
   closes (done + anything else? · next, I'm doing X · requirements met, could go further
   on X) — never a fuzzy ending.
