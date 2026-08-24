@@ -177,9 +177,12 @@ export function StartHero() {
           Turn your material into a grounded study kit
         </h1>
         <p className="mx-auto max-w-xl text-sm text-muted-foreground">
+          {/* The promise is the vision's, word for word (VISION §5), and it
+              matches DEFAULT_TARGETS exactly — copy that understates what the
+              button does is the same defect as copy that overstates it. */}
           Drop a PDF, image, audio, or video — paste your notes, or link a page.
-          We build flashcards, a summary, and a mind map — every card cited back
-          to your own material.
+          We build flashcards, a summary, a quiz, a mind map and an audio
+          overview — everything cited back to your own material.
         </p>
       </header>
 
