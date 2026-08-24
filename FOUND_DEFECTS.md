@@ -101,7 +101,7 @@ regenerated against it. Old and new builds both read successfully — no deploy 
 Vercel projects, drop `orchestrator_id` and `set_label` from the `returns table(...)` list and
 from the select body. Nothing else reads them — verified by grep across both repos.
 
-### D249 — a user listing their OWN files times out: the generated `entity` std_select is a per-row `has_access` over the whole table (2026-08-22)
+### D249 — RESOLVED 2026-08-23 — a user listing their OWN files times out: the generated `entity` std_select is a per-row `has_access` over the whole table (2026-08-22)
 
 **Measured live 2026-08-22** as the real non-admin `test@test.com` (owns 3 files), under `SET LOCAL ROLE authenticated` + `request.jwt.claims`, with `statement_timeout = 25s`:
 
@@ -123,6 +123,88 @@ std_select USING (created_by = (select auth.uid()) OR iam.has_access('<token>', 
 **Why it matters more than a slow query:** `files.files` is the user's file list. A first-party user cannot enumerate their own files inside a normal request timeout. Under db-rules §6a that is as serious as a leak — *"a legitimate user blocked from their own data is as serious a bug as a stranger let in"*.
 
 **Found in passing** while re-locking `storage_uri` on the same table (D231). Confirmed pre-existing and NOT caused by that work: the policy text is byte-identical to what `apply_rls` emits, the table already carried exactly the generator's six policies before it ran, and `runtime.global_request` — untouched — shows the same behaviour at the same shape.
+
+**RESOLVED 2026-08-23.** Measured live as the same real non-admin, same queries:
+
+| table | rows | before | after |
+|---|---|---|---|
+| `runtime.global_request` | 81k | 23.9s | **0.33s** |
+| `chat.conversation` | 17.8k | 2.6s | **0.17s** |
+| `files.files` | 48.5k | **timeout** | **3.0s** (407ms execution) |
+
+`iam.apply_rls`'s `entity`/`system` `std_select` now comes from
+`iam.entity_read_expr` (aidream migrations `0476`, `0477`, `0480`, `0481`): the
+SUFFICIENT attribute lanes of the access kernel inlined as INDEXABLE predicates,
+plus `iam.has_access` retained but reached only for ids the remaining
+id-producing lanes could admit. The `files.files` plan is now every arm a
+`hashed SubPlan`/`InitPlan` evaluated ONCE, with `iam.has_access` appearing only
+inside `id = ANY(hashed SubPlan) AND has_access(...)` — and that SubPlan returns
+0 rows for a normal user, so the per-row definer call never fires.
+
+**203 tables regenerated, 0 differed.** Every table was proved row-identical
+before being touched by `aidream/scripts/_verify_entity_read_equivalence.py`
+(`iam.entity_read_equivalence` in the DB): `lost` = rows the old expression
+admitted and the new one does not (an access denial), `gained` = the reverse (a
+leak). Both had to be 0. The certifying sweep compared **557,406 rows** across
+208 tables — the WHOLE table for 189 of them — and `files.files` a further
+36,000 comparisons across 6 real users.
+
+**Five things the gate caught that reading the code did not**, each of which
+would have shipped a wrong read policy:
+
+1. `plan.node` **gained 24** rows and `web.site` **gained 2** — the kernel
+   downgrades `include_public` when walking to a parent, so a child whose own
+   visibility is `internal` must not inherit access from a merely-public parent.
+2. `rag.data_stores` **lost 2** — a token-specific early lane returning a
+   BOOLEAN per row, so it could never be a candidate id set.
+3. `files.files` **lost 7** at 4,000 rows/user after passing clean at 60.
+   `iam.has_access` DISPATCHES BY TOKEN (`iam.has_access_for`: `file` routes to
+   `files.has_access_for`), so the expression had mirrored the wrong ladder. **A
+   small sample over a table whose exceptional rows are a minority proves almost
+   nothing.**
+4. `platform.rulebook` **lost 10** and `rag.data_stores` **lost 5** — the access
+   kernel was REWRITTEN by another lane between the certifying sweep and the
+   rollout an hour later (the `data_store` lane generalised into
+   `user_can_read_via_library_grant`, plus a new `library_is_open` lane and two
+   curator lanes). The gate refused both tables; 201 others regenerated.
+5. A **total read lockout**, invisible to the row-equivalence proof entirely: the
+   4-arg `iam.accessible_entity_ids` had EXECUTE granted to `postgres` only, so
+   the first regenerated table threw `permission denied` for `authenticated`.
+   Row-equivalence and REACHABILITY are different questions (`0478`, `0479`).
+
+**Three guards exist now so none of that depends on someone re-running a script:**
+
+- `iam.entity_read_kernel_fingerprint()` vs `iam.entity_read_kernel_expected()` —
+  an md5 over all 16 kernel functions the expression mirrors. On mismatch the
+  read lane DROPS THE BOUND (unbounded `iam.has_access` — exactly as correct as
+  the pre-D249 policy, merely slower) and warns. Correct-and-slow is the only
+  direction a read policy may fail in.
+- `iam.entity_read_lane_preflight()` — every function the lane can name must be
+  EXECUTE-able by the role that will evaluate it; `--apply` refuses to start
+  otherwise.
+- the generator reads the DISPATCH LIST out of the live `iam.has_access_for`, and
+  any token routed to a bespoke resolver it does not understand keeps an
+  unbounded arm.
+
+**Known cost, stated rather than buried:** the expression is large, so `files.files`
+spends ~2.4s in PLANNING against 407ms of execution. Worth revisiting (a
+`plan_cache_mode` hint, or lifting the arms into a helper) but not a regression —
+the table was unreadable before.
+
+**Not fixed, and filed rather than guessed at** — registered `entity` tables that
+cannot take the canonical lane at all and have NO `std_select` today:
+`extend.wbx_guidance` (`id` is TEXT); `iam.industry_curators`,
+`users.user_analysis_preferences`, `users.user_form_profile`,
+`users.user_preferences` (no `id` column); `context.scope_types`,
+`docproc.page_extraction_jobs`, `docproc.processed_documents`,
+`rag.kg_sweep_state`, `ui.ui_surface` (no `created_by`); `context.context_items`,
+`ops.app_log` (no `organization_id`). Plus 6 that `apply_rls` correctly refuses
+as access machinery (`iam.organizations`, `iam.memberships`, `iam.invitations`,
+`iam.access_requests`, `iam.system_personal_org_failures`,
+`platform.associations`). All are §6d-3 base-contract violations with real access
+models behind them.
+
+**The original filing follows.**
 
 **The fix is a generator change, not a per-table one**, so it is filed rather than patched: the `entity` `std_select` needs the same treatment the `ledger` lane got — an owner arm that can index-scan, plus a set-wise arm that resolves once per query rather than once per row (`iam.accessible_entity_ids`-shaped, the way the `component` lane already does it). That is a change to every entity table's read policy on the platform and needs its own measurement + adjudication. **Do not "fix" it by widening a policy.**
 
