@@ -2,10 +2,10 @@
 
 // UserMenuOrgSection — the active-organization switcher INSIDE the user-menu
 // dropdown. The persistent home for org selection: the user can always see the
-// current org, switch it, and pin a default. The drop-down HeaderOrgReminder
-// only appears as a one-time nudge while no org is chosen; this section is
-// always available. Default management uses the same canonical pieces as the
-// reminder popover (useActiveOrganizationPicker + DefaultOrgSwitch).
+// current org, switch it, and pin a default. HeaderChooseOrgButton appears in the
+// header only while no org is chosen; this section is always available. Default
+// management uses the same canonical pieces as that button's popover
+// (useActiveOrganizationPicker + DefaultOrgSwitch).
 
 import { Check, Star } from "lucide-react";
 import { cn } from "@/lib/utils";

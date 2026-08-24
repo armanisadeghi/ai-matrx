@@ -4,7 +4,7 @@
 // This is the single durable, cross-device source of truth for "which org am
 // I in by default" — read at startup by the active-org bootstrap to auto-select
 // an org (so the user is never left without one and never re-prompted), and
-// read/written by the org pickers (HeaderOrgReminder popover + UserMenuOrgSection)
+// read/written by the org pickers (HeaderChooseOrgButton popover + UserMenuOrgSection)
 // behind a "Set as my default organization" switch.
 //
 // Persistence is handled by the userPreferences sync engine: dispatching

@@ -17,7 +17,7 @@ export default function UserMenuTrigger({
   menuCheckboxId = "shell-user-menu",
 }: UserMenuTriggerProps) {
   // Soft org enforcement: ring the avatar red when no org is selected, nudging
-  // the user to choose one (alongside the drop-down HeaderOrgReminder). Gated on
+  // the user to choose one (alongside the in-header HeaderChooseOrgButton). Gated on
   // the bootstrap-resolved flag so it never flashes red during boot before the
   // default/personal org has resolved.
   const promptForOrg = useAppSelector(selectShouldPromptForOrganization);

@@ -1,5 +1,6 @@
 import HamburgerButton from "./header-left-menu/HamburgerButton";
 import UserMenuTrigger from "./header-right-menu/UserMenuTrigger";
+import HeaderChooseOrgButton from "./header-right-menu/HeaderChooseOrgButton";
 import UserMenuPanel from "./header-right-menu/UserMenuPanel";
 import GuestUserMenuTrigger from "./header-right-menu/GuestUserMenuTrigger";
 import GuestUserMenuPanel from "./header-right-menu/GuestUserMenuPanel";
@@ -21,6 +22,9 @@ export default function Header({ userData, isAuthenticated }: HeaderProps) {
 
       <div className="shell-header-right">
         <div className="shell-header-right-inject" id="shell-header-right" />
+        {/* Renders nothing once an org is active. In header flow on purpose —
+            it replaced a fixed drop-down card that covered route chrome. */}
+        {isAuthenticated && <HeaderChooseOrgButton />}
         {isAuthenticated && <SurfaceAgentsHeaderButton />}
         <CanvasShellHeaderToggle />
         <div className="shell-user-menu-wrapper">
