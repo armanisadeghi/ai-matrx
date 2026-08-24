@@ -32,6 +32,25 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "Google has not approved the Slides scope for our app — it needs its own approval campaign (FOUND_DEFECTS D214).",
     surfaces: ["Presentation export menu"],
   },
+  "database-admin.edit-function": {
+    id: "database-admin.edit-function",
+    label: "Save function definition",
+    owner: "administration",
+    promise:
+      "Edit a database function's body here and apply the change to the live database.",
+    stage: "blocked",
+    // Found 2026-08-24 during the dead-control sweep: Save was
+    // `console.log("Save changes")`. An admin could edit a function body,
+    // press Save, see no error, and believe it had been applied — a dead
+    // click that reads as a successful write is the worse half of the class.
+    // It stays blocked by design, not by neglect: CLAUDE.md § Migrations —
+    // app code has NO DDL path; DDL is applied via migration + Supabase MCP
+    // and recorded in the shared ledger. Building this button would mean
+    // building the thing that rule exists to prevent.
+    blockedBy:
+      "App code has no DDL path by policy (CLAUDE.md § Migrations) — function bodies change through a migration, not a browser textarea.",
+    surfaces: ["Database admin → function details → Definition tab"],
+  },
   "chat.live-audio": {
     id: "chat.live-audio",
     label: "Live audio",

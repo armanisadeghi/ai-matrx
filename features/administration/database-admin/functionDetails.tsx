@@ -16,6 +16,7 @@ import SyntaxHighlighter from "./SyntaxHighlighter";
 import { cn } from "@/lib/utils";
 import type { DatabaseFunction } from "./types";
 import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 
 interface FunctionDetailsProps {
   func: DatabaseFunction | null;
@@ -211,10 +212,15 @@ const FunctionDetails = ({
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => {
-                          // TODO: Implement save functionality
-                          console.log("Save changes");
-                        }}
+                        // Was `console.log("Save changes")` — the edit looked
+                        // saved and was not. It keeps the tracked promise now
+                        // (and leaves the edited text in place, so nothing a
+                        // person typed is thrown away).
+                        onClick={() =>
+                          void announceComingSoon(
+                            "database-admin.edit-function",
+                          )
+                        }
                       >
                         <Save className="h-4 w-4 mr-2" />
                         Save

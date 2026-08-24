@@ -71,6 +71,8 @@ import {
 import { formatCount } from "@/features/marketing/search-console/types";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { reviewWindow } from "../lib";
 import {
   previewMatcherReach,
@@ -326,10 +328,13 @@ function ReachPreviewCard({
 function AddMatcherForm({
   siteId,
   value,
+  dimensionLabel,
   onSaved,
 }: {
   siteId: string;
   value: FacetValue;
+  /** Only for the review window's title — the form itself never reads it. */
+  dimensionLabel: string;
   onSaved: () => void;
 }) {
   const [kind, setKind] = useState<PatternKind>("contains");
@@ -337,6 +342,8 @@ function AddMatcherForm({
   const [reach, setReach] = useState<MatcherReach | null>(null);
   const [reachError, setReachError] = useState<string | null>(null);
   const { brandId, site } = useMarketingSite();
+  const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const trimmed = pattern.trim();
 
   const preview = useMutation({
@@ -607,12 +614,18 @@ export function MatcherEditor({
             </ul>
           )}
 
-          <AddMatcherForm siteId={siteId} value={value} onSaved={refresh} />
+          <AddMatcherForm
+            siteId={siteId}
+            value={value}
+            dimensionLabel={dimensionLabel}
+            onSaved={refresh}
+          />
         </div>
 
         <DialogFooter className="items-center justify-between sm:justify-between">
           <p className="text-[11px] text-muted-foreground">
-            Changes here only take effect once matchers run.
+            Saving a match runs it straight away. Turning one on or off, or
+            deleting it, takes effect on the next run — or press below.
           </p>
           <Button
             type="button"
