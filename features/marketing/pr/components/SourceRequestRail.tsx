@@ -131,6 +131,8 @@ function RequestRow({
   onToggle,
   angle,
   onRule,
+  onScore,
+  scoring,
 }: {
   request: SourceRequest;
   now: number;
@@ -138,6 +140,9 @@ function RequestRow({
   onToggle: () => void;
   angle: StoryAngle | null;
   onRule: (status: string) => void;
+  /** Present only for rows the server will re-score (`new` / `matched`). */
+  onScore?: () => void;
+  scoring?: boolean;
 }) {
   const ref = useRef<HTMLLIElement>(null);
   const state = deadlineState(request.deadline_at, now);
@@ -345,10 +350,24 @@ function RequestRow({
               </p>
             </div>
           ) : answerable ? (
-            <p className="rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] leading-4 text-muted-foreground">
-              No draft yet. Drafting runs once the request is matched to an angle
-              — this one is {statusLabel.toLowerCase()}.
-            </p>
+            <div className="flex items-center justify-between gap-2 rounded-md border border-dashed border-border px-2 py-1.5">
+              <p className="text-[11px] leading-4 text-muted-foreground">
+                {request.status === "new"
+                  ? "Not scored yet — scoring judges the fit and drafts only when the match is real."
+                  : `No draft — this one is ${statusLabel.toLowerCase()}. Re-scoring takes a fresh look.`}
+              </p>
+              {onScore ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 shrink-0 text-[11px]"
+                  disabled={scoring}
+                  onClick={onScore}
+                >
+                  {scoring ? "Scoring…" : request.status === "new" ? "Score it" : "Re-score"}
+                </Button>
+              ) : null}
+            </div>
           ) : null}
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -416,6 +435,8 @@ export function SourceRequestRail({
   selectedId,
   onSelect,
   onRuleRequest,
+  onScoreRequest,
+  scoringRequestId,
   action,
 }: {
   requests: readonly SourceRequest[];
@@ -424,6 +445,9 @@ export function SourceRequestRail({
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onRuleRequest: (requestId: string, status: string) => void;
+  /** Score/re-score one `new`/`matched` row via the server's responder pass. */
+  onScoreRequest?: (requestId: string) => void;
+  scoringRequestId?: string | null;
   /** Header affordance — the workspace passes the digest-ingest dialog. */
   action?: React.ReactNode;
 }) {
@@ -507,6 +531,13 @@ export function SourceRequestRail({
                 onSelect(selectedId === request.id ? null : request.id)
               }
               onRule={(status) => onRuleRequest(request.id, status)}
+              onScore={
+                onScoreRequest &&
+                (request.status === "new" || request.status === "matched")
+                  ? () => onScoreRequest(request.id)
+                  : undefined
+              }
+              scoring={scoringRequestId === request.id}
               angle={
                 request.story_angle_id
                   ? (angleById.get(request.story_angle_id) ?? null)

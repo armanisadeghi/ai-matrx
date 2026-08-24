@@ -202,3 +202,44 @@ export async function ingestSourceRequests(
   }
   return completed;
 }
+
+export interface EvaluateRequestResult {
+  id: string;
+  status: string;
+  match_score: number;
+  drafted: boolean;
+}
+
+/**
+ * Score (or re-score) one existing request — the recovery door for rows that
+ * landed unscored (`new`) or need a fresh judgement (`matched`). One responder
+ * pass is ~30-90s of paid model work, so it rides the same durable stream.
+ */
+export async function evaluateSourceRequest(
+  dispatch: AppDispatch,
+  requestId: string,
+): Promise<EvaluateRequestResult> {
+  let completed: EvaluateRequestResult | undefined;
+  const outcome = await dispatch(
+    callApi({
+      path: `/seo/press/source-requests/${requestId}/evaluate`,
+      method: "POST",
+      body: {},
+      stream: true,
+      onStreamEvent: (event) => {
+        const data = streamData(event);
+        if (!data) return;
+        if (data.kind === "seo.press_source_request_evaluated") {
+          completed = data.result as EvaluateRequestResult | undefined;
+        }
+      },
+    }),
+  );
+  if (outcome.error) {
+    throw new Error(outcome.error.message ?? "Scoring failed.");
+  }
+  if (!completed) {
+    throw new Error("Scoring finished without returning a result.");
+  }
+  return completed;
+}
