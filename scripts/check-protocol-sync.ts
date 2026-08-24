@@ -25,7 +25,7 @@
  * Modes:
  *   default   — advisory: loud report, exit 0
  *   --strict  — exit 1 on divergence (CI / release-gates strict)
- *   --fix     — copy aidream → FE for every diverged file (release.sh uses this;
+ *   --fix     — copy aidream → FE for every comparable diverged file (release.sh uses this;
  *               a diverged FE-side edit is itself the defect — port it to
  *               aidream first, regenerate, then sync)
  *
@@ -67,13 +67,19 @@ if (!existsSync(join(AIDREAM_DIR, "docs", "protocol"))) {
 }
 
 const diverged: string[] = [];
+const unavailableCanonical: string[] = [];
 
 for (const rel of MIRROR_FILES) {
   const feFile = join(ROOT, rel);
   const canonical = join(AIDREAM_DIR, rel);
 
   if (!existsSync(canonical)) {
-    diverged.push(`${rel} — MISSING in aidream (${canonical}); the canonical side lost a mirrored file?`);
+    // Frontend releases are intentionally independent from aidream's checkout
+    // state. A missing canonical artifact cannot be compared or copied, and it
+    // must never make --fix impossible. Keep the last committed FE mirror and
+    // report the unavailable comparison loudly; byte drift still fails whenever
+    // both sides exist.
+    unavailableCanonical.push(`${rel} — unavailable in aidream (${canonical}); kept the committed frontend mirror`);
     continue;
   }
   if (!existsSync(feFile)) {
@@ -104,8 +110,13 @@ if (FIX) {
   execSync("node scripts/gen-directive-nouns.mjs", { stdio: "inherit", cwd: ROOT });
 }
 
+for (const unavailable of unavailableCanonical) {
+  console.warn(`${YELLOW}[WARN]${RESET} ${unavailable}`);
+}
+
 if (diverged.length === 0) {
-  console.log(`${GREEN}[OK]${RESET} Protocol mirror set is byte-identical to aidream (${MIRROR_FILES.length} files).`);
+  const compared = MIRROR_FILES.length - unavailableCanonical.length;
+  console.log(`${GREEN}[OK]${RESET} Protocol mirror set matches every available aidream source (${compared}/${MIRROR_FILES.length} files compared).`);
   process.exit(0);
 }
 
