@@ -7,6 +7,7 @@
  * only metadata and user intent.
  */
 import { createClient } from "@/utils/supabase/client";
+import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 
 export const MAX_VAULT_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
@@ -17,12 +18,16 @@ function backendBase(): string {
 }
 
 async function authorizationHeader(): Promise<Record<string, string>> {
+  const organizationId = requireSelectedOrgId();
   const supabase = createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not signed in");
-  return { Authorization: `Bearer ${session.access_token}` };
+  return {
+    Authorization: `Bearer ${session.access_token}`,
+    "X-Organization-Id": organizationId,
+  };
 }
 
 async function responseError(response: Response): Promise<Error> {

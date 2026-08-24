@@ -4,16 +4,14 @@
 // active organization id from OUTSIDE React — the parallel of
 // `utils/auth/getUserId.ts` for org instead of user.
 //
-// Source of truth is Redux ONLY: `appContext.organization_id` (the org the
-// user has explicitly selected) with `appContext.personal_organization_id` as
-// the never-empty fallback. This is exactly `selectEffectiveOrganizationId`
-// from `appContextSlice`, read here without a React hook for service/util code.
+// Source of truth is Redux ONLY: `appContext.organization_id`, the org the
+// user explicitly selected for the current request context. A personal org is
+// identity metadata, not a transport fallback.
 //
 // Why this exists: org is now required on every org-scoped write. Service
 // callsites must always attach the user's CURRENT org — not a per-callsite
-// guess and not just the personal org. Read this (or `ensureOrgId`, which
-// layers a personal-org RPC fallback on top) instead of writing a null
-// `organization_id`.
+// guess and not the personal org. Request transports use
+// `requireSelectedOrgId()` so missing context fails before networking.
 //
 // CRITICAL: imports ONLY from the cycle-free `store-singleton` leaf module —
 // never from `@/lib/redux/store` or the slice — so service modules can import
@@ -29,9 +27,9 @@ interface AppContextOrgShape {
 }
 
 /**
- * The user's GLOBAL active organization id, read synchronously from Redux:
- * the explicitly-selected org, else the personal org, else null (store not
- * yet hydrated). Mirrors `selectEffectiveOrganizationId`. No network.
+ * Legacy effective-scope read for direct data surfaces: explicitly selected
+ * org, else personal org, else null. Never use this for request transport;
+ * transports must call `requireSelectedOrgId()`.
  */
 export function getActiveOrgId(): string | null {
   const store = getStore();
@@ -57,10 +55,8 @@ export function getSelectedOrgId(): string | null {
 }
 
 /**
- * Like `getActiveOrgId` but throws if no org is resolvable (store not
- * hydrated). For synchronous callsites that cannot proceed without an org and
- * do not want the async personal-org RPC fallback. Most writes should use the
- * async `ensureOrgId` instead, which can recover via RPC.
+ * Legacy throwing effective-scope read for direct data surfaces. This may
+ * return the personal org and therefore is forbidden for request transport.
  */
 export function requireActiveOrgId(): string {
   const id = getActiveOrgId();
@@ -70,4 +66,17 @@ export function requireActiveOrgId(): string {
     );
   }
   return id;
+}
+
+/**
+ * Return the explicitly selected request organization or fail before I/O.
+ * Personal-organization identity is deliberately ignored: silently choosing
+ * it would make the transport invent scope instead of carrying user context.
+ */
+export function requireSelectedOrgId(): string {
+  const id = getSelectedOrgId();
+  if (typeof id !== "string" || id.trim().length === 0) {
+    throw new Error("Select an organization before sending this request.");
+  }
+  return id.trim();
 }

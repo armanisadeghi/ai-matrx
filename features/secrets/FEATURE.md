@@ -50,6 +50,13 @@ Field metadata (inject flag, env alias set/clear, description, `is_active`, hand
 1. **Masked metadata → DIRECT Supabase.** Items + fields + catalog definitions are read via supabase-js with the **explicit column lists** `CREDENTIAL_ITEM_COLUMNS` / `VAULT_FIELD_COLUMNS` (`types.ts`). `users.user_secrets.value_encrypted` is unreadable by client roles — **never `select *` on these tables.** Scope is declared per THE VIEW LAW — see Scopes below; RLS provides owner reads, org-member masked reads, personal-grantee reads, and self-reads on `user_secret_grants`.
 2. **Everything value-bearing or mutating → aidream `/api/vault/*`** (`vault-service.ts`): create/update/delete items and fields, import-env, reveal, resolve, rotate, share, transfer, fork, audit. The legacy `/api/user-secrets` + `/api/organization-secrets` routes are server-side aliases only — this FE must never call them.
 
+Every Vault and Authenticator aidream transport requires the explicitly
+selected request organization from `appContext.organization_id` and sends it
+as `X-Organization-Id`. `personal_organization_id` is never substituted. The
+transport itself refuses to call `fetch` when that request context is absent,
+including for personal Vault rows; organization context accompanies the
+request but does not replace the `user_id = auth.uid()` ownership boundary.
+
 Attachments keep the same split: `CREDENTIAL_ATTACHMENT_COLUMNS` reads only
 safe metadata directly from Supabase; `features/files/vault/vaultAttachmentTransport.ts`
 is the one browser byte path to aidream multipart upload/replace and no-store

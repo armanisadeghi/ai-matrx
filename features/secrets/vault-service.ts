@@ -14,6 +14,7 @@
  */
 import { createClient } from "@/utils/supabase/client";
 import { makeAssertData } from "@/utils/errors";
+import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import {
   downloadVaultAttachment as downloadVaultAttachmentBytes,
   replaceVaultAttachment as replaceVaultAttachmentBytes,
@@ -71,6 +72,7 @@ function backendBase(): string {
 }
 
 async function authHeaders(): Promise<Record<string, string>> {
+  const organizationId = requireSelectedOrgId();
   const supabase = createClient();
   const {
     data: { session },
@@ -78,6 +80,7 @@ async function authHeaders(): Promise<Record<string, string>> {
   if (!session?.access_token) throw new Error("Not signed in");
   return {
     Authorization: `Bearer ${session.access_token}`,
+    "X-Organization-Id": organizationId,
     "Content-Type": "application/json",
   };
 }

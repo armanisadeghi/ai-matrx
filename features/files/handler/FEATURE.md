@@ -17,8 +17,11 @@ cloud files and must never enter `cld_files` or expose an object-store URL.
 Their bytes stay inside the credential encryption boundary. The one sanctioned
 frontend transport is `features/files/vault/vaultAttachmentTransport.ts`, which
 posts bytes directly to aidream's Vault API and performs no-store downloads;
-the Vault feature owns only metadata and user intent. This is a specialized
-canonical byte boundary, not permission to hand-build another file flow.
+the Vault feature owns only metadata and user intent. That transport requires
+the explicitly selected request organization and sends `X-Organization-Id` on
+upload, replacement, and download; it never substitutes the personal org. This
+is a specialized canonical byte boundary, not permission to hand-build another
+file flow.
 
 ---
 

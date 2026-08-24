@@ -9,6 +9,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import type {
   AuthenticatorCode,
   AuthenticatorEntry,
@@ -21,6 +22,7 @@ function backendBase(): string {
 }
 
 async function authHeaders(json: boolean): Promise<Record<string, string>> {
+  const organizationId = requireSelectedOrgId();
   const supabase = createClient();
   const {
     data: { session },
@@ -28,6 +30,7 @@ async function authHeaders(json: boolean): Promise<Record<string, string>> {
   if (!session?.access_token) throw new Error("Not signed in");
   const headers: Record<string, string> = {
     Authorization: `Bearer ${session.access_token}`,
+    "X-Organization-Id": organizationId,
   };
   if (json) headers["Content-Type"] = "application/json";
   return headers;
