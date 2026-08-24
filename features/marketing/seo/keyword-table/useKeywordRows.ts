@@ -49,6 +49,13 @@ import {
   type KeywordServicePlacement,
   type KeywordStamp,
 } from "@/features/marketing/seo/keyword-workbench/data";
+import {
+  getKeywordLocations,
+  keywordLocationsQueryKey,
+} from "@/features/marketing/seo/value-system/locations/data";
+import { listBusinessLocations } from "@/features/marketing/data/service";
+import type { BusinessLocation } from "@/features/marketing/types";
+import type { KeywordLocationRow } from "@/features/marketing/seo/value-system/locations/types";
 import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
 
 /**
@@ -68,6 +75,13 @@ export const SERVER_SORTABLE = new Set<string>([
 
 export interface UseKeywordRowsInput {
   siteId: string;
+  /**
+   * The site's brand — business locations hang off the BRAND, not the site,
+   * because one company's branches serve every one of its sites. Optional so a
+   * surface that genuinely has no brand in hand still gets a table; the
+   * Location column simply has nothing to offer there.
+   */
+  brandId?: string | null;
   periods: GscResolvedPeriods;
   filters: GscFilters;
   search: string;
@@ -90,6 +104,22 @@ export interface KeywordRowsResult {
   stampFor: (row: GscBreakdownRow, slug: string) => KeywordStamp | undefined;
   valueFor: (row: GscBreakdownRow) => GscKeywordValueRow | undefined;
   serviceFor: (row: GscBreakdownRow) => KeywordServicePlacement | undefined;
+  /**
+   * C10 — WHICH business location this keyword belongs to, and how that was
+   * decided. `undefined` means the server had no answer, which is never the
+   * same as "no location": a keyword that names no place at all and a local
+   * search nothing could place are different facts, and the Location column
+   * separates them rather than printing one dash for both.
+   */
+  locationFor: (row: GscBreakdownRow) => KeywordLocationRow | undefined;
+  /** True once the attribution read has resolved, so the cell can wait rather than lie. */
+  locationsReady: boolean;
+  /**
+   * The brand's business locations — the Location column's filter options.
+   * EMPTY IS A REAL ANSWER, and the column says "no locations recorded yet"
+   * with the door to add one rather than rendering a filter with nothing in it.
+   */
+  brandLocations: BusinessLocation[];
   /** The site's dimension catalog — the Columns chooser and filter options. */
   dimensionCatalog: FacetDimension[];
   dimensionCatalogLoading: boolean;
@@ -109,6 +139,7 @@ export interface KeywordRowsResult {
 export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
   const {
     siteId,
+    brandId,
     periods,
     filters,
     search,
@@ -175,6 +206,31 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
     staleTime: 60_000,
   });
 
+  /**
+   * C10 — the attribution for the keywords ON SCREEN. Scoped to the page, like
+   * every other side read here: `gsc_keyword_locations` refuses more than
+   * 5,000 ids precisely so nobody asks it for a whole site and then renders
+   * fifty rows from the answer.
+   */
+  const locations = useQuery({
+    queryKey: keywordLocationsQueryKey(siteId, keywordIds),
+    queryFn: ({ signal }) => getKeywordLocations(siteId, keywordIds, signal),
+    enabled: keywordIds.length > 0,
+    staleTime: 60_000,
+  });
+
+  /**
+   * The brand's locations — the Location column's filter options, read from
+   * the ONE business-location list (`listBusinessLocations`). This module does
+   * not open a second door onto `web.business_location`.
+   */
+  const brandLocations = useQuery({
+    queryKey: ["marketing", "brand", "locations", brandId],
+    queryFn: ({ signal }) => listBusinessLocations(brandId as string, signal),
+    enabled: !!brandId,
+    staleTime: 5 * 60_000,
+  });
+
   const vocabulary = useQuery({
     queryKey: ["seo", "value", "vocab", siteId, "value_band"],
     queryFn: ({ signal }) => getValueVocabulary(siteId, "value_band", signal),
@@ -194,6 +250,11 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
     await queryClient.invalidateQueries({
       queryKey: ["marketing", "seo", "keyword-services", siteId],
     });
+    // C10 — binding an area to a location, or adding a location at all,
+    // re-decides which branch every local keyword belongs to.
+    await queryClient.invalidateQueries({
+      queryKey: ["seo", "locations", "keyword", siteId],
+    });
     // A placement changes which keywords are unplaced, which proposals are
     // still waiting, and what the tree counts — never leave that stale.
     await queryClient.invalidateQueries({ queryKey: ["marketing", "gsc", "breakdown"] });
@@ -208,7 +269,8 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
       breakdown.isFetching ||
       values.isFetching ||
       stamps.isFetching ||
-      placements.isFetching,
+      placements.isFetching ||
+      locations.isFetching,
     error: breakdown.isError ? breakdown.error : null,
     refetch: () => void breakdown.refetch(),
     stampFor: (row, slug) =>
@@ -217,6 +279,10 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
       row.keyword_id ? values.data?.get(row.keyword_id) : undefined,
     serviceFor: (row) =>
       row.keyword_id ? placements.data?.get(row.keyword_id) : undefined,
+    locationFor: (row) =>
+      row.keyword_id ? locations.data?.get(row.keyword_id) : undefined,
+    locationsReady: keywordIds.length === 0 || locations.isSuccess,
+    brandLocations: brandLocations.data ?? [],
     dimensionCatalog,
     dimensionCatalogLoading: catalog.isLoading,
     classDimension: dimensionCatalog.find((d) => d.slug === "traffic_class"),

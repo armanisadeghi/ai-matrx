@@ -100,6 +100,23 @@ export interface GscFilters {
    */
   placement?: string;
   /**
+   * C10 — WHICH LOCATION a local search belongs to (`lo=`). Takes a
+   * `web.business_location` uuid, or one of the two bucket tokens the
+   * Which-location panel already names: `unresolved` (the search names a place
+   * but nothing yet says which branch it belongs to) and `not_local` (no place
+   * named at all).
+   *
+   * "It's not just about knowing that something's local. It's also about
+   * knowing WHICH location that one belongs to." (P16) — so the answer has to
+   * be reachable from the ONE keyword table, not only from its own panel.
+   *
+   * Keyword-level, so it rides the query / query_page profiles exactly like
+   * the service and placement filters. The RPC resolves it through
+   * `seo.gsc_keyword_locations` — the single definition of the attribution
+   * ladder — rather than re-deriving it.
+   */
+  location?: string;
+  /**
    * C14 — WHOLE-WORD query match (`qw=`). "cost" must not drag in "costume"
    * when the expert meant the word; a contains-filter can never say that.
    */
@@ -151,6 +168,11 @@ export const GSC_FILTER_KEYS: readonly GscFilterKey[] = [
   "stamps",
   "levels",
   "topic",
+  // P28 / C10 — the two keyword-level filters that were added to `GscFilters`
+  // without being listed here. A key list that omits real keys is worse than
+  // no list at all.
+  "placement",
+  "location",
   "query_word",
   "clicks_min",
   "clicks_max",

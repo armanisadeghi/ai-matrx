@@ -69,6 +69,8 @@ const FILTER_PARAMS: Array<[keyof GscFilters, string]> = [
   ["levels", "lv"],
   ["topic", "tp"],
   ["placement", "pl"],
+  // C10 — which business location a local search belongs to.
+  ["location", "lo"],
   ["query_word", "qw"],
   ["clicks_min", "cmin"],
   ["clicks_max", "cmax"],
@@ -327,6 +329,11 @@ const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   "topic",
   // P28 — whose ruling the placement is (proposed / agent / human).
   "placement",
+  // C10 — WHICH location a local search belongs to. Keyword-level like the
+  // service filter, so it belongs to this group and not to country/device:
+  // GSC's `country` facet is where the SEARCHER was, which is a different
+  // question from which branch of the business the search is about.
+  "location",
   ...PROFILE_NEUTRAL_FILTER_KEYS,
 ];
 const COUNTRY_DEVICE_FILTER_KEYS: readonly (keyof GscFilters)[] = [

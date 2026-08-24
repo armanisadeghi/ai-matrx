@@ -72,6 +72,7 @@ const FILTER_LABELS: Record<GscFilterKey, string> = {
   country: "Country",
   device: "Device",
   search_appearance: "Appearance",
+  location: "Location",
   stamps: "Dimension",
   levels: "Level",
   // THE SERVICE FILTER is set and shown by the surface that can NAME a topic

@@ -54,6 +54,10 @@ export const KEYWORD_CORE_COLUMNS = [
   { id: "key", label: "Keyword" },
   { id: "topic", label: "Service" },
   { id: "traffic_class", label: "Class" },
+  // C10 — WHICH branch a local search belongs to. Opt-in, because a
+  // single-location business has one answer for every row and a column that
+  // repeats itself is a column that costs width for nothing.
+  { id: "location", label: "Location" },
   { id: "clicks", label: "Clicks" },
   { id: "impressions", label: "Impressions" },
   { id: "ctr", label: "CTR" },

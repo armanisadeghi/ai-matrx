@@ -247,7 +247,21 @@ export function KeywordTable({
     next: KeywordTableState,
     options: { history?: "push" | "replace" } = {},
   ) => {
-    const merged = mergeKeywordTableParams(params, next, { prefix });
+    /**
+     * Read the LIVE query string, never the `params` this render closed over.
+     *
+     * Measured 2026-08-24: with the React Compiler on, the handler handed to
+     * the controlled table can be memoized around an older `useSearchParams()`
+     * value. Merging into that stale copy produced a URL identical to the one
+     * already showing, so `router.push` no-opped and the header's second click
+     * (asc → desc) silently did nothing — the exact class of quiet lie this
+     * table exists to stop. `window.location.search` cannot be stale.
+     */
+    const live =
+      typeof window === "undefined"
+        ? params
+        : new URLSearchParams(window.location.search);
+    const merged = mergeKeywordTableParams(live, next, { prefix });
     const qs = merged.toString();
     const href = qs ? `${pathname}?${qs}` : pathname;
     if (options.history === "replace") router.replace(href, { scroll: false });
