@@ -133,8 +133,12 @@ export function reasonEditorLink(
           reason.value_id,
           reason.matcher_id,
         ),
+        // A matcher HAS no editor screen yet (the RPCs exist, the UI does
+        // not), so the link lands on the answer the matcher stamps — the
+        // nearest thing that is actually editable — and says so. Never label a
+        // link with a screen that does not exist.
         label: reason.matcher_id
-          ? "Edit the matcher that stamped this"
+          ? `Open “${reason.value_label}”, the answer this matcher stamps`
           : `Change what “${reason.value_label}” is worth`,
       };
     case "combo":
