@@ -40,7 +40,6 @@ import {
   listAllTopics,
   listTopicWorth,
   saveTopic,
-  setKeywordPrimaryTopic,
   setTopicParent,
   setTopicWorth,
 } from "./data";
@@ -60,6 +59,9 @@ import { TopicTreeRow } from "./TopicTreeRow";
 import { TopicEditDialog, type TopicEditDraft } from "./TopicEditDialog";
 import { TopicWorthDialog } from "./TopicWorthDialog";
 import { TopicPickerDialog, type TopicPickerRequest } from "./TopicPickerDialog";
+// THE ONE placement write for the whole product. The topic tree used to have
+// its own wrapper over the same RPC that silently dropped the reason (P24).
+import { setKeywordService } from "@/features/marketing/seo/keyword-workbench/data";
 import { UnplacedQueue } from "./UnplacedQueue";
 
 export function TopicTreeWorkbench() {
@@ -188,14 +190,23 @@ export function TopicTreeWorkbench() {
   });
 
   const placeKeywords = useMutation({
-    mutationFn: (input: { keywordIds: string[]; topicId: string | null }) =>
-      setKeywordPrimaryTopic(siteId, input.keywordIds, input.topicId),
+    mutationFn: (input: {
+      keywordIds: string[];
+      topicId: string | null;
+      notes: string | null;
+    }) =>
+      setKeywordService({
+        siteId,
+        keywordIds: input.keywordIds,
+        topicId: input.topicId,
+        notes: input.notes,
+      }),
     onSuccess: (results) => {
       setPicker(null);
       refreshTree();
       const bands = new Map<string, number>();
       for (const row of results)
-        bands.set(row.value_band, (bands.get(row.value_band) ?? 0) + 1);
+        bands.set(row.valueBand, (bands.get(row.valueBand) ?? 0) + 1);
       toast.success(
         `${results.length} keyword${results.length === 1 ? "" : "s"} placed`,
         {
@@ -272,6 +283,7 @@ export function TopicTreeWorkbench() {
       currentTopicId: node.topic.parent_id,
       forbidden: forbiddenParents(tree, node.topic.id),
       clearLabel: "No parent — make this the top of its own branch",
+      reasonPrompt: null,
       onChoose: (parentId) =>
         pinParent.mutate({ topicId: node.topic.id, parentId }),
     });
@@ -286,7 +298,9 @@ export function TopicTreeWorkbench() {
       currentTopicId: null,
       forbidden: new Set<string>(),
       clearLabel: null,
-      onChoose: (topicId) => placeKeywords.mutate({ keywordIds, topicId }),
+      reasonPrompt: "Why does this belong here?",
+      onChoose: (topicId, notes) =>
+        placeKeywords.mutate({ keywordIds, topicId, notes }),
     });
 
   return (

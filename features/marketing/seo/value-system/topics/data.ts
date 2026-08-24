@@ -200,27 +200,17 @@ export async function setTopicWorth(
   ) as string | null;
 }
 
-/**
- * Pin keywords to the tree by setting their PRIMARY topic (`topicId = null`
- * unpins). Returns the band each keyword lands in AFTER the change, straight
- * from the resolver — the payoff IS the response.
- */
-export async function setKeywordPrimaryTopic(
-  siteId: string,
-  keywordIds: string[],
-  topicId: string | null,
-): Promise<KeywordTopicResult[]> {
-  const response = await (await seoDb()).rpc("gsc_set_keyword_topic", {
-    p_site_id: siteId,
-    p_keyword_ids: keywordIds,
-    p_topic_id: topicId ?? undefined,
-  });
-  return assertGoverned(
-    response.data,
-    response.error,
-    "assign the topic",
-  ) as KeywordTopicResult[];
-}
+// Placing keywords on the tree is NOT written here. There is ONE placement
+// write for the whole product — `setKeywordService` in
+// `features/marketing/seo/keyword-workbench/data.ts` — and the topic tree
+// calls it like every other surface.
+//
+// This file used to carry a second, thinner wrapper over the same RPC
+// (`setKeywordPrimaryTopic`) that omitted `p_notes`. It worked, which is why
+// it survived: the placement saved and the bands came back. What it dropped
+// was the expert's WHY — so a ruling made from the topic tree, the screen
+// built specifically for an expert to say what their business sells, was the
+// one ruling that arrived with no reason attached (P24). Deleted 2026-08-24.
 
 // ── The placement backfill (ledger-backed) ─────────────────────────────────
 
@@ -247,7 +237,7 @@ export async function getTopicPlacementStatus(
 
 /**
  * The human half of P12: a proposal becomes the site's own ruling. Replacing
- * one instead is the EXISTING write (`setKeywordPrimaryTopic`), which stamps
+ * one instead is the placement write (`setKeywordService`), which stamps
  * `assigned_by='human'` and takes the keyword off the agent's list for good.
  */
 export async function confirmKeywordTopics(

@@ -132,12 +132,14 @@ The ONE human write for a stamp is `seo.gsc_set_keyword_stamps` — single row,
 right-click quick-assign, and a bulk of thousands all land there. The ONE human
 write for a PLACEMENT is `seo.gsc_set_keyword_topic`, the same way.
 
-> **Known duplication, deliberate and dated.** The topic tree screen has its
-> own thinner wrapper over that same RPC
-> (`value-system/topics/data.ts` → `setKeywordPrimaryTopic`, no reason field).
-> Two client wrappers, ONE write path; collapse them into
-> `keyword-workbench/data.ts` → `setKeywordService` when that file is next
-> touched.
+> **Collapsed 2026-08-24.** The topic tree used to keep its own thinner wrapper
+> over that same RPC (`value-system/topics/data.ts` → `setKeywordPrimaryTopic`)
+> which omitted `p_notes`. It worked, which is why it survived — the placement
+> saved and the bands came back. What it dropped was the expert's WHY, so the
+> one screen built specifically for an expert to say what their business sells
+> was the one screen whose rulings arrived with no reason attached. Deleted;
+> the tree now calls `setKeywordService` and its picker asks
+> **"Why does this belong here?"**.
 
 ## Server contract
 
@@ -203,6 +205,13 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
   root sits under it in the size of a footnote.
 
 ## Change log
+
+- **2026-08-24** — Collapsed the second placement wrapper. The topic tree
+  (`…/value/topics`) had its own `setKeywordPrimaryTopic` over the same RPC
+  without `p_notes`; every ruling made there arrived with no reason attached.
+  Deleted it, pointed the tree at `setKeywordService`, and gave
+  `TopicPickerDialog` a **"Why does this belong here?"** field (optional — an
+  expert is never blocked to explain themselves). One placement write remains.
 
 - **2026-08-24** — Made controlled keyword search usable on large sites: text
   stays immediate in both the toolbar and Keyword column filter, while URL and

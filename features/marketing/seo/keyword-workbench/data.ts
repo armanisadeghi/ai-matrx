@@ -386,10 +386,9 @@ export interface SetServiceResult {
  * the RPC answers with the band each keyword lands in after the change,
  * straight from the resolver, so a caller never re-derives a score.
  *
- * NOTE — the topic-tree screen has its own thinner wrapper over this same RPC
- * (`value-system/topics/data.ts` → `setKeywordPrimaryTopic`, no reason field).
- * Two wrappers, ONE write path; collapse them into this one when that file is
- * next touched.
+ * EVERY placement surface calls this one — the keyword workbench, the ruling
+ * session, and the topic tree. The tree used to keep a thinner wrapper of its
+ * own that omitted `p_notes`; collapsed here 2026-08-24.
  */
 export async function setKeywordService(input: {
   siteId: string;

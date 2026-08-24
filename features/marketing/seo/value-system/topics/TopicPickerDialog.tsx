@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/styles/themes/utils";
 import type { TopicNode } from "../types";
 import { rootTypeMeta } from "./types";
@@ -40,7 +41,12 @@ export interface TopicPickerRequest {
   forbidden: Set<string>;
   /** Label for the "no topic" choice, or null to hide it. */
   clearLabel: string | null;
-  onChoose: (topicId: string | null) => void;
+  /**
+   * Prompt for the expert's WHY, or null when this act does not record one.
+   * A placement carries a reason (P24); re-parenting a topic does not.
+   */
+  reasonPrompt: string | null;
+  onChoose: (topicId: string | null, reason: string | null) => void;
 }
 
 export function TopicPickerDialog({
@@ -55,6 +61,12 @@ export function TopicPickerDialog({
   onCancel: () => void;
 }) {
   const [search, setSearch] = useState("");
+  // Typed BEFORE the topic is picked, because picking is the last click: the
+  // list rows are the submit button. Optional — an expert who just wants the
+  // keyword placed is never blocked to explain themselves.
+  const [reason, setReason] = useState("");
+  const choose = (topicId: string | null) =>
+    request.onChoose(topicId, reason.trim() || null);
 
   // React Compiler is on — no manual memoization (CLAUDE.md core invariants).
   const options = (() => {
@@ -101,12 +113,31 @@ export function TopicPickerDialog({
           />
         </div>
 
+        {request.reasonPrompt ? (
+          <div className="space-y-1">
+            <label
+              htmlFor="topic-picker-reason"
+              className="text-xs font-medium text-foreground"
+            >
+              {request.reasonPrompt}
+            </label>
+            <Textarea
+              id="topic-picker-reason"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              rows={2}
+              placeholder="Optional — in your own words. This is what teaches the rules."
+              className="resize-none text-sm"
+            />
+          </div>
+        ) : null}
+
         <div className="min-h-0 flex-1 overflow-y-auto rounded border border-border">
           {request.clearLabel ? (
             <button
               type="button"
               disabled={busy}
-              onClick={() => request.onChoose(null)}
+              onClick={() => choose(null)}
               className={cn(
                 "flex w-full items-center gap-2 border-b border-border px-2.5 py-2 text-left text-sm hover:bg-muted/60",
                 request.currentTopicId === null && "bg-muted/40",
@@ -139,7 +170,7 @@ export function TopicPickerDialog({
                       ? `${row.topic.name}, under ${row.lineage}`
                       : row.topic.name
                   }
-                  onClick={() => request.onChoose(row.topic.id)}
+                  onClick={() => choose(row.topic.id)}
                   className={cn(
                     "flex w-full items-start gap-2 border-b border-border px-2.5 py-2 text-left last:border-b-0 hover:bg-muted/60",
                     selected && "bg-muted/40",
