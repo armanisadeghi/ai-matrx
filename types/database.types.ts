@@ -52194,6 +52194,7 @@ export type Database = {
           o_id: string
         }[]
       }
+      fn_value_rule_sync_meaning: { Args: { p_rule_id: string }; Returns: Json }
       geo_place_search: {
         Args: { p_kinds: string[]; p_limit: number; p_query: string }
         Returns: {
