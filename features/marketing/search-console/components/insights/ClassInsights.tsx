@@ -518,6 +518,8 @@ export function QualityView({
       <div className="shrink-0 overflow-hidden rounded-md border border-border p-2">
         <MatrxDataTable
           urlState={{ id: "gsc-class-summary", selectedRow: false }}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
           data={summaryRows}
           columns={summaryColumns}
           getRowId={(row) => row.traffic_class}
