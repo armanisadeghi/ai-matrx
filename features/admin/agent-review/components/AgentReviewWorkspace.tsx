@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, ExternalLink, RotateCcw } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ExternalLink,
+  RotateCcw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ChatThread } from "@/features/messaging/components/ChatThread";
@@ -37,17 +43,24 @@ const STAGES: Array<{ label: string; statuses: ReviewStatus[] }> = [
 ];
 
 function classification(row: ReviewQueueRow, registry: ReviewRegistry) {
-  const domain = registry.domainsById.get(row.domain_id)?.name ?? "Not assigned";
+  const domain =
+    registry.domainsById.get(row.domain_id)?.name ?? "Not assigned";
   const feature = row.feature_id
-    ? registry.featuresById.get(row.feature_id)?.name ?? "Not assigned"
+    ? (registry.featuresById.get(row.feature_id)?.name ?? "Not assigned")
     : "Not assigned";
   return { domain, feature };
 }
 
-export default function AgentReviewWorkspace({ reviewId }: { reviewId: string }) {
+export default function AgentReviewWorkspace({
+  reviewId,
+}: {
+  reviewId: string;
+}) {
   const user = useAppSelector(selectUser);
   const [row, setRow] = useState<ReviewQueueRow | null>(null);
-  const [registry, setRegistry] = useState<ReviewRegistry>(EMPTY_REVIEW_REGISTRY);
+  const [registry, setRegistry] = useState<ReviewRegistry>(
+    EMPTY_REVIEW_REGISTRY,
+  );
   const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +75,11 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
       setRegistry(nextRegistry);
       setError(null);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Review item failed to load");
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Review item failed to load",
+      );
     }
   }
 
@@ -77,7 +94,11 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
       })
       .catch((loadError: unknown) => {
         if (active) {
-          setError(loadError instanceof Error ? loadError.message : "Review item failed to load");
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Review item failed to load",
+          );
         }
       });
     return () => {
@@ -86,14 +107,20 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
   }, [reviewId]);
 
   const currentStage = useMemo(
-    () => STAGES.findIndex((stage) => row && stage.statuses.includes(row.status as ReviewStatus)),
+    () =>
+      STAGES.findIndex(
+        (stage) => row && stage.statuses.includes(row.status as ReviewStatus),
+      ),
     [row],
   );
 
   if (error) {
     return <div className="p-6 text-sm text-destructive">{error}</div>;
   }
-  if (!row) return <div className="p-6 text-sm text-muted-foreground">Loading review…</div>;
+  if (!row)
+    return (
+      <div className="p-6 text-sm text-muted-foreground">Loading review…</div>
+    );
 
   const names = classification(row, registry);
   const status = row.status as ReviewStatus;
@@ -102,12 +129,21 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
     if (!user?.id || !row) return;
     setSaving(true);
     try {
-      await recordHumanReviewAction({ row, userId: user.id, content, status: nextStatus });
+      await recordHumanReviewAction({
+        row,
+        userId: user.id,
+        content,
+        status: nextStatus,
+      });
       setFeedback("");
       await refresh();
       toast.success(REVIEW_STATUS_LABELS[nextStatus]);
     } catch (actionError) {
-      toast.error(actionError instanceof Error ? actionError.message : "Review action failed");
+      toast.error(
+        actionError instanceof Error
+          ? actionError.message
+          : "Review action failed",
+      );
     } finally {
       setSaving(false);
     }
@@ -130,10 +166,22 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
         </div>
         <h1 className="mt-3 text-xl font-semibold">{row.title}</h1>
         <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm md:grid-cols-4">
-          <div><dt className="text-muted-foreground">Current step</dt><dd>{REVIEW_STATUS_LABELS[status]}</dd></div>
-          <div><dt className="text-muted-foreground">Domain</dt><dd>{names.domain}</dd></div>
-          <div><dt className="text-muted-foreground">Feature</dt><dd>{names.feature}</dd></div>
-          <div><dt className="text-muted-foreground">Repository</dt><dd>{row.repo_slug}</dd></div>
+          <div>
+            <dt className="text-muted-foreground">Current step</dt>
+            <dd>{REVIEW_STATUS_LABELS[status]}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Domain</dt>
+            <dd>{names.domain}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Feature</dt>
+            <dd>{names.feature}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Repository</dt>
+            <dd>{row.repo_slug}</dd>
+          </div>
         </dl>
       </header>
 
@@ -141,7 +189,9 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
         <div className="flex items-center gap-2">
           {STAGES.map((stage, index) => (
             <div key={stage.label} className="contents">
-              {index > 0 ? <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
+              {index > 0 ? (
+                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              ) : null}
               <div
                 className={`flex-1 rounded-md border px-2 py-2 text-center text-sm ${
                   index === currentStage
@@ -168,14 +218,17 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
               className="h-full"
             />
           ) : (
-            <div className="p-6 text-sm text-destructive">Conversation unavailable.</div>
+            <div className="p-6 text-sm text-destructive">
+              Conversation unavailable.
+            </div>
           )}
         </section>
 
         <aside className="overflow-y-auto p-4">
           <h2 className="font-semibold">Your review</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Messages stay in this thread across every repair and re-review round.
+            Messages stay in this thread across every repair and re-review
+            round.
           </p>
           <ProTextarea
             value={feedback}
@@ -185,7 +238,9 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
           />
           <div className="mt-3 grid gap-2">
             <Button
-              disabled={saving || !feedback.trim()}
+              disabled={
+                saving || status !== "ready_for_human" || !feedback.trim()
+              }
               onClick={() => void act("human_changes_requested", feedback)}
             >
               Request changes
@@ -203,7 +258,8 @@ export default function AgentReviewWorkspace({ reviewId }: { reviewId: string })
               onClick={() =>
                 void act(
                   "submitted",
-                  feedback.trim() || "Run the agent review again from the beginning.",
+                  feedback.trim() ||
+                    "Run the agent review again from the beginning.",
                 )
               }
             >

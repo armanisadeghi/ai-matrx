@@ -17,16 +17,16 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 
 ## Surfaces
 
-| Part | Path |
-|---|---|
-| List route | `app/(admin)/administration/users/agent-review/page.tsx` |
-| Item route | `app/(admin)/administration/users/agent-review/[id]/page.tsx` |
-| URL-driven table | `components/AgentReviewQueueTable.tsx` |
-| Routed workspace | `components/AgentReviewWorkspace.tsx` |
-| Direct services | `service.ts` |
-| Registry classification | `registry.ts` |
-| Status/types | `types.ts` |
-| Triage contract | `triage.ts` |
+| Part                    | Path                                                          |
+| ----------------------- | ------------------------------------------------------------- |
+| List route              | `app/(admin)/administration/users/agent-review/page.tsx`      |
+| Item route              | `app/(admin)/administration/users/agent-review/[id]/page.tsx` |
+| URL-driven table        | `components/AgentReviewQueueTable.tsx`                        |
+| Routed workspace        | `components/AgentReviewWorkspace.tsx`                         |
+| Direct services         | `service.ts`                                                  |
+| Registry classification | `registry.ts`                                                 |
+| Status/types            | `types.ts`                                                    |
+| Triage contract         | `triage.ts`                                                   |
 
 ## Data contract
 
@@ -50,10 +50,13 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 - The admin layout and `agent.review_queue` super-admin RLS gate the review surface.
 - Messaging keeps its participant access and real-time/unread machinery; Agent Review adds no parallel permissions or message store.
 - The data path is direct `supabase-js`; no Next.js database proxy.
-- The recurring Codex reviewer is separate operational machinery and remains disabled until Arman explicitly approves its name and interval.
+- `Agent Review First Pass` is the approved recurring Codex reviewer: every 30 minutes, exactly one item per run. It uses only Codex's built-in Browser and stops before claiming work when that persistent profile is not signed in as an admin. The Codex automation remains paused until that one-time persistent admin sign-in is complete.
+- New transitions to `ready_for_human` require recorded verifier identity, verification time, and `assignment.state='awaiting_review'`. The constraint is enforced on new writes while legacy rows are repaired in place.
+- The list defaults to the human inbox (`ready_for_human`) and exposes all workflow activity only through the explicit **All activity** view.
 
 ## Change log
 
+- 2026-08-24 — Staged the approved 30-minute, one-item Codex reviewer; isolated browser testing to Codex's built-in Browser; added a database evidence gate; and made the human list default to verified `ready_for_human` work only. Activation is held only for the one-time persistent admin sign-in.
 - 2026-08-20 — Rebuilt Agent Review as an agent-first workflow; migrated every active row from human-first `pending` to `submitted`; linked all 456 rows to durable DM conversations; added atomic thread creation, routed item workspaces, visible stage rails, semi-tabular URL-state list, effective agent actors in Messages, and preserved multi-round feedback.
 - 2026-08-20 — Added registry-backed domain, feature, and repository classification with complete counts.
 - 2026-08-14 — Feedback editors adopted `ProTextarea`; target page became an explicit button.

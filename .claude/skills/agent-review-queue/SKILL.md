@@ -13,7 +13,7 @@ description: Register anything you built that Arman must go see/test in the UI, 
 
 # Agent Review Queue — get your work seen, get feedback back
 
-**The failure this kills:** agents build things, mention them mid-message, Arman misses it, and finished features rot undiscovered for weeks. The queue at `/administration/agent-review` is the ONE place he checks. If you built something he must look at and you didn't register it, assume it will never be seen.
+**The failure this kills:** agents build things, mention them mid-message, Arman misses it, and finished features rot undiscovered for weeks. The queue at `/administration/users/agent-review` is the ONE place he checks. If you built something he must look at and you didn't register it, assume it will never be seen.
 
 ## Everything is LIVE — never write deployment status into a row
 
@@ -173,6 +173,26 @@ violation. Never invent a status; read `REVIEW_STAGE_ORDER` if you need the orde
 be agent-reviewed and repaired before anything sets `ready_for_human`; only then does Arman see
 it. Filing straight to `ready_for_human` puts unverified work in front of him.
 
+## Codex Browser isolation — mandatory for every automated review
+
+The automated worker runs in **Codex's built-in Browser**, using its persistent signed-in
+profile. It never borrows Arman's browser state.
+
+- Invoke the `browser:control-in-app-browser` skill and explicitly select
+  `agent.browsers.get("iab")` before opening the target. Never use `getForUrl`, `getDefault`,
+  Chrome, the Chrome extension, Computer Use, or a tab that was already open.
+- Before claiming a queue row, open the admin list in a new built-in Browser tab and prove the
+  admin surface is signed in. If it lands on sign-in, **claim nothing** and report
+  `Codex Browser admin session required`. A human signs in once; the persistent profile retains
+  the session for later runs.
+- Passwords and session tokens never appear in this skill, an automation prompt, queue metadata,
+  messages, screenshots, logs, or chat. Never automate credential entry.
+- Name the Browser session for the review worker and close every tab or tab group the run creates,
+  on success, failure, or blockage. Never close a tab that predates the run.
+
+This is a hard isolation boundary, not a preference. A run without a proven built-in Browser
+admin session is blocked before ownership of any review item changes.
+
 ## Reading your own feedback (start of task)
 
 ```sql
@@ -186,71 +206,233 @@ order by feedback_at desc;
 - **The queue must never rot.** Handling a row's feedback ends with YOU updating that row — re-request review or archive. Never leave a handled item sitting in `*_changes_requested`/`approved`. If a demo is superseded or deleted, archive its row.
 - Arman may also paste a row at you via "Copy for AI" (`kind: agent-review-item`) — treat the embedded `feedback` as the instruction, then update the row per the rules above.
 
-## Repair coordination — claim by lane and tool
+## Initial review and repair worker — one item per run
 
-Use the original agent when `metadata.origin.thread_id` or another stable identity exists and the repair is context-heavy. Use a coordinator with specialist agents when origin identity is absent, the backlog is large, or tasks require distinct tool access. **`repo_slug` is the repository** (registry-backed); `source` is free text and identifies neither a repo nor an agent, so neither one is enough to route work back to the original author.
+Use the original agent when `metadata.origin.thread_id` or another stable identity exists and
+the repair is context-heavy. Use a coordinator with specialists when origin identity is absent,
+the backlog is large, or the row requires distinct tool access. **`repo_slug` is the repository**
+(registry-backed); `source` is free text and identifies neither a repo nor an agent.
 
-The current legacy backlog should be coordinator-owned because old rows did not record agent identity. A good coordinator delegates by capability, while preserving one end-to-end owner per row:
+The recurring worker follows this exact order:
 
-1. Implementation specialist claims and fixes one row.
-2. Specialist records evidence and moves assignment state to `verifying`.
-3. A browser/DB/deployment verifier performs the required checks and records `verification.verified_by`, `verified_at`, and notes.
-4. Only then does the coordinator return the row to `ready_for_human` for human re-review.
+1. Claim the schedule's current half-hour window through `schedule_claim`.
+2. Prove the Codex built-in Browser admin session, without claiming queue work yet.
+3. Claim exactly one eligible item, prioritizing human-requested repairs, then agent-requested
+   repairs, then new submissions.
+4. Read the entire conversation and target repository's `CLAUDE.md`; execute the row's actual
+   test instructions on the live target.
+5. If it passes, record evidence and move it to `ready_for_human`. If it fails, record precise
+   findings and move it to `agent_changes_requested` for repair. If the worker repairs code,
+   commit and push it, then leave the row ready for a later live-verification run; a local pass
+   alone never promotes it.
+6. Complete the schedule claim and close all created Browser tabs.
 
-Find work requiring a specific tool (JSONB containment is indexed later if volume ever warrants it; at this queue size a direct query is sufficient):
+Rows with `lane='human_required'`, missing triage, missing a conversation, or no browser tool are
+not eligible for this worker. A run processes **one item only**, even when it finishes quickly.
+
+Claim one row atomically and append the claim event to its existing conversation. Replace the
+placeholder with a stable label such as `agent-review-first-pass:<Codex task id>`:
 
 ```sql
-select id, title, url, source, feedback, metadata->'triage' as triage
-from agent.review_queue
-where status in ('agent_changes_requested','human_changes_requested')
-  and metadata->'triage'->'required_tools' @> '["browser"]'::jsonb
-  and metadata->'triage'->'assignment'->>'state' = 'ready'
-order by
-  case metadata->'triage'->>'priority'
-    when 'critical' then 1 when 'high' then 2 when 'normal' then 3 else 4
-  end,
-  feedback_at;
-```
-
-Claim exactly one matching row without racing another agent:
-
-```sql
-with candidate as (
-  select id
-  from agent.review_queue
-  where status in ('agent_changes_requested','human_changes_requested')
-    and metadata->'triage'->>'lane' = 'browser_ui'
-    and metadata->'triage'->'required_tools' @> '["browser"]'::jsonb
-    and metadata->'triage'->'assignment'->>'state' = 'ready'
-  order by feedback_at
+with candidate as materialized (
+  select queue.id
+  from agent.review_queue queue
+  where queue.status in (
+      'human_changes_requested',
+      'agent_changes_requested',
+      'submitted'
+    )
+    and queue.conversation_id is not null
+    and queue.metadata->'triage'->>'lane' <> 'human_required'
+    and queue.metadata->'triage'->'required_tools' @> '["browser"]'::jsonb
+    and queue.metadata->'triage'->'assignment'->>'state' = 'ready'
+  order by
+    case queue.status
+      when 'human_changes_requested' then 1
+      when 'agent_changes_requested' then 2
+      else 3
+    end,
+    case queue.metadata->'triage'->>'priority'
+      when 'critical' then 1 when 'high' then 2 when 'normal' then 3 else 4
+    end,
+    coalesce(queue.feedback_at, queue.created_at),
+    queue.id
   for update skip locked
   limit 1
+), claimed as (
+  update agent.review_queue queue
+  set
+    status = 'agent_review',
+    metadata = jsonb_set(
+      jsonb_set(
+        jsonb_set(
+          jsonb_set(
+            jsonb_set(queue.metadata, '{triage,assignment,state}', '"claimed"'::jsonb),
+            '{triage,assignment,owner}', to_jsonb('<stable agent/task label>'::text)
+          ),
+          '{triage,assignment,claimed_at}', to_jsonb(now())
+        ),
+        '{triage,verification,verified_by}', 'null'::jsonb
+      ),
+      '{triage,verification,verified_at}', 'null'::jsonb
+    )
+  from candidate
+  where queue.id = candidate.id
+  returning queue.*
+), message as (
+  insert into communication.dm_messages (
+    conversation_id, sender_id, content, message_type, status,
+    client_message_id, organization_id, created_by, metadata
+  )
+  select
+    claimed.conversation_id,
+    conversation.created_by,
+    'Claimed for initial agent review and live browser verification.',
+    'system',
+    'sent',
+    'agent-review:' || claimed.id || ':claimed:' || gen_random_uuid(),
+    conversation.organization_id,
+    conversation.created_by,
+    jsonb_build_object(
+      'actor_kind', 'agent',
+      'actor_label', '<stable agent/task label>',
+      'review_event', 'agent_review',
+      'review_queue_id', claimed.id
+    )
+  from claimed
+  join communication.dm_conversations conversation
+    on conversation.id = claimed.conversation_id
 )
-update agent.review_queue as queue
-set metadata = jsonb_set(
-  jsonb_set(
-    jsonb_set(queue.metadata, '{triage,assignment,state}', '"claimed"'::jsonb),
-    '{triage,assignment,owner}', to_jsonb('<stable agent/task label>'::text)
-  ),
-  '{triage,assignment,claimed_at}', to_jsonb(now())
-)
-from candidate
-where queue.id = candidate.id
-returning queue.*;
+select * from claimed;
 ```
 
-If this returns zero rows, another worker got there first or no matching item is ready. Do not take an already claimed row unless the coordinator deliberately reassigns it.
+If this returns zero rows, another worker got there first or no eligible item is ready. Never
+take an already claimed row unless a coordinator deliberately reassigns it.
 
-## Verification handoff
+## PASS, FAIL, and repair evidence
 
-Before returning a repaired item to human review, update the existing triage envelope rather than overwriting unrelated metadata. Required evidence depends on `required_tools`:
+Required evidence depends on `required_tools`:
 
-- `browser`: test the declared breakpoints and the actual interaction path, using a signed-in session when declared.
+- `browser`: test the actual interaction path and every declared breakpoint in the Codex
+  built-in Browser, using the signed-in admin session when declared.
 - `database`: verify the live row/RLS/RPC result, not just a migration or fixture file.
-- `deployment`: verify the production URL and deployed version; a branch or local build is not reviewable.
-- `external_service`: use a deterministic fixture when a paid/destructive call is unsafe, and say exactly what was not exercised.
+- `deployment`: verify production behavior; a branch, commit, or local build is not proof.
+- `external_service`: use a deterministic fixture when a paid/destructive call is unsafe, and
+  say exactly what was not exercised.
 
-The verifier records their stable label in `verification.verified_by`. Prefer a verifier different from `assignment.owner` for high/critical work. Oversight remains explicit: agents repair and verify; Arman is still the only person who approves or requests another round.
+On **PASS**, append a concise evidence message and move the item to the human inbox in one
+statement. The evidence text must name the interaction tested, result, target, and relevant
+breakpoints or data/API checks:
+
+```sql
+with reviewed as materialized (
+  select queue.*, conversation.created_by as audit_user_id,
+         conversation.organization_id as conversation_org_id
+  from agent.review_queue queue
+  join communication.dm_conversations conversation
+    on conversation.id = queue.conversation_id
+  where queue.id = '<review id>'
+    and queue.status = 'agent_review'
+    and queue.metadata->'triage'->'assignment'->>'owner' = '<stable agent/task label>'
+  for update
+), updated as (
+  update agent.review_queue queue
+  set
+    status = 'ready_for_human',
+    metadata = jsonb_set(
+      jsonb_set(
+        jsonb_set(
+          jsonb_set(queue.metadata, '{triage,assignment,state}', '"awaiting_review"'::jsonb),
+          '{triage,verification,verified_by}', to_jsonb('<stable agent/task label>'::text)
+        ),
+        '{triage,verification,verified_at}', to_jsonb(now())
+      ),
+      '{triage,verification,notes}', to_jsonb('<concise verification evidence>'::text)
+    )
+  from reviewed
+  where queue.id = reviewed.id
+  returning queue.*, reviewed.audit_user_id, reviewed.conversation_org_id
+), message as (
+  insert into communication.dm_messages (
+    conversation_id, sender_id, content, message_type, status,
+    client_message_id, organization_id, created_by, metadata
+  )
+  select
+    updated.conversation_id,
+    updated.audit_user_id,
+    '<concise verification evidence>',
+    'system',
+    'sent',
+    'agent-review:' || updated.id || ':verified:' || gen_random_uuid(),
+    updated.conversation_org_id,
+    updated.audit_user_id,
+    jsonb_build_object(
+      'actor_kind', 'agent',
+      'actor_label', '<stable agent/task label>',
+      'review_event', 'ready_for_human',
+      'review_queue_id', updated.id
+    )
+  from updated
+)
+select id, title, status, metadata->'triage' as triage from updated;
+```
+
+On **FAIL**, append the reproducible finding and return the row to the repair pool:
+
+```sql
+with reviewed as materialized (
+  select queue.*, conversation.created_by as audit_user_id,
+         conversation.organization_id as conversation_org_id
+  from agent.review_queue queue
+  join communication.dm_conversations conversation
+    on conversation.id = queue.conversation_id
+  where queue.id = '<review id>'
+    and queue.status = 'agent_review'
+    and queue.metadata->'triage'->'assignment'->>'owner' = '<stable agent/task label>'
+  for update
+), updated as (
+  update agent.review_queue queue
+  set
+    status = 'agent_changes_requested',
+    feedback = '<reproducible finding and expected behavior>',
+    feedback_at = now(),
+    metadata = jsonb_set(
+      jsonb_set(queue.metadata, '{triage,assignment,state}', '"ready"'::jsonb),
+      '{triage,verification,notes}', to_jsonb('<reproducible finding and expected behavior>'::text)
+    )
+  from reviewed
+  where queue.id = reviewed.id
+  returning queue.*, reviewed.audit_user_id, reviewed.conversation_org_id
+), message as (
+  insert into communication.dm_messages (
+    conversation_id, sender_id, content, message_type, status,
+    client_message_id, organization_id, created_by, metadata
+  )
+  select
+    updated.conversation_id,
+    updated.audit_user_id,
+    '<reproducible finding and expected behavior>',
+    'system',
+    'sent',
+    'agent-review:' || updated.id || ':changes-requested:' || gen_random_uuid(),
+    updated.conversation_org_id,
+    updated.audit_user_id,
+    jsonb_build_object(
+      'actor_kind', 'agent',
+      'actor_label', '<stable agent/task label>',
+      'review_event', 'agent_changes_requested',
+      'review_queue_id', updated.id
+    )
+  from updated
+)
+select id, title, status, feedback from updated;
+```
+
+If repair is small and in scope, the worker owns it: set assignment state to `fixing`, read the
+repo rules, implement, test locally, commit, and push. Then record the repair in the conversation,
+set `status='agent_changes_requested'`, and return assignment state to `ready` so a later run can
+prove the deployed behavior independently. Prefer a verifier different from the implementer for
+high/critical work. Agents repair and verify; Arman alone approves or requests the human round.
 
 ## Rules
 

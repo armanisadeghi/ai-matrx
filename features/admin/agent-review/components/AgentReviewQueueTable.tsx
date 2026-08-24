@@ -7,6 +7,7 @@ import { ArrowRight, ExternalLink, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
 import { toast } from "@/lib/toast";
 import { loadReviewQueue } from "@/features/admin/agent-review/service";
 import {
@@ -43,6 +44,10 @@ function featureName(row: ReviewQueueRow, registry: ReviewRegistry): string {
 
 export default function AgentReviewQueueTable() {
   const router = useRouter();
+  const [view, setView] = useUrlState(
+    "view",
+    enumUrlCodec(["inbox", "all"] as const, "inbox"),
+  );
   const [rows, setRows] = useState<ReviewQueueRow[]>([]);
   const [registry, setRegistry] = useState<ReviewRegistry>(
     EMPTY_REVIEW_REGISTRY,
@@ -59,7 +64,9 @@ export default function AgentReviewQueueTable() {
       setRows(queue);
       setRegistry(nextRegistry);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Review queue failed to load");
+      toast.error(
+        error instanceof Error ? error.message : "Review queue failed to load",
+      );
     } finally {
       setLoading(false);
     }
@@ -75,7 +82,11 @@ export default function AgentReviewQueueTable() {
       })
       .catch((error: unknown) => {
         if (active) {
-          toast.error(error instanceof Error ? error.message : "Review queue failed to load");
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Review queue failed to load",
+          );
         }
       })
       .finally(() => {
@@ -173,6 +184,8 @@ export default function AgentReviewQueueTable() {
   );
 
   const activeRows = rows.filter((row) => row.status !== "archived");
+  const inboxRows = rows.filter((row) => row.status === "ready_for_human");
+  const visibleRows = view === "all" ? rows : inboxRows;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-4">
@@ -183,12 +196,31 @@ export default function AgentReviewQueueTable() {
             Agents prepare and verify every item before it reaches you.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => void refresh()}>
-          <RefreshCw className="mr-1.5 h-4 w-4" /> Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant={view === "inbox" ? "default" : "outline"}
+            onClick={() => setView("inbox")}
+          >
+            Ready for you ({inboxRows.length})
+          </Button>
+          <Button
+            size="sm"
+            variant={view === "all" ? "default" : "outline"}
+            onClick={() => setView("all")}
+          >
+            All activity ({rows.length})
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => void refresh()}>
+            <RefreshCw className="mr-1.5 h-4 w-4" /> Refresh
+          </Button>
+        </div>
       </div>
 
-      <nav aria-label="Agent review workflow" className="flex items-stretch gap-2">
+      <nav
+        aria-label="Agent review workflow"
+        className="flex items-stretch gap-2"
+      >
         {FLOW.map((step, index) => {
           const count = activeRows.filter((row) =>
             step.statuses.some((status) => status === row.status),
@@ -200,7 +232,9 @@ export default function AgentReviewQueueTable() {
               ) : null}
               <div className="min-w-0 flex-1 rounded-md border bg-card px-3 py-2">
                 <div className="text-sm font-medium">{step.label}</div>
-                <div className="mt-1 text-2xl font-semibold tabular-nums">{count}</div>
+                <div className="mt-1 text-2xl font-semibold tabular-nums">
+                  {count}
+                </div>
               </div>
             </div>
           );
@@ -209,7 +243,7 @@ export default function AgentReviewQueueTable() {
 
       <div className="min-h-0 flex-1">
         <MatrxDataTable
-          data={rows}
+          data={visibleRows}
           columns={columns}
           getRowId={(row) => row.id}
           isLoading={loading}
@@ -230,8 +264,14 @@ export default function AgentReviewQueueTable() {
           zebra
           mobile="scroll"
           emptyState={{
-            title: "No review items match this view",
-            description: "Clear a search or column filter to see more items.",
+            title:
+              view === "inbox"
+                ? "Nothing is waiting for your review"
+                : "No review items match this view",
+            description:
+              view === "inbox"
+                ? "Agents are still testing and repairing the remaining activity."
+                : "Clear a search or column filter to see more items.",
           }}
         />
       </div>
