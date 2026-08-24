@@ -225,17 +225,20 @@ export function CreatablePicker({
   const create = async (text: string) => {
     const name = text.trim();
     if (busy) return;
-    if (!name) {
-      setNeedsName(true);
-      inputRef.current?.focus();
-      return;
-    }
+    // `onCreateRequiresMore` opens a dialog that asks for the name itself, so
+    // a blank click there is legitimate — it opens the dialog empty. Only the
+    // write-it-now path needs a name before it can do anything.
     if (onCreateRequiresMore) {
       close();
       onCreateRequiresMore(name);
       return;
     }
-    if (!onCreate || !name) return;
+    if (!onCreate) return;
+    if (!name) {
+      setNeedsName(true);
+      inputRef.current?.focus();
+      return;
+    }
     setBusy(true);
     try {
       const next = await onCreate(name);

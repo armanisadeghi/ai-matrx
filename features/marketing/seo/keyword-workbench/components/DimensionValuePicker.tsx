@@ -60,8 +60,16 @@ export function DimensionValuePicker({
   const [pendingDimensionId, setPendingDimensionId] = useState<string | null>(
     null,
   );
-  /** A dimension being INVENTED — real only once its first value lands. */
-  const [newDimensionLabel, setNewDimensionLabel] = useState("");
+  /**
+   * A dimension being INVENTED — real only once its first value lands.
+   * `null` means nobody is inventing one; `""` means they clicked "Add a
+   * dimension…" without typing a name yet, which is a REAL state and not a
+   * no-op (the three sibling editors that open a dialog treat it the same
+   * way). Modelling it as `""`-means-nothing is what made that click dead.
+   */
+  const [newDimensionLabel, setNewDimensionLabel] = useState<string | null>(
+    null,
+  );
 
   const locked = lockedDimensionSlug
     ? (dimensions.find((d) => d.slug === lockedDimensionSlug) ?? null)
@@ -99,7 +107,7 @@ export function DimensionValuePicker({
         valueId: created.value_id,
         valueLabel: created.value_label,
       });
-      setNewDimensionLabel("");
+      setNewDimensionLabel(null);
       setPendingDimensionId(created.dimension_id);
       toast.success(
         created.created_dimension
@@ -123,7 +131,9 @@ export function DimensionValuePicker({
   const valueRows = (activeDimension?.values ?? []).filter((v) => !v.abstain);
   const dimensionPlaceholder = newDimensionLabel
     ? `New: ${newDimensionLabel}`
-    : "Dimension";
+    : newDimensionLabel === ""
+      ? "Naming a new dimension…"
+      : "Dimension";
 
   return (
     <div className="grid gap-2 sm:grid-cols-2">
@@ -137,7 +147,7 @@ export function DimensionValuePicker({
           }))}
           onSelect={(dimensionId) => {
             onPicked(null);
-            setNewDimensionLabel("");
+            setNewDimensionLabel(null);
             setPendingDimensionId(dimensionId);
           }}
           placeholder={dimensionPlaceholder}
@@ -181,9 +191,11 @@ export function DimensionValuePicker({
         placeholder={
           newDimensionLabel
             ? `First value for “${newDimensionLabel}”`
-            : activeDimension
-              ? "Value"
-              : "Pick a dimension first"
+            : newDimensionLabel === ""
+              ? "Name the dimension first"
+              : activeDimension
+                ? "Value"
+                : "Pick a dimension first"
         }
         searchPlaceholder="Find or type a new value…"
         noun="value"
@@ -191,7 +203,7 @@ export function DimensionValuePicker({
         loading={loading}
         ariaLabel="Value"
         emptyLabel={
-          newDimensionLabel
+          newDimensionLabel !== null
             ? "Type what this new dimension's first value should be."
             : "Nothing by that name yet — type it and add it."
         }
@@ -199,14 +211,15 @@ export function DimensionValuePicker({
         onCreate={createValue}
       />
 
-      {newDimensionLabel ? (
+      {newDimensionLabel !== null ? (
         <p className="text-[11px] leading-snug text-muted-foreground sm:col-span-2">
-          New dimension “{newDimensionLabel}” — it becomes yours the moment you
-          add its first value.{" "}
+          {newDimensionLabel
+            ? `New dimension “${newDimensionLabel}” — it becomes yours the moment you add its first value.`
+            : "Naming a new dimension — type its name in the Dimension box, then give it a first value."}{" "}
           <button
             type="button"
             className="underline underline-offset-2 hover:text-foreground"
-            onClick={() => setNewDimensionLabel("")}
+            onClick={() => setNewDimensionLabel(null)}
           >
             Cancel
           </button>
