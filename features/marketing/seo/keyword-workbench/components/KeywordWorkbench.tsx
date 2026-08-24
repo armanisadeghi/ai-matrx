@@ -56,6 +56,7 @@ import {
 } from "@/features/marketing/seo/keyword-table/KeywordTable";
 import {
   WORKBENCH_DEFAULT_COLUMNS,
+  liveSearchParams,
   mergeKeywordTableParams,
   parseKeywordTableState,
   stateFromViewState,
@@ -90,6 +91,15 @@ export function KeywordWorkbench() {
   const openWhyScore = useOpenGscWhyScoreWindow();
 
   const state = parseKeywordTableState(params);
+  /**
+   * The arrangement AS IT IS NOW. Every handler below reads through this rather
+   * than the render's `state`: with the React Compiler on, a memoized handler
+   * can close over an older `useSearchParams()`, and a saved view built from a
+   * stale arrangement stores something the person never chose (measured
+   * 2026-08-24 — "Save this view" stored an empty arrangement, and reopening
+   * the view then did nothing at all).
+   */
+  const liveState = () => parseKeywordTableState(liveSearchParams(params));
 
   const views = useQuery({
     queryKey: ["marketing", "seo", "keyword-views", site.id],
@@ -113,10 +123,14 @@ export function KeywordWorkbench() {
    * exiting the workbench entirely.
    */
   const openView = (view: SavedView | null) => {
+    const current = liveState();
     const next = view
-      ? { ...stateFromViewState(view.state, state), viewId: view.id }
+      ? { ...stateFromViewState(view.state, current), viewId: view.id }
       : { ...parseKeywordTableState(new URLSearchParams()), viewId: null };
-    const qs = mergeKeywordTableParams(params, next).toString();
+    const qs = mergeKeywordTableParams(
+      liveSearchParams(params),
+      next,
+    ).toString();
     router.push(`${sitePath}/keywords${qs ? `?${qs}` : ""}`, { scroll: false });
   };
 
@@ -179,15 +193,16 @@ export function KeywordWorkbench() {
       return;
     }
     const drill = panelDrillFor("query", row);
+    const current = liveState();
     openDrilldown({
       siteId: site.id,
       siteName: site.domain,
       dimension: drill.dimension,
-      filters: { ...state.filters, ...drill.filters },
-      range: state.range,
-      customFrom: state.customFrom,
-      customTo: state.customTo,
-      compare: state.compare,
+      filters: { ...current.filters, ...drill.filters },
+      range: current.range,
+      customFrom: current.customFrom,
+      customTo: current.customTo,
+      compare: current.compare,
       title: drill.label,
     });
   };
@@ -210,7 +225,7 @@ export function KeywordWorkbench() {
                 siteId: site.id,
                 id: view.id,
                 name: view.name,
-                state: viewStateFor(state),
+                state: viewStateFor(liveState()),
                 shared: view.shared,
               }),
             `“${view.name}” now opens on this arrangement.`,
@@ -274,7 +289,7 @@ export function KeywordWorkbench() {
               () => deleteSavedView(site.id, view.id),
               `“${view.name}” deleted.`,
             );
-            if (state.viewId === view.id) openView(null);
+            if (liveState().viewId === view.id) openView(null);
           })();
         }}
       />
@@ -516,13 +531,14 @@ export function KeywordWorkbench() {
           onConfirm={async (name) => {
             setSavingNew(false);
             await runViewWrite(async () => {
+              const current = liveState();
               const created = await saveView({
                 siteId: site.id,
                 name,
-                state: viewStateFor(state),
+                state: viewStateFor(current),
               });
-              const qs = mergeKeywordTableParams(params, {
-                ...state,
+              const qs = mergeKeywordTableParams(liveSearchParams(params), {
+                ...current,
                 viewId: created.id,
               }).toString();
               router.push(`${sitePath}/keywords${qs ? `?${qs}` : ""}`, {
