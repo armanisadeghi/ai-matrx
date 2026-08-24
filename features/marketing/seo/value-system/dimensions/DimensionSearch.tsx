@@ -298,6 +298,7 @@ export function DimensionSearchResults({
           {hits.matchers.map(({ matcher, address }) => {
             const meta = kindMeta(matcher.kind);
             const Icon = meta.icon;
+            const matchCount = matcher.matchCount ?? 0;
             return (
               <ResultRow
                 key={matcher.id}
@@ -338,8 +339,8 @@ export function DimensionSearchResults({
                     </span>
                   )}
                   <span className="tabular-nums">
-                    {(matcher.matchCount ?? 0) > 0
-                      ? `${formatCount(matcher.matchCount)} keywords matched`
+                    {matchCount > 0
+                      ? `${formatCount(matchCount)} keywords matched`
                       : "never matched"}
                   </span>
                   {matcher.origin ? <span>from {matcher.origin}</span> : null}
