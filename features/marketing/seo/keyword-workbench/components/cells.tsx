@@ -13,7 +13,7 @@
  * is what a person actually wants the moment they spot a pattern.
  */
 
-import { CalendarRange, Check, Filter, PenLine, Plus } from "lucide-react";
+import { Check, Filter, Lock, PenLine, Plus } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -27,10 +27,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/styles/themes/utils";
 import type { FacetValue } from "@/features/marketing/seo/value-system/dimensions/data";
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
-import {
-  GSC_RANGE_PRESETS,
-  type GscRangeKey,
-} from "@/features/marketing/search-console/types";
 
 /** Where a stamp came from, in two words a non-technical reader can act on. */
 function sourceHint(source: string | null): string | null {
@@ -110,6 +106,7 @@ export function ClassCell({
   disabled,
   onPick,
   onAssignWithReason,
+  onMakeYourOwn,
 }: {
   current: string | null;
   source: string | null;
@@ -117,6 +114,8 @@ export function ClassCell({
   disabled?: boolean;
   onPick: (value: FacetValue) => void;
   onAssignWithReason: () => void;
+  /** P11's door: open the assign panel with no dimension locked. */
+  onMakeYourOwn: () => void;
 }) {
   const active = options.find((v) => v.key === current);
   const hint = sourceHint(source);
@@ -160,48 +159,21 @@ export function ClassCell({
           <PenLine className="mr-2 h-3.5 w-3.5" />
           Assign with a reason…
         </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-export function RangePicker({
-  value,
-  label,
-  onChange,
-}: {
-  value: GscRangeKey;
-  label: string;
-  onChange: (next: GscRangeKey) => void;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 gap-1 px-2 text-xs text-muted-foreground"
-        >
-          <CalendarRange className="h-3.5 w-3.5" />
-          {label}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
-        {GSC_RANGE_PRESETS.map((preset) => (
-          <DropdownMenuItem
-            key={preset.key}
-            className="text-xs"
-            onSelect={() => onChange(preset.key)}
-          >
-            <Check
-              className={cn(
-                "mr-2 h-3.5 w-3.5",
-                preset.key === value ? "opacity-100" : "opacity-0",
-              )}
-            />
-            {preset.label}
-          </DropdownMenuItem>
-        ))}
+        {/*
+          P11 — THE ONE VOCABULARY A SITE MAY NOT WIDEN, AND IT IS STILL NOT A
+          DEAD END. Class is shared by every business so cross-site learning
+          can exist at all; a silent list with no way out is exactly the break
+          P23 was written about, so the control SAYS why and hands over the
+          door — make your own dimension and answer it your way.
+        */}
+        <DropdownMenuItem className="text-xs" onSelect={onMakeYourOwn}>
+          <Lock className="mr-2 h-3.5 w-3.5" />
+          Need a different answer? Make it your own dimension…
+        </DropdownMenuItem>
+        <p className="px-2 pb-1 pt-0.5 text-[10px] leading-snug text-muted-foreground">
+          Class is shared by every business, so its choices are set
+          platform-wide.
+        </p>
       </DropdownMenuContent>
     </DropdownMenu>
   );

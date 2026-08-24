@@ -63,6 +63,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { FilterBar } from "@/features/marketing/search-console/components/FilterBar";
+import { RangeCompareControl } from "@/features/marketing/search-console/components/RangeCompareControl";
 import {
   useGscBreakdown,
   useGscFreshness,
@@ -114,7 +115,7 @@ import {
   type WorkbenchState,
 } from "@/features/marketing/seo/keyword-workbench/state";
 import { AssignPanel, type AssignTarget } from "./AssignPanel";
-import { ClassCell, RangePicker, StampCell } from "./cells";
+import { ClassCell, StampCell } from "./cells";
 import { ColumnChooser } from "./ColumnChooser";
 import type { PickedValue } from "./DimensionValuePicker";
 import { SavedViewTabs } from "./SavedViewTabs";
@@ -462,6 +463,15 @@ export function KeywordWorkbench() {
               keywordIds: [row.keyword_id],
               label: `“${row.key}”`,
               lockedDimensionSlug: "traffic_class",
+            });
+          }}
+          onMakeYourOwn={() => {
+            if (!row.keyword_id) return;
+            // No locked dimension: the picker opens on the whole catalog and
+            // will create a dimension of their own from whatever they type.
+            setAssignTarget({
+              keywordIds: [row.keyword_id],
+              label: `“${row.key}”`,
             });
           }}
         />
@@ -845,10 +855,23 @@ export function KeywordWorkbench() {
           }}
         />
         <div className="flex items-center gap-1.5">
-          <RangePicker
-            value={state.range}
-            label={rangeLabel}
-            onChange={(range) => patch({ range })}
+          {/* The canonical range + compare control — it already owns custom
+              date ranges, which a hand-rolled preset list silently refuses. */}
+          <RangeCompareControl
+            value={{
+              range: state.range,
+              customFrom: state.customFrom,
+              customTo: state.customTo,
+              compare: state.compare,
+            }}
+            onChange={(next) =>
+              patch({
+                range: next.range,
+                customFrom: next.customFrom,
+                customTo: next.customTo,
+                compare: next.compare,
+              })
+            }
           />
           <ColumnChooser
             dimensions={dimensions}
