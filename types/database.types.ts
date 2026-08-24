@@ -11872,6 +11872,20 @@ export type Database = {
             foreignKeyName: "kind_component_kind_definition_id_fkey"
             columns: ["kind_definition_id"]
             isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_component_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["kind_definition_id"]
+          },
+          {
+            foreignKeyName: "kind_component_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
             referencedRelation: "kind_definition"
             referencedColumns: ["id"]
           },
@@ -11972,6 +11986,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "kind_component"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_component_incident_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_component_incident_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["kind_definition_id"]
           },
           {
             foreignKeyName: "kind_component_incident_kind_definition_id_fkey"
@@ -12111,8 +12139,36 @@ export type Database = {
             foreignKeyName: "kind_edge_child_definition_id_fkey"
             columns: ["child_definition_id"]
             isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_edge_child_definition_id_fkey"
+            columns: ["child_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["kind_definition_id"]
+          },
+          {
+            foreignKeyName: "kind_edge_child_definition_id_fkey"
+            columns: ["child_definition_id"]
+            isOneToOne: false
             referencedRelation: "kind_definition"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_edge_parent_definition_id_fkey"
+            columns: ["parent_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_edge_parent_definition_id_fkey"
+            columns: ["parent_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["kind_definition_id"]
           },
           {
             foreignKeyName: "kind_edge_parent_definition_id_fkey"
@@ -12195,6 +12251,20 @@ export type Database = {
             foreignKeyName: "kind_example_kind_definition_id_fkey"
             columns: ["kind_definition_id"]
             isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_example_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["kind_definition_id"]
+          },
+          {
+            foreignKeyName: "kind_example_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
             referencedRelation: "kind_definition"
             referencedColumns: ["id"]
           },
@@ -12256,6 +12326,20 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
+          {
+            foreignKeyName: "kind_instance_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_instance_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["kind_definition_id"]
+          },
           {
             foreignKeyName: "kind_instance_kind_definition_id_fkey"
             columns: ["kind_definition_id"]
@@ -12324,6 +12408,20 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "kind_surface_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_surface_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_conformance"
+            referencedColumns: ["kind_definition_id"]
+          },
           {
             foreignKeyName: "kind_surface_kind_definition_id_fkey"
             columns: ["kind_definition_id"]
@@ -12401,6 +12499,43 @@ export type Database = {
           semver?: never
           source?: never
           version_number?: number | null
+        }
+        Relationships: []
+      }
+      kind_conformance: {
+        Row: {
+          canonical_example_count: number | null
+          duplicate_of: string | null
+          example_contradicts_schema: boolean | null
+          example_count: number | null
+          example_matches_schema: boolean | null
+          example_record_is_stale: boolean | null
+          family: string | null
+          generic_view_count: number | null
+          has_real_view: boolean | null
+          id: string | null
+          is_active: boolean | null
+          is_contract_artifact: boolean | null
+          kind: string | null
+          kind_definition_id: string | null
+          label: string | null
+          mandates_declaring: number | null
+          maturity: string | null
+          needs_a_view: boolean | null
+          nested_by_kinds: number | null
+          nests_kinds: number | null
+          only_the_generic_view: boolean | null
+          organization_id: string | null
+          outcomes_30d: number | null
+          passes_every_check: boolean | null
+          real_view_count: number | null
+          reasons: Json | null
+          shape_is_unique: boolean | null
+          state: string | null
+          stored_instances: number | null
+          updated_at: string | null
+          version: number | null
+          view_platforms: Json | null
         }
         Relationships: []
       }
