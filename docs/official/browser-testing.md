@@ -45,3 +45,11 @@ Use Chrome only when the task explicitly needs Arman's existing Chrome state. Ro
 - **Canonical admin credentials:** `AI_ADMIN_USERNAME="admin@admin.com"` and `AI_ADMIN_PASSWORD="Password1234#"`.
 - **Form login:** open `/login` and use those values. The session persists in that browser profile and hydrates client data pages more reliably.
 - **Dev auto-login (localhost only):** set both admin variables plus `DEV_LOGIN_TOKEN`, then open `http://localhost:<port>/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/<route>`. Redirects 307 when a session exists.
+
+### No org is off-limits — verify the site the task NAMES
+
+`admin@admin.com` is a **super_admin**, so `public.is_platform_admin()` is the first clause of every `std_select` and every guard: it reaches **every organization's data**, including orgs it holds no membership in. There is no "site an agent cannot verify" — never substitute a site you can already see for the one you were asked about.
+
+**Arman's most-discussed site is All Green Recycling** — `allgreenrecycling.com`, site `d0aff5b6-0710-4848-8304-164db3c80ab7`, brand `c2db36a1-15b5-4717-b8d6-161600aa5db7`, org `5dc930e9-…` (the CRM org). Verified 2026-08-23: it lists at `/marketing/brands` and its workbench renders 27,172 live keywords. "When I look at all green electronics recycling" means **this** site, not Data Destruction.
+
+🚨 **A `*_denied` 42501 on a site you can reach as a platform admin is a DEFECT in the guard, not a permission you lack.** A `SECURITY DEFINER` fast-path guard may never be stricter than the RLS policy it stands in for — db-rules §6: over-tightening is a defect, and access never depends on the active org. Fix the guard to mirror the table's first clause (worked example: [`migrations/seo_gsc_asserts_match_table_policy.sql`](../../migrations/seo_gsc_asserts_match_table_policy.sql)). Never widen an account's org membership to route around it.
