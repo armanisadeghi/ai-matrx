@@ -33024,6 +33024,42 @@ export type Database = {
         }
         Relationships: []
       }
+      wrappers_fdw_stats: {
+        Row: {
+          bytes_in: number | null
+          bytes_out: number | null
+          create_times: number | null
+          created_at: string
+          fdw_name: string
+          metadata: Json | null
+          rows_in: number | null
+          rows_out: number | null
+          updated_at: string
+        }
+        Insert: {
+          bytes_in?: number | null
+          bytes_out?: number | null
+          create_times?: number | null
+          created_at?: string
+          fdw_name: string
+          metadata?: Json | null
+          rows_in?: number | null
+          rows_out?: number | null
+          updated_at?: string
+        }
+        Update: {
+          bytes_in?: number | null
+          bytes_out?: number | null
+          create_times?: number | null
+          created_at?: string
+          fdw_name?: string
+          metadata?: Json | null
+          rows_in?: number | null
+          rows_out?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       current_user_is_admin: {
@@ -35042,6 +35078,20 @@ export type Database = {
         Args: { p_mode?: string; p_usage_id: string; p_usage_type: string }
         Returns: Json
       }
+      airtable_fdw_handler: { Args: never; Returns: unknown }
+      airtable_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      airtable_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
       append_rows_to_user_table: {
         Args: { p_rows: Json; p_table_id: string }
         Returns: number
@@ -35227,6 +35277,34 @@ export type Database = {
         Args: { org_id: string; user_id: string }
         Returns: boolean
       }
+      auth0_fdw_handler: { Args: never; Returns: unknown }
+      auth0_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      auth0_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
+      big_query_fdw_handler: { Args: never; Returns: unknown }
+      big_query_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      big_query_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
       bump_version: { Args: { p_file_id: string }; Returns: number }
       calculate_trending_score: {
         Args: {
@@ -35373,6 +35451,20 @@ export type Database = {
         Returns: number
       }
       cleanup_old_guest_records: { Args: never; Returns: number }
+      click_house_fdw_handler: { Args: never; Returns: unknown }
+      click_house_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      click_house_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
       close_feedback_item: {
         Args: { p_admin_notes?: string; p_id: string; p_status: string }
         Returns: Database["users"]["Tables"]["user_feedback"]["Row"]
@@ -35411,6 +35503,20 @@ export type Database = {
           parent_id: string
           updated_at: string
         }[]
+      }
+      cognito_fdw_handler: { Args: never; Returns: unknown }
+      cognito_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      cognito_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
       }
       component_created_by_report: { Args: never; Returns: Json }
       container_resource_counts: {
@@ -36284,6 +36390,20 @@ export type Database = {
         }
         Returns: string
       }
+      duckdb_fdw_handler: { Args: never; Returns: unknown }
+      duckdb_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      duckdb_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
       duplicate_row: {
         Args: {
           p_excluded_columns?: string[]
@@ -36304,6 +36424,20 @@ export type Database = {
           result: Json
           total_count: number
         }[]
+      }
+      dynamo_db_fdw_handler: { Args: never; Returns: unknown }
+      dynamo_db_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      dynamo_db_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
       }
       edu_certify_content: {
         Args: {
@@ -36753,6 +36887,20 @@ export type Database = {
           related_entry: Json
           related_table_name: string
         }[]
+      }
+      firebase_fdw_handler: { Args: never; Returns: unknown }
+      firebase_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      firebase_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
       }
       fn_get_user_usage_snapshot: {
         Args: { p_user_id: string }
@@ -37846,6 +37994,34 @@ export type Database = {
         }
         Returns: boolean
       }
+      hello_world_fdw_handler: { Args: never; Returns: unknown }
+      hello_world_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      hello_world_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
+      iceberg_fdw_handler: { Args: never; Returns: unknown }
+      iceberg_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      iceberg_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
       industry_assign_org: {
         Args: {
           p_actor?: string
@@ -38330,6 +38506,20 @@ export type Database = {
         }
         Returns: string
       }
+      logflare_fdw_handler: { Args: never; Returns: unknown }
+      logflare_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      logflare_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
       lookup_user_by_email: {
         Args: { lookup_email: string }
         Returns: {
@@ -38467,6 +38657,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      metadata_filter: { Args: { _left: Json; _right: Json }; Returns: boolean }
       mkt_initiative_list_facets: {
         Args: {
           p_deep?: boolean
@@ -38548,6 +38739,20 @@ export type Database = {
         }
         Returns: Json
       }
+      mssql_fdw_handler: { Args: never; Returns: unknown }
+      mssql_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      mssql_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
       mtx_is_durable_media_url: { Args: { url: string }; Returns: boolean }
       mtx_media_durability_health: {
         Args: never
@@ -38600,6 +38805,20 @@ export type Database = {
           ratified_count: number
           slug: string
         }[]
+      }
+      mysql_fdw_handler: { Args: never; Returns: unknown }
+      mysql_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      mysql_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
       }
       orchestra_list: {
         Args: never
@@ -39133,6 +39352,20 @@ export type Database = {
         }
         Returns: string
       }
+      redis_fdw_handler: { Args: never; Returns: unknown }
+      redis_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      redis_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
       reference_categories_list: {
         Args: never
         Returns: {
@@ -39312,6 +39545,38 @@ export type Database = {
           version: number
         }[]
       }
+      s3_fdw_handler: { Args: never; Returns: unknown }
+      s3_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      s3_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
+      s3_vectors_fdw_handler: { Args: never; Returns: unknown }
+      s3_vectors_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      s3_vectors_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
+      }
+      s3vec_distance: { Args: { s3vec: unknown }; Returns: number }
+      s3vec_in: { Args: { input: unknown }; Returns: unknown }
+      s3vec_knn: { Args: { _left: unknown; _right: unknown }; Returns: boolean }
+      s3vec_out: { Args: { input: unknown }; Returns: unknown }
       sch_enqueue_manual_run: { Args: { p_task_id: string }; Returns: string }
       sch_recompute_task_next_due_at: {
         Args: { p_task_id: string }
@@ -39621,6 +39886,20 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      stripe_fdw_handler: { Args: never; Returns: unknown }
+      stripe_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      stripe_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
       }
       studio_session_metrics: {
         Args: { p_session_ids: string[] }
@@ -40168,6 +40447,20 @@ export type Database = {
         Returns: {
           thread_id: string
         }[]
+      }
+      wasm_fdw_handler: { Args: never; Returns: unknown }
+      wasm_fdw_meta: {
+        Args: never
+        Returns: {
+          author: string
+          name: string
+          version: string
+          website: string
+        }[]
+      }
+      wasm_fdw_validator: {
+        Args: { catalog: unknown; options: string[] }
+        Returns: undefined
       }
       wfx_bucket_matches: {
         Args: { p_bucket: string; p_n: number }
