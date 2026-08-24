@@ -442,7 +442,7 @@ export function TopicTreeWorkbench() {
         onPassFinished={refreshTree}
       />
 
-      {/* P25 — ONE TABLE. The tree above is legitimately a TREE; these two
+      {/* P26 — ONE TABLE. The tree above is legitimately a TREE; these two
           keyword lists are TABLES, and they are the canonical one. */}
       <ProposedQueue
         siteId={siteId}

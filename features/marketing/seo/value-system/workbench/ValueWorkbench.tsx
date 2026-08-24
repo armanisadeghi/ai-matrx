@@ -138,12 +138,13 @@ import {
 } from "../lib";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
 import { ClassCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
-import {
-  AssignPanel,
-  type AssignTarget,
-} from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
 import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+} from "@/features/marketing/seo/keyword/keyword-actions";
 import { KeywordMeaningSuggestions } from "@/features/marketing/seo/value-system/suggestions/KeywordMeaningSuggestions";
 import { ValueDoors } from "../ValueDoors";
 import { BandScoreboard } from "./BandScoreboard";
@@ -345,7 +346,7 @@ export function ValueWorkbench() {
    * implemented twice; only the mounting differs (a dialog here, an inline
    * panel there, because this page's top is a ruled layout).
    */
-  const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
+  const surfaces = useKeywordAssignSurfaces({ siteId });
   const catalog = useQuery({
     queryKey: ["marketing", "seo", "dimension-catalog", siteId],
     queryFn: ({ signal }) => getFacetDimensionCatalog(siteId, signal),
@@ -354,6 +355,37 @@ export function ValueWorkbench() {
   const dimensions = catalog.data ?? [];
   const classDimension = dimensions.find((d) => d.slug === "traffic_class");
   const classOptions = (classDimension?.values ?? []).filter((v) => !v.abstain);
+
+  /**
+   * 🚨 THE MISSING MENU, closed 2026-08-24. Arman: *"I talked at length about
+   * how the context menu was essentially everything, but I'm just not seeing
+   * some of these things set up."* Right-clicking a keyword on this page — the
+   * flagship worth screen — used to select a word and open nothing at all.
+   *
+   * ONE menu for the whole pane (never one per row): `resolveContextOnOpen`
+   * reads `data-row-id` off the right-clicked element and stashes the row, and
+   * every item delegates to the shared keyword actions, so this page offers
+   * exactly what the Keyword Workbench offers, through the same RPCs.
+   */
+  const clickedRow = useRef<ValueReviewRow | null>(null);
+  const keywordSection = useKeywordMenuSection({
+    siteId,
+    siteName: site.domain,
+    brandId,
+    organizationId: site.organization_id,
+    surfaces,
+    getRow: () => {
+      const row = clickedRow.current;
+      return row
+        ? {
+            phrase: row.keyword,
+            keywordId: row.keyword_id,
+            currentLevel: row.value_band,
+            levelIsRuling: row.value_source === "override",
+          }
+        : null;
+    },
+  });
 
   /**
    * A class stamp changes what the resolver computes, so the score, the level
@@ -698,23 +730,20 @@ export function ValueWorkbench() {
               valueLabel: value.label,
             });
           }}
-          onAssignWithReason={() => {
-            if (!row.keyword_id) return;
-            setAssignTarget({
-              keywordIds: [row.keyword_id],
-              label: `“${row.keyword}”`,
-              lockedDimensionSlug: "traffic_class",
-            });
-          }}
-          onMakeYourOwn={() => {
-            if (!row.keyword_id) return;
+          onAssignWithReason={() =>
+            surfaces.openDimension(
+              { phrase: row.keyword, keywordId: row.keyword_id },
+              "traffic_class",
+            )
+          }
+          onMakeYourOwn={() =>
             // No locked dimension: the picker opens on the whole catalog and
             // will create a dimension of their own from whatever they type.
-            setAssignTarget({
-              keywordIds: [row.keyword_id],
-              label: `“${row.keyword}”`,
-            });
-          }}
+            surfaces.openDimension({
+              phrase: row.keyword,
+              keywordId: row.keyword_id,
+            })
+          }
         />
       ),
     },
@@ -863,11 +892,23 @@ export function ValueWorkbench() {
 
       <ReadyDefaultsBanner />
 
+      {/* WHAT THE AGENTS PROPOSED and you have not answered yet — rendered in
+          BOTH postures. The ruling session's trial proposes rule changes into
+          exactly this queue, so a session that hid it would tell a person to
+          "approve it below" and then show them nothing. */}
+      {sessionOpen ? (
+        <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
+      ) : null}
+
       {sessionOpen ? (
         <RulingSession
           siteId={siteId}
+          siteLabel={`${site.name ?? site.domain} (${site.domain})`}
+          organizationId={site.organization_id}
           window={window}
           metas={metas}
+          dimensions={dimensions}
+          dimensionsLoading={catalog.isLoading}
           totalUnvalued={unvaluedQueries}
           ruledCount={sessionRuled}
           rulingPending={ruling.isPending}
@@ -951,35 +992,45 @@ export function ValueWorkbench() {
           it renders nothing at all when the queue is empty. */}
       <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
 
-      {/* ONE assignment surface, borrowed whole from the Keyword Workbench —
-          never a second implementation of "assign a class with a reason".
+      {/* ONE assignment surface, borrowed whole from the shared keyword
+          actions — never a second implementation of "assign with a reason".
           MOUNTED INLINE, not in a Dialog: the value picker inside it opens its
           own portalled popover, and a Radix Dialog reads that click as an
           outside interaction and closes itself mid-assignment. Caught in the
           live pass on 2026-08-24 — if you move this into an overlay, that bug
           comes straight back. */}
-      {assignTarget ? (
-        <div className="shrink-0 rounded-lg border border-border bg-card p-3 shadow-sm">
-          <AssignPanel
-            siteId={siteId}
-            dimensions={dimensions}
-            dimensionsLoading={catalog.isLoading}
-            target={assignTarget}
-            onCancel={() => setAssignTarget(null)}
-            onDone={(result, picked) => {
-              setAssignTarget(null);
-              void refreshAfterStamp();
-              toast.success(
-                result.cleared > 0
-                  ? `Removed ${picked.valueLabel} from ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`
-                  : `${picked.dimensionLabel}: ${picked.valueLabel} on ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}${result.notesSaved ? " — your reason is saved with them." : "."}`,
-              );
-            }}
-          />
-        </div>
+      {surfaces.isOpen ? (
+        <div className="shrink-0">{surfaces.node}</div>
       ) : null}
 
-      {/* Review table */}
+      {/* Review table — ONE v3 menu around the whole pane. */}
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        surfaceName="matrx-user/keyword-value-workbench"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const id = target
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = (id && rows.find((r) => r.keyword_id === id)) || null;
+          clickedRow.current = row;
+          if (!row) return null;
+          return {
+            content: [
+              `Keyword: ${row.keyword}`,
+              `Level: ${bandMetaFor(metas, row.value_band).label}`,
+              `Score: ${formatScore(row.value_score)}`,
+              `Class: ${row.traffic_class ? humanizeSlug(row.traffic_class) : "not set"}`,
+              `Decided by: ${SOURCE_META[row.value_source]?.label ?? row.value_source}`,
+              `Clicks: ${formatCount(row.clicks)} · Impressions: ${formatCount(row.impressions)}`,
+            ].join("\n"),
+            keyword: row.keyword,
+            keyword_id: row.keyword_id,
+          };
+        }}
+        extraSections={[keywordSection]}
+      >
       <div className="flex flex-col rounded-lg border border-border bg-card p-2">
         {review.isError ? (
           <InlineQueryError
@@ -1108,11 +1159,10 @@ export function ValueWorkbench() {
                       type="button"
                       disabled={!row.keyword_id}
                       onClick={() =>
-                        setAssignTarget({
-                          keywordIds: [row.keyword_id],
-                          label: `“${row.keyword}”`,
-                          lockedDimensionSlug: "traffic_class",
-                        })
+                        surfaces.openDimension(
+                          { phrase: row.keyword, keywordId: row.keyword_id },
+                          "traffic_class",
+                        )
                       }
                       className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-center transition-colors hover:border-primary/40 hover:bg-accent"
                       title="Set this keyword's class — the same write as the Keyword Workbench, with room for your reason."
@@ -1198,6 +1248,7 @@ export function ValueWorkbench() {
           }}
         />
       </div>
+      </NonEditableContextMenu>
 
         </>
       )}

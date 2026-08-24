@@ -3,7 +3,7 @@
 /**
  * The work queue: this site's keywords with NO primary topic.
  *
- * P25 — ONE TABLE. This used to be a hand-rolled `<div>` list: 5,823 keywords
+ * P26 — ONE TABLE. This used to be a hand-rolled `<div>` list: 5,823 keywords
  * in no particular order, with clicks and impressions as unsortable text, no
  * filters, and none of the dimension columns the same keywords carry one screen
  * away in the Keyword Workbench. Arman, 2026-08-24: "all they had to do is just

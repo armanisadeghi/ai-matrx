@@ -12,7 +12,7 @@
  * `assigned_by='human'` through the EXISTING write, which takes the keyword off
  * the agent's list forever.
  *
- * P25 — ONE TABLE. This was a hand-rolled row list with unsortable numbers. It
+ * P26 — ONE TABLE. This was a hand-rolled row list with unsortable numbers. It
  * is now the canonical keyword table, configured by ONE base filter
  * (`placement: "proposed"`), which is why that filter exists on
  * `seo.gsc_perf_breakdown` at all: a surface is a configuration, never a second
