@@ -84,7 +84,9 @@ function ArtifactCard({ artifact }: { artifact: GeneratedArtifact }) {
 function StudyActionButton({ study }: { study: KitStudyState }) {
   const { href, label } = kitStudyAction(study);
   return (
-    <Button asChild size="lg" className="gap-1.5">
+    // Full-width on phone: the primary action must not compete with the stats
+    // for a 375px row ("mobile is the product, not a port").
+    <Button asChild size="lg" className="w-full gap-1.5 sm:w-auto">
       <Link href={href}>
         <GraduationCap className="h-4 w-4" />
         {label}
@@ -224,7 +226,7 @@ export function KitHub({
             the artifact grid never jumps down after paint. */}
         {studyLoading && <Skeleton className="h-[104px] w-full rounded-xl" />}
         {!studyLoading && study && (
-          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
+          <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:gap-4">
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-semibold tabular-nums text-foreground">
