@@ -394,7 +394,10 @@ function ItemDetailWindowInner({
             : {})}
           getApplicationScope={getScope}
         >
-          <div className="flex flex-col">
+          {/* `min-h-full` so the menu answers a right-click anywhere in the
+              window, not only on the rows — a short dossier otherwise leaves a
+              dead band of body below it where the page underneath answers. */}
+          <div className="flex min-h-full flex-col">
             {/* About — agent-provided description (content, can run multi-line). */}
             {initialAbout?.trim() && (
               <p className="border-b border-border/60 p-4 text-xs leading-snug text-muted-foreground line-clamp-3">
