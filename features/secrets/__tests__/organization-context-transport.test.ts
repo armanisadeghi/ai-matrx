@@ -96,9 +96,9 @@ describe("Vault and Authenticator organization transport", () => {
     await expect(fetchAuthenticators()).rejects.toThrow(
       "Select an organization before sending this request.",
     );
-    await expect(
-      checkVaultDestination("https://example.com"),
-    ).rejects.toThrow("Select an organization before sending this request.");
+    await expect(checkVaultDestination("https://example.com")).rejects.toThrow(
+      "Select an organization before sending this request.",
+    );
     await expect(
       uploadVaultAttachment(
         "item-1",
@@ -106,6 +106,27 @@ describe("Vault and Authenticator organization transport", () => {
         { label: "Secret", handling: "revealable" },
       ),
     ).rejects.toThrow("Select an organization before sending this request.");
+
+    expect(mockGetSession).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("malformed organization identity fails before auth or network I/O", async () => {
+    installContext("not-an-organization-uuid");
+
+    await expect(fetchAuthenticators()).rejects.toThrow(
+      "The selected organization ID is invalid.",
+    );
+    await expect(checkVaultDestination("https://example.com")).rejects.toThrow(
+      "The selected organization ID is invalid.",
+    );
+    await expect(
+      uploadVaultAttachment(
+        "item-1",
+        new File(["bytes"], "secret.txt", { type: "text/plain" }),
+        { label: "Secret", handling: "revealable" },
+      ),
+    ).rejects.toThrow("The selected organization ID is invalid.");
 
     expect(mockGetSession).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();

@@ -15,7 +15,10 @@
 import { createClient } from "@/utils/supabase/client";
 import { makeAssertData } from "@/utils/errors";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
-import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
 import {
   downloadVaultAttachment as downloadVaultAttachmentBytes,
   replaceVaultAttachment as replaceVaultAttachmentBytes,
@@ -76,7 +79,7 @@ async function authHeaders(): Promise<{
   organizationId: string;
   headers: Record<string, string>;
 }> {
-  const organizationId = requireSelectedOrgId();
+  const organizationId = requireOrganizationContext(requireSelectedOrgId());
   const supabase = createClient();
   const {
     data: { session },
@@ -93,7 +96,9 @@ async function authHeaders(): Promise<{
 
 async function vaultFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const { organizationId, headers: auth } = await authHeaders();
-  const suppliedHeaders = Object.fromEntries(new Headers(init?.headers).entries());
+  const suppliedHeaders = Object.fromEntries(
+    new Headers(init?.headers).entries(),
+  );
   const headers = applyOrganizationContextHeader(
     { ...auth, ...suppliedHeaders },
     organizationId,

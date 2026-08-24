@@ -8,6 +8,10 @@
  */
 import { createClient } from "@/utils/supabase/client";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import {
+  applyOrganizationContextHeader,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
 
 export const MAX_VAULT_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
@@ -18,16 +22,16 @@ function backendBase(): string {
 }
 
 async function authorizationHeader(): Promise<Record<string, string>> {
-  const organizationId = requireSelectedOrgId();
+  const organizationId = requireOrganizationContext(requireSelectedOrgId());
   const supabase = createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not signed in");
-  return {
-    Authorization: `Bearer ${session.access_token}`,
-    "X-Organization-Id": organizationId,
-  };
+  return applyOrganizationContextHeader(
+    { Authorization: `Bearer ${session.access_token}` },
+    organizationId,
+  );
 }
 
 async function responseError(response: Response): Promise<Error> {

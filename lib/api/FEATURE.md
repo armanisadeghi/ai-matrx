@@ -256,9 +256,9 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 - 2026-08-24 — Extracted the fail-closed organization transport kernel into
   `organization-context.ts`, made it reject malformed UUIDs, migrated Vault and
   Authenticator JSON transports onto it, and added the blocking
-  `check:organization-context` CI/release gate. Multipart Vault attachments are
-  pinned by the same zero-I/O regression suite while their byte adapter remains
-  separate from JSON transport.
+  `check:organization-context` CI/release gate. The separate Vault byte adapter
+  consumes the same kernel, so malformed/missing multipart context also fails
+  before auth lookup or networking.
 - 2026-08-24 — Made `callApi` fail closed on missing organization context,
   removed its personal-organization fallback, bound the same organization into
   `X-Organization-Id` and JSON bodies, and rejected body/query/header mismatch

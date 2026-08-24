@@ -324,9 +324,10 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 ## Change Log
 
 - **2026-08-24** — Moved Vault and Authenticator JSON calls onto the shared
-  organization-context kernel, rejected a conflicting caller header instead of
-  letting it override selected context, and pinned JSON plus protected-file
-  multipart zero-I/O behavior in the non-skippable frontend release gate.
+  organization-context kernel, moved the protected-file byte adapter onto the
+  same UUID admission, rejected conflicting caller headers instead of overriding
+  selected context, and pinned missing/malformed JSON plus multipart zero-I/O
+  behavior in the non-skippable frontend release gate.
 
 - **2026-08-24** — Vault gained its canonical v3 right-click menu
   (`components/VaultContextMenu.tsx`), mounted by `VaultWorkspace` so `/vault`,
