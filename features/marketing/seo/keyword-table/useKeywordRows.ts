@@ -213,8 +213,9 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
    * fifty rows from the answer.
    */
   const locations = useQuery({
-    queryKey: keywordLocationsQueryKey(siteId, keywordIds),
-    queryFn: ({ signal }) => getKeywordLocations(siteId, keywordIds, signal),
+    queryKey: keywordLocationsQueryKey(siteId, keywordIds, true),
+    queryFn: ({ signal }) =>
+      getKeywordLocations(siteId, keywordIds, signal, true),
     enabled: keywordIds.length > 0,
     staleTime: 60_000,
   });
