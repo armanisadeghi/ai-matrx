@@ -32,6 +32,7 @@ export const MATCHER_KINDS = [
   "place",
   "fact",
   "condition",
+  "brand_identity",
 ] as const;
 export type MatcherKind = (typeof MATCHER_KINDS)[number];
 
@@ -244,6 +245,7 @@ const MATCHER_KIND_WORDS: Record<MatcherKind, string> = {
   place: "mentions the place",
   fact: "already has",
   condition: "meets the condition",
+  brand_identity: "matches the brand name or one of its known variants",
 };
 
 /** What the matcher actually looks at, in the user's words. */

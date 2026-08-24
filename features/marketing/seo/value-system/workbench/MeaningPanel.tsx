@@ -212,8 +212,8 @@ export function MeaningPanel({
   const focusedComboRef = useRef<string | null>(null);
   const { site } = useMarketingSite();
   // The prose doctrine every AI run for this site reads (D35). Read-only here:
-  // the document is AUTHORED in the classification workbench, and two editors
-  // for one document is how they drift.
+  // the document is AUTHORED at `value:guidelines`, and two editors for one
+  // document is how they drift.
   const guidelines = useQuery({
     queryKey: kwGuidelinesQueryKey(siteId),
     queryFn: ({ signal }) => getKwGuidelines(siteId, signal),
@@ -315,9 +315,9 @@ export function MeaningPanel({
               hint="Prose this site's expert wrote about what it sells and who it serves. Every AI classification and valuation run for this site reads it first — it is why the model knows which terms are wrong for you."
             />
             <Link
-              href={`${marketingRoutes.site(brandId, siteId, "/keywords")}?view=classification`}
+              href={marketingRoutes.site(brandId, siteId, "/value/guidelines")}
               className="flex shrink-0 items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              title="Edit the guidelines in the classification workbench — the one place this document is authored"
+              title="Edit the guidelines — the one place this document is authored"
             >
               <Pencil className="h-3 w-3" /> Edit
             </Link>

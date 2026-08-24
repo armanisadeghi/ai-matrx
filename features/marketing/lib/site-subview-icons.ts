@@ -14,6 +14,7 @@
 import {
   Activity,
   BookOpen,
+  BookOpenCheck,
   Boxes,
   Briefcase,
   Building2,
@@ -50,7 +51,6 @@ import {
   Signpost,
   SlidersHorizontal,
   Table2,
-  Tags,
   Target,
   TrendingUp,
   TreePine,
@@ -102,7 +102,6 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "keywords:start": Signpost,
   "keywords:performance": TrendingUp,
   "keywords:workbench": SlidersHorizontal,
-  "keywords:classification": Tags,
 
   "ai-visibility:overview": LayoutDashboard,
   "ai-visibility:claims": MessageSquareQuote,
@@ -116,6 +115,7 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "value:rules": SlidersHorizontal,
   "value:topics": TreePine,
   "value:packs": Boxes,
+  "value:guidelines": BookOpenCheck,
 
   "settings:site": Settings,
   "settings:integrations": Plug,

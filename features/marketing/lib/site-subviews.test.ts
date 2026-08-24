@@ -162,6 +162,11 @@ describe("marketing site sub-view registry", () => {
     // 2026-08-24 — the value family gained `discovery` (the Business
     // Discovery Ladder, register KI-040): AI reads the site cold, the human
     // rules each rung. 50 + 1 = 51, 72 + 1 = 73.
+    //
+    // 2026-08-25 — KI-036: `keywords:classification` ("Teach classes") folded
+    // into the Workbench and was deleted; the business-guidelines editor it
+    // uniquely owned got its own door, `value:guidelines`. One out, one in —
+    // 51 stays 51, 73 stays 73.
     expect(MARKETING_SITE_SECTIONS.length).toBe(22);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(

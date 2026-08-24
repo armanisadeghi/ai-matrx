@@ -138,14 +138,15 @@ No class-E box-in-a-box was found: every non-canvas consumer wraps at most in `h
   follow the same recipe for `study_summary`). One mechanical follow-up from that session:
   `pnpm check:shapes:crosswalk:refresh` from a machine with DB access (the cloud container's
   egress blocked the DB hostname; the kind rows are live so the refresh needs no decisions).
-- **Gray area, needs Arman's ruling, not an agent's.** (a) `features/education/assessment/**`
+- **Gray area, needs Arman's ruling, not an agent's.** `features/education/assessment/**`
   renders `education.assessment_item` rows (question / options / correct_answer / explanation) —
-  the `quiz_set` shape plus grading, attempts and trust. (b)
-  `features/marketing/search-console/components/classification/KeywordClassificationWorkspace.tsx`
-  is a thousand-row table over the persisted classification columns whose kind
-  (`keyword_classification_v1`) renders as cards. Both are persisted entities with lifecycles rather
-  than re-rendered envelopes, and both already share the canonical child chips where they exist.
-  Neither should be "fixed" without a decision.
+  the `quiz_set` shape plus grading, attempts and trust. A persisted entity with a lifecycle
+  rather than a re-rendered envelope, and it already shares the canonical child chips where
+  they exist. Should not be "fixed" without a decision.
+  (2026-08-25 — the other half of this bullet, the classification workspace's
+  thousand-row table over persisted classification columns, is moot: KI-036
+  deleted `KeywordClassificationWorkspace.tsx` and the whole `?view=classification`
+  surface — the Keyword Workbench reached parity on assignment.)
 - **Two dispatch tables for canvas artifacts.** `features/canvas/core/CanvasRenderer.tsx:342-520`
   keeps a legacy `switch` beside `features/canvas/artifact-types/artifact-renderers.tsx`'s
   `RENDERERS` map. Both delegate to the canonical components, so no shape is duplicated — but the

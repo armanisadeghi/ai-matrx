@@ -7,7 +7,8 @@ Relationships" card). Cross-repo contract of record:
 
 The site-scoped surface is
 `/marketing/brands/[brandId]/sites/[siteId]/keywords` → `SiteKeywordsView`
-(`components/SiteKeywordsView.tsx`), two URL-selected views on one route:
+(`components/SiteKeywordsView.tsx`), URL-selected views on one route (`start`
+· `performance` · `workbench` — declared in `lib/site-subviews.ts`):
 
 - **Performance** (default) — `SiteKeywordPerformanceWorkspace`: the latest
   persisted 28-day search-provider query observations with canonical
@@ -21,12 +22,16 @@ The site-scoped surface is
   vocabulary: `candidate` → Opportunity, null → Not tracked, `ignored` → Not
   pursuing, and `suppressed` → Excluded by strategy. Suppression is displayed
   but not directly selectable because it requires a recorded strategy reason.
-- **Classification** (`?view=classification`) — the GSC traffic-class
-  truth-editing surface, owned by the search-console feature
-  (`features/marketing/search-console/components/classification/KeywordClassificationWorkspace.tsx`;
-  rules in [`features/marketing/search-console/FEATURE.md`](../../search-console/FEATURE.md)
-  § Classification UI). The Insights tab's Traffic-quality summary deep-links
-  here (`?view=classification&f_traffic_class=select:<class>`).
+- **Workbench** (`?view=workbench`) — THE assignment surface
+  (`features/marketing/seo/keyword-workbench/`): search, bulk-assign any
+  dimension with a reason, dynamic dimension columns, saved views. Retired
+  2026-08-25 (KI-036): the dedicated `?view=classification` traffic-class
+  truth-editing surface — the Workbench reached parity on assignment; see
+  [`features/marketing/search-console/FEATURE.md`](../../search-console/FEATURE.md)
+  § Classification UI for where its three unique panels went. The Insights
+  tab's Traffic-quality summary now deep-links here
+  (`?view=workbench&st=traffic_class:<class>`), and an old
+  `?view=classification` bookmark lands here too, never a crash.
 
 ## Data flow — the two-lane rule, exactly
 
@@ -264,6 +269,13 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-25 — **KI-036: `?view=classification` retired.** `SiteKeywordsView`
+  dropped the `classification` branch; the Workbench reached parity on
+  assignment. An old `?view=classification` (or `?tab=classification`) link
+  now lands on the Workbench instead of crashing. See
+  [`features/marketing/search-console/FEATURE.md`](../../search-console/FEATURE.md)
+  § Classification UI for the full retirement note and where its three panels
+  went.
 - 2026-08-24 — **Organic keyword performance joined the keyword-intelligence
   family.** The Performance tab (`SiteKeywordPerformanceWorkspace`) was the
   ADOPTION-SWEEP's "single most jarring" gap: 4,355 rows with no right-click at

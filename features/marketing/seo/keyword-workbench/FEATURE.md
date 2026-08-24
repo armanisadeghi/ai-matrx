@@ -9,8 +9,12 @@ timestamp: 2026-08-24
 # Keyword Workbench (C14)
 
 **Route:** `/marketing/brands/[brandId]/sites/[siteId]/keywords?view=workbench`
-(sibling sub-views on the same route: `performance`, `classification` — the
-latter folds into this one at parity, C18).
+(sibling sub-views on the same route: `start`, `performance`).
+`?view=classification` — the old dedicated traffic-class TEACHING surface —
+folded into this one at parity and was DELETED 2026-08-25 (KI-036, C18); an
+old `?view=classification` link lands here now, never a crash. See
+[`features/marketing/search-console/FEATURE.md`](../../search-console/FEATURE.md)
+§ Classification UI for the retirement note.
 
 > 🚨 **The GRID here is not this feature's.** Since 2026-08-24 the workbench
 > renders `<KeywordTable>` — see
@@ -232,6 +236,16 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
 
 ## Change log
 
+- **2026-08-25** — **KI-036: `?view=classification` folded in and deleted.**
+  The Workbench reached parity on assignment (traffic class is an ordinary
+  dimension here, assignable with a reason like any other), so the old
+  dedicated "Teach classes" surface and its whole component tree
+  (`search-console/components/classification/`) were deleted — no shim, no
+  redirect stub beyond `SiteKeywordsView`'s existing view-param fallback. The
+  three things only it owned went elsewhere: business guidelines to
+  `…/value/guidelines`, the brand-alias panel into THE MATCHER EDITOR
+  (`brand_identity` matchers), the class-rule panel retired with the
+  Rulebook. Full note: `search-console/FEATURE.md` § Classification UI.
 - **2026-08-25** — **KI-021: saved views proven live, CRUD moved to the shared
   keyword-table layer.** The URL codec (`viewStateFor` / `stateFromViewState`
   / `viewStateMatches`) already lived in `keyword-table/state.ts` and this

@@ -361,142 +361,82 @@ the reader ("3 rulings are set to Bronze — choose where they move before remov
 verbatim and leaves everything else to `assertData`'s generic sentence. Do not route a new
 vocabulary write through bare `assertData` — it swallows the rule.
 
-## Classification UI — the manual truth-editing surface (2026-08-08)
+## Classification UI — RETIRED 2026-08-25 (KI-036)
 
-Classification is important enough for a DEDICATED UI (Arman, 2026-08-08).
-It lives on the per-site keywords route —
-`/marketing/brands/[brandId]/sites/[siteId]/keywords?view=classification`
-(`components/classification/KeywordClassificationWorkspace.tsx`, rendered by
-the keyword-research feature's `SiteKeywordsView` toggle) — NOT a new
-top-level route. Entry points: the Traffic-quality summary rows link every
-class into it (`Classify →` / `Review →`,
-`?view=classification&f_traffic_class=select:<class>`; the legacy
-`/marketing/sites/[siteId]/...` shim keeps such links brand-free).
+The dedicated `?view=classification` ("Teach classes") workspace described in
+this section from 2026-08-08 through 2026-08-24 — its whole component tree
+(`components/classification/`), the floating panel
+(`windows/KeywordClassificationWindow.tsx`, overlay
+`keywordClassificationWindow`), and every link that offered it — is DELETED.
+The Keyword Workbench (`../seo/keyword-workbench/FEATURE.md`) reached parity
+on assignment, so the fold completed and the three things the old view
+uniquely owned found real homes:
 
-- **Read:** `seo.gsc_keyword_class_review`
-  ([`migrations/seo_keyword_class_layered_filters.sql`](../../../migrations/seo_keyword_class_layered_filters.sql))
-  — every GSC-active keyword for a 28-day window with class, class_source,
-  clicks/impressions (volume is what makes review meaningful), AI intent,
-  and the valuation row's override/notes. Winning-run dedup per THE
-  ACCURACY CONTRACT; server-paged/sorted/filtered (class + source accept
-  arrays because the table's select filters are multi-choice — a filter the
-  server can't serve must not render). The ordinary keyword search stays the
-  primary control and now exposes Contains / Whole words directly beside the
-  input; `q_match=whole_words` is URL-stable and the live RPC applies every
-  entered token as a complete word before count/pagination. Advanced adds up
-  to 20 ordered AND layers over keyword,
-  class/source, impressions, clicks, CTR percentage, AI intent, notes, ruling
-  origin, and confirmation state. Whole-word include/exclude semantics support
-  workflows such as `ITAD` minus `what` / `how` / `meaning`; numeric column
-  ranges and advanced rules use the same server evaluator, so a 10–100 clicks
-  range filters the entire dataset. Every visible data column sorts and filters.
-  URL parameter `layers` preserves rule order; Clear all owns search, column
-  filters, and layers together.
-- **Write:** `seo.gsc_set_keyword_class` is THE one human write path
-  (single + bulk share it; bulk carries ONE shared notes field). It writes
-  the explicit `traffic_class` column AND the semantic columns exactly as
-  the resolver reads them (money→content_role='money_page';
-  educational→'supporting_content'; mismatch→service_match='not_offered';
-  brand→traffic_class only), clears contradicting mismatch triggers on
-  positive rulings (resetting workflow_status 'suppressed'→'candidate' —
-  the table CHECK forbids suppressed-without-reason), and `clear` reverts
-  to machine classification. **Mismatch REQUIRES notes** — a ruling must
-  carry its case (server-enforced: `gsc_mismatch_needs_notes`). It returns
-  the RESOLVED (class, class_source) rows so the UI confirms the flip to
-  `site_value` from server truth. Gate: `seo.gsc_assert_site_editor` —
-  the SAME editor predicate as the table's RLS, once per call (direct
-  table writes are not granted to `authenticated`).
-- **Provenance always visible** — `ClassSourceChip` (vocabulary
-  `types.ts::GSC_CLASS_SOURCES`) beside every class; any `site_value` row
-  offers "Clear ruling", including legacy semantic-column rulings. The
-  class chip itself IS the control (`ClassCell` — a dropdown fed by
-  `GSC_TRAFFIC_CLASSES`, so a new class needs zero cell changes; Arman's
-  ruling 2026-08-08: never a fixed button row).
-- **Workbench v2 (2026-08-08)** — the full spec landed the same day:
-  - **Live scoreboard** (`ClassStatsBand` over `gsc_perf_class_summary`):
-    per-class keywords/clicks/impressions + the Unclassified countdown,
-    moving on every ruling (the `["marketing","gsc"]` invalidation IS the
-    gamification loop). Tiles filter the table; an unconfirmed chip filters
-    to auto-applied rulings awaiting human eyes.
-  - **Pattern rules** (`seo.keyword_class_rule`, architecture mirrors
-    `gsc_dig_rule`: ownerless world-readable templates with fixed UUIDs
-    `a1d18001-…` re-seeded by `migrations/seo_keyword_class_rules.sql`,
-    owned user rules, copy-insert adoption). Match kinds
-    contains/word/exact/starts_with/ends_with — matching is SERVER-side
-    (`gsc_keyword_class_review` p_pattern/p_match); preview pipes a rule's
-    live matches into the main table preselected, the user prunes, then
-    applies (origin='rule', confirmed=true). Per-rule `auto_apply` opt-in
-    runs once per site per session over NEW unclassified matches with
-    confirmed=false (flagged amber until confirmed via
-    `gsc_confirm_keyword_class`); the editor suppresses offering
-    auto-apply while the current preview is pruned. Provenance rides
-    `site_keyword_value.metadata.classification`
-    ({origin, rule_id, confirmed, applied_at}).
-  - **CSV / workbook round trip** (`ImportExportMenu`): full filtered
-    export, import template, CSV import via papaparse, "Send to workbook"
-    (`pushTableToWorkbook`, features/data-tables) and "Import from
-    workbook" (`getLatestSnapshot` → the NEW
-    `features/data-tables/univer-snapshot-rows.ts` reader). EVERY import
-    path lands in `seo.gsc_class_import` — server dry-run diff (change /
-    cleared / unchanged / unknown_keyword / invalid_class / missing_notes)
-    shown before anything applies; apply routes through
-    `gsc_set_keyword_class` server-side (one mapping, one home).
-  - **Classify with AI** — the EXISTING universal classifier
-    (`seo.keyword_classifier` mandate via aidream
-    `POST /seo/keywords/classify`, **20-id chunks with a 95s header budget**: the
-    route is synchronous and a 40-keyword batch measured 87.8s live, while
-    Cloudflare cuts a request at ~100s — see `lib/api/FEATURE.md` § Long
-    synchronous compute;
-    admin-gated server-side): selection or filtered-unclassified batch; results land
-    as `intent_class` = "AI intent" provenance, overridable like any
-    machine signal. The Site Intake Wizard (`intake/`) stays the
-    whole-site AI interview; this is the surgical batch complement.
-  - **Floating panel** (`windows/KeywordClassificationWindow.tsx`, overlay
-    `keywordClassificationWindow`, opener
-    `features/overlays/openers/keywordClassificationWindow.tsx`,
-    ephemeral, viewport-clamped rect): the SAME workspace with
-    `urlState={false}` (local table state — the page underneath owns the
-    URL). Entry: "Classify in panel" atop Traffic quality; the workspace
-    component is props-based (siteId/siteDomain/organizationId) so any
-    surface can mount or open it.
-  - Next round (documented, not built): sub-class / second-layer
-    classification — comparison-style clues ("vs", "before and after")
-    don't fit the four classes and await a sub-class vocabulary ruling.
-- The AI interview/wizard is a SEPARATE program (aidream
-  `docs/handoffs/content-ir-slots.md`); this surface is the manual
-  truth layer beside it. Never fork a second write path for classes —
-  extend `gsc_set_keyword_class`.
+- **Business guidelines editor** → its own door,
+  `features/marketing/seo/value-system/guidelines/GuidelinesWorkbench.tsx`
+  at `…/value/guidelines`. The editor itself
+  (`KwGuidelinesPanel.tsx`) MOVED there unchanged — same write path
+  (`setKwGuidelines` → `seo.gsc_set_site_kw_guidelines`).
+- **Brand-alias panel** → folded into THE MATCHER EDITOR
+  (`features/marketing/seo/value-system/dimensions/MatcherEditor.tsx`,
+  `…/value/dimensions`): an alias is now added as a `brand_identity` matcher
+  on the platform "Brand" value (`traffic_class:brand`), through the same
+  `dimension_matcher_upsert` / `dimension_matcher_delete` RPCs every other
+  matcher uses. `seo.gsc_matcher_reach_preview` was widened
+  (`migrations/seo_ki036_matcher_reach_preview_brand_identity.sql`) to accept
+  `brand_identity` as a text-pattern kind (contains semantics) so Preview
+  reach works for a brand draft too.
+- **Class-rule panel** → not moved; it retires with the Rulebook
+  (`../seo/value-system/rules/MeaningRulesWorkbench.tsx`, `…/value/rules`)
+  already covering the same job (KI-007/KI-035).
 
-## Universal facets — the backfill strip (2026-08-21)
+`?view=classification` and its legacy `?tab=classification` alias now land on
+the Workbench (never a crash) via `SiteKeywordsView`'s legacy-link check.
 
-**Two planes, two bands, never merged.** `ClassStatsBand` is the SITE's traffic classes
-(money / educational / brand / mismatch — this site's rulings). `FacetBackfillStrip`
-directly beneath it is the UNIVERSAL plane: the 13 intent facets on `seo.keyword`, one
-classification per phrase shared by every tenant (P3), which every rule in the Keyword
-Value System reads. A site ruling and a platform-wide fact are not the same kind of truth,
-so they never share a band.
+**What did NOT get a new home, and is a genuine capability loss until someone
+gives it one:** `FacetBackfillStrip` — the universal 13-facet coverage meter
+(§ "Universal facets" below, now also retired) — had no other surface reading
+`seo.keyword_classification_status`. Flagged to KI-022 (dimension coverage
+meter).
 
-**Why it exists.** On 2026-08-21 only 1,835 of 196,483 keyword rows carried facets, so
-`free_seeking ⇒ ×0.2` and every sibling value rule was a silent no-op — and no screen said
-so. Same failure mode as the five dead days of GSC ingestion that produced
-`IngestionHealthBanner`: recorded everywhere, surfaced nowhere.
+**Still live, unchanged by this retirement:** `seo.gsc_set_keyword_class` (the
+one human write path for `traffic_class`, still called by
+`keyword-research/components/SiteKeywordsWriteTargets.tsx` and
+`value-system/suggestions/apply.ts`), `seo.gsc_keyword_class_review`,
+`seo.keyword_class_rule` and its RPCs, `seo.gsc_class_import`,
+`seo.keyword_classifier` (the AI classifier mandate) — none of these DB
+objects were dropped (KI-035 owns that decision separately). Only the
+FRONTEND surfaces that called the now-dead ones
+(`getGscClassReview[All]`, `confirmGscKeywordClass`, `getGscBrandIdentity`,
+`getGscBrandAliasPreview`, `setGscBrandAliases`, `importGscKeywordClasses`,
+`classifyKeywordsWithAi`, `getFacetBackfillStatus`, `runFacetBackfillPass`)
+were trimmed from `data-classification.ts` — they had zero remaining callers
+once the workspace was gone.
 
-**Server state, not tab state.** The strip renders
-`seo.keyword_classification_status(site_id, min_impressions)`. A tab closed mid-pass
-returns to the true number and a second tab agrees with the first, because the progress
-lives in `seo.keyword_classification_queue`, not in this document. "Classify next"
-advances that ledger by one bounded pass
-(`POST /seo/keywords/classification/backfill`) — it does not own a loop.
+## Universal facets — the backfill strip — RETIRED 2026-08-25 (KI-036)
 
-**The headline is clicks.** ~68,000 GSC-active keywords, of which ~1,400 have ever earned
-a click, so "2% of keywords" and "52% of Search Console clicks" are both true and only one
-describes the business. Click coverage is the primary meter; keyword coverage is the quiet
-second one, because a percentage that can only crawl is not a progress bar anyone believes.
+`FacetBackfillStrip` lived inside the now-deleted classification workspace
+and had no other mount point, so it was deleted with it — a genuine
+capability loss, not a fold: nothing in the app today shows
+`seo.keyword_classification_status(site_id, min_impressions)`. The DB read
+and the aidream backfill service below are untouched and still correct; only
+the UI that surfaced them is gone. Flagged to KI-022 (dimension coverage
+meter) as the place this should resurface.
 
-**The demand floor is reported, never silent.** Keywords below the
-`seo.keyword_classification.min_impressions` knob are shown as held back — not classified
-and not counted as done. The strip reads that knob (`fetchFeatureKnobValues`) rather than
-assuming a number, so what it reports is what the server is actually applying.
+What it used to say, for whoever rebuilds it: **two planes, two bands, never
+merged** — the site's own traffic classes (money / educational / brand /
+mismatch) are a different kind of truth from the UNIVERSAL 13 intent facets
+on `seo.keyword` (one classification per phrase, shared by every tenant, P3,
+read by every Keyword Value System rule) — a site ruling and a platform-wide
+fact must never share a band. **Server state, not tab state** — progress
+lives in `seo.keyword_classification_queue`, so a closed tab and a second tab
+always agree; "Classify next" advances that ledger by one bounded pass
+(`POST /seo/keywords/classification/backfill`) rather than owning a loop.
+**The headline is clicks, not keywords** — most keywords never earn a click,
+so click-coverage is the meter anyone should trust. **The demand floor is
+reported, never silent** — keywords below
+`seo.keyword_classification.min_impressions` are shown held back, not
+silently uncounted.
 
 Cross-repo SoR: `../../../../common-docs/systems/marketing/seo/seo-keywords/value-system.md`.
 Server half: `aidream/services/seo/keyword_classification_backfill.py`.
@@ -523,13 +463,14 @@ classification and valuation run for that site.
   client. Blank text CLEARS the document rather than storing an empty string.
 - **Client:** `data-kw-guidelines.ts` (shared query key, so a save in one
   workbench refreshes the other). **Editor:**
-  `components/classification/KwGuidelinesPanel.tsx` — beside Brand and Rules.
-  It always shows provenance (who/when/version) and calls out a document that
-  has gone 90 days without an edit; the toolbar button carries a warning dot
-  when the site has none, and the post-sweep toast says plainly when a batch
-  ran with no business context. **Read-only surfacing:** the value workbench's
-  "How value is computed" panel
-  (`features/marketing/seo/value-system/variants/c/MeaningPanel.tsx`), with a
+  `features/marketing/seo/value-system/guidelines/KwGuidelinesPanel.tsx`,
+  its own door at `…/value/guidelines`
+  (`value-system/guidelines/GuidelinesWorkbench.tsx`) — moved here 2026-08-25
+  (KI-036) from the retired classification workspace, unchanged. It always
+  shows provenance (who/when/version) and calls out a document that has gone
+  90 days without an edit. **Read-only surfacing:** the value workbench's "How
+  value is computed" panel
+  (`features/marketing/seo/value-system/workbench/MeaningPanel.tsx`), with a
   door back to the one place it is authored.
 - **Server:** aidream `services/seo/kw_guidelines.py` is the ONE loader. The
   text reaches the agent as the NAMED variable `business_guidelines` — never
@@ -550,18 +491,26 @@ classification and valuation run for that site.
 
 ## Brand identity — the system and what remains
 
-Deterministic matching covers the derivable identity; everything else
-enters through **`web.brand.profile->'brand_aliases'`** — extend that
-array, never the resolver's alias derivation, for per-site knowledge
-(people, legal names, DBAs, misspellings). Server primitives (ONE
-derivation, in `seo_gsc_class_rpcs.sql`): `gsc_brand_aliases` (derive) →
-`gsc_brand_hits` (corpus scan) → consumed by BOTH `gsc_keyword_class_map`
-and `gsc_brand_identity` (the UI narrator: alias, origin, match counts,
-genericity demotion). Writers: `gsc_set_brand_aliases` (the
-classification workspace's Brand panel —
-`components/classification/BrandIdentityPanel.tsx`) and the intake
-wizard's accepted proposals (server-side apply) — same array, no other
-write path. Live aliases: All Green + Titanium → "arman sadeghi"; IOPBM
+Deterministic matching covers the derivable identity (domain / site name /
+brand name). Two writers exist side by side after 2026-08-25 (KI-036):
+
+- **Legacy custom aliases** — `web.brand.profile->'brand_aliases'`, written
+  by `gsc_set_brand_aliases` and consumed by `gsc_brand_aliases` (derive) →
+  `gsc_brand_hits` (corpus scan) → `gsc_keyword_class_map` /
+  `gsc_brand_identity` (the narrator: alias, origin, match counts, genericity
+  demotion). The classification workspace's Brand panel that used to write
+  this array is DELETED; existing aliases in it keep matching unchanged, and
+  the intake wizard's accepted proposals still land here (server-side apply)
+  — but nothing in the app writes NEW rows to it any more.
+- **Going forward** — a new alias is a `brand_identity` matcher on the
+  platform "Brand" value (`traffic_class:brand`), added through THE MATCHER
+  EDITOR (`value-system/dimensions/MatcherEditor.tsx`, `…/value/dimensions`)
+  and the same `dimension_matcher_upsert` RPC every other matcher uses — see
+  KI-036 in the register. Whether/how these two alias stores should converge
+  (migrate the legacy array into matcher rows) is not decided; both are read
+  live today.
+
+Live legacy aliases: All Green + Titanium → "arman sadeghi"; IOPBM
 → "angie sadeghi", "angizeh sadeghi"; datadestruction → "arman
 sadeghi", "datastruction". Open items:
 
@@ -750,6 +699,17 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-25 — **KI-036: the classification UI retired.** Deleted the whole
+  `?view=classification` component tree (`components/classification/`, the
+  floating panel + its overlay registration) and every link that offered it.
+  The business-guidelines editor moved to its own door,
+  `value-system/guidelines/` at `…/value/guidelines`; the brand-alias panel
+  folded into the Matcher Editor as `brand_identity` matchers (with
+  `gsc_matcher_reach_preview` widened to accept the kind); the class-rule
+  panel retired with the Rulebook (`…/value/rules`). `data-classification.ts`
+  trimmed to its one remaining live export (`setGscKeywordClass`) — no DB
+  objects dropped. `FacetBackfillStrip` (universal facet coverage) lost its
+  only mount point and has no replacement yet — flagged to KI-022.
 - 2026-08-24 — Debounced the two controlled Search Console paths that did not
   use `useMarketingTableState`: `GscDimensionTable` waits 300 ms before its
   breakdown read, and the classification WindowPanel's local state waits 250

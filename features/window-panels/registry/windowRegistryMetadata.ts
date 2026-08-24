@@ -1462,23 +1462,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   // ── Keyword Classification ────────────────────────────────────────────────
   // The traffic-class truth editor for one site's GSC keywords in a floating
   // window (features/marketing/search-console/components/classification/).
-  // Open with `useOpenKeywordClassificationWindow({ siteId, siteDomain })`.
-  // Ephemeral: everything it shows is server-backed; filters are cheap to
-  // re-pick, and the page underneath owns the URL.
-  {
-    slug: "keyword-classification-window",
-    overlayId: "keywordClassificationWindow",
-    kind: "window",
-    label: "Keyword Classification",
-    defaultData: {
-      siteId: "",
-      siteDomain: "",
-      organizationId: "",
-    },
-    ephemeral: true,
-    mobilePresentation: "fullscreen",
-  },
-
   // ── Keyword Intelligence ──────────────────────────────────────────────────
   // The canonical keyword dossier (features/marketing/seo/keyword/
   // KeywordIntelPanel) in a floating window: market metrics + classification,

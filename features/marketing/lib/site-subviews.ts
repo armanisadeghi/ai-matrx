@@ -170,11 +170,14 @@ export const MARKETING_SITE_SUBVIEWS = [
     //
     // C14 — the WORKBENCH is where a person gives keywords meaning: find
     // exactly the ones you mean, assign a value with a reason, keep the
-    // arrangement as a tab. `classification` is NOT redundant with it and did
-    // not fold in C18: it uniquely owns the class MATCHERS (patterns), the
-    // brand names, the business guidelines every AI run reads, CSV
-    // import/export and the batch AI classifier. So it keeps its route and
-    // wears a label that says which of those jobs it does.
+    // arrangement as a tab. `classification` (`?view=classification`, "Teach
+    // classes") folded in on 2026-08-25 (KI-036) once the Workbench reached
+    // parity on assignment — its three unique jobs found real homes: the
+    // business-guidelines editor moved to `value:guidelines`, the brand-alias
+    // panel folded into the matcher editor (KI-008, `value:dimensions`), and
+    // the class-rule panel retired with the Rulebook (`value:rules`). The
+    // view and its whole component tree were deleted; an old
+    // `?view=classification` bookmark now lands on this Workbench.
     section: "keywords",
     views: [
       {
@@ -192,12 +195,6 @@ export const MARKETING_SITE_SUBVIEWS = [
         label: "Workbench",
         purpose:
           "Say what a keyword IS — set its class or any dimension, with your reason.",
-      },
-      {
-        id: "classification",
-        label: "Teach classes",
-        purpose:
-          "Teach the system to class keywords itself: patterns, brand names, your guidelines, AI.",
       },
     ],
   },
@@ -243,6 +240,12 @@ export const MARKETING_SITE_SUBVIEWS = [
         id: "packs",
         label: "Industry packs",
         purpose: "Start from your industry's defaults instead of a blank page.",
+      },
+      {
+        id: "guidelines",
+        label: "Guidelines",
+        purpose:
+          "What the AI must know about this business before it judges a keyword.",
       },
       {
         id: "discovery",

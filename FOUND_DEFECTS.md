@@ -1536,7 +1536,7 @@ No-Dead-Ends audit worklist; fix by extending the canonical item detail, never a
 - P0: `components/operations/BatchDetailWorkspace.tsx` item detail = label/subject/metadata only; build one canonical `BatchItemDetail`.
 - P0: `components/media/SiteVideosView.tsx` persists AI title/description/keywords/schema but exposes only title + a badge.
 - P1: `components/backlinks/ReferringDomainIntelligenceTable.tsx` hides most fields, disables sort/filter on most columns.
-- P1: GSC query rows in `search-console/components/{GscDimensionTable,dig/DigResultsTable,watch/WatchlistTab,classification/KeywordClassificationWorkspace}.tsx` don't use the Keyword Intelligence window.
+- P1: GSC query rows in `search-console/components/{GscDimensionTable,dig/DigResultsTable,watch/WatchlistTab}.tsx` don't use the Keyword Intelligence window.
 - P1: `components/ranks/RanksWorkspace.tsx` — inert result URLs; forks a weaker SERP renderer instead of `SerpResult`.
 - P1: `content-plan/components/NodeAssociations.tsx` — relationships as truncated labels without entity doors.
 - P1: inert provider inventories in `components/integrations/MarketingConnectionsWorkspace.tsx`; Bing accounts as shortened UUIDs in `bing/BingConnectionsWorkspace.tsx`.

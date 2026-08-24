@@ -12,7 +12,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Gem, Scale, Tags } from "lucide-react";
-import { useOpenKeywordClassificationWindow } from "@/features/overlays/openers/keywordClassificationWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
@@ -197,7 +196,6 @@ export function QualityView({
   // what it is WORTH. Both filter the same movers list, independently.
   const [valueLevel, setValueLevel] = useState<string | null>(null);
   const [direction, setDirection] = useState<"gain" | "loss">("loss");
-  const openClassificationWindow = useOpenKeywordClassificationWindow();
   const summary = useGscClassSummary(siteId, periods);
   const valueSummary = useQuery({
     queryKey: [
@@ -487,19 +485,13 @@ export function QualityView({
       {/* The evaluated windows live in the tab-level GscPeriodStrip — ONE
           place, never a second period label here. */}
       <div className="flex shrink-0 justify-end">
-        <button
-          type="button"
+        <Link
+          href={marketingRoutes.site(null, siteId, "/keywords?view=workbench")}
           className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title="Open the classification workbench in a floating panel — rule on keywords without leaving this view"
-          onClick={() =>
-            openClassificationWindow({
-              siteId,
-              siteDomain: siteName ?? siteId,
-            })
-          }
+          title="Open the Keyword Workbench — rule on keywords"
         >
-          <Tags className="h-3 w-3" /> Classify in panel
-        </button>
+          <Tags className="h-3 w-3" /> Classify keywords
+        </Link>
       </div>
       {headline ? (
         // The weekly read, in one sentence, in the place Arman already looks.
@@ -535,11 +527,11 @@ export function QualityView({
           }
           rowActions={(row) => (
             <Link
-              href={`/marketing/sites/${siteId}/keywords?view=classification&f_traffic_class=select:${row.traffic_class}`}
+              href={`/marketing/sites/${siteId}/keywords?view=workbench&st=traffic_class:${row.traffic_class}`}
               className="whitespace-nowrap text-[11px] text-primary hover:underline"
               title={
                 row.traffic_class === "unclassified"
-                  ? "Open the classification queue — every unclassified keyword, biggest impressions first"
+                  ? "Open the Workbench — every unclassified keyword, biggest impressions first"
                   : `Review and override ${row.traffic_class} keywords`
               }
             >

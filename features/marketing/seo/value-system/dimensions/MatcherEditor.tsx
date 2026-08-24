@@ -17,19 +17,23 @@
  * approval flow and the ruling session's rule writer already use. This screen
  * adds no fourth.
  *
- * Only PATTERN matchers (exact / word / contains / starts_with / ends_with)
- * are authored here. `place` matchers come from the geo-area editor (KI-009,
- * `site → Value → Rules & Geo`), `brand_identity` from the brand-alias flow,
- * and `condition` from Dig Here — each already has its own screen and its own
- * shape of "what would this catch". All four kinds still LIST here, read-only
- * beyond enable/disable/delete, so a value's matchers are never split across
- * two places to look.
+ * PATTERN matchers (exact / word / contains / starts_with / ends_with) and
+ * `brand_identity` are authored here — KI-036 folded the old classification
+ * workspace's brand-alias panel into this screen: an alias IS a
+ * `brand_identity` matcher on the brand dimension's value, added, disabled and
+ * removed through the same two canonical functions as every other pattern.
+ * `place` matchers come from the geo-area editor (KI-009,
+ * `site → Value → Rules & Geo`), and `condition` from Dig Here — each already
+ * has its own screen and its own shape of "what would this catch". Those two
+ * kinds still LIST here, read-only beyond enable/disable/delete, so a value's
+ * matchers are never split across two places to look.
  */
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronsRight,
+  Fingerprint,
   Loader2,
   MapPin,
   BadgeCheck,
@@ -88,6 +92,11 @@ const PATTERN_KINDS = [
   { key: "exact", label: "Exact phrase", hint: "the entire search, nothing else" },
   { key: "starts_with", label: "Starts with", hint: "the phrase opens with this" },
   { key: "ends_with", label: "Ends with", hint: "the phrase closes with this" },
+  {
+    key: "brand_identity",
+    label: "Brand identity",
+    hint: "a name, misspelling or legal form that IS this brand — people, DBAs, and known variants",
+  },
 ] as const;
 type PatternKind = (typeof PATTERN_KINDS)[number]["key"];
 
@@ -103,7 +112,7 @@ const KIND_META: Record<
   place: { label: "Place", icon: MapPin, editableHere: false },
   fact: { label: "Fact", icon: ShieldCheck, editableHere: false },
   condition: { label: "Dig Here segment", icon: Timer, editableHere: false },
-  brand_identity: { label: "Brand identity", icon: BadgeCheck, editableHere: false },
+  brand_identity: { label: "Brand identity", icon: Fingerprint, editableHere: true },
 };
 
 function kindMeta(kind: string) {

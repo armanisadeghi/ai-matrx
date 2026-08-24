@@ -6,7 +6,7 @@
  * of rows the user has to go dig for. Zero tokens to notice (the existing
  * `seo.gsc_perf_*` algorithm RPCs ARE the noticing); the accepted action is
  * real: launch the SEO page-analyzer agent pre-filled with the finding's
- * code-compressed context, or navigate to the classification workbench /
+ * code-compressed context, or navigate to the Keyword Workbench /
  * intake wizard.
  *
  * Producer rules honored (features/assists/FEATURE.md):
@@ -224,7 +224,7 @@ function classifyCandidate(
   }
   const sharePct = Math.round(share * 100);
   // Mostly-unclassified site → the whole-site AI intake interview is the
-  // right first move; otherwise the manual/AI classification workbench.
+  // right first move; otherwise the Keyword Workbench.
   const severe = share >= CLASSIFY_INTAKE_SHARE;
   return {
     sourceKey: `${SOURCE_PREFIX}.classify`,
@@ -233,12 +233,12 @@ function classifyCandidate(
       : `Classify your traffic — ${sharePct}% of clicks are unclassified`,
     body: severe
       ? `${unclassified.clicks} of ${totalClicks} clicks in the last 28 days of data carry no traffic class, so quality decomposition is mostly blind. The AI intake interview reads the site's real GSC history and proposes class boundaries you approve.`
-      : `${unclassified.clicks} of ${totalClicks} clicks in the last 28 days of data carry no traffic class. The classification workbench has pattern rules and a batch AI classifier to clear the backlog.`,
+      : `${unclassified.clicks} of ${totalClicks} clicks in the last 28 days of data carry no traffic class. The Keyword Workbench assigns class with a reason, and dynamic dimension columns.`,
     action: {
       kind: "navigate",
       href: severe
         ? marketingRoutes.siteSettings(null, siteId, "intake")
-        : `/marketing/sites/${siteId}/keywords?view=classification&f_traffic_class=select:unclassified`,
+        : `/marketing/sites/${siteId}/keywords?view=workbench&st=traffic_class:unclassified`,
     },
     surfaceName: GSC_ASSIST_SURFACE,
     dedupeKey: `${SOURCE_PREFIX}.classify:${siteId}`,
