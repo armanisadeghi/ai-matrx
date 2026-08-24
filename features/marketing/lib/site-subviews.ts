@@ -242,6 +242,16 @@ export const MARKETING_SITE_SUBVIEWS = [
         purpose: "Start from your industry's defaults instead of a blank page.",
       },
       {
+        // The site rung of the settings ladder (KI-046). The three tiers above
+        // it are /administration/knowledge/seo-value-settings,
+        // /organizations/[orgId]/settings/keyword-value and
+        // /marketing/brands/[brandId]/settings.
+        id: "settings",
+        label: "Settings",
+        purpose:
+          "The starting score and the levels this site uses — or what it inherits from the brand.",
+      },
+      {
         id: "guidelines",
         label: "Guidelines",
         purpose:

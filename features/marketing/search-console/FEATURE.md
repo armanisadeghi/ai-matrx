@@ -328,6 +328,21 @@ has the plan. If you write a `gsc_perf_*` read that joins a map per keyword, joi
 
 **The vocabularies are editable, and that is the point** (Arman, 2026-08-21: "the rules
 can't live in the agent's head"). Two planes, two paths:
+- **THE SETTINGS LADDER (KI-046, 2026-08-25)** — the score baseline and the
+  level thresholds cascade **platform → organization → brand → site**; the
+  nearest scope with an answer wins and a scope that says nothing is never
+  overwritten from above. ONE editor
+  (`features/marketing/seo/value-system/settings/ValueSettingsEditor.tsx`) is
+  mounted at all four rungs — `/administration/knowledge/seo-value-settings`,
+  `/organizations/[orgId]/settings/keyword-value`,
+  `/marketing/brands/[brandId]/settings`, and the site's own
+  `…/value/settings` (sub-view `value:settings`). ONE write path
+  (`seo.set_value_settings`) carries the permission gate for every scope, and
+  `p_clear` hands a setting back up the ladder — never copy a parent's number
+  down, which looks identical and freezes the child forever.
+  🚨 **This is platform doctrine for EVERY marketing setting, not just this
+  one:** `../../../common-docs/policies/settings-ladder.md`. Read it before
+  adding any configurable number, threshold or default anywhere in marketing.
 - **Site bands** — `features/marketing/seo/value-system/vocabulary/BandVocabularyEditor.tsx`,
   opened from "How value is computed" on the workbench. Adopt-then-edit: the platform
   template is copied in on first save and the site owns its vocabulary after that.

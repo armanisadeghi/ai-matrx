@@ -93,7 +93,9 @@ describe("marketing site sub-view registry", () => {
   });
 
   it("recognizes only declared views", () => {
-    expect(isMarketingSubView("keywords", "classification")).toBe(true);
+    // `keywords:classification` was folded into the Workbench and deleted
+    // (KI-036, 2026-08-25); this assertion outlived it and left the suite red.
+    expect(isMarketingSubView("keywords", "workbench")).toBe(true);
     expect(isMarketingSubView("keywords", "performance")).toBe(true);
     expect(isMarketingSubView("keywords", "nope")).toBe(false);
     expect(isMarketingSubView("settings", "performance")).toBe(false);
@@ -167,15 +169,20 @@ describe("marketing site sub-view registry", () => {
     // into the Workbench and was deleted; the business-guidelines editor it
     // uniquely owned got its own door, `value:guidelines`. One out, one in —
     // 51 stays 51, 73 stays 73.
+    //
+    // 2026-08-25 — KI-046: `value:settings`, the SITE rung of the settings
+    // ladder (platform -> organization -> brand -> site). The three tiers above
+    // it live outside this map, so only this one is counted here.
+    // 51 + 1 = 52, 73 + 1 = 74.
     expect(MARKETING_SITE_SECTIONS.length).toBe(22);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(51);
+    ).toBe(52);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      73,
+      74,
     );
   });
 });
