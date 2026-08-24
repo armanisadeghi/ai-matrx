@@ -26,7 +26,7 @@
 
 import "server-only";
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { createClient } from "@/utils/supabase/server";
 import type { Json } from "@/types/database.types";
@@ -49,9 +49,11 @@ import type {
   KindDetailData,
   KindStatusBoardModel,
 } from "@/features/content-ir/admin/kind-detail-types";
+import { KIND_LOADING_SLUGS } from "@/features/content-ir/react/loading/kind-loading-slugs";
 import {
   artifactKindSlugsFromText,
   compiledKindSlugsFromText,
+  compiledLoadingSlugsFromTexts,
   extractDetectorTokensFromTexts,
   extractDispatchKeysFromText,
   extractHostSurfaceTokensFromTexts,
@@ -78,6 +80,7 @@ const SOURCE_FILES = {
   splitter:
     "components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts",
   systemKinds: "features/content-ir/registry/system-kinds.ts",
+  kindsDir: "features/content-ir/kinds",
   artifactRegistry: "features/canvas/artifact-types/artifact-type-registry.ts",
   blockDispatch:
     "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx",
@@ -104,6 +107,10 @@ interface CodeInputs {
   /** Block types resolveBlockDispatch answers; null when block-dispatch.tsx is
    * unreadable here (the dangling-component-key check goes quiet, loudly). */
   dispatchKeys: string[] | null;
+  /** Compiled per-kind loadingComponent declarations (system-kinds + kinds/*).
+   * Empty when sources are unreadable — the Loading column then under-reports
+   * for compiled kinds and leaves the drift diff. */
+  compiledLoadingSlugs: Map<string, string>;
   /** Columns whose live value depends on unavailable sources — excluded from
    * the snapshot diff so degraded runtimes never report fake drift. */
   excludedFromDrift: AssetColumn[];
@@ -159,6 +166,27 @@ function gatherCodeInputs(): CodeInputs {
     );
   }
 
+  // Compiled loadingComponent declarations — system-kinds.ts plus every
+  // kinds/*.ts module it imports. Loud-degrade like the rest: unreadable
+  // sources exclude the Loading column from the drift diff.
+  let compiledLoadingSlugs = new Map<string, string>();
+  try {
+    const kindsDir = join(/* turbopackIgnore: true */ process.cwd(), SOURCE_FILES.kindsDir);
+    const kindTexts = readdirSync(kindsDir)
+      .filter((name) => name.endsWith(".ts"))
+      .map((name) => readFileSync(join(kindsDir, name), "utf8"));
+    compiledLoadingSlugs = compiledLoadingSlugsFromTexts([
+      ...(systemKindsText ? [systemKindsText] : []),
+      ...kindTexts,
+    ]);
+    if (!systemKindsText) excluded.add("loading");
+  } catch {
+    excluded.add("loading");
+    warnings.push(
+      "features/content-ir/kinds/ unreadable in this runtime — compiled loadingComponent declarations under-report, so the Loading column is excluded from the drift diff.",
+    );
+  }
+
   // Dispatch keys — the code side of the dangling-component_key red. Unreadable
   // (or an extraction failure) means the check CANNOT run: it is skipped and
   // the Component column leaves the drift diff, never silently passed.
@@ -190,6 +218,7 @@ function gatherCodeInputs(): CodeInputs {
     compiledKinds,
     artifactKinds,
     dispatchKeys,
+    compiledLoadingSlugs,
     excludedFromDrift: [...excluded],
     warnings,
   };
@@ -448,6 +477,8 @@ export async function runLiveShapeDoctor(): Promise<LiveDoctorRun> {
     // reads from disk), so the board raises the same vocab-unclassified /
     // contract-gap reds without filesystem access at runtime.
     crosswalkNames: new Set(committedCrosswalk.rows.map((r) => r.name)),
+    loadingLibrarySlugs: new Set<string>(KIND_LOADING_SLUGS),
+    compiledLoadingSlugs: code.compiledLoadingSlugs,
   });
 
   return {
