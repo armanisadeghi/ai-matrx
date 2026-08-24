@@ -72947,7 +72947,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 500
+                "maxLength": 4000
               },
               {
                 "type": "null"
