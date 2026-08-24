@@ -158,15 +158,19 @@ describe("marketing site sub-view registry", () => {
     // registry held 49 views against an expected 48, so a sub-view had joined
     // in an earlier commit without its count. Corrected to the measured truth
     // here (49 + the front door = 50, and 22 + 50 = 72) rather than left red.
+    //
+    // 2026-08-24 — the value family gained `discovery` (the Business
+    // Discovery Ladder, register KI-040): AI reads the site cold, the human
+    // rules each rung. 50 + 1 = 51, 72 + 1 = 73.
     expect(MARKETING_SITE_SECTIONS.length).toBe(22);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
         0,
       ),
-    ).toBe(50);
+    ).toBe(51);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      72,
+      73,
     );
   });
 });

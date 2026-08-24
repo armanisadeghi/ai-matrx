@@ -36,11 +36,15 @@ export interface DiscoveryStatus {
 }
 
 export async function getDiscoveryStatus(siteId: string): Promise<DiscoveryStatus> {
-  const { data, error } = await apiGet("/seo/keywords/discovery/status", {
+  // `apiGet` throws on any non-OK response; a resolved call IS the data.
+  const { data } = await apiGet("/seo/keywords/discovery/status", {
     query: { site_id: siteId },
   });
-  if (error || !data) {
-    throw new Error(error?.message ?? "Could not read discovery status");
+  const parsed = data as unknown as DiscoveryStatus;
+  if (!Array.isArray(parsed?.steps)) {
+    // A shapeless answer must never render as "nothing has run" — that is
+    // the silent-empty class. Scream instead.
+    throw new Error("Discovery status returned an unexpected shape");
   }
-  return data as unknown as DiscoveryStatus;
+  return parsed;
 }
