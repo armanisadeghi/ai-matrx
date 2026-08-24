@@ -53,13 +53,33 @@ export interface ValueCombo {
 export type ValueReason =
   | { kind: "override"; level?: string | null }
   /** C2: the leading summary row — Σ adds → × factor (capped) → never. */
-  | { kind: "summary"; adds: number; factor: number; n_factors: number; never: boolean; score: number | null }
+  | {
+      kind: "summary";
+      /** KI-048: where the score starts before any meaning applies. */
+      baseline?: number;
+      /** The ± adds this keyword's own meaning expressed (excludes the baseline). */
+      adds: number;
+      /** baseline + adds — what the factors multiply. */
+      total_before_factor?: number;
+      factor: number;
+      n_factors: number;
+      never: boolean;
+      /** False only when NOTHING is expressed about this keyword (→ unvalued). */
+      has_meaning?: boolean;
+      score: number | null;
+    }
   /**
    * `topic_id` (2026-08-23) is what makes the step ACTIONABLE — the receipt's
    * topic step links to that node in the topic tree. Optional because cached
    * receipts written before the resolver carried it still render.
    */
   | { kind: "topic"; topic: string; topic_id?: string | null; weight: number; root: string | null; negative_guard: boolean; effect?: "add"; amount?: number }
+  /** KI-048: the starting point every score is built from. */
+  | { kind: "baseline"; amount: number }
+  /**
+   * Pre-KI-048 receipts only. The resolver stopped emitting this on 2026-08-25
+   * when the baseline made "no base" impossible; kept so cached receipts render.
+   */
   | { kind: "no_base"; pending_base: true }
   /** C2: a stamped value that carries worth for this site. */
   | {

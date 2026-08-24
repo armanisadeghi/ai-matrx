@@ -44,21 +44,28 @@ interface ReasonView {
 
 function reasonView(reason: ValueReason): ReasonView {
   switch (reason.kind) {
-    case "summary":
+    case "summary": {
+      const baseline = reason.baseline ?? 0;
+      const total = reason.total_before_factor ?? reason.adds;
+      const factorText = reason.factor
+        .toFixed(2)
+        .replace(/0+$/, "")
+        .replace(/\.$/, "");
       return {
         icon: Landmark,
         text: reason.never
           ? "Never — an explicit flag"
           : reason.score === null
-            ? "Nothing adds worth yet"
-            : `Adds ${reason.adds} × ${reason.factor.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")} = ${reason.score}`,
+            ? "Nothing is expressed about this keyword yet"
+            : `${baseline} ${reason.adds < 0 ? "−" : "+"} ${Math.abs(reason.adds)} = ${total} × ${factorText} = ${reason.score}`,
         detail: reason.never
-          ? "A never-flag is set (a not-offered topic or an out-of-market place). It wins over every other step — the score is zero regardless of what else matched."
+          ? "A never-flag is set (a not-offered Offering or an out-of-market place). It wins over every other step — the score is zero regardless of what else matched."
           : reason.score === null
-            ? "No topic worth and no adding value is stamped on this keyword, so there is nothing for factors to scale. Stamps below are recorded; they invent nothing."
-            : `Every adding worth summed to ${reason.adds}; then ${reason.n_factors} scaling ${reason.n_factors === 1 ? "factor" : "factors"} multiplied it by ${reason.factor} (capped between 0.01 and 10). Order is always: add, then scale, then never.`,
+            ? "Nothing you have told the system applies to this keyword, so it is honestly unvalued. It is not worth zero — it is unmeasured."
+            : `Every score starts at ${baseline}. This keyword's meaning ${reason.adds < 0 ? "subtracted" : "added"} ${Math.abs(reason.adds)}, giving ${total}; then ${reason.n_factors} scaling ${reason.n_factors === 1 ? "factor" : "factors"} multiplied it by ${reason.factor} (capped between 0.05 and 5). Order is always: start, add, scale, then never. Scores never go below zero.`,
         tone: reason.never ? "text-destructive" : undefined,
       };
+    }
     case "stamp": {
       // P20 — a situational stamp is a present-tense claim, so it never shows
       // without the moment it was worked out. Reading "parked" with no time
@@ -140,12 +147,19 @@ function reasonView(reason: ValueReason): ReasonView {
           : `Starts from the topic "${reason.topic}"${reason.root ? ` (a ${humanizeSlug(reason.root).toLowerCase()} root)` : ""}, which you weighted ${reason.weight} out of 100.`,
         tone: reason.negative_guard ? "text-destructive" : undefined,
       };
-    case "no_base":
+    case "baseline":
       return {
         icon: Landmark,
-        text: "Stamped — no topic worth yet",
+        text: `Starts at ${reason.amount}`,
+        detail: `Every keyword starts from the same neutral point — ${reason.amount} — so a score below it reads as worse than neutral and above it as better. Your site can change that starting point.`,
+      };
+    case "no_base":
+      // Pre-2026-08-25 cached receipts only; the baseline made this impossible.
+      return {
+        icon: Landmark,
+        text: "Stamped — recorded before the baseline existed",
         detail:
-          "Rules or geo areas matched this keyword (the stamps below), but no topic worth reaches it, so there is nothing for them to multiply. It stays Unvalued until the keyword sits under a topic you have weighted. Stamps never invent value.",
+          "This receipt was cached before every score started from a baseline. Re-open the keyword to recompute it.",
         tone: "text-muted-foreground",
       };
     case "rule":
