@@ -199,6 +199,18 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
 
     subscribedUserId = userId;
     dispatch(setRealtimeStatus({ status: "connecting", userId }));
+    // Seed the reconcile cooldown here, not just after an actual reconcile.
+    // `CloudFilesRealtimeProvider` dispatches `attachCloudFilesRealtime`
+    // (which lands here) and `loadUserFileTree` in the same effect — that
+    // pairing is load-bearing (see the provider's comment: "calling both is
+    // intentional"). Without this seed, `lastReconcileAt` starts at 0, so the
+    // very first `SUBSCRIBED` event — which arrives shortly after this call
+    // on every single page load, not just on reconnect — always clears the
+    // cooldown and fires a second, redundant `get_user_file_tree` RPC on top
+    // of the mount-effect's own load. Seeding it here means a normal-speed
+    // handshake (well under the 10s cooldown) skips that duplicate, while a
+    // genuinely slow handshake or a later reconnect still reconciles.
+    lastReconcileAt = Date.now();
 
     channel = supabase
       .channel(`cloud-files:${userId}`)
