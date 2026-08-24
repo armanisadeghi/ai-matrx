@@ -130,7 +130,9 @@ export function AssistCard({
   const [silenceReason, setSilenceReason] = useState("");
   const actionEditor = getAssistActionTextEditor(assist.action);
   const [actionEditOpen, setActionEditOpen] = useState(false);
-  const [actionDraft, setActionDraft] = useState(actionEditor?.value ?? "");
+  const [actionDraft, setActionDraft] = useState(
+    actionEditor ? actionEditor.value : "",
+  );
   const descriptor = describeAssistAction(assist.action);
   const urgency = urgencyFromPriority(assist.priority);
   const urgencyMeta = ASSIST_URGENCY_META[urgency];
