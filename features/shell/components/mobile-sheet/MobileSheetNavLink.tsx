@@ -28,14 +28,18 @@ export default function MobileSheetNavLink({
   openInNewTab = false,
   contextLabel,
 }: MobileSheetNavLinkProps) {
-  const pathname = usePathname() ?? "";
+  const pathname = usePathname();
   const isActive =
     !external &&
     !openInNewTab &&
-    (pathname === href || (href !== "/" && pathname.startsWith(`${href}/`)));
+    (pathname === href ||
+      (href !== "/" && pathname?.startsWith(`${href}/`) === true));
   const className = isChild
     ? "shell-mobile-nav-item shell-mobile-nav-child"
     : "shell-mobile-nav-item";
+  const closeAfterNavigationStarts = () => {
+    window.setTimeout(closeShellMobileMenu, 0);
+  };
 
   if (external || openInNewTab) {
     return (
@@ -44,7 +48,7 @@ export default function MobileSheetNavLink({
         target="_blank"
         rel="noopener noreferrer"
         className={className}
-        onClick={closeShellMobileMenu}
+        onClick={closeAfterNavigationStarts}
       >
         <span className="shell-nav-icon">
           <ShellIcon
@@ -75,7 +79,7 @@ export default function MobileSheetNavLink({
       data-active={isActive ? "true" : undefined}
       aria-current={isActive ? "page" : undefined}
       className={className}
-      onClick={closeShellMobileMenu}
+      onClick={closeAfterNavigationStarts}
     >
       <span className="shell-nav-icon">
         <ShellIcon

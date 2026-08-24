@@ -44,12 +44,16 @@ function searchResults(items: ShellNavItem[], query: string): SearchResult[] {
 
   const results: SearchResult[] = [];
   for (const item of items) {
-    const parentHaystack =
-      `${item.label} ${item.description ?? ""}`.toLocaleLowerCase();
+    const parentHaystack = [item.label, item.description]
+      .filter((part): part is string => typeof part === "string")
+      .join(" ")
+      .toLocaleLowerCase();
     if (parentHaystack.includes(needle)) results.push({ item });
     for (const child of item.children ?? []) {
-      const childHaystack =
-        `${child.label} ${child.description ?? ""} ${item.label}`.toLocaleLowerCase();
+      const childHaystack = [child.label, child.description, item.label]
+        .filter((part): part is string => typeof part === "string")
+        .join(" ")
+        .toLocaleLowerCase();
       if (childHaystack.includes(needle)) {
         results.push({ item: child, groupLabel: item.label });
       }
@@ -65,9 +69,9 @@ function GroupButton({
   item: ShellNavItem;
   onOpen: () => void;
 }) {
-  const pathname = usePathname() ?? "";
+  const pathname = usePathname();
   const isActive =
-    pathname === item.href || pathname.startsWith(`${item.href}/`);
+    pathname === item.href || pathname?.startsWith(`${item.href}/`) === true;
   return (
     <button
       type="button"
@@ -105,18 +109,32 @@ export default function MobileNavigationDrawer({
   useEffect(() => {
     const control = mobileMenuControl();
     if (!control) return;
+    let openFrame: number | null = null;
 
     const syncOpenState = () => {
-      setOpen(control.checked);
       if (control.checked) {
-        setActiveGroupHref(null);
-        setQuery("");
+        // The checkbox changes during the hamburger's pointer sequence. Mount
+        // Vaul on the next frame so that same pointer-up cannot dismiss the
+        // drawer as an outside interaction immediately after opening it.
+        openFrame = window.requestAnimationFrame(() => {
+          setActiveGroupHref(null);
+          setQuery("");
+          setOpen(true);
+          openFrame = null;
+        });
+      } else {
+        if (openFrame != null) window.cancelAnimationFrame(openFrame);
+        openFrame = null;
+        setOpen(false);
       }
     };
 
     syncOpenState();
     control.addEventListener("change", syncOpenState);
-    return () => control.removeEventListener("change", syncOpenState);
+    return () => {
+      if (openFrame != null) window.cancelAnimationFrame(openFrame);
+      control.removeEventListener("change", syncOpenState);
+    };
   }, []);
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -257,6 +275,7 @@ export default function MobileNavigationDrawer({
           className="shell-mobile-back-button"
           onClick={() => setActiveGroupHref(null)}
           aria-label="Back to main menu"
+          aria-hidden={!showBack}
           data-visible={showBack ? "true" : undefined}
           tabIndex={showBack ? 0 : -1}
         >

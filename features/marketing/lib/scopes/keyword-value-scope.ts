@@ -49,6 +49,53 @@ function projectLevel(meta: BandMeta): Record<string, unknown> {
   };
 }
 
+function projectTableState(
+  state: MatrxDataTableQueryState,
+): Record<string, unknown> {
+  return {
+    page: state.page,
+    page_size: state.pageSize,
+    search: state.search,
+    search_match_mode: state.searchMatchMode,
+    any_of: state.anyOf,
+    layered_filters: state.layeredFilters,
+    column_filters: state.columnFilters,
+    sort: state.sort,
+  };
+}
+
+function projectKpis(kpis: ValueKpis): Record<string, unknown> {
+  return {
+    clicks: kpis.clicks,
+    clicks_delta: kpis.clicksDelta,
+    valued_clicks: kpis.valuedClicks,
+    valued_clicks_delta: kpis.valuedClicksDelta,
+    valued_share: kpis.valuedShare,
+    unvalued_queries: kpis.unvaluedQueries,
+    unvalued_clicks: kpis.unvaluedClicks,
+    total_queries: kpis.totalQueries,
+    coverage: kpis.coverage,
+  };
+}
+
+function projectVerdict(verdict: Verdict): Record<string, unknown> {
+  return {
+    headline: verdict.headline,
+    detail: verdict.detail,
+    contrast_band: verdict.contrastBand,
+  };
+}
+
+function projectMeaningHealth(row: MeaningHealthRow): Record<string, unknown> {
+  return {
+    area: row.area,
+    severity: row.severity,
+    headline: row.headline,
+    detail: row.detail,
+    count_value: row.count_value,
+  };
+}
+
 export interface KeywordValueScopeInput {
   /** Inherited brand + site context, built by `useMarketingSiteSurfaceBase`. */
   base: MarketingSiteBaseValues;
@@ -97,18 +144,16 @@ export function buildKeywordValueScope({
   return createKeywordValueWorkbenchScope({
     ...base,
     selected_keyword_ids: selectedIds.length ? selectedIds : undefined,
-    table_query: tableState as unknown as Record<string, unknown>,
+    table_query: projectTableState(tableState),
     review_window: { ...window },
     visible_value_rows: rows.length ? rows.map(projectRow) : undefined,
     matching_keywords_total: loading ? undefined : total,
     level_vocabulary: levels.length ? levels.map(projectLevel) : undefined,
     levels_are_template: levels.length ? levelsAreTemplate : undefined,
-    value_kpis: kpis ? (kpis as unknown as Record<string, unknown>) : undefined,
-    site_verdict: verdict
-      ? (verdict as unknown as Record<string, unknown>)
-      : undefined,
+    value_kpis: kpis ? projectKpis(kpis) : undefined,
+    site_verdict: verdict ? projectVerdict(verdict) : undefined,
     meaning_health: meaningHealth?.length
-      ? (meaningHealth as unknown as Array<Record<string, unknown>>)
+      ? meaningHealth.map(projectMeaningHealth)
       : undefined,
     expert_ruling_count: rulingCount,
     active_level_filter: activeLevelFilter ?? undefined,
