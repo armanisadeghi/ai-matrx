@@ -59,6 +59,15 @@ const config: Config = {
             "<rootDir>/node_modules/@ai-matrx/$1/package.json",
         "^@ai-matrx/([^/]+)/(.+)$":
             "<rootDir>/node_modules/@ai-matrx/$1/dist/$2.js",
+        // BARE specifiers for the packages that ship `exports` but NO `main`
+        // (@ai-matrx/design-system, @ai-matrx/agents). Jest's resolver ignores
+        // `exports`, so `import { Separator } from "@ai-matrx/design-system"`
+        // resolved to nothing and killed every suite that transitively reached
+        // components/ui/separator.tsx — which is the whole block-dispatch tree.
+        // Packages that DO declare `main` (content-ir, content-ir-react) resolve
+        // on their own to the CJS build and are deliberately not listed.
+        "^@ai-matrx/(design-system|agents)$":
+            "<rootDir>/node_modules/@ai-matrx/$1/dist/index.js",
         "^@/(.*)$": "<rootDir>/$1",
     },
     // Transform ESM-only `uuid` instead of ignoring it. The lookahead must

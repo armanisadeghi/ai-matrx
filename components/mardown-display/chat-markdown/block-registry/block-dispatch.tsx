@@ -66,6 +66,10 @@ import {
 } from "@/features/content-ir/react/kind-route";
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
 import WebAnalysisItemBlock from "@/components/mardown-display/blocks/web-analysis/WebAnalysisItemBlock";
+import FlowStepResultBlock from "@/components/mardown-display/blocks/result-kinds/FlowStepResultBlock";
+import CollectionResultBlock from "@/components/mardown-display/blocks/result-kinds/CollectionResultBlock";
+import FileOperationResultBlock from "@/components/mardown-display/blocks/result-kinds/FileOperationResultBlock";
+import ValueResultBlock from "@/components/mardown-display/blocks/result-kinds/ValueResultBlock";
 import MarkdownKindBlock from "@/components/mardown-display/blocks/markdown/MarkdownKindBlock";
 // Lazy shell (next/dynamic ssr:false inside) — Babel/compiler weight ships in
 // its own chunk, fetched only when a block actually routed to a db component.
@@ -241,6 +245,13 @@ export function isBlockLoading(block: {
  *  - `generic_structured` — produced ONLY by `applyIrKindRoute`'s R6 generic
  *    fallback (a KNOWN shape nothing render-trusted claims); never emitted
  *    upstream, so it has no vocabulary row. Shape-classified by construction.
+ *  - `flow_step_result` / `collection_result` / `file_operation_result` /
+ *    `value_result` — the four RUNTIME RESULT family renderers (GAP 6,
+ *    2026-08-23). 61 workflow/tool kinds that reached the reader only through
+ *    the `generic_structured` floor now resolve to one of these by a
+ *    `kind_component` row per kind, on exactly the `web_analysis_item` model:
+ *    one shared reader question per family, the platform's value renderer
+ *    underneath. Reached ONLY via applyIrKindRoute's resolver-only path.
  *  - `web_analysis_item` — the ONE renderer for the `web_analysis_item`
  *    kind family (the 83 registered `web_*_v1` site-audit checks, which share
  *    one verified shape). Produced ONLY by `applyIrKindRoute`'s resolver-only
@@ -397,6 +408,10 @@ export type FeSynthesizedBlockType =
   | "postal_address"
   | "geo_coordinates"
   | "web_analysis_item"
+  | "flow_step_result"
+  | "collection_result"
+  | "file_operation_result"
+  | "value_result"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -513,6 +528,10 @@ export type ShapeBlockType =
   | "stats"
   | "diff"
   | "web_analysis_item"
+  | "flow_step_result"
+  | "collection_result"
+  | "file_operation_result"
+  | "value_result"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -2219,6 +2238,41 @@ const SHAPE_BLOCK_DISPATCH = {
   // a `kind_component` row per kind. Reached ONLY via applyIrKindRoute.
   web_analysis_item: ({ block, index }) => (
     <WebAnalysisItemBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+
+  // The four runtime-result family routes (features/content-ir/react/kind-route.ts
+  // resolver-only path): 61 workflow / tool / filesystem kinds, four shared
+  // reader questions — where did the run go, how many came out and what was
+  // lost, which file and what happened to it, what is the value. One component
+  // per family, pointed at by a `kind_component` row per kind. Reached ONLY via
+  // applyIrKindRoute.
+  flow_step_result: ({ block, index }) => (
+    <FlowStepResultBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  collection_result: ({ block, index }) => (
+    <CollectionResultBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  file_operation_result: ({ block, index }) => (
+    <FileOperationResultBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  value_result: ({ block, index }) => (
+    <ValueResultBlock
       key={index}
       content={block.content}
       metadata={block.metadata}

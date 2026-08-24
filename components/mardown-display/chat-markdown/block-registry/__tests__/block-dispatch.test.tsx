@@ -150,6 +150,12 @@ const FE_SYNTHESIZED_TYPES = [
   // The `markdown` kind route: MarkdownStream, reached through that kind's
   // kind_component row — the streaming-markdown render law, as a kind.
   "markdown_stream",
+  // The four runtime-result family routes (GAP 6): 61 workflow / tool /
+  // filesystem kinds, four components, one kind_component row per kind.
+  "flow_step_result",
+  "collection_result",
+  "file_operation_result",
+  "value_result",
 ];
 
 describe("block-dispatch registry", () => {
