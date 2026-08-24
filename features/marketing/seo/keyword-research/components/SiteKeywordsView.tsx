@@ -4,6 +4,11 @@
  * The per-site keywords workspace shell — two views on one route:
  *   Performance     — persisted GSC/Bing query evidence + market data
  *                     (`SiteKeywordPerformanceWorkspace`, the original page).
+ *   Workbench       — THE assignment surface (C14): search without limits,
+ *                     select individually or in bulk, assign a value (adding
+ *                     one on the spot when it does not exist) with the reason
+ *                     that teaches the system, dynamic dimension columns, and
+ *                     saved views as tabs.
  *   Classification  — the dedicated traffic-class truth-editing surface
  *                     (`KeywordClassificationWorkspace`, search-console
  *                     feature — it powers Traffic quality / Shifts / Juice).
@@ -15,6 +20,7 @@
  */
 
 import { KeywordClassificationWorkspace } from "@/features/marketing/search-console/components/classification/KeywordClassificationWorkspace";
+import { KeywordWorkbench } from "@/features/marketing/seo/keyword-workbench/components/KeywordWorkbench";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { useMarketingSubView } from "@/features/marketing/lib/useMarketingSubView";
 import { SiteKeywordPerformanceWorkspace } from "./SiteKeywordPerformanceWorkspace";
@@ -26,6 +32,10 @@ export function SiteKeywordsView() {
     <div className="flex h-full min-h-0 flex-col">
       {view === "classification" ? (
         <ClassificationRouteMount />
+      ) : view === "workbench" ? (
+        <div className="min-h-0 flex-1">
+          <KeywordWorkbench />
+        </div>
       ) : (
         <div className="min-h-0 flex-1">
           <SiteKeywordPerformanceWorkspace />

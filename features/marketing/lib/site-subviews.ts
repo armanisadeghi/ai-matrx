@@ -147,9 +147,15 @@ export const MARKETING_SITE_SUBVIEWS = [
     ],
   },
   {
+    // C14 — the WORKBENCH is where a person gives keywords meaning: find
+    // exactly the ones you mean, assign a value with a reason, keep the
+    // arrangement as a tab. `classification` stays until it is at parity and
+    // then folds into it (C18) — two surfaces for one job is the drift the
+    // convergence exists to end.
     section: "keywords",
     views: [
       { id: "performance", label: "Performance" },
+      { id: "workbench", label: "Workbench" },
       { id: "classification", label: "Classification" },
     ],
   },

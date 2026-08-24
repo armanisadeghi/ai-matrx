@@ -98,6 +98,7 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
   "reputation:evidence": FileSearch,
 
   "keywords:performance": TrendingUp,
+  "keywords:workbench": SlidersHorizontal,
   "keywords:classification": Tags,
 
   "ai-visibility:overview": LayoutDashboard,

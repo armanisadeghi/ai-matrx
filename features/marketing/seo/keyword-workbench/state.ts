@@ -27,7 +27,6 @@ import {
   type GscCompareMode,
   type GscFilters,
   type GscRangeKey,
-  type GscSortKey,
 } from "@/features/marketing/search-console/types";
 
 /** Columns that are always present and are not dimensions. */
@@ -53,13 +52,13 @@ const OPTIONAL_IDS = new Set<string>(
   WORKBENCH_OPTIONAL_COLUMNS.map((c) => c.id),
 );
 
-const SORTABLE: ReadonlySet<string> = new Set([
-  "key",
-  "clicks",
-  "impressions",
-  "ctr",
-  "position",
-]);
+/**
+ * A sort id can be a server metric OR a column the browser sorts (a dimension
+ * column, Class, Score, Level). It stays a plain string so a saved view that
+ * was sorted by "Buyer stage" restores sorted by "Buyer stage" — restricting
+ * it to the RPC's five keys silently threw that away on reload.
+ */
+const SORT_ID = /^[a-z0-9_:.-]{1,64}$/i;
 
 export interface WorkbenchState {
   filters: GscFilters;
@@ -67,7 +66,7 @@ export interface WorkbenchState {
   dimensions: string[];
   /** Optional metric columns switched on. */
   optional: WorkbenchOptionalColumnId[];
-  sort: GscSortKey;
+  sort: string;
   sortDir: "asc" | "desc";
   page: number;
   pageSize: number;
@@ -135,8 +134,7 @@ export function parseWorkbenchState(
     optional: parseList(params.get("m")).filter((id): id is WorkbenchOptionalColumnId =>
       OPTIONAL_IDS.has(id),
     ),
-    sort:
-      sortParam && SORTABLE.has(sortParam) ? (sortParam as GscSortKey) : base.sort,
+    sort: sortParam && SORT_ID.test(sortParam) ? sortParam : base.sort,
     sortDir: dirParam === "asc" ? "asc" : "desc",
     page: Number.isFinite(pageParam) && pageParam >= 1 ? Math.floor(pageParam) : 1,
     pageSize:
