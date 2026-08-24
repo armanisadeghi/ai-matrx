@@ -146,11 +146,15 @@ remembers nothing of this conversation and reads none of the documentation — e
   `update platform.taxonomy_node set last_reviewed_at = now(), review_notes = '<line>'
    where slug = '<slug>';`
 - Disagreeing docs found mid-take → spin off `/dedupe-and-verify <subject>`, don't burn
-  your context. New taxonomy discoveries → `proposed` registry rows, never improvised
+  your context. Multiple sessions/agents working your subject (or its plans scattered
+  across many hands) → the `item-register` skill: one self-contained register, every
+  perspective on it; recruiting the other live sessions is confirm-with-Arman-first. New taxonomy discoveries → `proposed` registry rows, never improvised
   homes. Every common-docs edit: index/log/lint per the bundle rules.
 
 # Changelog
 
+- 2026-08-24 — Item-register trigger added: a take that finds multiple sessions/agents on
+  one subject routes through the `item-register` skill (confirm-first session recruiting).
 - 2026-08-24 — THE VISION SWEEP added (Arman's ruling after the Steward failure): the node
   kit is the starting point, never the boundary; the richest vision treatment of your
   subject governs wherever it lives; a cross-node vision gap stops the build and goes to
