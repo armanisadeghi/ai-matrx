@@ -48502,6 +48502,60 @@ export type Database = {
           },
         ]
       }
+      keyword_saved_view: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          position: number | null
+          shared: boolean
+          site_id: string
+          state: Json
+          surface: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          position?: number | null
+          shared?: boolean
+          site_id: string
+          state?: Json
+          surface?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          position?: number | null
+          shared?: boolean
+          site_id?: string
+          state?: Json
+          surface?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       keyword_topic: {
         Row: {
           assigned_by: string | null
@@ -51614,6 +51668,11 @@ export type Database = {
           value_key: string
         }[]
       }
+      facet_site_slug: {
+        Args: { p_site_id: string; p_slug: string }
+        Returns: string
+      }
+      facet_slugify: { Args: { p_text: string }; Returns: string }
       facet_value_archive: {
         Args: {
           p_dimension: string
@@ -52095,6 +52154,24 @@ export type Database = {
           traffic_class: string
         }[]
       }
+      gsc_keyword_stamps_for: {
+        Args: {
+          p_dimension_slugs?: string[]
+          p_keyword_ids: string[]
+          p_site_id: string
+        }
+        Returns: {
+          dimension: string
+          dimension_label: string
+          keyword_id: string
+          notes: string
+          pinned: boolean
+          source: string
+          value: string
+          value_id: string
+          value_label: string
+        }[]
+      }
       gsc_keyword_value_for: {
         Args: { p_keyword_ids: string[]; p_site_id: string }
         Returns: {
@@ -52533,6 +52610,17 @@ export type Database = {
           kind: string
         }[]
       }
+      gsc_quick_add_value: {
+        Args: {
+          p_description?: string
+          p_dimension_id?: string
+          p_nature?: string
+          p_new_dimension_label?: string
+          p_site_id: string
+          p_value_label: string
+        }
+        Returns: Json
+      }
       gsc_reset_value_vocabulary: {
         Args: { p_kind?: string; p_reassign?: Json; p_site_id: string }
         Returns: {
@@ -52579,6 +52667,16 @@ export type Database = {
           keyword_id: string
           traffic_class: string
         }[]
+      }
+      gsc_set_keyword_stamps: {
+        Args: {
+          p_clear?: boolean
+          p_keyword_ids: string[]
+          p_notes?: string
+          p_site_id: string
+          p_value_id: string
+        }
+        Returns: Json
       }
       gsc_set_keyword_topic: {
         Args: {
