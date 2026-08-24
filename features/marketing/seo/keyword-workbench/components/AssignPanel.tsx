@@ -20,7 +20,7 @@
  * "Remove this value" when the target already carries it.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Eraser, Loader2, Tag } from "lucide-react";
 
@@ -69,13 +69,15 @@ export function AssignPanel({
   const queryClient = useQueryClient();
   const [picked, setPicked] = useState<PickedValue | null>(target.initial ?? null);
   const [notes, setNotes] = useState("");
-
   // A new target (different rows) is a new decision — never carry a reason
-  // written about other keywords onto these.
-  useEffect(() => {
+  // written about other keywords onto these. Reset during render, not in an
+  // effect: an effect would let the stale reason paint for one frame.
+  const [targetSeen, setTargetSeen] = useState(target);
+  if (targetSeen !== target) {
+    setTargetSeen(target);
     setPicked(target.initial ?? null);
     setNotes("");
-  }, [target]);
+  }
 
   const write = useMutation({
     mutationFn: (input: { clear: boolean }) => {

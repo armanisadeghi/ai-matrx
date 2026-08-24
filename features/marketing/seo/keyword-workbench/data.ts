@@ -109,59 +109,13 @@ export async function getKeywordStamps(
 
 /* ------------------------------------------------------- the P23 quick add */
 
-export interface QuickAddResult {
-  dimensionId: string;
-  dimensionSlug: string;
-  dimensionLabel: string;
-  valueId: string;
-  valueKey: string;
-  valueLabel: string;
-  createdDimension: boolean;
-  createdValue: boolean;
-}
-
-function readString(row: Record<string, Json>, key: string): string {
-  const value = row[key];
-  return typeof value === "string" ? value : "";
-}
-
 /**
- * P23 — EVERY PICKER TAKES NEW INPUT. Typed text becomes a real value (and a
- * real dimension when the person names one), selectable the instant it
- * returns. A picker that can only offer what already exists is the defect
- * this function exists to make impossible.
+ * There is none here — deliberately. Turning typed text into a real value is
+ * `quickAddDimensionValue` in `features/marketing/seo/value-system/quick-add.ts`,
+ * the keyword system's ONE creation path, and the picker shape around it is
+ * `CreatablePicker`. A second copy of either here would be a second set of
+ * rules about what a person is allowed to invent.
  */
-export async function quickAddValue(input: {
-  siteId: string;
-  valueLabel: string;
-  dimensionId?: string | null;
-  newDimensionLabel?: string | null;
-  description?: string | null;
-  nature?: "intrinsic" | "situational";
-}): Promise<QuickAddResult> {
-  const response = await (await seoDb()).rpc("gsc_quick_add_value", {
-    p_site_id: input.siteId,
-    p_value_label: input.valueLabel,
-    ...(input.dimensionId ? { p_dimension_id: input.dimensionId } : {}),
-    ...(input.newDimensionLabel
-      ? { p_new_dimension_label: input.newDimensionLabel }
-      : {}),
-    ...(input.description ? { p_description: input.description } : {}),
-    ...(input.nature ? { p_nature: input.nature } : {}),
-  });
-  const raw = assertGoverned(response.data, response.error, "add that value");
-  const row = (raw ?? {}) as Record<string, Json>;
-  return {
-    dimensionId: readString(row, "dimension_id"),
-    dimensionSlug: readString(row, "dimension_slug"),
-    dimensionLabel: readString(row, "dimension_label"),
-    valueId: readString(row, "value_id"),
-    valueKey: readString(row, "value_key"),
-    valueLabel: readString(row, "value_label"),
-    createdDimension: row.created_dimension === true,
-    createdValue: row.created_value === true,
-  };
-}
 
 /* ------------------------------------------------------------- the one write */
 
