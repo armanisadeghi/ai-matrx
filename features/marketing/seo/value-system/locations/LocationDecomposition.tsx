@@ -34,6 +34,12 @@ import {
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type {
+  ColumnFiltersState,
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@/components/official/matrx-data-table/types";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { useOpenGscWhyScoreWindow } from "@/features/overlays/openers/gscWhyScoreWindow";
@@ -42,15 +48,107 @@ import {
   getLocationSummary,
   locationKeywordsQueryKey,
   locationSummaryQueryKey,
+  type LocationKeywordsView,
+  type LocationKeywordSort,
 } from "./data";
 import {
   decidedByChip,
   explainDecidedBy,
   type LocationBucket,
+  type LocationKeywordRow,
   type LocationSummaryRow,
 } from "./types";
 
 const PAGE_SIZE = 25;
+
+/**
+ * The Attributed-by filter's options — the SAME `decided_by` values the RPC
+ * accepts, in the reader's words. `unattributed` is the null bucket: the RPC
+ * coalesces a missing answer to it, so "no answer yet" is filterable instead of
+ * being a hole in the column.
+ */
+const DECIDED_BY_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
+  "bound_area",
+  "place_match",
+  "state_match",
+  "nearest_place",
+  "single_location",
+  "unresolved",
+  "not_local",
+].map((value) => ({ value, label: decidedByChip(value) }));
+
+const SORTABLE: Record<string, LocationKeywordSort> = {
+  keyword: "keyword",
+  clicks: "clicks",
+  impressions: "impressions",
+  decided_by: "decided_by",
+};
+
+/** The server view, rendered back as the table's own filter state. */
+function toColumnFilters(view: LocationKeywordsView): ColumnFiltersState {
+  const filters: ColumnFiltersState = {};
+  if (view.decidedBy.length > 0)
+    filters.decided_by = {
+      kind: "select",
+      value: view.decidedBy[0] ?? "",
+      values: view.decidedBy,
+    };
+  if (view.clicksMin !== null || view.clicksMax !== null)
+    filters.clicks = {
+      kind: "number",
+      ...(view.clicksMin === null ? {} : { min: view.clicksMin }),
+      ...(view.clicksMax === null ? {} : { max: view.clicksMax }),
+    };
+  if (view.impressionsMin !== null || view.impressionsMax !== null)
+    filters.impressions = {
+      kind: "number",
+      ...(view.impressionsMin === null ? {} : { min: view.impressionsMin }),
+      ...(view.impressionsMax === null ? {} : { max: view.impressionsMax }),
+    };
+  return filters;
+}
+
+/**
+ * The table's state, translated into the RPC's parameters. The Keyword column's
+ * text filter and the toolbar's search box are the SAME server-side match, so
+ * whichever the person used is what the RPC is asked for — a filter that
+ * quietly did nothing would be the defect this conversion exists to remove.
+ */
+function nextView(
+  current: LocationKeywordsView,
+  next: MatrxDataTableQueryState,
+): LocationKeywordsView {
+  const filters = next.columnFilters ?? {};
+  const keywordFilter = filters.keyword;
+  const decidedFilter = filters.decided_by;
+  const clicksFilter = filters.clicks;
+  const impressionsFilter = filters.impressions;
+  const typedSearch =
+    keywordFilter?.kind === "text" ? keywordFilter.value.trim() : "";
+  return {
+    ...current,
+    page: next.page,
+    pageSize: next.pageSize,
+    search: next.search.trim() || typedSearch,
+    sort: SORTABLE[next.sort?.id ?? ""] ?? current.sort,
+    sortDir: next.sort?.direction ?? current.sortDir,
+    decidedBy:
+      decidedFilter?.kind === "select"
+        ? (decidedFilter.values ??
+          (decidedFilter.value ? [decidedFilter.value] : []))
+        : [],
+    clicksMin: clicksFilter?.kind === "number" ? (clicksFilter.min ?? null) : null,
+    clicksMax: clicksFilter?.kind === "number" ? (clicksFilter.max ?? null) : null,
+    impressionsMin:
+      impressionsFilter?.kind === "number"
+        ? (impressionsFilter.min ?? null)
+        : null,
+    impressionsMax:
+      impressionsFilter?.kind === "number"
+        ? (impressionsFilter.max ?? null)
+        : null,
+  };
+}
 
 /** Signed delta against the compare window — never a bare "up". */
 function Delta({ now, before }: { now: number; before: number }) {

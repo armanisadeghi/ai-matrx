@@ -856,7 +856,6 @@ function ListingsMatrix({
     }
   };
 
-  return (
   /**
    * P26 — ONE table. The publisher matrix picks which columns show; the
    * canonical table owns whether they sort and filter, so "which tier-1

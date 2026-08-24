@@ -52052,6 +52052,34 @@ export type Database = {
         }[]
       }
       _pack_touch: { Args: { p_pack_id: string }; Returns: undefined }
+      _rule_claim_matcher: {
+        Args: {
+          p_enabled: boolean
+          p_kind: string
+          p_notes: string
+          p_org: string
+          p_pack_id: string
+          p_pattern: string
+          p_rule_id: string
+          p_shape: string
+          p_site_id: string
+          p_value_id: string
+        }
+        Returns: string
+      }
+      _rule_claim_worth: {
+        Args: {
+          p_multiplier: number
+          p_notes: string
+          p_org: string
+          p_pack_id: string
+          p_rule_id: string
+          p_shape: string
+          p_site_id: string
+          p_value_id: string
+        }
+        Returns: string
+      }
       _site_keyword_query_totals: {
         Args: { p_site_id: string }
         Returns: {
@@ -53707,6 +53735,27 @@ export type Database = {
         }
         Returns: Json
       }
+      gsc_value_rule_health: {
+        Args: { p_site_id: string }
+        Returns: {
+          auto_apply: boolean
+          conflict_rule: string
+          enabled_matchers: number
+          is_class: boolean
+          is_facet: boolean
+          is_qualifier: boolean
+          matchers: number
+          name: string
+          pattern: string
+          rule_id: string
+          stamps: number
+          state: string
+          target_class: string
+          value_id: string
+          value_multiplier: number
+          worth: number
+        }[]
+      }
       gsc_value_rule_preview: {
         Args: {
           p_end: string
@@ -53722,6 +53771,7 @@ export type Database = {
         }
         Returns: Json
       }
+      gsc_value_rule_reconnect: { Args: { p_site_id: string }; Returns: Json }
       gsc_value_vocabulary: {
         Args: { p_kind?: string; p_site_id: string }
         Returns: {
