@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import { RunControlsMenu } from "./RunControlsMenu";
 import { ContextDocsMenu } from "./ContextDocsMenu";
@@ -297,7 +298,10 @@ export function InputActionButtons({
           <InputButton
             icon={AudioLines}
             tooltip="Live audio"
-            onClick={() => {}}
+            // A button that promises a live voice session and does literally
+            // nothing is worse than no button. Until the session exists it
+            // keeps the tracked promise instead (lib/coming-soon/registry.ts).
+            onClick={() => void announceComingSoon("chat.live-audio")}
           />
         )}
       </div>

@@ -1469,6 +1469,32 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   // every agent that runs on that page. Open with
   // `useOpenPageResearchWindow({ nodeId, siteId, pageLabel, primaryKeyword,
   // orgId })`.
+  // ── What this match caught (keyword matcher review) ──────────────────────
+  // The review table behind every matcher save and every "see what this
+  // caught" door: which keywords a `seo.dimension_value_matcher` catches, which
+  // of them it actually holds, which are overruled by a rival answer on the
+  // same single-answer dimension, and undo. Opened by the matcher editor right
+  // after a save runs the engine (Arman 2026-08-24: a count in a toast is not a
+  // review).
+  {
+    slug: "matcher-review-window",
+    overlayId: "matcherReviewWindow",
+    kind: "window",
+    label: "What this match caught",
+    defaultData: {
+      siteId: "",
+      matcherId: "",
+      pattern: "",
+      kindLabel: "",
+      valueLabel: "",
+      dimensionLabel: "",
+    },
+    mobilePresentation: "fullscreen",
+    // A review is about a run that just happened. Restoring one tomorrow would
+    // present a stale table as a fresh result.
+    ephemeral: true,
+  },
+
   {
     slug: "page-research-window",
     overlayId: "pageResearchWindow",

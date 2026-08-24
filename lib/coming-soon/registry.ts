@@ -32,6 +32,19 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "Google has not approved the Slides scope for our app — it needs its own approval campaign (FOUND_DEFECTS D214).",
     surfaces: ["Presentation export menu"],
   },
+  "chat.live-audio": {
+    id: "chat.live-audio",
+    label: "Live audio",
+    owner: "agents",
+    promise:
+      "Talk to the agent out loud and hear it answer, in a continuous live session — not a recording you send and wait on.",
+    stage: "planned",
+    // Found 2026-08-24 during the dead-control sweep: the button was rendered
+    // beside Send with `onClick={() => {}}`, so the one control on the input
+    // bar that promises the most did the least. Dictation (hold to record) is
+    // a DIFFERENT, working control — this is the continuous session.
+    surfaces: ["Chat input action bar"],
+  },
   "agents.create-app": {
     id: "agents.create-app",
     label: "Create App from Agent",

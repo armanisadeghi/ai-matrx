@@ -626,6 +626,11 @@ const PageResearchWindow = lazyOverlay(
     import("@/features/window-panels/windows/marketing/PageResearchWindow"),
   { ssr: false },
 );
+const MatcherReviewWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/MatcherReviewWindow"),
+  { ssr: false },
+);
 const KeywordWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/KeywordWindow"),
   { ssr: false },
@@ -1323,6 +1328,9 @@ export default function OverlayController() {
     pageResearchWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "pageResearchWindow"),
     ),
+    matcherReviewWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "matcherReviewWindow"),
+    ),
     keywordWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "keywordWindow"),
     ),
@@ -1704,6 +1712,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     keywordWindow: useAppSelector((s) =>
       selectOverlayData(s, "keywordWindow"),
+    matcherReviewWindow: useAppSelector((s) =>
+      selectOverlayData(s, "matcherReviewWindow"),
+    ),
     ) as Record<string, unknown> | null,
     socialCardAnalyzerWindow: useAppSelector((s) =>
       selectOverlayData(s, "socialCardAnalyzerWindow"),
@@ -4474,6 +4485,36 @@ export default function OverlayController() {
             pageLabel={str("pageLabel")}
             primaryKeyword={str("primaryKeyword")}
             orgId={str("orgId")}
+          />
+        );
+      })()}
+
+      {/* matcherReviewWindow */}
+      {(() => {
+        const isOpen = isOpenById.matcherReviewWindow;
+        const data = dataById.matcherReviewWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | undefined =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : undefined;
+        const siteId = str("siteId");
+        const matcherId = str("matcherId");
+        // No match, no review — the window's whole subject is the matcher.
+        if (!siteId || !matcherId) return null;
+        return (
+          <MatcherReviewWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "matcherReviewWindow" }))
+            }
+            siteId={siteId}
+            matcherId={matcherId}
+            pattern={str("pattern") ?? null}
+            kindLabel={str("kindLabel")}
+            valueLabel={str("valueLabel")}
+            dimensionLabel={str("dimensionLabel")}
           />
         );
       })()}

@@ -760,6 +760,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  matcherReviewWindow: {
+    label: "What this match caught",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   serpAnalyzerWindow: {
     label: "Search Appearance",
     instanceMode: "singleton",
