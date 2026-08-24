@@ -32,6 +32,9 @@ import {
 /** Columns that are always present and are not dimensions. */
 export const WORKBENCH_FIXED_COLUMNS = [
   "keyword",
+  // THE SERVICE COLUMN — the thing a keyword maps to. Fixed, and next to the
+  // keyword: it is the first question a person asks about a phrase.
+  "topic",
   "traffic_class",
   "clicks",
   "impressions",
