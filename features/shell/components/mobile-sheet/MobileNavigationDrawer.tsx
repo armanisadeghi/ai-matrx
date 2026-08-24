@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
+import { usePathname } from "next/navigation";
 import {
   BottomSheet,
   BottomSheetBody,
@@ -32,7 +33,9 @@ interface SearchResult {
 }
 
 function mobileMenuControl(): HTMLInputElement | null {
-  return document.getElementById("shell-mobile-menu") as HTMLInputElement | null;
+  return document.getElementById(
+    "shell-mobile-menu",
+  ) as HTMLInputElement | null;
 }
 
 function searchResults(items: ShellNavItem[], query: string): SearchResult[] {
@@ -41,10 +44,12 @@ function searchResults(items: ShellNavItem[], query: string): SearchResult[] {
 
   const results: SearchResult[] = [];
   for (const item of items) {
-    const parentHaystack = `${item.label} ${item.description ?? ""}`.toLocaleLowerCase();
+    const parentHaystack =
+      `${item.label} ${item.description ?? ""}`.toLocaleLowerCase();
     if (parentHaystack.includes(needle)) results.push({ item });
     for (const child of item.children ?? []) {
-      const childHaystack = `${child.label} ${child.description ?? ""} ${item.label}`.toLocaleLowerCase();
+      const childHaystack =
+        `${child.label} ${child.description ?? ""} ${item.label}`.toLocaleLowerCase();
       if (childHaystack.includes(needle)) {
         results.push({ item: child, groupLabel: item.label });
       }
@@ -60,12 +65,16 @@ function GroupButton({
   item: ShellNavItem;
   onOpen: () => void;
 }) {
+  const pathname = usePathname() ?? "";
+  const isActive =
+    pathname === item.href || pathname.startsWith(`${item.href}/`);
   return (
     <button
       type="button"
       className="shell-mobile-nav-item w-full"
       onClick={onOpen}
       aria-label={`Open ${item.label} menu`}
+      data-active={isActive ? "true" : undefined}
     >
       <span className="shell-nav-icon">
         <ShellIcon name={item.iconName} size={20} strokeWidth={1.75} />
@@ -169,7 +178,9 @@ export default function MobileNavigationDrawer({
   );
 
   const renderGroup = (group: ShellNavItem) => {
-    const { sections, panels, actions } = partitionNavChildren(group.children ?? []);
+    const { sections, panels, actions } = partitionNavChildren(
+      group.children ?? [],
+    );
     return (
       <div className="shell-mobile-main-nav" key={group.href}>
         <MobileSheetNavLink
@@ -228,9 +239,7 @@ export default function MobileNavigationDrawer({
     </div>
   );
 
-  const title = query.trim()
-    ? "Search"
-    : activeGroup?.label ?? "Menu";
+  const title = query.trim() ? "Search" : (activeGroup?.label ?? "Menu");
   const showBack = Boolean(activeGroup) && !query.trim();
 
   return (
@@ -278,7 +287,10 @@ export default function MobileNavigationDrawer({
       <BottomSheetBody className="shell-mobile-drawer-body">
         <nav aria-label="Mobile navigation">
           <MobileRouteMenuSlot />
-          <div className="shell-mobile-view" key={query.trim() ? "search" : activeGroupHref ?? "root"}>
+          <div
+            className="shell-mobile-view"
+            key={query.trim() ? "search" : (activeGroupHref ?? "root")}
+          >
             {query.trim()
               ? renderSearch()
               : activeGroup

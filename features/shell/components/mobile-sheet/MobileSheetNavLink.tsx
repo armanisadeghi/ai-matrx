@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
 import ShellIcon from "../ShellIcon";
 
@@ -27,6 +28,11 @@ export default function MobileSheetNavLink({
   openInNewTab = false,
   contextLabel,
 }: MobileSheetNavLinkProps) {
+  const pathname = usePathname() ?? "";
+  const isActive =
+    !external &&
+    !openInNewTab &&
+    (pathname === href || (href !== "/" && pathname.startsWith(`${href}/`)));
   const className = isChild
     ? "shell-mobile-nav-item shell-mobile-nav-child"
     : "shell-mobile-nav-item";
@@ -66,6 +72,8 @@ export default function MobileSheetNavLink({
     <Link
       href={href}
       data-nav-href={href}
+      data-active={isActive ? "true" : undefined}
+      aria-current={isActive ? "page" : undefined}
       className={className}
       onClick={closeShellMobileMenu}
     >
