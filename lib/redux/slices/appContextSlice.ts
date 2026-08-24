@@ -23,8 +23,11 @@
 //               └── tasks       (nestable — parent_task_id)
 //                   └── conversations
 //
-// All fields are nullable — none means "scope is just the current user".
-// Setting org narrows scope; setting project narrows further; etc.
+// Stored fields are nullable during boot and while the picker has no selection.
+// Null does NOT authorize a personal/system fallback: outbound compute refuses
+// before networking until an organization is selected or explicitly supplied
+// from the durable entity being acted on. Setting org narrows scope; setting
+// project narrows further; etc.
 //
 // scope_selections is MULTI-SELECT (2026-06-12): any number of scopes across
 // any number of scope types can be active at once (keyed by scope id). The old
@@ -39,7 +42,8 @@
 // ctx_scope_assignments / canonical associations and MUST read the user's
 // explicit UI selection — never reach into this slice just because it's loaded.
 //
-// Stamped onto every API call by lib/api/call-api.ts → resolveScope.
+// Supplies the baseline to lib/api/call-api.ts → resolveScope; entity-local
+// overrides may replace it, and null is refused before networking.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
@@ -56,9 +60,9 @@ export interface AppContextState {
   /**
    * The user's PERSONAL organization id (is_personal = true). Set once at
    * shell hydration by the active-org bootstrap; it is NOT the active org and
-   * is NEVER reset by setOrganization. It exists so the API layer can fall
-   * back to a guaranteed-valid org while org enforcement is still soft —
-   * see selectEffectiveOrganizationId. A user always has exactly one.
+   * is NEVER reset by setOrganization. It identifies the personal workspace
+   * for surfaces whose product contract explicitly names that workspace; it
+   * is not permission for the API transport to choose an organization.
    */
   personal_organization_id: string | null;
 
@@ -317,11 +321,10 @@ export const selectPersonalOrganizationId = (
 ): string | null => state.appContext.personal_organization_id;
 
 /**
- * The org id that should ride along on API calls. Returns the explicitly
- * selected org when set, otherwise falls back to the user's personal org.
- * This is the SOFT-enforcement fallback: while we work toward always having
- * an org selected, every request still carries a valid org id. Read this in
- * the API/scope layer instead of selectOrganizationId.
+ * Legacy effective-org selector for direct data surfaces that have not yet
+ * migrated to explicit organization input. Backend transports and new writes
+ * must use `selectOrganizationId` or a durable entity's organization and fail
+ * closed when neither exists. Every remaining consumer is migration debt.
  */
 export const selectEffectiveOrganizationId = (
   state: StateWithAppContext,
@@ -329,9 +332,9 @@ export const selectEffectiveOrganizationId = (
   state.appContext.organization_id ?? state.appContext.personal_organization_id;
 
 /**
- * True when the user has EXPLICITLY chosen an active org. False means we are
- * silently falling back to the personal org — the UI surfaces this as a
- * reminder (red ring on the avatar) so the user picks one.
+ * True when the user has EXPLICITLY chosen an active org. False means compute
+ * requests are blocked unless the caller supplies a durable entity org; the UI
+ * surfaces this as a reminder so the user can pick one.
  */
 export const selectHasExplicitOrganization = (
   state: StateWithAppContext,

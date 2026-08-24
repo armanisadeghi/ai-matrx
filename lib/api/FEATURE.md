@@ -112,15 +112,17 @@ body shape/key, wrong response field. When `pnpm sync-types` regenerates the
 contract after a backend change, every drifted callsite lights up red in the
 same PR.
 
-**3. Organization-aware compute never relies on a backend fallback.**
-`callApi` injects the active organization into JSON bodies automatically.
-When a call acts on an existing entity, pass that entity's durable organization
-with `scopeOverrides`; it wins over ambient app context. Typed-client and raw
-stream callers must send the generated `organization_id` field explicitly,
-resolving global actions through `ensureOrgId` and entity actions from the
-entity row. GET endpoints that declare `organization_id` receive it as a query
-parameter—body injection does not apply to GET. A server-side personal-org
-fallback is loud recovery for a frontend defect, never the normal request path.
+**3. Every compute request has one explicit organization before networking.**
+`callApi` reads only the explicitly selected organization or an entity-local
+`scopeOverrides.organization_id`; it never substitutes a personal organization.
+It refuses missing context, rejects body/query/header disagreement, injects the
+organization into the JSON body, and sends the same value as
+`X-Organization-Id` for server middleware. When a call acts on an existing
+entity, pass that entity's durable organization with `scopeOverrides`. Typed-client
+and raw stream callers must enforce the same contract and send the generated
+`organization_id` explicitly. GET endpoints also send it as a query parameter
+when their generated contract declares one. A server-side organization fallback
+is a defect, never recovery.
 
 ## Multipart nuance (read before touching a `*/multipart` call)
 
@@ -249,6 +251,10 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-08-24 — Made `callApi` fail closed on missing organization context,
+  removed its personal-organization fallback, bound the same organization into
+  `X-Organization-Id` and JSON bodies, and rejected body/query/header mismatch
+  before networking.
 - 2026-08-22 — Kept the exact retryable Cloud Browser worker-replacement 503
   out of Error Inspector persistence while preserving caller-visible recovery.
 - 2026-08-11 — Documented the two request ceilings (our 15s/30s defaults vs

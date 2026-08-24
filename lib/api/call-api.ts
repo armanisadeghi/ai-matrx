@@ -73,7 +73,7 @@ import {
 } from "@/lib/redux/slices/apiConfigSlice";
 import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
 import {
-  selectEffectiveOrganizationId,
+  selectOrganizationId,
   selectProjectId,
   selectTaskId,
   selectConversationId,
@@ -197,6 +197,27 @@ export interface CallScope {
    * Used as a path parameter or passed explicitly in the body by the caller.
    */
   conversation_id?: string;
+}
+
+export interface ResolvedCallScope extends CallScope {
+  organization_id: string;
+}
+
+export class OrganizationContextError extends Error {
+  readonly code:
+    | "organization_context_required"
+    | "organization_context_mismatch";
+
+  constructor(
+    code:
+      | "organization_context_required"
+      | "organization_context_mismatch",
+    message: string,
+  ) {
+    super(message);
+    this.name = "OrganizationContextError";
+    this.code = code;
+  }
 }
 
 // ============================================================================
@@ -585,28 +606,43 @@ function buildUrl(
  *
  * Fields that are null/undefined are omitted from the final scope object.
  */
+export function requireOrganizationContext(
+  selectedOrganizationId: string | null | undefined,
+  overrideOrganizationId?: string,
+): string {
+  const candidate = overrideOrganizationId ?? selectedOrganizationId;
+  if (typeof candidate !== "string" || candidate.trim().length === 0) {
+    throw new OrganizationContextError(
+      "organization_context_required",
+      "Select an organization before sending this request.",
+    );
+  }
+  return candidate.trim();
+}
+
 function resolveScope(
   state: RootState,
   overrides?: Partial<CallScope>,
-): CallScope {
+): ResolvedCallScope {
   // user_id: userAuth is the auth-domain slice (Phase 4 split — see
   // lib/redux/slices/userAuthSlice.ts); selectUserId is its canonical selector.
   const userId: string | undefined = selectUserId(state) ?? undefined;
 
-  // appContext may be absent in store configurations that haven't registered the slice.
-  // Guard defensively so callApi never crashes on a missing key — all fields are nullable.
+  // appContext may be absent in incomplete test/demo stores. That is not a
+  // valid request context: the required-org guard below refuses the request.
   const hasAppContext = !!(state as Partial<RootState>)?.appContext;
 
-  // Effective org = explicitly-selected org, else the user's personal org.
-  // Soft enforcement: every request carries a valid org id even before the
-  // user picks one. See selectEffectiveOrganizationId.
-  const rawOrgId = hasAppContext
-    ? selectEffectiveOrganizationId(state)
+  const selectedOrganizationId = hasAppContext
+    ? selectOrganizationId(state)
     : undefined;
+  const organizationId = requireOrganizationContext(
+    selectedOrganizationId,
+    overrides?.organization_id,
+  );
 
-  const resolved: CallScope = {
+  const resolved: ResolvedCallScope = {
     user_id: userId,
-    organization_id: rawOrgId ?? undefined,
+    organization_id: organizationId,
     project_id: hasAppContext
       ? (selectProjectId(state) ?? undefined)
       : undefined,
@@ -616,8 +652,12 @@ function resolveScope(
       : undefined,
   };
 
-  // Merge caller-supplied overrides (they win over auto-resolved)
-  return { ...resolved, ...overrides };
+  // Merge caller-supplied non-org overrides. The org was normalized and made
+  // non-null above; spreading an explicit `organization_id: undefined` here
+  // would silently undo the invariant.
+  const { organization_id: _organizationOverride, ...otherOverrides } =
+    overrides ?? {};
+  return { ...resolved, ...otherOverrides };
 }
 
 // ============================================================================
@@ -651,7 +691,10 @@ const UI_ONLY_BODY_FIELDS = new Set<string>([
  * UI-only capability flags (youtube_videos, file_urls, image_urls) are always
  * stripped — they are internal frontend signals and are not part of the backend schema.
  */
-function buildRequestBody(body: unknown, scope: CallScope): unknown {
+export function buildRequestBody(
+  body: unknown,
+  scope: ResolvedCallScope,
+): unknown {
   // MATRX-EXCEPTION: `body` is optional by design — a caller with no body
   // still gets scope fields injected below, so `{}` (no caller fields) is
   // the correct starting point, not a masked failure.
@@ -665,17 +708,74 @@ function buildRequestBody(body: unknown, scope: CallScope): unknown {
     }
   }
 
-  // Only inject fields that have an actual value — undefined keys are omitted
-  // from JSON.stringify, so endpoints that don't declare these fields are unaffected.
-  const scopeFields: Record<string, unknown> = {};
-  if (scope.organization_id !== undefined)
-    scopeFields.organization_id = scope.organization_id;
+  const bodyOrganizationId = base.organization_id;
+  if (
+    bodyOrganizationId !== undefined &&
+    (typeof bodyOrganizationId !== "string" ||
+      bodyOrganizationId.trim() !== scope.organization_id)
+  ) {
+    throw new OrganizationContextError(
+      "organization_context_mismatch",
+      "Request body organization_id must match the request context organization.",
+    );
+  }
+  if (bodyOrganizationId !== undefined) {
+    base.organization_id = scope.organization_id;
+  }
+
+  // organization_id is unconditional. Other optional scope fields are omitted
+  // when absent so endpoints that do not declare them remain unaffected.
+  const scopeFields: Record<string, unknown> = {
+    organization_id: scope.organization_id,
+  };
   if (scope.project_id !== undefined) scopeFields.project_id = scope.project_id;
   if (scope.task_id !== undefined) scopeFields.task_id = scope.task_id;
 
-  // Scope fields do NOT override values the caller already set explicitly in the body.
-  // Caller-supplied values win — scope fills in what's missing.
+  // The required organization is already proven identical above. Other scope
+  // fields preserve the existing caller-wins behavior.
   return { ...scopeFields, ...base };
+}
+
+export function applyOrganizationContextHeader(
+  headers: Record<string, string>,
+  organizationId: string,
+): Record<string, string> {
+  const normalizedOrganizationId = requireOrganizationContext(
+    organizationId,
+  );
+  for (const [name, value] of Object.entries(headers)) {
+    if (
+      name.toLowerCase() === "x-organization-id" &&
+      value.trim() !== normalizedOrganizationId
+    ) {
+      throw new OrganizationContextError(
+        "organization_context_mismatch",
+        "X-Organization-Id must match the request context organization.",
+      );
+    }
+  }
+  const withoutOrganizationHeader = Object.fromEntries(
+    Object.entries(headers).filter(
+      ([name]) => name.toLowerCase() !== "x-organization-id",
+    ),
+  );
+  return {
+    ...withoutOrganizationHeader,
+    "X-Organization-Id": normalizedOrganizationId,
+  };
+}
+
+export function assertQueryOrganizationMatchesContext(
+  queryParams: Record<string, string | number | boolean> | undefined,
+  organizationId: string,
+): void {
+  if (!queryParams || queryParams.organization_id === undefined) return;
+  if (String(queryParams.organization_id).trim() !== organizationId) {
+    throw new OrganizationContextError(
+      "organization_context_mismatch",
+      "Query organization_id must match the request context organization.",
+    );
+  }
 }
 
 // ============================================================================
@@ -800,6 +900,16 @@ function extractServerErrorMessage(serverDetail: unknown): string | undefined {
 }
 
 function normalizeError(err: unknown): ApiCallError {
+  if (err instanceof OrganizationContextError) {
+    return {
+      type: "validation_error",
+      message: err.message,
+      code: err.code,
+      name: err.name,
+      stack: err.stack,
+    };
+  }
+
   if (err instanceof DOMException && err.name === "AbortError") {
     return { type: "abort_error", message: "Request was cancelled." };
   }
@@ -1141,41 +1251,41 @@ export function callApi<
       stream: !!config.stream,
     });
 
-    // ── Step 4: Resolve scope ─────────────────────────────────────────────
-    const _scope = resolveScope(state, config.scopeOverrides);
-
-    // NOTE (2026-08-18): do NOT add an X-Organization-Id header here. The
-    // server's AuthMiddleware documents it, but the live CORS allowlist does
-    // not include it, so the preflight fails and EVERY callApi request dies
-    // (measured live). The org travels in the body (injected below); server
-    // routes that need it on ctx install it from body scope
-    // (workflow run-start does since 2026-08-18). Revisit only after the
-    // header lands in aidream's CORS allow_headers.
-
-    // ── Step 5: Assemble request body ─────────────────────────────────────
-    const body = buildRequestBody(config.body, _scope);
-    const desktopTargetInstanceId =
-      state.adminPreferences?.desktopTargetInstanceId ?? null;
-    if (
-      desktopTargetInstanceId &&
-      body &&
-      typeof body === "object" &&
-      isAiTurnPath(config.path as string)
-    ) {
-      applyDesktopTargetToRequestBody(body, desktopTargetInstanceId);
-    }
-
-    // ── Step 6: Apply test overrides ──────────────────────────────────────
-    const headers = applyTestHeaders(auth.headers, config._testOverrides);
-    maybeLogRequest(url, config.method, headers, body, config._testOverrides);
-
-    // Short-circuit for mock responses (testing only)
-    if (config._testOverrides?.mockResponse !== undefined) {
-      return { data: config._testOverrides.mockResponse };
-    }
-
-    // ── Step 7: Execute ───────────────────────────────────────────────────
     try {
+      // ── Step 4: Resolve and validate the complete request context ───────
+      const scope = resolveScope(state, config.scopeOverrides);
+      assertQueryOrganizationMatchesContext(
+        config.queryParams,
+        scope.organization_id,
+      );
+
+      // ── Step 5: Assemble request body ───────────────────────────────────
+      const body = buildRequestBody(config.body, scope);
+      const desktopTargetInstanceId =
+        state.adminPreferences?.desktopTargetInstanceId ?? null;
+      if (
+        desktopTargetInstanceId &&
+        body &&
+        typeof body === "object" &&
+        isAiTurnPath(config.path as string)
+      ) {
+        applyDesktopTargetToRequestBody(body, desktopTargetInstanceId);
+      }
+
+      // ── Step 6: Apply test overrides and bind the same org to middleware ─
+      const headers = applyOrganizationContextHeader(
+        applyTestHeaders(auth.headers, config._testOverrides),
+        scope.organization_id,
+      );
+      maybeLogRequest(url, config.method, headers, body, config._testOverrides);
+
+      // Short-circuit for mock responses (testing only). Context validation
+      // intentionally happens first so tests cannot normalize invalid callers.
+      if (config._testOverrides?.mockResponse !== undefined) {
+        return { data: config._testOverrides.mockResponse };
+      }
+
+      // ── Step 7: Execute ─────────────────────────────────────────────────
       const result = config.stream
         ? await executeStreamingRequest(
             url,
@@ -1243,8 +1353,8 @@ function isAiTurnPath(path: string): boolean {
  * caller never supplies them by hand. aidream marks them required on the
  * request schema — correct for an external client, wrong for a caller here,
  * which would otherwise have to reach into Redux for an org id the transport is
- * about to overwrite it with anyway. Callers may still pass one explicitly
- * (caller values win); `scopeOverrides` is the deliberate way to redirect it.
+ * about to inject. Callers may still pass one explicitly, but it must agree;
+ * `scopeOverrides` is the deliberate way to redirect the entire request context.
  */
 type TransportInjectedScope = "organization_id" | "project_id" | "task_id";
 
