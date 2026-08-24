@@ -33,9 +33,9 @@ export interface OverlayDiagnostics {
     someScriptsMissingDpl: boolean;
     /** True if a loaded script's dpl differs from this build's configured id. */
     deploymentIdMismatch: boolean;
-    /** True if scripts disagree on dpl, or some have none — skew suspect. */
-    deploymentSkewSuspected: boolean;
-    /** ms since the document started loading (stale tab = higher skew odds). */
+    /** True when loaded _next scripts carry inconsistent deployment ids. */
+    deploymentIdInconsistency: boolean;
+    /** ms since the document started loading; diagnostic context only. */
     pageAgeMs: number | null;
   };
   network: {
@@ -220,7 +220,7 @@ function collectDeploymentIds(
   ids: string[];
   someMissingDpl: boolean;
   mismatch: boolean;
-  skew: boolean;
+  inconsistency: boolean;
 } {
   const ids = new Set<string>();
   let sawNone = false;
@@ -237,14 +237,13 @@ function collectDeploymentIds(
     }
   }
   const list = Array.from(ids);
-  // A loaded script's dpl that doesn't match this build's configured id means
-  // the page is assembled from >1 deployment — definitive skew.
+  // A loaded script's dpl that doesn't match this build's configured id is an
+  // observed deployment-id inconsistency. It does not establish why it arose.
   const mismatch =
     configuredId !== null && list.some((id) => id !== configuredId);
-  // Skew suspected when: scripts disagree (>1 dpl), a mix of dpl-tagged and
-  // untagged _next assets, or a dpl mismatches this build.
-  const skew = list.length > 1 || (list.length >= 1 && sawNone) || mismatch;
-  return { ids: list, someMissingDpl: sawNone, mismatch, skew };
+  const inconsistency =
+    list.length > 1 || (list.length >= 1 && sawNone) || mismatch;
+  return { ids: list, someMissingDpl: sawNone, mismatch, inconsistency };
 }
 
 function collectChunkTimings(): {
@@ -329,7 +328,7 @@ export function collectOverlayDiagnostics(
 ): OverlayDiagnostics {
   const scripts = collectLoadedScripts();
   const configuredDeploymentId = process.env.NEXT_PUBLIC_DEPLOYMENT_ID || null;
-  const { ids, someMissingDpl, mismatch, skew } = collectDeploymentIds(
+  const { ids, someMissingDpl, mismatch, inconsistency } = collectDeploymentIds(
     scripts,
     configuredDeploymentId,
   );
@@ -364,7 +363,7 @@ export function collectOverlayDiagnostics(
       deploymentIdsOnPage: ids,
       someScriptsMissingDpl: someMissingDpl,
       deploymentIdMismatch: mismatch,
-      deploymentSkewSuspected: skew,
+      deploymentIdInconsistency: inconsistency,
       pageAgeMs: pageAgeMs(),
     },
     network: {

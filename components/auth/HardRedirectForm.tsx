@@ -6,8 +6,8 @@
 // Why: a tab left open on /login across deploys still runs the OLD build's JS.
 // A server action's redirect() is performed client-side by that old runtime,
 // which then requests the destination's chunks from a build whose assets are
-// gone (past the skew-protection window) — ChunkLoadError → the "This page is
-// out of date" boundary. /welcome was the top reported victim because it is
+// gone (past the skew-protection window) and reaches the chunk-load recovery
+// boundary. /welcome was the top reported victim because it is
 // the universal first landing after login. A window.location.assign() loads
 // the destination's HTML + assets entirely from the live deployment, and on an
 // auth page there is no user state to lose.

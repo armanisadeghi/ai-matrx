@@ -99,7 +99,7 @@ export function lazyOverlay<P extends object = Record<string, never>>(
           const err = new Error(
             `Overlay chunk did not load within ${OVERLAY_LOAD_TIMEOUT_MS}ms (module: ${
               modulePath ?? "unknown"
-            }). The dynamic import() never resolved — likely a stale build, cached chunk, or deployment skew (?dpl= mismatch).`,
+            }). The dynamic import() did not resolve before the recovery timeout.`,
           );
           // Name it ChunkLoadError so detection + messaging treat it as one.
           err.name = "ChunkLoadError";

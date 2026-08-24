@@ -1,8 +1,7 @@
-// Inline <script> that runs before React hydrates. Last line of defense for
-// stale tabs after a Vercel deploy: if a chunk request 404s during the INITIAL
-// page load — before any React error boundary mounts — this listener catches
-// the global error event and reloads the page. At that moment nothing the user
-// typed exists yet, so a reload is lossless.
+// Inline <script> that runs before React hydrates. If an explicit chunk request
+// fails during the INITIAL page load — before any React error boundary mounts —
+// this listener catches the global error event and reloads the page. At that
+// moment nothing the user typed exists yet, so a reload is lossless.
 //
 // CRITICAL: once React boots (NewVersionWatcher sets __MATRX_APP_BOOTED__),
 // this script must NEVER reload — a mid-session reload destroys unsaved work

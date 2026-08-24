@@ -89,7 +89,7 @@ export function normalizeError(error: unknown): {
         : safeStringify(error, 0);
   const stack = error instanceof Error && error.stack ? error.stack : null;
   // ChunkLoadError is the signature failure here — a dynamic import whose JS
-  // chunk 404s or stalls (stale deploy / cache / fragmented chunk graph).
+  // chunk did not load. The signature does not establish why.
   // The explicit chunk-fetch patterns live in ONE place so the overlay and
   // route boundaries classify the same evidence the same way.
   const haystack = `${name} ${message} ${stack ?? ""}`;
@@ -115,10 +115,10 @@ export function buildOverlayErrorHuman(ctx: OverlayErrorContext): string {
   const diag = collectOverlayDiagnostics(
     ctx.isAdmin ? ctx.getReduxState() : null,
   );
-  const skewLine = diag.deploy.deploymentSkewSuspected
-    ? `Deployment skew SUSPECTED — scripts on the page disagree on ?dpl= (ids: ${
+  const deploymentIdLine = diag.deploy.deploymentIdInconsistency
+    ? `Deployment ID inconsistency OBSERVED — scripts on the page disagree on ?dpl= (ids: ${
         diag.deploy.deploymentIdsOnPage.join(", ") || "none"
-      }). A stale tab requesting a chunk Vercel can't route is the likely cause.`
+      }). This is diagnostic evidence, not proof of why the module failed.`
     : null;
   const failed = diag.network.failedOrPendingChunks;
   const failedLine =
@@ -140,9 +140,9 @@ export function buildOverlayErrorHuman(ctx: OverlayErrorContext): string {
     `Module: ${ctx.modulePath ?? "unknown"}`,
     `Error: ${e.name}: ${e.message}`,
     e.isChunkLoadError
-      ? `Likely cause: dynamic chunk failed to load (stale build / cache / deploy skew). A hard reload usually recovers it.`
+      ? `Observed failure: a dynamic chunk did not load. The error signature does not establish the cause.`
       : null,
-    skewLine,
+    deploymentIdLine,
     failedLine,
     ...pendingLines,
     `Build id: ${diag.deploy.nextBuildId ?? "unknown"}`,
@@ -208,8 +208,8 @@ export function buildOverlayErrorAgentPayload(
         ? "This is a dynamic-import chunk load failure."
         : "This is a runtime render error."
     }${
-      diag.deploy.deploymentSkewSuspected
-        ? " Deployment skew is suspected (scripts disagree on ?dpl=)."
+      diag.deploy.deploymentIdInconsistency
+        ? " Loaded scripts have inconsistent deployment ids (?dpl=)."
         : ""
     }`,
     data: safeData,
@@ -217,7 +217,7 @@ export function buildOverlayErrorAgentPayload(
       module: ctx.modulePath ?? undefined,
       errorName: e.name,
       chunkLoadError: e.isChunkLoadError,
-      deploymentSkewSuspected: diag.deploy.deploymentSkewSuspected,
+      deploymentIdInconsistency: diag.deploy.deploymentIdInconsistency,
       failedChunkCount: diag.network.failedOrPendingChunks.length,
       adminDump: ctx.isAdmin,
     },

@@ -297,15 +297,15 @@ There is no longer a timeout/heartbeat middleware: the explicit controller rende
 
 ### Lazy loading — `lazyOverlay`, never bare `dynamic()`
 
-Every overlay is code-split with `ssr: false` (required — the initial bundle would be unusable otherwise). But a bare `next/dynamic` has **no loading state and no error boundary**, so a failed or stalled chunk (the classic production failure: stale deploy, cached file, or a chunk graph fragmented by *nested* `ssr:false` boundaries down one render path) renders **nothing** and fails silently. This was the real residual silent-failure hole.
+Every overlay is code-split with `ssr: false` (required — the initial bundle would be unusable otherwise). But a bare `next/dynamic` has **no loading state and no error boundary**, so a failed or stalled chunk renders **nothing** and fails silently. This was the real residual silent-failure hole.
 
 `features/overlays/boundary/lazyOverlay.tsx` closes it. It is a 1:1 drop-in for `dynamic()` and guarantees, for every overlay, one of exactly three outcomes — **the component, a loading state, or a meaningful error — never nothing**:
 
 - **`OverlayLoadingFallback`** — canonical spinner while the chunk loads, with a 10s loud stall console-warning.
 - **Hard load timeout (the key fix).** A hung `import()` that never resolves *and* never rejects isn't an error, so an error boundary alone can't catch it (confirmed in prod: trace `B2` fired, `B3` never did). `lazyOverlay` races the import against a `OVERLAY_LOAD_TIMEOUT_MS` (12s) timeout that **rejects** with a `ChunkLoadError`, converting a stall into a catchable error so the rich admin error fallback always takes over.
 - **`OverlayErrorBoundary`** — per-render error boundary that catches `ChunkLoadError` / render throws, `console.error`s loudly, and renders `OverlayErrorFallback`.
-- **`OverlayErrorFallback`** — clear message + a **deploy-skew banner** when detected + "Try again" / "Reload page". For **admins** (`selectIsAdmin`) it adds an expandable view of **targeted diagnostics** and a **"Copy for AI"** button (`buildOverlayErrorAgentPayload`). The payload is NOT a full Redux dump (noise for a chunk failure) — it's `overlayDiagnostics.ts`: the error + component stack + failing module, **deploy/skew forensics** (build id, the set of `?dpl=` ids across loaded scripts — a mix/absence is the skew tell), **network/chunk forensics** (which `_next/static` chunks failed or hung, connection state), and ONLY the overlay-relevant slices (`overlays` / `windowManager` / `appContext` + a redacted user summary).
-- **Genuine retry.** "Try again" builds a **fresh loadable per attempt** (`lazyOverlay` caches `dynamic()` by attempt number). A bare `dynamic()` caches the import result for the module's life, so a naive re-mount would replay the same rejection — retry would be a no-op. The fresh loadable makes retry actually re-import (recovers transient failures; deploy-skew still needs the reload).
+- **`OverlayErrorFallback`** — cause-neutral failure message + an **inconsistent deployment-ID banner** only when loaded scripts actually disagree on `?dpl=`, plus "Try again" / "Reload page". For **admins** (`selectIsAdmin`) it adds an expandable view of **targeted diagnostics** and a **"Copy for AI"** button (`buildOverlayErrorAgentPayload`). The payload is NOT a full Redux dump (noise for a chunk failure) — it's `overlayDiagnostics.ts`: the error + component stack + failing module, deployment-ID observations (build id and `?dpl=` values), **network/chunk forensics** (which `_next/static` chunks failed or hung, connection state), and ONLY the overlay-relevant slices (`overlays` / `windowManager` / `appContext` + a redacted user summary).
+- **Genuine retry.** "Try again" builds a **fresh loadable per attempt** (`lazyOverlay` caches `dynamic()` by attempt number). A bare `dynamic()` caches the import result for the module's life, so a naive re-mount would replay the same rejection — retry would be a no-op. The fresh loadable makes retry actually re-import; page reload remains the user-chosen last resort.
 
 Pass a custom `loading` as the second arg only when an overlay needs a bespoke skeleton; the error handling always applies.
 
@@ -338,6 +338,7 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-08-23 — Removed unsupported deployment-cause claims from every lazy-overlay recovery surface.** A chunk error or timeout proves only that a module did not load; it does not prove a stale tab, cache fault, or deploy. User copy, timeout errors, human/agent diagnostic payloads, and the diagnostic field now state only observed facts. The separate banner appears only for an actual loaded-script `?dpl=` inconsistency and does not infer how it arose. Regression coverage scans route, global, toast, lazy-overlay, and diagnostic-copy surfaces.
 - **2026-08-21** — **Quick Chat can adopt an existing conversation.**
   `useOpenQuickChatSheet({ initialConversationId, title })` threads both values
   explicitly through `OverlayController` into `QuickChatSheet`, so a compact

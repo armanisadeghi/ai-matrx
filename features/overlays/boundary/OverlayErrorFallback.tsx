@@ -16,13 +16,14 @@
  *     import. Because the agent runner's typed request lives in Redux keyed by
  *     conversationId (NOT in the unmounted React tree), a successful retry
  *     brings the user's message back intact.
- *   - "Reload page" (last resort) — the hard fix for a genuinely stale chunk.
+ *   - "Reload page" (last resort) — requests a fresh document and module set.
  *
  * Two audiences:
  *   - Everyone: a clear message + the actions above.
  *   - Admins: the in-flight agent request (the exact text that was being sent,
- *     so it's visible/copyable and provably not lost), a deploy-skew banner when
- *     detected, plus an expandable view of the TARGETED diagnostics (error,
+ *     so it's visible/copyable and provably not lost), a deployment-id
+ *     inconsistency banner when observed, plus an expandable view of the
+ *     TARGETED diagnostics (error,
  *     component stack, failing module, build id, ?dpl= ids, failed/pending
  *     chunks, connection, overlay-relevant Redux slices, and live agent
  *     execution state) — and a "Copy for AI" button that packages it all into
@@ -93,10 +94,10 @@ export function OverlayErrorFallback({
     getReduxState: () => store.getState(),
   };
 
-  // Deploy-skew detection runs for everyone (cheap, browser-only) so we can show
-  // the right recovery hint; the heavier sectioned dump is admin + on-expand.
+  // Deployment-id comparison runs for everyone (cheap, browser-only). It only
+  // reports the observed script state; it never infers why a load failed.
   const diag = collectOverlayDiagnostics(isAdmin ? store.getState() : null);
-  const skewSuspected = diag.deploy.deploymentSkewSuspected;
+  const deploymentIdsInconsistent = diag.deploy.deploymentIdInconsistency;
 
   // The user's work at risk: any conversation carrying a typed-but-unsent
   // request. Surfaced inline (admins) so they can SEE and copy the exact
@@ -132,7 +133,7 @@ export function OverlayErrorFallback({
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
               {e.isChunkLoadError
-                ? "The panel's code couldn't be downloaded — usually a stale build or cached file after a deploy. Reloading the page almost always fixes it."
+                ? "A required part of the panel did not finish loading. Try again, or reload the page if retrying fails."
                 : "Something went wrong while rendering this panel."}
             </p>
           </div>
@@ -140,17 +141,16 @@ export function OverlayErrorFallback({
 
         {/* Body */}
         <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
-          {skewSuspected && (
+          {deploymentIdsInconsistent && (
             <div className="mb-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground">
               <span className="font-semibold text-warning">
-                Deployment skew detected.
+                Inconsistent deployment IDs detected.
               </span>{" "}
               The page&apos;s scripts disagree on their deployment id
               {diag.deploy.deploymentIdsOnPage.length
                 ? ` (${diag.deploy.deploymentIdsOnPage.join(", ")})`
                 : ""}
-              . This tab was likely open across a deploy — reloading pulls a
-              fresh, consistent set of chunks.
+              . Reloading requests a fresh, consistent set of modules.
             </div>
           )}
 

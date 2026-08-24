@@ -28,12 +28,22 @@ describe("chunk-load failure detection", () => {
       "app/global-error.tsx",
       "components/errors/ErrorBoundaryView.tsx",
       "components/errors/NewVersionWatcher.tsx",
+      "features/overlays/boundary/lazyOverlay.tsx",
+      "features/overlays/boundary/OverlayErrorFallback.tsx",
+      "features/overlays/boundary/overlayErrorReport.ts",
     ]) {
       const source = readFileSync(join(process.cwd(), relativePath), "utf8");
       expect(source).not.toContain("This page is out of date");
       expect(source).not.toContain(
         "A new version of the app was deployed while this tab was open",
       );
+      expect(source).not.toContain("usually a stale build");
+      expect(source).not.toContain("This tab was likely open across a deploy");
+      expect(source).not.toContain("stale build / cache / deploy skew");
+      expect(source).not.toContain(
+        "likely a stale build, cached chunk, or deployment skew",
+      );
+      expect(source).not.toContain("A stale tab requesting a chunk");
     }
   });
 
