@@ -56,7 +56,7 @@ function DeltaTag({ delta, label }: { delta: Delta; label: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums",
+        "inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[11px] font-semibold tabular-nums",
         tone,
       )}
       title={`${label} vs the previous 28 days`}
@@ -196,7 +196,7 @@ export function ValueKpiBand({
       />
 
       <Tile
-        label="Clicks you have valued"
+        label="Valued clicks"
         hint="Clicks carried by keywords that have a level. This rises when valued traffic grows AND every time you rule one more keyword — it is the number your work shows up in."
         value={formatCount(kpis.valuedClicks)}
         valueTone="text-success"
@@ -216,7 +216,7 @@ export function ValueKpiBand({
       />
 
       <Tile
-        label="Unvalued — your queue"
+        label="Unvalued queue"
         hint="Keywords no meaning reaches yet, and the clicks they carry. Until you rule on them, every total on this page understates what you know."
         value={formatCount(kpis.unvaluedQueries)}
         valueTone={queueOpen ? "text-warning" : "text-success"}

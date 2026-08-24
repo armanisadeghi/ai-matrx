@@ -59,7 +59,7 @@ function DeltaBadge({ delta, label }: { delta: Delta; label: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 text-[10px] font-medium tabular-nums",
+        "inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[10px] font-medium tabular-nums",
         tone,
       )}
       title={`${label} vs the previous 28 days`}

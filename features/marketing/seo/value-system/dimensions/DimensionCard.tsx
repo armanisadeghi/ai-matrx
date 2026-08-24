@@ -72,6 +72,7 @@ function ValueRow({
   siteId,
   dimensionSlug,
   situational,
+  focused = false,
   onSaved,
 }: {
   value: FacetValue;
@@ -79,6 +80,8 @@ function ValueRow({
   siteId: string;
   dimensionSlug: string;
   situational: boolean;
+  /** Arrived here from a value receipt's "change what this is worth" link. */
+  focused?: boolean;
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -119,7 +122,13 @@ function ValueRow({
   }
 
   return (
-    <li className="flex flex-wrap items-start gap-x-2 gap-y-1 rounded-md border border-border bg-card px-2.5 py-2">
+    <li
+      id={`facet-value-${value.value_id}`}
+      className={cn(
+        "flex flex-wrap items-start gap-x-2 gap-y-1 rounded-md border bg-card px-2.5 py-2",
+        focused ? "border-primary ring-1 ring-primary/40" : "border-border",
+      )}
+    >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span className="text-xs font-semibold text-foreground">
@@ -183,14 +192,24 @@ export function DimensionCard({
   dimension,
   siteId,
   defaultExpanded,
+  focusValueId = null,
   onSaved,
 }: {
   dimension: FacetDimension;
   siteId: string;
   defaultExpanded: boolean;
+  /**
+   * A value receipt sent the reader straight here. The card opens regardless
+   * of the collapse default and the row is ringed — arriving on a collapsed
+   * card would make the link look broken.
+   */
+  focusValueId?: string | null;
   onSaved: () => void;
 }) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const focusedHere =
+    !!focusValueId &&
+    dimension.values.some((value) => value.value_id === focusValueId);
+  const [expanded, setExpanded] = useState(defaultExpanded || focusedHere);
   const [editingDimension, setEditingDimension] = useState(false);
   const [addingValue, setAddingValue] = useState(false);
 
@@ -456,6 +475,7 @@ export function DimensionCard({
                   siteId={siteId}
                   dimensionSlug={dimension.slug}
                   situational={situational}
+                  focused={value.value_id === focusValueId}
                   onSaved={onSaved}
                 />
               ))}

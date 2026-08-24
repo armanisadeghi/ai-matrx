@@ -25,7 +25,8 @@
  * possible instead of offering a button that quietly orphans facts.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layers, Lock, Plus, Timer } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -64,6 +65,16 @@ export function DimensionManager() {
   const { site } = useMarketingSite();
   const siteId = site.id;
   const queryClient = useQueryClient();
+  /**
+   * `?dimension=<slug>&value=<value_id>` — the door a value receipt opens when
+   * the reader asks what a stamped answer is worth. The card for that value
+   * expands, the row is ringed and scrolled to. `?matcher=` rides along for
+   * the day a matcher editor exists; it is deliberately not read yet, because
+   * pretending to open an editor that does not exist is worse than landing on
+   * the value the matcher stamps.
+   */
+  const searchParams = useSearchParams();
+  const focusValueId = searchParams.get("value");
   const [creating, setCreating] = useState(false);
   const [savingNew, setSavingNew] = useState(false);
 
@@ -102,6 +113,19 @@ export function DimensionManager() {
   };
 
   const dimensions = catalog.data ?? [];
+
+  const focusedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focusValueId || dimensions.length === 0) return;
+    if (focusedRef.current === focusValueId) return;
+    focusedRef.current = focusValueId;
+    const frame = requestAnimationFrame(() => {
+      document
+        .getElementById(`facet-value-${focusValueId}`)
+        ?.scrollIntoView({ block: "center" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusValueId, dimensions.length]);
   // P20/P22 — intrinsic and situational are the same machinery and are NEVER
   // shown as one undifferentiated list. "What this keyword IS" and "where
   // this keyword sits right now" answer different questions, are trusted
@@ -238,6 +262,7 @@ export function DimensionManager() {
                     dimension={dimension}
                     siteId={siteId}
                     defaultExpanded={mine.length <= 3}
+                    focusValueId={focusValueId}
                     onSaved={refresh}
                   />
                 ))}
@@ -261,6 +286,7 @@ export function DimensionManager() {
                       dimension={dimension}
                       siteId={siteId}
                       defaultExpanded={situational.length <= 3}
+                      focusValueId={focusValueId}
                       onSaved={refresh}
                     />
                   ))}
@@ -289,6 +315,7 @@ export function DimensionManager() {
                       dimension={dimension}
                       siteId={siteId}
                       defaultExpanded={false}
+                      focusValueId={focusValueId}
                       onSaved={refresh}
                     />
                   ))
