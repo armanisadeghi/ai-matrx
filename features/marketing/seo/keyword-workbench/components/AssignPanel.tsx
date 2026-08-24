@@ -22,7 +22,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eraser, Loader2, Tag } from "lucide-react";
+import { Eraser, Loader2, Tag, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +49,40 @@ export interface AssignTarget {
   lockedDimensionSlug?: string;
   /** Pre-selected value (a cell dropdown re-opening on the current answer). */
   initial?: PickedValue | null;
+}
+
+/**
+ * The one place the TARGET of an assignment is described — "412 keywords",
+ * "every keyword your filters match", and the honest sentence when the server
+ * capped the sweep. Exported because the SERVICE panel places keywords on the
+ * topic tree with the same three gestures, and two copies of "your filters
+ * match more than this" is two chances to lie differently.
+ */
+export function AssignTargetHeadline({
+  target,
+  title,
+  icon: Icon = Tag,
+}: {
+  target: AssignTarget;
+  title: string;
+  icon?: LucideIcon;
+}) {
+  const count = target.keywordIds.length;
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        {target.fromFilters ? (
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            {target.capped
+              ? `Your filters match more than this — ${count.toLocaleString()} keywords were taken, the most one assignment can carry. Narrow the filters and repeat for the rest.`
+              : `Every keyword your current filters match — ${count.toLocaleString()} of them.`}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 export function AssignPanel({
@@ -110,21 +144,10 @@ export function AssignPanel({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-start gap-2">
-        <Tag className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">
-            Assign a value to {target.label}
-          </p>
-          {target.fromFilters ? (
-            <p className="text-[11px] leading-snug text-muted-foreground">
-              {target.capped
-                ? `Your filters match more than this — ${count.toLocaleString()} keywords were taken, the most one assignment can carry. Narrow the filters and repeat for the rest.`
-                : `Every keyword your current filters match — ${count.toLocaleString()} of them.`}
-            </p>
-          ) : null}
-        </div>
-      </div>
+      <AssignTargetHeadline
+        target={target}
+        title={`Assign a value to ${target.label}`}
+      />
 
       <DimensionValuePicker
         siteId={siteId}

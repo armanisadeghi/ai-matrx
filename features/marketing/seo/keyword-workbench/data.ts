@@ -289,3 +289,129 @@ export async function deleteSavedView(
   });
   assertGoverned(response.data, response.error, "delete that view");
 }
+
+/* ------------------------------------------------ the SERVICE (topic) stamp */
+
+/**
+ * THE SERVICE COLUMN. Arman, 2026-08-24: "when I look at all green electronics
+ * recycling, the first thing I wanna know is what service they map to… I wanna
+ * know what maps to e-waste recycling, what maps to ITAD, and what maps to
+ * data destruction."
+ *
+ * The topic tree is the ONE declared hierarchical exception in the stamp model
+ * (P19), so it has its own stamp table (`seo.keyword_topic`) rather than a
+ * dimension + value pair. Everything else about it is the same contract as a
+ * stamp: read the window you render, write through ONE RPC, carry the reason.
+ */
+export interface KeywordServicePlacement {
+  topicId: string;
+  topicName: string;
+  nodeType: string;
+  rootId: string | null;
+  rootName: string | null;
+  rootType: string | null;
+  /** Root › … › parent — the ancestors, never the node itself. */
+  lineage: string | null;
+  /** 'human' | 'agent' | a model token — whose ruling this is. */
+  assignedBy: string | null;
+  confidence: number | null;
+  notes: string | null;
+  /** True when THIS topic carries the site's own worth ruling. */
+  hasOwnWorth: boolean;
+  /** The ancestor the worth is inherited FROM, when it is inherited. */
+  worthFromId: string | null;
+  worthFromName: string | null;
+}
+
+/** keyword_id → its primary placement. Unplaced keywords are simply absent. */
+export type KeywordServiceMap = Map<string, KeywordServicePlacement>;
+
+/**
+ * THE SCOPE RULE, again: the RPC refuses more than 2,000 ids, so the caller
+ * asks for the page it renders. Resolving 20,000 keywords' lineage to paint 50
+ * rows is the mistake the stamp reader already refuses to make.
+ */
+export async function getKeywordServices(
+  siteId: string,
+  keywordIds: string[],
+  signal?: AbortSignal,
+): Promise<KeywordServiceMap> {
+  const map: KeywordServiceMap = new Map();
+  if (keywordIds.length === 0) return map;
+  const response = await (await seoDb())
+    .rpc("gsc_keyword_topics_for", {
+      p_site_id: siteId,
+      p_keyword_ids: keywordIds,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(
+    response.data,
+    response.error,
+    "read which service these keywords map to",
+  );
+  for (const row of rows) {
+    map.set(row.keyword_id, {
+      topicId: row.topic_id,
+      topicName: row.topic_name,
+      nodeType: row.node_type,
+      rootId: row.root_id,
+      rootName: row.root_name,
+      rootType: row.root_type,
+      lineage: row.lineage,
+      assignedBy: row.assigned_by,
+      confidence: row.confidence,
+      notes: row.notes,
+      hasOwnWorth: row.has_own_worth,
+      worthFromId: row.worth_from_id,
+      worthFromName: row.worth_from_name,
+    });
+  }
+  return map;
+}
+
+export interface SetServiceResult {
+  /** What the resolver says each keyword is worth AFTER the placement. */
+  keywordId: string;
+  valueBand: string;
+  valueSource: string;
+  valueScore: number | null;
+}
+
+/**
+ * THE ONE PLACEMENT WRITE — `seo.gsc_set_keyword_topic`. One row from a cell,
+ * the checked rows, or every keyword the filters match all land here, and the
+ * reason (P24) rides along on the stamp.
+ *
+ * `topicId: null` takes the keyword off the tree. The payoff IS the response:
+ * the RPC answers with the band each keyword lands in after the change,
+ * straight from the resolver, so a caller never re-derives a score.
+ *
+ * NOTE — the topic-tree screen has its own thinner wrapper over this same RPC
+ * (`value-system/topics/data.ts` → `setKeywordPrimaryTopic`, no reason field).
+ * Two wrappers, ONE write path; collapse them into this one when that file is
+ * next touched.
+ */
+export async function setKeywordService(input: {
+  siteId: string;
+  keywordIds: string[];
+  topicId: string | null;
+  notes?: string | null;
+}): Promise<SetServiceResult[]> {
+  const response = await (await seoDb()).rpc("gsc_set_keyword_topic", {
+    p_site_id: input.siteId,
+    p_keyword_ids: input.keywordIds,
+    ...(input.topicId ? { p_topic_id: input.topicId } : {}),
+    ...(input.notes?.trim() ? { p_notes: input.notes.trim() } : {}),
+  });
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    input.topicId ? "place these keywords on that service" : "take these keywords off the tree",
+  );
+  return (rows ?? []).map((row) => ({
+    keywordId: row.keyword_id,
+    valueBand: row.value_band,
+    valueSource: row.value_source,
+    valueScore: row.value_score == null ? null : Number(row.value_score),
+  }));
+}

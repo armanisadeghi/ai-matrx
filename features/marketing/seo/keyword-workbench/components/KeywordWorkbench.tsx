@@ -31,6 +31,7 @@ import {
   BrainCircuit,
   Info,
   Loader2,
+  Network,
   PanelTop,
   SearchX,
   Tag,
@@ -99,13 +100,16 @@ import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import {
   deleteSavedView,
+  getKeywordServices,
   getKeywordStamps,
   getMatchingKeywordIds,
   listSavedViews,
   saveView,
+  setKeywordService,
   setKeywordStamps,
   type SavedView,
 } from "@/features/marketing/seo/keyword-workbench/data";
+import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
 import {
   parseWorkbenchState,
   stateFromViewState,
@@ -115,6 +119,10 @@ import {
   type WorkbenchState,
 } from "@/features/marketing/seo/keyword-workbench/state";
 import { AssignPanel, type AssignTarget } from "./AssignPanel";
+import { ServiceAssignPanel } from "./ServiceAssignPanel";
+import { ServiceCell } from "./ServiceCell";
+import { ServiceFilterControl } from "./ServiceFilterControl";
+import { SERVICE_UNPLACED } from "./ServicePicker";
 import { ClassCell, StampCell } from "./cells";
 import { ColumnChooser } from "./ColumnChooser";
 import type { PickedValue } from "./DimensionValuePicker";
@@ -130,6 +138,9 @@ const SERVER_SORTABLE = new Set([
   "impressions",
   "ctr",
   "position",
+  // THE SERVICE COLUMN sorts on the server or it lies: the browser holds one
+  // page, and "sort by service" over 4,471 keywords must mean all of them.
+  "topic",
 ]);
 
 export function KeywordWorkbench() {
@@ -199,6 +210,23 @@ export function KeywordWorkbench() {
     staleTime: 60_000,
   });
 
+  /**
+   * THE SERVICE COLUMN's two reads. The catalog (the site's topic tree) is
+   * shared with the topic-tree screen under its own query keys; the placements
+   * are asked for the page on screen only (THE SCOPE RULE).
+   */
+  const services = useSiteServices(
+    site.id,
+    periods.current.start,
+    periods.current.end,
+  );
+  const placements = useQuery({
+    queryKey: ["marketing", "seo", "keyword-services", site.id, keywordIds],
+    queryFn: ({ signal }) => getKeywordServices(site.id, keywordIds, signal),
+    enabled: keywordIds.length > 0,
+    staleTime: 60_000,
+  });
+
   const stamps = useQuery({
     queryKey: [
       "marketing",
@@ -238,6 +266,8 @@ export function KeywordWorkbench() {
     if (selectedIds.length > 0) setSelectedIds([]);
   }
   const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
+  /** The same three gestures, aimed at the topic tree instead of a stamp. */
+  const [serviceTarget, setServiceTarget] = useState<AssignTarget | null>(null);
   const [lastUsed, setLastUsed] = useState<PickedValue | null>(null);
   const [selectingAll, setSelectingAll] = useState(false);
   const [viewsBusy, setViewsBusy] = useState(false);
@@ -260,6 +290,44 @@ export function KeywordWorkbench() {
     await queryClient.invalidateQueries({
       queryKey: ["marketing", "seo", "dimension-catalog", site.id],
     });
+    await queryClient.invalidateQueries({
+      queryKey: ["marketing", "seo", "keyword-services", site.id],
+    });
+    // The topic tree screen counts these placements — never leave it stale.
+    await queryClient.invalidateQueries({ queryKey: ["seo", "topics"] });
+  };
+
+  /**
+   * Place one keyword on a service straight from the cell — one gesture, no
+   * dialog, the same doctrine as the Class cell. The reason box lives in the
+   * bulk panel for the times the WHY matters (P24); a single quick placement
+   * that demanded a paragraph would stop being one gesture.
+   */
+  const placeService = async (
+    keywordId: string,
+    topicId: string | null,
+    keyword: string,
+  ) => {
+    try {
+      await setKeywordService({
+        siteId: site.id,
+        keywordIds: [keywordId],
+        topicId,
+      });
+      await refreshMeaning();
+      const name = topicId
+        ? (services.byId.get(topicId)?.name ?? "that service")
+        : null;
+      toast.success(
+        name
+          ? `“${keyword}” maps to ${name}.`
+          : `“${keyword}” is off the tree — it maps to no service now.`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not place that.",
+      );
+    }
   };
 
   /** Quick-assign: one click, the value you last used, no dialog (P23 story). */
@@ -281,7 +349,7 @@ export function KeywordWorkbench() {
     }
   };
 
-  const selectAllMatching = async () => {
+  const selectAllMatching = async (intent: "stamp" | "service" = "stamp") => {
     setSelectingAll(true);
     try {
       const match = await getMatchingKeywordIds(
@@ -294,12 +362,14 @@ export function KeywordWorkbench() {
         toast.info("Nothing matches these filters yet.");
         return;
       }
-      setAssignTarget({
+      const target: AssignTarget = {
         keywordIds: match.keywordIds,
         label: `${match.keywordIds.length.toLocaleString()} keywords`,
         fromFilters: true,
         capped: match.capped,
-      });
+      };
+      if (intent === "service") setServiceTarget(target);
+      else setAssignTarget(target);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -341,6 +411,14 @@ export function KeywordWorkbench() {
     row.keyword_id ? stamps.data?.get(row.keyword_id)?.get(slug) : undefined;
   const valueFor = (row: GscBreakdownRow) =>
     row.keyword_id ? values.data?.get(row.keyword_id) : undefined;
+  const serviceFor = (row: GscBreakdownRow) =>
+    row.keyword_id ? placements.data?.get(row.keyword_id) : undefined;
+  const filterByService = (topic: string | undefined) => {
+    const filters: GscFilters = { ...state.filters };
+    if (!topic) delete filters.topic;
+    else filters.topic = topic;
+    patch({ filters });
+  };
 
   const stampPairs = parseStampFilter(state.filters.stamps);
   const filterByStamp = (dimensionSlug: string, valueKey: string) => {
@@ -434,6 +512,46 @@ export function KeywordWorkbench() {
           {row.key}
         </span>
       ),
+    },
+    {
+      /**
+       * THE SERVICE COLUMN — "the first thing I wanna know is what service
+       * they map to". It sits next to the keyword because that is the order a
+       * person reads: the phrase, then what it is FOR, then how we classify
+       * it, then the dimensions, then the numbers.
+       */
+      id: "topic",
+      header: "Service",
+      sortable: true,
+      filter: "select",
+      filterSingle: true,
+      // P26 — every column filters. This one's filter is the same server
+      // filter the toolbar control writes, so both doors lead to one truth.
+      filterOptions: [
+        { value: SERVICE_UNPLACED, label: "Not placed yet" },
+        ...services.options.map((option) => ({
+          value: option.topicId,
+          label: option.depth > 0 ? `${option.rootName} › ${option.name}` : option.name,
+        })),
+      ],
+      width: 190,
+      accessorFn: (row) => serviceFor(row)?.topicName ?? "",
+      cell: (row) => {
+        if (!row.keyword_id) {
+          return <span className="text-[11px] text-muted-foreground">—</span>;
+        }
+        return (
+          <ServiceCell
+            siteId={site.id}
+            services={services}
+            placement={serviceFor(row)}
+            onPlace={(topicId) =>
+              void placeService(row.keyword_id as string, topicId, row.key)
+            }
+            onFilter={(topicId) => filterByService(topicId)}
+          />
+        );
+      },
     },
     {
       id: "traffic_class",
@@ -600,6 +718,14 @@ export function KeywordWorkbench() {
     // server-side `stamps` filter rather than sieving the page in the browser.
     const columnFilterEntries = Object.entries(next.columnFilters ?? {});
     for (const [id, raw] of columnFilterEntries) {
+      if (id === "topic") {
+        const picked = Array.isArray(raw) ? raw[0] : raw;
+        if (typeof picked === "string" && picked !== "") {
+          filterByService(picked);
+          return;
+        }
+        continue;
+      }
       if (!id.startsWith("dim:") && id !== "traffic_class") continue;
       const slug = id.startsWith("dim:") ? id.slice(4) : "traffic_class";
       const picked = Array.isArray(raw) ? raw[0] : raw;
@@ -665,7 +791,10 @@ export function KeywordWorkbench() {
         getRowId={(row) => row.key}
         isLoading={breakdown.isLoading}
         isFetching={
-          breakdown.isFetching || values.isFetching || stamps.isFetching
+          breakdown.isFetching ||
+          values.isFetching ||
+          stamps.isFetching ||
+          placements.isFetching
         }
         query={{
           mode: "controlled",
@@ -694,6 +823,21 @@ export function KeywordWorkbench() {
                 <Tag className="h-3.5 w-3.5" />
                 Assign…
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                disabled={selectedKeywordIds.length === 0}
+                onClick={() =>
+                  setServiceTarget({
+                    keywordIds: selectedKeywordIds,
+                    label: `${selectedKeywordIds.length.toLocaleString()} keyword${selectedKeywordIds.length === 1 ? "" : "s"}`,
+                  })
+                }
+              >
+                <Network className="h-3.5 w-3.5" />
+                Service…
+              </Button>
               {lastUsed ? (
                 <Button
                   variant="outline"
@@ -720,20 +864,32 @@ export function KeywordWorkbench() {
           searchPlaceholder: "Search keywords…",
           leading:
             total > rows.length ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1 whitespace-nowrap text-xs"
-                onClick={() => void selectAllMatching()}
-                disabled={selectingAll}
-              >
-                {selectingAll ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Tag className="h-3.5 w-3.5" />
-                )}
-                Assign all {formatCount(total)} matching
-              </Button>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1 whitespace-nowrap text-xs"
+                  onClick={() => void selectAllMatching("stamp")}
+                  disabled={selectingAll}
+                >
+                  {selectingAll ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Tag className="h-3.5 w-3.5" />
+                  )}
+                  Assign all {formatCount(total)} matching
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1 whitespace-nowrap text-xs"
+                  onClick={() => void selectAllMatching("service")}
+                  disabled={selectingAll}
+                >
+                  <Network className="h-3.5 w-3.5" />
+                  Service for all {formatCount(total)}
+                </Button>
+              </div>
             ) : undefined,
         }}
         copy={{
@@ -898,6 +1054,14 @@ export function KeywordWorkbench() {
           allowedKeys={allowedFilterKeysForTab("queries")}
           siteId={site.id}
         />
+        {/* The service filter's own control — the shared bar has no topic
+            catalog, and a chip reading a raw uuid is not a filter. */}
+        <ServiceFilterControl
+          siteId={site.id}
+          services={services}
+          value={state.filters.topic}
+          onChange={filterByService}
+        />
         <span className="ml-auto whitespace-nowrap text-[11px] text-muted-foreground">
           {formatCount(total)} keywords · {rangeLabel}
           {dataThrough ? ` · through ${dataThrough}` : ""}
@@ -930,6 +1094,25 @@ export function KeywordWorkbench() {
                   dimensions: [...state.dimensions, picked.dimensionSlug],
                 });
               }
+            }}
+          />
+        </div>
+      ) : null}
+
+      {serviceTarget ? (
+        <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+          <ServiceAssignPanel
+            siteId={site.id}
+            services={services}
+            target={serviceTarget}
+            onCancel={() => setServiceTarget(null)}
+            onDone={(result, placed) => {
+              setServiceTarget(null);
+              toast.success(
+                placed.topicId
+                  ? `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} now map to ${placed.name}.`
+                  : `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} taken off the tree.`,
+              );
             }}
           />
         </div>
@@ -991,6 +1174,27 @@ export function KeywordWorkbench() {
                         return;
                       }
                       setAssignTarget({
+                        keywordIds: [row.keyword_id],
+                        label: `“${row.key}”`,
+                      });
+                    },
+                  },
+                  {
+                    kind: "item" as const,
+                    id: "kw-service",
+                    label: "Which service?",
+                    icon: Network,
+                    description:
+                      "Place this keyword under the service, product or thing it is really about",
+                    onSelect: () => {
+                      const row = clickedRow.current;
+                      if (!row?.keyword_id) {
+                        toast.error(
+                          "Right-click a keyword row to place it on a service.",
+                        );
+                        return;
+                      }
+                      setServiceTarget({
                         keywordIds: [row.keyword_id],
                         label: `“${row.key}”`,
                       });

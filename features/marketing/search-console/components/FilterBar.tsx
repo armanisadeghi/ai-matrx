@@ -74,6 +74,11 @@ const FILTER_LABELS: Record<GscFilterKey, string> = {
   search_appearance: "Appearance",
   stamps: "Dimension",
   levels: "Level",
+  // THE SERVICE FILTER is set and shown by the surface that can NAME a topic
+  // (the keyword workbench's own Service control). This bar has no topic
+  // catalog, so it never offers the key and never renders a raw uuid chip for
+  // it — see SKIPPED_KEYS below.
+  topic: "Service",
   clicks_min: "Clicks",
   clicks_max: "Clicks",
   impressions_min: "Impressions",
@@ -121,10 +126,20 @@ const QUERY_PAGE_KEYS: GscFilterKey[] = [
   "page_eq",
   "stamps",
   "levels",
+  // The service filter is a keyword-level filter like a stamp, so it belongs
+  // to this profile group even though this bar does not render its control.
+  "topic",
 ];
 const COUNTRY_DEVICE_KEYS: GscFilterKey[] = ["country", "device"];
 /** Keys that hold a LIST (several chips, several adds) rather than one value. */
 const MULTI_KEYS: GscFilterKey[] = ["stamps", "levels"];
+/**
+ * Keys this bar deliberately leaves alone: they are part of the shared URL
+ * dialect (so a pasted link means the same thing everywhere) but their own
+ * surface owns the control AND the chip, because only that surface can turn
+ * the stored id into a name a person recognises.
+ */
+const SKIPPED_KEYS: GscFilterKey[] = ["topic"];
 
 function activeGroup(
   filters: GscFilters,
@@ -224,6 +239,7 @@ export function FilterBar({
   const addable: FilterMenuKey[] = [
     ...(Object.keys(FILTER_LABELS) as GscFilterKey[]).filter((key) => {
       if (RANGE_BOUND_KEYS.has(key)) return false; // offered as a range group
+      if (SKIPPED_KEYS.includes(key)) return false; // its own surface owns it
       if (filters[key] && !MULTI_KEYS.includes(key)) return false;
       if (allowedKeys && !allowedKeys.includes(key)) return false;
       if (MULTI_KEYS.includes(key) && !siteId) return false;
@@ -272,6 +288,7 @@ export function FilterBar({
   >) {
     if (typeof value !== "string" || value.trim() === "") continue;
     if (RANGE_BOUND_KEYS.has(key)) continue; // one chip per range, added below
+    if (SKIPPED_KEYS.includes(key)) continue; // its own surface renders the chip
     if (key === "stamps") {
       stampPairs.forEach((pair, idx) => {
         chips.push({

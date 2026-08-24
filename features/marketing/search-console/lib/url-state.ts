@@ -67,6 +67,7 @@ const FILTER_PARAMS: Array<[keyof GscFilters, string]> = [
   ["search_appearance", "appearance"],
   ["stamps", "st"],
   ["levels", "lv"],
+  ["topic", "tp"],
   ["query_word", "qw"],
   ["clicks_min", "cmin"],
   ["clicks_max", "cmax"],
@@ -321,6 +322,8 @@ const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   // C6: dimension stamps + levels are keyword-level — the query/page group
   "stamps",
   "levels",
+  // The SERVICE filter — one topic subtree, or "none" for the unplaced.
+  "topic",
   ...PROFILE_NEUTRAL_FILTER_KEYS,
 ];
 const COUNTRY_DEVICE_FILTER_KEYS: readonly (keyof GscFilters)[] = [

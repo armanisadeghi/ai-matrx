@@ -81,6 +81,15 @@ export interface GscFilters {
   /** C6 — value LEVELS, encoded `level|level` (`lv=`); RPC `levels: [...]`. */
   levels?: string;
   /**
+   * THE SERVICE FILTER (`tp=`) — a `seo.topic` uuid, meaning that topic AND
+   * everything under it, or the literal `none` for keywords nobody has placed
+   * on the tree yet. Keyword-level, so it rides the query / query_page
+   * profiles like a stamp does. The topic tree is the ONE hierarchical
+   * exception in the stamp model (P19), which is why it is its own key and not
+   * a `stamps` pair.
+   */
+  topic?: string;
+  /**
    * C14 — WHOLE-WORD query match (`qw=`). "cost" must not drag in "costume"
    * when the expert meant the word; a contains-filter can never say that.
    */
@@ -131,6 +140,7 @@ export const GSC_FILTER_KEYS: readonly GscFilterKey[] = [
   "search_appearance",
   "stamps",
   "levels",
+  "topic",
   "query_word",
   "clicks_min",
   "clicks_max",
@@ -451,7 +461,9 @@ export type GscSortKey =
   | "ctr"
   | "position"
   | "key"
-  | "delta_clicks";
+  | "delta_clicks"
+  /** The SERVICE column — sorted by topic name, server-side (C14 + services). */
+  | "topic";
 
 /**
  * Dig Here rule vocabulary — mirrored EXACTLY by the server whitelist inside
