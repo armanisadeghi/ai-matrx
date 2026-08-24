@@ -69,7 +69,12 @@ export const locationKeywordsQueryKey = (
   bucket: LocationBucket | null,
   start: string,
   end: string,
-  page: number,
+  /**
+   * The WHOLE view, not just the page. Sort, search and the column filters are
+   * server-side, so two different arrangements are two different answers and
+   * must not share a cache entry.
+   */
+  view: LocationKeywordsView,
 ) =>
   [
     "seo",
@@ -79,7 +84,7 @@ export const locationKeywordsQueryKey = (
     locationId ?? bucket ?? "all",
     start,
     end,
-    page,
+    view,
   ] as const;
 
 /** Every key this feature owns — invalidate them all after a binding changes. */
@@ -168,15 +173,43 @@ export interface LocationKeywordsPage {
   total: number;
 }
 
-/** The keywords behind ONE decomposition row, paged server-side. */
+/** What the canonical table asked for. Every field is honored SERVER-side. */
+export interface LocationKeywordsView {
+  page: number;
+  pageSize: number;
+  /** Free text, matched on the phrase. */
+  search: string;
+  sort: LocationKeywordSort;
+  sortDir: "asc" | "desc";
+  /** `decided_by` values to keep; `unattributed` is the null bucket. */
+  decidedBy: string[];
+  clicksMin: number | null;
+  clicksMax: number | null;
+  impressionsMin: number | null;
+  impressionsMax: number | null;
+}
+
+export type LocationKeywordSort =
+  | "keyword"
+  | "clicks"
+  | "impressions"
+  | "decided_by";
+
+/**
+ * The keywords behind ONE decomposition row.
+ *
+ * Search, sort, the attributed-by filter, the metric filters AND pagination are
+ * all the RPC's (P26/P28). Nothing here re-orders or re-filters the page it got
+ * back: sorting 25 of a location's 900 keywords in the browser would look like
+ * a sorted list and be a lie about one.
+ */
 export async function getLocationKeywords(
   siteId: string,
   locationId: string | null,
   bucket: LocationBucket | null,
   start: string,
   end: string,
-  page: number,
-  pageSize: number,
+  view: LocationKeywordsView,
   signal?: AbortSignal,
 ): Promise<LocationKeywordsPage> {
   const response = await (await seoDb())
@@ -186,8 +219,20 @@ export async function getLocationKeywords(
       ...(!locationId && bucket ? { p_bucket: bucket } : {}),
       p_start: start,
       p_end: end,
-      p_limit: pageSize,
-      p_offset: (page - 1) * pageSize,
+      p_limit: view.pageSize,
+      p_offset: (view.page - 1) * view.pageSize,
+      ...(view.search.trim() ? { p_search: view.search.trim() } : {}),
+      p_sort: view.sort,
+      p_sort_dir: view.sortDir,
+      ...(view.decidedBy.length > 0 ? { p_decided_by: view.decidedBy } : {}),
+      ...(view.clicksMin === null ? {} : { p_clicks_min: view.clicksMin }),
+      ...(view.clicksMax === null ? {} : { p_clicks_max: view.clicksMax }),
+      ...(view.impressionsMin === null
+        ? {}
+        : { p_impressions_min: view.impressionsMin }),
+      ...(view.impressionsMax === null
+        ? {}
+        : { p_impressions_max: view.impressionsMax }),
     })
     .abortSignal(signal ?? new AbortController().signal);
   const rows = assertData(response.data, response.error);

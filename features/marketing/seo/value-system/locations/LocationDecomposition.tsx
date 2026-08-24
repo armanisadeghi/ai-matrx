@@ -113,35 +113,35 @@ function LocationKeywords({
   /** Keywords this row had in the COMPARE window — see the empty state below. */
   comparedKeywords: number;
 }) {
-  const [page, setPage] = useState(1);
+  /**
+   * P26 — ONE table. This list used to be a hand-rolled <ul> with a
+   * Previous/Next pair: 900 keywords you could page through and never sort.
+   * It is the canonical table now, in CONTROLLED mode, because every control
+   * on it is answered by `seo.gsc_location_keywords` — sorting the 25 rows the
+   * browser happens to hold is not sorting a location's keywords (P28).
+   */
+  const [view, setView] = useState<LocationKeywordsView>({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    search: "",
+    sort: "clicks",
+    sortDir: "desc",
+    decidedBy: [],
+    clicksMin: null,
+    clicksMax: null,
+    impressionsMin: null,
+    impressionsMax: null,
+  });
   const openWhy = useOpenGscWhyScoreWindow();
 
   const keywords = useQuery({
-    queryKey: locationKeywordsQueryKey(siteId, locationId, bucket, start, end, page),
+    queryKey: locationKeywordsQueryKey(siteId, locationId, bucket, start, end, view),
     placeholderData: keepPreviousData,
     staleTime: 60_000,
     queryFn: ({ signal }) =>
-      getLocationKeywords(
-        siteId,
-        locationId,
-        bucket,
-        start,
-        end,
-        page,
-        PAGE_SIZE,
-        signal,
-      ),
+      getLocationKeywords(siteId, locationId, bucket, start, end, view, signal),
   });
 
-  if (keywords.isPending) {
-    return (
-      <div className="space-y-1 px-2.5 py-2">
-        <Skeleton className="h-5 rounded" />
-        <Skeleton className="h-5 rounded" />
-        <Skeleton className="h-5 rounded" />
-      </div>
-    );
-  }
   if (keywords.isError) {
     return (
       <div className="px-2.5 py-2">
@@ -154,95 +154,122 @@ function LocationKeywords({
     );
   }
 
-  const { rows, total } = keywords.data;
-  if (total === 0) {
-    // A row can be listed on compare traffic alone — its location earned
-    // searches last month and none this month. "No keyword lands here" would
-    // read as a bug; the real news is that the traffic STOPPED.
-    return (
-      <p className="px-2.5 py-2.5 text-[11px] text-muted-foreground">
-        {comparedKeywords > 0
-          ? `No keyword lands here in ${windowLabel}. In the 28 days before that, ${formatCount(
-              comparedKeywords,
-            )} did — this location's search demand has stopped, which is why the row is still here.`
-          : `No keyword in ${windowLabel} lands here.`}
-      </p>
-    );
-  }
+  const rows = keywords.data?.rows ?? [];
+  const total = keywords.data?.total ?? 0;
 
-  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const columns: MatrxColumnDef<LocationKeywordRow>[] = [
+    {
+      id: "keyword",
+      accessorKey: "keyword",
+      header: "Keyword",
+      filter: "text",
+      cell: (row) => (
+        <button
+          type="button"
+          onClick={() =>
+            openWhy({
+              siteId,
+              brandId,
+              keywordId: row.keyword_id,
+              keyword: row.keyword,
+            })
+          }
+          title="Why this keyword is worth what it is — opens beside this view"
+          className="min-w-0 truncate text-left text-[11px] text-foreground hover:text-primary hover:underline"
+        >
+          {row.keyword}
+        </button>
+      ),
+    },
+    {
+      id: "decided_by",
+      accessorKey: "decided_by",
+      header: "Attributed by",
+      filter: "select",
+      width: 150,
+      /* The reader's words, and the same set the RPC filters on. */
+      filterOptions: DECIDED_BY_FILTER_OPTIONS,
+      cell: (row) =>
+        row.decided_by ? (
+          <span
+            className="rounded border border-border bg-muted/40 px-1 py-px text-[9px] text-muted-foreground"
+            title={explainDecidedBy(row.decided_by, row.place_name, null)}
+          >
+            {decidedByChip(row.decided_by)}
+          </span>
+        ) : (
+          <span className="text-[9px] text-muted-foreground">—</span>
+        ),
+    },
+    {
+      id: "clicks",
+      accessorKey: "clicks",
+      header: "Clicks",
+      filter: "number",
+      align: "right",
+      width: 90,
+      cell: (row) => (
+        <span className="text-[11px] font-medium tabular-nums text-foreground">
+          {formatCount(Number(row.clicks))}
+        </span>
+      ),
+    },
+    {
+      id: "impressions",
+      accessorKey: "impressions",
+      header: "Impressions",
+      filter: "number",
+      align: "right",
+      width: 110,
+      cell: (row) => (
+        <span className="text-[11px] tabular-nums text-muted-foreground">
+          {formatCount(Number(row.impressions))}
+        </span>
+      ),
+    },
+  ];
 
   return (
-    <div>
-      <ul className="divide-y divide-border">
-        {rows.map((row) => (
-          <li
-            key={row.keyword_id}
-            className="flex items-center gap-2 px-2.5 py-1 transition-colors hover:bg-accent/60"
-          >
-            <button
-              type="button"
-              onClick={() =>
-                openWhy({
-                  siteId,
-                  brandId,
-                  keywordId: row.keyword_id,
-                  keyword: row.keyword,
-                })
-              }
-              title="Why this keyword is worth what it is — opens beside this view"
-              className="min-w-0 flex-1 truncate text-left text-[11px] text-foreground hover:text-primary hover:underline"
-            >
-              {row.keyword}
-            </button>
-            {row.decided_by ? (
-              <span
-                className="shrink-0 rounded border border-border bg-muted/40 px-1 py-px text-[9px] text-muted-foreground"
-                title={explainDecidedBy(row.decided_by, row.place_name, null)}
-              >
-                {decidedByChip(row.decided_by)}
-              </span>
-            ) : null}
-            <span className="w-12 shrink-0 text-right text-[11px] font-medium tabular-nums text-foreground">
-              {formatCount(Number(row.clicks))}
-            </span>
-            <span className="w-14 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
-              {formatCount(Number(row.impressions))}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {lastPage > 1 ? (
-        <div className="flex items-center justify-between gap-2 border-t border-border px-2.5 py-1.5">
-          <span className="text-[10px] tabular-nums text-muted-foreground">
-            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of{" "}
-            {formatCount(total)}
-          </span>
-          <span className="flex items-center gap-1">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={page === 1 || keywords.isFetching}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="h-6 px-2 text-[10px]"
-            >
-              Previous
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={page >= lastPage || keywords.isFetching}
-              onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
-              className="h-6 px-2 text-[10px]"
-            >
-              Next
-            </Button>
-          </span>
-        </div>
-      ) : null}
-    </div>
+    <MatrxDataTable<LocationKeywordRow>
+      data={rows}
+      columns={columns}
+      getRowId={(row) => row.keyword_id}
+      isLoading={keywords.isPending}
+      isFetching={keywords.isFetching}
+      className="border-0"
+      query={{
+        mode: "controlled",
+        totalItems: total,
+        state: {
+          page: view.page,
+          pageSize: view.pageSize,
+          search: view.search,
+          anyOf: "",
+          columnFilters: toColumnFilters(view),
+          sort: { id: view.sort, direction: view.sortDir },
+        },
+        onStateChange: (next) => setView((current) => nextView(current, next)),
+      }}
+      copy={{
+        label: "Keyword",
+        listLabel: `Keywords behind ${locationName}`,
+        location: "Traffic by location",
+        rowKind: "gsc_location_keyword",
+        listKind: "gsc_location_keyword_list",
+        humanRow: (row) =>
+          `${row.keyword} — ${formatCount(Number(row.clicks))} clicks, ${formatCount(Number(row.impressions))} impressions${row.decided_by ? ` (${decidedByChip(row.decided_by)})` : ""}`,
+      }}
+      emptyState={{
+        title: `No keyword in ${windowLabel} lands here`,
+        // A row can be listed on compare traffic alone — its location earned
+        // searches last month and none this month. "No keyword lands here"
+        // would read as a bug; the real news is that the traffic STOPPED.
+        description:
+          comparedKeywords > 0 && view.search === "" && total === 0
+            ? `In the 28 days before that, ${formatCount(comparedKeywords)} did — this location's search demand has stopped, which is why the row is still here.`
+            : "Nothing matches the filters on this list.",
+      }}
+    />
   );
 }
 

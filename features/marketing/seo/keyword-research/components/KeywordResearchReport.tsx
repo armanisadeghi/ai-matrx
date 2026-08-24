@@ -28,6 +28,8 @@ import type { ReactNode } from "react";
 
 import KeywordClassificationBatchBlock from "@/components/mardown-display/blocks/keyword-research/KeywordClassificationBatchBlock";
 import KeywordResearchBlock from "@/components/mardown-display/blocks/keyword-research/KeywordResearchBlock";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import {
   KeywordCompetitionBadge,
   KeywordIntentChip,
@@ -42,6 +44,7 @@ import {
   buildMetricRows,
   buildResearchBlockData,
   summarizeKeywordReport,
+  type KeywordReportMetricRow,
   type KeywordReportRow,
 } from "@/features/marketing/seo/keyword-research/data/report";
 import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
@@ -106,6 +109,102 @@ function StatTile({
   );
 }
 
+/**
+ * The market table's columns. Built OUTSIDE the component because they only
+ * close over the optional keyword-navigation door — every other value is on
+ * the row. Sort and filter are the table's, never a per-surface decision (P26).
+ */
+function marketDataColumns(
+  onKeywordNavigate?: (phrase: string) => void,
+): MatrxColumnDef<KeywordReportMetricRow>[] {
+  return [
+    {
+      id: "phrase",
+      accessorKey: "phrase",
+      header: "Keyword",
+      filter: "text",
+      cell: (row) =>
+        onKeywordNavigate ? (
+          <button
+            type="button"
+            onClick={() => onKeywordNavigate(row.phrase)}
+            className="text-left font-medium text-foreground underline-offset-2 hover:text-primary hover:underline"
+            title={`Drill into “${row.phrase}”`}
+          >
+            {row.phrase}
+          </button>
+        ) : (
+          <span className="font-medium text-foreground">{row.phrase}</span>
+        ),
+    },
+    {
+      id: "intent",
+      accessorKey: "intentClass",
+      header: "Intent",
+      filter: "select",
+      width: 140,
+      cell: (row) => (
+        <KeywordIntentChip intentClass={row.intentClass} hideUnclassified />
+      ),
+    },
+    {
+      id: "searchVolume",
+      accessorKey: "searchVolume",
+      header: "Monthly searches",
+      filter: "number",
+      align: "right",
+      width: 150,
+      cell: (row) => (
+        <span className="tabular-nums text-foreground">
+          {formatSearchVolume(row.searchVolume)}
+        </span>
+      ),
+    },
+    {
+      id: "trend",
+      /* Sorted and filtered by the trend PERCENT the badge states — a
+         sparkline is a picture of that number, not a second one. */
+      accessorFn: (row) => monthlySearchTrend(row.monthlySearches),
+      header: "12-month trend",
+      filter: "number",
+      width: 190,
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          <KeywordTrendSparkline points={row.monthlySearches} />
+          <KeywordTrendBadge percent={monthlySearchTrend(row.monthlySearches)} />
+        </div>
+      ),
+    },
+    {
+      id: "competition",
+      /* The INDEX orders it (low → high); the label is what the badge shows.
+         Sorting on the label would order it alphabetically, which is a lie
+         about competition. */
+      accessorFn: (row) => row.competitionIndex ?? row.competition,
+      header: "Competition",
+      filter: "auto",
+      width: 150,
+      cell: (row) => (
+        <KeywordCompetitionBadge
+          competition={row.competition}
+          competitionIndex={row.competitionIndex}
+        />
+      ),
+    },
+    {
+      id: "cpc",
+      accessorKey: "cpc",
+      header: "CPC",
+      filter: "number",
+      align: "right",
+      width: 110,
+      cell: (row) => (
+        <span className="tabular-nums text-foreground">{formatCpc(row.cpc)}</span>
+      ),
+    },
+  ];
+}
+
 export default function KeywordResearchReport({
   artifact,
   keywords,
@@ -123,6 +222,7 @@ export default function KeywordResearchReport({
   const metricRows = buildMetricRows(keywords);
   const summary = summarizeKeywordReport(artifact, metricRows);
   const measuredRows = metricRows.filter((row) => row.searchVolume !== null);
+  const marketColumns = marketDataColumns(onKeywordNavigate);
   const visibleSections = new Set(
     sections ??
       (variant === "page"
@@ -151,71 +251,27 @@ export default function KeywordResearchReport({
               12-month search data
             </p>
           </header>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[46rem] text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="px-4 py-2 font-medium">Keyword</th>
-                  <th className="px-3 py-2 font-medium">Intent</th>
-                  <th className="px-3 py-2 text-right font-medium">
-                    Monthly searches
-                  </th>
-                  <th className="px-3 py-2 font-medium">12-month trend</th>
-                  <th className="px-3 py-2 font-medium">Competition</th>
-                  <th className="px-3 py-2 text-right font-medium">CPC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {measuredRows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="border-b border-border/60 last:border-0"
-                  >
-                    <td className="px-4 py-2 font-medium text-foreground">
-                      {onKeywordNavigate ? (
-                        <button
-                          type="button"
-                          onClick={() => onKeywordNavigate(row.phrase)}
-                          className="text-left underline-offset-2 hover:text-primary hover:underline"
-                          title={`Drill into “${row.phrase}”`}
-                        >
-                          {row.phrase}
-                        </button>
-                      ) : (
-                        row.phrase
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <KeywordIntentChip
-                        intentClass={row.intentClass}
-                        hideUnclassified
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-foreground">
-                      {formatSearchVolume(row.searchVolume)}
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <KeywordTrendSparkline points={row.monthlySearches} />
-                        <KeywordTrendBadge
-                          percent={monthlySearchTrend(row.monthlySearches)}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <KeywordCompetitionBadge
-                        competition={row.competition}
-                        competitionIndex={row.competitionIndex}
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-foreground">
-                      {formatCpc(row.cpc)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* P26 — ONE table. Every column here sorts and filters because it is
+              the canonical table, not a hand-rolled <table> that looked like
+              one. The report still decides which columns SHOW; it does not get
+              to decide whether they work. */}
+          <MatrxDataTable<KeywordReportMetricRow>
+            data={measuredRows}
+            columns={marketColumns}
+            getRowId={(row) => row.id}
+            pageSize={25}
+            zebra
+            className="border-0"
+            copy={{
+              label: "Keyword",
+              listLabel: "Market data",
+              location: "Keyword research report",
+              rowKind: "keyword_market_row",
+              listKind: "keyword_market_list",
+              humanRow: (row) =>
+                `${row.phrase} — ${formatSearchVolume(row.searchVolume)} monthly searches, CPC ${formatCpc(row.cpc)}`,
+            }}
+          />
         </section>
       ) : null}
 

@@ -24,6 +24,8 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Separator } from "@/components/ui/separator";
 import {
   useAddDiscoveredPublisher,
@@ -42,6 +44,7 @@ import {
   type EndowmentVerdict,
   type PortfolioArtifact,
   type PortfolioPlatform,
+  type RegistryMatch,
 } from "@/features/marketing/local/endowment-portfolio";
 import {
   PUBLISHER_API_ACCESS_LABELS,
@@ -62,6 +65,105 @@ type RowState =
   | { kind: "working" }
   | { kind: "added"; label: string; href?: string }
   | { kind: "failed"; message: string };
+
+/**
+ * The platform columns. Every value here is on the row, so the definition is a
+ * module constant — the registry ACTION is a `rowActions` cell, because it is a
+ * write, not data to sort by.
+ */
+const platformColumns: MatrxColumnDef<RegistryMatch>[] = [
+  {
+    id: "platform",
+    accessorFn: (match) => match.platform.name,
+    header: "Platform",
+    filter: "text",
+    cell: (match) => (
+      <div className="min-w-0">
+        <a
+          href={`https://${match.platform.domain}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary"
+        >
+          {match.platform.name}
+          <ArrowUpRight className="size-3" aria-hidden />
+        </a>
+        <div className="text-xs text-muted-foreground">
+          {match.platform.domain}
+        </div>
+        {match.platform.notes ? (
+          <div className="mt-0.5 max-w-md text-xs text-muted-foreground">
+            {match.platform.notes}
+          </div>
+        ) : null}
+      </div>
+    ),
+  },
+  {
+    id: "endowment",
+    accessorFn: (match) => ENDOWMENT_LABELS[match.platform.endowment],
+    header: "Endowment",
+    filter: "select",
+    width: 170,
+    cell: (match) => (
+      <span className="text-xs text-muted-foreground">
+        {ENDOWMENT_LABELS[match.platform.endowment]}
+      </span>
+    ),
+  },
+  {
+    id: "tier",
+    accessorFn: (match) => PUBLISHER_TIER_LABELS[match.platform.tier],
+    header: "Tier",
+    filter: "select",
+    width: 150,
+    cell: (match) => (
+      <span className="text-xs text-muted-foreground">
+        {PUBLISHER_TIER_LABELS[match.platform.tier]}
+      </span>
+    ),
+  },
+  {
+    id: "access",
+    accessorFn: (match) =>
+      PUBLISHER_API_ACCESS_LABELS[match.platform.api_access_guess] ??
+      match.platform.api_access_guess,
+    header: "Access",
+    filter: "select",
+    width: 150,
+    cell: (match) => (
+      <span className="text-xs text-muted-foreground">
+        {PUBLISHER_API_ACCESS_LABELS[match.platform.api_access_guess] ??
+          match.platform.api_access_guess}
+      </span>
+    ),
+  },
+  {
+    id: "categories",
+    accessorFn: (match) => match.platform.categories.join(", "),
+    header: "Categories",
+    filter: "text",
+    cell: (match) => (
+      <span className="text-xs text-muted-foreground">
+        {match.platform.categories.join(", ") || "—"}
+      </span>
+    ),
+  },
+  {
+    id: "registry",
+    /* Sortable and filterable on purpose: "show me everything not yet
+       tracked" is the whole job this panel exists for. */
+    accessorFn: (match) => (match.existing ? "Already tracked" : "Not tracked"),
+    header: "Registry",
+    filter: "select",
+    width: 140,
+    cell: (match) => (
+      <span className="text-xs text-muted-foreground">
+        {match.existing ? "Already tracked" : "Not tracked"}
+      </span>
+    ),
+  },
+];
 
 export function EndowmentPortfolioPanel({
   portfolio,
@@ -212,68 +314,35 @@ export function EndowmentPortfolioPanel({
               </span>
             ) : null}
           </div>
-          <div className="overflow-x-auto rounded-md border border-border">
-            <table className="w-full min-w-[52rem] text-sm">
-              <thead className="bg-muted/50 text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-2 py-1.5 text-left font-medium">Platform</th>
-                  <th className="px-2 py-1.5 text-left font-medium">Endowment</th>
-                  <th className="px-2 py-1.5 text-left font-medium">Tier</th>
-                  <th className="px-2 py-1.5 text-left font-medium">Access</th>
-                  <th className="px-2 py-1.5 text-left font-medium">Categories</th>
-                  <th className="px-2 py-1.5 text-right font-medium">Registry</th>
-                </tr>
-              </thead>
-              <tbody>
-                {matches.map(({ platform, existing, matchedBy }) => {
-                  const state = platformState[platform.domain] ?? { kind: "idle" };
-                  return (
-                    <tr key={platform.domain} className="border-t border-border align-top">
-                      <td className="px-2 py-1.5">
-                        <a
-                          href={`https://${platform.domain}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary"
-                        >
-                          {platform.name}
-                          <ArrowUpRight className="size-3" aria-hidden />
-                        </a>
-                        <div className="text-xs text-muted-foreground">{platform.domain}</div>
-                        {platform.notes ? (
-                          <div className="mt-0.5 max-w-md text-xs text-muted-foreground">
-                            {platform.notes}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td className="px-2 py-1.5 text-xs text-muted-foreground">
-                        {ENDOWMENT_LABELS[platform.endowment]}
-                      </td>
-                      <td className="px-2 py-1.5 text-xs text-muted-foreground">
-                        {PUBLISHER_TIER_LABELS[platform.tier]}
-                      </td>
-                      <td className="px-2 py-1.5 text-xs text-muted-foreground">
-                        {PUBLISHER_API_ACCESS_LABELS[platform.api_access_guess] ??
-                          platform.api_access_guess}
-                      </td>
-                      <td className="px-2 py-1.5 text-xs text-muted-foreground">
-                        {platform.categories.join(", ") || "—"}
-                      </td>
-                      <td className="px-2 py-1.5 text-right">
-                        <PlatformAction
-                          state={state}
-                          existingSlug={existing?.slug ?? null}
-                          matchedBy={matchedBy}
-                          disabled={!canWriteRegistry}
-                          onAdd={() => void handleAddPlatform(platform)}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          {/* P26 — ONE table. The portfolio picks which columns show; the
+              canonical table decides that every one of them sorts and filters,
+              which is what makes a 40-platform verdict list usable. */}
+          <MatrxDataTable<RegistryMatch>
+            data={matches}
+            columns={platformColumns}
+            getRowId={(match) => match.platform.domain}
+            isLoading={publishersQuery.isPending}
+            pageSize={25}
+            zebra
+            rowActions={(match) => (
+              <PlatformAction
+                state={platformState[match.platform.domain] ?? { kind: "idle" }}
+                existingSlug={match.existing?.slug ?? null}
+                matchedBy={match.matchedBy}
+                disabled={!canWriteRegistry}
+                onAdd={() => void handleAddPlatform(match.platform)}
+              />
+            )}
+            copy={{
+              label: "Publishing platform",
+              listLabel: "Publishing platforms",
+              location: surfaceUrl,
+              rowKind: "endowment_portfolio_platform",
+              listKind: "endowment_portfolio_platform_list",
+              humanRow: (match) =>
+                `${match.platform.name} (${match.platform.domain}) — ${ENDOWMENT_LABELS[match.platform.endowment]}, ${PUBLISHER_TIER_LABELS[match.platform.tier]}${match.existing ? ", already in the registry" : ""}`,
+            }}
+          />
         </section>
       ) : null}
 

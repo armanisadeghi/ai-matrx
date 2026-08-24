@@ -7529,6 +7529,13 @@ export type Database = {
             foreignKeyName: "cx_agent_plan_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_agent_plan_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
             referencedRelation: "conversation"
             referencedColumns: ["id"]
           },
@@ -7741,6 +7748,13 @@ export type Database = {
             foreignKeyName: "cx_agent_task_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_agent_task_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
             referencedRelation: "conversation"
             referencedColumns: ["id"]
           },
@@ -7847,6 +7861,13 @@ export type Database = {
             foreignKeyName: "cx_artifact_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_artifact_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
             referencedRelation: "conversation"
             referencedColumns: ["id"]
           },
@@ -7934,6 +7955,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "cx_code_edit_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cx_code_edit_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -8041,6 +8069,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "cx_code_message_file_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cx_code_message_file_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -8153,6 +8188,13 @@ export type Database = {
           writer_runtime_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "coding_session_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "coding_session_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -8387,6 +8429,13 @@ export type Database = {
             foreignKeyName: "cx_conversation_forked_from_id_fkey"
             columns: ["forked_from_id"]
             isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_forked_from_id_fkey"
+            columns: ["forked_from_id"]
+            isOneToOne: false
             referencedRelation: "conversation"
             referencedColumns: ["id"]
           },
@@ -8395,6 +8444,13 @@ export type Database = {
             columns: ["forked_from_id"]
             isOneToOne: false
             referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_parent_conversation_id_fkey"
+            columns: ["parent_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
             referencedColumns: ["id"]
           },
           {
@@ -8488,6 +8544,13 @@ export type Database = {
             foreignKeyName: "conversation_value_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_value_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
             referencedRelation: "conversation"
             referencedColumns: ["id"]
           },
@@ -8553,6 +8616,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "cx_media_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cx_media_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -8655,6 +8725,13 @@ export type Database = {
           voice?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cx_message_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cx_message_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -8773,6 +8850,13 @@ export type Database = {
             foreignKeyName: "cx_observational_memory_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_observational_memory_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
             referencedRelation: "conversation"
             referencedColumns: ["id"]
           },
@@ -8873,6 +8957,13 @@ export type Database = {
             foreignKeyName: "observational_memory_event_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observational_memory_event_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
             referencedRelation: "conversation"
             referencedColumns: ["id"]
           },
@@ -8881,6 +8972,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observational_memory_event_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "admin_user_request_summary"
             referencedColumns: ["id"]
           },
           {
@@ -8970,6 +9068,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "cx_pending_injection_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cx_pending_injection_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -9094,6 +9199,13 @@ export type Database = {
             foreignKeyName: "cx_request_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_request_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
             referencedRelation: "conversation"
             referencedColumns: ["id"]
           },
@@ -9102,6 +9214,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_request_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "admin_user_request_summary"
             referencedColumns: ["id"]
           },
           {
@@ -9204,6 +9323,13 @@ export type Database = {
             foreignKeyName: "request_snapshot_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_snapshot_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
             referencedRelation: "conversation"
             referencedColumns: ["id"]
           },
@@ -9212,6 +9338,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_snapshot_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "admin_user_request_summary"
             referencedColumns: ["id"]
           },
           {
@@ -9395,6 +9528,13 @@ export type Database = {
             foreignKeyName: "cx_tool_call_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
             referencedRelation: "conversation"
             referencedColumns: ["id"]
           },
@@ -9410,6 +9550,13 @@ export type Database = {
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "message"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "admin_user_request_summary"
             referencedColumns: ["id"]
           },
           {
@@ -9512,6 +9659,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "tool_trace_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tool_trace_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -9690,6 +9844,13 @@ export type Database = {
             foreignKeyName: "cx_user_todo_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_user_todo_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
             referencedRelation: "conversation"
             referencedColumns: ["id"]
           },
@@ -9758,6 +9919,82 @@ export type Database = {
       }
     }
     Views: {
+      admin_conversation_summary: {
+        Row: {
+          conversation_type: string | null
+          cost_complete: boolean | null
+          created_at: string | null
+          description: string | null
+          error_count: number | null
+          id: string | null
+          initial_agent_id: string | null
+          initial_agent_version_id: string | null
+          is_ephemeral: boolean | null
+          is_favorite: boolean | null
+          is_public: boolean | null
+          known_cost_subtotal: number | null
+          last_model_id: string | null
+          last_model_name: string | null
+          last_model_provider: string | null
+          last_request_at: string | null
+          last_request_status: string | null
+          message_count: number | null
+          organization_id: string | null
+          origin_class: string | null
+          project_id: string | null
+          request_count: number | null
+          snapshot_count: number | null
+          source_app: string | null
+          source_feature: string | null
+          status: string | null
+          task_id: string | null
+          title: string | null
+          tool_call_count: number | null
+          total_cost: number | null
+          total_duration_ms: number | null
+          total_tokens: number | null
+          unknown_cost_calls: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      admin_user_request_summary: {
+        Row: {
+          agent_id: string | null
+          agent_version_id: string | null
+          api_duration_ms: number | null
+          completed_at: string | null
+          conversation_count: number | null
+          cost_complete: boolean | null
+          created_at: string | null
+          created_by: string | null
+          error_count: number | null
+          finish_reason: string | null
+          id: string | null
+          iterations: number | null
+          known_cost_subtotal: number | null
+          last_activity_at: string | null
+          last_request_at: string | null
+          origin_class: string | null
+          request_count: number | null
+          source_app: string | null
+          source_feature: string | null
+          status: string | null
+          stored_total_cost: number | null
+          stored_total_tokens: number | null
+          tool_duration_ms: number | null
+          total_cached_tokens: number | null
+          total_cost: number | null
+          total_duration_ms: number | null
+          total_input_tokens: number | null
+          total_output_tokens: number | null
+          total_tokens: number | null
+          total_tool_calls: number | null
+          unknown_cost_calls: number | null
+        }
+        Relationships: []
+      }
       conversation_summary: {
         Row: {
           conversation_type: string | null
@@ -31105,6 +31342,14 @@ export type Database = {
     Functions: {
       actor_system: { Args: never; Returns: string }
       actor_tier: { Args: never; Returns: string }
+      admin_access_contract_violations: {
+        Args: never
+        Returns: {
+          category: string
+          detail: string
+          object_name: string
+        }[]
+      }
       admin_relation_catalog: {
         Args: never
         Returns: {
@@ -31140,6 +31385,7 @@ export type Database = {
           ordinal: number
         }[]
       }
+      assert_admin_access_contract: { Args: never; Returns: undefined }
       assist_admission_decision: {
         Args: { p_source_key: string; p_user_id: string }
         Returns: {
@@ -52622,11 +52868,19 @@ export type Database = {
       gsc_location_keywords: {
         Args: {
           p_bucket?: string
+          p_clicks_max?: number
+          p_clicks_min?: number
+          p_decided_by?: string[]
           p_end?: string
+          p_impressions_max?: number
+          p_impressions_min?: number
           p_limit?: number
           p_location_id?: string
           p_offset?: number
+          p_search?: string
           p_site_id: string
+          p_sort?: string
+          p_sort_dir?: string
           p_start?: string
         }
         Returns: {

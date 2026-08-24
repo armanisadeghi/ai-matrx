@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -754,6 +756,13 @@ function LabeledInput({
 
 const GOOGLE_PUBLISHER_SLUG = "google-business-profile";
 
+/** The saved status of one matrix row — "unknown" when nothing is recorded. */
+function rowStatus(row: ListingMatrixRow): ListingStatus {
+  return row.listing && isListingStatus(row.listing.status)
+    ? row.listing.status
+    : "unknown";
+}
+
 function ListingsMatrix({
   organizationId,
   location,
@@ -848,148 +857,200 @@ function ListingsMatrix({
   };
 
   return (
+  /**
+   * P26 — ONE table. The publisher matrix picks which columns show; the
+   * canonical table owns whether they sort and filter, so "which tier-1
+   * publishers am I still missing" is a click instead of a read-through.
+   * Status and Listing URL stay live WRITE cells — sorting a column does not
+   * make its control decorative.
+   */
+  const columns: MatrxColumnDef<ListingMatrixRow>[] = [
+    {
+      id: "publisher",
+      accessorFn: (row) => row.publisher.name,
+      header: "Publisher",
+      filter: "text",
+      cell: ({ publisher, listing }) => (
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span
+              className="truncate font-medium text-foreground"
+              title={publisher.api_notes ?? undefined}
+            >
+              {publisher.name}
+            </span>
+            {publisher.slug === GOOGLE_PUBLISHER_SLUG ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 shrink-0 px-2 text-[11px]"
+                onClick={() => void handleGoogleCheck()}
+                disabled={checkingGoogle}
+              >
+                {checkingGoogle ? "Checking live…" : "Fetch live data"}
+              </Button>
+            ) : null}
+            {publisher.manage_url ? (
+              <a
+                href={publisher.manage_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-muted-foreground hover:text-primary"
+                aria-label={`Open ${publisher.name} listing manager`}
+              >
+                <ArrowUpRight className="size-3.5" aria-hidden />
+              </a>
+            ) : null}
+          </div>
+          {listing &&
+          listing.observed &&
+          Object.keys(listing.observed as object).length > 0 ? (
+            <ObservedVerdictLine location={location} listing={listing} />
+          ) : publisher.api_notes ? (
+            <p
+              className="mt-0.5 line-clamp-1 max-w-96 text-[11px] text-muted-foreground"
+              title={publisher.api_notes}
+            >
+              {publisher.api_notes}
+            </p>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      id: "tier",
+      accessorFn: (row) =>
+        PUBLISHER_TIER_LABELS[row.publisher.tier as PublisherTier] ??
+        row.publisher.tier,
+      header: "Tier",
+      filter: "select",
+      width: 170,
+      cell: ({ publisher }) => {
+        const tier = publisher.tier as PublisherTier;
+        return (
+          <Badge
+            variant="outline"
+            className={`border-transparent text-[11px] ${TIER_BADGE_CLASS[tier] ?? "bg-muted"}`}
+          >
+            {PUBLISHER_TIER_LABELS[tier] ?? publisher.tier}
+            {publisher.is_aggregator ? " · feeds others" : ""}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "api_access",
+      accessorFn: (row) =>
+        PUBLISHER_API_ACCESS_LABELS[row.publisher.api_access] ??
+        row.publisher.api_access,
+      header: "API access",
+      filter: "select",
+      width: 160,
+      cell: ({ publisher }) => (
+        <span className="text-xs text-muted-foreground">
+          {PUBLISHER_API_ACCESS_LABELS[publisher.api_access] ??
+            publisher.api_access}
+        </span>
+      ),
+    },
+    {
+      id: "impact",
+      accessorFn: (row) => row.publisher.citation_weight,
+      header: "Impact",
+      filter: "number",
+      align: "right",
+      width: 100,
+      cell: ({ publisher }) => (
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {publisher.citation_weight}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      accessorFn: (row) => LISTING_STATUS_LABELS[rowStatus(row)],
+      header: "Status",
+      filter: "select",
+      width: 170,
+      cell: (row) => (
+        <Select
+          value={rowStatus(row)}
+          onValueChange={(value) => {
+            if (isListingStatus(value))
+              void handleStatus(row.publisher.id, value);
+          }}
+          disabled={savingPublisherId === row.publisher.id}
+        >
+          <SelectTrigger className="h-7 w-32 text-xs xl:w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LISTING_STATUSES.map((option) => (
+              <SelectItem key={option} value={option}>
+                {LISTING_STATUS_LABELS[option]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ),
+    },
+    {
+      id: "listing_url",
+      accessorFn: (row) => row.listing?.listing_url ?? "",
+      header: "Listing URL",
+      filter: "text",
+      cell: (row) => (
+        <div className="flex items-center gap-1">
+          <Input
+            /* Keyed on the saved value so a write (or a sort that moves this
+               row) re-seeds the uncontrolled input instead of showing the
+               previous publisher's URL. */
+            key={row.listing?.listing_url ?? ""}
+            defaultValue={row.listing?.listing_url ?? ""}
+            placeholder="https://…"
+            className="h-7 w-full min-w-40 max-w-72 text-xs"
+            onBlur={(event) => {
+              const next = event.target.value;
+              if ((row.listing?.listing_url ?? "") !== next.trim()) {
+                void handleUrl(row.publisher.id, rowStatus(row), next);
+              }
+            }}
+          />
+          {row.listing?.listing_url ? (
+            <a
+              href={row.listing.listing_url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-muted-foreground hover:text-primary"
+              aria-label={`Open the live listing on ${row.publisher.name}`}
+            >
+              <ArrowUpRight className="size-3.5" aria-hidden />
+            </a>
+          ) : null}
+        </div>
+      ),
+    },
+  ];
+
+  return (
     <SectionCard title="Listings by publisher" anchor="local-listings-matrix">
-      <div className="overflow-x-auto p-3">
-        <table className="w-full min-w-[760px] border-collapse text-sm xl:min-w-0">
-          <thead>
-            <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-              <th className="py-1.5 pr-2 font-medium">Publisher</th>
-              <th className="py-1.5 pr-2 font-medium">Tier</th>
-              <th className="py-1.5 pr-2 font-medium">API access</th>
-              <th className="py-1.5 pr-2 text-right font-medium">Impact</th>
-              <th className="py-1.5 pr-2 font-medium">Status</th>
-              <th className="py-1.5 font-medium">Listing URL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {matrix.map(({ publisher, listing }) => {
-              const status: ListingStatus =
-                listing && isListingStatus(listing.status)
-                  ? listing.status
-                  : "unknown";
-              const tier = publisher.tier as PublisherTier;
-              return (
-                <tr
-                  key={publisher.id}
-                  className="border-b border-border/60 last:border-b-0"
-                >
-                  <td className="py-1.5 pr-2">
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <span
-                        className="truncate font-medium text-foreground"
-                        title={publisher.api_notes ?? undefined}
-                      >
-                        {publisher.name}
-                      </span>
-                      {publisher.slug === GOOGLE_PUBLISHER_SLUG ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-6 shrink-0 px-2 text-[11px]"
-                          onClick={() => void handleGoogleCheck()}
-                          disabled={checkingGoogle}
-                        >
-                          {checkingGoogle
-                            ? "Checking live…"
-                            : "Fetch live data"}
-                        </Button>
-                      ) : null}
-                      {publisher.manage_url ? (
-                        <a
-                          href={publisher.manage_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-muted-foreground hover:text-primary"
-                          aria-label={`Open ${publisher.name} listing manager`}
-                        >
-                          <ArrowUpRight className="size-3.5" aria-hidden />
-                        </a>
-                      ) : null}
-                    </div>
-                    {listing &&
-                    listing.observed &&
-                    Object.keys(listing.observed as object).length > 0 ? (
-                      <ObservedVerdictLine
-                        location={location}
-                        listing={listing}
-                      />
-                    ) : publisher.api_notes ? (
-                      <p
-                        className="mt-0.5 line-clamp-1 max-w-96 text-[11px] text-muted-foreground"
-                        title={publisher.api_notes}
-                      >
-                        {publisher.api_notes}
-                      </p>
-                    ) : null}
-                  </td>
-                  <td className="py-1.5 pr-2">
-                    <Badge
-                      variant="outline"
-                      className={`border-transparent text-[11px] ${TIER_BADGE_CLASS[tier] ?? "bg-muted"}`}
-                    >
-                      {PUBLISHER_TIER_LABELS[tier] ?? publisher.tier}
-                      {publisher.is_aggregator ? " · feeds others" : ""}
-                    </Badge>
-                  </td>
-                  <td className="py-1.5 pr-2 text-xs text-muted-foreground">
-                    {PUBLISHER_API_ACCESS_LABELS[publisher.api_access] ??
-                      publisher.api_access}
-                  </td>
-                  <td className="py-1.5 pr-2 text-right text-xs tabular-nums text-muted-foreground">
-                    {publisher.citation_weight}
-                  </td>
-                  <td className="py-1.5 pr-2">
-                    <Select
-                      value={status}
-                      onValueChange={(value) => {
-                        if (isListingStatus(value))
-                          void handleStatus(publisher.id, value);
-                      }}
-                      disabled={savingPublisherId === publisher.id}
-                    >
-                      <SelectTrigger className="h-7 w-32 text-xs xl:w-36">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LISTING_STATUSES.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {LISTING_STATUS_LABELS[option]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="py-1.5">
-                    <div className="flex items-center gap-1">
-                      <Input
-                        defaultValue={listing?.listing_url ?? ""}
-                        placeholder="https://…"
-                        className="h-7 w-full min-w-40 max-w-72 text-xs"
-                        onBlur={(event) => {
-                          const next = event.target.value;
-                          if ((listing?.listing_url ?? "") !== next.trim()) {
-                            void handleUrl(publisher.id, status, next);
-                          }
-                        }}
-                      />
-                      {listing?.listing_url ? (
-                        <a
-                          href={listing.listing_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-muted-foreground hover:text-primary"
-                          aria-label={`Open the live listing on ${publisher.name}`}
-                        >
-                          <ArrowUpRight className="size-3.5" aria-hidden />
-                        </a>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="p-3">
+        <MatrxDataTable<ListingMatrixRow>
+          data={matrix}
+          columns={columns}
+          getRowId={(row) => row.publisher.id}
+          pageSize={0}
+          zebra
+          copy={{
+            label: "Publisher listing",
+            listLabel: "Listings by publisher",
+            location: `/marketing/local/${location.id}#local-listings-matrix`,
+            rowKind: "location_listing_row",
+            listKind: "location_listing_matrix",
+            humanRow: (row) =>
+              `${row.publisher.name} — ${LISTING_STATUS_LABELS[rowStatus(row)]}${row.listing?.listing_url ? ` (${row.listing.listing_url})` : ""}`,
+          }}
+        />
       </div>
       <p className="px-3 pb-3 text-xs text-muted-foreground">
         Impact is each publisher&apos;s relative citation weight (0–100).
