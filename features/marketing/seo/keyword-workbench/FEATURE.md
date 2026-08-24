@@ -95,16 +95,19 @@ Two deliberate choices worth knowing:
 | `components/KeywordWorkbench.tsx` | The surface: thin top, filters, table, selection, assignment, context menu. |
 | `components/AssignPanel.tsx` | One dimension+value+reason panel serving all three gestures (a row, the checked rows, everything matching). |
 | `components/DimensionValuePicker.tsx` | The two-step dimension→value **composition** over the canonical `CreatablePicker`. |
-| `components/ColumnChooser.tsx` | Every dimension this site sees, offered as a column (P26). |
-| `components/SavedViewTabs.tsx` | Saved views as tabs — rename, share, reorder, delete, and "keep these changes". |
+| `components/SavedViewTabs.tsx` | Saved views as tabs — rename, share, reorder, delete, and "keep these changes". The UI is this surface's own; the CRUD underneath (`listSavedViews`/`saveView`/`deleteSavedView`) is the shared `keyword-table/savedViews.ts` (KI-021). |
 | `components/cells.tsx` | The Class dropdown that ASSIGNS (with P11's door in it), and the stamp cell that assigns and filters. |
 | `components/ServiceCell.tsx` | THE OFFERING COLUMN's cell — the name, its root, who placed it, and the picker behind it. |
 | `components/OfferingPicker.tsx` | The tree-shaped, creatable offering picker shared by the cell, the bulk panel, and the filter. |
 | `components/OfferingAssignPanel.tsx` | Bulk placement + the reason, over the ONE placement write. |
 | `components/ServiceFilterControl.tsx` | The Offering filter chip and picker (the shared bar cannot name a topic). |
 | `hooks/useSiteServices.ts` | The site's topic tree, flattened parent → child for a picker. Shares the topic screen's query keys. |
-| `state.ts` | The URL state. A saved view IS this state, stored verbatim. |
-| `data.ts` | The RPC callers. **No write path of its own** — see below. |
+| `data.ts` | The stamp/service RPC callers. **No write path of its own** — see below. Saved views moved out (KI-021, 2026-08-25) — that CRUD is `keyword-table/savedViews.ts`. |
+
+> Deleted 2026-08-25 (dead since the 2026-08-24 grid extraction): this
+> folder's own `state.ts` and `components/ColumnChooser.tsx` — both were
+> superseded that day by `keyword-table/state.ts` and
+> `keyword-table/ColumnChooser.tsx`, and nothing still imported either.
 
 ## Reuse — what this feature deliberately does NOT own
 
@@ -228,6 +231,27 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
   root sits under it in the size of a footnote.
 
 ## Change log
+
+- **2026-08-25** — **KI-021: saved views proven live, CRUD moved to the shared
+  keyword-table layer.** The URL codec (`viewStateFor` / `stateFromViewState`
+  / `viewStateMatches`) already lived in `keyword-table/state.ts` and this
+  page already used it; what still lived here, duplicated verbatim in
+  `data.ts`, was the `seo.keyword_saved_view` CRUD itself. Moved to
+  `keyword-table/savedViews.ts` (now takes an explicit `surface` so a second
+  keyword-table surface can save its own views without a second data layer);
+  this page's calls updated, no behavior change. Deleted `state.ts` and
+  `components/ColumnChooser.tsx`, dead since the grid moved out 2026-08-24.
+  No migration needed — `seo.keyword_saved_view.surface` and the RPCs'
+  `p_surface` already generalize past this one surface.
+  **Live-verified end to end on Data Destruction**
+  (`38eff4c9-b021-451a-b995-7d9b3d17db5e`, `/marketing/brands/52a7eea1-0260-4a6f-a392-90bea1dda941/sites/38eff4c9-b021-451a-b995-7d9b3d17db5e/keywords?view=workbench`):
+  filtered to Class = Money, sorted by Score desc, saved as "Money keywords";
+  reloaded the page cold; reopened the "Money keywords" tab and the exact
+  filter + sort + column arrangement came back; renamed it to "Money keywords
+  (renamed)"; deleted it. A stray `"C14 Test View"` row left over from the
+  2026-08-23 build-and-verify pass was cleaned up (soft-deleted) rather than
+  left behind. 0 saved views remain after this pass, by design — the proof
+  left no residue.
 
 - **2026-08-24** — **KI-047: renamed "Service" to "Offering" everywhere it is
   a user-visible label.** Column header, filter label, picker aria-labels,

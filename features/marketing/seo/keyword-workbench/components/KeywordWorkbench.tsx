@@ -71,11 +71,11 @@ import {
 } from "@/features/marketing/seo/keyword-table/state";
 import {
   deleteSavedView,
-  getMatchingKeywordIds,
   listSavedViews,
   saveView,
   type SavedView,
-} from "@/features/marketing/seo/keyword-workbench/data";
+} from "@/features/marketing/seo/keyword-table/savedViews";
+import { getMatchingKeywordIds } from "@/features/marketing/seo/keyword-workbench/data";
 import { SavedViewTabs } from "./SavedViewTabs";
 
 const SURFACE: KeywordTableSurface = {
@@ -108,7 +108,7 @@ export function KeywordWorkbench() {
 
   const views = useQuery({
     queryKey: ["marketing", "seo", "keyword-views", site.id],
-    queryFn: ({ signal }) => listSavedViews(site.id, signal),
+    queryFn: ({ signal }) => listSavedViews(site.id, undefined, signal),
     staleTime: 60_000,
   });
   const activeView =

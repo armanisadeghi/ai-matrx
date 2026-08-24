@@ -56,7 +56,8 @@ which is why it lives in the URL.
 | `KeywordTable.tsx` | The component. Controlled `MatrxDataTable`, the URL ↔ query-state translation, selection, and the two write panels (dimension assign, offering placement). |
 | `useKeywordRows.ts` | **THE ONE QUERY** (P28). `seo.gsc_perf_breakdown` for the rows plus the four page-scoped reads that decorate them (value, offering, stamps, catalog) and the site's own band vocabulary. |
 | `columns.tsx` | **THE ONE COLUMN SET** (P26). Keyword, Offering, Class, any dimension, Clicks, Impressions, CTR, Position, Score, Level. |
-| `state.ts` | The URL dialect + the per-surface `prefix`, `visibleCoreColumns`, and `liveSearchParams`. |
+| `state.ts` | The URL dialect + the per-surface `prefix`, `visibleCoreColumns`, `liveSearchParams`, and the saved-view snapshot codec (`viewStateFor` / `stateFromViewState` / `viewStateMatches`). |
+| `savedViews.ts` | **Saved views (KI-021).** The CRUD around `seo.keyword_saved_view` — `listSavedViews` / `saveView` / `deleteSavedView`, one row per (site, surface, name), state stored verbatim from `viewStateFor`. Any surface rendering `<KeywordTable>` can mount saved views by calling these with its own `surface` id; a surface UI (tabs, a picker, anything) is that surface's own chrome, never a second data layer. |
 | `ColumnChooser.tsx` | Add AND remove core columns; add any dimension from the site's catalog. |
 
 ## Server vs browser — the honesty rule
@@ -105,6 +106,27 @@ Guard: `pnpm check:one-table-law`.
   top band "Core revenue"). The Level filter's options are read, never listed.
 
 ## Change Log
+
+- 2026-08-25 — gsc-ideas: **KI-021 — saved views moved to the shared layer.**
+  `state.ts` already carried the saved-view snapshot codec (`viewStateFor` /
+  `stateFromViewState` / `viewStateMatches`) and `KeywordWorkbench.tsx` already
+  used it; what still lived workbench-side was the CRUD itself
+  (`listSavedViews` / `saveView` / `deleteSavedView` + the `SavedView` type,
+  duplicated verbatim in `keyword-workbench/data.ts`). Moved that CRUD to
+  `savedViews.ts` here (added an explicit `surface` parameter to
+  `listSavedViews` / `saveView` so a second surface can adopt views under its
+  own id without touching workbench rows) and deleted the workbench copy — one
+  data layer, not two. `seo.keyword_saved_view` needed no migration: its
+  `surface` column and the `p_surface` RPC args already generalize past the
+  workbench, `'keyword_workbench'` was only ever the column DEFAULT. Also
+  deleted `keyword-workbench/state.ts` and its only consumer
+  `keyword-workbench/components/ColumnChooser.tsx` — dead since the grid (and
+  its column chooser) moved to this folder 2026-08-24; nothing else imported
+  either. Live-verified end to end on Data Destruction
+  (`38eff4c9-b021-451a-b995-7d9b3d17db5e`): saved "Money keywords" (Class =
+  Money, sorted by Score desc), reloaded the page, reopened the tab, confirmed
+  the exact filter + sort + column arrangement restored; renamed it; deleted
+  it. See `keyword-workbench/FEATURE.md` Change Log for the full walkthrough.
 
 - 2026-08-24 — Claude: **the Location column (C10).** Multi-location attribution
   was built and starved — the ladder worked, but the answer lived only on the

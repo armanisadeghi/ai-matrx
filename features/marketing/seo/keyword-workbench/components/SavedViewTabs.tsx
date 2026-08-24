@@ -34,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/styles/themes/utils";
-import type { SavedView } from "@/features/marketing/seo/keyword-workbench/data";
+import type { SavedView } from "@/features/marketing/seo/keyword-table/savedViews";
 
 export function SavedViewTabs({
   views,
