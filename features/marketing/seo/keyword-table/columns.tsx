@@ -93,6 +93,16 @@ export function buildKeywordColumns({
   } = data;
   const shown = new Set<string>(visible);
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [];
+  /**
+   * "This isn't something we offer" is a traffic class, not an offering — so
+   * the Offering cell's door writes THIS value through the class path the
+   * Class column already uses. Looked up, never hardcoded past a key: if the
+   * platform vocabulary ever stops carrying it, the door disappears rather
+   * than writing a class that does not exist.
+   */
+  const mismatchClass = (classDimension?.values ?? []).find(
+    (value) => value.key === "mismatch" && !value.abstain,
+  );
 
   if (shown.has("key")) {
     columns.push({
@@ -146,6 +156,21 @@ export function buildKeywordColumns({
               handlers.onPlaceService(row.keyword_id as string, topicId, row.key)
             }
             onFilter={(topicId) => handlers.onFilterByService(topicId)}
+            onNotOffered={
+              // The SAME write the Class column makes — one path, one ruling.
+              mismatchClass && classDimension
+                ? () => {
+                    if (!row.keyword_id || !classDimension) return;
+                    handlers.onQuickAssign([row.keyword_id], {
+                      dimensionId: classDimension.dimension_id,
+                      dimensionSlug: classDimension.slug,
+                      dimensionLabel: classDimension.label,
+                      valueId: mismatchClass.value_id,
+                      valueLabel: mismatchClass.label,
+                    });
+                  }
+                : undefined
+            }
           />
         );
       },

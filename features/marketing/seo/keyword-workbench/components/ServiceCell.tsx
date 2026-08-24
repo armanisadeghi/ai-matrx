@@ -38,6 +38,7 @@ export function ServiceCell({
   disabled,
   onPlace,
   onFilter,
+  onNotOffered,
 }: {
   siteId: string;
   services: SiteServices;
@@ -47,6 +48,12 @@ export function ServiceCell({
   onPlace: (topicId: string | null) => void;
   /** Show everything that maps to this offering — the pattern-spotting door. */
   onFilter?: (topicId: string) => void;
+  /**
+   * "It isn't an offering we offer" — the ruling Arman looked for in this
+   * control on 2026-08-24. It is a traffic class, so the cell only carries the
+   * door; the caller writes it through the one class path.
+   */
+  onNotOffered?: () => void;
 }) {
   const hint = sourceHint(placement?.assignedBy ?? null);
   const title = placement
@@ -82,6 +89,7 @@ export function ServiceCell({
         unplacedLabel={placement ? "Take it off the tree" : undefined}
         placeholder="Not placed yet"
         ariaLabel="Offering this keyword maps to"
+        onNotOffered={onNotOffered}
         className="h-auto min-h-6 border-0 px-1 py-0.5 shadow-none hover:bg-accent"
         renderSelected={
           placement ? (

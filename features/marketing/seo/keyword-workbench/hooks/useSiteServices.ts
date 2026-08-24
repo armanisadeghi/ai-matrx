@@ -39,6 +39,20 @@ export interface ServiceOption {
   keywords: number;
   /** True when this site already has keywords or a worth ruling here. */
   ownedByThisSite: boolean;
+  /** The root this node hangs under (itself, when it IS a root). */
+  rootId: string;
+  /**
+   * True when THIS SITE has actually used the branch this node sits on.
+   *
+   * `seo.topic` is one catalog shared by every business — that is deliberate
+   * (cross-site learning needs a shared vocabulary), and it is also why Arman
+   * opened the offering picker and saw offerings that are not his. The answer
+   * is a heading, not a filter: the branches this site uses come first under
+   * "Your offerings", the rest stay reachable under the shared heading, and
+   * whole ROOTS are judged rather than single nodes so a tree never gets torn
+   * in half across two headings.
+   */
+  usedByThisSite: boolean;
 }
 
 export interface SiteServices {
@@ -86,7 +100,11 @@ export function useSiteServices(
     scope: null,
   });
 
-  const toOption = (node: TopicTreeNode, lineage: string): ServiceOption => ({
+  const toOption = (
+    node: TopicTreeNode,
+    lineage: string,
+    rootId: string,
+  ): ServiceOption => ({
     topicId: node.topic.id,
     name: node.topic.name,
     depth: node.depth,
@@ -95,11 +113,17 @@ export function useSiteServices(
     lineage,
     keywords: node.subtree.keywords,
     ownedByThisSite: !!node.ownWorth || node.subtree.keywords > 0,
+    rootId,
+    // Filled in below, once the whole root is known.
+    usedByThisSite: false,
   });
 
   const lineageByTopic = new Map<string, string>();
   const options: ServiceOption[] = [];
+  // `flat` is depth-ordered, so the last depth-0 node seen is the current root.
+  let rootId = "";
   for (const node of flat) {
+    if (node.depth === 0) rootId = node.topic.id;
     const parentId = node.topic.parent_id;
     const parentLineage = parentId ? lineageByTopic.get(parentId) : undefined;
     const parentName = parentId
@@ -111,7 +135,17 @@ export function useSiteServices(
         : parentName
       : "";
     lineageByTopic.set(node.topic.id, lineage);
-    options.push(toOption(node, lineage));
+    options.push(toOption(node, lineage, rootId));
+  }
+
+  // A root counts as this site's the moment ANY node on it does — a keyword
+  // placed three levels down still means the business sells that branch.
+  const usedRoots = new Set<string>();
+  for (const option of options) {
+    if (option.ownedByThisSite) usedRoots.add(option.rootId);
+  }
+  for (const option of options) {
+    option.usedByThisSite = usedRoots.has(option.rootId);
   }
 
   return {

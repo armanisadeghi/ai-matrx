@@ -25,10 +25,12 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import {
   buildGscMetricColumns,
+  buildGscValueColumns,
   gscMetricCopyLines,
 } from "@/features/marketing/search-console/lib/columns";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
 import { getGscWatch } from "@/features/marketing/search-console/data-watch";
 import {
   useToggleWatch,
@@ -94,6 +96,20 @@ export function WatchlistTab({
     kindFilter === "all"
       ? allRows
       : allRows.filter((r) => r.kind === kindFilter);
+
+  // KI-026 — Class · Score · Level for the watched QUERIES (a watched page's
+  // `entity_id` is a page id, not a keyword id — the value resolver only
+  // applies to the query rows), through the ONE stamp resolver.
+  const sortedKeywordIds = [...keywordIds].sort();
+  const keywordValues = useQuery({
+    queryKey: ["marketing", "gsc", "keyword-value-for", siteId, sortedKeywordIds],
+    queryFn: ({ signal }) =>
+      getGscKeywordValueFor(siteId, sortedKeywordIds, signal),
+    enabled: sortedKeywordIds.length > 0,
+    staleTime: 60_000,
+  });
+  const valueFor = (row: GscWatchRow) =>
+    row.kind === "query" ? keywordValues.data?.get(row.entity_id) : undefined;
 
   const clickedRowRef = useRef<GscWatchRow | null>(null);
   const rowId = (row: GscWatchRow) => `${row.kind}:${row.entity_id}`;
@@ -232,6 +248,13 @@ export function WatchlistTab({
         </span>
       ),
     },
+    // KI-026 — the shared Class · Score · Level cells, resolved through
+    // `gsc_keyword_value_for` for the watched queries on screen. Blank on
+    // watched pages (there is no per-page value stamp).
+    ...buildGscValueColumns<GscWatchRow>(valueFor, {
+      siteId,
+      keywordOf: (row) => (row.kind === "query" ? row.key : null),
+    }),
     ...buildGscMetricColumns<GscWatchRow>(hasCompare, "all"),
   ];
 

@@ -200,6 +200,19 @@ function TableViewerWindowInner({
       height={height}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-auto p-4"
     >
+      {/* Nested overlay emitter — while this window is open its scope
+          out-depths the host page's provider (deepest wins), so the header
+          Agents chrome runs against the TABLE, not the page behind it.
+          🚨 It wraps the menu and is NEVER placed between the menu and its
+          child: `ContextMenuTrigger asChild` clones its ONE child and hands it
+          the trigger's ref + `onContextMenu`, so a non-DOM component in that
+          slot swallows them and the menu silently stops opening (measured
+          live 2026-08-24 — right-click did nothing at all). */}
+      <SurfaceRuntimeProvider
+        surfaceName={TABLE_VIEWER_SURFACE_NAME}
+        getScope={() => buildScope(null)}
+        isEditable={false}
+      >
       <NonEditableContextMenu
         sourceFeature="ai-results"
         surfaceName={TABLE_VIEWER_SURFACE_NAME}
@@ -234,14 +247,6 @@ function TableViewerWindowInner({
         }}
         extraSections={[tableSection]}
       >
-        {/* Nested overlay emitter — while this window is open its scope
-            out-depths the host page's provider (deepest wins), so the header
-            Agents chrome runs against the TABLE, not the page behind it. */}
-        <SurfaceRuntimeProvider
-          surfaceName={TABLE_VIEWER_SURFACE_NAME}
-          getScope={() => buildScope(null)}
-          isEditable={false}
-        >
         <div className="flex min-h-0 flex-1 flex-col">
           {content ? (
             <Suspense fallback={<MatrxMiniLoader />}>
@@ -261,8 +266,8 @@ function TableViewerWindowInner({
             </div>
           )}
         </div>
-        </SurfaceRuntimeProvider>
       </NonEditableContextMenu>
+      </SurfaceRuntimeProvider>
     </WindowPanel>
   );
 }

@@ -39,8 +39,16 @@
  * (P23, P11) + value-system.md § THE ASSIGNMENT LAYER.
  */
 
-import { useState, type ReactNode } from "react";
-import { Check, ChevronsUpDown, Loader2, Lock, Plus } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import {
+  Check,
+  ChevronsUpDown,
+  ExternalLink,
+  Loader2,
+  Lock,
+  Plus,
+  type LucideIcon,
+} from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -56,6 +64,14 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/styles/themes/utils";
 
+/**
+ * "Add a offering…" is the kind of small wrongness that makes a product feel
+ * unfinished, and the noun is caller-supplied so the article has to be derived.
+ */
+function article(noun: string): string {
+  return /^[aeiou]/i.test(noun.trim()) ? `an ${noun}` : `a ${noun}`;
+}
+
 export interface CreatableOption {
   value: string;
   label: string;
@@ -65,6 +81,16 @@ export interface CreatableOption {
   render?: ReactNode;
   /** Extra words the type-ahead should match on. */
   keywords?: string;
+  /**
+   * The heading this option files under. Options keep the caller's order; a
+   * group is opened the first time an option names it. Omit on every option
+   * for a single ungrouped list.
+   *
+   * THE CATALOG IS NOT A WALL (Arman, 2026-08-24, on being shown offerings
+   * that were not his): a set that legitimately holds more than this tenant's
+   * own rows says so with a heading instead of hiding the rest.
+   */
+  group?: string;
 }
 
 export function CreatablePicker({
@@ -104,6 +130,24 @@ export function CreatablePicker({
    */
   createExtra,
   /**
+   * THE MANAGE DOOR. Arman, 2026-08-24: "where we have 'add' we should also
+   * have a 'manage' button that opens that thing in a new tab." A control that
+   * names a vocabulary must also be able to reach the place that vocabulary is
+   * governed — otherwise the person who wants to rename, re-parent, or retire
+   * an option has to go hunting for a screen they may not know exists.
+   *
+   * It opens in a NEW TAB on purpose: nobody loses the row they were editing
+   * in order to go look at the catalog.
+   */
+  manageAction,
+  /**
+   * Doors to a DIFFERENT answer than this vocabulary can give. The offering
+   * picker's "this isn't something we offer" lives here, because that ruling
+   * is a traffic class, not an offering — and sending someone to look for
+   * another column on their own is the dead end this slot exists to close.
+   */
+  footerActions,
+  /**
    * What the TRIGGER shows for the current selection, when the caller wants
    * something other than the option row's own `render`. A dense table cell
    * needs one compact line ("Data Destruction Services · ITAD"); the list row
@@ -129,14 +173,43 @@ export function CreatablePicker({
   lockedNote?: string;
   lockedAction?: { label: string; onSelect: () => void };
   createExtra?: ReactNode;
+  manageAction?: { label: string; href: string };
+  footerActions?: Array<{
+    label: string;
+    icon?: LucideIcon;
+    onSelect: () => void;
+    /** A sentence under the door saying what it does, when it needs one. */
+    note?: string;
+  }>;
   renderSelected?: ReactNode;
   size?: "sm" | "md";
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
+  /**
+   * THE FOOTER IS NEVER A DEAD CLICK. Arman, 2026-08-24: "one of the options is
+   * to allow you to add. When I click add offering, however, nothing happens."
+   * He was right, and the cause was here, not in the popover: with nothing
+   * typed, `create("")` fell straight out of `if (!name) return` and the
+   * button ate the click in silence. A control whose whole purpose is P23 may
+   * not be the control that ignores you — so an empty "Add…" now puts the
+   * cursor in the box and SAYS what it wants.
+   */
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [needsName, setNeedsName] = useState(false);
 
   const selected = options.find((option) => option.value === value) ?? null;
+
+  // Caller order is the order. A heading opens the first time an option names
+  // it, so a tree stays in tree order inside its own heading.
+  const groups: Array<{ heading?: string; options: CreatableOption[] }> = [];
+  for (const option of options) {
+    const last = groups[groups.length - 1];
+    if (last && last.heading === option.group) last.options.push(option);
+    else groups.push({ heading: option.group, options: [option] });
+  }
+
   const typed = query.trim();
   const exactMatch = options.some(
     (option) => option.label.toLowerCase() === typed.toLowerCase(),
@@ -146,11 +219,17 @@ export function CreatablePicker({
   const close = () => {
     setOpen(false);
     setQuery("");
+    setNeedsName(false);
   };
 
   const create = async (text: string) => {
     const name = text.trim();
     if (busy) return;
+    if (!name) {
+      setNeedsName(true);
+      inputRef.current?.focus();
+      return;
+    }
     if (onCreateRequiresMore) {
       close();
       onCreateRequiresMore(name);
@@ -202,15 +281,19 @@ export function CreatablePicker({
           }}
         >
           <CommandInput
+            ref={inputRef}
             value={query}
-            onValueChange={setQuery}
-            placeholder={searchPlaceholder ?? `Search or add a ${noun}…`}
+            onValueChange={(next) => {
+              setQuery(next);
+              if (next.trim()) setNeedsName(false);
+            }}
+            placeholder={searchPlaceholder ?? `Search or add ${article(noun)}…`}
           />
           <CommandList>
             <CommandEmpty>{emptyLabel}</CommandEmpty>
-            {options.length > 0 ? (
-              <CommandGroup>
-                {options.map((option) => (
+            {groups.map((group) => (
+              <CommandGroup key={group.heading ?? "__ungrouped__"} heading={group.heading}>
+                {group.options.map((option) => (
                   <CommandItem
                     key={option.value}
                     value={option.label}
@@ -238,7 +321,7 @@ export function CreatablePicker({
                   </CommandItem>
                 ))}
               </CommandGroup>
-            ) : null}
+            ))}
           </CommandList>
 
           {/* The "+ Add" footer sits OUTSIDE CommandList so the search can
@@ -262,9 +345,58 @@ export function CreatablePicker({
                 <span className="min-w-0 truncate">
                   {typed && !exactMatch
                     ? `Create “${typed}”`
-                    : `Add a ${noun}…`}
+                    : `Add ${article(noun)}…`}
                 </span>
               </button>
+              {needsName ? (
+                <p className="px-2 pb-0.5 text-[11px] leading-snug text-muted-foreground">
+                  Type the name of the {noun} you want to add — then this
+                  creates it.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* THE DOORS. Everything this control names must be reachable from
+              it: the place the vocabulary is governed, and the other answer
+              when this vocabulary is the wrong one to be answering with. */}
+          {footerActions?.length || manageAction ? (
+            <div className="space-y-0.5 border-t border-border p-1">
+              {footerActions?.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <div key={action.label}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        close();
+                        action.onSelect();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      {Icon ? <Icon className="size-3.5 shrink-0" /> : null}
+                      <span className="min-w-0 truncate">{action.label}</span>
+                    </button>
+                    {action.note ? (
+                      <p className="px-2 pb-1 text-[10px] leading-snug text-muted-foreground">
+                        {action.note}
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })}
+              {manageAction ? (
+                <a
+                  href={manageAction.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={close}
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <ExternalLink className="size-3.5 shrink-0" />
+                  <span className="min-w-0 truncate">{manageAction.label}</span>
+                </a>
+              ) : null}
             </div>
           ) : null}
 

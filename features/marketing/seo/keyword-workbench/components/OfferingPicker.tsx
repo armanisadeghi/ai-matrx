@@ -11,6 +11,15 @@
  * Destruction Services" means nothing until you can see it sits under a
  * service you sell.
  *
+ * WHERE THE LIST COMES FROM, and why it holds more than one business's
+ * offerings: `seo.topic` is ONE catalog shared by every site (no `site_id` —
+ * see `listAllTopics`), because cross-site learning needs a shared vocabulary.
+ * Arman, 2026-08-24: "the options that it's showing me go beyond the options
+ * for this company. So I'm trying to see where this list comes from." The
+ * answer is a HEADING, never a filter — the branches this site actually uses
+ * come first under "Your offerings", the rest stay reachable underneath, and
+ * `manageAction` is the door to the screen that governs them.
+ *
  * P23 — EVERY PICKER TAKES NEW INPUT. Typing an offering that does not exist
  * offers `Create "…"`, and the footer's one extra choice says where it goes
  * (its own root, or under an existing topic). Creating and placing is ONE
@@ -19,8 +28,9 @@
  */
 
 import { useState, type ReactNode } from "react";
+import { useParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { CircleSlash } from "lucide-react";
+import { CircleSlash, ThumbsDown } from "lucide-react";
 
 import {
   CreatablePicker,
@@ -54,6 +64,7 @@ export function OfferingPicker({
   size = "sm",
   ariaLabel = "Offering",
   renderSelected,
+  onNotOffered,
 }: {
   siteId: string;
   services: SiteServices;
@@ -69,10 +80,24 @@ export function OfferingPicker({
   ariaLabel?: string;
   /** What the trigger shows once something is chosen (a cell wants one line). */
   renderSelected?: ReactNode;
+  /**
+   * "This isn't something we offer." Arman went looking for that answer in
+   * this control and could not find it — because it is not an offering at
+   * all, it is the traffic class `Mismatch`, and it lives one column over.
+   * Rather than teach the picker a second vocabulary, the caller hands over
+   * the door to the ruling it already owns.
+   */
+  onNotOffered?: () => void;
 }) {
   const queryClient = useQueryClient();
+  const params = useParams<{ brandId?: string }>();
   /** Where an offering the person is inventing should hang. "" = its own root. */
   const [newParentId, setNewParentId] = useState("");
+
+  /** The screen that governs this vocabulary — the tree, in a new tab. */
+  const manageHref = params?.brandId
+    ? `/marketing/brands/${params.brandId}/sites/${siteId}/value/topics`
+    : null;
 
   const options: CreatableOption[] = [];
   if (unplacedLabel) {
@@ -88,11 +113,26 @@ export function OfferingPicker({
       ),
     });
   }
-  for (const option of services.options) {
+  // Yours first, the rest of the shared catalog after — tree order preserved
+  // inside each heading, and whole roots kept together (see `usedByThisSite`).
+  const anyShared = services.options.some((option) => !option.usedByThisSite);
+  const ordered = anyShared
+    ? [
+        ...services.options.filter((option) => option.usedByThisSite),
+        ...services.options.filter((option) => !option.usedByThisSite),
+      ]
+    : services.options;
+
+  for (const option of ordered) {
     const meta = rootTypeMeta(option.rootType);
     options.push({
       value: option.topicId,
       label: option.name,
+      group: anyShared
+        ? option.usedByThisSite
+          ? "Your offerings"
+          : "Shared catalog — not used by this site yet"
+        : undefined,
       keywords: `${option.lineage} ${option.rootName} ${meta.label}`,
       hint: option.keywords > 0 ? `${option.keywords} kw` : undefined,
       render: (
@@ -167,6 +207,23 @@ export function OfferingPicker({
       size={size}
       triggerClassName={className}
       renderSelected={renderSelected}
+      footerActions={
+        onNotOffered
+          ? [
+              {
+                label: "This isn’t something we offer",
+                icon: ThumbsDown,
+                onSelect: onNotOffered,
+                note: "Files it under the Mismatch class — traffic you don’t want.",
+              },
+            ]
+          : undefined
+      }
+      manageAction={
+        manageHref
+          ? { label: "Manage offerings", href: manageHref }
+          : undefined
+      }
       createExtra={
         <Select
           value={newParentId || "__root__"}
