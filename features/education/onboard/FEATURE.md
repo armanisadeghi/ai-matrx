@@ -228,6 +228,30 @@ empty document) surfaces the server's own `ErrorInfo.message` (or a clear fallba
 When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT`) and the matching
 `useIngest` branch together — never one without the other.
 
+## 🚨 Open decision for Arman — per-target cost on the kit flow
+
+The kit flow meters **once per run** (`useEntitlementGuard("education.ingest_document")` in
+`StartHero`), and `useKitGeneration.run` fans out to `convertMany` with **no per-target
+entitlement check at all** — even though every generator declares its own capability
+(`education.generate_cards`, `quiz_generate`, `audio_generate`, `notes_generate`,
+`mindmap_generate`) and the SINGLE-target dialog (`ConvertContentDialog`) does guard on
+`meta.capability`.
+
+That gap is pre-existing. What changed on 2026-08-24 is its blast radius: **audio is now a
+default target**, and audio is the most expensive artifact (its own dedicated
+`education.audio_generate` capability and its own meter in the single-target dialog exist for
+that reason). So every default kit now runs a TTS render, gated only by the blanket
+ingest meter.
+
+This was kept ON because VISION §5 names the audio overview as part of the headline flow and
+Arman re-ratified that flow on 2026-08-20 — and because all 16 education capabilities are
+currently `enforced: false` (STATE.md §4.1 item 15), so no per-target guard would fire today
+regardless. **The decision that is genuinely his:** either add per-target guards to the kit
+flow (and decide what a partially-capped kit does — refuse that target, or refuse the run), or
+accept an uncapped audio render per kit until entitlements are enforced. Do not silently
+"fix" this by removing audio from the defaults — that would put the product back out of step
+with the stated vision.
+
 ## Gotchas learned
 
 - The kit deck runs the `flashcards.generate_from_source` mandate (`CONVERT_MANDATES.deckFromSource`)
