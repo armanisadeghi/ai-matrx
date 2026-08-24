@@ -32,7 +32,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -41,6 +41,20 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
 const ARTIFACT = resolve(ROOT, "features/content-ir/kinds/generated/kinds.generated.ts");
 const ALLOWLIST = resolve(HERE, "kind-type-twins-allowlist.json");
+
+/**
+ * THE STRICTNESS LAW clause 2 (Arman, 2026-08-23) — the allowlist only shrinks,
+ * and until this lock existed it only *claimed* to. Stale entries failed, so an
+ * exception could not outlive its twin; nothing stopped a NEW one. The gate's
+ * own failure message even named the file to put it in — which is precisely the
+ * shape Arman ruled against: "everywhere we leave a little bit of breathing room
+ * ... coding agents abuse it and suddenly make it their default route."
+ *
+ * The lock records exactly which exceptions exist today. An allowlist entry
+ * whose key is not in the lock FAILS. Removing one is free; `--ratchet` rewrites
+ * the lock and refuses to grow it.
+ */
+const LOCK = resolve(HERE, "kind-type-twins-allowlist.lock.json");
 
 /**
  * Where a kind payload twin is a defect: the bridges themselves, and every
@@ -297,8 +311,43 @@ function main(): void {
         "    The generated type is the ONLY declaration of a kind's shape. Import it\n" +
         "    from features/content-ir/kinds/generated/kinds.generated (or the\n" +
         "    kind-payload helpers) and derive a narrower view with Pick/Omit.\n" +
-        "    A genuine exception goes in scripts/shape/kind-type-twins-allowlist.json\n" +
-        "    with a reason — that list only ever shrinks.",
+        "    There is no exception to take: the allowlist is locked at its current\n" +
+        "    contents (kind-type-twins-allowlist.lock.json) and adding an entry\n" +
+        "    fails this gate too. THE STRICTNESS LAW clause 2.",
+    );
+  }
+
+  // ZERO GROWTH: an exception that is not already locked does not exist.
+  const lock = JSON.parse(readFileSync(LOCK, "utf8")) as { entries: string[] };
+  const locked = new Set(lock.entries);
+  const liveKeys = [
+    ...allowlist.map((entry) => `allow::${allowKey(entry.file, entry.interface)}`),
+    ...unregistered.map((entry) => `unregistered::${entry.kind}`),
+  ].sort();
+  if (process.argv.includes("--ratchet")) {
+    const grew = liveKeys.filter((key) => !locked.has(key));
+    if (grew.length > 0) {
+      console.error(
+        `\n🚨 THE ALLOWLIST ONLY SHRINKS — refusing to lock ${grew.length} NEW exception(s):\n` +
+          grew.map((key) => `    + ${key}`).join("\n") +
+          "\n\n    Remove the twin, or register the kind. Recording a NEW exception is\n" +
+          "    not available — not to you, not behind a flag (THE STRICTNESS LAW\n" +
+          "    clause 2). A genuinely new one is Arman's ruling.\n",
+      );
+      process.exit(1);
+    }
+    writeFileSync(LOCK, `${JSON.stringify({ ...lock, entries: liveKeys }, null, 2)}\n`);
+    console.log(`allowlist locked at ${liveKeys.length} exception(s)`);
+    process.exit(0);
+  }
+  const unlocked = liveKeys.filter((key) => !locked.has(key));
+  if (unlocked.length > 0) {
+    failures.push(
+      `${unlocked.length} allowlist entr(ies) are NOT in the lock — this list only shrinks:\n` +
+        unlocked.map((key) => `  + ${key}`).join("\n") +
+        "\n\n    Remove the twin, or register the kind. Recording a NEW exception is not\n" +
+        "    available (THE STRICTNESS LAW clause 2) — a genuinely new one is Arman's\n" +
+        "    ruling, landed by whoever rewrites the lock deliberately.",
     );
   }
 

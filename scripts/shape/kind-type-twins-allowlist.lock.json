@@ -1,0 +1,6 @@
+{
+  "$comment": "THE STRICTNESS LAW clause 2 (Arman, 2026-08-23): the twins allowlist ONLY SHRINKS. Every exception that exists is keyed here; an allowlist entry not in this lock fails check-kind-type-twins.ts. Stale entries already failed, so an exception could not outlive its twin \u2014 but nothing stopped a NEW one, and the gate's own failure message named the file to put it in. Shrink with: pnpm check:kind-type-twins --ratchet (it refuses to grow).",
+  "entries": [
+    "unregistered::keyword_classification_v1"
+  ]
+}
