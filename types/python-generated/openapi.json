@@ -39708,6 +39708,92 @@
         }
       }
     },
+    "/workflow/kinds/generic-floor": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Report Generic Floor Render",
+        "description": "Record that a shape rendered through the generic floor.\n\nFire-and-forget from the caller's point of view — it returns 200 even\nwhen nothing was recorded (an unregistered slug, a write that failed).\nAn alarm that can fail a render is worse than no alarm, and the client\nmust never surface anything to the reader about it.",
+        "operationId": "report_generic_floor_render_workflow_kinds_generic_floor_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenericFloorReport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericFloorReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflow/kinds/generic-floor/open": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "List Generic Floor Incidents",
+        "description": "Every shape still rendering bare — the shapes board's read.\n\nAdmin-only: the list names kinds across every organization, which is the\npoint (a gap is fixed by whoever can author a component, not by the user\nwho happened to hit it).",
+        "operationId": "list_generic_floor_incidents_workflow_kinds_generic_floor_open_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericFloorBoard"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/workflow/contracts/audit": {
       "get": {
         "tags": [
@@ -106423,6 +106509,210 @@
         "title": "GenerateTagsRequest",
         "description": "Trigger cross-cutting tag GENERATION over a topic's keywords + ranked\nsearch results. Discovers brand-new tag dimensions that span ≥2 keywords and\npersists them as suggestions on ``rs_topic.tag_suggestions`` (none applied —\nthe user picks which to create via ``/apply-tag-suggestions``)."
       },
+      "GenericFloorBoard": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "incidents": {
+            "items": {
+              "$ref": "#/components/schemas/GenericFloorIncident"
+            },
+            "type": "array",
+            "title": "Incidents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "incidents"
+        ],
+        "title": "GenericFloorBoard"
+      },
+      "GenericFloorIncident": {
+        "properties": {
+          "incident_id": {
+            "type": "string",
+            "title": "Incident Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "occurrences": {
+            "type": "integer",
+            "title": "Occurrences",
+            "default": 1
+          },
+          "first_seen_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen At"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "surfaces": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Surfaces"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "incident_id",
+          "kind"
+        ],
+        "title": "GenericFloorIncident",
+        "description": "One open creator alarm, as the shapes board reads it."
+      },
+      "GenericFloorReport": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Kind",
+            "description": "The registered kind slug that fell through."
+          },
+          "platform": {
+            "type": "string",
+            "title": "Platform",
+            "description": "Render target: web | vite | mobile | desktop.",
+            "default": "web"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "output"
+          },
+          "surface": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surface",
+            "description": "Where it rendered — e.g. 'workflow-studio/result', 'matrx-user/workflow'."
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Why the resolver fell through, in the resolver's own words ('no rows', 'all rows inactive', 'unknown component_key')."
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "GenericFloorReport",
+        "description": "One generic-floor render, reported by the surface that took it."
+      },
+      "GenericFloorReportResponse": {
+        "properties": {
+          "recorded": {
+            "type": "boolean",
+            "title": "Recorded"
+          },
+          "incident_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incident Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recorded"
+        ],
+        "title": "GenericFloorReportResponse"
+      },
       "GetConversationResponse": {
         "properties": {
           "conversation": {
@@ -123853,6 +124143,17 @@
               }
             ],
             "title": "Output Kind"
+          },
+          "dynamic_output": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dynamic Output"
           },
           "input_schema": {
             "anyOf": [

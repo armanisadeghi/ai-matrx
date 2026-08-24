@@ -15321,6 +15321,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflow/kinds/generic-floor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Generic Floor Render
+         * @description Record that a shape rendered through the generic floor.
+         *
+         *     Fire-and-forget from the caller's point of view — it returns 200 even
+         *     when nothing was recorded (an unregistered slug, a write that failed).
+         *     An alarm that can fail a render is worse than no alarm, and the client
+         *     must never surface anything to the reader about it.
+         */
+        post: operations["report_generic_floor_render_workflow_kinds_generic_floor_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflow/kinds/generic-floor/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Generic Floor Incidents
+         * @description Every shape still rendering bare — the shapes board's read.
+         *
+         *     Admin-only: the list names kinds across every organization, which is the
+         *     point (a gap is fixed by whoever can author a component, not by the user
+         *     who happened to hit it).
+         */
+        get: operations["list_generic_floor_incidents_workflow_kinds_generic_floor_open_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflow/contracts/audit": {
         parameters: {
             query?: never;
@@ -40802,6 +40851,83 @@ export interface components {
                 [key: string]: unknown;
             }[] | null;
         };
+        /** GenericFloorBoard */
+        GenericFloorBoard: {
+            /** Total */
+            total: number;
+            /** Incidents */
+            incidents: components["schemas"]["GenericFloorIncident"][];
+        };
+        /**
+         * GenericFloorIncident
+         * @description One open creator alarm, as the shapes board reads it.
+         */
+        GenericFloorIncident: {
+            /** Incident Id */
+            incident_id: string;
+            /** Kind */
+            kind: string;
+            /** Platform */
+            platform?: string | null;
+            /** Role */
+            role?: string | null;
+            /**
+             * Occurrences
+             * @default 1
+             */
+            occurrences?: number;
+            /** First Seen At */
+            first_seen_at?: string | null;
+            /** Last Seen At */
+            last_seen_at?: string | null;
+            /** Surfaces */
+            surfaces?: string[];
+            /** Message */
+            message?: string | null;
+        };
+        /**
+         * GenericFloorReport
+         * @description One generic-floor render, reported by the surface that took it.
+         */
+        GenericFloorReport: {
+            /**
+             * Kind
+             * @description The registered kind slug that fell through.
+             */
+            kind: string;
+            /**
+             * Platform
+             * @description Render target: web | vite | mobile | desktop.
+             * @default web
+             */
+            platform?: string;
+            /**
+             * Role
+             * @default output
+             */
+            role?: string;
+            /**
+             * Surface
+             * @description Where it rendered — e.g. 'workflow-studio/result', 'matrx-user/workflow'.
+             */
+            surface?: string | null;
+            /**
+             * Reason
+             * @description Why the resolver fell through, in the resolver's own words ('no rows', 'all rows inactive', 'unknown component_key').
+             */
+            reason?: string | null;
+            /** Run Id */
+            run_id?: string | null;
+            /** Node Id */
+            node_id?: string | null;
+        };
+        /** GenericFloorReportResponse */
+        GenericFloorReportResponse: {
+            /** Recorded */
+            recorded: boolean;
+            /** Incident Id */
+            incident_id?: string | null;
+        };
         /** GetConversationResponse */
         GetConversationResponse: {
             conversation: components["schemas"]["ConversationRecord"];
@@ -47630,6 +47756,8 @@ export interface components {
             input_kind?: string | null;
             /** Output Kind */
             output_kind?: string | null;
+            /** Dynamic Output */
+            dynamic_output?: boolean | null;
             /** Input Schema */
             input_schema?: {
                 [key: string]: unknown;
@@ -94767,6 +94895,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KindDescriptor"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_generic_floor_render_workflow_kinds_generic_floor_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenericFloorReport"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericFloorReportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_generic_floor_incidents_workflow_kinds_generic_floor_open_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericFloorBoard"];
                 };
             };
             /** @description Validation Error */
