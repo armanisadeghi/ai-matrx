@@ -475,14 +475,20 @@ export function SurfaceDetailPanel({
                     key={b.id}
                     className="px-2 py-1.5 flex items-center gap-2"
                   >
-                    <EntityRef
-                      token="agent"
-                      id={b.agent_id}
-                      wrap
-                      openInNewTab
-                      className="min-w-0 flex-1"
-                      nameClassName="font-mono text-[11px]"
-                    />
+                    {b.agent_id ? (
+                      <EntityRef
+                        token="agent"
+                        id={b.agent_id}
+                        wrap
+                        openInNewTab
+                        className="min-w-0 flex-1"
+                        nameClassName="font-mono text-[11px]"
+                      />
+                    ) : (
+                      <span className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+                        No agent assigned
+                      </span>
+                    )}
                     <Badge variant="outline" className="text-[10px]">
                       {scopeLabel}
                     </Badge>
