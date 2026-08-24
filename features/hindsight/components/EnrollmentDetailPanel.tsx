@@ -24,6 +24,7 @@ import { subjectDoor } from "../subject-doors";
 import { DoorLink } from "./DoorLink";
 import { useDoorAudience } from "./door-audience";
 import { FindingCard } from "./FindingCard";
+import { PendingExamplesPanel } from "./PendingExamplesPanel";
 import { ReviewProgress } from "./ReviewProgress";
 import { ReviewRow } from "./ReviewRow";
 import { fmtCost, fmtDate, KIND_COLOR, KIND_ICON, KIND_LABEL } from "./tokens";
@@ -268,6 +269,14 @@ export function EnrollmentDetailPanel({
           )}
           <span>last review {fmtDate(enrollment.last_review_at)}</span>
         </div>
+
+        <PendingExamplesPanel
+          className="mt-3"
+          enrollmentId={enrollmentId}
+          audience={audience}
+          reviewRunning={runReview.isPending}
+          onReviewExample={(id) => runReview.mutate([id])}
+        />
       </Card>
 
       <section>
