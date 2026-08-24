@@ -50260,6 +50260,7 @@ export type Database = {
           geo_band: string
           id: string
           label: string
+          location_ids: string[] | null
           match_tokens: Json
           metadata: Json
           notes: string | null
@@ -50278,6 +50279,7 @@ export type Database = {
           geo_band: string
           id?: string
           label: string
+          location_ids?: string[] | null
           match_tokens?: Json
           metadata?: Json
           notes?: string | null
@@ -50296,6 +50298,7 @@ export type Database = {
           geo_band?: string
           id?: string
           label?: string
+          location_ids?: string[] | null
           match_tokens?: Json
           metadata?: Json
           notes?: string | null
@@ -51974,6 +51977,17 @@ export type Database = {
           strong_matches: number
         }[]
       }
+      gsc_breakdown_keyword_ids: {
+        Args: {
+          p_end: string
+          p_filters?: Json
+          p_limit?: number
+          p_search?: string
+          p_site_id: string
+          p_start: string
+        }
+        Returns: Json
+      }
       gsc_class_import: {
         Args: { p_dry_run?: boolean; p_rows: Json; p_site_id: string }
         Returns: {
@@ -51997,6 +52011,10 @@ export type Database = {
           value_score: number
           value_source: string
         }[]
+      }
+      gsc_delete_saved_view: {
+        Args: { p_id: string; p_site_id: string }
+        Returns: Json
       }
       gsc_dig_condition_passes: {
         Args: { p_op: string; p_threshold: number; p_value: number }
@@ -52154,6 +52172,19 @@ export type Database = {
           traffic_class: string
         }[]
       }
+      gsc_keyword_locations: {
+        Args: { p_keyword_ids?: string[]; p_site_id: string }
+        Returns: {
+          decided_by: string
+          distance_km: number
+          keyword_id: string
+          locality: string
+          location_id: string
+          location_name: string
+          place_name: string
+          region: string
+        }[]
+      }
       gsc_keyword_stamps_for: {
         Args: {
           p_dimension_slugs?: string[]
@@ -52208,6 +52239,15 @@ export type Database = {
           value_band: string
           value_score: number
           value_source: string
+        }[]
+      }
+      gsc_location_readiness: {
+        Args: { p_site_id: string }
+        Returns: {
+          count_value: number
+          detail: string
+          headline: string
+          state: string
         }[]
       }
       gsc_perf_breakdown: {
@@ -52270,6 +52310,7 @@ export type Database = {
           p_dimension: string
           p_direction?: string
           p_end: string
+          p_filters?: Json
           p_limit?: number
           p_offset?: number
           p_site_id: string
@@ -52288,6 +52329,7 @@ export type Database = {
           page_id: string
           total_count: number
           traffic_class: string
+          value_band: string
         }[]
       }
       gsc_perf_class_summary: {
@@ -52425,6 +52467,26 @@ export type Database = {
         }[]
       }
       gsc_perf_like_escape: { Args: { p_value: string }; Returns: string }
+      gsc_perf_location_summary: {
+        Args: {
+          p_compare_end?: string
+          p_compare_start?: string
+          p_end: string
+          p_site_id: string
+          p_start: string
+        }
+        Returns: {
+          clicks: number
+          cmp_clicks: number
+          cmp_impressions: number
+          cmp_queries: number
+          decided_by: string
+          impressions: number
+          location_id: string
+          location_name: string
+          queries: number
+        }[]
+      }
       gsc_perf_page_class_summary: {
         Args: {
           p_compare_end?: string
@@ -52646,6 +52708,40 @@ export type Database = {
           label: string
           sort: number
           value: string
+        }[]
+      }
+      gsc_save_view: {
+        Args: {
+          p_id?: string
+          p_name: string
+          p_position?: number
+          p_shared?: boolean
+          p_site_id: string
+          p_state: Json
+          p_surface?: string
+        }
+        Returns: {
+          created_by: string
+          id: string
+          name: string
+          shared: boolean
+          sort_position: number
+          state: Json
+          surface: string
+          updated_at: string
+        }[]
+      }
+      gsc_saved_views: {
+        Args: { p_site_id: string; p_surface?: string }
+        Returns: {
+          created_by: string
+          id: string
+          name: string
+          shared: boolean
+          sort_position: number
+          state: Json
+          surface: string
+          updated_at: string
         }[]
       }
       gsc_set_brand_aliases: {
@@ -53030,6 +53126,10 @@ export type Database = {
           value_score: number
           value_source: string
         }[]
+      }
+      multi_location_knob: {
+        Args: { p_default: number; p_key: string }
+        Returns: number
       }
       release_page_measurement_quarantine: {
         Args: { p_page_id: string; p_reason?: string; p_strategy?: string }
