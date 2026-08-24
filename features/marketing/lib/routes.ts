@@ -97,6 +97,7 @@ export const marketingRoutes = {
   brandLocation: (brandId: string, locationId: string) =>
     `/marketing/brands/${brandId}/local/${locationId}`,
   ranks: () => "/marketing/ranks",
+  approvals: () => "/marketing/approvals",
   contentStudio: () => "/marketing/content-studio",
   social: () => "/marketing/social",
   email: () => "/marketing/email",
