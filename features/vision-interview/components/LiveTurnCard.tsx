@@ -18,6 +18,7 @@
 
 import { cn } from "@/lib/utils";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import type { WorkflowNodeStreamEntry } from "@/features/agents/types/request.types";
 import { ROLES, STRUCTURED_ROLES, type RoleKey } from "../types";
 import { RoleAvatar } from "./RoleAvatar";
@@ -38,7 +39,11 @@ const STRUCTURED_WORKING_LABEL: Partial<Record<RoleKey, string>> = {
 export function LiveTurnCard({ role, stream, round }: LiveTurnCardProps) {
   const meta = ROLES[role];
   const structured = STRUCTURED_ROLES.has(role);
-  const isThinking = stream.text.length === 0;
+  // Providers embed chain-of-thought in the chunk channel as <reasoning>
+  // fences — it is never transcript content. Closed blocks are removed, an
+  // open one is truncated, and a thinking-only stream shows as "Thinking".
+  const { visible } = stripThinkingStreaming(stream.text);
+  const isThinking = visible.length === 0;
 
   return (
     <div className="flex gap-2.5 px-1 py-1.5">
@@ -78,7 +83,7 @@ export function LiveTurnCard({ role, stream, round }: LiveTurnCardProps) {
           !isThinking && (
             <div className="mt-0.5 text-sm">
               <BasicMarkdownContent
-                content={stream.text}
+                content={visible}
                 isStreamActive
                 showCopyButton={false}
               />

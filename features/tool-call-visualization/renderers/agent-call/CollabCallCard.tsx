@@ -20,6 +20,7 @@ import { selectAgentCallChildStream } from "@/features/agents/redux/execution-sy
 import { useConversationTitle } from "@/features/agents/hooks/useConversationTitle";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import { ResultMarkdown } from "../../result-fields/ResultMarkdown";
 import { cn } from "@/lib/utils";
 import type { ToolRendererProps } from "../../types";
@@ -68,7 +69,10 @@ export function CollabCallCard(props: ToolRendererProps) {
     ? `Branched copy of ${childTitle ?? sourceTitle ?? "this conversation"}`
     : (childTitle ?? "Specialist conversation");
 
-  const liveText = childStream?.text ?? "";
+  // The child streams on the chunk channel, where providers embed
+  // chain-of-thought as <reasoning> fences — never render it as the
+  // specialist's words. Closed blocks drop; an open one is truncated.
+  const { visible: liveText } = stripThinkingStreaming(childStream?.text ?? "");
   const showLiveStream =
     childStream !== null && (childStream.status === "running" || isActive) && liveText.length > 0;
   const answerText = !isActive ? (info.resultText ?? (liveText || null)) : null;
