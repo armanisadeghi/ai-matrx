@@ -339,3 +339,33 @@ deleted_at IS NULL` so the common "my schedules, newest first"
 - **2026-05-10** — Initial release. 4 migrations, full user UI,
   full admin UI, matrx-scheduler Python package, aidream router with
   5 endpoints under `/scheduling`.
+
+## Schedule alarms — the schedules that need a human (2026-08-24)
+
+`scheduler.sch_task` carries only the canonical `std_*` policies (FOUND_DEFECTS
+D140), so every console read here shows the VIEWER'S OWN schedules — a
+service-owned SYSTEM schedule is invisible. On 2026-08-23 that let an approved
+nightly (`seo_keyword_facet_backfill`) be repeat-guard-suspended and sit unread
+for a day: three `ops.system_error` rows, red `sch_run` statuses and a
+suspension reason naming the exact error, all recorded correctly, and nothing
+routed a human to them. **Recording is not routing.**
+
+`scheduler.system_schedule_alarms(p_overdue_grace_minutes)` — SECURITY DEFINER,
+super-admin gated (the protected-resources pattern; RLS untouched, no new
+security layer) — returns ONLY schedules needing a human:
+
+| alarm | means |
+|---|---|
+| `suspended` | the repeat guard switched an enabled schedule off — nothing runs until a person re-enables it |
+| `overdue` | enabled, due in the past, past its grace window — the scanner may be down or the trigger is not firing |
+| `failing` | enabled, and its most recent run failed (the run's own `error_message`) |
+
+Healthy rows are deliberately absent: a health read that lists healthy rows
+becomes wallpaper. Read it through `fetchSystemScheduleAlarms()` in
+`service/queries.ts` (the ONE place `sch_*` is read) and rendered FIRST on
+**Scanner health** (`/administration/automation/scheduling/scanner-health`),
+each row a door to `/schedules/<id>`. The scanner status and these alarms settle
+independently — a green scanner says nothing about whether a schedule ran — and
+if the alarm read itself fails the page says so ("treat this as unknown, not
+healthy") rather than implying all-clear.
+
