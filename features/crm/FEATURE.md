@@ -820,8 +820,14 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
   and the row's existing "…" verbs are reused verbatim through
   `itemMenuConfigToExtraSections` — no page re-implements a write. Deals also
   gained a real "Move to stage" submenu on both affordances, writing through
-  the same `moveDealToStage` the board drag uses. `/crm/deals` passes no
-  `surfaceName` because no deals surface manifest exists yet.
+  the same `moveDealToStage` the board drag uses. `/crm/deals` and the outreach
+  list DETAIL pass no `surfaceName` — no manifest describes either surface, and
+  claiming one they cannot fill would emit a scope that lies; both resolve
+  their row content through `contextData` instead. The two list surfaces hand
+  the menu the SAME `getScope` their `SurfaceRuntimeProvider` uses, merged with
+  the clicked row's text by `useCrmRowMenu.getApplicationScope` — v3's
+  `getApplicationScope` REPLACES `contextData`, so without that merge Copy /
+  Export / AI would act on the pane's DOM text instead of the record.
 
 - 2026-08-24 — Outreach-list member search keeps the input immediate and
   debounces the server-paged read by 300 ms; it no longer fetches once per
