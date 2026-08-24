@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-21
+updated: 2026-08-24
 repos: [matrx-frontend, aidream, matrx-local, matrx-claude-plugin, matrx-codex-plugin, matrx-cursor-plugin, matrx-vscode, matrx-sandbox, common-docs]
 vision:
   - /Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md
@@ -39,237 +39,87 @@ individually "works". Verified ground truth below is from a three-way full-featu
   the parts but the parts aren't talking to each other yet and we're missing the main layer on
   top… someone needs to be aware of that." That someone is the owner of THIS document.
 
-## The global map — every component and its state (2026-08-19)
+## The global map — every component and its state (re-verified 2026-08-24)
 
-| Component | Where | State | Proof |
-|---|---|---|---|
-| Contract + raw ledger + projection | aidream `services/coding_session_bridge/` + 2 `chat` tables | LIVE, deployed `c29d5fe59` | 802 sessions, 282,725 entries, newest 1s old |
-| Claude event mirror (hooks) | matrx-claude-plugin `0.2.0-alpha.6` | LIVE | 327 event_mirror sessions; capture-gap alert on 3 pages |
-| Claude history import + backfill | matrx-local (importer, `capture_reconciler.py`) | LIVE; 160-backfill done (150 ok / 10 dead-lettered by design) | 146 imported sessions in cloud |
-| Titles: Claude → AI Matrx | matrx-local `title_sync.py` + aidream ladder | LIVE | conversation titles = Claude sidebar labels |
-| Pins + categories: Claude → AI Matrx | machine sync agent (`~/.claude/sync-claude-code-sessions.py` + `claude-code-pins-extract.py` reading the app's localStorage LevelDB) → ledger → matrx-local `claude_session_index.py` → SessionMetadata → `conversation.is_favorite` + bridge-metadata category; AI Work Category column live in `cvx_list_scoped` | BUILT 2026-08-21 (matrx-local v1.4.42); one-time backfill applied: 95 favorites, 24 categories live in prod DB | ledger holds 110 pinned / 38 categorized; ongoing flow gated on the East re-login below |
-| Titles: AI Matrx → Claude (return) | matrx-local `claude_label_writer.py` | SHIPPED, manual-only (desktop "Sync titles now"; no background loop) | proof `aidream/scripts/_verify_claude_label_return_sync.py` |
-| LOCAL Claude runtime (start/resume/cancel) | matrx-local `local_runtime.py` + Broadcast bridge + composer/Continue panel | LIVE and heavily used | **146 native/matrx_local sessions**, newest today |
-| Hosted (sandbox) Claude runtime | aidream `claude_managed_runtime.py` | Backend CERTIFIED; **UI-orphaned** — `/claude/stream`+`/cancel` have zero callers | disabled placeholder button only |
-| Conversations MCP tool + platform tool | aidream (`conversations`, `conversations_tool.py`) | LIVE; **search+provider filter BROKEN** (reproduced 2026-08-19) | feedback `2f29a244`, still `new` |
-| Conversation-analysis agents (5) | aidream mandates + `ConversationAnalyzePanel` | LIVE on both detail views (2 clicks from inbox) | mandate-resolved, LiveRunWindow |
-| AI Work UI (inbox/search/organize/compose/requests/connections) | matrx-frontend `features/ai-work` | LIVE (v0.4.845) | six journeys: 5 work, launch-watchability partial |
-| Codex event mirror | matrx-codex-plugin `0.2.0-alpha.3` + Matrx Local | Transport certified; **hooks untrusted on real hosts = mirrors nothing**; quarantine fix on main UNRELEASED (CHANGELOG "Unreleased") | 329 codex sessions are smoke/loopback-era |
-| Cursor adapter | matrx-cursor-plugin `0.2.0-alpha.2` | Certified E2E to production (2026-08-12); **distribution-orphaned** (needs public repo or team plan) | repo frozen since 08-12 |
-| VS Code extension | matrx-vscode `v0.1.1` VSIX | Built+certified+packaged; **blocked ~7 days on Arman's 40-min publish checklist** | `OPERATOR_CHECKLIST.md` |
-| Duplicate-binding protection | DB | **FIXED**: partial unique index live, the one pair merged 2026-08-16 | zero duplicate pairs |
-| Outbox durability | matrx-local **v1.4.38** (`15b35f723`, `90d930061`, `dc092789d`) | Publisher no longer dies (4 wedge causes fixed, verified live); route latency 330 s → 0.30 s. **Queue still not draining** — blocked on MXL-D-079 (large-envelope TLS failure), 23,413 rows pending | local sqlite + access.log + process sample, 2026-08-19 |
-| Codex stable-event-id stability | matrx-codex-plugin | **DEFECT**: one `UserPromptSubmit:<turn_id>` emitted with 16 different payloads in one session → server `entry_mutated`, 88 rows permanently quarantined | quarantine table, 2026-08-19 |
+| Component | State | Proof |
+|---|---|---|
+| Contract + raw ledger + projection (aidream `services/coding_session_bridge/`) | LIVE; projector reclassified (sidecar kinds + empty Stops skip; native tool_use/tool_result pair into `chat.tool_call` in BOTH lanes) | 977k entries; **projection errors: 0** after set-based backfill (148,968 historical tool_calls minted) |
+| Claude event mirror (matrx-claude-plugin `alpha-6`) + history import + reconciler | LIVE | newest entries minutes old |
+| Titles Claude→Matrx + return direction | LIVE; 193+78 drifted titles backfilled with ladder precedence (0 user renames touched) | cloud titles == Claude sidebar |
+| **Pins + categories Claude→Matrx** | **LIVE end-to-end**: app localStorage LevelDB → `~/.claude/claude-code-pins-extract.py` → ledger (`sync-claude-code-sessions.py`, wipe-guarded) → matrx-local `claude_session_index.py` → SessionMetadata (flip-detection; explicit-category contract) → `conversation.is_favorite` + bridge category → AI Work Category column | 1,223 sessions carry pin state via the live pipe; pins restored INTO Claude via `~/.claude/claude-code-pins-writeback.mjs` (Arman ran it, app adopted) |
+| Desktop engine auth / outbox | **RESOLVED 2026-08-24**: root cause was the retired Supabase project's publishable key baked into every build (CI secret never rotated at East cutover); fixed bbdc48b01 + secret rotation, shipped v1.4.43; Arman re-logged-in | outbox 42,192 → ~59; engine v1.4.47 ok |
+| `conversations` tool search+provider | FIXED on main (nested-Subquery ORM fix) + forcing-function regression tests added; feedback `2f29a244` resolved `awaiting_review` | 5+13 tests green |
+| AI Work UI | LIVE incl. watchable running sessions (v0.4.851), Category column + facet, schedule prefill (with Suspense boundary) | — |
+| Local Claude runtime | LIVE, heavily used | 146+ native sessions |
+| Hosted (sandbox) Claude runtime | Backend certified (pre-migration — treat unre-certified); UI-orphaned | item 3 |
+| Codex event mirror | quarantine fix RELEASED `v0.2.0-alpha.4`; hooks still untrusted on real hosts = mirrors nothing | item 4 |
+| Cursor / VS Code | certified/packaged; distribution Arman-gated | item 7 |
 
 ## Resources
 
-- **Behavior bar (read FIRST):** `common-docs/systems/coding/coding-session-bridge/BEHAVIOR.md` — MUSTs
-  for identity/capture/runtime, provider-cloud verdict (no user-subscription cloud triggering;
-  Anthropic Managed Agents is the only credible future cloud destination), Arman's verification
-  script. Baseline says v1.4.33; nothing in v1.4.34/35 contradicts a MUST.
-- **Contract:** `common-docs/systems/coding/coding-session-bridge/FEATURE.md`. Product plan:
-  `common-docs/projects/ai-work-hub/PLAN.md`. Adapter plan: `projects/coding-agent-bridge/PLAN.md`.
-- **Backend:** `aidream/services/coding_session_bridge/` (+ `ownership.py` server-side org
-  resolution, bounded checkpoint reads, `mandates.py`); MCP `api/mcp/agent_service/`; REST
-  `api/routers/coding_sessions.py`.
-- **Frontend:** `features/ai-work/` (+FEATURE.md — has drift, see item 8); browser→Mac relay
-  `lib/matrxLocalRuntime.ts` over Broadcast channel `matrx-local-bridge:<userId>`.
-- **Local:** `matrx-local/app/services/coding_sessions/` (runtime, importer, reconciler, title
-  sync both ways, label writer, workspace discovery); engine handlers
-  `app/api/coding_runtime_handlers.py`; desktop pages ClaudeHistorySync (capture UI shipped
-  `e0894b257`) + Agent Runtime card.
-- **DB probes:** asyncpg + aidream `.env` `SUPABASE_MATRIX_*`, `statement_cache_size=0`. Local
-  outbox: `sqlite3 ~/.matrx/matrx.db "select count(*) from coding_session_bridge_outbox"`.
-- **Deploy:** aidream `./scripts/release.sh`; matrx-local `./scripts/release.sh --message` (signed);
-  frontend on push. Verify prod: `https://server.app.matrxserver.com/health/version`.
-
-## 2026-08-21 session delta (owner: Coding Integrations take)
-
-- **Titles/pins/categories unification SHIPPED end-to-end** (Arman's ruling: label drift
-  is the killer; favorites = pinned). Sources found: titles/archived in
-  `~/.claude/claude-code-sidebar-state.json` (the sync-agent ledger); pins + custom
-  groups in the desktop app's localStorage LevelDB (`dframe-local-slice`,
-  `dframe-group-scopes`). Pipeline: `~/.claude/claude-code-pins-extract.py` (venv
-  `~/.claude/.sync-venv`, ccl-chromium-reader) → ledger (extended by
-  `sync-claude-code-sessions.py`, wipe-guarded) → matrx-local
-  `claude_session_index.py` (`is_pinned`/`pinned_rank`/`category` in
-  `metadata_payload`, 8012fbfa2) → aidream SessionMetadata
-  (`apply_provider_pin_and_category` → `conversation.is_favorite` +
-  `metadata.coding_session_bridge.category`, bc2e7d98c + tests dca9686f0) → AI Work
-  Category column + facet (ada53cf00).
-- **Backfills applied to live DB (verified by query):** 193 drifted titles corrected
-  with ladder precedence (0 user renames touched); 95 favorites; 24 categories.
-- **Pin restore INTO Claude works:** `~/.claude/claude-code-pins-writeback.mjs`
-  (classic-level; refuses while app runs; full backup; keep-unknown pins). Arman ran it
-  2026-08-22; app adopted the pin list on relaunch (verified in LevelDB seq history).
-  **Category cross-account replication is impossible locally** — the app restored
-  per-account group scopes from Anthropic's server 12s after launch; categories are
-  server-synced per account. Ledger/AI Matrx still unify them read-side.
-- **Outbox 401 ROOT CAUSE FOUND (supersedes the MXL-D-079-only theory):** the packaged
-  app ships the retired Supabase project's publishable key — CI secret
-  `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY` was never rotated at the East cutover
-  (URL secret was). Engine GoTrue introspection + all direct PostgREST reads 401 on
-  every install since 08-20; the stored pre-East JWT can't be replaced because token
-  verification itself uses the dead key. Fixed: secret rotated + `app/config.py` /
-  `app/bundled_config.py` (bbdc48b01). **Release v1.4.43 pending** (blocked on a
-  concurrent session's uncommitted matrx-local work), then Arman signs out/in once →
-  outbox drains (token save auto-unpauses the publisher). MXL-D-079 (large-envelope
-  TLS) remains latent beneath and may resurface during the drain.
-- Independent macOS TCC finding: Files & Folders denies the Documents watcher
-  (`~/Documents/Matrx/Notes`) since the reboot — Arman toggles it in System Settings.
+- **Behavior bar (read FIRST):** `common-docs/systems/coding/coding-session-bridge/BEHAVIOR.md`.
+  Contract: `.../FEATURE.md` (invariant added 2026-08-24: tool use/result pair into ONE
+  `chat.tool_call` in both lanes). Product plan: `common-docs/projects/ai-work-hub/PLAN.md`.
+- **Backend:** aidream `aidream/services/coding_session_bridge/` (service, orm_store, backfill.py +
+  `scripts/backfill_native_tool_projections.py` — per-row, resumable; historical bulk was applied
+  set-based 2026-08-24). **Frontend:** `features/ai-work/`. **Local:** matrx-local
+  `app/services/coding_sessions/` (ledger reader `claude_session_index.py`).
+- **Machine (Arman's Mac):** `~/.claude/sync-claude-code-sessions.py` (launchd, ledger keeper) ·
+  `claude-code-pins-extract.py` (LevelDB read, venv `~/.claude/.sync-venv`) ·
+  `claude-code-pins-writeback.mjs` (app-closed pin restore; categories are server-synced per
+  account — local cross-account replication is impossible, verified: the app restores scopes from
+  Anthropic's servers on launch).
+- **DB probes:** asyncpg + aidream `.env` `SUPABASE_MATRIX_*`; outbox
+  `sqlite3 ~/.matrx/matrx.db "select count(*) from coding_session_bridge_outbox"`.
 
 ## Remaining work (priority order)
 
-0. **THE BLOCKER (found 2026-08-21): the desktop engine's auth broke on the Supabase East
-   migration.** The engine holds a JWT + refresh token issued by the OLD instance; the new
-   instance rejects them (`PGRST301 No suitable key was found to decode the JWT`, surfacing as
-   HTTP 401 `token_required` on `/coding-sessions/bridge` and ORPHAN INSTANCE heartbeat errors in
-   `~/Library/Logs/MatrxLocal/system.log`). Every engine→cloud lane is dead: the outbox sits at
-   42,192 rows (was 22,126 on 08-19 — note the old TLS theory MXL-D-079 is NOT the current
-   front-line failure; 401 is), title/pin/category sync cannot deliver, settings heartbeat fails.
-   **Only a fresh sign-in in the AI Matrx desktop app can mint a new-instance token** — Arman
-   guided step, asked 2026-08-21. After re-login: watch the outbox drain
-   (`sqlite3 ~/.matrx/matrx.db "select count(*) from coding_session_bridge_outbox"`), confirm
-   pins/categories flow (v1.4.42 sends them), and only then re-evaluate MXL-D-079/080 against
-   whatever still fails.
-0b. **Projection mislabeling (found 2026-08-21, decision pending):** 137,992 entries carry
-   `projection_status='error'` but most are tool_use/tool_result/thinking-only payloads with no
-   visible text — deliberate non-messages misfiled as `malformed_event` (plus attachment/
-   last-prompt/custom-title/… kinds misfiled as `unsupported_event` errors). Recommended (asked
-   2026-08-21, awaiting his answer or silence-=-go): mark no-visible-text as `skipped`, handle the
-   known sidecar kinds, leave a small true-error remainder; do NOT dump raw tool payloads into
-   conversations. `_project_known` in aidream `service.py` is the seam.
-1. **DONE-with-a-successor (2026-08-19): the app is on v1.4.35 and the wedge was NOT fixed by it.**
-   The updater installed 1.4.35 and the engine now reports it. **v1.4.35 did not drain the
-   outbox** — it fixed the v1.4.34 crash (an ack-write exception raising out of the tick) but
-   left the post-delivery writes on the shared aiosqlite connection, where they lost to the codex
-   hook burst with `database is locked`. Ack, delete, AND deferral all failed, the loop
-   `continue`d, and outbox row 72184 was re-POSTed to aidream **48 times** while the outbox grew
-   21,636 → 22,126. Because `sync_pending` holds `_sync_lock` for the whole tick, this starved
-   every coding-session route: `/coding-session/status` median **1,040 s**,
-   `/coding-session/hooks` median **330 s**, `/health` 0 ms.
-   **Fixed in matrx-local `15b35f723`, released as v1.4.36** — retirement now runs on a private
-   `BEGIN IMMEDIATE` connection (the same durable boundary the hook ingress uses), and a
-   delivered row is never uploaded twice. Regression:
-   `matrx-local/tests/unit/test_coding_session_delivered_row_wedge.py`.
-   - **The "codex lanes are starved / attempts=0" question is CLOSED — it was never a lane bug.**
-     The publisher only ever touches lane HEADS, so of 22,126 queued rows exactly **219** were
-     ever eligible to be attempted; `attempts=0` on the other 21,907 is correct by design. Lane
-     isolation (`be04a6038`) worked throughout. Codex dominates only because Claude Code hooks
-     deliver directly (109 claude_code rows vs 22,017 codex).
-   - **Latency is fixed and verified:** `/coding-session/hooks` went from a 330 s median to
-     **0.30 s**, `/coding-session/status` from 1,040 s to ~2 s, immediately after v1.4.36 booted.
-   - **Three more incarnations of the same failure shape were found and fixed after v1.4.36**,
-     each verified live on Arman's machine within minutes of the previous release:
-     **v1.4.37** (`90d930061`) — a raw `ssl.SSLError: SSLV3_ALERT_BAD_RECORD_MAC` was not
-     classified by `AIDreamClient`, sailed past `except (AIDreamOfflineError, AIDreamError)`, and
-     killed the tick; and **v1.4.38** (`dc092789d`) — `_record_failure` still ran on the shared
-     aiosqlite connection, so it raised `database is locked` *from inside the exception handler*
-     and killed the tick again. Every outbox mutation (enqueue, retire, defer, record-failure,
-     quarantine) now runs on the private `BEGIN IMMEDIATE` boundary, quarantine's copy-then-delete
-     is atomic, and an unexpected error degrades to one deferred row instead of a dead publisher.
-     **On v1.4.38 the publisher no longer dies** — zero new tick failures.
-   - **STILL NOT DRAINING — new, separate root cause: `matrx-local` MXL-D-079.** Large envelopes
-     (the stalled lane head is a run of 155-330 KB rows; largest pending is 2.6 MB) fail TLS
-     *inside the engine process* with `SSLV3_ALERT_BAD_RECORD_MAC`, while `curl` to the same host
-     from the same machine succeeded 6/6 at ~50-130 ms. Because a TLS failure is classified
-     `AIDreamOfflineError` and offline deliberately `break`s the whole tick as "publisher-wide",
-     ONE big row at the oldest lane head starves all 226 lanes. Small envelopes deliver fine.
-     Also filed: **MXL-D-080**, watchfiles pegging ~2 CPU cores in the engine (`/health` 1 ms
-     while every DB-touching route degrades to 10-60 s), which plausibly stops httpx timeouts
-     firing promptly. Neither root cause is identified; both are filed, not fixed.
-   - **The 88 quarantined rows are correctly abandoned, not recoverable as-is** (all codex
-     `UserPromptSubmit`, all HTTP 409 `entry_mutated`, quarantined 08-17/08-18). Root cause is
-     upstream in matrx-codex-plugin: the same `UserPromptSubmit:<turn_id>` was emitted with
-     **different bytes** repeatedly within ONE session — one id has 16 rows with 16 distinct
-     payload hashes, another 13, another 10. The server stored the first version and refuses the
-     rest, which is correct. The plugin's own client-side quarantine caught the same class
-     locally (6 poison files, `stable hook event identity was reused with a different envelope`).
-     **The real fix belongs in matrx-codex-plugin: make the stable event id a function of the
-     payload, or stop mutating a turn's payload after first emit.** Re-sending the 88 as-is fails
-     forever; minting new ids would duplicate turns. They are preserved, never deleted.
-2. **DONE 2026-08-19 — a launched local run is now watchable.** `/work/conversations/[id]`
-   updates live while its coding session is delivering (`useLiveProviderTranscript` +
-   `liveSessionState`, shipped v0.4.851): new turns and tool calls append within a few seconds,
-   the loop stops when the session settles, returning to the tab or **Check now** re-arms it, and
-   the composer / Continue copy now matches. Transport is a visible-tab poll of the existing
-   keyset reads, chosen against the `supabase-realtime` skill and verified on the live DB
-   (`chat.message` / `chat.tool_call` are not in the realtime publication; `chat.conversation` is
-   but only bumps at message boundaries). Rationale + rules: `features/ai-work/FEATURE.md`
-   § Watch a run while it happens. **Left open:** owner-eyes browser pass on production — the
-   live path is owner-only by construction (the binding read is `created_by = auth.uid()`), so it
-   cannot be exercised from the admin test account.
-3. **Fix `conversations` search+provider (chip fired).** Reproduced: search+provider fails while
-   each alone works; nested Subquery composition in `conversation_browse.py` ~L348-395 is the
-   suspect; the tool also swallows the real exception (its own defect). Feedback `2f29a244`.
-4. **Schedule-prefill dead end.** Composer links `/schedules/new?agentId&prompt` and claims
-   prefill; `ScheduleForm` reads neither param. Either consume them (small) or stop claiming.
-   Part of the automations lane: `/work/automations` + Saved Request → workflow handoff absent.
-5. **Hosted lane — RULED BUILD (2026-08-20), and the 2026-08-21 sandbox map found the hard
-   blocker (chips fired):** the new internal `development` sandbox is **EC2-tier-only**
-   (matrx-sandbox `routes/sandboxes.py:93-105`, host `matrx-sandbox-host-dev`), while managed
-   Claude is **hosted-tier-only** by an explicit gate — coding_session_bridge `FEATURE.md:232`:
-   EC2 capability probes return unavailable "until that tier has a separately reviewed container
-   isolation profile". Resolving that gate (review bwrap/socat isolation on the `development`
-   image, then deliberately open EC2 tier) is the prerequisite for "run the cloud environment in
-   the dev sandbox". Also: the hosted endpoints' 08-15 "certification" has NO in-repo record and
-   predates the AWS/Cloudflare migration — treat as unre-certified; `docs/ACCEPTANCE_DEV_SERVER.md`
-   still documents the retired Coolify deploy path; the hosted-template reseed defect
-   (aidream FOUND_DEFECTS ~L1117) is still open though the dev template's flock'd sync is the fix
-   pattern. Missing capability = LOUD "unavailable because X", never silent absence.
-6. **Codex path to LIVE mirroring.** In order: release the quarantine fix (plugin still
-   `alpha-3`/"Unreleased" on main — bump + tag), Arman runs `/hooks` trust once per machine,
-   build the trust detector + honest `/work/connections` status (chip fired earlier, never
-   executed), then verify real codex sessions land. Managed-Codex runtime remains design-only
-   (`docs/MANAGED_RUNTIME_PLAN.md`).
-7. **Web sync door (TASK-007) is now feasible** — `SyncStatePanel`'s "browser cannot reach the
-   desktop" rationale predates the Broadcast bridge RPC; add `coding_history.*` handlers beside
-   `coding_runtime.*` and give AI Work real preview/import/status/retry/discard. TASK-008
-   (reconnect/account UX) still not started. Live-path multi-account identity still unproven.
-8. **Conformance + docs debt (single sweep):** BEHAVIOR.md 12-MUST conformance was chipped but
-   never executed (MUST #1 mismatch statement likely missing); `features/ai-work/FEATURE.md`
-   drift (inspector→detail mount and SyncStatePanel mechanism copy both FIXED 2026-08-19;
-   schedule-prefill claim still open — see item 4);
-   matrx-local AGENT_TASKS hygiene (TASK-003/003b done-but-Active); the 2 pre-existing failing
-   tests in `compose-destinations.test.ts` are FIXED (they asserted the retired hosted-capability
-   contract; `pnpm jest features/ai-work` is green); 19 `Auto:%` titles remain among coding-bound conversations
-   (was 1 — regressed during the backfill wave; re-run title sync after the outbox drains, then
-   investigate any survivors).
-9. **Distribution (all Arman-gated):** VS Code — 40 min in `matrx-vscode/OPERATOR_CHECKLIST.md`;
-   Cursor — public repo or team plan; Claude plugin public marketplace publication.
-10. **Analysis surfaces polish:** row-level analyze actions on the inbox (today it's two clicks via
-    detail), durable analysis outputs (note/association), thread-level War Room placement, FTS
-    when ILIKE stops scaling.
+1. **Verify the last mile after the aidream deploy** (deploy agent ships main): new sidecar-kind
+   entries stop erroring; run one sweep of the sidecar receipt UPDATE for any stragglers (pattern
+   in this doc's history / `backfill.py`); confirm `Auto:%` titles decay as title sync runs.
+2. **Favorite return direction (design gap, accepted for now):** pin mirror is one-way with
+   flip-detection — an AI Matrx favorite change survives unchanged provider observations but a
+   real Claude-side flip wins; favoriting in AI Matrx never reaches Claude. The return path =
+   ledger write + `claude-code-pins-writeback.mjs` mechanics. Also open: auto-run write-back when
+   Claude is closed and drifted (needs Arman's yes — standing automation).
+3. **Hosted lane — RULED BUILD (2026-08-20).** Blocker: `development` sandbox is EC2-tier-only
+   while managed Claude is hosted-tier-only by an isolation gate (contract FEATURE.md:232) —
+   review bwrap/socat isolation on the dev image, open EC2 tier deliberately, re-certify the
+   hosted endpoints (their 08-15 certification predates the AWS migration), then wire
+   `/claude/stream`+`/cancel` into `/work/new`. Missing capability = LOUD "unavailable because X".
+4. **Codex to LIVE mirroring:** Arman runs `/hooks` trust once per machine (plugin alpha-4 is
+   released); build the trust detector + honest `/work/connections` status; verify real codex
+   sessions land. Non-claude native tool outcomes are skipped-not-guessed by design — revisit
+   per-provider rules when codex native entries actually flow.
+5. **Web sync door (TASK-007):** add `coding_history.*` handlers beside `coding_runtime.*` over
+   the Broadcast bridge; give AI Work real preview/import/status/retry/discard. TASK-008
+   (reconnect/account UX) not started. Live-path multi-account identity unproven.
+6. **Conformance + docs debt:** BEHAVIOR.md 12-MUST pass never executed (MUST #1 mismatch
+   statement likely missing); matrx-local AGENT_TASKS hygiene (TASK-003/003b done-but-Active);
+   owner-eyes browser pass on live watchable sessions (owner-only by construction).
+7. **Distribution (all Arman-gated):** VS Code publish checklist (40 min); Cursor repo
+   visibility; Claude plugin marketplace.
+8. **Analysis surfaces polish:** row-level analyze on the inbox, durable analysis outputs,
+   thread-level War Room placement, FTS when ILIKE stops scaling.
 
-## Done (one line each; details live in the named code/FEATURE.md)
+## Done (one line each; details in code/FEATURE.md)
 
-- Contract, two `chat` tables, owner-only RLS, four-provider event mirror, idempotency/leases —
-  contract FEATURE.md; unique binding constraint live in DB (2026-08-19 verified).
-- Claude plugin `alpha-6` (OAuth hooks, transcript locator, health that proves attachment).
-- Titles both directions + workspace/branch labels + placeholder backfills — matrx-local
-  `title_sync.py`/`claude_label_writer.py`, aidream `titles.py`.
-- Claude history import + 160-session backfill + capture reconciler + capture UI + capture-gap
-  alert — matrx-local, `ClaudeHistorySync.tsx`, `CaptureGapAlert`.
-- LOCAL Claude runtime end-to-end (start/resume/cancel over Broadcast bridge, native ledger,
-  folder approvals, desktop card, composer destination, Continue panel) — production-proven,
-  146 sessions.
-- Hosted managed runtime production-CERTIFIED (backend) incl. broker gzip fix.
-- `conversations` MCP+platform tool, five analysis agents mounted on both detail views.
-- AI Work Hub: inbox (honest last-activity sort, compact star, real titles), transcript with tool
-  calls + load-earlier, organization, search, composer + Saved Requests, connections with account
-  grouping — v0.4.845.
-- Outbox poison-row quarantine (both sides: matrx-local v1.4.35 + codex plugin main) — release
-  pending install/tag (item 1/6).
-- Codex/Cursor certified transports; VS Code packaged `v0.1.1`; ownership consolidation; OAuth
-  identity repair; the EC2/Coolify production-origin incident fixes.
+- Contract, raw tables, RLS, event mirror, idempotency/leases; unique binding live.
+- Titles both directions; pins/categories capture + platform mirror + backfills (95→ favorites,
+  categories, 271 title corrections); AI Work Category column; watchable runs; schedule prefill.
+- Projection ledger CLEAN: sidecar/empty-Stop reclassification, native tool pairing both lanes,
+  148,968 historical tool_calls, projection errors 0 (2026-08-24).
+- East-key auth incident: root-caused, fixed, released (v1.4.43), outbox drained 42k→~59.
+- Outbox durability (v1.4.36–38), poison-row quarantine both sides (codex plugin alpha-4
+  released); 88 quarantined codex rows preserved-by-design (repair-or-accept still open below).
+- Adversarial-review hardening 2026-08-24: pin flip-detection (no favorite clobber), explicit
+  category observation contract, StopFailure named receipts, per-provider sidecar gate,
+  duplicate-tool_use_id ordinal ids, create_tool_call race convergence, ledger wipe-guard on
+  total emptiness, write-back keeps pins the ledger has no real opinion on.
+- macOS TCC Documents watcher finding handed to Arman (System Settings toggle).
 
-## Decisions needed (each self-contained)
+## Decisions needed
 
-- ~~Hosted lane (item 5)~~ **RULED 2026-08-20 (Arman): BUILD IT — "really no question that we want
-  the hosted lanes as well… that was never a question."** The new dev sandbox is the proving
-  ground: prove the cloud environment can run managed sessions there, then wire the hosted
-  destination into the product. Not everything needs a cloud lane, but the path is to build this
-  out completely — **any missing capability must be a VERY LOUD missing thing** (explicit
-  "not available because X" in the UI and docs), never silently absent.
-- **Quarantined events (item 1):** after the v1.4.35 update, 88 quarantined envelopes represent
-  events that will never reach the platform unless individually repaired. Repair or accept loss?
+- **Quarantined codex events:** 88 envelopes (entry_mutated, preserved) — repair upstream ids or
+  accept loss?
+- **Standing automation:** auto-run the pin write-back when Claude is closed and drifted (item 2)?
