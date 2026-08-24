@@ -128,6 +128,7 @@ interface CachedToken {
 
 const TOKEN_CACHE = new Map<string, CachedToken>();
 const REFRESH_LEEWAY_SECONDS = 30;
+const TOKEN_MINT_ATTEMPTS = 2;
 
 /**
  * Box rowIds we KNOW are dead (terminal: expired / stopped / failed), learned
@@ -475,21 +476,27 @@ async function fetchAccessToken(
   const cached = TOKEN_CACHE.get(sandboxRowId);
   if (isStillValid(cached)) return cached;
 
-  let resp: Response;
-  try {
-    resp = await fetch(`/api/sandbox/${sandboxRowId}/access-tokens`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scopes: ["ai"] }),
-    });
-  } catch (err) {
-    // LOUD: network-level failure reaching our own mint route. Never silent.
-    console.error(
-      `${LOG} ❌ token mint request THREW for box ${sandboxRowId}. The /api/sandbox/${sandboxRowId}/access-tokens fetch could not complete. The agent will get NO sandbox tools this turn.`,
-      err,
-    );
-    return null;
+  let resp: Response | null = null;
+  for (let attempt = 1; attempt <= TOKEN_MINT_ATTEMPTS; attempt += 1) {
+    try {
+      resp = await fetch(`/api/sandbox/${sandboxRowId}/access-tokens`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scopes: ["ai"] }),
+      });
+    } catch (err) {
+      if (attempt < TOKEN_MINT_ATTEMPTS) continue;
+      // LOUD only after the bounded retry is exhausted. A recovered transport
+      // blip is not a durable system error and does not remove tools this turn.
+      console.error(
+        `${LOG} ❌ token mint request THREW for box ${sandboxRowId} after ${attempt} attempts. The /api/sandbox/${sandboxRowId}/access-tokens fetch could not complete. The agent will get NO sandbox tools this turn.`,
+        err,
+      );
+      return null;
+    }
+    if (resp.ok || resp.status < 500 || attempt === TOKEN_MINT_ATTEMPTS) break;
   }
+  if (!resp) return null;
   if (!resp.ok) {
     // LOUD: read the body so the REAL reason (missing orchestrator API key,
     // box not running, orchestrator unreachable) is visible — not swallowed.

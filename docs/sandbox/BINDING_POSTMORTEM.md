@@ -93,6 +93,10 @@ localhost button. **Fix:** auto-routing only applies on the `production` toggle.
 3. **Contract drift with no validation.** FE assumed `exp:number`; the
    orchestrator sends `expires_at:string`. Nothing logged the mismatch; the
    token was just silently discarded.
+4. **Transient mint failures get one bounded retry.** A single orchestrator
+   5xx or transport blip must not strip sandbox tools from the current turn or
+   enter the durable error queue. `fetchAccessToken` retries once and logs a
+   terminal error only when both attempts fail.
 
 ## 4. Prevention / where it's verified now
 
