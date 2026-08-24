@@ -836,6 +836,17 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-24 — **Publish runs on the queue; the design seam gets its UI.**
+  (1) Setup rung 5's apply seeds `steps=["p7_publish"]` on the durable
+  cms_fill queue (the one-shot `/cms-publish` request died at the gateway
+  timeout mid-site); dry-run preview unchanged; progress renders in the
+  existing per-step rows; completion toasts in pages LIVE and auto-runs the
+  rendered-page shell inspection. (2) Setup rung 2 gained the site "Design
+  direction" textarea (`settings.content_plan.design_guidance`) and the
+  NodePanel Build tab a per-page design note (`node.metadata.design_notes`)
+  — both reach the P6 builder on every run (aidream offers them as
+  `design_guidance`; sections seeded by the starter kit arrive as
+  `section_library`).
 - 2026-08-21 — **Every rail chip runs, and the pipeline exists at the SITE
   level.** (1) `p1_keywords` joined `RUNNABLE_PIPELINE_STEPS` (the server's
   step route now serves it — deterministic: it confirms the recorded keyword
