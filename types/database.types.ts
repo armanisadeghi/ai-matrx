@@ -23284,6 +23284,33 @@ export type Database = {
   }
   iam: {
     Tables: {
+      _unnest_uuids_rollout: {
+        Row: {
+          done: boolean
+          err: string | null
+          schema_name: string
+          table_name: string
+          token: string | null
+          variant: string | null
+        }
+        Insert: {
+          done?: boolean
+          err?: string | null
+          schema_name: string
+          table_name: string
+          token?: string | null
+          variant?: string | null
+        }
+        Update: {
+          done?: boolean
+          err?: string | null
+          schema_name?: string
+          table_name?: string
+          token?: string | null
+          variant?: string | null
+        }
+        Relationships: []
+      }
       access_requests: {
         Row: {
           created_at: string
@@ -24519,6 +24546,7 @@ export type Database = {
           total: number
         }[]
       }
+      unnest_uuids: { Args: { p_ids: string[] }; Returns: string[] }
       verify_canonical: {
         Args: {
           p_schema: string
