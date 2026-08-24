@@ -399,6 +399,7 @@ export function buildGscValueColumns<T>(
             {why ? (
               <WhyScoreHint
                 subject={{
+                  keywordId: v.keyword_id,
                   keyword: why.keywordOf(row),
                   valueBand: v.value_band,
                   valueScore: v.value_score,

@@ -561,7 +561,11 @@ export function QualityView({
       {/* BY LEVEL — the decomposition beside the class one, same shape, same
           click-to-filter behaviour. Class and Level answer different questions
           and are never merged into one table. */}
-      <div className="shrink-0 overflow-hidden rounded-md border border-border p-2">
+      {/* No `overflow-hidden` here: this block sizes to its content, and a
+          clipping wrapper around an auto-height table hides the last row
+          instead of scrolling it (useClippedContentGuard catches exactly
+          that). */}
+      <div className="shrink-0 rounded-md border border-border p-2">
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <p className="text-[11px] font-medium text-foreground">By level</p>
           <Link

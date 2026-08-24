@@ -16,6 +16,7 @@
 
 import { Info } from "lucide-react";
 import Link from "next/link";
+import { useOpenGscWhyScoreWindow } from "@/features/overlays/openers/gscWhyScoreWindow";
 import {
   HoverCard,
   HoverCardContent,
@@ -28,6 +29,8 @@ import type { ValueReason, ValueSource } from "../types";
 import { ReasonChainDetail } from "./ReasonChain";
 
 export interface WhyScoreSubject {
+  /** Present = the (i) can also OPEN the receipt as a floating panel. */
+  keywordId?: string | null;
   keyword: string | null;
   valueBand: string | null;
   valueScore: number | null;
@@ -115,6 +118,7 @@ export function WhyScoreHint({
   subject: WhyScoreSubject;
   context: ReasonLinkContext;
 }) {
+  const openPanel = useOpenGscWhyScoreWindow();
   if (!subject.reasons || subject.reasons.length === 0) return null;
   return (
     <HoverCard openDelay={120} closeDelay={80}>
@@ -122,17 +126,30 @@ export function WhyScoreHint({
         <button
           type="button"
           aria-label="Why this score"
+          title="Why this score — click to keep it open in a panel"
           className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
-          // The hover card carries the explanation; the click target exists so
-          // keyboard and touch users reach the same content.
-          onClick={(event) => event.stopPropagation()}
+          // Hover reads it; CLICK keeps it — as a floating panel that survives
+          // the pointer leaving, which is also the only way a touch device
+          // reaches this content at all.
+          onClick={(event) => {
+            event.stopPropagation();
+            if (!subject.keywordId) return;
+            openPanel({
+              siteId: context.siteId,
+              brandId: context.brandId ?? null,
+              keywordId: subject.keywordId,
+              keyword: subject.keyword,
+            });
+          }}
         >
           <Info className="h-3 w-3" />
         </button>
       </HoverCardTrigger>
       <HoverCardContent
         align="start"
-        className="w-[22rem] max-w-[90vw] p-3"
+        // A receipt can run to a dozen steps — it scrolls inside the popover
+        // rather than running off the bottom of the window.
+        className="max-h-[60vh] w-[22rem] max-w-[90vw] overflow-y-auto p-3"
         onClick={(event) => event.stopPropagation()}
       >
         <WhyScoreBody subject={subject} context={context} />
