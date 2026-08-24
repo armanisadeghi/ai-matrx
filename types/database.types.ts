@@ -29505,6 +29505,45 @@ export type Database = {
         }
         Relationships: []
       }
+      lifecycle_tier_ledger: {
+        Row: {
+          created_at: string
+          dropped_at: string | null
+          iceberg_table: string
+          id: string
+          partition_name: string
+          rows_iceberg: number
+          rows_postgres: number
+          source_table: string
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          dropped_at?: string | null
+          iceberg_table: string
+          id?: string
+          partition_name: string
+          rows_iceberg?: number
+          rows_postgres?: number
+          source_table: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          dropped_at?: string | null
+          iceberg_table?: string
+          id?: string
+          partition_name?: string
+          rows_iceberg?: number
+          rows_postgres?: number
+          source_table?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       masterwork_corpus_item: {
         Row: {
           attempts: number
@@ -31341,6 +31380,10 @@ export type Database = {
       }
     }
     Functions: {
+      _lifecycle_partition_guard: {
+        Args: { p_partition: string }
+        Returns: string
+      }
       actor_system: { Args: never; Returns: string }
       actor_tier: { Args: never; Returns: string }
       admin_access_contract_violations: {
@@ -31569,6 +31612,14 @@ export type Database = {
       }
       lifecycle_map_is_fresh: { Args: never; Returns: boolean }
       lifecycle_open_run: { Args: { p_dry_run?: boolean }; Returns: string }
+      lifecycle_partition_count: {
+        Args: { p_partition: string }
+        Returns: number
+      }
+      lifecycle_partition_page: {
+        Args: { p_limit: number; p_offset: number; p_partition: string }
+        Returns: Json
+      }
       lifecycle_schema_fingerprint: { Args: never; Returns: string }
       lifecycle_sweep_plan: {
         Args: {
@@ -31578,11 +31629,27 @@ export type Database = {
         }
         Returns: Json
       }
+      lifecycle_tier_ledger_check: {
+        Args: { p_partition: string; p_table: string }
+        Returns: Json
+      }
+      lifecycle_tier_ledger_record: {
+        Args: {
+          p_iceberg: string
+          p_partition: string
+          p_rows_ice: number
+          p_rows_pg: number
+          p_table: string
+          p_verified: boolean
+        }
+        Returns: Json
+      }
       lifecycle_user_keep: {
         Args: { p_entity_token: string; p_ids?: string[] }
         Returns: Json
       }
       lifecycle_user_notice: { Args: { p_user_id?: string }; Returns: Json }
+      lifecycle_vault_read: { Args: { p_name: string }; Returns: string }
       list_my_presentable_assists: {
         Args: { p_limit?: number }
         Returns: {

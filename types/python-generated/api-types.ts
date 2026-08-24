@@ -5902,53 +5902,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/seo/keywords/discovery/step": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Site Discovery Step
-         * @description Run ONE rung of the Business Discovery Ladder (KI-040) for a site — a
-         *     DURABLE streamed command (rejoin via /seo/collections/{run_id}/rejoin).
-         *
-         *     The ladder runs in order with a human ruling between rungs: this endpoint
-         *     refuses a step whose prerequisites have no completed result. A re-run of
-         *     any step is always intentional (tune-up / full redo) and supersedes the
-         *     prior result for the steps after it to consume.
-         */
-        post: operations["site_discovery_step_seo_keywords_discovery_step_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/seo/keywords/discovery/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Site Discovery Status
-         * @description Every ladder rung's latest run + artifact for a site — the UI's ONE
-         *     status read (server state, never client memory).
-         */
-        get: operations["site_discovery_status_seo_keywords_discovery_status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/seo/keywords/assign-topics": {
         parameters: {
             query?: never;
@@ -10976,30 +10929,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -36052,33 +35981,6 @@ export interface components {
             /** Error */
             error?: string | null;
         };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
-        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -36467,28 +36369,6 @@ export interface components {
             job_id: string;
             /** Deleted */
             deleted: number;
-        };
-        /** DiscoveryStepBody */
-        DiscoveryStepBody: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Site Id */
-            site_id: string;
-            /** Step */
-            step: string;
         };
         /**
          * DiscussOut
@@ -43715,7 +43595,7 @@ export interface components {
          */
         JsonSchemaProperty: {
             /** Type */
-            type?: ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string") | ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string")[] | null;
+            type?: ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null") | ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null")[] | null;
             /** Description */
             description?: string | null;
             /** Enum */
@@ -78992,72 +78872,6 @@ export interface operations {
             };
         };
     };
-    site_discovery_step_seo_keywords_discovery_step_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DiscoveryStepBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    site_discovery_status_seo_keywords_discovery_status_get: {
-        parameters: {
-            query: {
-                site_id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     keyword_assign_topics_seo_keywords_assign_topics_post: {
         parameters: {
             query?: never;
@@ -87377,41 +87191,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
