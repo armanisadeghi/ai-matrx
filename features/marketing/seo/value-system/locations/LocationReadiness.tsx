@@ -118,6 +118,27 @@ export function LocationReadiness({
         </button>
       );
     }
+    /**
+     * THE SECOND LOCATION IS THE WHOLE FEATURE. The one-location row's own
+     * sentence is "add more locations and the system starts telling you which
+     * one each keyword belongs to" — and it used to answer that with a link to
+     * a list. A call to action that does not do the thing it just asked for is
+     * how a feature stays at one location forever.
+     */
+    if (row.door === "manage_locations" && organizationId) {
+      return (
+        <span className="flex shrink-0 items-center gap-1">
+          <button type="button" onClick={() => setAdding("")} className={className}>
+            <Plus className="h-2.5 w-2.5" aria-hidden />
+            Add another
+          </button>
+          <Link href={marketingRoutes.brandLocal(brandId)} className={className}>
+            <ArrowRight className="h-2.5 w-2.5" aria-hidden />
+            {label}
+          </Link>
+        </span>
+      );
+    }
     if (row.door === "run_place_detection" && onGoToPlaceDetection) {
       return (
         <button type="button" onClick={onGoToPlaceDetection} className={className}>
