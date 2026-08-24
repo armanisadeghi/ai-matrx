@@ -352,6 +352,16 @@ export function DimensionCard({
   const [expanded, setExpanded] = useState(defaultExpanded || focusedHere);
   const [editingDimension, setEditingDimension] = useState(false);
   const [addingValue, setAddingValue] = useState(false);
+  /**
+   * AN ANSWER WITH NO MATCH DOES NOTHING (Arman, 2026-08-24: *"you shouldn't
+   * need to click matcher — clicking okay should just run it automatically"*).
+   * Adding an answer used to end with a toast and a row stamped on zero
+   * keywords, and the one thing that would change that — writing a match —
+   * was three clicks away behind a button labelled with a count. The new
+   * answer's matcher editor now opens on its own, so the flow ends where the
+   * work actually is.
+   */
+  const [justAdded, setJustAdded] = useState<string | null>(null);
 
   const owned = dimension.scope === "site";
   const situational = dimension.nature === "situational";
@@ -447,10 +457,11 @@ export function DimensionCard({
         siteId,
         position: dimension.values.length + 1,
       }),
-    onSuccess: () => {
+    onSuccess: (valueId) => {
       setAddingValue(false);
       setExpanded(true);
-      toast.success("Answer added");
+      setJustAdded(typeof valueId === "string" ? valueId : null);
+      toast.success("Answer added — now say what finds it");
       onSaved();
     },
     onError: (error) => toast.error(extractErrorMessage(error)),
@@ -701,7 +712,10 @@ export function DimensionCard({
                   situational={situational}
                   focused={value.value_id === focusValueId}
                   matcherCount={matcherCounts.data?.get(value.value_id) ?? (matcherCounts.data ? 0 : undefined)}
-                  autoOpenMatchers={focusMatcher && value.value_id === focusValueId}
+                  autoOpenMatchers={
+                    (focusMatcher && value.value_id === focusValueId) ||
+                    value.value_id === justAdded
+                  }
                   onSaved={onSaved}
                   onMatchersChanged={refreshMatcherCounts}
                 />
