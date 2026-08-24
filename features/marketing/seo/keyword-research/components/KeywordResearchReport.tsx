@@ -123,6 +123,9 @@ function marketDataColumns(
       accessorKey: "phrase",
       header: "Keyword",
       filter: "text",
+      /* The identity column: the metric columns declare widths, so without a
+         floor the phrase is the one that gets squeezed into three lines. */
+      className: "min-w-[15rem]",
       cell: (row) =>
         onKeywordNavigate ? (
           <button
