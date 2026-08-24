@@ -52213,6 +52213,21 @@ export type Database = {
           value_label: string
         }[]
       }
+      gsc_dimension_coverage: {
+        Args: { p_end: string; p_site_id: string; p_start: string }
+        Returns: {
+          decided_clicks: number
+          decided_keywords: number
+          dimension: string
+          dimension_label: string
+          nature: string
+          scope: string
+          stamped_clicks: number
+          stamped_keywords: number
+          total_clicks: number
+          total_keywords: number
+        }[]
+      }
       gsc_effective_stamps: {
         Args: { p_keyword_ids?: string[]; p_site_id: string }
         Returns: {
