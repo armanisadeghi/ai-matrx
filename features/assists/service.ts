@@ -53,14 +53,17 @@ const SORT_COLUMNS = {
 } as const;
 
 /** Narrow rows, screaming (never silently dropping) on an unaddressable one. */
-function narrowRows(rows: AssistRow[]): Assist[] {
+export function narrowRows(rows: AssistRow[]): Assist[] {
   const assists: Assist[] = [];
   for (const row of rows) {
     const assist = toAssist(row);
     if (assist) {
       assists.push(assist);
     } else {
-      console.error(
+      // Invalid/stale ledger data is expected validation fallout: keep it loud
+      // for developers without turning a safely skipped row into a durable
+      // application incident through the global console.error capture.
+      console.warn(
         `[assists] row ${row.id} (${row.source_key}) has an action that does not narrow — skipped`,
       );
     }

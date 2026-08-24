@@ -242,6 +242,8 @@ an assist is personal and addressed to one person by design.
 
 ## Change Log
 
+- 2026-08-24 — Invalid or stale ledger actions remain visibly skipped with a developer warning, but no longer use `console.error`; expected schema-validation fallout must not enter the durable system-error queue.
+
 - 2026-08-23 — **Editable assists are truthful and keyboard-safe.** The suggestion remains the card headline while its separate editable item is plainly labeled **Keyword guidelines**—no payload lectures or redundant status copy. **Edit** opens the guidelines fully selected before approval, mobile cards expand in the Drawer's single keyboard-aware scroll chain, and bulk approval cannot bypass individual review.
 
 - 2026-08-23 — **Assists can be edited before approval.** Added the reusable typed text-editing contract in `runtime/action-editing.ts` and the compact `AssistActionTextEditor`, built on the canonical `ProTextarea`. Keyword-guideline proposals are the first consumer: **Edit before approving** exposes the complete replacement document, validates it against the existing human write path, and approval sends the user's exact revision through the same `apply_keyword_meaning` handler. The original payload hash remains the suggestion's audit/dedupe identity; no database writer or action kind was added.
