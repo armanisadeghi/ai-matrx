@@ -34,16 +34,22 @@
 import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BrainCircuit, Info, Loader2, Network, PanelTop, Tag } from "lucide-react";
+import { Loader2, Network, Tag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
-import { useOpenGscWhyScoreWindow } from "@/features/overlays/openers/gscWhyScoreWindow";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+  type KeywordMenuRow,
+} from "@/features/marketing/seo/keyword/keyword-actions";
 import { gscMetricCopyLines } from "@/features/marketing/search-console/lib/columns";
 import { humanLines } from "@/features/marketing/lib/copy-payloads";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
@@ -88,7 +94,6 @@ export function KeywordWorkbench() {
   const params = useSearchParams();
   const queryClient = useQueryClient();
   const openDrilldown = useOpenGscDrilldownWindow();
-  const openWhyScore = useOpenGscWhyScoreWindow();
 
   const state = parseKeywordTableState(params);
   /**
@@ -116,6 +121,53 @@ export function KeywordWorkbench() {
   const clickedRow = useRef<GscBreakdownRow | null>(null);
   /** The live table, for chrome that renders outside it (the right-click menu). */
   const view = useRef<KeywordTableView | null>(null);
+
+  /**
+   * 🚨 ONE DEFINITION OF THE KEYWORD'S ACTIONS (2026-08-24). This page built
+   * the whole set inline, which is exactly why nothing else in the family
+   * could reach any of it — the finding that opened ADOPTION-SWEEP.md. The
+   * items now come from `keyword-actions.tsx`, the same module the Value
+   * Workbench and the Keyword Intelligence window consume, so an item added
+   * once appears on all three.
+   *
+   * What stays this page's own is only the MOUNTING: the table already owns a
+   * bulk-aware assign panel that remembers the last-used value, so it hands
+   * that panel to the shared hook as a delegate instead of getting a second
+   * one, and its pages drill inherits the table's live range and filters.
+   */
+  const menuRow = (): KeywordMenuRow | null => {
+    const row = clickedRow.current;
+    return row?.keyword_id
+      ? { phrase: row.key, keywordId: row.keyword_id }
+      : row
+        ? { phrase: row.key, keywordId: null }
+        : null;
+  };
+  const surfaces = useKeywordAssignSurfaces({
+    siteId: site.id,
+    delegate: {
+      openDimension: (row, lockedDimensionSlug) =>
+        view.current?.openAssign(
+          row.keywordId ? [row.keywordId] : [],
+          `“${row.phrase}”`,
+          lockedDimensionSlug,
+        ),
+      openService: (row) =>
+        view.current?.openServiceAssign(
+          row.keywordId ? [row.keywordId] : [],
+          `“${row.phrase}”`,
+        ),
+    },
+  });
+  const keywordSection = useKeywordMenuSection({
+    siteId: site.id,
+    siteName: site.domain,
+    brandId,
+    organizationId: site.organization_id,
+    surfaces,
+    getRow: menuRow,
+    openPages: () => openPagesPanel(),
+  });
 
   /**
    * THE BACK BUTTON IS UNDO. Opening a saved view is a discrete decision, so it
@@ -209,6 +261,10 @@ export function KeywordWorkbench() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 bg-textured p-3">
+      {/* The shared keyword actions' own surface — here that is only the
+          ruling dialog ("Pin a level…"), because the dimension and service
+          panels are delegated to the table's. */}
+      {surfaces.isOpen ? <div className="shrink-0">{surfaces.node}</div> : null}
       {/* THE THIN TOP — one line of context, then controls. Nothing else. */}
       <SavedViewTabs
         views={views.data ?? []}
@@ -403,14 +459,19 @@ export function KeywordWorkbench() {
               clickedRow.current = row;
               if (!row) return null;
               return {
+                // The ROW's entity owns Attach To — one menu serves every row,
+                // so the pane must never be the target.
+                [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef(menuRow()),
                 content: humanLines(gscMetricCopyLines("Keyword", "query", row)),
               };
             }}
             extraSections={[
               {
-                id: "keyword-workbench",
-                label: "This keyword",
-                anchor: "after-compare",
+                ...keywordSection,
+                /* This page's ONE genuinely local item, in front of the shared
+                   set: repeat the value you assigned last with no dialog at
+                   all (P23). It exists only here because only this table
+                   remembers a last-used value. */
                 items: [
                   ...(view.current?.lastUsed
                     ? [
@@ -435,79 +496,7 @@ export function KeywordWorkbench() {
                         },
                       ]
                     : []),
-                  {
-                    kind: "item" as const,
-                    id: "kw-assign",
-                    label: "Assign…",
-                    icon: BrainCircuit,
-                    description:
-                      "Pick a dimension and value — or type a new one — and say why",
-                    onSelect: () => {
-                      const row = clickedRow.current;
-                      if (!row?.keyword_id || !view.current) {
-                        toast.error("Right-click a keyword row to assign it.");
-                        return;
-                      }
-                      view.current.openAssign(
-                        [row.keyword_id],
-                        `“${row.key}”`,
-                      );
-                    },
-                  },
-                  {
-                    kind: "item" as const,
-                    id: "kw-service",
-                    label: "Which service?",
-                    icon: Network,
-                    description:
-                      "Place this keyword under the service, product or thing it is really about",
-                    onSelect: () => {
-                      const row = clickedRow.current;
-                      if (!row?.keyword_id || !view.current) {
-                        toast.error(
-                          "Right-click a keyword row to place it on a service.",
-                        );
-                        return;
-                      }
-                      view.current.openServiceAssign(
-                        [row.keyword_id],
-                        `“${row.key}”`,
-                      );
-                    },
-                  },
-                  {
-                    kind: "item" as const,
-                    id: "kw-why",
-                    label: "Why this score",
-                    icon: Info,
-                    description:
-                      "The full receipt, with a door to every rule behind it",
-                    onSelect: () => {
-                      const row = clickedRow.current;
-                      if (!row?.keyword_id) {
-                        toast.error(
-                          "Right-click a keyword row to see its receipt.",
-                        );
-                        return;
-                      }
-                      openWhyScore({
-                        siteId: site.id,
-                        siteName: site.domain,
-                        brandId,
-                        keywordId: row.keyword_id,
-                        keyword: row.key,
-                      });
-                    },
-                  },
-                  {
-                    kind: "item" as const,
-                    id: "kw-pages",
-                    label: "See pages for this keyword",
-                    icon: PanelTop,
-                    description:
-                      "Opens beside this table in a floating panel — you never lose the view",
-                    onSelect: openPagesPanel,
-                  },
+                  ...keywordSection.items,
                 ],
               },
             ]}

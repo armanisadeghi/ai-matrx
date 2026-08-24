@@ -139,11 +139,25 @@ export function invalidateKeywordFacts(
   ]);
 }
 
+/**
+ * A surface that ALREADY owns a dimension/service assign panel (the Keyword
+ * Workbench's table does — its panels are bulk-aware and remember the
+ * last-used value) hands that panel in here instead of getting a second one.
+ * It still gets the shared MENU, the shared refusals and the shared ruling
+ * dialog; only the mounting differs. Anything left undefined falls back to the
+ * panels this hook mounts itself.
+ */
+export interface KeywordAssignDelegate {
+  openDimension?: (row: KeywordMenuRow, lockedDimensionSlug?: string) => void;
+  openService?: (row: KeywordMenuRow) => void;
+}
+
 export function useKeywordAssignSurfaces(opts: {
   siteId: string;
   onChanged?: () => void;
+  delegate?: KeywordAssignDelegate;
 }): KeywordAssignSurfaces {
-  const { siteId } = opts;
+  const { siteId, delegate } = opts;
   const queryClient = useQueryClient();
   const [window] = useState(reviewWindow);
   const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
@@ -217,6 +231,10 @@ export function useKeywordAssignSurfaces(opts: {
         refuse();
         return;
       }
+      if (delegate?.openDimension) {
+        delegate.openDimension(row, lockedDimensionSlug);
+        return;
+      }
       setAssignTarget(
         lockedDimensionSlug ? { ...target, lockedDimensionSlug } : target,
       );
@@ -225,6 +243,10 @@ export function useKeywordAssignSurfaces(opts: {
       const target = targetFor(row);
       if (!target) {
         refuse();
+        return;
+      }
+      if (delegate?.openService) {
+        delegate.openService(row);
         return;
       }
       setServiceTarget(target);
@@ -342,6 +364,12 @@ export function useKeywordMenuSection(opts: {
   getRow: () => KeywordMenuRow | null;
   /** Omit the "Open Keyword Intelligence" door (the window's own menu does). */
   includeIntelDoor?: boolean;
+  /**
+   * A surface whose drilldown must carry MORE than the phrase — the Keyword
+   * Workbench's pages panel inherits the table's live date range, comparison
+   * and filters — opens the panel itself here. Default: the phrase alone.
+   */
+  openPages?: (row: KeywordMenuRow) => void;
   /** Label for the section heading. */
   label?: string;
 }): ContextMenuExtraSection {
@@ -424,6 +452,10 @@ export function useKeywordMenuSection(opts: {
       description:
         "Opens beside this table in a floating panel — you never lose the view",
       onSelect: withRow((row) => {
+        if (opts.openPages) {
+          opts.openPages(row);
+          return;
+        }
         openDrilldown({
           siteId,
           siteName: opts.siteName ?? null,

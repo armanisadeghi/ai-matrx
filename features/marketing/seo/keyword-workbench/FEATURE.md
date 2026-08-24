@@ -102,6 +102,23 @@ Two deliberate choices worth knowing:
 
 ## Reuse — what this feature deliberately does NOT own
 
+- 🚨 **The right-click menu's keyword items** → `seo/keyword/keyword-actions.tsx`
+  (`useKeywordAssignSurfaces` + `useKeywordMenuSection`). This page used to
+  define the whole set inline, which is precisely why nothing else in the
+  family could reach any of it — the finding that opened
+  `common-docs/projects/keyword-intelligence-convergence/ADOPTION-SWEEP.md`.
+  It now consumes the same section the Value Workbench and the Keyword
+  Intelligence window consume, so an item added once appears on all three.
+  What stays this page's own is the MOUNTING and one local item:
+  - its table already owns a bulk-aware assign panel that remembers the
+    last-used value, so it passes that panel in as the hook's `delegate`
+    (`openDimension` / `openService`) instead of getting a second one —
+    `KeywordTableControls.openAssign` takes an optional `lockedDimensionSlug`
+    so the shared **"Set the class…"** reaches THAT panel;
+  - its pages drill inherits the table's live range, compare and filters, so
+    it passes `openPages`;
+  - **quick-assign the last-used value** is prepended to the shared items,
+    because only this table has a last-used value.
 - **Turning typed text into a value** → `value-system/quick-add.ts`
   (`quickAddDimensionValue`). One creation path for the whole keyword system.
 - **The picker shape** → `components/ui/creatable-picker.tsx`.
@@ -206,6 +223,14 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
 
 ## Change log
 
+- **2026-08-24** — Collapsed the second right-click menu. This page's inline
+  `extraSections` was the only full keyword menu in the platform; it is now
+  the shared `useKeywordMenuSection` plus one local quick-assign item. The
+  page GAINED **Set the class…**, **Pin a level…** and **Open Keyword
+  Intelligence**, and its rows now carry their own entity for Attach To.
+  `KeywordTableControls.openAssign` gained an optional `lockedDimensionSlug`,
+  and `useKeywordAssignSurfaces` gained a `delegate`, so the shared menu drives
+  THIS table's existing panels rather than mounting a second set.
 - **2026-08-24** — Collapsed the second placement wrapper. The topic tree
   (`…/value/topics`) had its own `setKeywordPrimaryTopic` over the same RPC
   without `p_notes`; every ruling made there arrived with no reason attached.

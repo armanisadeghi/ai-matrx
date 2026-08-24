@@ -247,6 +247,15 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 
 ## Change Log
 
+- 2026-08-24 — Claude: `keyword-actions.tsx` became the ONLY keyword menu in
+  the platform. The Keyword Workbench's inline copy is gone; it now consumes
+  `useKeywordMenuSection` like everyone else. Two seams made that possible
+  without a second assign panel or a poorer drill-down: `delegate`
+  (`openDimension` / `openService`) on `useKeywordAssignSurfaces`, for a
+  surface that already owns a bulk-aware panel, and `openPages` on
+  `useKeywordMenuSection`, for a surface whose drill must carry its live range
+  and filters. Everything not delegated still comes from here — including the
+  ruling dialog, which the Workbench never had.
 - 2026-08-24 — Claude: the dossier carries the NEW system. Retired the 13
   mirror facets; added `KeywordMeaningPanel` + `keyword-meaning.ts` (Class,
   Service, Score, Level, receipt, every stamp with provenance, all settable in

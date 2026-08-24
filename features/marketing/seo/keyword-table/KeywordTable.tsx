@@ -124,8 +124,17 @@ export interface KeywordTableSurface {
 export interface KeywordTableControls {
   /** Open the reason-carrying service placement panel for these keywords. */
   openServiceAssign: (keywordIds: string[], label: string) => void;
-  /** Open the dimension assign panel (P24 — the WHY rides the stamp). */
-  openAssign: (keywordIds: string[], label: string) => void;
+  /**
+   * Open the dimension assign panel (P24 — the WHY rides the stamp).
+   * `lockedDimensionSlug` pins the panel to one dimension, which is how the
+   * shared keyword menu's "Set the class…" reaches THIS panel instead of
+   * mounting a second one.
+   */
+  openAssign: (
+    keywordIds: string[],
+    label: string,
+    lockedDimensionSlug?: string,
+  ) => void;
   /** Re-read everything a write can change. */
   refresh: () => Promise<void>;
   /**
@@ -349,7 +358,12 @@ export function KeywordTable({
   const controls: KeywordTableControls = {
     openServiceAssign: (keywordIds, label) =>
       setServiceTarget({ keywordIds, label }),
-    openAssign: (keywordIds, label) => setAssignTarget({ keywordIds, label }),
+    openAssign: (keywordIds, label, lockedDimensionSlug) =>
+      setAssignTarget({
+        keywordIds,
+        label,
+        ...(lockedDimensionSlug ? { lockedDimensionSlug } : {}),
+      }),
     refresh: afterWrite,
     lastUsed,
     quickAssign: (keywordIds, picked) => void quickAssign(keywordIds, picked),
