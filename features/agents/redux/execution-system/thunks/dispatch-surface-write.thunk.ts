@@ -6,8 +6,8 @@
  *
  * This is the stream side of the surfaces 360 loop — the first live caller
  * of the seam's agent-origin branch. The apply-policy machinery does all the
- * governing: `auto` applies, `ask` shows the in-place confirm (naming the
- * agent via `actorLabel`), `manual` is refused loudly, and per-run binding
+ * governing: `auto` applies, `ask` shows a non-blocking inline approval card
+ * (naming the agent via `actorLabel`), `manual` is refused loudly, and per-run binding
  * overrides (`registerSurfaceWritePolicies`) are resolved inside the seam.
  *
  * Result contract back to the model (via the single `submitToolResult`
@@ -31,6 +31,8 @@ import { extractErrorMessage } from "@/utils/errors";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";
 import { applySurfaceWrite } from "@/features/surfaces/runtime/surface-writeback";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { requestInlineApproval } from "@/features/agents/ui-first-tools/redux/request-approval";
+import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 
@@ -40,6 +42,16 @@ export interface DispatchSurfaceWritePayload {
   callId: string;
   toolName: string;
   args: Record<string, unknown>;
+}
+
+function formatProposedValue(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value == null) return "";
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
 }
 
 export const dispatchSurfaceWrite = createAsyncThunk<
@@ -113,6 +125,42 @@ export const dispatchSurfaceWrite = createAsyncThunk<
       const result = await applySurfaceWrite(target, args.value, {
         origin: "agent",
         actorLabel,
+        requestApproval: async (proposal) => {
+          const who = proposal.actorLabel?.trim() || "The agent";
+          const timing =
+            proposal.target.mode === "entity"
+              ? "This saves immediately if approved."
+              : proposal.target.mode === "draft"
+                ? "Approval only stages it in the editor; you still review and save."
+                : "Approval changes the current interface state.";
+          const change: ApprovalChange = {
+            verb: proposal.target.name.startsWith("append") ? "append" : "update",
+            entity: "proposed change",
+            title: proposal.target.label,
+            description: `${who} proposed this change. ${proposal.target.description} ${timing}`,
+            fields: [
+              {
+                label: "Proposed value",
+                after: formatProposedValue(proposal.value),
+                block: true,
+              },
+            ],
+          };
+          const decision = await requestInlineApproval({
+            conversationId,
+            callId,
+            toolName,
+            change,
+            dispatch,
+          });
+          if (decision.kind === "approved") return { kind: "approved" };
+          if (decision.kind === "instructions") {
+            return { kind: "declined", instructions: decision.text };
+          }
+          return decision.kind === "rejected"
+            ? { kind: "declined" }
+            : { kind: "cancelled" };
+        },
       });
 
       if (result.ok) {
@@ -133,7 +181,12 @@ export const dispatchSurfaceWrite = createAsyncThunk<
 
       if (result.declined) {
         // The user answered "keep as is". Deliberately NOT an error result.
-        finish({ ok: false, declined: true, message: result.error });
+        finish({
+          ok: false,
+          declined: true,
+          message: result.error,
+          ...(result.instructions ? { instructions: result.instructions } : {}),
+        });
         return;
       }
 

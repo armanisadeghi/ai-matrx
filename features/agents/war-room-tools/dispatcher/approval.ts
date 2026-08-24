@@ -7,54 +7,40 @@
  * `<PendingAsksZone>` already mounted in the war-room panel's conversation
  * column, and awaits the user's decision via the shared ask-resolver registry:
  *
- *   - `enqueuePendingAsk` (pendingAsks slice) carries the {@link ApprovalChange}
- *     descriptor + the threadId (so the card's "always approve" knows its scope).
- *   - `registerAskResolver` gives us a promise that resolves when the user
- *     clicks Approve / Decline / Respond / × on that card.
+ *   - The shared inline-approval bridge carries the {@link ApprovalChange}
+ *     descriptor + threadId and awaits the card's explicit decision.
  *
  * The card resolves `{confirmed:true}` (Approve — plus the REMEMBER_SENTINEL in
  * `selected` when "always approve" is checked), `{confirmed:false}` (Decline),
- * `{freeform:string}` (Respond — typed instructions instead of approving), or
- * `{cancelled:true}` (×). We map that to a small decision object.
+ * or `{freeform:string}` (Respond — typed instructions instead of approving).
+ * Minimizing the card sends nothing and leaves the request pending.
  *
  * Approval asks do NOT carry a timeout: the user may approve seconds or minutes
  * later, exactly like a client-tool answer. The server's far-future abandonment
  * backstop on `cx_tool_call.expires_at` is the only timing source.
  */
 
-import type { ThunkDispatch } from "redux-thunk";
-import type { UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import {
-  enqueuePendingAsk,
-  resolvePendingAsk,
-  sweepPendingAsks,
   selectPendingAsksForConversation,
 } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
-import { registerAskResolver } from "@/features/agents/ui-first-tools/redux/ask-resolver-registry";
 import { resolveAskByCallId } from "@/features/agents/ui-first-tools/redux/ask-resolver-registry";
-import type { AskUserResponse } from "@/features/agents/ui-first-tools/tools/schemas";
 import { EMPTY_ASK_RESPONSE } from "@/features/agents/ui-first-tools/tools/schemas";
 import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
-import { REMEMBER_SENTINEL } from "@/features/agents/ui-first-tools/ui/approval-types";
+import {
+  requestInlineApproval,
+  type ApprovalDecision,
+  type RequestInlineApprovalInput,
+} from "@/features/agents/ui-first-tools/redux/request-approval";
 
-type Dispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
+export type WarRoomApprovalDecision = ApprovalDecision;
 
-export type WarRoomApprovalDecision =
-  | { kind: "approved"; remember: boolean }
-  | { kind: "rejected" }
-  | { kind: "instructions"; text: string }
-  | { kind: "cancelled" };
-
-export interface RequestApprovalInput {
-  conversationId: string;
-  /** The delegated tool call id — the ApprovalCard keys off this. */
-  callId: string;
+export interface RequestApprovalInput
+  extends Omit<RequestInlineApprovalInput, "toolName"> {
   /** The tile this change acts on (drives the "always approve" scope). */
   threadId: string;
   /** The structured change descriptor the card renders. */
   change: ApprovalChange;
-  dispatch: Dispatch;
 }
 
 /**
@@ -64,43 +50,7 @@ export interface RequestApprovalInput {
 export async function requestWarRoomApproval(
   input: RequestApprovalInput,
 ): Promise<WarRoomApprovalDecision> {
-  const { conversationId, callId, threadId, change, dispatch } = input;
-
-  dispatch(
-    enqueuePendingAsk({
-      callId,
-      conversationId,
-      // Namespaced toolName — approval cards route by `kind`, not toolName.
-      toolName: "war_room",
-      kind: "approval",
-      approval: change,
-      threadId,
-      status: "pending",
-      createdAtMs: Date.now(),
-    }),
-  );
-
-  const response: AskUserResponse = await new Promise<AskUserResponse>(
-    (resolve) => {
-      registerAskResolver(callId, resolve);
-    },
-  );
-
-  // Fade + sweep the card (same pattern as the ui-first userHandler).
-  dispatch(resolvePendingAsk({ callId, conversationId }));
-  queueMicrotask(() => {
-    setTimeout(() => dispatch(sweepPendingAsks(conversationId)), 250);
-  });
-
-  if (response.cancelled || response.timed_out) return { kind: "cancelled" };
-  const freeform = response.freeform?.trim();
-  if (freeform) return { kind: "instructions", text: freeform };
-  if (response.confirmed === true) {
-    const remember = response.selected?.includes(REMEMBER_SENTINEL) ?? false;
-    return { kind: "approved", remember };
-  }
-  // confirmed === false (Decline), or any non-affirmative envelope → rejected.
-  return { kind: "rejected" };
+  return requestInlineApproval({ ...input, toolName: "war_room" });
 }
 
 /**

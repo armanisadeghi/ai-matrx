@@ -30,7 +30,6 @@
  */
 
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
 
@@ -75,6 +74,8 @@ export type SurfaceWriteResult =
        * the property unreachable.
        */
       declined?: true;
+      /** Optional replacement instruction the user sent instead of approving. */
+      instructions?: string;
     };
 
 /**
@@ -107,7 +108,27 @@ export interface ApplySurfaceWriteOptions {
    * strategist wants to…"). Ignored for user-origin writes.
    */
   actorLabel?: string;
+  /**
+   * Agent-tool callers provide the conversation's non-blocking approval card
+   * bridge. The callback may remain pending indefinitely while the card is
+   * minimized; only an explicit decision resumes this write.
+   */
+  requestApproval?: (
+    proposal: SurfaceWriteApprovalProposal,
+  ) => Promise<SurfaceWriteApprovalDecision>;
 }
+
+export interface SurfaceWriteApprovalProposal {
+  surfaceName: string;
+  target: SurfaceWriteTarget;
+  value: unknown;
+  actorLabel?: string;
+}
+
+export type SurfaceWriteApprovalDecision =
+  | { kind: "approved" }
+  | { kind: "declined"; instructions?: string }
+  | { kind: "cancelled" };
 
 // ---------------------------------------------------------------------------
 // Per-run write-policy overrides — the BINDING's say over the surface default.
@@ -189,11 +210,15 @@ function resolveApplyPolicy(
 }
 
 /** Neither a success nor a defect — the user declined. Silent by design. */
-function declined(target: SurfaceWriteTarget): SurfaceWriteResult {
+function declined(
+  target: SurfaceWriteTarget,
+  instructions?: string,
+): SurfaceWriteResult {
   return {
     ok: false,
     declined: true,
     error: `The user declined the change to "${target.label}".`,
+    ...(instructions ? { instructions } : {}),
   };
 }
 
@@ -210,6 +235,8 @@ async function agentWriteAllowed(
   target: SurfaceWriteTarget,
   surfaceName: string,
   actorLabel: string | undefined,
+  value: unknown,
+  requestApproval: ApplySurfaceWriteOptions["requestApproval"],
 ): Promise<SurfaceWriteResult | true> {
   const policy = resolveApplyPolicy(target, surfaceName);
   if (policy === "auto") return true;
@@ -221,19 +248,23 @@ async function agentWriteAllowed(
       { targetName: target.name, surfaceName, policy },
     );
   }
-  const who = actorLabel?.trim() ? actorLabel.trim() : "An agent";
-  const approved = await confirm({
-    title: `${who} wants to change ${target.label}`,
-    description:
-      target.mode === "entity"
-        ? `${target.description} This is saved immediately.`
-        : target.mode === "draft"
-          ? `${target.description} It is staged for you to review — nothing is saved until you save.`
-          : target.description,
-    confirmLabel: "Apply",
-    cancelLabel: "Keep as is",
+  if (!requestApproval) {
+    return fail(
+      `"${target.label}" requires approval, but this agent write has no inline approval surface.`,
+      { targetName: target.name, surfaceName, policy },
+    );
+  }
+  const decision = await requestApproval({
+    surfaceName,
+    target,
+    value,
+    actorLabel,
   });
-  return approved ? true : declined(target);
+  if (decision.kind === "approved") return true;
+  return declined(
+    target,
+    decision.kind === "declined" ? decision.instructions : undefined,
+  );
 }
 
 function findDeclaredTarget(
@@ -300,6 +331,8 @@ export async function applySurfaceWrite(
         target,
         runtime.surfaceName,
         opts?.actorLabel,
+        value,
+        opts?.requestApproval,
       );
       if (verdict !== true) return verdict;
     }

@@ -272,7 +272,7 @@ export const surfaceDelegatedToolCall = (
       // build-tool-injection whenever the mounted surface stack has
       // agent-writable write targets. The dispatcher routes the call through
       // the ONE writeback seam with `origin: "agent"`, so the target's apply
-      // policy (ask → in-place confirm, manual → loud refusal, per-binding
+      // policy (ask → inline approval card, manual → loud refusal, per-binding
       // overrides) governs the write; the result posts through the single
       // submitToolResult funnel so the suspended loop always resumes.
       dispatch(

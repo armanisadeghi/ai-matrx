@@ -13,7 +13,7 @@
  * + pendingAsks slice, so the war-room dispatcher's awaiting promise unblocks
  * exactly once. Approve packs `confirmed:true` (and the REMEMBER_SENTINEL when
  * "always approve" is on); Decline packs `confirmed:false`; Respond packs the
- * typed `freeform`; the × dismisses with `cancelled:true`.
+ * typed `freeform`; the × minimizes without resolving the tool call.
  */
 
 import { useState } from "react";
@@ -25,6 +25,7 @@ import {
   RotateCcw,
   MessageSquarePlus,
   CornerDownLeft,
+  ChevronUp,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,14 +34,8 @@ import { ChangeDiff } from "@/components/ui/change-diff";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { PendingAsk } from "../redux/pending-asks.slice";
-import {
-  resolvePendingAsk,
-  cancelPendingAsk,
-} from "../redux/pending-asks.slice";
-import {
-  resolveAskByCallId,
-  cancelAskByCallId,
-} from "../redux/ask-resolver-registry";
+import { resolvePendingAsk } from "../redux/pending-asks.slice";
+import { resolveAskByCallId } from "../redux/ask-resolver-registry";
 import { EMPTY_ASK_RESPONSE } from "../tools/schemas";
 import type { ApprovalVerb } from "./approval-types";
 import { REMEMBER_SENTINEL } from "./approval-types";
@@ -71,12 +66,14 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
   const [remember, setRemember] = useState(false);
   const [respondMode, setRespondMode] = useState(false);
   const [respondText, setRespondText] = useState("");
+  const [minimized, setMinimized] = useState(false);
 
   const change = ask.approval;
   // Defensive: an approval ask should always carry its change descriptor.
   if (!change) return null;
 
   const meta = VERB_META[change.verb];
+  const MetaIcon = meta.Icon;
   const headline =
     change.title && change.title.trim()
       ? change.title
@@ -107,16 +104,6 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
 
   function decline() {
     resolve({ ...EMPTY_ASK_RESPONSE, confirmed: false });
-  }
-
-  function dismiss() {
-    cancelAskByCallId(ask.callId);
-    dispatch(
-      cancelPendingAsk({
-        callId: ask.callId,
-        conversationId: ask.conversationId,
-      }),
-    );
   }
 
   function sendRespond() {
@@ -202,17 +189,41 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
     </div>
   );
 
+  if (minimized) {
+    return (
+      <button
+        type="button"
+        onClick={() => setMinimized(false)}
+        className="flex w-full items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-left transition-colors hover:bg-primary/10"
+        aria-label={`Review pending agent change: ${headline}`}
+      >
+        <MetaIcon className="size-4 shrink-0 text-primary" />
+        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+          Decision waiting: {headline}
+        </span>
+        <span className="text-xs text-muted-foreground">Review</span>
+        <ChevronUp className="size-4 shrink-0 text-muted-foreground" />
+      </button>
+    );
+  }
+
   return (
     <AgentCardShell
       tone={meta.tone}
       icon={meta.Icon}
       eyebrow={eyebrow}
       title={headline}
-      onDismiss={dismiss}
+      onDismiss={() => setMinimized(true)}
+      dismissLabel="Minimize — keep decision pending"
       pending={resolved}
       footer={footer}
       aria-label={`${eyebrow}: ${headline}`}
     >
+      {change.description ? (
+        <p className="mb-2 text-xs leading-relaxed text-muted-foreground">
+          {change.description}
+        </p>
+      ) : null}
       {change.fields.length > 0 ? <ChangeDiff fields={change.fields} /> : null}
     </AgentCardShell>
   );

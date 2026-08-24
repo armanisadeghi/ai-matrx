@@ -42,6 +42,8 @@ export interface ApprovalChange {
   title?: string | null;
   /** Field-level diffs (updates) or new values (adds). May be empty. */
   fields: ApprovalFieldDiff[];
+  /** Optional concise explanation of effect/timing shown above the diff. */
+  description?: string;
   /** When set, the card offers an "always approve {noun}" affordance. */
   autoApprove?: ApprovalAutoApprove;
 }
