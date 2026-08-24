@@ -52946,6 +52946,41 @@ export type Database = {
           value: string
         }[]
       }
+      gsc_ruling_session_matcher_probe: {
+        Args: { p_keyword_ids: string[]; p_site_id: string }
+        Returns: {
+          dimension_label: string
+          dimension_slug: string
+          keyword_id: string
+          matcher_id: string
+          matcher_kind: string
+          matcher_pattern: string
+          value_id: string
+          value_label: string
+          value_slug: string
+        }[]
+      }
+      gsc_ruling_session_queue: {
+        Args: {
+          p_end: string
+          p_exclude?: string[]
+          p_limit?: number
+          p_similarity?: number
+          p_site_id: string
+          p_start: string
+          p_word_overlap?: number
+        }
+        Returns: {
+          clicks: number
+          closest_kept: string
+          considered: number
+          impressions: number
+          keyword: string
+          keyword_id: string
+          unruled_total: number
+          why_distinct: string
+        }[]
+      }
       gsc_save_value_vocabulary: {
         Args: {
           p_kind: string
