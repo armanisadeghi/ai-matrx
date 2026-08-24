@@ -410,9 +410,9 @@ the Workbench (never a crash) via `SiteKeywordsView`'s legacy-link check.
 
 **What did NOT get a new home, and is a genuine capability loss until someone
 gives it one:** `FacetBackfillStrip` — the universal 13-facet coverage meter
-(§ "Universal facets" below, now also retired) — had no other surface reading
-`seo.keyword_classification_status`. Flagged to KI-022 (dimension coverage
-meter).
+(§ "Universal facets" below) — had no other surface reading
+`seo.keyword_classification_status`. Rebuilt on the Keyword Dimensions screen
+2026-08-24 (KI-022); this feature no longer reads it.
 
 **Still live, unchanged by this retirement:** `seo.gsc_set_keyword_class` (the
 one human write path for `traffic_class`, still called by
@@ -428,30 +428,23 @@ FRONTEND surfaces that called the now-dead ones
 were trimmed from `data-classification.ts` — they had zero remaining callers
 once the workspace was gone.
 
-## Universal facets — the backfill strip — RETIRED 2026-08-25 (KI-036)
+## Universal facets — the coverage meter — REBUILT ELSEWHERE 2026-08-24 (KI-022)
 
-`FacetBackfillStrip` lived inside the now-deleted classification workspace
-and had no other mount point, so it was deleted with it — a genuine
-capability loss, not a fold: nothing in the app today shows
-`seo.keyword_classification_status(site_id, min_impressions)`. The DB read
-and the aidream backfill service below are untouched and still correct; only
-the UI that surfaced them is gone. Flagged to KI-022 (dimension coverage
-meter) as the place this should resurface.
+`FacetBackfillStrip` lived inside the classification workspace this section
+retired (KI-036) and had no other mount point, so it died with it. It is BACK,
+with a real home and not in this feature: the KEYWORD DIMENSIONS screen
+(`features/marketing/seo/value-system/coverage/FacetCoverage.tsx`, mounted by
+`value-system/dimensions/DimensionManager.tsx` at `…/value/dimensions`). That
+screen is where a site owner already reasons about whether their meaning
+reaches their keywords, so the coverage of the shared 13-facet plane belongs at
+the top of it rather than bolted to a Search Console surface. Nothing in
+search-console reads `seo.keyword_classification_status` any more, by design.
 
-What it used to say, for whoever rebuilds it: **two planes, two bands, never
-merged** — the site's own traffic classes (money / educational / brand /
-mismatch) are a different kind of truth from the UNIVERSAL 13 intent facets
-on `seo.keyword` (one classification per phrase, shared by every tenant, P3,
-read by every Keyword Value System rule) — a site ruling and a platform-wide
-fact must never share a band. **Server state, not tab state** — progress
-lives in `seo.keyword_classification_queue`, so a closed tab and a second tab
-always agree; "Classify next" advances that ledger by one bounded pass
-(`POST /seo/keywords/classification/backfill`) rather than owning a loop.
-**The headline is clicks, not keywords** — most keywords never earn a click,
-so click-coverage is the meter anyone should trust. **The demand floor is
-reported, never silent** — keywords below
-`seo.keyword_classification.min_impressions` are shown held back, not
-silently uncounted.
+The four rules it must never break — two planes never merged (a site's own
+traffic classes are a different kind of truth from the platform-wide 13 facets),
+server state not tab state, the headline is clicks not keywords, and the demand
+floor is reported never silent — live in the rebuilt component's header and in
+the cross-repo SoR below.
 
 Cross-repo SoR: `../../../../common-docs/systems/marketing/seo/seo-keywords/value-system.md`.
 Server half: `aidream/services/seo/keyword_classification_backfill.py`.

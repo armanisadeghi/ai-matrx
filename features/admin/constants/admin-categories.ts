@@ -701,6 +701,17 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        // KI-046 declared this destination in `admin-navigation.ts` without a
+        // catalogue entry, and `destination()` THROWS on a missing one at module
+        // load — so every admin page died on import until this landed.
+        title: "Keyword Value Settings",
+        description:
+          "Top of the keyword-value settings ladder (platform → organization → brand → site): the numbers every site starts from before anyone below overrides them.",
+        iconName: "SlidersHorizontal",
+        link: "/administration/knowledge/seo-value-settings",
+        isNew: true,
+      },
+      {
         title: "Growth Loop Map",
         description:
           "The end-to-end loop — research to plan to pages to live site to crawl to findings to fixes — with every connection scored on the three pipes (code / human / AI) and every open gap.",

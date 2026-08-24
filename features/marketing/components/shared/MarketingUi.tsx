@@ -35,9 +35,25 @@ export function formatDate(value: string | null): string {
   }).format(date);
 }
 
+/**
+ * A CALENDAR date, rendered as the calendar date it names.
+ *
+ * `new Date("2026-08-23")` is parsed as UTC midnight, so west of Greenwich
+ * `Intl` renders it as the 22nd — a Postgres `date` column silently loses a day
+ * on every screen that shows it. A bare `YYYY-MM-DD` is therefore built as a
+ * LOCAL date; anything carrying a time (an ISO timestamp) keeps the old
+ * instant-aware behaviour, which is correct for it.
+ */
 export function formatDateOnly(value: string | null): string {
   if (!value) return "—";
-  const date = new Date(value);
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  const date = dateOnly
+    ? new Date(
+        Number(dateOnly[1]),
+        Number(dateOnly[2]) - 1,
+        Number(dateOnly[3]),
+      )
+    : new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",

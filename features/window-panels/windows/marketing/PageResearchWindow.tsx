@@ -21,8 +21,11 @@
  * So this is NOT a fork of `ResearchInitForm` (the full wizard: templates,
  * projects, AI suggestion, tags, quotas). It is a launcher over the SAME
  * service functions the wizard calls — `createTopic` → `addKeywords` →
- * `runPipeline` — with the page's own values carried in: the topic is named
- * after the page and the first keyword IS the page's target query.
+ * `runPipeline` → `generateDocument` — with the page's own values carried in:
+ * the topic is named after the page and the first keyword IS the page's target
+ * query. Document assembly is part of the job, not a follow-up: the server
+ * grounds agents on the final `rs_document`, so a topic that stopped after the
+ * pipeline would be an attachment that grounds nothing.
  *
  * On success the new topic is ATTACHED to the plan node through the one
  * association write path (`useContainerLinks.attach`), so it appears in the
@@ -34,7 +37,7 @@
  * the adopted `requestId` — never a bespoke renderer, never a bare spinner.
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Loader2, Plus, X } from "lucide-react";
 
@@ -84,6 +87,7 @@ type Phase =
   | { status: "form" }
   | { status: "starting" }
   | { status: "running"; topicId: string }
+  | { status: "assembling"; topicId: string }
   | { status: "done"; topicId: string };
 
 function PageResearchWindowInner({
@@ -107,7 +111,6 @@ function PageResearchWindowInner({
 
   const api = useResearchApi();
   const stream = useResearchStream();
-  const abortRef = useRef<AbortController | null>(null);
   const links = useContainerLinks({
     containerType: "plan_node",
     containerId: nodeId,
@@ -160,7 +163,6 @@ function PageResearchWindowInner({
 
       setPhase({ status: "running", topicId: topic.id });
       const controller = new AbortController();
-      abortRef.current = controller;
       const response = await api.runPipeline(
         topic.id,
         topic.organization_id,
@@ -169,6 +171,13 @@ function PageResearchWindowInner({
       await stream.startStream(response, undefined, {
         abortController: controller,
       });
+
+      // ASSEMBLY IS PART OF THE JOB, not a follow-up the user must discover.
+      // `runPipeline` only searches / scrapes / analyzes; the server's
+      // `_load_research_report` reads the final `rs_document`, so a topic that
+      // stops before assembly grounds NOTHING and the attachment is a lie.
+      setPhase({ status: "assembling", topicId: topic.id });
+      await stream.startStream(await api.generateDocument(topic.id));
       setPhase({ status: "done", topicId: topic.id });
     } catch (error) {
       const message = extractErrorMessage(error);
@@ -199,7 +208,7 @@ function PageResearchWindowInner({
     [nodeId, siteId, pageLabel, primaryKeyword, orgId],
   );
 
-  const topicId = phase.status === "running" || phase.status === "done" ? phase.topicId : null;
+  const topicId = phase.status === "form" || phase.status === "starting" ? null : phase.topicId;
   const latest = stream.messages.at(-1)?.message ?? null;
 
   return (
@@ -303,10 +312,12 @@ function PageResearchWindowInner({
               <span>
                 {phase.status === "starting"
                   ? "Creating the topic…"
-                  : (latest ??
-                    (stream.isStreaming
-                      ? "Researching…"
-                      : "Research finished."))}
+                  : phase.status === "assembling"
+                    ? (latest ?? "Assembling the research report…")
+                    : (latest ??
+                      (stream.isStreaming
+                        ? "Researching…"
+                        : "Research finished."))}
               </span>
             </div>
             {stream.error ? (
@@ -335,7 +346,11 @@ function PageResearchWindowInner({
           instanceId={`page-research:${nodeId}`}
           requestId={stream.requestId}
           pending={!stream.requestId}
-          label="Researching this page"
+          label={
+            phase.status === "assembling"
+              ? "Assembling the research report"
+              : "Researching this page"
+          }
         />
       ) : null}
     </WindowPanel>

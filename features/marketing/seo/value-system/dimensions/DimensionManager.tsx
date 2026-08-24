@@ -38,6 +38,7 @@ import {
   InlineQueryError,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { FacetCoverage } from "@/features/marketing/seo/value-system/coverage/FacetCoverage";
 import { WhatIsADimension } from "./WhatIsADimension";
 import { DimensionCard } from "./DimensionCard";
 import { DimensionForm, type DimensionFormValue } from "./DimensionForm";
@@ -174,6 +175,15 @@ export function DimensionManager() {
           {/* Keyed so the "nobody has authored one yet" case opens the
               explainer the moment the catalogue answers — a default read on
               the first (loading) render would always be false. */}
+          {/* KI-022 — the honest gauge that stops anyone trusting a filter over
+              a 3%-covered corpus, and the one home the universal-facet meter
+              has after KI-036 deleted the strip it used to live in. It leads
+              this screen because "what are the questions" is only half the
+              job: the other half is whether the answers ever reached your
+              keywords. Admin-gated by its own read (renders nothing for
+              everyone else). */}
+          <FacetCoverage siteId={siteId} />
+
           <WhatIsADimension
             key={
               catalog.data

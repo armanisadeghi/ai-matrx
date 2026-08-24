@@ -52760,6 +52760,10 @@ export type Database = {
           places_written: number
         }[]
       }
+      fn_brand_identity_sync_meaning: {
+        Args: { p_site_id: string }
+        Returns: Json
+      }
       fn_claim_keyword_classification_batch: {
         Args: {
           p_limit: number
