@@ -20,9 +20,34 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { makeAssertData } from "@/utils/errors";
+import { extractErrorMessage, makeAssertData } from "@/utils/errors";
 
 const assertGoverned = makeAssertData("add that option");
+
+/**
+ * The governed refusals this path raises, kept as a typed error so a caller can
+ * branch on P11 without string-matching. Every one of these carries a sentence
+ * AFTER the colon written for a non-technical reader — it is surfaced verbatim,
+ * never replaced with "something went wrong".
+ */
+export class QuickAddRefusal extends Error {
+  readonly code: string;
+  constructor(code: string, message: string, cause?: unknown) {
+    super(message, { cause });
+    this.name = "QuickAddRefusal";
+    this.code = code;
+  }
+  /**
+   * P11 — a vocabulary every tenant shares, which a site may not widen. The
+   * ONLY correct answer is the local-override path ("make this your own
+   * dimension"), never a bare refusal.
+   */
+  get isPlatformVocabulary(): boolean {
+    return this.code === "seo_platform_dimension_readonly";
+  }
+}
+
+const GOVERNED_CODE = /^(seo_[a-z_]+|gsc_site_[a-z_]+):\s*/;
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -60,6 +85,17 @@ export async function quickAddDimensionValue(input: {
     p_description: input.description ?? undefined,
     p_nature: input.nature ?? "intrinsic",
   });
+  if (response.error) {
+    const message = extractErrorMessage(response.error).split(" · ")[0];
+    const governed = message.match(GOVERNED_CODE);
+    if (governed) {
+      throw new QuickAddRefusal(
+        governed[1],
+        message.slice(governed[0].length),
+        response.error,
+      );
+    }
+  }
   return assertGoverned(response.data, response.error) as unknown as QuickAddedValue;
 }
 

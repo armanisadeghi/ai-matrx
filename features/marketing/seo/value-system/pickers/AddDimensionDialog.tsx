@@ -10,7 +10,7 @@
  * stamp it on everything, so it is never offered to the AI at all. Collecting
  * two here means the thing the person just invented actually works.
  *
- * ONE WRITE PATH. Both choices go through `quickAddValue`
+ * ONE WRITE PATH. Both choices go through `quickAddDimensionValue`
  * (`seo.gsc_quick_add_value`) — the first call mints the dimension, the second
  * adds to it by id. The RPC is idempotent, so a retry never doubles anything.
  */
@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuickAdd } from "./useQuickAdd";
-import type { QuickAddValueResult } from "../data";
+import type { QuickAddedValue } from "../quick-add";
 
 export function AddDimensionDialog({
   siteId,
@@ -44,7 +44,7 @@ export function AddDimensionDialog({
   nature?: "intrinsic" | "situational";
   onCancel: () => void;
   /** The dimension and its FIRST value, so the caller can select both. */
-  onCreated: (result: QuickAddValueResult) => void;
+  onCreated: (result: QuickAddedValue) => void;
 }) {
   const { quickAdd } = useQuickAdd(siteId);
   const [name, setName] = useState(initialLabel);

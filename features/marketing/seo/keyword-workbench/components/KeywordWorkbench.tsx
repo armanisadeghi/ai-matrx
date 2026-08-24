@@ -106,7 +106,6 @@ import {
   viewStateFor,
   viewStateMatches,
   workbenchSearchParams,
-  type WorkbenchOptionalColumnId,
   type WorkbenchState,
 } from "@/features/marketing/seo/keyword-workbench/state";
 import { AssignPanel, type AssignTarget } from "./AssignPanel";
@@ -431,11 +430,11 @@ export function KeywordWorkbench() {
       periods.compare !== null,
       "clicks-only",
     ).filter((column) => {
-      if (column.id === "ctr" || column.id === "avg_position") {
-        const id: WorkbenchOptionalColumnId =
-          column.id === "ctr" ? "ctr" : "position";
-        return state.optional.includes(id);
-      }
+      // CTR and Position are opt-in: clicks and impressions are what a person
+      // scans, and two more numeric columns push the meaning columns off a
+      // laptop screen.
+      if (column.id === "ctr") return state.optional.includes("ctr");
+      if (column.id === "position") return state.optional.includes("position");
       return true;
     }),
     {

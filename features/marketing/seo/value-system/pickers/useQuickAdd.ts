@@ -3,8 +3,9 @@
 /**
  * P23 — the shared "+ Add" behaviour every dimension-value picker uses.
  *
- * ONE write path (`quickAddValue` → `seo.gsc_quick_add_value`), ONE toast, and
- * ONE answer to the P11 refusal. Keeping it here is the point: the reason the
+ * ONE write path (`quickAddDimensionValue` → `seo.gsc_quick_add_value`, the
+ * standalone primitive in ../quick-add.ts), ONE toast, and ONE answer to the
+ * P11 refusal. Keeping it here is the point: the reason the
  * platform kept growing dead-end dropdowns is that each screen re-decided what
  * "+ Add" meant, and most of them decided "nothing".
  *
@@ -20,7 +21,11 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useMarketingSiteOptional } from "@/features/marketing/components/site/MarketingSiteContext";
-import { quickAddValue, QuickAddRefusal, type QuickAddValueResult } from "../data";
+import {
+  quickAddDimensionValue,
+  QuickAddRefusal,
+  type QuickAddedValue,
+} from "../quick-add";
 
 export interface QuickAddInput {
   /** The dimension they picked, or null when they are naming a new one. */
@@ -43,11 +48,11 @@ export function useQuickAdd(siteId: string) {
     async (
       typed: string,
       input: QuickAddInput = {},
-    ): Promise<QuickAddValueResult | null> => {
+    ): Promise<QuickAddedValue | null> => {
       const label = typed.trim();
       if (!label) return null;
       try {
-        const result = await quickAddValue({
+        const result = await quickAddDimensionValue({
           siteId,
           valueLabel: label,
           dimensionId: input.dimensionId ?? null,

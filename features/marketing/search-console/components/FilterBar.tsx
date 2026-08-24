@@ -24,7 +24,7 @@
  */
 
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, X } from "lucide-react";
 import {
   Popover,
@@ -59,7 +59,6 @@ import { CreatablePicker } from "@/features/marketing/seo/value-system/pickers/C
 import { AddDimensionDialog } from "@/features/marketing/seo/value-system/pickers/AddDimensionDialog";
 import { AddLevelDialog } from "@/features/marketing/seo/value-system/pickers/AddLevelDialog";
 import { useQuickAdd } from "@/features/marketing/seo/value-system/pickers/useQuickAdd";
-import { quickAddDimensionValue } from "@/features/marketing/seo/value-system/quick-add";
 import { toast } from "@/lib/toast";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
@@ -185,7 +184,6 @@ export function FilterBar({
   const [newLevelDraft, setNewLevelDraft] = useState<string | null>(null);
   const { quickAdd } = useQuickAdd(siteId ?? "");
   // P23 — the person may always type one that does not exist yet.
-  const [newValueLabel, setNewValueLabel] = useState("");
   const queryClient = useQueryClient();
 
   const stampPairs = parseStampFilter(filters.stamps);
@@ -208,25 +206,6 @@ export function FilterBar({
       getValueVocabulary(siteId as string, "value_band", signal),
     enabled: wantsVocab,
     staleTime: 5 * 60_000,
-  });
-
-  const addValue = useMutation({
-    mutationFn: (label: string) =>
-      quickAddDimensionValue({
-        siteId: siteId as string,
-        valueLabel: label,
-        dimensionId: draftDimensionRow?.dimension_id ?? null,
-      }),
-    onSuccess: (created) => {
-      toast.success(`Added “${created.value_label}” to ${created.dimension_label}`);
-      setNewValueLabel("");
-      setDraftStampValue(created.value_key);
-      void queryClient.invalidateQueries({
-        queryKey: ["marketing", "gsc", "filter-dimension-catalog", siteId],
-      });
-    },
-    onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "Could not add that option"),
   });
 
   const dimensions = (catalog.data ?? []).filter((d) => d.values.length > 0);
@@ -545,40 +524,6 @@ export function FilterBar({
                     return created.value_key;
                   }}
                 />
-                {/* P23 — never a closed list: type one that does not exist yet. */}
-                <div className="flex items-center gap-1.5 rounded-md border border-dashed border-border p-1.5">
-                  <Input
-                    value={newValueLabel}
-                    onChange={(e) => setNewValueLabel(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && newValueLabel.trim()) {
-                        addValue.mutate(newValueLabel.trim());
-                      }
-                    }}
-                    placeholder={
-                      draftDimensionRow
-                        ? `New ${draftDimensionRow.label.toLowerCase()} value…`
-                        : "Pick a dimension first"
-                    }
-                    className="h-7 text-xs"
-                    aria-label="New value name"
-                    disabled={!draftDimensionRow || addValue.isPending}
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 shrink-0 gap-1 text-xs"
-                    disabled={!draftDimensionRow || !newValueLabel.trim() || addValue.isPending}
-                    onClick={() => addValue.mutate(newValueLabel.trim())}
-                  >
-                    {addValue.isPending ? (
-                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                    ) : (
-                      <Plus className="h-3 w-3" aria-hidden />
-                    )}
-                    Add
-                  </Button>
-                </div>
                 <p className="text-[11px] leading-snug text-muted-foreground">
                   Add several to intersect them — a keyword must carry every
                   stamp you pick. Stamps are keyword-level, so country / device /
