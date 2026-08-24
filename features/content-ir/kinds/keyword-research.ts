@@ -578,7 +578,9 @@ export const KEYWORD_RESEARCH_KIND_DEFINITIONS: KindDefinition[] = [
     toLegacyServerData: keywordSerpIntentAnalysisServerDataFromEnvelope,
     toMarkdown: keywordSerpIntentAnalysisMarkdownFromValue,
     persistence: { persistStructured: true },
-    loadingComponent: "report",
+    // "report" is not a loading-library slug (kind-loading-slugs.ts); document
+    // is the closest real loader for a long-form analysis.
+    loadingComponent: "document",
     schema: keywordSerpIntentAnalysisKindSchema,
   },
 ];

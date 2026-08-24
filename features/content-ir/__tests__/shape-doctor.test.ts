@@ -85,7 +85,15 @@ describe("shape doctor", () => {
   it("reports an all-green kind with zero findings", () => {
     const report = runShapeDoctor(
       baseInput({
-        kinds: [makeKind({ id: "k1", kind: "flashcard_set", isActive: true })],
+        kinds: [
+          makeKind({
+            id: "k1",
+            kind: "flashcard_set",
+            isActive: true,
+            metadata: { loading_component: "flashcards" },
+          }),
+        ],
+        loadingLibrarySlugs: new Set(["flashcards"]),
         examples: [
           {
             id: "e1",
@@ -139,7 +147,7 @@ describe("shape doctor", () => {
       kinds: 1,
       red: 0,
       yellow: 0,
-      cells: { ok: 7, warn: 0, missing: 0, "n/a": 0 },
+      cells: { ok: 8, warn: 0, missing: 0, "n/a": 0 },
     });
     expect(row.exemption).toBeNull();
   });
@@ -411,7 +419,7 @@ describe("shape doctor — n/a classification", () => {
 
     const row = report.rows[0];
     expect(row.exemption?.class).toBe("data_only");
-    for (const col of ["component", "surface", "skill", "content_block"] as const) {
+    for (const col of ["component", "loading", "surface", "skill", "content_block"] as const) {
       expect(row.assets[col].status).toBe("n/a");
       expect(row.assets[col].detail).toContain("generated workflow_io contract");
     }
@@ -423,7 +431,7 @@ describe("shape doctor — n/a classification", () => {
 
     // No yellow noise.
     expect(report.findings).toHaveLength(0);
-    expect(report.totals.cells["n/a"]).toBe(4);
+    expect(report.totals.cells["n/a"]).toBe(5);
   });
 
   it("marks a NESTED-ONLY CHILD n/a for component/surface/skill/block", () => {
@@ -443,7 +451,7 @@ describe("shape doctor — n/a classification", () => {
     const child = report.rows.find((r) => r.kind === "flashcard");
     expect(child?.exemption?.class).toBe("nested_only_child");
     expect(child?.exemption?.parents).toEqual(["flashcard_set"]);
-    for (const col of ["component", "surface", "skill", "content_block"] as const) {
+    for (const col of ["component", "loading", "surface", "skill", "content_block"] as const) {
       expect(child?.assets[col].status).toBe("n/a");
       expect(child?.assets[col].detail).toContain("nested-only child of flashcard_set");
     }
@@ -451,6 +459,76 @@ describe("shape doctor — n/a classification", () => {
     for (const code of ["no-skill", "no-content-block"] as const) {
       expect(report.findings.some((f) => f.code === code && f.kind === "flashcard")).toBe(false);
     }
+  });
+
+  it("loading column: known slug ok (db + compiled), unknown slug RED, undeclared renderable kind yellow", () => {
+    const renderable = (id: string, kind: string): DoctorKindComponent => ({
+      id: `c-${id}`,
+      kindDefinitionId: id,
+      platform: "web",
+      role: "output",
+      componentKey: "generic_structured",
+      source: "db",
+      isActive: true,
+    });
+    const example = (id: string) => ({
+      id: `e-${id}`,
+      kindDefinitionId: id,
+      isCanonical: true,
+      data: goodSample,
+      updatedAt: T0,
+    });
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({
+            id: "kA",
+            kind: "declared_db",
+            isActive: true,
+            metadata: { loading_component: "quiz" },
+          }),
+          makeKind({ id: "kB", kind: "declared_compiled", isActive: true }),
+          makeKind({
+            id: "kC",
+            kind: "declared_unknown",
+            isActive: true,
+            metadata: { loading_component: "report" },
+          }),
+          makeKind({ id: "kD", kind: "undeclared_renderable", isActive: true }),
+        ],
+        examples: [example("kA"), example("kB"), example("kC"), example("kD")],
+        components: [
+          renderable("kA", "declared_db"),
+          renderable("kB", "declared_compiled"),
+          renderable("kC", "declared_unknown"),
+          renderable("kD", "undeclared_renderable"),
+        ],
+        loadingLibrarySlugs: new Set(["quiz", "list", "generic"]),
+        compiledLoadingSlugs: new Map([["declared_compiled", "list"]]),
+      }),
+    );
+
+    const row = (kind: string) => report.rows.find((r) => r.kind === kind)!;
+    expect(row("declared_db").assets.loading.status).toBe("ok");
+    expect(row("declared_db").assets.loading.detail).toContain("db metadata");
+    expect(row("declared_compiled").assets.loading.status).toBe("ok");
+    expect(row("declared_compiled").assets.loading.detail).toContain("compiled definition");
+
+    // Unknown slug: warn cell + RED screamer (silent generic fallback).
+    expect(row("declared_unknown").assets.loading.status).toBe("warn");
+    expect(
+      report.findings.some(
+        (f) => f.code === "unknown-loading-component" && f.kind === "declared_unknown",
+      ),
+    ).toBe(true);
+
+    // Renderable but undeclared: missing cell + yellow.
+    expect(row("undeclared_renderable").assets.loading.status).toBe("missing");
+    expect(
+      report.findings.some(
+        (f) => f.code === "no-loading-component" && f.kind === "undeclared_renderable",
+      ),
+    ).toBe(true);
   });
 
   it("keeps `no-example` LOUD for a nested-only child (its schema is unproven)", () => {
