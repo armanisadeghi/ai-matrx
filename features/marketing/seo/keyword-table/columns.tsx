@@ -44,6 +44,12 @@ export interface KeywordColumnHandlers {
   onFilterByService: (topicId: string | undefined) => void;
   /** Assign one dimension value to one keyword, no dialog (P23). */
   onQuickAssign: (keywordIds: string[], picked: PickedValue) => void;
+  /** Take a ruling back — the same write with `p_clear`. */
+  onQuickClear: (
+    keywordIds: string[],
+    valueId: string,
+    dimensionLabel: string,
+  ) => void;
   /** Open the reason-carrying assign panel for one keyword. */
   onAssign: (
     keywordId: string,
@@ -208,6 +214,18 @@ export function buildKeywordColumns({
           onAssignWithReason={() => {
             if (!row.keyword_id) return;
             handlers.onAssign(row.keyword_id, row.key, "traffic_class");
+          }}
+          onClear={() => {
+            const current = valueFor(row)?.traffic_class ?? null;
+            const value = (classDimension?.values ?? []).find(
+              (v) => v.key === current,
+            );
+            if (!row.keyword_id || !value || !classDimension) return;
+            handlers.onQuickClear(
+              [row.keyword_id],
+              value.value_id,
+              classDimension.label,
+            );
           }}
           onMakeYourOwn={() => {
             if (!row.keyword_id) return;

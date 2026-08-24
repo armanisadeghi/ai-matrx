@@ -412,6 +412,35 @@ export function KeywordTable({
     }
   };
 
+  /**
+   * TAKING A RULING BACK. `gsc_set_keyword_stamps` has always accepted
+   * `p_clear` — nothing in the UI ever offered it, so a class could be set and
+   * then never unset: pick "Money" by accident and the only way back was
+   * another wrong answer. Same RPC, same provenance, one flag.
+   */
+  const quickClear = async (
+    targetIds: string[],
+    valueId: string,
+    dimensionLabel: string,
+  ) => {
+    try {
+      const result = await setKeywordStamps({
+        siteId,
+        keywordIds: targetIds,
+        valueId,
+        clear: true,
+      });
+      await afterWrite();
+      toast.success(
+        `${dimensionLabel} cleared on ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not clear that.",
+      );
+    }
+  };
+
   /* ---------------------------------------------------------------- filters */
   const filterByService = (topic: string | undefined) => {
     const filters: GscFilters = { ...state.filters };
@@ -466,6 +495,8 @@ export function KeywordTable({
         onFilterByService: filterByService,
         onFilterByLocation: filterByLocation,
         onQuickAssign: (ids, picked) => void quickAssign(ids, picked),
+        onQuickClear: (ids, valueId, dimensionLabel) =>
+          void quickClear(ids, valueId, dimensionLabel),
         onAssign: (keywordId, keyword, lockedDimensionSlug, initial) =>
           setAssignTarget({
             keywordIds: [keywordId],

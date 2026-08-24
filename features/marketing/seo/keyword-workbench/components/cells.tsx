@@ -13,7 +13,7 @@
  * is what a person actually wants the moment they spot a pattern.
  */
 
-import { Check, Filter, Lock, PenLine, Plus } from "lucide-react";
+import { Check, Eraser, Filter, Lock, PenLine, Plus } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -107,6 +107,7 @@ export function ClassCell({
   onPick,
   onAssignWithReason,
   onMakeYourOwn,
+  onClear,
 }: {
   current: string | null;
   source: string | null;
@@ -116,6 +117,11 @@ export function ClassCell({
   onAssignWithReason: () => void;
   /** P11's door: open the assign panel with no dimension locked. */
   onMakeYourOwn: () => void;
+  /**
+   * TAKE IT BACK. A control that can only ever move you to another wrong
+   * answer is not a control. Only offered once something is actually set.
+   */
+  onClear?: () => void;
 }) {
   const active = options.find((v) => v.key === current);
   const hint = sourceHint(source);
@@ -155,6 +161,12 @@ export function ClassCell({
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
+        {current && onClear ? (
+          <DropdownMenuItem className="text-xs" onSelect={onClear}>
+            <Eraser className="mr-2 h-3.5 w-3.5" />
+            Clear this class
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem className="text-xs" onSelect={onAssignWithReason}>
           <PenLine className="mr-2 h-3.5 w-3.5" />
           Assign with a reason…
