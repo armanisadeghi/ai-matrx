@@ -345,7 +345,7 @@ export function KeywordMeaningSuggestions({
                 <div className="flex shrink-0 items-center gap-1">
                   {row.requiresIndividualReview ? (
                     <span className="max-w-24 text-right text-[11px] leading-tight text-muted-foreground">
-                      Review exact text in its chip
+                      Review guidelines in its chip
                     </span>
                   ) : (
                     <Button

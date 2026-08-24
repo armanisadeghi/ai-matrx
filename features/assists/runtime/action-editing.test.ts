@@ -20,9 +20,9 @@ describe("getAssistActionTextEditor", () => {
     const editor = getAssistActionTextEditor(guidelineAction);
 
     expect(editor?.value).toBe("Original guidelines");
-    expect(editor?.label).toBe("Exact text that will be saved");
-    expect(editor?.description).toContain("headline summarizes");
-    expect(editor?.description).toContain("exactly this text");
+    expect(editor?.triggerLabel).toBe("Edit guidelines");
+    expect(editor?.label).toBe("Keyword guidelines");
+    expect(editor?.description).toBeUndefined();
     expect(editor?.validate("  ")).toBe("Guidelines cannot be empty.");
   });
 

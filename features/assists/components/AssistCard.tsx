@@ -310,7 +310,7 @@ export function AssistCard({
       )}
 
       <div className="border-t border-border/60 px-3 py-2">
-        {actionEditor && (
+        {actionEditor && (actionEditOpen || actionReviewed) && (
           <AssistActionTextEditor
             definition={actionEditor}
             value={actionDraft}
@@ -342,7 +342,7 @@ export function AssistCard({
             className="min-h-11 min-w-0 gap-1 px-1 text-[11px] md:h-7 md:min-h-0 md:px-3 md:text-xs"
             title={
               actionEditor && !actionReviewed
-                ? "Review the exact text before approving"
+                ? "Edit or review the guidelines before approving"
                 : descriptor?.verb
             }
           >
@@ -351,7 +351,7 @@ export function AssistCard({
             )}
             <span className="truncate">
               {actionEditor && !actionReviewed
-                ? "Review text"
+                ? "Edit"
                 : (descriptor?.verb ?? "Unavailable")}
             </span>
           </Button>

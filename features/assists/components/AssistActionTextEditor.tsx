@@ -92,9 +92,11 @@ export function AssistActionTextEditor({
           <div className="text-xs font-medium text-foreground">
             {definition.label}
           </div>
-          <p className="text-[11px] leading-snug text-muted-foreground">
-            {definition.description}
-          </p>
+          {definition.description && (
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              {definition.description}
+            </p>
+          )}
         </div>
         {isDirty && (
           <Button
@@ -128,16 +130,12 @@ export function AssistActionTextEditor({
         className="text-base md:text-xs"
         aria-invalid={validationMessage ? true : undefined}
       />
-      <div className="mt-1 flex min-h-10 items-center gap-2 md:min-h-0">
+      <div className="mt-1 flex min-h-10 items-center justify-end gap-2 md:min-h-0">
         {validationMessage ? (
           <p className="flex-1 text-[11px] text-destructive" role="alert">
             {validationMessage}
           </p>
-        ) : (
-          <p className="flex-1 text-[11px] text-muted-foreground">
-            {isDirty ? "Your version will be applied." : "No changes yet."}
-          </p>
-        )}
+        ) : null}
         <Button
           type="button"
           size="sm"

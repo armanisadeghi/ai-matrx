@@ -18,10 +18,10 @@ const KEYWORD_GUIDELINES_MAX_LENGTH = 40_000;
 export interface AssistActionTextEditorDefinition {
   /** Short call to action shown before the editor opens. */
   triggerLabel: string;
-  /** Field label shown with the exact value that will be applied. */
+  /** Plain name of the item being edited. */
   label: string;
-  /** One sentence explaining the scope of the editable value. */
-  description: string;
+  /** Only present when the field needs genuinely useful clarification. */
+  description?: string;
   value: string;
   maxLength?: number;
   validate: (value: string) => string | null;
@@ -44,10 +44,8 @@ export function getAssistActionTextEditor(
   }
 
   return {
-    triggerLabel: "Review or edit exact text",
-    label: "Exact text that will be saved",
-    description:
-      "The headline summarizes the change. Approval replaces the full guideline document with exactly this text.",
+    triggerLabel: "Edit guidelines",
+    label: "Keyword guidelines",
     value: action.proposal.proposedText,
     maxLength: KEYWORD_GUIDELINES_MAX_LENGTH,
     validate: (value) => {

@@ -32,10 +32,8 @@ jest.mock("@/components/official/ProTextarea", () => {
 });
 
 const definition: AssistActionTextEditorDefinition = {
-  triggerLabel: "Review or edit exact text",
-  label: "Exact text that will be saved",
-  description:
-    "The headline summarizes the change. Approval replaces the full guideline document with exactly this text.",
+  triggerLabel: "Edit guidelines",
+  label: "Keyword guidelines",
   value: "Original full document",
   maxLength: 40_000,
   validate: () => null,
