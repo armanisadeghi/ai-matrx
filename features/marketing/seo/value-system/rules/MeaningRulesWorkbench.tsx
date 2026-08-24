@@ -30,7 +30,7 @@
  * …/pack-adoption-ui-proposal.md.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -442,6 +442,26 @@ export function MeaningRulesWorkbench() {
   };
 
   const visibleRules = (rules.data ?? []).filter((r) => matchesSource(r.id, r.metadata));
+  /**
+   * `#service-areas` — the keyword front door's "where searches come from" door
+   * lands here. A bare fragment cannot do the job: the section does not exist
+   * in the DOM until the areas query resolves, so the browser's own hash scroll
+   * fires against nothing and the reader arrives at the top of a long page
+   * wondering what they were sent to look at. This scrolls ONCE, when the
+   * section is actually there.
+   */
+  const hashScrolledRef = useRef(false);
+  useEffect(() => {
+    if (hashScrolledRef.current) return;
+    // `window` is shadowed in this file by the value-window prop name, so read
+    // the location off the document instead of the global.
+    if (document.location.hash !== "#service-areas") return;
+    const target = document.getElementById("service-areas");
+    if (!target) return;
+    hashScrolledRef.current = true;
+    target.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [areas.data]);
+
   const incompleteAreas = (areas.data ?? []).filter(areaNeedsPlaces);
   const visibleAreas = (onlyIncompleteAreas ? incompleteAreas : (areas.data ?? [])).filter((a) =>
     matchesSource(a.id, a.metadata),
