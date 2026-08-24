@@ -92,6 +92,12 @@ export function ExportMenu({
       const { sendRowsToGoogleSheet } =
         await import("@/features/google-workspace/export/sendToGoogle");
       const result = await sendRowsToGoogleSheet(rows, label);
+      if (!result.ok && result.reason === "failed") {
+        toast.error("Could not create the Google Sheet", {
+          description: result.message,
+        });
+        return;
+      }
       if (!result.ok) {
         toast.info("Connect Google to send this to a Sheet", {
           description:

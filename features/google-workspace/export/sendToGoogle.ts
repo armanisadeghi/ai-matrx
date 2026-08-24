@@ -21,10 +21,18 @@ import {
   GOOGLE_WORKSPACE_SETTINGS_HREF,
   resolveGoogleWorkspaceConnection,
 } from "@/features/google-workspace/connection";
+import { BackendApiError } from "@/lib/api/errors";
 
 export type SendToGoogleResult =
   | { ok: true; name: string; fileId: string; openUrl: string | null }
-  | { ok: false; reason: "not_connected"; settingsHref: string };
+  | { ok: false; reason: "not_connected"; settingsHref: string }
+  /**
+   * The connection looked healthy client-side but the server refused —
+   * typically an expired grant needing reconnect. `message` is the server's
+   * user-facing explanation (it names where to reconnect). Callers surface it;
+   * they never see a raw exception from this module.
+   */
+  | { ok: false; reason: "failed"; message: string };
 
 const MAX_TITLE = 200;
 
@@ -48,23 +56,37 @@ async function connection(): Promise<
   return { ok: true, connectionId: resolved.connectionId };
 }
 
+function failure(error: unknown): SendToGoogleResult {
+  const message =
+    error instanceof BackendApiError
+      ? error.detail || error.userMessage
+      : error instanceof Error
+        ? error.message
+        : "Google did not accept the request.";
+  return { ok: false, reason: "failed", message };
+}
+
 export async function sendContentToGoogleDoc(
   content: string,
   title?: string,
 ): Promise<SendToGoogleResult> {
   const link = await connection();
   if (!link.ok) return link;
-  const file = await createGoogleDocument(
-    link.connectionId,
-    googleFileTitle(title, "AI Matrx document"),
-    content,
-  );
-  return {
-    ok: true,
-    name: file.name,
-    fileId: file.fileId,
-    openUrl: file.webViewLink,
-  };
+  try {
+    const file = await createGoogleDocument(
+      link.connectionId,
+      googleFileTitle(title, "AI Matrx document"),
+      content,
+    );
+    return {
+      ok: true,
+      name: file.name,
+      fileId: file.fileId,
+      openUrl: file.webViewLink,
+    };
+  } catch (error) {
+    return failure(error);
+  }
 }
 
 /**
@@ -88,17 +110,21 @@ export async function sendRowsToGoogleSheet(
     columns,
     ...rows.map((row) => columns.map((key) => cellText(row?.[key]))),
   ];
-  const file = await createGoogleSheet(
-    link.connectionId,
-    googleFileTitle(title, "AI Matrx export"),
-    values,
-  );
-  return {
-    ok: true,
-    name: file.name,
-    fileId: file.fileId,
-    openUrl: file.webViewLink,
-  };
+  try {
+    const file = await createGoogleSheet(
+      link.connectionId,
+      googleFileTitle(title, "AI Matrx export"),
+      values,
+    );
+    return {
+      ok: true,
+      name: file.name,
+      fileId: file.fileId,
+      openUrl: file.webViewLink,
+    };
+  } catch (error) {
+    return failure(error);
+  }
 }
 
 function cellText(value: unknown): string {

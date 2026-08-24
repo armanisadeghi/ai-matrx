@@ -36,6 +36,7 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES, type DisplayTheme } from "../themes";
 import SaveTableModal from "./SaveTableModal";
 import { SendToWorkbookButton } from "./SendToWorkbookButton";
+import { SendToGoogleSheetButton } from "./SendToGoogleSheetButton";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { TableEditToolbar } from "./editing/TableEditToolbar";
@@ -856,10 +857,16 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
           )}
           {renderTableActionButton()}
           {internalTableData.normalizedData && (
-            <SendToWorkbookButton
-              headers={internalTableData.headers}
-              rows={internalTableData.rows}
-            />
+            <>
+              <SendToWorkbookButton
+                headers={internalTableData.headers}
+                rows={internalTableData.rows}
+              />
+              <SendToGoogleSheetButton
+                headers={internalTableData.headers}
+                rows={internalTableData.rows}
+              />
+            </>
           )}
           <ExportDropdownMenu
             tableData={internalTableData}

@@ -129,6 +129,13 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- 2026-08-22: `SendToGoogleResult` gained a `failed` variant — `sendToGoogle`
+  now catches server refusals (typically an expired grant needing reconnect)
+  and returns the server's user-facing message instead of leaking an exception;
+  all four consumers surface it as an error toast. Added the "Google Sheet"
+  sibling to the "Workbook" button on markdown tables
+  (`components/mardown-display/tables/SendToGoogleSheetButton.tsx`), closing
+  the export-target gap named in `docs/handoffs/google-workspace-deeper-integrations.md` §2.
 - 2026-08-18: Reworked the settings/reviewer workspace around a compact
   connected-account permission/status table, concise policy copy, per-account
   management, and collapsed file/email connection tests. Repeated Picker opens

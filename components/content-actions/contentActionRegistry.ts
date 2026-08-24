@@ -311,6 +311,12 @@ function googleDocItem(ctx: ContentActionContext): MenuItem {
         "@/features/google-workspace/export/sendToGoogle"
       );
       const result = await sendContentToGoogleDoc(content, title);
+      if (!result.ok && result.reason === "failed") {
+        toast.error("Could not create the Google Doc", {
+          description: result.message,
+        });
+        return;
+      }
       if (!result.ok) {
         toast.info("Connect Google to send this to a Doc", {
           description: "Takes about ten seconds, and only for files you choose or that we create.",

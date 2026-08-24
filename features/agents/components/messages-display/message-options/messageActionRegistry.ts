@@ -593,6 +593,12 @@ function actionsItems(ctx: MessageActionContext): MenuItem[] {
           turnText,
           deriveMessageTitle(ctx) ?? "AI Matrx message",
         );
+        if (!result.ok && result.reason === "failed") {
+          toast.error("Could not create the Google Doc", {
+            description: result.message,
+          });
+          return;
+        }
         if (!result.ok) {
           toast.info("Connect Google to send this to a Doc", {
             description:

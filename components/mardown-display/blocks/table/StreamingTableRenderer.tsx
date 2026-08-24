@@ -43,6 +43,7 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES, type DisplayTheme } from "../../themes";
 import SaveTableModal from "../../tables/SaveTableModal";
 import { SendToWorkbookButton } from "../../tables/SendToWorkbookButton";
+import { SendToGoogleSheetButton } from "../../tables/SendToGoogleSheetButton";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { TableEditToolbar } from "../../tables/editing/TableEditToolbar";
@@ -1109,7 +1110,10 @@ const StreamingTableRendererCore: React.FC<
               )}
               {renderTableActionButton()}
               {tableData.normalizedData && (
-                <SendToWorkbookButton headers={headers} rows={rows} />
+                <>
+                  <SendToWorkbookButton headers={headers} rows={rows} />
+                  <SendToGoogleSheetButton headers={headers} rows={rows} />
+                </>
               )}
               <ExportDropdownMenu
                 tableData={tableData}
