@@ -1833,7 +1833,7 @@ export interface SeoStarterPackProposalOffer {
 export interface SeoTopicAssignmentOffer {
   __kind?: "seo.topic_assignment.offer";
   keywords: unknown;
-  existing_branch: unknown;
+  existing_topic_branches: unknown;
   territory: string;
   business_guidelines: string;
   assigner_version: string;
