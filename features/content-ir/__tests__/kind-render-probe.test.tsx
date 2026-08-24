@@ -53,6 +53,7 @@ jest.mock("next/dynamic", () => ({
 
 import {
   applyIrKindRoute,
+  DB_KIND_COMPONENT_KEY,
   GENERIC_STRUCTURED_COMPONENT_KEY,
   IR_ROUTE_KEY,
   type IrRouteMarker,
@@ -217,7 +218,13 @@ function probeOne(row: JobRow): ProbeResult {
   // compiled fallback while the registered row points at nothing does not
   // satisfy that, so it FAILS here. Found by sabotaging `rating`'s row during
   // the first verification pass (2026-08-23) — nothing else in the system caught it.
-  if (marker.key !== routed.type && !resolveBlockDispatch(marker.key)) {
+  // …EXCEPT on the user-authored path: a `source='db'` row deliberately re-types
+  // to `db_kind_component`, which compiles `component_source` in-page, so its
+  // `component_key` is a LABEL for that component and was never meant to appear
+  // in the bundled dispatch table. Checking it there would false-fail every
+  // studio-authored renderer (it did, on 4 kinds, on the first apply run).
+  const isUserAuthoredRoute = routed.type === DB_KIND_COMPONENT_KEY;
+  if (!isUserAuthoredRoute && marker.key !== routed.type && !resolveBlockDispatch(marker.key)) {
     return {
       ...base,
       verdict: "dangling_route_key",
