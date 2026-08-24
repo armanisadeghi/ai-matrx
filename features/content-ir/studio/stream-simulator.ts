@@ -45,8 +45,7 @@ export function withKindFirst(
   data: Record<string, unknown>,
   kind: string,
 ): Record<string, unknown> {
-  const { __kind: _existing, ...rest } = data;
-  return { __kind: kind, ...rest };
+  return Object.assign({ __kind: kind }, data, { __kind: kind });
 }
 
 /**
