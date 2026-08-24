@@ -251,6 +251,31 @@ export function compiledKindSlugsFromText(systemKindsText: string): string[] {
   return [...slugs].sort();
 }
 
+/**
+ * Compiled per-kind `loadingComponent` declarations, from kind-definition
+ * source TEXT (system-kinds.ts + each kinds/*.ts). Same nearest-preceding-
+ * `kind:` attribution as `compiledKindSlugsFromText`. Later files never
+ * overwrite an earlier attribution for the same kind (definitions are unique
+ * per kind in practice; first wins keeps the result order-stable).
+ */
+export function compiledLoadingSlugsFromTexts(
+  texts: readonly string[],
+): Map<string, string> {
+  const bySlug = new Map<string, string>();
+  for (const text of texts) {
+    const kindPositions: Array<{ index: number; slug: string }> = [];
+    for (const m of text.matchAll(/kind: "([a-z0-9_]+)"/g)) {
+      kindPositions.push({ index: m.index ?? 0, slug: m[1] });
+    }
+    for (const m of text.matchAll(/\n\s+loadingComponent: "([a-z0-9-]+)"/g)) {
+      const at = m.index ?? 0;
+      const owner = [...kindPositions].reverse().find((k) => k.index < at);
+      if (owner && !bySlug.has(owner.slug)) bySlug.set(owner.slug, m[1]);
+    }
+  }
+  return bySlug;
+}
+
 /** Kinds referenced by artifact-type-registry `kinds: ["…"]` facade entries. */
 export function artifactKindSlugsFromText(registryText: string): string[] {
   const slugs = new Set<string>();

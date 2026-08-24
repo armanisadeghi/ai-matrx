@@ -78,6 +78,7 @@ export const ASSET_COLUMNS = [
   "example",
   "gate_structural",
   "component",
+  "loading",
   "skill",
   "content_block",
   "surface",
@@ -99,6 +100,7 @@ export const ASSET_STATUSES = ["ok", "warn", "missing", "n/a"] as const;
  */
 export const EXEMPTIBLE_COLUMNS: ReadonlySet<AssetColumn> = new Set<AssetColumn>([
   "component",
+  "loading",
   "surface",
   "skill",
   "content_block",
@@ -293,6 +295,23 @@ export interface ShapeDoctorInput {
     fence_lang: ReadonlySet<string>;
     json_root_key: ReadonlySet<string>;
   };
+  /**
+   * The hardcoded loading-library slugs (KIND_LOADING_SLUGS,
+   * react/loading/kind-loading-slugs.ts). When provided, a declared
+   * `loading_component` naming a slug outside this set is a RED
+   * `unknown-loading-component` — the registry claims a loader that does not
+   * exist, and at runtime it silently falls back to the generic skeleton.
+   * Omit only in a caller that cannot load the list (it loses the check).
+   */
+  loadingLibrarySlugs?: ReadonlySet<string>;
+  /**
+   * Compiled per-kind `loadingComponent` declarations (kind slug → loader
+   * slug), extracted from system-kinds.ts + kinds/*.ts TEXT. Compiled
+   * definitions win at runtime (`kindRegistry.getDefinition`), so a compiled
+   * declaration satisfies the loading cell exactly like a DB
+   * `metadata.loading_component` does.
+   */
+  compiledLoadingSlugs?: ReadonlyMap<string, string>;
 }
 
 // ─── Report shape ───────────────────────────────────────────────────────────
@@ -339,7 +358,9 @@ export type FindingCode =
   | "contract-gap" // manifest ↔ live catalog mismatch for a generated contract family
   | "coverage-input-missing" // emitted by the CLI when crosswalk/manifest snapshot is unreadable
   | "surface-token-undetectable" // an ACTIVE kind_surface token no host literal can fire
+  | "unknown-loading-component" // declared loading_component slug is not in the loading library
   // yellow
+  | "no-loading-component" // renderable kind with no declared loading component (generic fallback)
   | "no-example"
   | "no-canonical-example" // example exists but none is canonical / only interim sample_data
   | "no-skill"
@@ -434,6 +455,15 @@ export function kindFamily(metadata: unknown): string | null {
   return typeof family === "string" ? family : null;
 }
 
+/** `metadata.loading_component`, defensively — jsonb arrives as `unknown`. */
+export function kindLoadingComponent(metadata: unknown): string | null {
+  if (typeof metadata !== "object" || metadata === null || Array.isArray(metadata)) {
+    return null;
+  }
+  const slug = (metadata as Record<string, unknown>).loading_component;
+  return typeof slug === "string" && slug.length > 0 ? slug : null;
+}
+
 export interface ExemptionEvidence {
   kind: DoctorKindDefinition;
   /** Slugs of OTHER kinds that embed this one via `kind_edge`, sorted. */
@@ -491,12 +521,14 @@ export function classifyExemption(evidence: ExemptionEvidence): KindExemption | 
 const EXEMPT_CELL_REASON: Record<ExemptionClass, Record<string, string>> = {
   data_only: {
     component: "framed contract data, never rendered",
+    loading: "never rendered, so it never streams into a loading state",
     surface: "never arrives on a content surface",
     skill: "agents never emit it as content",
     content_block: "never delivered as content",
   },
   nested_only_child: {
     component: "renders inside its parent, never standalone",
+    loading: "its parent's loading state covers it",
     surface: "arrives inside its parent's payload, never at its own detector",
     skill: "taught by its parent's skill",
     content_block: "delivered by its parent's content block",
@@ -842,6 +874,61 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
       });
     }
 
+    // loading — the declared loading component (kind_definition.metadata
+    // .loading_component, or a compiled definition's `loadingComponent`).
+    // The loading state is a SEPARATE component, selected by slug from the
+    // hardcoded loading library (react/loading/kind-loading-slugs.ts): while
+    // a kind's region streams, the pending/announced stages render that
+    // loader, and a missing/unknown slug silently degrades to the generic
+    // skeleton. An UNKNOWN slug is a RED — the registry advertises a loader
+    // that does not exist and nothing at runtime ever says so.
+    const declaredLoadingDb = kindLoadingComponent(kind.metadata);
+    const declaredLoadingCompiled = input.compiledLoadingSlugs?.get(kind.kind) ?? null;
+    const declaredLoading = declaredLoadingDb ?? declaredLoadingCompiled;
+    const loadingSource = declaredLoadingDb !== null ? "db metadata" : "compiled definition";
+    let loading: AssetCell;
+    if (declaredLoading !== null) {
+      if (input.loadingLibrarySlugs === undefined) {
+        loading = {
+          status: "ok",
+          detail: `${declaredLoading} (${loadingSource}; library slugs unavailable — not checked)`,
+        };
+      } else if (input.loadingLibrarySlugs.has(declaredLoading)) {
+        loading = { status: "ok", detail: `${declaredLoading} (${loadingSource})` };
+      } else {
+        loading = {
+          status: "warn",
+          detail: `UNKNOWN slug "${declaredLoading}" (${loadingSource}) — not in the loading library; renders the generic skeleton`,
+        };
+        reds.push({
+          severity: "red",
+          code: "unknown-loading-component",
+          kind: kind.kind,
+          message: `kind "${kind.kind}" declares loading_component "${declaredLoading}" (${loadingSource}), which is not in the loading library (kind-loading-slugs.ts) — at runtime it silently falls back to the generic skeleton; pick a real slug or add the loader to the library`,
+        });
+      }
+    } else if (exemption) {
+      loading = naCell(exemption, "loading");
+    } else if (webComponents.length > 0 || codePaths.length > 0) {
+      loading = {
+        status: "missing",
+        detail: "no loading_component declared — streams behind the generic skeleton",
+      };
+      yellows.push({
+        severity: "yellow",
+        code: "no-loading-component",
+        kind: kind.kind,
+        message: `kind "${kind.kind}" renders but declares no loading_component — while it streams the user sees the generic skeleton; set metadata.loading_component to a loading-library slug`,
+      });
+    } else {
+      // No renderer at all — the component cell already screams; a second
+      // finding here would be noise, but the gap stays visible in the cell.
+      loading = {
+        status: "missing",
+        detail: "no loading_component (no renderer yet either)",
+      };
+    }
+
     // skill — render_block skill(s) teaching this kind.
     const kindTeachings = teachingsByKind.get(kind.kind) ?? [];
     let skill: AssetCell;
@@ -930,6 +1017,7 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
         example,
         gate_structural: gate,
         component,
+        loading,
         skill,
         content_block: contentBlock,
         surface,

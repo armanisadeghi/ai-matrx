@@ -40,6 +40,7 @@ export const COLUMN_HEADING: Record<AssetColumn, string> = {
   definition: "Definition",
   example: "Example",
   gate_structural: "Gate",
+  loading: "Loading",
   component: "Component",
   skill: "Skill",
   content_block: "Block",

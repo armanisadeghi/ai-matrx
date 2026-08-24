@@ -24,7 +24,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -52,9 +52,11 @@ import {
   DB_KIND_COMPONENT_KEY,
   GENERIC_STRUCTURED_COMPONENT_KEY,
 } from "@ai-matrx/content-ir-react";
+import { KIND_LOADING_SLUGS } from "../../features/content-ir/react/loading/kind-loading-slugs";
 import {
   artifactKindSlugsFromText,
   compiledKindSlugsFromText,
+  compiledLoadingSlugsFromTexts,
   extractDetectorTokensFromTexts,
   extractDispatchKeysFromText,
   extractHostSurfaceTokensFromTexts,
@@ -134,6 +136,20 @@ function extractHostSurfaceTokens(): HostSurfaceExtraction {
 
 function compiledKindSlugs(): string[] {
   return compiledKindSlugsFromText(readFileSync(SYSTEM_KINDS_PATH, "utf8"));
+}
+
+/**
+ * Compiled `loadingComponent` declarations live in system-kinds.ts AND in the
+ * per-family kinds/*.ts modules it imports — scan them all.
+ */
+function compiledLoadingSlugs(): Map<string, string> {
+  const kindsDir = resolve(ROOT, "features/content-ir/kinds");
+  const texts = [readFileSync(SYSTEM_KINDS_PATH, "utf8")];
+  for (const name of readdirSync(kindsDir)) {
+    if (!name.endsWith(".ts")) continue;
+    texts.push(readFileSync(resolve(kindsDir, name), "utf8"));
+  }
+  return compiledLoadingSlugsFromTexts(texts);
 }
 
 function artifactRegistryKindSlugs(): string[] {
@@ -512,6 +528,7 @@ const COLUMN_HEADING: Record<AssetColumn, string> = {
   definition: "Definition",
   example: "Example",
   gate_structural: "Gate",
+  loading: "Loading",
   component: "Component",
   skill: "Skill",
   content_block: "Content block",
@@ -659,6 +676,7 @@ const SHORT_HEAD: Record<AssetColumn, string> = {
   definition: "def",
   example: "ex",
   gate_structural: "gate",
+  loading: "load",
   component: "comp",
   skill: "skl",
   content_block: "blk",
@@ -766,6 +784,8 @@ async function main(): Promise<number> {
     },
     crosswalkNames: crosswalk.names,
     hostSurfaceTokens,
+    loadingLibrarySlugs: new Set<string>(KIND_LOADING_SLUGS),
+    compiledLoadingSlugs: compiledLoadingSlugs(),
   });
 
   // Coverage inputs are load-bearing for the strict gate — a missing/corrupt

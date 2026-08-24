@@ -15,6 +15,7 @@
 
 import type React from "react";
 import type { KindLoadingProps } from "./kind-loading.types";
+import type { KindLoadingSlug } from "./kind-loading-slugs";
 import {
   CardLoading,
   ChartLoading,
@@ -41,12 +42,12 @@ import {
   TreeLoading,
 } from "./kind-loading-components";
 
-export const DEFAULT_KIND_LOADING_SLUG = "generic" as const;
+export { DEFAULT_KIND_LOADING_SLUG, KIND_LOADING_SLUGS } from "./kind-loading-slugs";
 
-export const KIND_LOADING_COMPONENTS: Record<
-  string,
-  React.ComponentType<KindLoadingProps>
-> = {
+// Typed against the pure slug list (kind-loading-slugs.ts) — a slug added
+// there without a component here (or vice versa) is a COMPILE error. The pure
+// list is what the shape doctor / CLI validate declarations against.
+const KIND_LOADING_COMPONENTS_EXACT = {
   card: CardLoading,
   list: ListLoading,
   table: TableLoading,
@@ -70,7 +71,11 @@ export const KIND_LOADING_COMPONENTS: Record<
   progress: ProgressLoading,
   minimal: MinimalLoading,
   generic: GenericLoading,
-};
+} satisfies Record<KindLoadingSlug, React.ComponentType<KindLoadingProps>>;
+
+export const KIND_LOADING_COMPONENTS: Readonly<
+  Record<string, React.ComponentType<KindLoadingProps>>
+> = KIND_LOADING_COMPONENTS_EXACT;
 
 /**
  * Resolve a loading component: the kind's declared slug, else the generic
@@ -79,5 +84,9 @@ export const KIND_LOADING_COMPONENTS: Record<
 export function resolveKindLoadingComponent(
   slug: string | null | undefined,
 ): React.ComponentType<KindLoadingProps> {
-  return (slug ? KIND_LOADING_COMPONENTS[slug] : undefined) ?? GenericLoading;
+  return (
+    (slug
+      ? KIND_LOADING_COMPONENTS[slug]
+      : undefined) ?? GenericLoading
+  );
 }
