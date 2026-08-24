@@ -49,6 +49,8 @@ const ALL_QUICK_ACTION_KEYS: readonly string[] = [
   ...SECONDARY_QUICK_ACTIONS,
 ].map((action) => action.mandateKey);
 
+const OPTIONAL_QUICK_ACTION_KEYS: readonly string[] = ["chat.quick_org_chart"];
+
 export function NewChatGreeting({
   sourceConversationId,
   surfaceKey,
@@ -57,7 +59,9 @@ export function NewChatGreeting({
   const store = useAppStore();
   const userName = useAppSelector(selectActiveUserName);
   const firstName = (userName ?? "").trim().split(/\s+/)[0] || "";
-  const mandates = useMandateSet(ALL_QUICK_ACTION_KEYS);
+  const mandates = useMandateSet(ALL_QUICK_ACTION_KEYS, {
+    optionalKeys: OPTIONAL_QUICK_ACTION_KEYS,
+  });
 
   const chipState = (action: ChatQuickAction) => {
     const state = mandates[action.mandateKey];
