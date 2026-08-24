@@ -29,7 +29,7 @@ export type DirectiveConfirmReceipt =
   | components["schemas"]["DirectiveItemFailed"];
 
 /** One Plane-2 function (or deprecated legacy named directive). */
-export type CustomActionEntry = components["schemas"]["CustomActionEntry"];
+export type CustomActionEntry = components["schemas"]["KindActionEntry"];
 
 /** A cell's wiring state — derived from NounDirectives verb columns. */
 export type DirectiveState = NounDirectives["reference"];
@@ -47,16 +47,18 @@ export const READ_VERBS: readonly DirectiveVerb[] = [
   "view",
 ] as const;
 
-const DIRECTIVE_VERBS: ReadonlySet<string> = new Set([
+export const DIRECTIVE_VERBS = [
   "reference",
   "view",
   "create",
   "update",
   "delete",
-]);
+] as const satisfies readonly DirectiveVerb[];
+
+const DIRECTIVE_VERB_SET: ReadonlySet<string> = new Set(DIRECTIVE_VERBS);
 
 export function isDirectiveVerb(value: string): value is DirectiveVerb {
-  return DIRECTIVE_VERBS.has(value);
+  return DIRECTIVE_VERB_SET.has(value);
 }
 
 export function isWriteVerb(verb: string): boolean {
@@ -68,8 +70,7 @@ export function isDirectiveCatalog(value: unknown): value is DirectiveCatalog {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
   return (
-    typeof v.matrx_version === "number" &&
-    Array.isArray(v.verbs) &&
+    typeof v.directive_version === "number" &&
     Array.isArray(v.nouns)
   );
 }
@@ -89,7 +90,7 @@ export function isDirectiveApplyResult(
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
   return (
-    typeof v.type === "string" &&
+    typeof v.directive === "string" &&
     typeof v.applied === "number" &&
     typeof v.failed === "number" &&
     Array.isArray(v.receipts)
@@ -103,7 +104,7 @@ export function isDirectiveConfirmResult(
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
   return (
-    typeof v.type === "string" &&
+    typeof v.directive === "string" &&
     typeof v.proposal_id === "string" &&
     typeof v.applied === "number" &&
     typeof v.failed === "number" &&

@@ -181,6 +181,10 @@ silently drops items the server would have happily applied.
 
 ## Change Log
 
+- 2026-08-23 — Directive execute/confirm consumers now translate Matrx envelopes to
+  the unified API request contract (`directive` slug + items) instead of sending the
+  retired multi-field directive shell.
+
 - 2026-07-26 — Claude: **The FE derives nouns from the server catalog — zero edits for a
   new action.** `catalog-nouns.generated.ts` (from the mirrored
   `matrx_directives_catalog.generated.json`, via `pnpm gen:directive-nouns`, auto-run by

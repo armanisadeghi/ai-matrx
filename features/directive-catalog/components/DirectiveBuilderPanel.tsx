@@ -57,6 +57,7 @@ import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPi
 import { fetchEntityTitles } from "@/features/scopes/service/entityTitles";
 import {
   cellState,
+  DIRECTIVE_VERBS,
   isDirectiveVerb,
   type DirectiveApplyResult,
   type DirectiveCatalog,
@@ -94,7 +95,7 @@ export function DirectiveBuilderPanel({
 }: {
   catalog: DirectiveCatalog;
 }) {
-  const verbs = catalog.verbs.filter(isDirectiveVerb);
+  const verbs = DIRECTIVE_VERBS.filter(isDirectiveVerb);
   const nouns = useMemo(
     () => [...catalog.nouns].sort((a, b) => a.noun.localeCompare(b.noun)),
     [catalog.nouns],
@@ -265,8 +266,7 @@ export function DirectiveBuilderPanel({
     setResult(null);
     try {
       const res = await executeDirective(baseUrl, {
-        kind: "output_directive",
-        type: `${verb}:${nounName}`,
+        directive: `directive_v${catalog.directive_version}_${verb}_${nounName}`,
         items: [parsed.value],
         force,
       });
@@ -579,7 +579,7 @@ export function DirectiveBuilderPanel({
                   <div className="flex items-center gap-2">
                     <StatusPill status={r.status} />
                     <span className="font-mono text-muted-foreground">
-                      {r.verb}:{r.noun}
+                      {r.directive_class}:{r.noun}
                     </span>
                   </div>
                   {r.summary && (

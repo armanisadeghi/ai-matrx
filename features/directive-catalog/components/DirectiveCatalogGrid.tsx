@@ -26,10 +26,11 @@ import {
   StateBadge,
   StateCell,
 } from "@/features/directive-catalog/components/StateCell";
-import type {
-  DirectiveCatalog,
-  DirectiveVerb,
-  NounDirectives,
+import {
+  DIRECTIVE_VERBS,
+  type DirectiveCatalog,
+  type DirectiveVerb,
+  type NounDirectives,
 } from "@/features/directive-catalog/types";
 import type { DirectiveShapeSelection } from "@/features/directive-catalog/components/DirectiveShapePanel";
 import {
@@ -55,7 +56,7 @@ export function DirectiveCatalogGrid({
   onToggleWritable: (noun: NounDirectives, enabled: boolean) => void;
   onInspect: (selection: DirectiveShapeSelection) => void;
 }) {
-  const verbs = catalog.verbs as DirectiveVerb[];
+  const verbs: DirectiveVerb[] = [...DIRECTIVE_VERBS];
 
   const [familyFilter, setFamilyFilter] = useState<string>(ALL_FAMILIES);
   const [query, setQuery] = useState("");
@@ -202,7 +203,7 @@ export function DirectiveCatalogGrid({
 
 /**
  * Plane-2 Custom Actions + deprecated legacy Directives — the half the noun × verb grid can't
- * represent. Fully server-derived (`catalog.functions`).
+ * represent. Fully server-derived (`catalog.actions`).
  */
 function CustomActionsSection({
   catalog,
@@ -213,7 +214,7 @@ function CustomActionsSection({
   query: string;
   onInspect: (selection: DirectiveShapeSelection) => void;
 }) {
-  const customActions = catalog.functions ?? [];
+  const customActions = catalog.actions ?? [];
   const q = query.trim().toLowerCase();
   const visible = q
     ? customActions.filter((entry) => `${entry.name} ${entry.doc ?? ""}`.toLowerCase().includes(q))
@@ -228,17 +229,12 @@ function CustomActionsSection({
         <tbody>
           {visible.map((f) => (
             <tr
-              key={`${f.kind}:${f.name}`}
+              key={f.slug}
               className="cursor-pointer border-b border-border/60 transition-colors hover:bg-accent/40"
               onClick={() => onInspect({ kind: "custom_action", customAction: f })}
             >
               <td className="w-64 px-3 py-1 font-mono text-xs font-medium text-foreground">
                 {f.name}
-                {f.deprecated && (
-                  <span className="ml-2 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-600 dark:text-amber-400">
-                    legacy
-                  </span>
-                )}
               </td>
               <td className="px-3 py-1 text-xs text-muted-foreground">{f.doc}</td>
             </tr>

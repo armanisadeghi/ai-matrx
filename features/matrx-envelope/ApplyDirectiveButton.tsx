@@ -78,9 +78,7 @@ export function ApplyDirectiveButton({
     setState({ status: "applying" });
     try {
       const result = await confirmDirective(baseUrl, {
-        matrx_version: envelope.matrx_version,
-        kind: envelope.kind,
-        type: envelope.type,
+        directive: envelope.type,
         items: items as Record<string, unknown>[],
       });
       setState({

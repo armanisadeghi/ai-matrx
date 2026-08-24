@@ -23749,6 +23749,15 @@ export type Database = {
       }
     }
     Functions: {
+      _apply_rls_unchecked: {
+        Args: {
+          p_schema: string
+          p_table: string
+          p_token: string
+          p_variant?: string
+        }
+        Returns: undefined
+      }
       _client_grant_column_list: {
         Args: { p_excluded: string[]; p_rel: unknown }
         Returns: string
@@ -23985,6 +23994,8 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: string
       }
+      entity_read_kernel_expected: { Args: never; Returns: string }
+      entity_read_kernel_fingerprint: { Args: never; Returns: string }
       entity_read_lane_preflight: {
         Args: never
         Returns: {
@@ -24107,6 +24118,10 @@ export type Database = {
           }
       is_org_member: {
         Args: { p_org: string; p_user: string }
+        Returns: boolean
+      }
+      membership_row_visible: {
+        Args: { p_membership_id: string }
         Returns: boolean
       }
       my_orgs: { Args: never; Returns: string[] }
@@ -48725,6 +48740,7 @@ export type Database = {
           is_primary: boolean
           keyword_id: string
           metadata: Json
+          notes: string | null
           organization_id: string
           topic_id: string
           updated_at: string
@@ -48742,6 +48758,7 @@ export type Database = {
           is_primary?: boolean
           keyword_id: string
           metadata?: Json
+          notes?: string | null
           organization_id?: string
           topic_id: string
           updated_at?: string
@@ -48759,6 +48776,7 @@ export type Database = {
           is_primary?: boolean
           keyword_id?: string
           metadata?: Json
+          notes?: string | null
           organization_id?: string
           topic_id?: string
           updated_at?: string
@@ -51907,6 +51925,7 @@ export type Database = {
       }
       fn_complete_keyword_classification_batch: {
         Args: {
+          p_batch_failure?: boolean
           p_error: string
           p_keyword_ids: string[]
           p_max_attempts: number
@@ -51919,6 +51938,7 @@ export type Database = {
       }
       fn_complete_topic_placement_batch: {
         Args: {
+          p_batch_failure?: boolean
           p_error: string
           p_keyword_ids: string[]
           p_max_attempts: number
@@ -52374,6 +52394,25 @@ export type Database = {
           value: string
           value_id: string
           value_label: string
+        }[]
+      }
+      gsc_keyword_topics_for: {
+        Args: { p_keyword_ids: string[]; p_site_id: string }
+        Returns: {
+          assigned_by: string
+          confidence: number
+          has_own_worth: boolean
+          keyword_id: string
+          lineage: string
+          node_type: string
+          notes: string
+          root_id: string
+          root_name: string
+          root_type: string
+          topic_id: string
+          topic_name: string
+          worth_from_id: string
+          worth_from_name: string
         }[]
       }
       gsc_keyword_value_for: {
@@ -52971,6 +53010,7 @@ export type Database = {
       gsc_set_keyword_topic: {
         Args: {
           p_keyword_ids: string[]
+          p_notes?: string
           p_site_id: string
           p_topic_id?: string
         }
@@ -53038,6 +53078,12 @@ export type Database = {
       }
       gsc_stamp_keyword_set: {
         Args: { p_site_id: string; p_stamps: Json }
+        Returns: {
+          kw_id: string
+        }[]
+      }
+      gsc_topic_keyword_set: {
+        Args: { p_topic_id: string }
         Returns: {
           kw_id: string
         }[]

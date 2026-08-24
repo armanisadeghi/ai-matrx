@@ -53,7 +53,7 @@ export async function fetchDirectiveCatalog(
   const payload: unknown = await response.json();
   if (!isDirectiveCatalog(payload)) {
     throw new Error(
-      `Directive catalog response was malformed (missing matrx_version / verbs / nouns) from ${url}`,
+      `Directive catalog response was malformed (missing directive_version / nouns) from ${url}`,
     );
   }
   return payload;

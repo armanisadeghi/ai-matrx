@@ -292,6 +292,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/scraper-kinds/scrape": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Scrape As Kind */
+        post: operations["scrape_as_kind_scraper_kinds_scrape_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper-kinds/scrape-many": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Scrape Many As Kind */
+        post: operations["scrape_many_as_kind_scraper_kinds_scrape_many_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/communications/voice/conversation-relay/session-reference": {
         parameters: {
             query?: never;
@@ -3350,7 +3384,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Supabase auth webhook — runs ensure_default_sandbox for the user. */
+        /** Supabase auth webhook acknowledgement (no scoped writes). */
         post: operations["on_sign_in_auth_on_sign_in_post"];
         delete?: never;
         options?: never;
@@ -3459,9 +3493,8 @@ export interface paths {
         /**
          * Get Sandbox Env
          * @description Return the decrypted env dict that should be injected into a new
-         *     sandbox for this user. Used by both auto-provision
-         *     (`ensure_default_sandbox`) and manual creation (the Next.js sandbox
-         *     route calls this before forwarding to the orchestrator).
+         *     sandbox for this user. Browser callers receive personal values only;
+         *     organization-scoped creation resolves through the service-token endpoint.
          *
          *     The response is the same `config.env` shape the orchestrator expects:
          *     a flat `{KEY: value}` dict of plaintext values. Auth gates this — no
@@ -15301,6 +15334,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflow/kinds/conformance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shape Conformance Board
+         * @description Every Shape's real state, with the counts above it.
+         *
+         *     Admin-only: the board names Shapes across every organization, which is the
+         *     point — a Shape gap is fixed by whoever can author a component, not by
+         *     whoever happened to hit it.
+         *
+         *     ``state`` filters to one plain-language state; ``limit`` caps the rows, not
+         *     the counts.
+         */
+        get: operations["shape_conformance_board_workflow_kinds_conformance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflow/kinds/{slug}": {
         parameters: {
             query?: never;
@@ -21505,14 +21565,14 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Execute Directive
-         * @description Run ONE `verb:noun` Directive (`create:`/`update:`/`delete:` <noun>) as the user.
+         * Execute Write Directive
+         * @description Run ONE write Directive (`directive_v1_create|update|delete_<noun>`) as the user.
          *
          *     Powers the admin UI "Execute". Writes run inside `acting_as_user` (RLS), so this is
          *     no more powerful than the user's own access. Idempotent by content key — a repeat of
          *     the same item in the same namespace is a no-op (set `force` for a deliberate dup).
          */
-        post: operations["execute_directive_directives_execute_post"];
+        post: operations["execute_write_directive_directives_execute_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -21532,7 +21592,7 @@ export interface paths {
          * Confirm Proposed Directive
          * @description Apply a directive an agent PROPOSED under the `ask` policy, once the user accepts.
          *
-         *     The client POSTs back the envelope it received in `directive_apply.proposed`. This
+         *     The client POSTs back the two-key shell it received in `directive_apply.proposed`. This
          *     is an explicit user action (a human clicked accept), so it bypasses the model-facing
          *     policy gate by design. Applies through the same per-item core as the auto path
          *     (`acting_as_user`, RLS), idempotent by `proposal_id` — a double-click is a no-op.
@@ -34503,30 +34563,6 @@ export interface components {
             /** Errors */
             errors?: string[];
         };
-        /**
-         * CustomActionEntry
-         * @description One Plane-2 Custom Action (or a deprecated legacy named Directive).
-         */
-        CustomActionEntry: {
-            /** Name */
-            name: string;
-            /** Kind */
-            kind: string;
-            /**
-             * Doc
-             * @default
-             */
-            doc?: string;
-            /** Item Schema */
-            item_schema?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Deprecated
-             * @default false
-             */
-            deprecated?: boolean;
-        };
         /** CustomTool */
         CustomTool: {
             /**
@@ -36092,8 +36128,8 @@ export interface components {
         };
         /** DirectiveApplyResult */
         DirectiveApplyResult: {
-            /** Type */
-            type: string;
+            /** Directive */
+            directive: string;
             /** Applied */
             applied: number;
             /** Failed */
@@ -36103,26 +36139,36 @@ export interface components {
         };
         /**
          * DirectiveCatalog
-         * @description The whole grid: verb axis + noun rows + Plane-2 Custom Actions.
+         * @description The whole grid: class axis + noun rows + Kind Actions.
          *
-         *     ``functions`` is the deferred U4 wire field; do not treat it as current policy.
-         *     This is what the API returns and what the admin UI renders.
+         *     This is what the API returns and what the admin UI renders. The retired
+         *     shell's version field, plus the ``verbs`` and ``functions`` wire fields, are
+         *     gone with it — `directive_version` is the grammar version carried in the
+         *     slug, and an action is called an action.
          */
         DirectiveCatalog: {
-            /** Matrx Version */
-            matrx_version: number;
-            /** Verbs */
-            verbs: string[];
+            /** Directive Version */
+            directive_version: number;
+            /** Classes */
+            classes: string[];
             /** Nouns */
             nouns: components["schemas"]["NounDirectives"][];
-            /** Functions */
-            functions?: components["schemas"]["CustomActionEntry"][];
+            /** Actions */
+            actions?: components["schemas"]["KindActionEntry"][];
             /** Aliases */
             aliases?: {
                 [key: string]: string;
             };
         };
-        /** DirectiveConfirmRequest */
+        /**
+         * DirectiveConfirmRequest
+         * @description The two-key shell the client received in the proposal, POSTed back verbatim.
+         *
+         *     ``directive`` is the SLUG — one field, one identity. The retired shell's
+         *     three-field control triple is gone, and so is the defaulted identity field
+         *     that came with it: a confirm request that does not say exactly what it is
+         *     confirming is rejected, not guessed at.
+         */
         DirectiveConfirmRequest: {
             /**
              * Organization Id
@@ -36139,18 +36185,8 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
-            /**
-             * Matrx Version
-             * @default 1
-             */
-            matrx_version?: number;
-            /**
-             * Kind
-             * @default output_directive
-             */
-            kind?: string;
-            /** Type */
-            type: string;
+            /** Directive */
+            directive: string;
             /** Items */
             items?: {
                 [key: string]: unknown;
@@ -36165,8 +36201,8 @@ export interface components {
         };
         /** DirectiveConfirmResult */
         DirectiveConfirmResult: {
-            /** Type */
-            type: string;
+            /** Directive */
+            directive: string;
             /** Proposal Id */
             proposal_id: string;
             /** Applied */
@@ -36178,16 +36214,15 @@ export interface components {
         };
         /**
          * DirectiveExecuteRequest
-         * @description Body for `POST /directives/execute` — one `verb:noun` output_directive envelope.
+         * @description Body for `POST /directives/execute` — one write directive.
+         *
+         *     `directive` is the SLUG (`directive_v1_create_task`). There is no `kind`
+         *     companion field: the class is part of the slug, so a request cannot say two
+         *     different things about what it is.
          */
         DirectiveExecuteRequest: {
-            /**
-             * Kind
-             * @default output_directive
-             */
-            kind?: string;
-            /** Type */
-            type: string;
+            /** Directive */
+            directive: string;
             /** Items */
             items?: {
                 [key: string]: unknown;
@@ -36207,8 +36242,8 @@ export interface components {
              * @default directive_apply.item
              */
             kind?: string;
-            /** Type */
-            type: string;
+            /** Directive */
+            directive: string;
             /** Index */
             index: number;
             /**
@@ -36230,8 +36265,8 @@ export interface components {
              * @default directive_apply.failed
              */
             kind?: string;
-            /** Type */
-            type: string;
+            /** Directive */
+            directive: string;
             /** Index */
             index: number;
             /** Error */
@@ -36241,8 +36276,8 @@ export interface components {
         };
         /** DirectiveReceipt */
         DirectiveReceipt: {
-            /** Verb */
-            verb: string;
+            /** Directive Class */
+            directive_class: string;
             /** Noun */
             noun: string;
             /**
@@ -44058,6 +44093,30 @@ export interface components {
             reason: string;
         };
         /**
+         * KindActionEntry
+         * @description One Kind Action — the `action` class of the grammar.
+         *
+         *     There is no `kind` discriminator and no `deprecated` flag any more: before
+         *     the merge the same procedure appeared here twice, once under each of the two
+         *     old side-effect kinds, and one copy had to be marked deprecated to stop the
+         *     UI listing it twice. One slug per shape makes both fields meaningless.
+         */
+        KindActionEntry: {
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /**
+             * Doc
+             * @default
+             */
+            doc?: string;
+            /** Item Schema */
+            item_schema?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
          * KindAvailabilityResponse
          * @description The picker payload for one workflow (optionally one node's view).
          */
@@ -47938,7 +47997,7 @@ export interface components {
         };
         /**
          * NounDirectives
-         * @description One row of the grid — a noun (Dimension 2) and its state for every verb.
+         * @description One row of the grid — a noun (Dimension 2) and its state for every class.
          */
         NounDirectives: {
             /** Noun */
@@ -48396,8 +48455,6 @@ export interface components {
             ok: boolean;
             /** User Id */
             user_id: string;
-            /** Sandbox Row Id */
-            sandbox_row_id?: string | null;
         };
         /** OpenRuntimeResponse */
         OpenRuntimeResponse: {
@@ -57125,6 +57182,87 @@ export interface components {
             /** Source Ids */
             source_ids?: string[] | null;
         };
+        /** ScrapeManyRequest */
+        ScrapeManyRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Urls */
+            urls?: string[];
+            /**
+             * Use Proxy
+             * @default false
+             */
+            use_proxy?: boolean;
+            /**
+             * Fast
+             * @default false
+             */
+            fast?: boolean;
+            /**
+             * Concurrency
+             * @default 5
+             */
+            concurrency?: number;
+            /**
+             * Include Raw
+             * @default false
+             */
+            include_raw?: boolean;
+        };
+        /** ScrapePageRequest */
+        ScrapePageRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Url
+             * @description Full URL to fetch.
+             */
+            url: string;
+            /**
+             * Use Proxy
+             * @description Route through the scraper's proxy pool. Off for the demo — direct is faster and honest about what a plain fetch sees.
+             * @default false
+             */
+            use_proxy?: boolean;
+            /**
+             * Fast
+             * @description Skip link and hash extraction. Leave off to see the whole shape.
+             * @default false
+             */
+            fast?: boolean;
+            /**
+             * Include Raw
+             * @description Also return the raw engine result (projection 2). Off by default — it is large.
+             * @default false
+             */
+            include_raw?: boolean;
+        };
         /** ScreenshotFailure */
         ScreenshotFailure: {
             /** Kind */
@@ -58386,6 +58524,121 @@ export interface components {
             assist_id?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** ShapeConformanceBoard */
+        ShapeConformanceBoard: {
+            counts: components["schemas"]["ShapeConformanceCounts"];
+            /** Total Matching */
+            total_matching: number;
+            /** Shapes */
+            shapes: components["schemas"]["ShapeConformanceRow"][];
+        };
+        /**
+         * ShapeConformanceCounts
+         * @description One number per state, over every Shape.
+         */
+        ShapeConformanceCounts: {
+            /**
+             * Live
+             * @default 0
+             */
+            live?: number;
+            /**
+             * Not Live
+             * @default 0
+             */
+            not_live?: number;
+            /**
+             * Ready
+             * @default 0
+             */
+            ready?: number;
+            /**
+             * Example Contradicts Schema
+             * @default 0
+             */
+            example_contradicts_schema?: number;
+            /**
+             * No Matching Example
+             * @default 0
+             */
+            no_matching_example?: number;
+            /**
+             * Generic View Only
+             * @default 0
+             */
+            generic_view_only?: number;
+            /**
+             * No View At All
+             * @default 0
+             */
+            no_view_at_all?: number;
+            /**
+             * Duplicate Shape
+             * @default 0
+             */
+            duplicate_shape?: number;
+            /**
+             * Record Behind Live Check
+             * @default 0
+             */
+            record_behind_live_check?: number;
+        };
+        /**
+         * ShapeConformanceRow
+         * @description One Shape's state. Open shape — the view owns the column list.
+         */
+        ShapeConformanceRow: {
+            /** Kind */
+            kind?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Version */
+            version?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Family */
+            family?: string | null;
+            /** State */
+            state?: string | null;
+            /** Passes Every Check */
+            passes_every_check?: boolean | null;
+            /** Example Matches Schema */
+            example_matches_schema?: boolean | null;
+            /** Example Contradicts Schema */
+            example_contradicts_schema?: boolean | null;
+            /** Example Record Is Stale */
+            example_record_is_stale?: boolean | null;
+            /** Has Real View */
+            has_real_view?: boolean | null;
+            /** Only The Generic View */
+            only_the_generic_view?: boolean | null;
+            /** Needs A View */
+            needs_a_view?: boolean | null;
+            /** Shape Is Unique */
+            shape_is_unique?: boolean | null;
+            /** Duplicate Of */
+            duplicate_of?: string | null;
+            /** Example Count */
+            example_count?: number | null;
+            /** Canonical Example Count */
+            canonical_example_count?: number | null;
+            /** Real View Count */
+            real_view_count?: number | null;
+            /** Generic View Count */
+            generic_view_count?: number | null;
+            /** Nests Kinds */
+            nests_kinds?: number | null;
+            /** Nested By Kinds */
+            nested_by_kinds?: number | null;
+            /** Stored Instances */
+            stored_instances?: number | null;
+            /** Mandates Declaring */
+            mandates_declaring?: number | null;
+            /** Outcomes 30D */
+            outcomes_30d?: number | null;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * ShareLinkInfo
@@ -68456,6 +68709,72 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SearchKindsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scrape_as_kind_scraper_kinds_scrape_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapePageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scrape_many_as_kind_scraper_kinds_scrape_many_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeManyRequest"];
             };
         };
         responses: {
@@ -94877,6 +95196,38 @@ export interface operations {
             };
         };
     };
+    shape_conformance_board_workflow_kinds_conformance_get: {
+        parameters: {
+            query?: {
+                state?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShapeConformanceBoard"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_workflow_kind_workflow_kinds__slug__get: {
         parameters: {
             query?: never;
@@ -105393,7 +105744,7 @@ export interface operations {
             };
         };
     };
-    execute_directive_directives_execute_post: {
+    execute_write_directive_directives_execute_post: {
         parameters: {
             query?: never;
             header?: never;

@@ -9,7 +9,10 @@
  * registration appears here with ZERO frontend edits.
  */
 
-import type { DirectiveCatalog } from "@/features/directive-catalog/types";
+import {
+  DIRECTIVE_VERBS,
+  type DirectiveCatalog,
+} from "@/features/directive-catalog/types";
 
 export interface DirectiveOption {
   /** The directive type string stored in `matrx_actions.allow`. */
@@ -21,13 +24,8 @@ export interface DirectiveOption {
 }
 
 /** Verbs that produce a side effect — everything except the read verbs. */
-function writeVerbs(catalog: DirectiveCatalog): string[] {
-  return (catalog.verbs ?? []).filter((v) => v !== "reference" && v !== "view");
-}
-
-function functionLabel(name: string, deprecated: boolean | undefined): string {
-  const pretty = name.replace(/_/g, " ");
-  return deprecated ? `${pretty} (legacy)` : pretty;
+function functionLabel(name: string): string {
+  return name.replace(/_/g, " ");
 }
 
 /**
@@ -39,14 +37,16 @@ export function buildDirectiveOptions(
 ): DirectiveOption[] {
   if (!catalog) return [];
   const options: DirectiveOption[] = [];
-  for (const fn of catalog.functions ?? []) {
+  for (const fn of catalog.actions ?? []) {
     options.push({
-      type: fn.name,
-      label: functionLabel(fn.name, fn.deprecated),
-      family: fn.deprecated ? "Legacy directives" : "Functions",
+      type: fn.slug,
+      label: functionLabel(fn.name),
+      family: "Actions",
     });
   }
-  const verbs = writeVerbs(catalog);
+  const verbs = DIRECTIVE_VERBS.filter(
+    (verb) => verb !== "reference" && verb !== "view",
+  );
   for (const noun of catalog.nouns) {
     for (const verb of verbs) {
       if ((noun as Record<string, unknown>)[verb] === "yes") {

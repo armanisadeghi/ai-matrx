@@ -69,9 +69,7 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
   const onApprove = async () => {
     setBusy(true);
     const body: DirectiveConfirmRequest = {
-      matrx_version: proposal.envelope.matrx_version,
-      kind: "output_directive",
-      type: proposal.type,
+      directive: proposal.type,
       items: proposal.envelope.items,
       proposal_id: proposal.proposalId,
       force: false,

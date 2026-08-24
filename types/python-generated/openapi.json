@@ -436,6 +436,84 @@
         }
       }
     },
+    "/scraper-kinds/scrape": {
+      "post": {
+        "tags": [
+          "Scraper Kinds"
+        ],
+        "summary": "Scrape As Kind",
+        "operationId": "scrape_as_kind_scraper_kinds_scrape_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScrapePageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scraper-kinds/scrape-many": {
+      "post": {
+        "tags": [
+          "Scraper Kinds"
+        ],
+        "summary": "Scrape Many As Kind",
+        "operationId": "scrape_many_as_kind_scraper_kinds_scrape_many_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScrapeManyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/communications/voice/conversation-relay/session-reference": {
       "post": {
         "tags": [
@@ -8171,7 +8249,7 @@
         "tags": [
           "Auth Hooks"
         ],
-        "summary": "Supabase auth webhook — runs ensure_default_sandbox for the user.",
+        "summary": "Supabase auth webhook acknowledgement (no scoped writes).",
         "operationId": "on_sign_in_auth_on_sign_in_post",
         "requestBody": {
           "content": {
@@ -8460,7 +8538,7 @@
           "User Secrets"
         ],
         "summary": "Get Sandbox Env",
-        "description": "Return the decrypted env dict that should be injected into a new\nsandbox for this user. Used by both auto-provision\n(`ensure_default_sandbox`) and manual creation (the Next.js sandbox\nroute calls this before forwarding to the orchestrator).\n\nThe response is the same `config.env` shape the orchestrator expects:\na flat `{KEY: value}` dict of plaintext values. Auth gates this — no\nuser can pull another user's env. Caller is responsible for sending\nthese on the wire ONLY to trusted upstreams (the orchestrator over an\nauthenticated channel).",
+        "description": "Return the decrypted env dict that should be injected into a new\nsandbox for this user. Browser callers receive personal values only;\norganization-scoped creation resolves through the service-token endpoint.\n\nThe response is the same `config.env` shape the orchestrator expects:\na flat `{KEY: value}` dict of plaintext values. Auth gates this — no\nuser can pull another user's env. Caller is responsible for sending\nthese on the wire ONLY to trusted upstreams (the orchestrator over an\nauthenticated channel).",
         "operationId": "get_sandbox_env_user_secrets_sandbox_env_get",
         "responses": {
           "200": {
@@ -39665,6 +39743,66 @@
         }
       }
     },
+    "/workflow/kinds/conformance": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Shape Conformance Board",
+        "description": "Every Shape's real state, with the counts above it.\n\nAdmin-only: the board names Shapes across every organization, which is the\npoint — a Shape gap is fixed by whoever can author a component, not by\nwhoever happened to hit it.\n\n``state`` filters to one plain-language state; ``limit`` caps the rows, not\nthe counts.",
+        "operationId": "shape_conformance_board_workflow_kinds_conformance_get",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShapeConformanceBoard"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/workflow/kinds/{slug}": {
       "get": {
         "tags": [
@@ -56408,9 +56546,9 @@
           "Directives",
           "Directives"
         ],
-        "summary": "Execute Directive",
-        "description": "Run ONE `verb:noun` Directive (`create:`/`update:`/`delete:` <noun>) as the user.\n\nPowers the admin UI \"Execute\". Writes run inside `acting_as_user` (RLS), so this is\nno more powerful than the user's own access. Idempotent by content key — a repeat of\nthe same item in the same namespace is a no-op (set `force` for a deliberate dup).",
-        "operationId": "execute_directive_directives_execute_post",
+        "summary": "Execute Write Directive",
+        "description": "Run ONE write Directive (`directive_v1_create|update|delete_<noun>`) as the user.\n\nPowers the admin UI \"Execute\". Writes run inside `acting_as_user` (RLS), so this is\nno more powerful than the user's own access. Idempotent by content key — a repeat of\nthe same item in the same namespace is a no-op (set `force` for a deliberate dup).",
+        "operationId": "execute_write_directive_directives_execute_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -56452,7 +56590,7 @@
           "Directives"
         ],
         "summary": "Confirm Proposed Directive",
-        "description": "Apply a directive an agent PROPOSED under the `ask` policy, once the user accepts.\n\nThe client POSTs back the envelope it received in `directive_apply.proposed`. This\nis an explicit user action (a human clicked accept), so it bypasses the model-facing\npolicy gate by design. Applies through the same per-item core as the auto path\n(`acting_as_user`, RLS), idempotent by `proposal_id` — a double-click is a no-op.",
+        "description": "Apply a directive an agent PROPOSED under the `ask` policy, once the user accepts.\n\nThe client POSTs back the two-key shell it received in `directive_apply.proposed`. This\nis an explicit user action (a human clicked accept), so it bypasses the model-facing\npolicy gate by design. Applies through the same per-item core as the auto path\n(`acting_as_user`, RLS), idempotent by `proposal_id` — a double-click is a no-op.",
         "operationId": "confirm_proposed_directive_directives_confirm_post",
         "requestBody": {
           "content": {
@@ -89814,48 +89952,6 @@
         "title": "CrystallizationSweepResult",
         "description": "Outcome of one free detection pass.\n\n``status`` splits the two zero cases the same way every other detector in\nthis service does: ``ok`` with ``candidates=0`` means it RAN and no\nOrchestra repeats a path yet; ``no_addressee`` means it could not run."
       },
-      "CustomActionEntry": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "kind": {
-            "type": "string",
-            "title": "Kind"
-          },
-          "doc": {
-            "type": "string",
-            "title": "Doc",
-            "default": ""
-          },
-          "item_schema": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Item Schema"
-          },
-          "deprecated": {
-            "type": "boolean",
-            "title": "Deprecated",
-            "default": false
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name",
-          "kind"
-        ],
-        "title": "CustomActionEntry",
-        "description": "One Plane-2 Custom Action (or a deprecated legacy named Directive)."
-      },
       "CustomTool": {
         "properties": {
           "name": {
@@ -94038,9 +94134,9 @@
       },
       "DirectiveApplyResult": {
         "properties": {
-          "type": {
+          "directive": {
             "type": "string",
-            "title": "Type"
+            "title": "Directive"
           },
           "applied": {
             "type": "integer",
@@ -94061,7 +94157,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "type",
+          "directive",
           "applied",
           "failed",
           "receipts"
@@ -94070,16 +94166,16 @@
       },
       "DirectiveCatalog": {
         "properties": {
-          "matrx_version": {
+          "directive_version": {
             "type": "integer",
-            "title": "Matrx Version"
+            "title": "Directive Version"
           },
-          "verbs": {
+          "classes": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Verbs"
+            "title": "Classes"
           },
           "nouns": {
             "items": {
@@ -94088,12 +94184,12 @@
             "type": "array",
             "title": "Nouns"
           },
-          "functions": {
+          "actions": {
             "items": {
-              "$ref": "#/components/schemas/CustomActionEntry"
+              "$ref": "#/components/schemas/KindActionEntry"
             },
             "type": "array",
-            "title": "Functions"
+            "title": "Actions"
           },
           "aliases": {
             "additionalProperties": {
@@ -94106,12 +94202,12 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "matrx_version",
-          "verbs",
+          "directive_version",
+          "classes",
           "nouns"
         ],
         "title": "DirectiveCatalog",
-        "description": "The whole grid: verb axis + noun rows + Plane-2 Custom Actions.\n\n``functions`` is the deferred U4 wire field; do not treat it as current policy.\nThis is what the API returns and what the admin UI renders."
+        "description": "The whole grid: class axis + noun rows + Kind Actions.\n\nThis is what the API returns and what the admin UI renders. The retired\nshell's version field, plus the ``verbs`` and ``functions`` wire fields, are\ngone with it — `directive_version` is the grammar version carried in the\nslug, and an action is called an action."
       },
       "DirectiveConfirmRequest": {
         "properties": {
@@ -94151,19 +94247,9 @@
             "title": "Task Id",
             "description": "Optional associated task selected by the caller."
           },
-          "matrx_version": {
-            "type": "integer",
-            "title": "Matrx Version",
-            "default": 1
-          },
-          "kind": {
+          "directive": {
             "type": "string",
-            "title": "Kind",
-            "default": "output_directive"
-          },
-          "type": {
-            "type": "string",
-            "title": "Type"
+            "title": "Directive"
           },
           "items": {
             "items": {
@@ -94193,15 +94279,16 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "type"
+          "directive"
         ],
-        "title": "DirectiveConfirmRequest"
+        "title": "DirectiveConfirmRequest",
+        "description": "The two-key shell the client received in the proposal, POSTed back verbatim.\n\n``directive`` is the SLUG — one field, one identity. The retired shell's\nthree-field control triple is gone, and so is the defaulted identity field\nthat came with it: a confirm request that does not say exactly what it is\nconfirming is rejected, not guessed at."
       },
       "DirectiveConfirmResult": {
         "properties": {
-          "type": {
+          "directive": {
             "type": "string",
-            "title": "Type"
+            "title": "Directive"
           },
           "proposal_id": {
             "type": "string",
@@ -94233,7 +94320,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "type",
+          "directive",
           "proposal_id",
           "applied",
           "failed",
@@ -94243,14 +94330,9 @@
       },
       "DirectiveExecuteRequest": {
         "properties": {
-          "kind": {
+          "directive": {
             "type": "string",
-            "title": "Kind",
-            "default": "output_directive"
-          },
-          "type": {
-            "type": "string",
-            "title": "Type"
+            "title": "Directive"
           },
           "items": {
             "items": {
@@ -94280,10 +94362,10 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "type"
+          "directive"
         ],
         "title": "DirectiveExecuteRequest",
-        "description": "Body for `POST /directives/execute` — one `verb:noun` output_directive envelope."
+        "description": "Body for `POST /directives/execute` — one write directive.\n\n`directive` is the SLUG (`directive_v1_create_task`). There is no `kind`\ncompanion field: the class is part of the slug, so a request cannot say two\ndifferent things about what it is."
       },
       "DirectiveItemApplied": {
         "properties": {
@@ -94292,9 +94374,9 @@
             "title": "Kind",
             "default": "directive_apply.item"
           },
-          "type": {
+          "directive": {
             "type": "string",
-            "title": "Type"
+            "title": "Directive"
           },
           "index": {
             "type": "integer",
@@ -94328,7 +94410,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "type",
+          "directive",
           "index",
           "status",
           "resource_kind",
@@ -94344,9 +94426,9 @@
             "title": "Kind",
             "default": "directive_apply.failed"
           },
-          "type": {
+          "directive": {
             "type": "string",
-            "title": "Type"
+            "title": "Directive"
           },
           "index": {
             "type": "integer",
@@ -94364,7 +94446,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "type",
+          "directive",
           "index",
           "error",
           "fault"
@@ -94373,9 +94455,9 @@
       },
       "DirectiveReceipt": {
         "properties": {
-          "verb": {
+          "directive_class": {
             "type": "string",
-            "title": "Verb"
+            "title": "Directive Class"
           },
           "noun": {
             "type": "string",
@@ -94435,7 +94517,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "verb",
+          "directive_class",
           "noun",
           "status"
         ],
@@ -114104,6 +114186,43 @@
         ],
         "title": "KeywordVolumeRejectedPhrase"
       },
+      "KindActionEntry": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "doc": {
+            "type": "string",
+            "title": "Doc",
+            "default": ""
+          },
+          "item_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Schema"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "slug"
+        ],
+        "title": "KindActionEntry",
+        "description": "One Kind Action — the `action` class of the grammar.\n\nThere is no `kind` discriminator and no `deprecated` flag any more: before\nthe merge the same procedure appeared here twice, once under each of the two\nold side-effect kinds, and one copy had to be marked deprecated to stop the\nUI listing it twice. One slug per shape makes both fields meaningless."
+      },
       "KindAvailabilityResponse": {
         "properties": {
           "definition_id": {
@@ -124721,7 +124840,7 @@
           "delete"
         ],
         "title": "NounDirectives",
-        "description": "One row of the grid — a noun (Dimension 2) and its state for every verb."
+        "description": "One row of the grid — a noun (Dimension 2) and its state for every class."
       },
       "OAuthTokenPersistRequest": {
         "properties": {
@@ -125482,17 +125601,6 @@
           "user_id": {
             "type": "string",
             "title": "User Id"
-          },
-          "sandbox_row_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sandbox Row Id"
           }
         },
         "additionalProperties": false,
@@ -147471,6 +147579,147 @@
         "title": "ScoreSourcesRequest",
         "description": "Trigger the config-driven PRE-READ scoring over a topic's sources.\n\n``source_ids=None`` scores every included source on the topic; otherwise only\nthe given sources are (re)scored. Always recomputes from the current keyword-\nrank + authority data — so a user hits this after tuning the scoring config to\nre-rank their sources without re-running the whole pipeline."
       },
+      "ScrapeManyRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Urls"
+          },
+          "use_proxy": {
+            "type": "boolean",
+            "title": "Use Proxy",
+            "default": false
+          },
+          "fast": {
+            "type": "boolean",
+            "title": "Fast",
+            "default": false
+          },
+          "concurrency": {
+            "type": "integer",
+            "maximum": 10,
+            "minimum": 1,
+            "title": "Concurrency",
+            "default": 5
+          },
+          "include_raw": {
+            "type": "boolean",
+            "title": "Include Raw",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ScrapeManyRequest"
+      },
+      "ScrapePageRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url",
+            "description": "Full URL to fetch."
+          },
+          "use_proxy": {
+            "type": "boolean",
+            "title": "Use Proxy",
+            "description": "Route through the scraper's proxy pool. Off for the demo — direct is faster and honest about what a plain fetch sees.",
+            "default": false
+          },
+          "fast": {
+            "type": "boolean",
+            "title": "Fast",
+            "description": "Skip link and hash extraction. Leave off to see the whole shape.",
+            "default": false
+          },
+          "include_raw": {
+            "type": "boolean",
+            "title": "Include Raw",
+            "description": "Also return the raw engine result (projection 2). Off by default — it is large.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ScrapePageRequest"
+      },
       "ScreenshotFailure": {
         "properties": {
           "kind": {
@@ -150688,6 +150937,355 @@
         "type": "object",
         "title": "ShadowSweepReport",
         "description": "What one pass actually did — with the honesty fields first."
+      },
+      "ShapeConformanceBoard": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/ShapeConformanceCounts"
+          },
+          "total_matching": {
+            "type": "integer",
+            "title": "Total Matching"
+          },
+          "shapes": {
+            "items": {
+              "$ref": "#/components/schemas/ShapeConformanceRow"
+            },
+            "type": "array",
+            "title": "Shapes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "counts",
+          "total_matching",
+          "shapes"
+        ],
+        "title": "ShapeConformanceBoard"
+      },
+      "ShapeConformanceCounts": {
+        "properties": {
+          "live": {
+            "type": "integer",
+            "title": "Live",
+            "default": 0
+          },
+          "not_live": {
+            "type": "integer",
+            "title": "Not Live",
+            "default": 0
+          },
+          "ready": {
+            "type": "integer",
+            "title": "Ready",
+            "default": 0
+          },
+          "example_contradicts_schema": {
+            "type": "integer",
+            "title": "Example Contradicts Schema",
+            "default": 0
+          },
+          "no_matching_example": {
+            "type": "integer",
+            "title": "No Matching Example",
+            "default": 0
+          },
+          "generic_view_only": {
+            "type": "integer",
+            "title": "Generic View Only",
+            "default": 0
+          },
+          "no_view_at_all": {
+            "type": "integer",
+            "title": "No View At All",
+            "default": 0
+          },
+          "duplicate_shape": {
+            "type": "integer",
+            "title": "Duplicate Shape",
+            "default": 0
+          },
+          "record_behind_live_check": {
+            "type": "integer",
+            "title": "Record Behind Live Check",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ShapeConformanceCounts",
+        "description": "One number per state, over every Shape."
+      },
+      "ShapeConformanceRow": {
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "passes_every_check": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passes Every Check"
+          },
+          "example_matches_schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Matches Schema"
+          },
+          "example_contradicts_schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Contradicts Schema"
+          },
+          "example_record_is_stale": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Record Is Stale"
+          },
+          "has_real_view": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Real View"
+          },
+          "only_the_generic_view": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Only The Generic View"
+          },
+          "needs_a_view": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needs A View"
+          },
+          "shape_is_unique": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shape Is Unique"
+          },
+          "duplicate_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of"
+          },
+          "example_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Count"
+          },
+          "canonical_example_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Example Count"
+          },
+          "real_view_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Real View Count"
+          },
+          "generic_view_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generic View Count"
+          },
+          "nests_kinds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nests Kinds"
+          },
+          "nested_by_kinds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nested By Kinds"
+          },
+          "stored_instances": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stored Instances"
+          },
+          "mandates_declaring": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandates Declaring"
+          },
+          "outcomes_30d": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcomes 30D"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ShapeConformanceRow",
+        "description": "One Shape's state. Open shape — the view owns the column list."
       },
       "ShareLinkInfo": {
         "properties": {

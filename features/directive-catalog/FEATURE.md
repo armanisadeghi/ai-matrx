@@ -63,20 +63,24 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 The catalog is COMPUTED server-side from `platform.entity_types` + the envelope shape
 registry, and the payload is enriched: per-noun `label` / `title_column` /
 `identity_fields` (required fields of the registered reference item model) / per-verb
-write `schemas`, plus a `functions` section (Plane-2 registered procedures + deprecated
-legacy named directives) and the server's alias map. Consequences here:
+write `schemas`, plus an `actions` section (registered Kind Actions) and the server's
+alias map. Consequences here:
 
 - `buildEnvelope.ts::refFieldsForNoun(noun, catalogNoun)` derives identity fields from
   the catalog row; the hand `REF_FIELDS` map is only uuid/label polish + offline
   fallback — **never add entries for new nouns**.
 - `isReferenceVerb` = "not a write verb" (`types.ts::isWriteVerb`); a server-added verb
   is a write by default, no FE edit.
-- The grid renders the `functions` section below the matrix (search-filtered).
+- The grid renders the `actions` section below the matrix (search-filtered).
 - The mirrored manifest also generates `features/matrx-envelope/catalog-nouns.generated.ts`
   (`pnpm gen:directive-nouns`, auto-run by `check-protocol-sync --fix`) — the slim table the
   reference resolvers derive from.
 
 ## Change Log
+
+- 2026-08-23 — Synchronized the unified directive grammar: `directive_version`
+  replaces the retired envelope version, verbs derive from noun capabilities, Kind
+  Actions come from `actions`, and execute/confirm send the canonical directive slug.
 
 - 2026-08-23 — Reference/view examples now update immediately from verb + noun with
   exact identity placeholders; identity fields search real RLS-visible records in a
