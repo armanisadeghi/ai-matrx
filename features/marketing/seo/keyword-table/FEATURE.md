@@ -106,6 +106,23 @@ Guard: `pnpm check:one-table-law`.
 
 ## Change Log
 
+- 2026-08-24 — Claude: **the Location column (C10).** Multi-location attribution
+  was built and starved — the ladder worked, but the answer lived only on the
+  rules-bench panel, so the ONE keyword table could not say which branch a
+  local search belongs to and nothing could filter by it. Added:
+  `location` in the SHARED `GscFilters` dialect (`lo=`), resolved SERVER side in
+  `seo.gsc_perf_breakdown` through the existing `gsc_keyword_locations` ladder
+  (no bespoke filter, no sixth RPC); the `Location` column + `LocationCell`,
+  which renders THREE states rather than one dash — placed on a branch, *local
+  but unplaced* (the unrouted-revenue work list), and *not location-specific* —
+  with the attribution REASON in its tooltip; `p_include_unplaced` on
+  `gsc_keyword_locations` so the table can tell the last two apart (existing
+  callers byte-identical; the two-arg overload dropped, not twinned).
+  Live-verified on **All Green Recycling** (45,385 keywords, 90-day window):
+  the filter partitions exactly — San Diego 95 + Los Angeles 75 + unresolved
+  1,632 + not-local 43,583 = 45,385. Measured gap:
+  keyword-intelligence-convergence ADOPTION-SWEEP.md #15.
+
 - **2026-08-24** — Built, by extracting the Keyword Workbench's grid rather
   than copying it, and rebuilding the topic tree's unplaced and proposals
   queues on it. Added the `placement` filter key to `gsc_perf_breakdown` so the
