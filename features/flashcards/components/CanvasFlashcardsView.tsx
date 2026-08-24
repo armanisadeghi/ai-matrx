@@ -121,10 +121,18 @@ export function CanvasFlashcardsView({
 
   /** Resolves `true` when the grade write went through; `false` on a failed
    *  write (useFlashcardStudy resolves null + toasts) so MatchingCardPlayer
-   *  can offer a retry. Flip callers fire-and-forget (`void`). */
-  const handleGrade = (result: ReviewResult): Promise<boolean> => {
+   *  can offer a retry. Flip callers fire-and-forget (`void`). `confidence`
+   *  rides along from the mobile view's canonical 1–5 row (IC-4 parity) so
+   *  it feeds FSRS the same way the desktop confidence row does. */
+  const handleGrade = (
+    result: ReviewResult,
+    confidence?: number,
+  ): Promise<boolean> => {
     if (grading) return Promise.resolve(false);
-    return grade(result).then((mastery) => mastery !== null);
+    return grade(
+      result,
+      confidence != null ? { confidence } : undefined,
+    ).then((mastery) => mastery !== null);
   };
 
   const debugStrip = (

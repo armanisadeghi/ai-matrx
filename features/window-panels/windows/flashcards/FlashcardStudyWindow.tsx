@@ -53,9 +53,11 @@ export function FlashcardStudyWindow({
     if (isOpen) setMobileDismissed(false);
   }, [isOpen, setId]);
 
-  const handleGrade = (result: ReviewResult) => {
+  // `confidence` rides along from the mobile view's canonical 1–5 row (IC-4
+  // parity) so it feeds FSRS the same way the desktop confidence row does.
+  const handleGrade = (result: ReviewResult, confidence?: number) => {
     if (study.grading) return;
-    void study.grade(result);
+    void study.grade(result, confidence != null ? { confidence } : undefined);
   };
 
   const mobileResultsByIndex = useMemo(

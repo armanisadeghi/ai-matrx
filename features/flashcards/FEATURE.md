@@ -157,6 +157,21 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-08-24 — **Mobile study's fallback grade row is now the canonical 1–5 confidence tap**
+  (STATE item 22). `FlashcardMobileView`'s two internal fallback grade rows — used whenever a
+  study caller doesn't inject its own `bottomBar` (matching cards' manual override in
+  `StudyDeck.tsx`, and `CanvasFlashcardsView.tsx` / `FlashcardStudyWindow.tsx`, which never wired
+  IC-4 confidence) — hard-coded the 3-way `FlashcardGradeButtonRow`, so a learner on those paths
+  never saw the 1–5 confidence scale desktop feeds FSRS. Both fallbacks now render the SAME
+  `FlashcardConfidenceRow` desktop uses, via `confidenceToResult` (`lib/srs/fsrs.ts`) — never a
+  fork. `onGrade` widened to carry an optional `confidence` (`components/mardown-display/blocks/
+  flashcards/FlashcardMobileView.tsx`); `CanvasFlashcardsView.tsx` and `FlashcardStudyWindow.tsx`
+  forward it into `useFlashcardStudy().grade(result, { confidence })`, which already runs the
+  offline-aware FSRS path (`recordAttemptOfflineAware`) — no new write path, no bypass. The
+  in-grid duplicate compact row (cramped into a 3-column action-grid cell) was removed in favor
+  of the existing full-width row below the grid, which now carries the confidence tap; the grid
+  cell always offers "Jump" instead. Flip / swipe / audio behaviors untouched.
+
 - 2026-08-22 — 🚨 **The spoken grader can no longer grade a silence.** A live bench run proved
   `flashcards.grade_spoken` with NO audio attached invented a transcript and returned
   `correct` — a learner who said nothing was marked right. Both halves are fixed. **Wire:**

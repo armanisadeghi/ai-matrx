@@ -26,10 +26,12 @@ import type {
   MarkdownComponentOverrides,
   MarkdownStyleConfig,
 } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
-import { FlashcardGradeButtonRow } from "@/features/flashcards/components/study/FlashcardGradeButton";
+import { FlashcardConfidenceRow } from "@/features/flashcards/components/study/FlashcardConfidenceRow";
 import { MatchingCardPlayer } from "@/features/flashcards/components/study/MatchingCardPlayer";
 import { CARD_KIND } from "@/features/flashcards/utils/cardVariants";
 import type { ReviewResult } from "@/features/flashcards/types";
+import type { Confidence } from "@/lib/srs/fsrs";
+import { confidenceToResult } from "@/lib/srs/fsrs";
 import type { FlashcardMobileCard } from "./flashcard-mobile-bridge";
 import { FlashcardFaceImage, hasFaceImage } from "./FlashcardFaceImage";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
@@ -54,8 +56,13 @@ interface FlashcardMobileViewProps {
   controlledFlipped?: boolean;
   onFlipToggle?: () => void;
   /** May resolve `false` when the grade write failed (drives the matching
-   *  player's retry affordance); flip grading fires-and-forgets it. */
-  onGrade?: (result: ReviewResult) => void | Promise<boolean | void>;
+   *  player's retry affordance); flip grading fires-and-forgets it.
+   *  `confidence` rides along when the tap came from the canonical 1–5
+   *  row, so the FSRS grade it feeds matches desktop exactly. */
+  onGrade?: (
+    result: ReviewResult,
+    confidence?: Confidence,
+  ) => void | Promise<boolean | void>;
   resultsByIndex?: Record<number, ReviewResult | undefined>;
   grading?: boolean;
   /**
@@ -786,12 +793,24 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
   }, [index, total, goTo, isStudy]);
 
   const handleGrade = useCallback(
-    (result: ReviewResult) => {
+    (result: ReviewResult, confidence?: Confidence) => {
       if (!onGrade || grading) return;
-      onGrade(result);
+      onGrade(result, confidence);
       setMenuOpen(false);
     },
     [onGrade, grading],
+  );
+
+  // The one internal grade affordance every study caller falls back to when
+  // it doesn't inject its own `bottomBar` (matching cards' manual override,
+  // and any driver that hasn't wired IC-4 confidence yet). Canonical 1–5
+  // confidence tap — the SAME component and FSRS-feeding shape desktop uses
+  // (`FlashcardConfidenceRow` + `confidenceToResult`), never a 3-way stand-in.
+  const handleConfidenceRate = useCallback(
+    (confidence: Confidence) => {
+      handleGrade(confidenceToResult(confidence), confidence);
+    },
+    [handleGrade],
   );
 
   // Matching cards self-grade when every pair is connected; funnel the result
@@ -1175,9 +1194,11 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
                 label="Random"
                 onClick={shuffle}
               />
-            ) : bottomBar ? (
-              // The driver owns grading via the bottom bar — this cell offers
-              // the filmstrip jump instead of a duplicate grade row.
+            ) : (
+              // Study mode always grades via a full-width row below (either
+              // the driver's own `bottomBar`, or the canonical 1–5 confidence
+              // fallback just beneath the grid) — this cell offers the
+              // filmstrip jump instead of squeezing a grade row in here.
               <ActionButton
                 icon={<Layers className="h-5 w-5" />}
                 label="Jump"
@@ -1186,15 +1207,6 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
                   setScrubOpen(true);
                 }}
               />
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-1 bg-zinc-900 px-1 py-2">
-                <FlashcardGradeButtonRow
-                  onGrade={handleGrade}
-                  disabled={grading || !onGrade}
-                  size="compact"
-                  className="w-full max-w-[11rem]"
-                />
-              </div>
             )}
             <ActionButton
               icon={<ChevronRight className="h-5 w-5" />}
@@ -1208,11 +1220,14 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
           </div>
 
           {isStudy && onGrade && !bottomBar ? (
+            // No driver-injected bottomBar (matching cards' manual override,
+            // or a study caller that hasn't wired its own confidence row) —
+            // fall back to the SAME canonical 1–5 confidence tap desktop
+            // uses, never a 3-way stand-in.
             <div className="border-t border-white/5 px-3 py-2">
-              <FlashcardGradeButtonRow
-                onGrade={handleGrade}
+              <FlashcardConfidenceRow
+                onRate={handleConfidenceRate}
                 disabled={grading}
-                size="compact"
                 className="w-full"
               />
             </div>
