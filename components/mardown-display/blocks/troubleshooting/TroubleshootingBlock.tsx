@@ -1,3 +1,5 @@
+"use client";
+
 // THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
 // this renderer never re-declares them (`check:kind-type-twins`).
 import type {
@@ -5,7 +7,6 @@ import type {
   TroubleshootingSolution,
   TroubleshootingIssue,
 } from "./parseTroubleshootingMarkdown";
-"use client";
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import {
   HelpCircle,

@@ -1,3 +1,5 @@
+"use client";
+
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
 import type {
@@ -5,7 +7,6 @@ import type {
   ProgressItem,
   ProgressTrackerData,
 } from "./parseProgressMarkdown";
-"use client";
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import {
   BarChart3,
