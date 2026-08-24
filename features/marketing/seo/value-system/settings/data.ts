@@ -155,3 +155,69 @@ export async function copySiteMeaning(input: {
   });
   return assertData(response.data, response.error) as unknown as MeaningCopyResult;
 }
+
+// ── Autonomy modes (KI-044) ────────────────────────────────────────────────
+// Which of the four human-in-the-loop modes each AI step runs in. A setting, so
+// it rides the same ladder: platform → organization → brand → site.
+// Policy: /policies/human-in-the-loop-autonomy-modes.md
+
+export type AutonomyMode =
+  | "auto_platform"
+  | "auto_org"
+  | "review_timeout"
+  | "review_required";
+
+export interface AutonomyCapability {
+  slug: string;
+  label: string;
+  description: string;
+  default_mode: AutonomyMode;
+  default_timeout_hours: number | null;
+  /** False when the running code does not consult this setting yet. */
+  enforced: boolean;
+  enforcement_note: string | null;
+  own_mode: AutonomyMode | null;
+  own_timeout_hours: number | null;
+  effective: { mode: AutonomyMode; source: string; timeout_hours?: number | null };
+}
+
+export interface AutonomyScopePayload {
+  scope: SettingsScope;
+  id: string | null;
+  label: string | null;
+  parent: { scope: SettingsScope; id?: string; label: string } | null;
+  may_edit: boolean;
+  capabilities: AutonomyCapability[];
+}
+
+export async function getAutonomyModes(
+  scope: SettingsScope,
+  id: string | null,
+  signal?: AbortSignal,
+): Promise<AutonomyScopePayload> {
+  const response = await (await seoDb())
+    .rpc("ai_autonomy_scope", { p_scope: scope, p_id: id ?? undefined })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error) as unknown as AutonomyScopePayload;
+}
+
+export async function setAutonomyMode(input: {
+  scope: SettingsScope;
+  id: string | null;
+  capability: string;
+  mode?: AutonomyMode;
+  timeoutHours?: number | null;
+  clear?: boolean;
+}): Promise<AutonomyScopePayload> {
+  const response = await (await seoDb()).rpc("set_ai_autonomy", {
+    p_scope: input.scope,
+    p_capability: input.capability,
+    p_id: input.id ?? undefined,
+    ...(input.mode ? { p_mode: input.mode } : {}),
+    ...(input.timeoutHours === undefined || input.timeoutHours === null
+      ? {}
+      : { p_timeout_hours: input.timeoutHours }),
+    p_clear: input.clear ?? false,
+  });
+  return assertData(response.data, response.error) as unknown as AutonomyScopePayload;
+}

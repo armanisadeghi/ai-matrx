@@ -7,6 +7,7 @@
  */
 
 import { useParams } from "next/navigation";
+import { AutonomyModesEditor } from "@/features/marketing/seo/value-system/settings/AutonomyModesEditor";
 import { CopyMeaningFromSite } from "@/features/marketing/seo/value-system/settings/CopyMeaningFromSite";
 import { ValueSettingsEditor } from "@/features/marketing/seo/value-system/settings/ValueSettingsEditor";
 
@@ -18,6 +19,7 @@ export default function SiteValueSettingsPage() {
     <div className="h-full overflow-y-auto p-4">
       <div className="mx-auto max-w-4xl space-y-4">
         <ValueSettingsEditor scope="site" id={siteId} />
+        <AutonomyModesEditor scope="site" id={siteId} />
         <CopyMeaningFromSite siteId={siteId} />
       </div>
     </div>

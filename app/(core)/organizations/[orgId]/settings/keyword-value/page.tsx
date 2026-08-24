@@ -7,6 +7,7 @@
  */
 
 import { useParams } from "next/navigation";
+import { AutonomyModesEditor } from "@/features/marketing/seo/value-system/settings/AutonomyModesEditor";
 import { ValueSettingsEditor } from "@/features/marketing/seo/value-system/settings/ValueSettingsEditor";
 
 export default function OrgValueSettingsPage() {
@@ -15,7 +16,10 @@ export default function OrgValueSettingsPage() {
   if (!orgId) return null;
   return (
     <div className="h-full overflow-y-auto p-4">
-      <ValueSettingsEditor scope="org" id={orgId} className="mx-auto max-w-4xl" />
+      <div className="mx-auto max-w-4xl space-y-4">
+        <ValueSettingsEditor scope="org" id={orgId} />
+        <AutonomyModesEditor scope="org" id={orgId} />
+      </div>
     </div>
   );
 }

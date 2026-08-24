@@ -46354,6 +46354,45 @@ export type Database = {
   }
   seo: {
     Tables: {
+      ai_capability: {
+        Row: {
+          created_at: string
+          default_mode: string
+          default_timeout_hours: number | null
+          description: string
+          enforced: boolean
+          enforcement_note: string | null
+          label: string
+          position: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_mode: string
+          default_timeout_hours?: number | null
+          description: string
+          enforced?: boolean
+          enforcement_note?: string | null
+          label: string
+          position?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_mode?: string
+          default_timeout_hours?: number | null
+          description?: string
+          enforced?: boolean
+          enforcement_note?: string | null
+          label?: string
+          position?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_visibility_citation: {
         Row: {
           capture_cache_key: string | null
@@ -52829,6 +52868,10 @@ export type Database = {
         }
         Returns: Json
       }
+      ai_autonomy_scope: {
+        Args: { p_id?: string; p_scope: string }
+        Returns: Json
+      }
       assert_combo_shape: {
         Args: {
           p_amount: number
@@ -52995,6 +53038,10 @@ export type Database = {
           p_value: string
         }
         Returns: string
+      }
+      fn_ai_autonomy: {
+        Args: { p_capability: string; p_site_id: string }
+        Returns: Json
       }
       fn_archive_keywords: {
         Args: { p_keyword_ids: string[]; p_reason?: string }
@@ -54682,6 +54729,17 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_ai_autonomy: {
+        Args: {
+          p_capability?: string
+          p_clear?: boolean
+          p_id?: string
+          p_mode?: string
+          p_scope: string
+          p_timeout_hours?: number
+        }
+        Returns: Json
       }
       set_value_settings: {
         Args: {
