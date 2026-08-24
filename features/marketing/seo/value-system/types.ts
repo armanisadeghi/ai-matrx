@@ -164,6 +164,14 @@ export interface SiteGeoArea {
    * its ambiguity rule, so "columbus" stops meaning four different cities.
    */
   place_ids: string[];
+  /**
+   * C10 — the business locations this area serves (`web.business_location.id`).
+   * A human binding here is the STRONGEST signal in the attribution walk: it
+   * outranks city matching, state matching, distance and the single-location
+   * fallback, because a person said so. Empty is a real answer — the resolver
+   * then matches the detected place against the locations themselves.
+   */
+  location_ids: string[];
   geo_band: string;
   notes: string | null;
 }

@@ -236,7 +236,7 @@ export async function previewGeoArea(
 // ── seo.site_geo_area — THE write path (this module is its only writer) ─────
 
 const GEO_AREA_COLUMNS =
-  "id, site_id, label, area_kind, match_tokens, place_ids, geo_band, notes";
+  "id, site_id, label, area_kind, match_tokens, place_ids, location_ids, geo_band, notes";
 
 function geoAreaWriteColumns(draft: GeoAreaDraft, siteId: string) {
   return {
@@ -245,6 +245,9 @@ function geoAreaWriteColumns(draft: GeoAreaDraft, siteId: string) {
     area_kind: draft.areaKind,
     match_tokens: draft.tokens as unknown as Json,
     place_ids: draft.placeIds,
+    // C10 — the binding a human made. Written as an empty array rather than
+    // NULL so "unbound" is a state the row states, not one it omits.
+    location_ids: draft.locationIds,
     geo_band: draft.geoBand,
     notes: draft.notes.trim() || null,
   };

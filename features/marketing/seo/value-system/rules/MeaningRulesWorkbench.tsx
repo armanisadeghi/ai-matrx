@@ -30,7 +30,7 @@
  * …/pack-adoption-ui-proposal.md.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -90,6 +90,7 @@ import { BandVocabularyEditor } from "../vocabulary/BandVocabularyEditor";
 import { ValueRuleEditor } from "./ValueRuleEditor";
 import { GeoAreaEditor } from "./GeoAreaEditor";
 import { PlaceDetectionStrip } from "./PlaceDetectionStrip";
+import { LocationPanel } from "../locations/LocationPanel";
 import {
   geoAreasQueryKey,
   getMeaningUsage,
@@ -297,6 +298,18 @@ export function MeaningRulesWorkbench() {
   const [editingBands, setEditingBands] = useState<VocabKind | null>(
     bandsFromUrl,
   );
+  /**
+   * C10 — the readiness gauge's "Run place detection" door. The fix already
+   * lives on this page, so the door scrolls to it and flashes it rather than
+   * navigating somewhere else or growing a second copy of the control.
+   */
+  const placeDetectionRef = useRef<HTMLDivElement | null>(null);
+  const [flashPlaceDetection, setFlashPlaceDetection] = useState(false);
+  const goToPlaceDetection = () => {
+    placeDetectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFlashPlaceDetection(true);
+    globalThis.setTimeout(() => setFlashPlaceDetection(false), 1600);
+  };
 
   const bands = useQuery({
     queryKey: ["marketing", "value-c", "vocab", siteId, "value_band"],
@@ -664,7 +677,15 @@ export function MeaningRulesWorkbench() {
 
           {/* The other half of the geo match: an area can only fire on a
               keyword that has been read for the places it names. */}
-          <PlaceDetectionStrip siteId={siteId} />
+          <div
+            ref={placeDetectionRef}
+            className={cn(
+              "rounded-md transition-shadow",
+              flashPlaceDetection ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : null,
+            )}
+          >
+            <PlaceDetectionStrip siteId={siteId} />
+          </div>
 
           {areas.isLoading ? (
             <div className="space-y-1.5">
@@ -781,6 +802,27 @@ export function MeaningRulesWorkbench() {
             ))}
           </ul>
         </section>
+
+        {/* ── Which location (C10) ──
+            Sits directly under Service areas because binding an area to a
+            location is authored one section up, and the gauge's "bind an area"
+            door opens exactly that editor. */}
+        <LocationPanel
+          siteId={siteId}
+          brandId={brandId}
+          organizationId={site.organization_id}
+          window={window}
+          windowLabel={windowLabel}
+          onGoToPlaceDetection={goToPlaceDetection}
+          onBindArea={() => {
+            const unbound = (areas.data ?? []).find(
+              (area) => (area.location_ids ?? []).length === 0,
+            );
+            // No area at all yet → the editor opens on a new one, which is the
+            // same fix one step earlier. Never a door that opens onto nothing.
+            setEditingArea(unbound ?? null);
+          }}
+        />
 
         {/* ── Bands ── */}
         <section className="space-y-2">

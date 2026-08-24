@@ -130,6 +130,10 @@ export default function GscWhyScoreWindow({
         ) : (
           <WhyScoreBody
             subject={{
+              // C10 — the receipt's location line needs the id to ask which
+              // location this keyword belongs to. Without it the panel showed a
+              // receipt the in-table (i) did not.
+              keywordId,
               keyword,
               valueBand: row.value_band,
               valueScore: row.value_score,

@@ -122,6 +122,8 @@ export interface GeoAreaDraft {
   tokens: string[];
   /** Gazetteer places (`seo.geo_place.id`) this area covers. */
   placeIds: string[];
+  /** C10 — business locations this area serves (`web.business_location.id`). */
+  locationIds: string[];
   geoBand: string;
   notes: string;
 }
@@ -185,6 +187,8 @@ export interface GeoAreaFormState {
   tokensText: string;
   /** Places picked from the gazetteer, kept whole so the chips can render. */
   places: GeoPlace[];
+  /** C10 — business locations bound to this area. Ids: the picker reads rows. */
+  locationIds: string[];
   geoBand: string;
   notes: string;
 }

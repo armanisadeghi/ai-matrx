@@ -176,12 +176,19 @@ export async function listSiteVocabulary(siteId: string, kind: "value_band" | "g
 export async function listGeoAreas(siteId: string): Promise<SiteGeoArea[]> {
   const response = await (await seoDb())
     .from("site_geo_area")
-    .select("id, site_id, label, area_kind, match_tokens, place_ids, geo_band, notes, metadata")
+    .select(
+      "id, site_id, label, area_kind, match_tokens, place_ids, location_ids, geo_band, notes, metadata",
+    )
     .eq("site_id", siteId)
     .is("deleted_at", null)
     .order("label");
   return (assertData(response.data, response.error) as unknown as SiteGeoArea[]).map(
-    (row) => ({ ...row, metadata: row.metadata ?? {} }),
+    (row) => ({
+      ...row,
+      metadata: row.metadata ?? {},
+      // NULL and "{}" mean the same thing to a reader: not bound to anything.
+      location_ids: row.location_ids ?? [],
+    }),
   );
 }
 

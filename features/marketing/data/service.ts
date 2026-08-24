@@ -3816,6 +3816,10 @@ export async function createBusinessLocation(
       organization_id: input.organizationId,
       brand_id: input.brandId,
       name: input.name,
+      // Optional at the type level, never silently dropped: a location created
+      // with a city and state is attributable the moment it lands (C10).
+      ...(input.locality?.trim() ? { locality: input.locality.trim() } : {}),
+      ...(input.region?.trim() ? { region: input.region.trim() } : {}),
     })
     .select(BUSINESS_LOCATION_COLUMNS)
     .single();

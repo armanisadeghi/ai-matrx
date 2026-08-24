@@ -57,11 +57,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreatablePicker } from "../pickers/CreatablePicker";
+import { CreatablePicker } from "@/components/ui/creatable-picker";
 import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useDebounce } from "@/hooks/usehooks/useDebounce";
+import { useMarketingSiteOptional } from "@/features/marketing/components/site/MarketingSiteContext";
 import { getValueVocabulary } from "../data";
 import type { SiteGeoArea,
   EditorProvenance,
@@ -78,6 +79,7 @@ import {
   valueSurfaceQueryKeys,
 } from "./data";
 import { GeoPlacePicker } from "./GeoPlacePicker";
+import { LocationBindingPicker } from "../locations/LocationBindingPicker";
 import {
   AREA_KINDS,
   parseTokens,
@@ -92,6 +94,7 @@ function areaToForm(area: SiteGeoArea): GeoAreaFormState {
     areaKind: area.area_kind,
     tokensText: area.match_tokens.join(", "),
     places: [],
+    locationIds: area.location_ids ?? [],
     geoBand: area.geo_band,
     notes: area.notes ?? "",
   };
@@ -102,6 +105,7 @@ const EMPTY: GeoAreaFormState = {
   areaKind: "city",
   tokensText: "",
   places: [],
+  locationIds: [],
   geoBand: "",
   notes: "",
 };
@@ -165,6 +169,13 @@ export function GeoAreaEditor({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  /**
+   * C10 — the brand whose locations this area may bind to. Optional on purpose:
+   * this editor can mount outside the site shell, and "no brand in context"
+   * degrades to no binding control rather than a crash.
+   */
+  const siteContext = useMarketingSiteOptional();
+  const brandId = siteContext?.brandId ?? null;
   // P23 — "+ Add a geo band" from inside the band picker; the string is what
   // was typed. A band needs a multiplier, so it is collected, never guessed.
   const [addingBand, setAddingBand] = useState<string | null>(null);
@@ -255,6 +266,7 @@ export function GeoAreaEditor({
         areaKind: form.areaKind,
         tokens: parseTokens(form.tokensText),
         placeIds: form.places.map((place) => place.id),
+        locationIds: form.locationIds,
         geoBand: form.geoBand,
         notes: form.notes,
       };
@@ -399,6 +411,22 @@ export function GeoAreaEditor({
                 onChange={(next) => set("places", next)}
               />
             </Field>
+
+            {brandId && organizationId ? (
+              <Field
+                label={`Which location serves it${
+                  form.locationIds.length > 0 ? ` (${form.locationIds.length})` : ""
+                }`}
+                hint="Optional, and the strongest signal there is. Bind this area to the branch that serves it and every search it catches is attributed there — ahead of any match the system would work out on its own. Leave it empty and the detected place is matched against your locations instead."
+              >
+                <LocationBindingPicker
+                  brandId={brandId}
+                  organizationId={organizationId}
+                  value={form.locationIds}
+                  onChange={(next) => set("locationIds", next)}
+                />
+              </Field>
+            ) : null}
 
             <Field
               label={`Other place names${tokenCount > 0 ? ` (${tokenCount})` : ""}`}

@@ -27,6 +27,7 @@ import { humanizeSlug } from "../lib";
 import { levelEditorLink, type ReasonLinkContext } from "../reason-links";
 import type { ValueReason, ValueSource } from "../types";
 import { ReasonChainDetail } from "./ReasonChain";
+import { KeywordLocationLine } from "../locations/KeywordLocationLine";
 
 export interface WhyScoreSubject {
   /** Present = the (i) can also OPEN the receipt as a floating panel. */
@@ -97,6 +98,25 @@ export function WhyScoreBody({
         </p>
       ) : null}
       <Verdict subject={subject} context={linkContext} />
+      {/*
+        C10 — WHICH location this keyword belongs to, and HOW that was decided.
+        It sits with the other reasons because for a multi-location business
+        "which branch" is part of what a local keyword MEANS (P16), not a
+        separate report. `isLocal` comes from the receipt's own geo evidence, so
+        "local but unplaced" is only ever said when the chain proves the search
+        names a place; anything less and the line stays silent rather than
+        guessing.
+      */}
+      {subject.keywordId ? (
+        <KeywordLocationLine
+          siteId={context.siteId}
+          brandId={context.brandId ?? null}
+          keywordId={subject.keywordId}
+          isLocal={
+            subject.reasons.some((reason) => reason.kind === "geo") ? true : null
+          }
+        />
+      ) : null}
       <ReasonChainDetail
         reasons={subject.reasons}
         source={asSource(subject.valueSource)}

@@ -52257,11 +52257,32 @@ export type Database = {
           value_source: string
         }[]
       }
+      gsc_location_keywords: {
+        Args: {
+          p_bucket?: string
+          p_end?: string
+          p_limit?: number
+          p_location_id?: string
+          p_offset?: number
+          p_site_id: string
+          p_start?: string
+        }
+        Returns: {
+          clicks: number
+          decided_by: string
+          impressions: number
+          keyword: string
+          keyword_id: string
+          place_name: string
+          total_count: number
+        }[]
+      }
       gsc_location_readiness: {
         Args: { p_site_id: string }
         Returns: {
           count_value: number
           detail: string
+          door: string
           headline: string
           state: string
         }[]

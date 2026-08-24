@@ -819,6 +819,14 @@ export interface CreateBusinessLocationInput {
   organizationId: string;
   brandId: string;
   name: string;
+  /**
+   * City and state at creation time (C10). A location with neither can never
+   * win a local keyword — `seo.gsc_location_readiness` reports exactly that —
+   * so any surface that creates a location in passing collects them here
+   * rather than leaving a row that looks done and attributes nothing.
+   */
+  locality?: string | null;
+  region?: string | null;
 }
 
 export interface UpdateBusinessLocationInput {
