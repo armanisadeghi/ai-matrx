@@ -6535,6 +6535,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/press/source-requests/{request_id}/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Evaluate Press Source Request
+         * @description Score (or re-score) one existing journalist request — a DURABLE streamed
+         *     command.
+         *
+         *     The recovery door for rows still sitting at `new` (created with evaluation
+         *     off, a failed evaluate, or one deferred past the per-run ceiling) and for
+         *     re-judging a `matched` row. Human-owned states are refused. Streamed
+         *     because one responder pass is ~30-90s of paid model work, past the 60s
+         *     gateway sever.
+         */
+        post: operations["evaluate_press_source_request_seo_press_source_requests__request_id__evaluate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/press/newsroom/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Press Newsroom
+         * @description Create (once) and refresh this business's public newsroom — a DURABLE
+         *     streamed command.
+         *
+         *     Press page + press-mentions and media-kit collections on the customer's own
+         *     CMS site, fed from platform truth (human-approved story angles, observed
+         *     coverage, brand assets). The page is created once and then belongs to the
+         *     human; re-syncs converge the collections. Dozens of cross-database writes —
+         *     hence the stream. Rejoin with ``POST /seo/collections/{run_id}/rejoin``.
+         */
+        post: operations["sync_press_newsroom_seo_sites__site_id__press_newsroom_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/web-url-changes/{site_id}/{token}": {
         parameters: {
             query?: never;
@@ -37095,6 +37149,11 @@ export interface components {
              * @default 0
              */
             replays_reaped?: number;
+            /**
+             * Reviews Reaped
+             * @default 0
+             */
+            reviews_reaped?: number;
             /** Skipped */
             skipped?: {
                 [key: string]: number;
@@ -47513,6 +47572,88 @@ export interface components {
             http_status?: number | null;
             /** Text Preview */
             text_preview?: string | null;
+        };
+        /** NewsroomSyncBody */
+        NewsroomSyncBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Publish
+             * @default true
+             */
+            publish?: boolean;
+        };
+        /**
+         * NewsroomSyncResult
+         * @description Durable result shared by the HTTP route and workflow node.
+         */
+        NewsroomSyncResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "press.newsroom.sync";
+            /** Cms Site Id */
+            cms_site_id: string;
+            /**
+             * Cms Site Created
+             * @default false
+             */
+            cms_site_created?: boolean;
+            /** Page Id */
+            page_id?: string | null;
+            /**
+             * Page Created
+             * @default false
+             */
+            page_created?: boolean;
+            /** Page Path */
+            page_path?: string | null;
+            /**
+             * Mentions Synced
+             * @default 0
+             */
+            mentions_synced?: number;
+            /**
+             * Media Kit Synced
+             * @default 0
+             */
+            media_kit_synced?: number;
+            /**
+             * Items Created
+             * @default 0
+             */
+            items_created?: number;
+            /**
+             * Items Updated
+             * @default 0
+             */
+            items_updated?: number;
+            /**
+             * Items Deleted
+             * @default 0
+             */
+            items_deleted?: number;
+            /**
+             * Assets Skipped
+             * @default 0
+             */
+            assets_skipped?: number;
+            /** Blocked Reason */
+            blocked_reason?: string | null;
         };
         /**
          * NodeAgentChatContext
@@ -58138,7 +58279,7 @@ export interface components {
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
             /** Result */
-            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BackfillPassResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["SourceRequestIngestResult"] | components["schemas"]["StoryAngleGenerateResult"] | components["schemas"]["StructuredDataValidateResult"] | components["schemas"]["PlacementPassResult"]) | null;
+            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BackfillPassResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["NewsroomSyncResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["SourceRequestEvaluateResult"] | components["schemas"]["SourceRequestIngestResult"] | components["schemas"]["StoryAngleGenerateResult"] | components["schemas"]["StructuredDataValidateResult"] | components["schemas"]["PlacementPassResult"]) | null;
         };
         /** SeoSpendSummaryResponse */
         SeoSpendSummaryResponse: {
@@ -59953,6 +60094,25 @@ export interface components {
             scraped_at: string;
         };
         /**
+         * SourceRequestEvaluateResult
+         * @description The durable result of re-scoring one existing request row.
+         */
+        SourceRequestEvaluateResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "press.source_request.evaluate";
+            /** Id */
+            id: string;
+            /** Status */
+            status: string;
+            /** Match Score */
+            match_score: number;
+            /** Drafted */
+            drafted: boolean;
+        };
+        /**
          * SourceRequestIngestBody
          * @description One inbound batch of journalist source requests.
          *
@@ -60010,7 +60170,7 @@ export interface components {
              * Outcome
              * @enum {string}
              */
-            outcome: "created" | "duplicate" | "screened_out" | "evaluate_failed";
+            outcome: "created" | "duplicate" | "rescored" | "screened_out" | "evaluate_failed" | "evaluation_deferred";
             /** Request Id */
             request_id?: string | null;
             /**
@@ -60050,6 +60210,11 @@ export interface components {
              */
             duplicates?: number;
             /**
+             * Rescored
+             * @default 0
+             */
+            rescored?: number;
+            /**
              * Screened Out
              * @default 0
              */
@@ -60064,6 +60229,16 @@ export interface components {
              * @default 0
              */
             drafted?: number;
+            /**
+             * Evaluations Deferred
+             * @default 0
+             */
+            evaluations_deferred?: number;
+            /**
+             * Truncated Requests
+             * @default 0
+             */
+            truncated_requests?: number;
             /** Outcomes */
             outcomes?: components["schemas"]["SourceRequestIngestOutcome"][];
         };
@@ -79548,6 +79723,72 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SourceRequestIngestBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    evaluate_press_source_request_seo_press_source_requests__request_id__evaluate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_press_newsroom_seo_sites__site_id__press_newsroom_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewsroomSyncBody"];
             };
         };
         responses: {

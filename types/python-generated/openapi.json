@@ -15786,6 +15786,98 @@
         }
       }
     },
+    "/seo/press/source-requests/{request_id}/evaluate": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Evaluate Press Source Request",
+        "description": "Score (or re-score) one existing journalist request — a DURABLE streamed\ncommand.\n\nThe recovery door for rows still sitting at `new` (created with evaluation\noff, a failed evaluate, or one deferred past the per-run ceiling) and for\nre-judging a `matched` row. Human-owned states are refused. Streamed\nbecause one responder pass is ~30-90s of paid model work, past the 60s\ngateway sever.",
+        "operationId": "evaluate_press_source_request_seo_press_source_requests__request_id__evaluate_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/press/newsroom/sync": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Sync Press Newsroom",
+        "description": "Create (once) and refresh this business's public newsroom — a DURABLE\nstreamed command.\n\nPress page + press-mentions and media-kit collections on the customer's own\nCMS site, fed from platform truth (human-approved story angles, observed\ncoverage, brand assets). The page is created once and then belongs to the\nhuman; re-syncs converge the collections. Dozens of cross-database writes —\nhence the stream. Rejoin with ``POST /seo/collections/{run_id}/rejoin``.",
+        "operationId": "sync_press_newsroom_seo_sites__site_id__press_newsroom_sync_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewsroomSyncBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/web-url-changes/{site_id}/{token}": {
       "post": {
         "tags": [
@@ -96708,6 +96800,11 @@
             "title": "Replays Reaped",
             "default": 0
           },
+          "reviews_reaped": {
+            "type": "integer",
+            "title": "Reviews Reaped",
+            "default": 0
+          },
           "skipped": {
             "additionalProperties": {
               "type": "integer"
@@ -123537,6 +123634,148 @@
         ],
         "title": "NavigateResult"
       },
+      "NewsroomSyncBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "publish": {
+            "type": "boolean",
+            "title": "Publish",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "NewsroomSyncBody"
+      },
+      "NewsroomSyncResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "press.newsroom.sync",
+            "title": "Result Kind",
+            "default": "press.newsroom.sync"
+          },
+          "cms_site_id": {
+            "type": "string",
+            "title": "Cms Site Id"
+          },
+          "cms_site_created": {
+            "type": "boolean",
+            "title": "Cms Site Created",
+            "default": false
+          },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Id"
+          },
+          "page_created": {
+            "type": "boolean",
+            "title": "Page Created",
+            "default": false
+          },
+          "page_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Path"
+          },
+          "mentions_synced": {
+            "type": "integer",
+            "title": "Mentions Synced",
+            "default": 0
+          },
+          "media_kit_synced": {
+            "type": "integer",
+            "title": "Media Kit Synced",
+            "default": 0
+          },
+          "items_created": {
+            "type": "integer",
+            "title": "Items Created",
+            "default": 0
+          },
+          "items_updated": {
+            "type": "integer",
+            "title": "Items Updated",
+            "default": 0
+          },
+          "items_deleted": {
+            "type": "integer",
+            "title": "Items Deleted",
+            "default": 0
+          },
+          "assets_skipped": {
+            "type": "integer",
+            "title": "Assets Skipped",
+            "default": 0
+          },
+          "blocked_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "cms_site_id"
+        ],
+        "title": "NewsroomSyncResult",
+        "description": "Durable result shared by the HTTP route and workflow node."
+      },
       "NodeAgentChatContext": {
         "properties": {
           "mandate_key": {
@@ -149814,6 +150053,9 @@
                     "$ref": "#/components/schemas/TopicAssignResult"
                   },
                   {
+                    "$ref": "#/components/schemas/NewsroomSyncResult"
+                  },
+                  {
                     "$ref": "#/components/schemas/PageAnalysisResult"
                   },
                   {
@@ -149827,6 +150069,9 @@
                   },
                   {
                     "$ref": "#/components/schemas/RobotsCheckResult"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SourceRequestEvaluateResult"
                   },
                   {
                     "$ref": "#/components/schemas/SourceRequestIngestResult"
@@ -149857,6 +150102,8 @@
                     "keywords.volume_refresh": "#/components/schemas/KeywordVolumeRefreshResult",
                     "pages.analyze": "#/components/schemas/PageAnalysisResult",
                     "pages.map_keywords": "#/components/schemas/PageKeywordMapResult",
+                    "press.newsroom.sync": "#/components/schemas/NewsroomSyncResult",
+                    "press.source_request.evaluate": "#/components/schemas/SourceRequestEvaluateResult",
                     "press.source_requests.ingest": "#/components/schemas/SourceRequestIngestResult",
                     "press.story_angles.generate": "#/components/schemas/StoryAngleGenerateResult",
                     "public.page_audit": "#/components/schemas/PageAuditResult",
@@ -154499,6 +154746,42 @@
         ],
         "title": "SourceContentResponse"
       },
+      "SourceRequestEvaluateResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "press.source_request.evaluate",
+            "title": "Result Kind",
+            "default": "press.source_request.evaluate"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "match_score": {
+            "type": "integer",
+            "title": "Match Score"
+          },
+          "drafted": {
+            "type": "boolean",
+            "title": "Drafted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "match_score",
+          "drafted"
+        ],
+        "title": "SourceRequestEvaluateResult",
+        "description": "The durable result of re-scoring one existing request row."
+      },
       "SourceRequestIngestBody": {
         "properties": {
           "organization_id": {
@@ -154614,8 +154897,10 @@
             "enum": [
               "created",
               "duplicate",
+              "rescored",
               "screened_out",
-              "evaluate_failed"
+              "evaluate_failed",
+              "evaluation_deferred"
             ],
             "title": "Outcome"
           },
@@ -154701,6 +154986,11 @@
             "title": "Duplicates",
             "default": 0
           },
+          "rescored": {
+            "type": "integer",
+            "title": "Rescored",
+            "default": 0
+          },
           "screened_out": {
             "type": "integer",
             "title": "Screened Out",
@@ -154714,6 +155004,16 @@
           "drafted": {
             "type": "integer",
             "title": "Drafted",
+            "default": 0
+          },
+          "evaluations_deferred": {
+            "type": "integer",
+            "title": "Evaluations Deferred",
+            "default": 0
+          },
+          "truncated_requests": {
+            "type": "integer",
+            "title": "Truncated Requests",
             "default": 0
           },
           "outcomes": {
