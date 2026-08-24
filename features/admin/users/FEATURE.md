@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-08-20`
+**Last updated:** `2026-08-24`
 
 ---
 
@@ -132,6 +132,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 - Account and organization screens link to the same Organizations tab; do not build separate per-user and per-organization membership managers.
 - **A user is named through `AdminUserRef`, never a bare `<span>` or uuid.** There is still no canonical `/users/<id>` route and no `user` token in the entity registry, so `EntityRef` has nothing to resolve — `AdminUserRef` is the stand-in that declares the per-user destination set exactly once. Consume it; do not hand-roll a link list beside it. When a canonical user route exists, one edit there lights up every surface.
 - **A door is only added after reading the target route and confirming it consumes the param.** Both `?user=` destinations added on 2026-08-09 were previously broken promises: Accounts read no param at all, and the Accounts row menu advertised an "Admin level" filter that `…/users/admins` silently ignored. A link to a route that ignores its param is worse than no link, because it looks like it worked.
+- **The Accounts query has one owner.** `AccountsTableClient` uses `useTableUrlState({ tableId: "user-accounts" })` and passes its state into `MatrxDataTable` controlled-local mode; never also pass the table's `urlState` prop.
 - The name is a real anchor, not a click handler, so middle-click and cmd-click work. Where a user's name genuinely cannot be an anchor (inside a `<label>` or a button that means something else), render `AdminUserDoorControls` as a sibling instead — an anchor nested in interactive content is invalid DOM. All 12 call sites were verified clear on 2026-08-09.
 - **Never put `href` on a `MatrxDataTable` column whose cell renders `AdminUserRef`.** A column declaring `href` makes the table wrap the whole cell in a `<Link>` (`MatrxDataTable.tsx`), which would nest the name's anchor inside another anchor. Every current user column renders its own cell and declares no `href`; that is deliberate, not an oversight. Row-click navigation is safe alongside it — the table already ignores clicks originating inside an `<a>`.
 - **Guest, visitor, account, and converted are distinct states.** Visitor means a fingerprint observed before an auth identity exists; guest means `auth.users.is_anonymous=true`; converted means a guest-registry lineage now points at a permanent account.
@@ -160,6 +161,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 
 ## Change log
 
+- `2026-08-24` — Fixed the Accounts route crash by moving shareable table query state into the controlled query owner with `useTableUrlState`; search, filters, sort, pagination, Back/Forward, and agent-visible query context now share one state path.
 - `2026-08-20` — Moved first touch to zero-blocking Proxy capture backed by atomic `record_acquisition_first_touch`, adopted the server visitor ID for new guest AI use, linked email/OAuth accounts without requiring an AI execution, separated historical gaps from direct/withheld referrers, and excluded localhost/agent and bot rows from headline acquisition and cost totals while retaining them for diagnosis.
 - `2026-08-19` — Reused the already-fetched Supabase Auth creation timestamp and anonymous flag in Redux so guests and first-seven-day accounts retain all frontend diagnostic tiers without a database boolean, expiry job, or additional query.
 - `2026-08-19` — Replaced the blocking Journey sheet with the canonical non-blocking Matrx side panel, stopped row-click propagation, preserved partial journey history when secondary telemetry is unavailable, and marked localhost/loopback referrers as local/agent testing.

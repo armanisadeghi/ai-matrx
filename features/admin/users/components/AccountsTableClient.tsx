@@ -49,10 +49,8 @@ import {
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import { filterAndSortRows } from "@/components/official/matrx-data-table/filter-engine";
-import type {
-  MatrxColumnDef,
-  MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_USERS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-users.manifest";
@@ -62,18 +60,6 @@ import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
 
 const ROSTER_PAGE_SIZE = 50;
-
-/** Fresh table query state — the shape `MatrxDataTable` reads in controlled mode. */
-function initialQueryState(): MatrxDataTableQueryState {
-  return {
-    page: 1,
-    pageSize: ROSTER_PAGE_SIZE,
-    search: "",
-    anyOf: "",
-    columnFilters: {},
-    sort: null,
-  };
-}
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -117,9 +103,10 @@ export function AccountsTableClient() {
   // live query is invisible to everything outside the table — including the
   // surface emitter, which has to be able to say how many accounts still
   // match what the admin is looking at.
-  const [queryState, setQueryState] = useState<MatrxDataTableQueryState>(
-    initialQueryState,
-  );
+  const tableQuery = useTableUrlState({
+    tableId: "user-accounts",
+    defaultPageSize: ROSTER_PAGE_SIZE,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -455,14 +442,14 @@ export function AccountsTableClient() {
       filterAndSortRows(
         visibleRows,
         columns.filter((column) => !column.hidden),
-        queryState.columnFilters,
-        queryState.sort,
-        queryState.search,
+        tableQuery.state.columnFilters,
+        tableQuery.state.sort,
+        tableQuery.state.search,
         undefined,
-        queryState.layeredFilters,
-        queryState.searchMatchMode,
+        tableQuery.state.layeredFilters,
+        tableQuery.state.searchMatchMode,
       ),
-    [visibleRows, columns, queryState],
+    [visibleRows, columns, tableQuery.state],
   );
 
   function clearUserFocus() {
@@ -489,11 +476,11 @@ export function AccountsTableClient() {
           focusedUser,
           focusMissed,
           matchingCount: matchingRows.length,
-          search: queryState.search,
-          columnFilters: queryState.columnFilters,
-          sort: queryState.sort,
-          page: queryState.page,
-          pageSize: queryState.pageSize,
+          search: tableQuery.state.search,
+          columnFilters: tableQuery.state.columnFilters,
+          sort: tableQuery.state.sort,
+          page: tableQuery.state.page,
+          pageSize: tableQuery.state.pageSize,
           dmRecipientId: dmTarget?.id ?? null,
           dmDraft: dmContent,
         })
@@ -545,17 +532,16 @@ export function AccountsTableClient() {
 
       <div className="min-h-0 flex-1" data-surface-value="visible_user_count">
         <MatrxDataTable
-          urlState={{ id: "user-accounts" }}
           data={visibleRows}
           columns={columns}
           getRowId={(r) => r.id}
           isLoading={loading}
           pageSize={ROSTER_PAGE_SIZE}
-          // Local filtering, caller-owned query — see `queryState` above.
+          // Local filtering, caller-owned query — see `tableQuery` above.
           query={{
             mode: "controlled-local",
-            state: queryState,
-            onStateChange: setQueryState,
+            state: tableQuery.state,
+            onStateChange: tableQuery.onStateChange,
           }}
           // A focused id that is not in the roster must NOT be reported as a
           // filter miss — that blames a control the user never touched for a
