@@ -69,6 +69,7 @@ features/shell/
 │   │           └── HeaderToggle.tsx
 │   ├── mobile-sheet/
 │   │   ├── MobileSheetNavLink.tsx
+│   │   ├── MobileNavigationDrawer.tsx
 │   │   └── MobileSideSheet.tsx
 │   └── sidebar/
 │       ├── AdminNavInjector.tsx
@@ -91,7 +92,7 @@ features/shell/
 
 ## Architecture Overview
 
-The shell is a **zero-JS-first, CSS-checkbox-driven layout** that uses the grid:
+The shell uses a **zero-JS-first CSS grid** for desktop chrome and a client-controlled mobile drawer:
 
 ```
 sidebar | header
@@ -101,7 +102,7 @@ sidebar | main
 The `app/(a)/layout.tsx` is the root — it's an async Server Component that:
 1. Fetches the Supabase session and user data
 2. Builds `initialReduxState` and wraps everything in `<Providers>`
-3. Renders the `.shell-root` div containing hidden checkboxes for CSS-driven state, then `<Sidebar>`, `<Header>`, `<main>`, and `<MobileSideSheet>`
+3. Renders `.shell-root` with hidden shell controls, then `<Sidebar>`, `<Header>`, `<main>`, and `<MobileSideSheet>`; its menu checkbox bridges the server-rendered hamburger to the canonical client `BottomSheet`
 4. Portals `<MobileDock>` into `#glass-layer` (outside `.shell-root`) via `<GlassPortal>`
 5. Mounts zero-footprint client components: `NavActiveSync`, `VisualViewportSync`, `DeferredIslands`
 
@@ -256,17 +257,17 @@ Key design decisions:
 
 3. **Main area margin trick** (`.shell-main`): `margin-top: calc(-1 * var(--shell-header-h))` — main content starts behind the header, letting pages decide their own top offset.
 
-4. **Active nav state** — entirely CSS-driven. Layout stamps `data-pathname` on `.shell-root`. `NavActiveSync` keeps it live. CSS `:where()` selectors match `[data-pathname^=...] [data-nav-href=...]` — one place in CSS updates sidebar, mobile sheet, and dock simultaneously.
+4. **Active nav state** — Layout stamps `data-pathname` on `.shell-root`; `NavActiveSync` keeps it live. CSS drives the desktop sidebar and dock, while the portaled mobile drawer derives active state from `usePathname`.
 
-5. **Five checkboxes** manage all interactive state without JS:
+5. **Five hidden controls** bridge server-rendered shell triggers to their owning surfaces:
    - `#shell-sidebar-toggle` — desktop sidebar expand/collapse
-   - `#shell-mobile-menu` — mobile side sheet
+   - `#shell-mobile-menu` — solid 92dvh mobile bottom drawer
    - `#shell-user-menu` — user menu dropdown
    - `#shell-panel-toggle` — secondary panel sidebar (desktop)
    - `#shell-panel-mobile` — secondary panel sidebar (mobile drawer)
 
 6. **Route-level controls** via sentinel elements: `<span class="shell-show-dock">` (mobile dock, opt-in) and `<span class="shell-hide-sidebar">` — routes drop invisible zero-size spans; shell detects them with `:has()` and adjusts layout globally.
 
-7. **Glass tokens** are defined in `--shell-glass-*` (single source of truth in `app/globals.css`). The four canonical utility classes are `.shell-glass`, `.shell-glass-dock`, `.shell-glass-sheet`, and `.shell-glass-card`. Modal/overlay variants (`.shell-glass-overlay`, `.shell-glass-modal`) live outside `@layer utilities` with `!important` to win the cascade against Radix-injected inline styles.
+7. **Glass tokens** remain the desktop/dock chrome source of truth in `app/globals.css`; the mobile navigation drawer deliberately uses `bg-background` with no backdrop filter.
 
 8. **Panel sidebar system** (section 17b): Routes can opt into a secondary sidebar by rendering `<aside class="shell-panel">`. The shell splits `shell-main` into a two-column grid automatically. Desktop uses `#shell-panel-toggle`; mobile uses `#shell-panel-mobile` as a drawer.

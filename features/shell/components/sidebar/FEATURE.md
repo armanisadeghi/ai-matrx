@@ -2,13 +2,13 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-08-15`
+**Last updated:** `2026-08-24`
 
 ---
 
 ## Purpose
 
-The desktop app-shell sidebar renders the global navigation and lets Large Routes replace it with route-owned navigation without building a second shell. Admin users also receive a persistent footer section whose Admin Launchpad door remains directly reachable from normal and route-owned menus.
+The app shell renders one canonical navigation tree across the desktop sidebar and an iOS-style mobile bottom drawer. Large Routes can replace either surface with route-owned navigation without building a second shell. Admin users also receive a persistent Admin Launchpad door.
 
 ## Entry points
 
@@ -19,6 +19,8 @@ The desktop app-shell sidebar renders the global navigation and lets Large Route
 - `../../constants/route-menu-style.ts` — canonical route-menu row class and icon metrics.
 - `../../../../styles/shell.css` — expansion, collapse, animation, mode-control, and collapsed-tooltip behavior.
 - `admin-menu/AdminSidebarSection.tsx` — admin-only footer controls and the direct new-tab Admin Launchpad door.
+- `../mobile-sheet/MobileNavigationDrawer.tsx` — solid 92dvh mobile drawer, drill-in stack, Back navigation, and destination search.
+- `../mobile-sheet/MobileSideSheet.tsx` — server boundary that filters the canonical nav tree for the viewer before handing it to the drawer.
 
 ## Key flows
 
@@ -41,6 +43,13 @@ The desktop app-shell sidebar renders the global navigation and lets Large Route
 2. Admins receive a visually distinct Admin Launchpad anchor before the Administration cascade and operational toggles.
 3. The anchor opens `/administration/launchpad` in a new tab so the current product workspace is never displaced.
 
+### Navigate on mobile
+
+1. The existing `#shell-mobile-menu` control opens the canonical `BottomSheet` with `surface="solid"` and a fixed 92dvh height.
+2. A top-level group opens one child screen; Back returns to the root without changing routes.
+3. Search filters parent and child destinations from the same viewer-filtered `nav-data.ts` tree.
+4. Selecting a destination starts navigation, then closes the drawer; route changes also close it through `MobileMenuPathSync`.
+
 ## Invariants & gotchas
 
 - **Register Large Routes only in `route-menu-registry.ts`.** Keep more-specific pathname patterns before broader patterns.
@@ -49,11 +58,14 @@ The desktop app-shell sidebar renders the global navigation and lets Large Route
 - **Never depend on animation events for the view flip.** Hidden pages may not emit them.
 - **Do not force every route menu into one row component.** Consumers use different elements, state, groupings, and specialized rows; share the visual contract unless behavior also becomes identical.
 - **Keep Admin Launchpad directly reachable.** It is a real new-tab anchor in the admin-only footer, not another level inside the Administration cascade.
+- **Mobile navigation is a solid bottom drawer.** Do not restore glass, a left sheet, inline primary-group accordions, or an adaptive-height panel.
+- **Keep one mobile scroll area.** `BottomSheetBody` owns scrolling; drill-in screens and search results flow inside it.
+- **Keep iOS interaction minimums.** Rows are at least 48px and the search input is 16px.
 
 ## Related features
 
 - Consumers: `features/agents/components/chat/ChatSidebarMenu.tsx`, `features/agents/components/shell/AgentRunSidebarMenu.tsx`, `features/code/shell/CodeSidebarMenu.tsx`, `features/admin/components/AdminRouteSidebarMenu.tsx`, `features/marketing/components/shell/MarketingSidebarMenu.tsx`.
-- Mobile counterpart: `../mobile-sheet/MobileRouteMenuSlot.tsx`.
+- Mobile route-menu bridge: `../mobile-sheet/MobileRouteMenuSlot.tsx`.
 
 ## Doctrine compliance
 
@@ -69,5 +81,6 @@ The desktop app-shell sidebar renders the global navigation and lets Large Route
 
 ## Change log
 
+- `2026-08-24` — Codex: replaced the glass left mobile sheet and inline primary-group accordions with a solid, searchable, fixed-height bottom drawer with drill-in and Back navigation.
 - `2026-08-15` — Codex: added the prominent admin-only new-tab Launchpad door to the persistent sidebar footer.
 - `2026-08-15` — Codex: Preserved mode-switch meaning in the collapsed rail and centralized the route-menu row visual contract.
