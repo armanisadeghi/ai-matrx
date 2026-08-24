@@ -50,6 +50,18 @@ stamps it, so a `source` edge without one belongs to a different system on the s
 importantly the **per-card** `fc_card → file` edges a deck writes, which would otherwise flood a
 kit with hundreds of rows. Filter on the stamp, never on a type blocklist.
 
+## The kit is a STUDY surface, not a directory
+
+`kitStudy.ts` reads the canonical study spine (`item_mastery` via `studyService` — the SAME
+numbers the deck page and planner show, never a second progress model) for the kit's largest
+deck, and the hub leads with mastery %, cards studied, due count, and one primary action.
+
+🚨 **The action always opens the deck's own study surface, and the due count is a FACT, not a
+destination.** There is no per-kit due queue: `/education/flashcards/review` is the cross-deck
+FSRS queue and `[setId]/study` takes no mode parameter, so a "review this kit's due cards" link
+would be a promise the product cannot keep — exactly the class of shipped lie
+(`STATE.md` §4.1 item 7) that a behavioural test cannot see.
+
 ## Doors (THE DOOR LAW)
 
 A kit is reachable from every direction a learner can arrive from:
@@ -72,6 +84,16 @@ A kit is reachable from every direction a learner can arrive from:
   name is the name of the MATERIAL, which is what the hub is about.
 
 ## Change log
+
+- **2026-08-24** — Study-first hub (`kitStudy.ts`): mastery %, cards studied, due count and one
+  primary action, read from the canonical spine. Verified live on a fresh 6-artifact kit
+  ("0% mastered · 0 of 8 cards studied · Start studying") and on a 13-artifact kit (largest deck
+  of 65 chosen). Adversarial-review fixes in the same pass: `listKits` now pages to exhaustion
+  (a single 500-row page silently dropped older kits from the index while their direct links
+  still worked); the `EntityListQuery`/`Sort` casts were replaced with real objects off
+  `DEFAULT_ENTITY_LIST_QUERY` (they were hiding three missing required fields); an
+  entity-sourced kit (note→deck) gained the origin door it was missing entirely; both routes
+  registered in the education admin map.
 
 - **2026-08-22** — Created. Kit hub + index over the existing source-lineage edges; `sourceTitle`
   added to the lineage metadata so a kit can name itself; doors from the run board, every
