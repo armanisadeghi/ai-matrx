@@ -103,11 +103,15 @@ function toMandateSummary(r: MandateRow): MandateSummary {
 }
 
 /** Full workbench detail for the selected mandate — pin state + agent type. */
-function toMandateDetail(row: MandateRow, data: MandateConsoleData): MandateDetail {
+function toMandateDetail(
+  row: MandateRow,
+  data: MandateConsoleData,
+): MandateDetail {
   const pinnedVersion = row.mandate.default_agent_version_id
     ? data.versionsById[row.mandate.default_agent_version_id]
     : undefined;
-  const agentId = row.mandate.default_agent_id ?? pinnedVersion?.agentId ?? null;
+  const agentId =
+    row.mandate.default_agent_id ?? pinnedVersion?.agentId ?? null;
   const agent = agentId ? data.agentsById[agentId] : undefined;
   return {
     ...toMandateSummary(row),
@@ -199,10 +203,7 @@ export function MandatesConsole() {
           // `callApi` already records the request-level failure once with the
           // endpoint and transport class. Keep the local breadcrumb without
           // creating a second, poorer system_error for the same request.
-          console.warn(
-            "[mandates] code truth unavailable",
-            truthResult.reason,
-          );
+          console.warn("[mandates] code truth unavailable", truthResult.reason);
         } else {
           setCodeTruthByMandateKey(
             Object.fromEntries(
@@ -251,7 +252,9 @@ export function MandatesConsole() {
   const rows = useMemo(() => {
     if (!data) return [];
     return data.mandates
-      .map((mandate) => buildRow(mandate, data, codeTruthByMandateKey[mandate.mandate_key]))
+      .map((mandate) =>
+        buildRow(mandate, data, codeTruthByMandateKey[mandate.mandate_key]),
+      )
       .sort(
         (left, right) =>
           HEALTH_PRIORITY[left.health] - HEALTH_PRIORITY[right.health] ||
@@ -672,8 +675,8 @@ export function MandatesConsole() {
             <div>
               <div className="font-medium">Code truth is unavailable.</div>
               <div className="text-muted-foreground">
-                Mandate rows still work, but code-to-agent drift cannot be trusted
-                until aidream answers: {codeTruthError}
+                Mandate rows still work, but code-to-agent drift cannot be
+                trusted until aidream answers: {codeTruthError}
               </div>
             </div>
           </div>
@@ -705,6 +708,7 @@ export function MandatesConsole() {
             data={rows}
             columns={columns}
             getRowId={(r) => r.id}
+            searchText={(r) => r.mandateKey}
             isLoading={loading}
             isFetching={fetching}
             pageSize={50}

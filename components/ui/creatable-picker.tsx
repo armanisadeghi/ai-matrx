@@ -103,6 +103,13 @@ export function CreatablePicker({
    * caller's own `onCreate`.
    */
   createExtra,
+  /**
+   * What the TRIGGER shows for the current selection, when the caller wants
+   * something other than the option row's own `render`. A dense table cell
+   * needs one compact line ("Data Destruction Services · ITAD"); the list row
+   * it came from is indented and annotated. Same selection, two jobs.
+   */
+  renderSelected,
   size = "sm",
 }: {
   value: string | null;
@@ -122,6 +129,7 @@ export function CreatablePicker({
   lockedNote?: string;
   lockedAction?: { label: string; onSelect: () => void };
   createExtra?: ReactNode;
+  renderSelected?: ReactNode;
   size?: "sm" | "md";
 }) {
   const [open, setOpen] = useState(false);
@@ -176,7 +184,7 @@ export function CreatablePicker({
         >
           <span className="min-w-0 flex-1 truncate">
             {selected ? (
-              (selected.render ?? selected.label)
+              (renderSelected ?? selected.render ?? selected.label)
             ) : (
               <span className="text-muted-foreground">
                 {loading ? "Loading…" : placeholder}

@@ -42,6 +42,10 @@ The batch response is non-streaming and includes every selected candidate/exempl
 
 The list is the canonical `MatrxDataTable` (`components/official/matrx-data-table`) — every column sorts + filters, global search, Copy/Copy-for-AI (row + this view), pagination, UUID cell on `id`. The canonical `<feature>.<mandate>` key is split at its first dot into separate **Feature** (searchable select) and **Mandate** columns; later dots remain part of Mandate, while copy/surface/detail payloads retain the full `mandate_key` and UUID identity. Derived `MandateRow` (`mandate-health.ts`) owns ONE worst-first **Health** model: `code ↔ agent drift` → code-truth import failure → unresolved pin → non-system agent → archived agent → `code ↔ contract drift` → version drift → ok. Rows use that same order, so a breaking code/agent mismatch is on the first page without opening a drawer. Row click → side-panel workbench; the WindowPanel Edit tab reuses the same body.
 
+Global search also indexes the intact dotted `mandate_key` through the table's
+non-column `searchText` seam. Searching `hindsight.reviewer` therefore finds the
+row even though its visible Feature and Mandate values remain separate.
+
 **The drawer is FACTS-FIRST, THEN ISSUE-DRIVEN (`MandateDetailPanel.tsx`).** Structure: labeled mandate facts → live code facts + per-variable server verdicts → health remedy → three collapsible sections (**Change pinned agent** / **Test this mandate** / **User & org bindings**). The code facts come from typed `GET /mandates/code-truth`; per-variable labels come from typed `POST /mandates/{mandate_key}/variable-verdicts`, evaluated against the agent that actually runs. Never infer either from `mandate.contract`.
 
 **The code-truth read allows 60 seconds to receive headers.** A cold server may
@@ -79,6 +83,10 @@ The page is the `matrx-admin/mandates` surface (`features/surfaces/manifests/man
 The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate` (`ui`, handled on the console's own provider, which owns `selectedId`) and `mandate_exemplar_draft` (`draft`, registered by `MandateTestBench` via `useSurfaceWriteHandlers`). Both are `applyPolicy: "ask"`. Read the JUDGMENT BAR block at the top of the manifest before adding a third: rebind, enable/disable, the per-principal overrides, Run all, and every health/roll-up value are deliberately NOT writable, and each has its reason written down there.
 
 ## Change Log
+
+- 2026-08-23 — Made the intact dotted mandate key part of canonical table
+  search without merging the separately sortable/filterable Feature and
+  Mandate columns.
 
 - 2026-08-18 — Gave code truth a 60-second connection window, kept retryable
   transport loss local, and removed its duplicate console-error capture;
