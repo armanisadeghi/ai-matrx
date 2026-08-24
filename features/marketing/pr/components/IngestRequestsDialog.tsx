@@ -192,8 +192,26 @@ export function IngestRequestsDialog({
                 {run.result.duplicates
                   ? `, ${run.result.duplicates} already here`
                   : ""}
+                {run.result.rescored
+                  ? `, ${run.result.rescored} re-scored`
+                  : ""}
                 .
               </p>
+              {run.result.evaluations_deferred ? (
+                <p className="text-muted-foreground">
+                  {run.result.evaluations_deferred} landed unscored — this run
+                  hit its scoring ceiling. Use &ldquo;Score it&rdquo; on a row,
+                  or paste again to continue.
+                </p>
+              ) : null}
+              {run.result.truncated_requests ? (
+                <p className="text-muted-foreground">
+                  {run.result.truncated_requests} entr
+                  {run.result.truncated_requests === 1 ? "y" : "ies"} beyond
+                  this run&rsquo;s limit were not processed — paste the rest in
+                  a second run (already-landed ones are skipped).
+                </p>
+              ) : null}
               {screenedOut && screenedOut.length > 0 ? (
                 <p className="text-muted-foreground">
                   Not a fit for this site ({screenedOut.length}):{" "}

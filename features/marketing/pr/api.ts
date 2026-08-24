@@ -122,7 +122,13 @@ export async function generateStoryAngles(
 export interface IngestOutcome {
   query_title: string;
   site_id: string;
-  outcome: "created" | "duplicate" | "screened_out" | "evaluate_failed";
+  outcome:
+    | "created"
+    | "duplicate"
+    | "rescored"
+    | "screened_out"
+    | "evaluate_failed"
+    | "evaluation_deferred";
   request_id: string | null;
   screen_score: number;
   matched_terms: string[];
@@ -136,9 +142,14 @@ export interface IngestRequestsResult {
   sites_considered: number;
   created: number;
   duplicates: number;
+  rescored: number;
   screened_out: number;
   evaluated: number;
   drafted: number;
+  /** Rows created but not yet scored — the per-run model ceiling was spent. */
+  evaluations_deferred: number;
+  /** Entries beyond the per-run entry knob, dropped loudly; re-paste the rest. */
+  truncated_requests: number;
   outcomes: IngestOutcome[];
 }
 
@@ -199,47 +210,6 @@ export async function ingestSourceRequests(
   }
   if (!completed) {
     throw new Error("The ingest finished without returning a result.");
-  }
-  return completed;
-}
-
-export interface EvaluateRequestResult {
-  id: string;
-  status: string;
-  match_score: number;
-  drafted: boolean;
-}
-
-/**
- * Score (or re-score) one existing request — the recovery door for rows that
- * landed unscored (`new`) or need a fresh judgement (`matched`). One responder
- * pass is ~30-90s of paid model work, so it rides the same durable stream.
- */
-export async function evaluateSourceRequest(
-  dispatch: AppDispatch,
-  requestId: string,
-): Promise<EvaluateRequestResult> {
-  let completed: EvaluateRequestResult | undefined;
-  const outcome = await dispatch(
-    callApi({
-      path: `/seo/press/source-requests/${requestId}/evaluate`,
-      method: "POST",
-      body: {},
-      stream: true,
-      onStreamEvent: (event) => {
-        const data = streamData(event);
-        if (!data) return;
-        if (data.kind === "seo.press_source_request_evaluated") {
-          completed = data.result as EvaluateRequestResult | undefined;
-        }
-      },
-    }),
-  );
-  if (outcome.error) {
-    throw new Error(outcome.error.message ?? "Scoring failed.");
-  }
-  if (!completed) {
-    throw new Error("Scoring finished without returning a result.");
   }
   return completed;
 }
