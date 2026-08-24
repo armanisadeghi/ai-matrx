@@ -1712,9 +1712,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     keywordWindow: useAppSelector((s) =>
       selectOverlayData(s, "keywordWindow"),
+    ) as Record<string, unknown> | null,
     matcherReviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "matcherReviewWindow"),
-    ),
     ) as Record<string, unknown> | null,
     socialCardAnalyzerWindow: useAppSelector((s) =>
       selectOverlayData(s, "socialCardAnalyzerWindow"),

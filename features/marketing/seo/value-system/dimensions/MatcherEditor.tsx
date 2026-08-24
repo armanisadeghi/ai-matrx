@@ -362,22 +362,61 @@ function AddMatcherForm({
     },
   });
 
+  /**
+   * SAVE IS ONE ACT (Arman, 2026-08-24: *"you shouldn't need to click matcher.
+   * Clicking okay should just run it automatically"*).
+   *
+   * Saving a match used to write the row and stop, leaving the rule inert until
+   * someone found "Run matchers now" — so the thing you just created did
+   * nothing and the screen said "saved". Now the same click writes it, RUNS the
+   * engine, and opens the review of what it actually caught. The engine is
+   * site-wide because a new pattern's reach is not knowable in advance; it is
+   * the same call the manual button always made.
+   */
   const save = useMutation({
-    mutationFn: () =>
-      upsertDimensionMatcher({
+    mutationFn: async () => {
+      const saved = await upsertDimensionMatcher({
         siteId,
         valueId: value.value_id,
         kind,
         pattern: trimmed,
         origin: "human",
         enabled: true,
-      }),
-    onSuccess: () => {
-      toast.success(`Matcher saved — “${value.label}” now watches for this`);
+      });
+      const run = await runSiteMatchers(siteId);
+      return { saved, run };
+    },
+    onSuccess: ({ saved, run }) => {
       setPattern("");
       setReach(null);
       setReachError(null);
       onSaved();
+      // Facets feed the value resolver — every keyword surface just moved.
+      void queryClient.invalidateQueries({ queryKey: ["marketing", "seo"] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing", "gsc"] });
+      const matcherId = saved?.id;
+      if (matcherId) {
+        // The result IS the review, not a number. The window opens on the
+        // match that was just saved, showing every keyword it caught and every
+        // one it lost to a rival answer, with undo on it.
+        dispatch(
+          openOverlay({
+            overlayId: "matcherReviewWindow",
+            data: {
+              siteId,
+              matcherId,
+              pattern: trimmed,
+              kindLabel: kindMeta(kind).label,
+              valueLabel: value.label,
+              dimensionLabel,
+            },
+          }),
+        );
+      } else {
+        toast.success(
+          `“${value.label}” now watches for this — ${formatCount(run.stamped)} stamped, ${formatCount(run.removed)} released`,
+        );
+      }
     },
     onError: (error) => toast.error(extractErrorMessage(error)),
   });
@@ -412,8 +451,8 @@ function AddMatcherForm({
         />
       </div>
       <p className="text-[11px] leading-4 text-muted-foreground">
-        {PATTERN_KINDS.find((k) => k.key === kind)?.hint} — every keyword this
-        catches gets stamped “{value.label}” the next time matchers run.
+        {PATTERN_KINDS.find((k) => k.key === kind)?.hint} — saving runs it
+        straight away and shows you every keyword it caught.
       </p>
 
       {reach ? (

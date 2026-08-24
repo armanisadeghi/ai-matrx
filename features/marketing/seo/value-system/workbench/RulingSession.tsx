@@ -46,6 +46,7 @@ import {
   Network,
   SkipForward,
   X,
+  ShieldQuestion,
 } from "lucide-react";
 
 import { cn } from "@/styles/themes/utils";
@@ -70,6 +71,7 @@ import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import { humanizeSlug, type BandMeta, type ValueWindow } from "../lib";
 import { getRulingSessionQueue, type SessionQueueRow } from "./session/data";
 import { TrialPanel } from "./session/TrialPanel";
+import { VerifyPanel } from "./session/VerifyPanel";
 import type { SessionRuling } from "./session/trial";
 import { trialDimensionSlug } from "./session/trial";
 
@@ -128,6 +130,7 @@ export function RulingSession({
   const [fastSlug, setFastSlug] = useState(DEFAULT_FAST_DIMENSION);
   const [addingLevel, setAddingLevel] = useState<string | null>(null);
   const [trialOpen, setTrialOpen] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
   /** What the person taught this session, in their own words — the training set. */
   const [taught, setTaught] = useState<SessionRuling[]>([]);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -328,6 +331,22 @@ export function RulingSession({
     ) ?? null;
   const trialReady = taught.length >= beforeTrial && trialDimension !== null;
 
+  // THE BLIND CHECK (KI-032): the system re-answers ALREADY-ruled keywords
+  // cold; the fast dimension is the one to argue about.
+  if (verifyOpen && fastDimension) {
+    return (
+      <VerifyPanel
+        siteId={siteId}
+        siteLabel={siteLabel}
+        organizationId={organizationId}
+        window={{ start: reviewWindow.start, end: reviewWindow.end }}
+        dimension={fastDimension}
+        dimensions={dimensions}
+        onExit={() => setVerifyOpen(false)}
+      />
+    );
+  }
+
   if (trialOpen && trialDimension) {
     return (
       <TrialPanel
@@ -384,6 +403,19 @@ export function RulingSession({
             >
               <BrainCircuit className="h-3.5 w-3.5" />
               Let the system try the next {trialBatch}
+            </Button>
+          ) : null}
+          {fastDimension ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => setVerifyOpen(true)}
+              title={`The system re-answers your ${fastDimension.label.toLowerCase()} rulings cold — never shown your answers — and you argue the disagreements`}
+            >
+              <ShieldQuestion className="h-3.5 w-3.5" />
+              Blind-check my rulings
             </Button>
           ) : null}
           <Button
