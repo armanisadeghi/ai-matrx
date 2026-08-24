@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * THE KEYWORD TABLE — the ONE column set (P25).
+ * THE KEYWORD TABLE — the ONE column set (P26).
  *
  * Arman, 2026-08-24: "This is the bare bones table. The core data doesn't
  * change. The things you can sort and filter by do not change. Now we can add
@@ -241,7 +241,7 @@ export function buildKeywordColumns({
    * THE METRIC COLUMNS. `buildGscMetricColumns` ships them with `filter: false`
    * because most Search Console tables have no server-side metric filter to
    * back one. This table does (`clicks_min/max`, `impressions_min/max`,
-   * `position_min/max` on `gsc_perf_breakdown`), so here they filter — P25:
+   * `position_min/max` on `gsc_perf_breakdown`), so here they filter — P26:
    * a surface may change which columns SHOW, never whether they sort or filter.
    */
   const metricFilterable = new Set(["clicks", "impressions", "position"]);

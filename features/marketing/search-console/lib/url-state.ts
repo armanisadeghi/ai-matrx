@@ -325,7 +325,7 @@ const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   "levels",
   // The SERVICE filter — one topic subtree, or "none" for the unplaced.
   "topic",
-  // P25 — whose ruling the placement is (proposed / agent / human).
+  // P28 — whose ruling the placement is (proposed / agent / human).
   "placement",
   ...PROFILE_NEUTRAL_FILTER_KEYS,
 ];

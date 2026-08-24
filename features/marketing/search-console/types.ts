@@ -90,7 +90,7 @@ export interface GscFilters {
    */
   topic?: string;
   /**
-   * P25 — WHOSE RULING the keyword's placement is (`pl=`). `proposed` is an
+   * P28 — WHOSE RULING the keyword's placement is (`pl=`). `proposed` is an
    * agent placement below the confidence floor still waiting for a person;
    * `agent` / `human` are the two authors. Keyword-level, so it rides the
    * query / query_page profiles exactly like the service filter.

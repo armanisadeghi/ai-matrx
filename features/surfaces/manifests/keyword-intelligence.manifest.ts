@@ -20,7 +20,7 @@ import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 const groups: SurfaceValueGroup[] = [
   { key: "keyword_identity", label: "Keyword identity", sortOrder: 100 },
   { key: "keyword_market", label: "Market metrics", sortOrder: 200 },
-  { key: "keyword_classification", label: "Classification", sortOrder: 300 },
+  { key: "keyword_meaning", label: "This site's meaning", sortOrder: 300 },
   { key: "keyword_relationships", label: "Relationships", sortOrder: 400 },
   { key: "keyword_site_evidence", label: "Site evidence", sortOrder: 500 },
 ];
@@ -96,16 +96,22 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "keyword_market",
     sortOrder: 410,
   },
-  // ── Classification ─────────────────────────────────────────────────────
+  // ── This site's meaning ────────────────────────────────────────────────
+  //
+  // 2026-08-24 — REPLACED `keyword_classification`. That value carried the 13
+  // intrinsic columns of `seo.keyword`, which are a legacy MIRROR of the fact
+  // store (`seo.keyword_facet`). An agent reading them was reading a copy that
+  // no keyword surface writes any more. This value carries what the system
+  // actually decides.
   {
-    name: "keyword_classification",
-    label: "Intent classification",
+    name: "keyword_meaning",
+    label: "Class, service, score and level",
     description:
-      "The 13 intrinsic classification columns of the library keyword (intent_class, funnel_stage, specificity, query_form, local_intent, urgency, audience_type, brand_presence, comparison_intent, price_sensitivity, transaction_direction, fulfillment_mode, compliance_framing), non-null values only. Empty when unclassified.",
+      "What THIS site says the keyword is, resolved live: { class, class_source, service, service_lineage, service_assigned_by, score, level, level_source, receipt (the step-by-step reasons behind the score), stamps (every dimension answer with its source, whether a human pinned it, and the reason they wrote), unanswered_dimensions }. Present only with a site binding AND a library keyword. `level_source: \"override\"` means a person ruled it and that ruling beats every computed signal.",
     valueType: "object",
     alwaysAvailable: false,
-    typicalCharCount: 400,
-    group: "keyword_classification",
+    typicalCharCount: 900,
+    group: "keyword_meaning",
     sortOrder: 500,
   },
   // ── Relationships ──────────────────────────────────────────────────────
@@ -219,7 +225,8 @@ export const keywordIntelligenceManifest: SurfaceManifest = {
   intro: `<surface_intro>
 The Keyword Intelligence window is the platform's canonical dossier for ONE
 keyword. The user researches, evaluates, and acts on a single phrase here:
-market demand (volume, CPC, competition, trend), intent classification,
+market demand (volume, CPC, competition, trend), what this site says it IS
+(keyword_meaning: class, service, score, level and the receipt behind them),
 relationships to other keywords, and — when opened from a site — that site's
 real search performance for it. Read keyword_brief first; it is the condensed
 truth. keyword_known=false means the phrase has no library data yet: useful
@@ -271,7 +278,7 @@ export function createKeywordIntelligenceScope(values: {
   keyword_language?: string;
   keyword_brief?: Record<string, unknown>;
   keyword_market?: Array<Record<string, unknown>>;
-  keyword_classification?: Record<string, unknown>;
+  keyword_meaning?: Record<string, unknown>;
   keyword_relationships?: Array<Record<string, unknown>>;
   site_id?: string;
   page_id?: string;

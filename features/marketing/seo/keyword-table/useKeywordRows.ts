@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * THE KEYWORD TABLE — the ONE data access system (P25).
+ * THE KEYWORD TABLE — the ONE data access system (P28).
  *
  * Every surface that lists keywords reads through this hook. Not "usually" —
  * every one. The topic tree's queues used to run their own RPCs
@@ -21,7 +21,7 @@
  *   • `gsc_keyword_stamps_for` — the dimension columns the user added.
  *   • `facet_dimension_catalog` + the site's topic tree — the filter options.
  *
- * SoR: common-docs/systems/marketing/seo/seo-keywords/keyword-system-decisions.md (P25)
+ * SoR: common-docs/systems/marketing/seo/seo-keywords/keyword-system-decisions.md (P26 + P28)
  */
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";

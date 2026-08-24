@@ -23,7 +23,7 @@
  * I don't like pages where there are novels written." The top is ONE line of
  * context plus the controls. Everything else is table.
  *
- * WHAT THIS FILE IS NOW (P25 — ONE TABLE, 2026-08-24): the workbench's chrome.
+ * WHAT THIS FILE IS NOW (P26 — ONE TABLE, 2026-08-24): the workbench's chrome.
  * The grid itself, its data access, its columns and its URL dialect all moved
  * to `features/marketing/seo/keyword-table/`, because the topic tree's keyword
  * queues had been built as hand-rolled lists and lost every one of them. What

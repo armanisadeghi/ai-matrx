@@ -1,7 +1,7 @@
 /**
  * THE KEYWORD TABLE — URL state, shared by every surface that lists keywords.
  *
- * P25 — ONE TABLE (Arman, 2026-08-24): "all they had to do is just use the
+ * P26, extended 2026-08-24 — ONE TABLE: "all they had to do is just use the
  * canonical table… the core data doesn't change, the things you can sort and
  * filter by do not change. Now we can add and remove columns… they all need to
  * be one single table at the core. One table, one data access system, but then
@@ -17,7 +17,7 @@
  *     `seo.keyword_saved_view.state` (nothing else has to understand it);
  *   • a link pasted to a colleague opens the table they were looking at;
  *   • reload never loses the arrangement;
- *   • Back is one-step undo (P24).
+ *   • Back is one-step undo (P27).
  *
  * Two keyword tables can share one route (the topic tree shows the proposals
  * queue above the unplaced queue), so every parameter can carry a per-surface
@@ -248,7 +248,7 @@ export function parseKeywordTableState(
     ...base,
     filters: parseGscFilters(own),
     dimensions: parseList(own.get("cols")),
-    // `m` is the pre-P25 name for "extra metric columns" (CTR / Position).
+    // `m` is the pre-2026-08-24 name for "extra metric columns" (CTR / Position).
     // Reading it as `added` is what keeps every saved view written before this
     // module existed opening on the arrangement it was saved with.
     added: [...new Set([...coreList(own.get("m")), ...coreList(own.get("addc"))])],
@@ -339,7 +339,7 @@ const NON_FILTER_PARAMS = [
   "cols",
   "addc",
   "remc",
-  // The pre-P25 name for the extra-metric columns; cleared so a stale `m=`
+  // The pre-2026-08-24 name for the extra-metric columns; cleared so a stale `m=`
   // cannot outlive the arrangement that replaced it.
   "m",
   "sort",

@@ -39,6 +39,14 @@ export function buildKeywordBrief(input: {
   keyword: KeywordWithMarket | null;
   market: KeywordMarketRow | null;
   sitePerformance?: SiteKeywordPerformanceRow[] | null;
+  /**
+   * What THIS site says the keyword is — class, service, score, level, the
+   * receipt and every dimension stamp (`keywordMeaningPayload`). Present
+   * whenever the brief is built with a site binding; it is the half an agent
+   * launched from a keyword row most needs, so it rides in the same envelope.
+   */
+  meaning?: Record<string, unknown> | null;
+  meaningLines?: [string, string][];
 }): KeywordBrief {
   const { phrase, keyword, market } = input;
   const sitePerf = input.sitePerformance ?? [];
@@ -115,6 +123,11 @@ export function buildKeywordBrief(input: {
           : Number(best.average_position).toFixed(1)
       }${best.top_page_url ? ` · strongest page ${best.top_page_url}` : ""}`,
     ]);
+  }
+
+  if (input.meaning) {
+    data.site_meaning = input.meaning;
+    for (const line of input.meaningLines ?? []) lines.push(line);
   }
 
   return { data, lines };

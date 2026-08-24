@@ -1,24 +1,49 @@
--- P26 + P28 — ONE TABLE, ONE DATA ACCESS SYSTEM.
+-- C10 — THE LOCATION FILTER, in the SHARED dialect.
 --
--- Every surface that lists keywords reads `seo.gsc_perf_breakdown`. The topic
--- tree's two queues used to read their OWN RPCs (`gsc_topic_unassigned_keywords`,
--- `gsc_topic_proposed_keywords`), which is why those lists had no sortable
--- clicks/impressions, no dimension columns and no filters: a second query means
--- a second, poorer contract.
+-- "It's not just about knowing that something's local. It's also about knowing
+-- WHICH location that one belongs to." (P16)
 --
--- The unplaced queue was already expressible here (`filters.topic = 'none'`).
--- The proposals queue was not, so this migration adds the ONE missing filter
--- key — `placement` — rather than letting a second query survive.
+-- Multi-location attribution already worked: `seo.gsc_keyword_locations` walks
+-- the precedence ladder (bound area > city match > state match > nearest >
+-- single location) and answers for any keyword. What was missing is that the
+-- ONE canonical keyword table could not FILTER by that answer, so the feature
+-- was reachable only from its own panel — a second, poorer door.
 --
---   placement = 'proposed'  the primary placement is an agent ruling below the
---                           confidence floor, still waiting for a human
---                           (`keyword_topic.metadata->placement->>confirmed = 'false'`)
---   placement = 'agent'     placed by anything that is not a person
---   placement = 'human'     placed by a person
+-- This adds `location` to `p_filters` on `seo.gsc_perf_breakdown`, the same way
+-- `topic` and `placement` ride it: keyword-level, so it belongs to the
+-- query / query_page profiles and needs no change to
+-- `seo.gsc_perf_resolve_profile` (which, being IMMUTABLE, only inspects the
+-- keys that decide a PROFILE — a keyword-level filter is not one of them).
 --
--- Idempotent: CREATE OR REPLACE.
+-- THE VOCABULARY IS NOT NEW. The filter takes a `web.business_location` uuid,
+-- or one of the two bucket tokens the decomposition already names —
+-- `unresolved` (a local search nothing could place) and `not_local` (no place
+-- named at all). Inventing a third word for a bucket the user already reads on
+-- the Which-location panel would be a second dialect.
+--
+-- NO SIXTH RPC. The attribution is read from `seo.gsc_keyword_locations`
+-- itself, materialized once as a CTE rather than re-derived here. There is
+-- exactly one definition of which location a keyword belongs to, and this is
+-- not it — it is a consumer of it.
+--
+-- Cost when unused is zero: every added CTE is guarded on `f_lo IS NOT NULL`.
+--
+-- SoR: common-docs/systems/marketing/seo/seo-keywords/value-system.md § C10.
 
-CREATE OR REPLACE FUNCTION seo.gsc_perf_breakdown(p_site_id uuid, p_dimension text, p_start date, p_end date, p_compare_start date DEFAULT NULL::date, p_compare_end date DEFAULT NULL::date, p_filters jsonb DEFAULT '{}'::jsonb, p_search text DEFAULT NULL::text, p_sort text DEFAULT 'clicks'::text, p_sort_dir text DEFAULT 'desc'::text, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0)
+CREATE OR REPLACE FUNCTION seo.gsc_perf_breakdown(
+  p_site_id uuid,
+  p_dimension text,
+  p_start date,
+  p_end date,
+  p_compare_start date DEFAULT NULL::date,
+  p_compare_end date DEFAULT NULL::date,
+  p_filters jsonb DEFAULT '{}'::jsonb,
+  p_search text DEFAULT NULL::text,
+  p_sort text DEFAULT 'clicks'::text,
+  p_sort_dir text DEFAULT 'desc'::text,
+  p_limit integer DEFAULT 50,
+  p_offset integer DEFAULT 0
+)
  RETURNS TABLE(key text, page_id uuid, keyword_id uuid, clicks bigint, impressions bigint, ctr numeric, avg_position numeric, cmp_clicks bigint, cmp_impressions bigint, cmp_ctr numeric, cmp_avg_position numeric, total_count bigint)
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
@@ -39,12 +64,12 @@ DECLARE
   f_st jsonb := CASE WHEN jsonb_typeof(p_filters->'stamps') = 'array' AND jsonb_array_length(p_filters->'stamps') > 0 THEN p_filters->'stamps' END;
   f_lv text[] := CASE WHEN jsonb_typeof(p_filters->'levels') = 'array' AND jsonb_array_length(p_filters->'levels') > 0
                       THEN ARRAY(SELECT jsonb_array_elements_text(p_filters->'levels')) END;
-  -- THE SERVICE FILTER: a topic uuid (the topic AND its whole subtree), or the
-  -- literal `none` for the keywords nobody has placed yet.
   f_tp text := NULLIF(btrim(p_filters->>'topic'), '');
   f_tp_id uuid;
-  -- WHOSE RULING the placement is (P28). Only meaningful for placed keywords.
   f_pl text := NULLIF(btrim(p_filters->>'placement'), '');
+  -- C10 — WHICH LOCATION: a business-location uuid, or `unresolved` / `not_local`.
+  f_lo text := NULLIF(btrim(p_filters->>'location'), '');
+  f_lo_id uuid;
   f_cmin numeric := NULLIF(p_filters->>'clicks_min','')::numeric;
   f_cmax numeric := NULLIF(p_filters->>'clicks_max','')::numeric;
   f_imin numeric := NULLIF(p_filters->>'impressions_min','')::numeric;
@@ -77,6 +102,13 @@ BEGIN
   IF f_pl IS NOT NULL AND f_pl NOT IN ('proposed', 'agent', 'human') THEN
     RAISE EXCEPTION 'gsc_placement_filter_invalid: the placement filter takes proposed, agent or human.';
   END IF;
+  IF f_lo IS NOT NULL AND f_lo NOT IN ('unresolved', 'not_local') THEN
+    BEGIN
+      f_lo_id := f_lo::uuid;
+    EXCEPTION WHEN others THEN
+      RAISE EXCEPTION 'gsc_location_filter_invalid: the location filter takes a business location id, "unresolved" or "not_local".';
+    END;
+  END IF;
 
   RETURN QUERY
   WITH winner AS (
@@ -91,6 +123,20 @@ BEGIN
   ),
   topic_set AS (
     SELECT s.kw_id FROM seo.gsc_topic_keyword_set(f_tp_id) s WHERE f_tp_id IS NOT NULL
+  ),
+  -- C10 — the ONE attribution answer, read once. Empty unless a location
+  -- filter is actually set, so the unfiltered path pays nothing for it.
+  loc_hits AS (
+    SELECT kl.keyword_id AS kw_id, kl.location_id
+    FROM seo.gsc_keyword_locations(p_site_id) kl
+    WHERE f_lo IS NOT NULL
+  ),
+  -- Every keyword that names a place at all — the denominator that separates
+  -- "local but nothing could place it" from "not a local search".
+  local_kw AS (
+    SELECT DISTINCT kp.keyword_id AS kw_id
+    FROM seo.keyword_place kp
+    WHERE f_lo IN ('unresolved', 'not_local') AND kp.deleted_at IS NULL
   ),
   latest AS (
     SELECT spd.date AS d,
@@ -137,6 +183,17 @@ BEGIN
                               OR kt.metadata #>> '{placement,confirmed}' = 'false')
                          AND (f_pl <> 'human' OR kt.assigned_by = 'human')
                          AND (f_pl <> 'agent' OR kt.assigned_by IS DISTINCT FROM 'human')))
+      -- C10 — WHICH LOCATION.
+      AND (f_lo IS NULL
+           OR (f_lo_id IS NOT NULL
+               AND EXISTS (SELECT 1 FROM loc_hits lh
+                            WHERE lh.kw_id = spd.keyword_id AND lh.location_id = f_lo_id))
+           OR (f_lo = 'unresolved'
+               AND EXISTS (SELECT 1 FROM local_kw lk WHERE lk.kw_id = spd.keyword_id)
+               AND NOT EXISTS (SELECT 1 FROM loc_hits lh WHERE lh.kw_id = spd.keyword_id))
+           OR (f_lo = 'not_local'
+               AND spd.keyword_id IS NOT NULL
+               AND NOT EXISTS (SELECT 1 FROM local_kw lk WHERE lk.kw_id = spd.keyword_id)))
       AND (f_lv IS NULL OR spd.keyword_id IN (
              SELECT vm.keyword_id FROM seo.keyword_value_map(p_site_id,
                (SELECT array_agg(DISTINCT x.keyword_id) FROM seo.search_performance_daily x
@@ -193,8 +250,6 @@ BEGIN
              WHEN 'position' THEN CASE WHEN j.c_pos_imps > 0 THEN j.c_wpos / j.c_pos_imps END
              WHEN 'delta_clicks' THEN (j.c_clicks - COALESCE(j.m_clicks, 0))::numeric
            END AS s_val,
-           -- Sorting the SERVICE column is a server sort or it is a lie: the
-           -- browser only ever holds one page. Resolved only when asked for.
            CASE WHEN p_sort = 'topic' THEN (
              SELECT t.name
              FROM seo.keyword_topic kt

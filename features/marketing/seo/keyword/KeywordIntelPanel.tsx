@@ -70,7 +70,8 @@ import {
 import { normalizeMonthlySearches } from "@/features/marketing/seo/keyword-research/types";
 import type { KeywordWithMarket } from "@/features/marketing/seo/keyword-research/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { humanLines, webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { isJsonObject } from "@/types/json";
 import KeywordSerpIntentAnalysisBlock from "@/components/mardown-display/blocks/keyword-research/KeywordSerpIntentAnalysisBlock";
@@ -80,8 +81,18 @@ import {
   createKeywordIntelligenceScope,
   keywordIntelligenceManifest,
 } from "@/features/surfaces/manifests/keyword-intelligence.manifest";
-import { KeywordDataChips } from "./KeywordDataChips";
 import { KeywordInput } from "./KeywordInput";
+import { KeywordMeaningPanel } from "./KeywordMeaningPanel";
+import {
+  keywordMeaningLines,
+  keywordMeaningPayload,
+  useKeywordMeaning,
+} from "./keyword-meaning";
+import {
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+  type KeywordAssignSurfaces,
+} from "./keyword-actions";
 import { KeywordRankingsTab, KeywordSerpTab } from "./KeywordRankTabs";
 import {
   KeywordResearchTab,
@@ -123,22 +134,22 @@ const EMPTY_RESEARCH_STATE: KeywordResearchPanelState = {
 const KEYWORD_INTELLIGENCE_SURFACE_NAME =
   keywordIntelligenceManifest.surfaceName;
 
-/** The 13 intrinsic classification columns, humanized. */
-const CLASSIFICATION_LABELS: [keyof KeywordWithMarket, string][] = [
-  ["intent_class", "Intent"],
-  ["funnel_stage", "Funnel stage"],
-  ["specificity", "Specificity"],
-  ["query_form", "Query form"],
-  ["local_intent", "Local intent"],
-  ["urgency", "Urgency"],
-  ["audience_type", "Audience"],
-  ["brand_presence", "Brand presence"],
-  ["comparison_intent", "Comparison"],
-  ["price_sensitivity", "Price sensitivity"],
-  ["transaction_direction", "Transaction"],
-  ["fulfillment_mode", "Fulfillment"],
-  ["compliance_framing", "Compliance"],
-];
+/**
+ * 🚨 THE 13 MIRROR FACETS ARE GONE FROM THIS DOSSIER (2026-08-24).
+ *
+ * `seo.keyword`'s intent_class / funnel_stage / specificity / query_form /
+ * local_intent / urgency / audience_type / brand_presence / comparison_intent /
+ * price_sensitivity / transaction_direction / fulfillment_mode /
+ * compliance_framing columns are a LEGACY MIRROR of the fact store
+ * (`seo.keyword_facet`). The window used to render all 13 as its
+ * "Classification" card while showing nothing at all from the system that
+ * replaced them — so the one dossier twelve surfaces open told every curious
+ * user the old story.
+ *
+ * The meaning half of this dossier is now `./KeywordMeaningPanel`, reading the
+ * canonical RPCs (`gsc_keyword_value_for`, `gsc_keyword_topics_for`,
+ * `gsc_keyword_stamps_for`). Do not reintroduce a facet-column reader here.
+ */
 
 function savedSerpIntentAnalysis(
   keyword: KeywordWithMarket | null,
@@ -217,26 +228,49 @@ export function KeywordIntelPanel({
     [],
   );
 
+  // THE MEANING HALF. Read here (not only inside the panel) so the surface
+  // scope, the Copy-for-AI envelope and the right-click menu all carry the
+  // same class/service/score/level the human is looking at.
+  const meaning = useKeywordMeaning(siteId, keyword?.id ?? null);
+  const meaningPayload = keywordMeaningPayload(meaning.data);
+
+  // The SAME assignment surfaces the right-click menu opens — one set, shared
+  // between the menu items and the dossier's own buttons.
+  const surfaces = useKeywordAssignSurfaces({ siteId: siteId ?? "" });
+  const keywordSection = useKeywordMenuSection({
+    siteId: siteId ?? "",
+    brandId: scope?.brandId ?? null,
+    organizationId: scope?.organizationId ?? null,
+    surfaces,
+    // The dossier IS the Keyword Intelligence window — a door back to itself
+    // would be the dead end this campaign exists to remove.
+    includeIntelDoor: false,
+    getRow: () =>
+      keyword
+        ? {
+            phrase: keyword.phrase,
+            keywordId: keyword.id,
+            currentLevel: meaning.data.value?.value_band ?? null,
+            levelIsRuling: meaning.data.value?.value_source === "override",
+          }
+        : { phrase, keywordId: null },
+  });
+
   const brief = buildKeywordBrief({
     phrase,
     keyword,
     market,
     sitePerformance: sitePerf.data,
+    meaning: meaningPayload,
+    meaningLines: keywordMeaningLines(meaning.data),
   });
 
   // Live surface scope — built at agent-launch/menu-open time from the
   // already-loaded query data (never fetches). The window IS a surface:
   // user-created agents bound to `matrx-user/keyword-intelligence` receive
   // the full dossier, condensed in `keyword_brief`.
-  const getScope = () => {
-    const classification: Record<string, string> = {};
-    if (keyword) {
-      for (const [field] of CLASSIFICATION_LABELS) {
-        const value = keyword[field];
-        if (typeof value === "string" && value) classification[field] = value;
-      }
-    }
-    return createKeywordIntelligenceScope({
+  const getScope = () =>
+    createKeywordIntelligenceScope({
       phrase,
       keyword_known: Boolean(keyword),
       keyword_id: keyword?.id,
@@ -245,8 +279,7 @@ export function KeywordIntelPanel({
       keyword_market: keyword?.keyword_market?.length
         ? keyword.keyword_market.map((row) => ({ ...row }))
         : undefined,
-      keyword_classification:
-        Object.keys(classification).length > 0 ? classification : undefined,
+      keyword_meaning: meaningPayload ?? undefined,
       keyword_relationships: edges.data
         ? edges.data.map((edge) => ({ ...edge }))
         : undefined,
@@ -257,12 +290,11 @@ export function KeywordIntelPanel({
         ? sitePerf.data.map((row) => ({ ...row }))
         : undefined,
     });
-  };
   const copy = webCopy({
     kind: "seo-keyword-brief",
     label: `Keyword — ${phrase || "none"}`,
     description:
-      "The condensed keyword dossier: market metrics, classification, and site performance.",
+      "The condensed keyword dossier: market metrics, this site's class/service/score/level with its receipt, and site performance.",
     surface: "Keyword Intelligence window",
     data: brief.data,
     lines: brief.lines,
@@ -349,6 +381,33 @@ export function KeywordIntelPanel({
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
     >
+      {/*
+        🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without this,
+        a right-click inside the floating dossier was answered by whatever page
+        happened to be underneath — handing the user THAT page's surface, values
+        and agents, silently wrong and looking like it worked. Verified live on
+        2026-08-24: right-clicking here produced nothing at all, so the dossier
+        could not even be copied for an AI.
+      */}
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        surfaceName={KEYWORD_INTELLIGENCE_SURFACE_NAME}
+        contentSource={{ type: "raw" }}
+        {...(keyword
+          ? {
+              entity: {
+                type: "seo_keyword" as const,
+                id: keyword.id,
+                title: keyword.phrase,
+              },
+            }
+          : {})}
+        contextData={{
+          content: humanLines(brief.lines),
+          context: brief.data,
+        }}
+        extraSections={siteId ? [keywordSection] : []}
+      >
       <div className="flex h-full min-h-0 flex-col">
         {/* ── Header: phrase + condensed data + actions ─────────────────────── */}
         <div className="shrink-0 border-b border-border px-3 pb-2 pt-3">
@@ -458,6 +517,9 @@ export function KeywordIntelPanel({
                 <OverviewTab
                   phrase={phrase}
                   keyword={keyword}
+                  siteId={siteId ?? null}
+                  brandId={scope?.brandId ?? null}
+                  surfaces={surfaces}
                   marketLoading={resolved.isLoading}
                   onFetchMarket={() => void refreshVolume(false)}
                   fetching={volumeRefresh.state.status === "running"}
@@ -578,7 +640,16 @@ export function KeywordIntelPanel({
             </>
           )}
         </div>
+
+        {/* The shared assignment surfaces the menu and the dossier both open.
+            Never inside a Dialog — see `useKeywordAssignSurfaces`. */}
+        {surfaces.isOpen ? (
+          <div className="shrink-0 border-t border-border p-2">
+            {surfaces.node}
+          </div>
+        ) : null}
       </div>
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }
@@ -599,6 +670,9 @@ function EmptyPanelState() {
 function OverviewTab({
   phrase,
   keyword,
+  siteId,
+  brandId,
+  surfaces,
   marketLoading,
   onFetchMarket,
   fetching,
@@ -607,6 +681,9 @@ function OverviewTab({
 }: {
   phrase: string;
   keyword: KeywordWithMarket | null;
+  siteId: string | null;
+  brandId: string | null;
+  surfaces: KeywordAssignSurfaces;
   marketLoading: boolean;
   onFetchMarket: () => void;
   fetching: boolean;
@@ -636,12 +713,6 @@ function OverviewTab({
   }
 
   const markets = keyword.keyword_market ?? [];
-  const classification = CLASSIFICATION_LABELS.flatMap(([field, label]) => {
-    const value = keyword[field];
-    return typeof value === "string" && value
-      ? [{ label, value: value.replaceAll("_", " ") }]
-      : [];
-  });
 
   return (
     <div className="grid gap-3">
@@ -771,30 +842,29 @@ function OverviewTab({
         })
       )}
 
-      <div className="rounded-lg border border-border p-3">
-        <p className="mb-2 text-xs font-semibold text-foreground">
-          Classification
-        </p>
-        {classification.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            Unclassified — run Research to classify intent, funnel stage, and
-            specificity.
+      {/* THE MEANING HALF — Class, Service, Score, Level, the receipt and
+          every dimension stamp, all settable in place. This replaced the 13
+          retired mirror facets on 2026-08-24; see the note at the top of this
+          file. Without a site there is nothing to say: meaning is per-site. */}
+      {siteId ? (
+        <KeywordMeaningPanel
+          siteId={siteId}
+          brandId={brandId}
+          keywordId={keyword.id}
+          phrase={keyword.phrase}
+          surfaces={surfaces}
+        />
+      ) : (
+        <div className="rounded-lg border border-dashed border-border p-3">
+          <p className="text-xs font-medium text-foreground">
+            Class, service and value are decided per website
           </p>
-        ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {classification.map((entry) => (
-              <Badge
-                key={entry.label}
-                variant="outline"
-                className="gap-1 text-[10px]"
-              >
-                <span className="text-muted-foreground">{entry.label}:</span>
-                <span className="capitalize">{entry.value}</span>
-              </Badge>
-            ))}
-          </div>
-        )}
-      </div>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            This dossier is currently global. Open it from a website to see —
+            and set — what that site says this keyword is.
+          </p>
+        </div>
+      )}
 
       <CondensedFieldGrid
         fields={[

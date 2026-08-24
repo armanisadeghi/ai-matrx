@@ -13,7 +13,7 @@
  * one data access system, but then you're basically just saving configurations
  * for each page, and then the user gets to create their own configurations."
  *
- * That is P25 — ONE TABLE — and this file is it:
+ * That is P26 (one table) + P28 (one data access) — and this file is it:
  *
  *   • the rows come from ONE query (`useKeywordRows` → `gsc_perf_breakdown`);
  *   • the columns come from ONE builder (`buildKeywordColumns`);
@@ -22,7 +22,7 @@
  *     lie about one;
  *   • a surface supplies a CONFIGURATION — which columns it opens on, a base
  *     filter it never lets go of, its own bulk actions — and nothing else;
- *   • the user's own arrangement rides the URL, so Back is one-step undo (P24)
+ *   • the user's own arrangement rides the URL, so Back is one-step undo (P27)
  *     and a saved view is literally this state.
  *
  * SoR: common-docs/systems/marketing/seo/seo-keywords/keyword-system-decisions.md
@@ -239,7 +239,7 @@ export function KeywordTable({
   const debouncedSearch = useDebounce(searchDraft, 300);
 
   /**
-   * THE BACK BUTTON IS UNDO (P24). Every write here is a discrete user action —
+   * THE BACK BUTTON IS UNDO (P27). Every write here is a discrete user action —
    * a filter, a column, a page — so it PUSHES a history entry and Back walks
    * back exactly one step.
    */
