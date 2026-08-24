@@ -1,12 +1,12 @@
 /**
  * Read helpers for the scraper kind family blocks.
  *
- * TYPES COME FROM THE REGISTRY, NOWHERE ELSE. `readScraperKindValue<"page_link">`
- * hands back the mid-stream view of `page_link` generated from
- * `content_ir.kind_definition`, so a field these renderers read that the
- * registry does not declare is a COMPILE error rather than a silently-undefined
- * box on the screen. These files must never declare a payload interface of
- * their own — that is the twin the `check:kind-type-twins` gate fails on.
+ * Nested scraper structures are generated interfaces, not independently
+ * registered Shape slugs. This reader therefore validates only the common
+ * object boundary and leaves fields as `unknown`; the small field readers
+ * below narrow every value at its point of use. These files must never declare
+ * a payload interface of their own — that is the twin the
+ * `check:kind-type-twins` gate fails on.
  *
  * Every block receives `serverData` from one of two paths: the streaming
  * bridge (`{ value, isComplete }`) or a nested/persisted caller handing the
@@ -15,14 +15,8 @@
  * defensive and a half-arrived page is a NORMAL state, never an error.
  */
 
-import type {
-  GeneratedKindSlug,
-  PartialKind,
-  PartialKindPayload,
-} from "@/features/content-ir/kinds/kind-payload";
-
-export interface ScraperKindPayload<S extends GeneratedKindSlug> {
-  value: PartialKindPayload<S>;
+export interface ScraperKindPayload {
+  value: Record<string, unknown>;
   isComplete: boolean;
 }
 
@@ -30,19 +24,17 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function readScraperKindValue<S extends GeneratedKindSlug>(
-  serverData: unknown,
-): ScraperKindPayload<S> {
+export function readScraperKindValue(serverData: unknown): ScraperKindPayload {
   if (isRecord(serverData)) {
     if (isRecord(serverData.value)) {
       return {
-        value: serverData.value as PartialKindPayload<S>,
+        value: serverData.value,
         isComplete: serverData.isComplete !== false,
       };
     }
-    return { value: serverData as PartialKindPayload<S>, isComplete: true };
+    return { value: serverData, isComplete: true };
   }
-  return { value: {} as PartialKindPayload<S>, isComplete: true };
+  return { value: {}, isComplete: true };
 }
 
 export function text(value: unknown): string | null {
@@ -58,10 +50,10 @@ export function strings(value: unknown): string[] {
   return value.filter((i): i is string => typeof i === "string" && i.trim() !== "");
 }
 
-/** The present elements of a mid-stream array of objects, keeping their registry type. */
-export function items<T>(value: PartialKind<T>[] | undefined): PartialKind<T>[] {
+/** The present object elements of a mid-stream array. */
+export function items(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is PartialKind<T> => isRecord(item));
+  return value.filter(isRecord);
 }
 
 /** Untyped escape hatch for genuinely open payload corners. */

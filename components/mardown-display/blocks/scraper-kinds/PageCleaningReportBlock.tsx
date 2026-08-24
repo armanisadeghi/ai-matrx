@@ -60,7 +60,7 @@ function LedgerRow({
 }
 
 export default function PageCleaningReportBlock({ serverData, className, survivors }: Props) {
-  const { value } = readScraperKindValue<"page_cleaning_report">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const removed = items(value.removed);
   const noiseCount = num(value.noise_removed_count) ?? 0;
   const filterCount = num(value.filter_removed_count) ?? 0;
@@ -75,10 +75,9 @@ export default function PageCleaningReportBlock({ serverData, className, survivo
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return removed.filter((entry) => {
-      const record = entry as Record<string, unknown>;
-      if (only !== "all" && text(record.remover) !== only) return false;
+      if (only !== "all" && text(entry.remover) !== only) return false;
       if (!needle) return true;
-      return [record.text, record.trigger_value, record.attribute]
+      return [entry.text, entry.trigger_value, entry.attribute]
         .map((v) => (typeof v === "string" ? v.toLowerCase() : ""))
         .some((v) => v.includes(needle));
     });
@@ -140,7 +139,7 @@ export default function PageCleaningReportBlock({ serverData, className, survivo
 
       <div className="max-h-[28rem] space-y-1.5 overflow-auto pr-1">
         {visible.map((entry, i) => (
-          <ScraperKindNested key={i} value={entry as object} />
+          <ScraperKindNested key={i} value={entry} />
         ))}
         {visible.length === 0 && (
           <p className="py-4 text-center text-xs text-muted-foreground">

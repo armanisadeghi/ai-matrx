@@ -75,7 +75,7 @@ export const ExternalImage: React.FC<{
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={src}
-      alt={alt ?? ""}
+      alt={typeof alt === "string" ? alt : ""}
       loading="lazy"
       className={cn("object-cover", className)}
       onError={() => setFailed(true)}

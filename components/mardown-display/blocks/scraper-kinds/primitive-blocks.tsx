@@ -23,7 +23,15 @@ import {
 import { cn } from "@/lib/utils";
 import MarkdownCore from "@/components/markdown-core/MarkdownCore";
 import { ExternalImage, Pill, SiteFavicon } from "./scraper-kind-shared";
-import { compactNumber, num, readScraperKindValue, strings, text } from "./scraper-kind-data";
+import {
+  compactNumber,
+  isRecord,
+  num,
+  readScraperKindValue,
+  records,
+  strings,
+  text,
+} from "./scraper-kind-data";
 
 interface BlockProps {
   serverData?: unknown;
@@ -39,7 +47,7 @@ const LINK_TYPE_TONE = {
 } as const;
 
 export function PageLinkBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"page_link">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const url = text(value.target_url);
   if (!url) return null;
   const anchor = text(value.anchor_text);
@@ -73,8 +81,13 @@ export function PageLinkBlock({ serverData, className }: BlockProps) {
           <span
             className={cn(
               "inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
-              LINK_TYPE_TONE[linkType as keyof typeof LINK_TYPE_TONE] ??
-                "border-border bg-muted/40 text-muted-foreground",
+              linkType === "internal"
+                ? LINK_TYPE_TONE.internal
+                : linkType === "external"
+                  ? LINK_TYPE_TONE.external
+                  : linkType === "subdomain"
+                    ? LINK_TYPE_TONE.subdomain
+                    : "border-border bg-muted/40 text-muted-foreground",
             )}
           >
             {linkType}
@@ -97,11 +110,11 @@ const BUCKETS = [
 ] as const;
 
 export function LinkBucketsBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"link_buckets">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const present = BUCKETS.map(([key, label]) => ({
     key,
     label,
-    urls: strings(value[key as keyof typeof value]),
+    urls: strings(value[key]),
   })).filter((b) => b.urls.length > 0);
   if (present.length === 0) return null;
   const total = present.reduce((sum, b) => sum + b.urls.length, 0);
@@ -149,7 +162,7 @@ export function LinkBucketsBlock({ serverData, className }: BlockProps) {
 /* ------------------------------------------------------------------ media */
 
 export function PageImageBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"page_image">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const src = text(value.src);
   if (!src) return null;
   const alt = text(value.alt);
@@ -178,7 +191,7 @@ export function PageImageBlock({ serverData, className }: BlockProps) {
 }
 
 export function PageVideoBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"page_video">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const src = text(value.src);
   if (!src) return null;
   const poster = text(value.poster);
@@ -208,7 +221,7 @@ export function PageVideoBlock({ serverData, className }: BlockProps) {
 }
 
 export function PageAudioBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"page_audio">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const src = text(value.src);
   if (!src) return null;
   return (
@@ -231,7 +244,7 @@ export function PageAudioBlock({ serverData, className }: BlockProps) {
 /* -------------------------------------------------------------- structure */
 
 export function PageHeadingBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"page_heading">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const label = text(value.text);
   if (!label) return null;
   const level = num(value.level) ?? 0;
@@ -255,7 +268,7 @@ export function PageHeadingBlock({ serverData, className }: BlockProps) {
 }
 
 export function PageSectionBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"page_section">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const heading = text(value.heading);
   const markdown = text(value.markdown);
   if (!heading && !markdown) return null;
@@ -264,7 +277,7 @@ export function PageSectionBlock({ serverData, className }: BlockProps) {
       {heading && <h3 className="text-sm font-semibold text-foreground">{heading}</h3>}
       {markdown && (
         <div className="prose prose-sm max-w-none dark:prose-invert">
-          <MarkdownCore content={markdown} />
+          <MarkdownCore>{markdown}</MarkdownCore>
         </div>
       )}
     </section>
@@ -272,7 +285,7 @@ export function PageSectionBlock({ serverData, className }: BlockProps) {
 }
 
 export function PageListBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"page_list">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const entries = strings(value.items);
   if (entries.length === 0) return null;
   const ordered = value.ordered === true;
@@ -297,7 +310,7 @@ export function PageListBlock({ serverData, className }: BlockProps) {
 }
 
 export function CodeBlockKindBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"code_block">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const code = text(value.code);
   if (!code) return null;
   const language = text(value.language);
@@ -322,7 +335,7 @@ export function CodeBlockKindBlock({ serverData, className }: BlockProps) {
  * dispatches on `type` rather than showing a field dump.
  */
 export function PageBlockBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"page_block">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const type = text(value.type);
   const body = text(value.text);
   const entries = strings(value.items);
@@ -387,7 +400,7 @@ export function PageBlockBlock({ serverData, className }: BlockProps) {
 /* ------------------------------------------------------- transport / meta */
 
 export function RedirectHopBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"redirect_hop">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const url = text(value.url);
   if (!url) return null;
   const status = num(value.status);
@@ -400,7 +413,7 @@ export function RedirectHopBlock({ serverData, className }: BlockProps) {
 }
 
 export function ContentFingerprintBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"content_fingerprint">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const simhash = text(value.simhash);
   const outline = text(value.outline_simhash);
   const minhash = Array.isArray(value.minhash) ? value.minhash : [];
@@ -436,24 +449,20 @@ export function ContentFingerprintBlock({ serverData, className }: BlockProps) {
  * link will produce, not a list of meta tags.
  */
 export function PageMetadataBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"page_metadata">(serverData);
-  const og = (value.open_graph ?? {}) as Record<string, unknown>;
+  const { value } = readScraperKindValue(serverData);
+  const og = isRecord(value.open_graph) ? value.open_graph : {};
   const ogTitle = text(og["og:title"]);
   const ogDesc = text(og["og:description"]);
   const ogImage = text(og["og:image"]);
   const ogSite = text(og["og:site_name"]);
   const canonical = text(value.canonical_url);
   const robots = text(value.robots_directives);
-  const jsonLd = Array.isArray(value.json_ld) ? value.json_ld : [];
-  const metaTags = (value.meta_tags ?? {}) as Record<string, unknown>;
+  const jsonLd = records(value.json_ld);
+  const metaTags = isRecord(value.meta_tags) ? value.meta_tags : {};
   const metaCount = Object.keys(metaTags).length;
 
   const schemaTypes = jsonLd
-    .map((entry) =>
-      typeof entry === "object" && entry !== null
-        ? text((entry as Record<string, unknown>)["@type"])
-        : null,
-    )
+    .map((entry) => text(entry["@type"]))
     .filter((t): t is string => Boolean(t));
 
   const hasCard = Boolean(ogTitle || ogDesc || ogImage);
@@ -532,7 +541,7 @@ export function PageMetadataBlock({ serverData, className }: BlockProps) {
 /* ---------------------------------------------------------------- removal */
 
 export function PageRemovalBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"page_removal">(serverData);
+  const { value } = readScraperKindValue(serverData);
   const body = text(value.text);
   const trigger = text(value.trigger_value);
   const attribute = text(value.attribute);
@@ -565,8 +574,8 @@ export function PageRemovalBlock({ serverData, className }: BlockProps) {
 
 /** `parsed_table` — reused kind; a page table renders as a real table. */
 export function ParsedTableBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue<"parsed_table">(serverData);
-  const rows = Array.isArray(value.rows) ? value.rows : [];
+  const { value } = readScraperKindValue(serverData);
+  const rows = records(value.rows);
   const columns = strings(value.columns);
   if (rows.length === 0) return null;
   const cols =
@@ -574,9 +583,7 @@ export function ParsedTableBlock({ serverData, className }: BlockProps) {
       ? columns
       : Array.from(
           rows.reduce<Set<string>>((set, row) => {
-            if (row && typeof row === "object" && !Array.isArray(row)) {
-              Object.keys(row as Record<string, unknown>).forEach((k) => set.add(k));
-            }
+            Object.keys(row).forEach((k) => set.add(k));
             return set;
           }, new Set()),
         );
@@ -597,10 +604,7 @@ export function ParsedTableBlock({ serverData, className }: BlockProps) {
           {rows.slice(0, 50).map((row, i) => (
             <tr key={i} className="border-t border-border/50">
               {cols.map((col) => {
-                const cell =
-                  row && typeof row === "object" && !Array.isArray(row)
-                    ? (row as Record<string, unknown>)[col]
-                    : undefined;
+                const cell = row[col];
                 return (
                   <td key={col} className="px-2 py-1 align-top text-foreground">
                     {cell === null || cell === undefined ? "" : String(cell)}
