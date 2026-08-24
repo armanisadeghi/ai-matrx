@@ -17,6 +17,7 @@ import type {
   EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import { scopeOrgId } from "@/lib/list-scope/types";
+import { getGscKeywordValueForMulti } from "@/features/marketing/search-console/data-insights";
 
 /** Sparkline / movement window, mirrored by the scoped RPC. */
 export const RANK_HISTORY_DAYS = 90;
@@ -30,6 +31,10 @@ export type CrossSiteRankRow = Omit<
 > & {
   /** Oldest → newest observations inside the 90-day server window. */
   history: Array<{ observed_at: string; organic_rank: number | null }>;
+  /** Stamp columns (KI-026) — resolved per page via the ONE multi-site read. */
+  traffic_class: string | null;
+  value_score: number | null;
+  value_band: string | null;
 };
 
 const assertData = makeAssertData("reach your rank tracking portfolio");
@@ -41,7 +46,57 @@ function toRankRow(row: RankListRpcRow): CrossSiteRankRow {
   }));
   const { history_observed_at: _times, history_organic_rank: _ranks, ...rest } =
     row;
-  return { ...rest, history };
+  return {
+    ...rest,
+    history,
+    traffic_class: null,
+    value_score: null,
+    value_band: null,
+  };
+}
+
+/**
+ * Attach Class/Score/Level to a page of rows through the ONE multi-site value
+ * read (KI-026) — batched per site, per-site access asserted server-side,
+ * never re-derived here. A failed read leaves the stamp cells honestly empty
+ * for this page rather than sinking the table.
+ */
+async function withKeywordValues(
+  rows: CrossSiteRankRow[],
+): Promise<CrossSiteRankRow[]> {
+  const bySite = new Map<string, string[]>();
+  for (const row of rows) {
+    if (!row.site_id || !row.keyword_id) continue;
+    const ids = bySite.get(row.site_id) ?? [];
+    ids.push(row.keyword_id);
+    bySite.set(row.site_id, ids);
+  }
+  if (bySite.size === 0) return rows;
+  try {
+    const values = await getGscKeywordValueForMulti(
+      [...bySite.entries()].map(([siteId, keywordIds]) => ({
+        siteId,
+        keywordIds,
+      })),
+    );
+    return rows.map((row) => {
+      const hit =
+        row.site_id && row.keyword_id
+          ? values.get(`${row.site_id}:${row.keyword_id}`)
+          : undefined;
+      return hit
+        ? {
+            ...row,
+            traffic_class: hit.traffic_class ?? null,
+            value_score: hit.value_score ?? null,
+            value_band: hit.value_band ?? null,
+          }
+        : row;
+    });
+  } catch (error) {
+    console.error("[ranks] keyword value read failed for this page", error);
+    return rows;
+  }
 }
 
 export async function fetchCrossSiteRankPage(
@@ -70,7 +125,7 @@ export async function fetchCrossSiteRankPage(
     return { rows: [], total: Number(probeData[0]?.total_count ?? 0) };
   }
   return {
-    rows: data.map(toRankRow),
+    rows: await withKeywordValues(data.map(toRankRow)),
     total: data.length > 0 ? Number(data[0].total_count) : 0,
   };
 }

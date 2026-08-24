@@ -8,6 +8,9 @@ import {
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { formatCompactDate } from "@/features/marketing/components/shared/MarketingUi";
 import type { CrossSiteRankRow } from "./cross-site-data";
+import { ClassChip } from "@/features/marketing/search-console/components/insights/ClassChip";
+import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
+import type { GscTrafficClass } from "@/features/marketing/search-console/types";
 
 export const POSITION_FILTER_OPTIONS = [
   { value: "top10", label: "Top 10" },
@@ -58,6 +61,64 @@ export const CROSS_SITE_RANK_COLUMNS: EntityColumnSpec<CrossSiteRankRow>[] = [
           {row.keyword}
         </span>
       ),
+    },
+  },
+  // Stamp columns (KI-026): rendered from the ONE multi-site value read the
+  // page fetch attaches — never re-derived here.
+  {
+    id: "traffic_class",
+    label: "Class",
+    column: {
+      id: "traffic_class",
+      accessorKey: "traffic_class",
+      header: "Class",
+      cell: (row) =>
+        row.traffic_class ? (
+          <ClassChip trafficClass={row.traffic_class as GscTrafficClass} />
+        ) : (
+          <span className="text-[11px] text-muted-foreground">—</span>
+        ),
+    },
+  },
+  {
+    id: "value_score",
+    label: "Score",
+    column: {
+      id: "value_score",
+      accessorKey: "value_score",
+      header: "Score",
+      cell: (row) => (
+        <span className="text-xs tabular-nums text-foreground">
+          {row.value_score === null
+            ? "—"
+            : Math.round(Number(row.value_score)).toLocaleString()}
+        </span>
+      ),
+    },
+  },
+  {
+    id: "value_band",
+    label: "Level",
+    column: {
+      id: "value_band",
+      accessorKey: "value_band",
+      header: "Level",
+      cell: (row) =>
+        row.value_band ? (
+          <span
+            className={`rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium ${
+              row.value_band === "negative"
+                ? "text-destructive"
+                : row.value_band === "unvalued"
+                  ? "text-muted-foreground"
+                  : "text-foreground"
+            }`}
+          >
+            {humanizeSlug(row.value_band)}
+          </span>
+        ) : (
+          <span className="text-[11px] text-muted-foreground">—</span>
+        ),
     },
   },
   {

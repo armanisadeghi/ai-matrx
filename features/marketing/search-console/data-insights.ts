@@ -263,6 +263,42 @@ export interface GscKeywordValueRow {
   reasons: ValueReason[];
 }
 
+/**
+ * The MULTI-SITE batch variant (KI-026, cross-site surfaces): pairs of
+ * (site, keyword ids) resolve through the same single-site function per site
+ * — one resolver, per-site access asserted, a partial answer impossible.
+ * Keys of the returned map are `${site_id}:${keyword_id}`.
+ */
+export async function getGscKeywordValueForMulti(
+  pairs: Array<{ siteId: string; keywordIds: string[] }>,
+  signal?: AbortSignal,
+): Promise<Map<string, GscKeywordValueRow>> {
+  const real = pairs.filter((pair) => pair.keywordIds.length > 0);
+  if (real.length === 0) return new Map();
+  const response = await (await seoDb())
+    .rpc("gsc_keyword_value_for_multi", {
+      p_pairs: real.map((pair) => ({
+        site_id: pair.siteId,
+        keyword_ids: pair.keywordIds,
+      })),
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error) as Array<
+    Omit<GscKeywordValueRow, "reasons"> & { site_id: string; reasons: unknown }
+  >;
+  return new Map(
+    rows.map((row) => [
+      `${row.site_id}:${row.keyword_id}`,
+      {
+        ...row,
+        reasons: Array.isArray(row.reasons)
+          ? (row.reasons as ValueReason[])
+          : [],
+      },
+    ]),
+  );
+}
+
 export async function getGscKeywordValueFor(
   siteId: string,
   keywordIds: string[],

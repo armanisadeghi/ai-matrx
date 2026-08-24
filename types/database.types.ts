@@ -31871,7 +31871,7 @@ export type Database = {
         Returns: number
       }
       lifecycle_partition_page: {
-        Args: { p_limit: number; p_offset: number; p_partition: string }
+        Args: { p_after_id?: number; p_limit: number; p_partition: string }
         Returns: Json
       }
       lifecycle_schema_fingerprint: { Args: never; Returns: string }
@@ -53657,6 +53657,19 @@ export type Database = {
           class_source: string
           keyword_id: string
           reasons: Json
+          traffic_class: string
+          value_band: string
+          value_score: number
+          value_source: string
+        }[]
+      }
+      gsc_keyword_value_for_multi: {
+        Args: { p_pairs: Json }
+        Returns: {
+          class_source: string
+          keyword_id: string
+          reasons: Json
+          site_id: string
           traffic_class: string
           value_band: string
           value_score: number
