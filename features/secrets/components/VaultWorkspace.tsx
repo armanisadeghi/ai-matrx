@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import {
   Select,
   SelectContent,
@@ -61,6 +62,9 @@ import {
   type VaultItem,
   type VaultPrincipal,
   type VaultScope,
+  parseVaultScopeKey,
+  scopeToPrincipal,
+  vaultScopeKey,
 } from "../types";
 import { VaultCreateDialog } from "./VaultCreateDialog";
 import { VaultEnvImportDialog } from "./VaultEnvImportDialog";
@@ -90,28 +94,40 @@ export function VaultWorkspace({
   scope: controlledScope,
   onScopeChange,
 }: VaultWorkspaceProps) {
-  const orgAdmin =
-    principal.type === "organization" ? Boolean(canManage) : true;
-  // The personal surface offers Mine / Shared with me; the organization
-  // surface is always its own scope (an org page showing another person's
-  // shared personal items would be a category error).
-  const [uncontrolledScope, setUncontrolledScope] = useState<"mine" | "shared">(
-    "mine",
-  );
-  const personalScope: "mine" | "shared" =
-    controlledScope === "shared" || controlledScope === "mine"
-      ? controlledScope
-      : uncontrolledScope;
-  const setPersonalScope = (next: "mine" | "shared") => {
+  const { organizations } = useUserOrganizations();
+  const availableOrganizations = organizations.filter((org) => !org.isPersonal);
+  const [uncontrolledScope, setUncontrolledScope] = useState<VaultScope>({
+    kind: "mine",
+  });
+  const requestedUserScope =
+    parseVaultScopeKey(controlledScope) ?? uncontrolledScope;
+  const userScope: VaultScope =
+    requestedUserScope.kind !== "organization" ||
+    availableOrganizations.some(
+      (org) => org.id === requestedUserScope.organizationId,
+    )
+      ? requestedUserScope
+      : { kind: "mine" };
+  const setUserScope = (next: VaultScope) => {
     setUncontrolledScope(next);
-    onScopeChange?.(next);
+    onScopeChange?.(vaultScopeKey(next));
   };
   const scope: VaultScope =
     principal.type === "organization"
       ? { kind: "organization", organizationId: principal.organizationId }
-      : personalScope === "shared"
-        ? { kind: "shared" }
-        : { kind: "mine" };
+      : userScope;
+  const activeOrganization =
+    scope.kind === "organization"
+      ? availableOrganizations.find((org) => org.id === scope.organizationId)
+      : undefined;
+  const orgAdmin =
+    scope.kind === "organization"
+      ? principal.type === "organization"
+        ? Boolean(canManage)
+        : activeOrganization?.role === "owner" ||
+          activeOrganization?.role === "admin"
+      : true;
+  const viewedPrincipal = scopeToPrincipal(scope) ?? { type: "user" };
   const isShared = scope.kind === "shared";
 
   const vault = useVault(scope, { orgAdmin });
@@ -190,7 +206,7 @@ export function VaultWorkspace({
             <div className="border-b border-border px-3 py-3.5">
               <div className="flex items-center gap-2">
                 <span className={cn(IDENTITY_TILE_CLASS, "h-7 w-7")}>
-                  {principal.type === "organization" ? (
+                  {scope.kind === "organization" ? (
                     <Building2 className="h-3.5 w-3.5 text-primary" />
                   ) : (
                     <UserRound className="h-3.5 w-3.5 text-primary" />
@@ -198,8 +214,8 @@ export function VaultWorkspace({
                 </span>
                 <div className="min-w-0">
                   <p className="whitespace-normal break-words text-sm font-semibold text-foreground">
-                    {principal.type === "organization"
-                      ? "Organization vault"
+                    {scope.kind === "organization"
+                      ? (activeOrganization?.name ?? "Organization vault")
                       : "Personal vault"}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
@@ -216,27 +232,76 @@ export function VaultWorkspace({
               {principal.type === "user" ? (
                 <>
                   <VaultNavButton
-                    active={personalScope === "mine"}
+                    active={scope.kind === "mine"}
                     icon={List}
                     label="My credentials"
-                    count={personalScope === "mine" ? vault.items.length : null}
+                    count={scope.kind === "mine" ? vault.items.length : null}
                     onClick={() => {
-                      setPersonalScope("mine");
+                      setUserScope({ kind: "mine" });
                       setSelectedId(null);
                     }}
                   />
                   <VaultNavButton
-                    active={personalScope === "shared"}
+                    active={scope.kind === "shared"}
                     icon={Share2}
                     label="Shared with me"
-                    count={
-                      personalScope === "shared" ? vault.items.length : null
-                    }
+                    count={scope.kind === "shared" ? vault.items.length : null}
                     onClick={() => {
-                      setPersonalScope("shared");
+                      setUserScope({ kind: "shared" });
                       setSelectedId(null);
                     }}
                   />
+                  {availableOrganizations.length > 0 && (
+                    <>
+                      <VaultNavButton
+                        active={scope.kind === "organization"}
+                        icon={Building2}
+                        label="Organization"
+                        count={
+                          scope.kind === "organization"
+                            ? vault.items.length
+                            : null
+                        }
+                        onClick={() => {
+                          const organizationId =
+                            activeOrganization?.id ??
+                            availableOrganizations[0]?.id;
+                          if (!organizationId) return;
+                          setUserScope({
+                            kind: "organization",
+                            organizationId,
+                          });
+                          setSelectedId(null);
+                        }}
+                      />
+                      {scope.kind === "organization" && (
+                        <Select
+                          value={scope.organizationId}
+                          onValueChange={(organizationId) => {
+                            setUserScope({
+                              kind: "organization",
+                              organizationId,
+                            });
+                            setSelectedId(null);
+                          }}
+                        >
+                          <SelectTrigger
+                            className="h-8 w-full"
+                            aria-label="Organization vault"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableOrganizations.map((org) => (
+                              <SelectItem key={org.id} value={org.id}>
+                                {org.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </>
+                  )}
                 </>
               ) : (
                 <VaultNavButton
@@ -284,7 +349,7 @@ export function VaultWorkspace({
               )}
             </nav>
 
-            {principal.type === "organization" && (
+            {scope.kind === "organization" && (
               <div className="border-t border-border p-3">
                 <div className="flex items-start gap-2 text-xs text-muted-foreground">
                   <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
@@ -308,14 +373,14 @@ export function VaultWorkspace({
                         key={value}
                         type="button"
                         role="tab"
-                        aria-selected={personalScope === value}
+                        aria-selected={scope.kind === value}
                         onClick={() => {
-                          setPersonalScope(value);
+                          setUserScope({ kind: value });
                           setSelectedId(null);
                         }}
                         className={cn(
                           "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                          personalScope === value
+                          scope.kind === value
                             ? "bg-card text-foreground shadow-sm"
                             : "text-muted-foreground hover:text-foreground",
                         )}
@@ -323,7 +388,59 @@ export function VaultWorkspace({
                         {value === "mine" ? "My credentials" : "Shared with me"}
                       </button>
                     ))}
+                    {availableOrganizations.length > 0 && (
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={scope.kind === "organization"}
+                        onClick={() => {
+                          const organizationId =
+                            activeOrganization?.id ??
+                            availableOrganizations[0]?.id;
+                          if (!organizationId) return;
+                          setUserScope({
+                            kind: "organization",
+                            organizationId,
+                          });
+                          setSelectedId(null);
+                        }}
+                        className={cn(
+                          "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                          scope.kind === "organization"
+                            ? "bg-card text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        Organization
+                      </button>
+                    )}
                   </div>
+                )}
+                {principal.type === "user" && scope.kind === "organization" && (
+                  <Select
+                    value={scope.organizationId}
+                    onValueChange={(organizationId) => {
+                      setUserScope({
+                        kind: "organization",
+                        organizationId,
+                      });
+                      setSelectedId(null);
+                    }}
+                  >
+                    <SelectTrigger
+                      className="h-8 w-auto min-w-40"
+                      aria-label="Organization vault"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableOrganizations.map((org) => (
+                        <SelectItem key={org.id} value={org.id}>
+                          {org.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
                 {familiesPresent.length > 1 && (
                   <Select
@@ -474,7 +591,7 @@ export function VaultWorkspace({
                   <VaultItemDetail
                     key={detailItem.id}
                     item={detailItem}
-                    principal={principal}
+                    principal={viewedPrincipal}
                     definitions={defsByKey}
                     busy={vault.busy}
                     actions={vault.actions}
@@ -513,7 +630,7 @@ export function VaultWorkspace({
                 )
               : null
           }
-          principal={principal}
+          principal={viewedPrincipal}
           definitions={defsByKey}
           busy={vault.busy}
           actions={vault.actions}
@@ -523,7 +640,7 @@ export function VaultWorkspace({
         <VaultCreateDialog
           open={createOpen}
           onOpenChange={setCreateOpen}
-          principal={principal}
+          principal={viewedPrincipal}
           definitions={definitions}
           busy={vault.busy}
           onCreate={(body, attachments) =>
@@ -545,7 +662,7 @@ export function VaultWorkspace({
 
   return (
     <div className="space-y-3">
-      {principal.type === "organization" && (
+      {scope.kind === "organization" && (
         <div className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/40 p-3 text-xs">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <p className="text-muted-foreground">
@@ -572,14 +689,14 @@ export function VaultWorkspace({
                 key={value}
                 type="button"
                 role="tab"
-                aria-selected={personalScope === value}
+                aria-selected={scope.kind === value}
                 onClick={() => {
-                  setPersonalScope(value);
+                  setUserScope({ kind: value });
                   setSelectedId(null);
                 }}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                  personalScope === value
+                  scope.kind === value
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
@@ -587,7 +704,52 @@ export function VaultWorkspace({
                 {value === "mine" ? "Mine" : "Shared with me"}
               </button>
             ))}
+            {availableOrganizations.length > 0 && (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={scope.kind === "organization"}
+                onClick={() => {
+                  const organizationId =
+                    activeOrganization?.id ?? availableOrganizations[0]?.id;
+                  if (!organizationId) return;
+                  setUserScope({ kind: "organization", organizationId });
+                  setSelectedId(null);
+                }}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  scope.kind === "organization"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Organization
+              </button>
+            )}
           </div>
+        )}
+        {principal.type === "user" && scope.kind === "organization" && (
+          <Select
+            value={scope.organizationId}
+            onValueChange={(organizationId) => {
+              setUserScope({ kind: "organization", organizationId });
+              setSelectedId(null);
+            }}
+          >
+            <SelectTrigger
+              className="h-8 w-auto min-w-40"
+              aria-label="Organization vault"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableOrganizations.map((org) => (
+                <SelectItem key={org.id} value={org.id}>
+                  {org.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
 
         <div className="relative min-w-0 flex-1 basis-56">
@@ -735,7 +897,7 @@ export function VaultWorkspace({
               <VaultItemDetail
                 key={selected.id}
                 item={selected}
-                principal={principal}
+                principal={viewedPrincipal}
                 definitions={defsByKey}
                 busy={vault.busy}
                 actions={vault.actions}
@@ -750,7 +912,7 @@ export function VaultWorkspace({
       <VaultCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        principal={principal}
+        principal={viewedPrincipal}
         definitions={definitions}
         busy={vault.busy}
         onCreate={(body, attachments) =>

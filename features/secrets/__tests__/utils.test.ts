@@ -5,7 +5,11 @@ import {
   safeVaultLoginUrl,
 } from "@/features/secrets/utils";
 import { recommendedHandlingForFieldKey } from "@/features/secrets/credential-identity";
-import { normalizeVaultHandling } from "@/features/secrets/types";
+import {
+  normalizeVaultHandling,
+  parseVaultScopeKey,
+  vaultScopeKey,
+} from "@/features/secrets/types";
 
 describe("normalizeVaultHandling", () => {
   test("materializes the server default and preserves every supported level", () => {
@@ -19,6 +23,27 @@ describe("normalizeVaultHandling", () => {
     expect(() => normalizeVaultHandling("encrypted-ish")).toThrow(
       "Invalid Vault protection value",
     );
+  });
+});
+
+describe("Vault scope persistence", () => {
+  test("round-trips every deliberate Vault destination", () => {
+    expect(parseVaultScopeKey(vaultScopeKey({ kind: "mine" }))).toEqual({
+      kind: "mine",
+    });
+    expect(parseVaultScopeKey(vaultScopeKey({ kind: "shared" }))).toEqual({
+      kind: "shared",
+    });
+    expect(
+      parseVaultScopeKey(
+        vaultScopeKey({ kind: "organization", organizationId: "org-1" }),
+      ),
+    ).toEqual({ kind: "organization", organizationId: "org-1" });
+  });
+
+  test("rejects unknown and incomplete persisted scopes", () => {
+    expect(parseVaultScopeKey("organization:")).toBeNull();
+    expect(parseVaultScopeKey("active-organization")).toBeNull();
   });
 });
 

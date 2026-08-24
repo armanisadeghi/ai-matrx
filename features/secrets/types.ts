@@ -247,6 +247,26 @@ export const VAULT_SCOPE_LABELS = {
   organization: "Organization",
 } as const;
 
+/** Stable, non-secret persistence key for a viewed Vault scope. */
+export function vaultScopeKey(scope: VaultScope): string {
+  return scope.kind === "organization"
+    ? `organization:${scope.organizationId}`
+    : scope.kind;
+}
+
+/** Parse only the three canonical Vault destinations from persisted UI state. */
+export function parseVaultScopeKey(
+  value: string | null | undefined,
+): VaultScope | null {
+  if (value === "mine") return { kind: "mine" };
+  if (value === "shared") return { kind: "shared" };
+  if (value?.startsWith("organization:")) {
+    const organizationId = value.slice("organization:".length).trim();
+    if (organizationId) return { kind: "organization", organizationId };
+  }
+  return null;
+}
+
 /**
  * Canonical human-facing vault vocabulary. Every personal and organization
  * surface imports these labels so the same concept never acquires a second

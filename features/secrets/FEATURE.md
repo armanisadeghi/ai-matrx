@@ -71,8 +71,10 @@ personal vault:
 | `shared`       | my own `user_secret_grants` rows (`can_use`) → `in(id, thoseItemIds)` + `neq(user_id, me)` | Items OTHER people shared with me. Create/import are hidden here — the items are owned by someone else. |
 | `organization` | `eq(organization_id, org)`                                                                 | Unchanged.                                                                                              |
 
-The personal surface shows a My credentials / Shared with me switcher; the
-organization surface is always its own scope.
+The personal surface shows My credentials / Shared with me / Organization.
+Organization is one bounded destination with an explicit membership dropdown;
+it never expands into an unbounded chip row and never follows the active org.
+The organization-management embed remains fixed to its host organization.
 
 ## Sharing, ownership, and assignment (2026-07-26)
 
@@ -308,6 +310,12 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-08-23** — Restored the ratified Organization destination on the main
+  Vault and its floating window. The user chooses an organization explicitly
+  from current memberships; the selected role governs management actions, the
+  persisted scope contains only the org id, and the organization-management
+  embed remains fixed to its host principal.
 
 - **2026-08-22** — Collapsed credential field display and editing into one
   compact surface: value actions now sit on the value row, Edit replaces the
