@@ -24,6 +24,11 @@ import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Database, Json } from "@/types/database.types";
 import { updateMessageRecord } from "../messages/messages.slice";
+import { extractFlatText } from "../messages/messages.selectors";
+import {
+  clearRequestEditedText,
+  setRequestEditedText,
+} from "../active-requests/active-requests.slice";
 import { markCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";
 
@@ -73,6 +78,14 @@ export const editMessage = createAsyncThunk<
     const previousContent = prevRecord.content;
     const previousContentHistory = prevRecord.contentHistory;
     const previousStatus = prevRecord.status;
+    const requestId = prevRecord._streamRequestId;
+    const previousEditedText = requestId
+      ? getState().activeRequests.byRequestId[requestId]?.editedText
+      : null;
+    const optimisticEditedText = extractFlatText({
+      ...prevRecord,
+      content: newContent,
+    });
 
     // eslint-disable-next-line no-console
     console.log(
@@ -96,6 +109,15 @@ export const editMessage = createAsyncThunk<
         },
       }),
     );
+    // A turn streamed during this mounted session keeps rendering from its
+    // retained active-request entry, even after completion. Mirror the edit
+    // into that render source too; patching messages.byId alone persists the
+    // right value while leaving the old streamed text visible until reload.
+    if (requestId) {
+      dispatch(
+        setRequestEditedText({ requestId, text: optimisticEditedText }),
+      );
+    }
 
     // ── 2. Fire the DB RPC ──────────────────────────────────────────────
     const { data, error } = await supabase
@@ -119,6 +141,16 @@ export const editMessage = createAsyncThunk<
           },
         }),
       );
+      if (requestId) {
+        dispatch(
+          previousEditedText === null || previousEditedText === undefined
+            ? clearRequestEditedText({ requestId })
+            : setRequestEditedText({
+                requestId,
+                text: previousEditedText,
+              }),
+        );
+      }
       // Supabase `PostgrestError` doesn't own enumerable props so default
       // serialization gives `{}`. Manually extract every field we've seen
       // come back from the RPC layer so the failure is visible in logs.
@@ -186,6 +218,14 @@ export const editMessage = createAsyncThunk<
           },
         }),
       );
+      if (requestId) {
+        dispatch(
+          setRequestEditedText({
+            requestId,
+            text: extractFlatText({ ...prevRecord, content: data.content }),
+          }),
+        );
+      }
     }
 
     // ── 4. Invalidate server-side cache

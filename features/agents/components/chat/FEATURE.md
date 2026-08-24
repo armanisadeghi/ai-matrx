@@ -5,7 +5,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-23`
+**Last updated:** `2026-08-24`
 
 > **This is the authoritative doc for the LIVE chat route.** The chat route lives at `app/(a)/chat/**` and is built on the `features/agents/` execution-system — **not** on the unbuilt `ConversationShell` in `features/conversation/`. If you were sent here by `features/conversation/FEATURE.md` or `phase-07-chat-route.md`, this file supersedes their description of how the route behaves.
 
@@ -263,6 +263,8 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 ---
 
 ## Change log
+
+- `2026-08-24` — codex: **assistant-message edits now update the visible retained stream optimistically.** `editMessage` already patched `messages.byId` before calling `cx_message_edit`, but assistant turns streamed during the mounted session intentionally keep rendering from `activeRequests.byRequestId[requestId]`; the saved database value therefore changed while the old response stayed on screen until reload. The shared edit thunk now mirrors the optimistic and authoritative edited text into `activeRequests.editedText`, and restores the prior retained text on RPC failure, so action-bar and overflow-menu edits update the current UI immediately without abandoning the live-run retention contract.
 
 - `2026-08-23` — codex: **stale queued submits are cancelled quietly.** Navigation or fresh-chat cleanup can remove a browser-local conversation after its click/keypress is queued; `smartExecute` now drops that expected stale intent before the organization guard, preventing the causally paired false “Organization required — Conversation … not found” toast and `[smart-execute] Conversation … not found` console error. The admission claim still releases through `finally`, covered by `smart-execute-stale-conversation.test.ts`.
 
