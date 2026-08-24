@@ -555,17 +555,17 @@ export function FilterBar({
                 />
                 <p className="text-[11px] leading-snug text-muted-foreground">
                   Levels come from this site&apos;s value scale. Several levels
-                  are OR-ed.{" "}
+                  are OR-ed. Need one that does not exist yet? Add it from the
+                  picker — it asks for the score it starts at, then joins your
+                  scale for good.{" "}
                   {siteId ? (
                     <a
                       className="underline underline-offset-2 hover:text-foreground"
-                      href={`${marketingRoutes.site(null, siteId, "value")}?edit=levels`}
+                      href={`${marketingRoutes.site(null, siteId, "/value")}?edit=levels`}
                     >
-                      Add or rename a level
+                      Rename or reorder your levels
                     </a>
-                  ) : null}{" "}
-                  — a level needs a score it starts at, so it is named on the value
-                  scale rather than here.
+                  ) : null}
                 </p>
               </div>
             ) : (
