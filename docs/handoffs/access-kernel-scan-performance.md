@@ -1,5 +1,5 @@
 ---
-status: active
+status: parked
 updated: 2026-08-21
 repos: [matrx-frontend]
 vision: [/Users/armanisadeghi/code/common-docs/systems/platform/db-rules/FEATURE.md]
@@ -95,17 +95,31 @@ rows (each page resolves its file, then that file's folder) at ~0.55 ms each.
 `platform.entity_row_access_attrs` (~1.35 s) plus the parent-FK `execute
 format(...)` in the containment loop (~0.9 s).
 
-## Decisions — RULED by Arman, 2026-08-21 (in chat, this session)
+## Rulings and outcomes (2026-08-21 ruled · 2026-08-22 executed)
 
-**Q1 (merge row-attribute read with parent-FK fetch): APPROVED — option (a).**
-Merge, and let latent registry drift surface as real errors.
-**Q2 (parallel-safe kernel): APPROVED to pursue.** Arman's words: "I definitely
-think we need to push to do whatever we can do to speed things up because right
-now, it is incredibly slow." The equivalence bar below still applies in full.
-**Context for whoever executes:** Arman reports SYSTEM-WIDE sluggishness since
-the database + server move (chat side panel, marketing surfaces "almost
-unbearable") and wants MEASUREMENTS. Do not assume this handoff's scan is the
-cause — measure first; this doc's scope is the kernel, not the whole regression.
+**Q1 (merge): APPROVED, EXECUTED, MEASURED MOOT — reverted.** Built as staged
+v2 functions, proven equivalent (34,782 probes × 11 identities + element-wise
+files.pages/files, ZERO disagreements), then measured: 8,467 ms live vs
+8,621 ms merged on the slow-identity unfiltered scan. The 0.9 s premise was
+absorbed by the earlier plan-cache work. Full record:
+`migrations/access_kernel_q1_merge_verdict.sql` — read it before ever
+rebuilding the merge. Registry drift pre-scan: ZERO drift; loud detection
+belongs in a guard, not the hot path. **Trap discovered:** the first v2 draft
+was built from THIS repo's migration file and the harness caught 7 narrowings —
+the live kernel had grown four lanes (library grants, open library, pack
+curators, rulebook curators) the file predates. Always rebuild from
+`pg_get_functiondef`, never from a migration file.
+
+**Q2 (parallel-safe): APPROVED to pursue, deliberately NOT executed yet.** The
+unfiltered whole-table scan serves no real surface (~100 ms filtered paths),
+and the 2026-08-22 slowness investigation found and fixed the ACTUAL felt
+regressions elsewhere: 940 RLS policies re-evaluated identity per row
+(`migrations/rls_initplan_identity_sweep.sql` — advisor `auth_rls_initplan`
+class plus the same bug with our own is_platform_admin/is_super_admin/is_admin
+helpers on 657 tables), hot RPCs re-parsing the JWT per row (facets 2,869→18 ms;
+DM list 196→88 ms; ~24 plpgsql RPCs wrapped), and unscoped client lists. If the
+headroom scan ever becomes user-visible, Q2 is the next lever and its bar below
+stands.
 
 ## Decisions needed (original framing, kept for the executor)
 

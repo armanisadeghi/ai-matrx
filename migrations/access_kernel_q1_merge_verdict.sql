@@ -1,0 +1,30 @@
+-- ACCESS KERNEL Q1 MERGE — EXECUTED AND MEASURED MOOT (2026-08-22).
+-- This file is a RECORD, not a change: it re-applies nothing and exists so the
+-- next agent does not rebuild the merge.
+--
+-- Arman approved (2026-08-21) merging the row-attribute read with the
+-- parent-FK fetch in iam.has_access_for_base, on the 2026-08-15 diagnosis that
+-- the separate per-relationship EXECUTE cost ~0.9 s on the unfiltered
+-- files.pages scan.
+--
+-- IT WAS BUILT AND PROVEN, THEN REVERTED ON MEASUREMENT:
+--   * v2 kernel + platform.entity_row_access_attrs_ext staged alongside live.
+--   * FIRST DRAFT built from THIS REPO'S migration file was caught by the
+--     equivalence harness with 7 narrowings — the live kernel had grown four
+--     lanes the file predates (library grants, open library, pack curators,
+--     rulebook curators). The migration file is history, never the source:
+--     rebuild from pg_get_functiondef, always.
+--   * Rebuilt from live: 34,782 probes (3 sampled rows x every active entity
+--     type x 3 levels x 11 identities incl. ANON) = ZERO disagreements;
+--     element-wise files.pages (6,567 rows) and files (66) = ZERO.
+--   * Speed: unfiltered files.pages scan, slow identity: 8,467 ms live vs
+--     8,621 ms merged. The 0.9 s premise was already absorbed by the earlier
+--     plpgsql plan-cache work; the merge's own bookkeeping (per-invocation
+--     relationship lookup + catalog drift check) cancels the rest.
+--   * Staging dropped (access_kernel_q1_merge_measured_moot_revert). The live
+--     kernel is byte-identical to before.
+--
+-- Registry-drift half of the ruling: a pre-scan found ZERO drift (every
+-- declared parent fk_column exists). Loud drift detection belongs in a guard
+-- sweep, not in the kernel hot path.
+select 1;
