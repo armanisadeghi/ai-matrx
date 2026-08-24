@@ -164,8 +164,21 @@ function MatcherRow({
 
   const remove = useMutation({
     mutationFn: () => deleteDimensionMatcher(matcher.id),
-    onSuccess: () => {
-      toast.success("Matcher removed");
+    onSuccess: (result) => {
+      // The delete already unstamped — say what it actually did rather than
+      // "removed", which used to leave the reader to guess (and guess wrong).
+      toast.success("Match removed", {
+        description:
+          result.answersRemoved > 0
+            ? `Took the answer back off ${formatCount(result.answersRemoved)} keyword${
+                result.answersRemoved === 1 ? "" : "s"
+              }${
+                result.answersRestamped > 0
+                  ? `, and ${formatCount(result.answersRestamped)} of them picked up the answer waiting behind it`
+                  : ""
+              }.`
+            : "It was not holding any keyword.",
+      });
       onChanged();
     },
     onError: (error) => toast.error(extractErrorMessage(error)),
@@ -244,9 +257,14 @@ function MatcherRow({
             disabled={remove.isPending}
             onClick={async () => {
               const ok = await confirm({
-                title: "Remove this matcher?",
-                description:
-                  "Keywords it already stamped keep their stamp until you re-run matchers.",
+                title: "Remove this match?",
+                description: matcher.matchCount
+                  ? `This also takes the answer back off the ${formatCount(
+                      matcher.matchCount,
+                    )} keyword${
+                      matcher.matchCount === 1 ? "" : "s"
+                    } it is holding — in one step, nothing left behind. Any keyword another match was waiting to claim picks that answer up immediately.`
+                  : "It is not holding any keyword, so nothing else changes.",
                 confirmLabel: "Remove",
                 variant: "destructive",
               });
@@ -624,8 +642,9 @@ export function MatcherEditor({
 
         <DialogFooter className="items-center justify-between sm:justify-between">
           <p className="text-[11px] text-muted-foreground">
-            Saving a match runs it straight away. Turning one on or off, or
-            deleting it, takes effect on the next run — or press below.
+            Saving a match runs it straight away, and deleting one takes its
+            answers back off with it. Turning a match on or off takes effect on
+            the next run — or press below.
           </p>
           <Button
             type="button"
