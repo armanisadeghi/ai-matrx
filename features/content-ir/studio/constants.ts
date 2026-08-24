@@ -48,6 +48,10 @@ export function shapeSchemaHref(kind: string): string {
   return `${shapeDetailHref(kind)}/schema`;
 }
 
+export function shapeStreamHref(kind: string): string {
+  return `${shapeDetailHref(kind)}/stream`;
+}
+
 export function shapeInstancesHref(kind: string): string {
   return `${shapeDetailHref(kind)}/instances`;
 }
