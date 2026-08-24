@@ -64,6 +64,7 @@ import type { KindComponentProjection } from "../registry/schema-source-kind-com
 import {
   resolveBlockDispatch,
   type BlockDispatchContext,
+  type RenderBlock,
 } from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
 
 interface JobRow {
@@ -106,9 +107,9 @@ function projection(kind: string, row: Partial<KindComponentProjection>): KindCo
 }
 
 /** The dispatch context a block renderer receives on the run page / in chat. */
-function dispatchContext(block: { type: string; content: string; serverData?: unknown; metadata?: unknown }): BlockDispatchContext {
+function dispatchContext(block: RenderBlock): BlockDispatchContext {
   return {
-    block: block as never,
+    block,
     index: 0,
     isStreamActive: false,
     hideReasoning: false,
@@ -131,10 +132,10 @@ function withProviders(el: React.ReactElement): React.ReactElement {
   if (providerWrap === null) {
     try {
       const { Provider } = require("react-redux") as typeof import("react-redux");
-      const { makeStore } = require("@/lib/redux/store") as { makeStore: () => unknown };
+      const { makeStore } = require("@/lib/redux/store") as typeof import("@/lib/redux/store");
       const store = makeStore();
       providerWrap = (child) =>
-        React.createElement(Provider, { store: store as never }, child);
+        React.createElement(Provider, { store, children: child });
     } catch {
       providerWrap = (child) => child;
     }

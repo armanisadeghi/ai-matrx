@@ -12513,6 +12513,18 @@ export type Database = {
         Args: { p_kind_definition_id: string }
         Returns: Json
       }
+      kind_exercise_evidence: {
+        Args: never
+        Returns: {
+          captured_examples: number
+          chat_payload: number
+          instances: number
+          kind: string
+          last_seen: string
+          node_outcome_declared: number
+          node_outcome_payload: number
+        }[]
+      }
       resolve_kind_version: {
         Args: { p_kind: string; p_organization_id: string; p_version?: number }
         Returns: {
