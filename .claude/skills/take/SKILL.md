@@ -46,7 +46,9 @@ aliases; wherever his words live, **the richest treatment governs** — a thin m
 your own VISION.md never outranks a detailed vision elsewhere. If two visions disagree, or
 your kit under-states what a bigger doc demands, STOP and bring him the gap before building
 to the lesser version — and leave pointer lines in both kits so the next taker can't miss
-it. This rule exists because it failed: the Steward was specified in depth in the workflow
+it. Ground two nodes both read, write, and build on is **co-owned ground**: ONE shared doc
+with declared co-ownership, equal pointers in both seams sections, no restating
+([`document-types.md § Co-owned ground`](/policies/document-types.md)). This rule exists because it failed: the Steward was specified in depth in the workflow
 system's agent-graph-v2 vision set, Masterwork's docs referenced it thinly, and the
 Masterwork build followed the thin version — nobody reached across, noticed, or told him.
 
