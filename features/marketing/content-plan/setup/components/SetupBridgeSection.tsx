@@ -66,7 +66,14 @@ import { extractErrorMessage } from "@/utils/errors";
 
 import { planKeys } from "../../data/hooks";
 import { marketingKeys } from "@/features/marketing/data/hooks";
-import { fetchFreshSite, saveSiteEffortTier } from "../draft";
+import { Textarea } from "@/components/ui/textarea";
+
+import {
+  fetchFreshSite,
+  readSiteDesignGuidance,
+  saveSiteDesignGuidance,
+  saveSiteEffortTier,
+} from "../draft";
 import {
   DEFAULT_EFFORT_TIER,
   EFFORT_TIERS,
@@ -293,6 +300,24 @@ export function SetupBridgeSection({
   // automatically) — a human can point it at the live site any time.
   const [shellSummary, setShellSummary] = useState<ShellCheckSummary | null>(null);
   const [shellBusy, setShellBusy] = useState(false);
+  // Site design direction — saved on blur; the builder reads it on every run.
+  const [designGuidance, setDesignGuidance] = useState(() =>
+    readSiteDesignGuidance(site.settings),
+  );
+  const [designGuidanceSaving, setDesignGuidanceSaving] = useState(false);
+  const savedGuidanceRef = useRef(readSiteDesignGuidance(site.settings));
+  const handleDesignGuidanceSave = async () => {
+    if (designGuidance.trim() === savedGuidanceRef.current.trim()) return;
+    setDesignGuidanceSaving(true);
+    try {
+      await saveSiteDesignGuidance(site.id, designGuidance);
+      savedGuidanceRef.current = designGuidance;
+    } catch (error) {
+      toast.error(`Could not save the design direction: ${extractErrorMessage(error)}`);
+    } finally {
+      setDesignGuidanceSaving(false);
+    }
+  };
   const handleShellCheck = async () => {
     setShellBusy(true);
     try {
@@ -787,6 +812,32 @@ export function SetupBridgeSection({
               </span>
             )}
           </RunRow>
+          {/* THE DESIGN SEAM, site half: one paragraph in the owner's words
+              that the page builder receives on EVERY build (aidream offers it
+              to content_plan.page_build as design_guidance). Optional — empty
+              means the theme and shell carry the look alone. */}
+          <div className="mt-2 space-y-1">
+            <label
+              className="text-[11px] font-medium text-foreground"
+              htmlFor={`design-guidance-${site.id}`}
+            >
+              Design direction for every page
+            </label>
+            <Textarea
+              id={`design-guidance-${site.id}`}
+              value={designGuidance}
+              rows={2}
+              placeholder="e.g. Calm, clinical and premium — generous whitespace, no stock-photo clichés, one clear action per page."
+              className="min-h-0 text-xs"
+              onChange={(event) => setDesignGuidance(event.target.value)}
+              onBlur={() => void handleDesignGuidanceSave()}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {designGuidanceSaving
+                ? "Saving…"
+                : "Every page the factory builds honors this. Individual pages can add their own note on their Build tab."}
+            </p>
+          </div>
         </Rung>
 
         {/* ── 3 · Realize pages ── */}

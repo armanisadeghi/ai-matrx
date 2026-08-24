@@ -66,6 +66,7 @@ import {
   readNodeEffortTier,
   withNodeEffortTier,
 } from "../setup/effort";
+import { readNodeDesignNotes, withNodeDesignNotes } from "../setup/draft";
 import type { PlanDeepenController } from "../hooks/useContentPlanAi";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import {
@@ -1287,6 +1288,37 @@ export function NodePanel({
                       ? EFFORT_TIER_BLURB[nodeEffortTier]
                       : "This page runs whatever the site build is set to."}
                   </span>
+                </div>
+                {/* THE DESIGN SEAM, page half (Arman: minor per page, an
+                    OPTION of injecting a bit more): a note that refines the
+                    site's design direction for THIS page. Saved on blur into
+                    node.metadata.design_notes; the builder receives it
+                    appended to the site direction on every build. */}
+                <div className="mb-2 space-y-1">
+                  <label
+                    className="text-[11px] font-medium text-foreground"
+                    htmlFor={`design-note-${node.id}`}
+                  >
+                    Design note for this page
+                  </label>
+                  <input
+                    id={`design-note-${node.id}`}
+                    className="h-7 w-full rounded-md border border-input bg-background px-1.5 text-xs"
+                    defaultValue={readNodeDesignNotes(node.metadata)}
+                    placeholder="Optional — e.g. lead with the before/after gallery, keep it visual"
+                    disabled={update.isPending}
+                    onBlur={(event) => {
+                      const next = event.target.value;
+                      if (next.trim() === readNodeDesignNotes(node.metadata).trim())
+                        return;
+                      update.mutate({
+                        id: node.id,
+                        patch: {
+                          metadata: withNodeDesignNotes(node.metadata, next),
+                        },
+                      });
+                    }}
+                  />
                 </div>
                 <NodeRealityCard
                   node={node}

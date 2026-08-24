@@ -439,6 +439,62 @@ export async function saveSiteEffortTier(
   );
 }
 
+/** `settings.content_plan.design_guidance` — the owner's design direction. */
+const SITE_DESIGN_GUIDANCE_KEY = "design_guidance";
+
+export function readSiteDesignGuidance(settings: unknown): string {
+  if (!isRecord(settings)) return "";
+  const block = settings[SITE_SETTINGS_KEY];
+  if (!isRecord(block)) return "";
+  const value = block[SITE_DESIGN_GUIDANCE_KEY];
+  return typeof value === "string" ? value : "";
+}
+
+/**
+ * Record (or clear, with empty text) the site's design direction. The page
+ * builder receives it on every build (aidream `cms_fill` offers it to
+ * `content_plan.page_build` as `design_guidance`), so one paragraph here
+ * steers the look of every page the factory writes.
+ */
+export async function saveSiteDesignGuidance(
+  siteId: string,
+  text: string,
+): Promise<void> {
+  const trimmed = text.trim();
+  const mutate = (block: Record<string, unknown>) => {
+    if (trimmed) block[SITE_DESIGN_GUIDANCE_KEY] = trimmed;
+    else delete block[SITE_DESIGN_GUIDANCE_KEY];
+  };
+  if (await writeDraftOnce(siteId, mutate)) return;
+  if (await writeDraftOnce(siteId, mutate)) return;
+  throw new Error(
+    "The site record kept changing while saving the design guidance — the builder would run without it.",
+  );
+}
+
+/** `plan.node.metadata.design_notes` — the PAGE half of the design seam: an
+ * optional note that refines (never replaces) the site's direction for one
+ * page. Server twin: aidream `cms_fill._design_guidance`. */
+const NODE_DESIGN_NOTES_KEY = "design_notes";
+
+export function readNodeDesignNotes(metadata: unknown): string {
+  if (!isRecord(metadata)) return "";
+  const value = metadata[NODE_DESIGN_NOTES_KEY];
+  return typeof value === "string" ? value : "";
+}
+
+/** The node metadata jsonb with the page's design note recorded (empty clears). */
+export function withNodeDesignNotes(
+  metadata: unknown,
+  text: string,
+): Record<string, unknown> {
+  const next = isRecord(metadata) ? { ...metadata } : {};
+  const trimmed = text.trim();
+  if (trimmed) next[NODE_DESIGN_NOTES_KEY] = trimmed;
+  else delete next[NODE_DESIGN_NOTES_KEY];
+  return next;
+}
+
 /** Remove the draft (after a fully-successful commit). */
 export async function clearSetupDraft(siteId: string): Promise<void> {
   const mutate = (block: Record<string, unknown>) => {
