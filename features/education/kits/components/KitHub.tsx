@@ -14,13 +14,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, BrainCircuit, FileSearch, Layers } from "lucide-react";
+import {
+  ArrowUpRight,
+  BrainCircuit,
+  FileSearch,
+  GraduationCap,
+  Layers,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
 import type { GeneratedArtifact } from "@/features/education/convert/lineage";
 import { readKit, type StudyKit } from "../kitService";
+import {
+  kitStudyAction,
+  readKitStudyState,
+  type KitStudyState,
+} from "../kitStudy";
 
 /** Study-first ordering: what you practise with, then what you read, then audio. */
 const KIND_ORDER: Record<string, number> = {
@@ -72,15 +83,25 @@ export function KitHub({
   sourceType?: string;
 }) {
   const [kit, setKit] = useState<StudyKit | null>(null);
+  const [study, setStudy] = useState<KitStudyState | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
-    void readKit(sourceType, sourceId).then((result) => {
+    setStudy(null);
+    void readKit(sourceType, sourceId).then(async (result) => {
       if (!active) return;
       setKit(result);
       setLoading(false);
+      // The study bar is a SECOND, slower read (deck cards + mastery). It lands
+      // after the kit renders rather than holding the whole page behind it.
+      if (!result) return;
+      const setIds = result.artifacts
+        .filter((a) => a.artifactType === "fc_set")
+        .map((a) => a.artifactId);
+      const state = await readKitStudyState(setIds);
+      if (active) setStudy(state);
     });
     return () => {
       active = false;
@@ -155,6 +176,37 @@ export function KitHub({
             </Button>
           </div>
         </div>
+
+        {/* STUDY FIRST — the kit exists to be studied, so where the learner
+            stands and their next tap sit above the contents, not below. */}
+        {study && (
+          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-semibold tabular-nums text-foreground">
+                  {study.masteryPct}%
+                </span>
+                <span className="text-sm text-muted-foreground">mastered</span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width]"
+                  style={{ width: `${Math.min(100, study.masteryPct)}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {study.studiedCount} of {study.cardCount} cards studied
+                {study.dueCount > 0 && ` · ${study.dueCount} due for review`}
+              </p>
+            </div>
+            <Button asChild size="lg" className="gap-1.5">
+              <Link href={kitStudyAction(study).href}>
+                <GraduationCap className="h-4 w-4" />
+                {kitStudyAction(study).label}
+              </Link>
+            </Button>
+          </div>
+        )}
 
         <div className="grid gap-2 sm:grid-cols-2">
           {ordered.map((artifact) => (

@@ -47,12 +47,26 @@ import {
 
 type InputMode = "upload" | "paste" | "link";
 
-// Notes are ON by default. Ingest already turns every input into ONE clean
-// markdown document before anything is generated (that is what the whole kit is
-// built from), so the material for notes is already in hand — leaving the one
-// artifact that simply ORGANIZES that material unchecked was the odd default,
-// not the other way round.
-const DEFAULT_TARGETS: TargetKind[] = ["deck", "summary", "mind_map", "notes"];
+// THE HEADLINE FLOW'S PAYLOAD, taken from the vision verbatim: "a student drops
+// in a PDF, records a lecture, pastes a link or photographs their notes, and gets
+// back a deck, a summary, a quiz, a mind map and an audio overview — everything
+// they need to study, from one action" (VISION §5, amended by Arman 2026-08-20).
+// The defaults ARE the promise: a student who changes nothing must get what the
+// front door says they get, so `quiz` and `audio` are on. Notes stays on too —
+// ingest already produces the one clean document notes organize, so the artifact
+// that merely structures material in hand was the odd one to leave unchecked.
+//
+// Memory aids and practice tests stay OFF: both are deliberate follow-ups a
+// learner reaches for once they know the material, not part of the first
+// thirty seconds. Everything here is one tap to change.
+const DEFAULT_TARGETS: TargetKind[] = [
+  "deck",
+  "summary",
+  "quiz",
+  "mind_map",
+  "audio",
+  "notes",
+];
 
 export function StartHero() {
   const kit = useKitGeneration();
