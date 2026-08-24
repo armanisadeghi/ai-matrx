@@ -98,6 +98,11 @@ Manage while pending:
 - `DELETE /ai/conversations/{id}/inbox/{injection_id}` → retract. `409` if it already drained, `404` if gone.
 - `PATCH  /ai/conversations/{id}/inbox/{injection_id}` `{ "text": "…" }` → edit. Same `409` / `404`.
 
+**A POST 404 is stale client state, not a system fault.** Keep the optimistic
+card failed and tell the user to open a current conversation, but do not emit
+that expected recovery through `console.error` / `system_error`. Other enqueue
+failures remain loud.
+
 ## New stream event — `injection_consumed`
 
 Emitted on the **existing** stream when the running agent drains queued item(s):

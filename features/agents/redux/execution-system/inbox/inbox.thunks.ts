@@ -30,6 +30,7 @@ import {
   type InboxItemKind,
   type InboxItemMode,
 } from "./inbox.slice";
+import { classifyInboxEnqueueFailure } from "./inbox-error";
 
 type InboxEnqueueResponse = components["schemas"]["InboxEnqueueResponse"];
 // `source` shipped server-side 2026-08-10 (agent_collab write-back notes) but
@@ -152,17 +153,24 @@ export const enqueueInboxMessage = createAsyncThunk<
     );
 
     if (result.error) {
-      const message =
-        result.error.message ?? "The server rejected the queued message.";
-      console.error("[inbox] enqueue failed", {
-        conversationId,
-        error: result.error,
-      });
+      const failure = classifyInboxEnqueueFailure(result.error);
+      if (failure.reportAsSystemError) {
+        console.error("[inbox] enqueue failed", {
+          conversationId,
+          error: result.error,
+        });
+      }
       dispatch(
-        failInboxItem({ conversationId, injectionId: localId, error: message }),
+        failInboxItem({
+          conversationId,
+          injectionId: localId,
+          error: failure.message,
+        }),
       );
-      toast.error("Couldn't queue your message", { description: message });
-      return thunkApi.rejectWithValue(message) as never;
+      toast.error("Couldn't queue your message", {
+        description: failure.message,
+      });
+      return thunkApi.rejectWithValue(failure.message) as never;
     }
 
     const data = result.data as InboxEnqueueResponse;
