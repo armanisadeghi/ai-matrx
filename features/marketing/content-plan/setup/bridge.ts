@@ -423,6 +423,25 @@ export interface StarterKitOutcome {
   notes: string[];
 }
 
+/**
+ * What the logo hunt found — or honestly did not. `found: false` is a NORMAL
+ * outcome and carries `message` (what was tried) plus `rejected` (every
+ * candidate we downloaded and why it lost), so the UI never shows a shrug.
+ */
+export interface FindLogoOutcome {
+  found: boolean;
+  message: string;
+  assetId: string | null;
+  assetUrl: string | null;
+  /** og:image | twitter:image | apple-touch-icon | icon | msapplication-tile | image-search */
+  source: string | null;
+  sourceUrl: string | null;
+  width: number | null;
+  height: number | null;
+  candidatesConsidered: number;
+  rejected: string[];
+}
+
 function str(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
@@ -972,6 +991,69 @@ export async function bridgeFillCancel(
     }),
   );
   return parseFillStatus(requireBody(result, "cms-fill/cancel"));
+}
+
+/**
+ * Find the company's real logo on the web and store it as a `logo`-tagged CMS
+ * asset — the header picks it up on the next starter-kit run.
+ *
+ * Streams (the server reads the company's live homepage, then Brave's image
+ * index, then downloads the winner), so the caller gets stage narration for
+ * free; the terminal `cms_logo_found` event is the answer. A MISS arrives as a
+ * successful stream with `found: false` — only a real failure throws.
+ */
+export async function bridgeFindLogo(
+  dispatch: AppDispatch,
+  siteId: string,
+  options: { cmsSite?: string } = {},
+): Promise<FindLogoOutcome> {
+  let outcome: FindLogoOutcome | null = null;
+  let streamError: string | null = null;
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/find-logo",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: {
+        cms_site: options.cmsSite ?? null,
+        company_name: null,
+        domain: null,
+      },
+      stream: true,
+      onStreamEvent: (event) => {
+        if (event.event === "error") {
+          streamError = describeBackendFailure(parseStreamError(event.data)).headline;
+          return;
+        }
+        if (event.event !== "data" || !event.data || typeof event.data !== "object") {
+          return;
+        }
+        const data = event.data as Record<string, unknown>;
+        if (data.type !== "cms_logo_found") return;
+        outcome = {
+          found: data.found === true,
+          message: str(data.message),
+          assetId: str(data.asset_id) || null,
+          assetUrl: str(data.asset_url) || null,
+          source: str(data.source) || null,
+          sourceUrl: str(data.source_url) || null,
+          width: typeof data.width === "number" ? data.width : null,
+          height: typeof data.height === "number" ? data.height : null,
+          candidatesConsidered:
+            typeof data.candidates_considered === "number" ? data.candidates_considered : 0,
+          rejected: Array.isArray(data.rejected) ? data.rejected.map(String) : [],
+        };
+      },
+    }),
+  );
+  if (result.error) {
+    throw new Error(result.error.message || "The find-logo call failed.");
+  }
+  if (streamError) throw new Error(streamError);
+  if (!outcome) {
+    throw new Error("The logo search ended without a result payload.");
+  }
+  return outcome;
 }
 
 /** Seed the paired CMS site's shell (global CSS + header/footer + nav). */

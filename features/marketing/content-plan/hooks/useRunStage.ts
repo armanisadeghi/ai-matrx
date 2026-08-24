@@ -69,6 +69,18 @@ export const KIT_STAGES: readonly RunStage[] = [
     { after: 120, label: "Saving the shell into the website" },
 ];
 
+/**
+ * Setup rung 2, the logo hunt — reads the company's live homepage, then falls
+ * back to Brave's image index, then downloads and measures the winner. Real
+ * network work against sites we do not control, so the tail is generous.
+ */
+export const LOGO_STAGES: readonly RunStage[] = [
+    { after: 0, label: "Reading the company's website for its logo" },
+    { after: 12, label: "Searching the web for the company's logo" },
+    { after: 25, label: "Downloading and checking the resolution" },
+    { after: 40, label: "Saving the logo into the site's assets" },
+];
+
 /** Setup rung 3 — reconcile: read both sides page-by-page and diff them. */
 export const COMPARE_STAGES: readonly RunStage[] = [
     { after: 0, label: "Reading every planned page" },

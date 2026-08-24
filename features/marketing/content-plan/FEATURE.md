@@ -836,6 +836,20 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-24 — **"Find the company logo" in Setup rung 2.** A second button
+  beside the starter kit (`SetupBridgeSection.tsx`) calls the streaming
+  `POST /content-plan/sites/{site_id}/find-logo` via `bridgeFindLogo`
+  (`setup/bridge.ts`): the server reads the company's own website for its
+  `og:image` / `apple-touch-icon` / favicon declarations, falls back to web
+  image search, downloads the best candidate, checks its real resolution, and
+  stores it as a `logo`-tagged CMS asset. Narrated by `LOGO_STAGES`
+  (`hooks/useRunStage.ts`) — no bare spinner on a live web fetch. A HIT toasts
+  what was found and says to re-run the starter kit (which is what actually
+  puts it in the header, as `<img class="matrx-brand-logo">`); a MISS toasts
+  the honest "no logo found — upload one in the CMS assets" plus the first
+  three rejected candidates and why. Never silent in either direction. It is
+  its own act, deliberately NOT folded into the kit: it reaches the live
+  internet and can legitimately come back empty.
 - 2026-08-24 — **Publish runs on the queue; the design seam gets its UI.**
   (1) Setup rung 5's apply seeds `steps=["p7_publish"]` on the durable
   cms_fill queue (the one-shot `/cms-publish` request died at the gateway
