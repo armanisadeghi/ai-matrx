@@ -156,11 +156,22 @@ GRANT EXECUTE ON FUNCTION seo.gsc_dimension_coverage(uuid, date, date) TO authen
 --   window_days — how much history the Dimensions screen measures coverage
 --   over when no window is on screen. 90 matches every other "is this feature
 --   inert" strip in the value system.
-INSERT INTO platform.feature_knob (feature, key, value, description)
+INSERT INTO platform.feature_knob
+  (feature, key, value, default_value, value_type, unit, min_value, max_value,
+   label, description, set_by, basis, review_due)
 VALUES
-  ('seo.dimension_coverage', 'low_coverage_click_pct', '20'::jsonb,
-   'Below this share of the window''s clicks, filtering by a dimension warns that the corpus is not classified yet.'),
-  ('seo.dimension_coverage', 'window_days', '90'::jsonb,
-   'How many days of history the Dimensions screen measures coverage over.')
-ON CONFLICT (feature, key) DO UPDATE
-  SET description = EXCLUDED.description;
+  ('seo.dimension_coverage', 'low_coverage_click_pct', '20'::jsonb, '20'::jsonb,
+   'integer', 'percent', 0, 100,
+   'Low dimension coverage threshold',
+   'Below this share of the window''s clicks, filtering by a dimension warns that the corpus is not classified yet.',
+   'agent',
+   'On Data Destruction''s 90-day window, platform dimensions cover between 0% and 55% of clicks. Below 20%, a filtered slice describes the backfill queue more than the business. Re-measure with multi-site data before changing it.',
+   '2026-11-23'),
+  ('seo.dimension_coverage', 'window_days', '90'::jsonb, '90'::jsonb,
+   'integer', 'days', 1, 480,
+   'Dimension coverage window',
+   'How many days of history the Dimensions screen measures coverage over.',
+   'agent',
+   'Ninety days matches the established inert-feature coverage strips and smooths weekday seasonality while remaining recent enough to expose an incomplete classification corpus.',
+   '2026-11-23')
+ON CONFLICT (feature, key) DO NOTHING;
