@@ -48202,6 +48202,78 @@ export type Database = {
           },
         ]
       }
+      engine_schedule: {
+        Row: {
+          cadence: string
+          created_at: string
+          created_by: string | null
+          day_of_week: number | null
+          deleted_at: string | null
+          enabled: boolean
+          engine_slug: string
+          id: string
+          max_keywords_per_run: number
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          run_at_utc: string | null
+          scope_organization_id: string | null
+          scope_tier: string
+          site_id: string | null
+          sites_per_run: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          cadence: string
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: number | null
+          deleted_at?: string | null
+          enabled?: boolean
+          engine_slug: string
+          id?: string
+          max_keywords_per_run?: number
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          run_at_utc?: string | null
+          scope_organization_id?: string | null
+          scope_tier: string
+          site_id?: string | null
+          sites_per_run?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          cadence?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: number | null
+          deleted_at?: string | null
+          enabled?: boolean
+          engine_slug?: string
+          id?: string
+          max_keywords_per_run?: number
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          run_at_utc?: string | null
+          scope_organization_id?: string | null
+          scope_tier?: string
+          site_id?: string | null
+          sites_per_run?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       geo_place: {
         Row: {
           aliases: Json
