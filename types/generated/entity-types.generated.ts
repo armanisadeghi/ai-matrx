@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 425 active entity tokens. A token here is FK-valid for
+// 426 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -463,6 +463,7 @@ export type EntityTypeToken =
   | "workflow_plan_sample"
   | "workflow_recovery_audit"
   | "workflow_run"
+  | "workflow_run_log"
   | "workflow_runtime_surface"
   | "workflow_template"
   | "workflow_trigger"
@@ -1165,6 +1166,7 @@ export type ScopeableEntityToken =
   | "workflow_node_outcome"
   | "workflow_recovery_audit"
   | "workflow_run"
+  | "workflow_run_log"
   | "workflow_runtime_surface"
   | "workflow_template"
   | "workflow_trigger"
@@ -1650,6 +1652,7 @@ export const ENTITY_TYPE_METADATA = {
   "workflow_plan_sample": { token: "workflow_plan_sample", schema: "workflow", table: "plan_sample", label: "Workflow Plan Sample", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_recovery_audit": { token: "workflow_recovery_audit", schema: "workflow", table: "recovery_audit", label: "Workflow Recovery Audit", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_run": { token: "workflow_run", schema: "workflow", table: "run", label: "Workflow Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "workflow_run_log": { token: "workflow_run_log", schema: "workflow", table: "run_log", label: "Workflow Run Log", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_runtime_surface": { token: "workflow_runtime_surface", schema: "workflow", table: "runtime_surface", label: "Run Surface", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workflow_template": { token: "workflow_template", schema: "workflow", table: "template", label: "Workflow Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "workflow_trigger": { token: "workflow_trigger", schema: "workflow", table: "trigger", label: "Workflow Trigger", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -2079,6 +2082,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "workflow_plan_sample",
   "workflow_recovery_audit",
   "workflow_run",
+  "workflow_run_log",
   "workflow_runtime_surface",
   "workflow_template",
   "workflow_trigger",
