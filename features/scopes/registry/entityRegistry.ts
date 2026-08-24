@@ -385,10 +385,6 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     // A tag's owning topic is resolved by the flat redirect route.
     hrefFor: (id) => `/research/tags/${id}`,
   },
-  flashcard_set: {
-    Icon: Layers,
-    labelPlural: "Flashcard Sets",
-  },
   // The row FlashcardPeek actually reads (education.fc_set) — the canonical
   // flashcard-set entity (legacy education.flashcard_data merged 2026-08-12).
   fc_set: {

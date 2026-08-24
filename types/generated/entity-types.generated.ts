@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 427 active entity tokens. A token here is FK-valid for
+// 425 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -180,8 +180,6 @@ export type EntityTypeToken =
   | "file_page_annotations"
   | "file_pages"
   | "file_version"
-  | "flashcard_review"
-  | "flashcard_set"
   | "flexible_data"
   | "folder"
   | "game_badge"
@@ -507,7 +505,6 @@ export type ReferencePickableEntityToken =
   | "fc_set"
   | "feature_doc"
   | "file"
-  | "flashcard_set"
   | "flexible_data"
   | "folder"
   | "game_result"
@@ -888,8 +885,6 @@ export type ScopeableEntityToken =
   | "file_overrides"
   | "file_page_annotations"
   | "file_pages"
-  | "flashcard_review"
-  | "flashcard_set"
   | "flexible_data"
   | "folder"
   | "game_badge"
@@ -1372,8 +1367,6 @@ export const ENTITY_TYPE_METADATA = {
   "file_page_annotations": { token: "file_page_annotations", schema: "files", table: "page_annotations", label: "Page Annotation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "file_pages": { token: "file_pages", schema: "files", table: "pages", label: "File Page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "file_version": { token: "file_version", schema: "files", table: "file_versions", label: "File Version", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Sources", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "flashcard_review": { token: "flashcard_review", schema: "users", table: "user_flashcard_reviews", label: "Flashcard Review", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "flashcard_set": { token: "flashcard_set", schema: "users", table: "user_flashcard_sets", label: "Flashcard Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
   "flexible_data": { token: "flexible_data", schema: "platform", table: "flexible_data", label: "Flexible Data", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "folder": { token: "folder", schema: "files", table: "folders", label: "Folder", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Sources", referencePickable: true, titleColumn: "folder_name", contentRole: "source", referenceCategory: null },
   "game_badge": { token: "game_badge", schema: "education", table: "game_badge", label: "Game Badge", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1803,8 +1796,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "file_page_annotations",
   "file_pages",
   "file_version",
-  "flashcard_review",
-  "flashcard_set",
   "flexible_data",
   "folder",
   "game_badge",
