@@ -587,6 +587,12 @@ export function QualityView({
             isLoading={valueSummary.isLoading}
             isFetching={valueSummary.isFetching}
             pageSize={10}
+            // A level row is a FILTER, not a record. Opening a detail drawer
+            // on it shows raw column names and a slug ("negative") in place of
+            // the reader's own word for the level — the row's real door is
+            // "Review →".
+            detail={{ enabled: false }}
+            window={{ enabled: false }}
             selectedId={valueLevel}
             onRowOpen={(row) =>
               setValueLevel((current) =>

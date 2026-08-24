@@ -415,9 +415,9 @@ BEGIN
       WHERE v.site_id = p_site_id AND v.surface = p_surface AND v.deleted_at IS NULL;
     END IF;
     INSERT INTO seo.keyword_saved_view
-      (site_id, name, surface, state, "position", shared, organization_id, visibility, created_by, updated_by)
+      (site_id, name, surface, state, "position", shared, organization_id, created_by, updated_by)
     VALUES (p_site_id, v_name, p_surface, COALESCE(p_state, '{}'::jsonb), v_pos, p_shared,
-            v_org, 'internal', v_uid, v_uid)
+            v_org, v_uid, v_uid)
     RETURNING seo.keyword_saved_view.id INTO v_id;
   END IF;
 

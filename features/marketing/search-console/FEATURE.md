@@ -103,12 +103,31 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   (`SearchConsoleWorkspace.drillFor`); right-click on any row (via the
   table's `data-row-id` stamps + `NonEditableContextMenu` with
   `resolveContextOnOpen`) opens floating panels; panel row clicks re-drill
-  into further panels (`lib/drills.ts::panelDrillFor` is the ONE panel
-  drill vocabulary).
+  into further panels. `lib/drills.ts` is the ONE panel drill vocabulary —
+  `panelDrillFor` (this row's OTHER dimension: pages for a keyword, queries
+  for a page) and `rowScopeDrillFor` (this row alone, same dimension: its
+  KPIs, its trend, its table). Extend it; never write a drill inline.
+- 🚨 **A drill opens a PANEL; the table underneath never re-filters** (P25,
+  keyword-system-decisions.md). Row click keeps its cross-filter behaviour
+  because the user asked for that one explicitly; every right-click entry is
+  additive. A change that makes a panel drill mutate the host table's
+  filters, sort, or scroll is a regression, not a simplification.
 - `windows/GscDrilldownWindow.tsx` + overlay id `gscDrilldownWindow`
   (multi-instance; opener `features/overlays/openers/gscDrilldownWindow.tsx`
   derives a deterministic instanceId per slice, so identical drills focus
-  the existing panel while distinct slices float side by side).
+  the existing panel while distinct slices float side by side). **A panel is
+  a COMPLETE view, not a screenshot**: it owns its own period strip, its own
+  filter chips (`allowedFilterKeysForDimension` / `pruneFiltersForDimension`),
+  and its own `GscDimensionTable` with the same Class · Score · Level
+  columns. Narrowing a panel never touches the table it came from.
+- `windows/GscWhyScoreWindow.tsx` + overlay id `gscWhyScoreWindow`
+  (multi-instance, keyed on site+keyword) — one keyword's value receipt as a
+  panel. Body is `WhyScoreBody` from the value system; there is no second
+  explanation of a score in this app.
+- Both panels are registered `mobilePresentation: "drawer"` + `ephemeral`
+  in `windowRegistryMetadata.ts`: on mobile they are bottom sheets you swipe
+  away back to the table you were reading, which is the same promise the
+  floating panel makes on desktop.
 
 ## The four method tabs (v2, 2026-08-04; Insights 2026-08-07)
 
@@ -613,8 +632,16 @@ we do not have is worse than one more click.
   table (breakdown, dig, watch) builds from it; a per-table copy is the
   defect it exists to kill.
 - One dimension table, one drill vocabulary, one panel — extend
-  `GscDimensionTable` / `panelDrillFor` / `GscDrilldownWindow`; never fork a
+  `GscDimensionTable` / `lib/drills.ts` / `GscDrilldownWindow`; never fork a
   per-tab table or a second panel body.
+- **A score's WHY renders in exactly two shapes**, both from
+  `features/marketing/seo/value-system/workbench/WhyScore.tsx`: a small (i)
+  with a thin hover popover inside a table cell (`WhyScoreHint` — a
+  paragraph in a cell is banned, P26), and the full receipt
+  (`WhyScoreBody`) in the Why-this-score panel. Every step of the chain
+  carries the door to the screen that changes it — the mapping lives ONCE in
+  `value-system/reason-links.ts`. A new receipt step gains its editor there,
+  never in a component.
 - `types/database.types.ts` (seo Functions) and
   `types/python-generated/api-types.ts` (the gsc sync path) were
   hand-patched to match the live DB / next-deploy OpenAPI because this
@@ -706,6 +733,26 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-23 — **C6 finish: panel drills, the actionable receipt, Insights by
+  LEVEL** ([`migrations/seo_value_level_movers_and_topic_receipt.sql`](../../../migrations/seo_value_level_movers_and_topic_receipt.sql)).
+  Right-click on any Search Console row now offers, per dimension, "See pages
+  for this keyword" / "See queries for this page", "See this row's Search
+  Console data" (`rowScopeDrillFor`) and — on keyword rows — "Why this score";
+  each opens a WINDOW PANEL and leaves the host table's filters, sort and
+  scroll exactly as they were. Panels became independently filterable
+  (own period strip, own chips, own table). `seo.keyword_value_map`'s topic
+  receipt gained `topic_id`, which is what lets a receipt step link to the
+  topic tree AT that node; `seo.gsc_perf_class_movers` gained
+  `p_filters.levels` + a `value_band` column (body now maintained in
+  `seo_class_map_scope_fix.sql`), backing the by-LEVEL decomposition beside
+  the class one in Traffic quality and its one-sentence headline ("clicks are
+  flat overall — but Costs money to serve is up 33%"). Verified live on Data
+  Destruction: two panels open side by side from different rows with the host
+  table untouched, and each receipt step landing on its editor (topic tree at
+  the node with its worth dialog open; the dimension screen ringing the
+  stamped answer; the band vocabulary editor). Known gap: a matcher has RPCs
+  but no editor SCREEN, so a matcher step links to the answer it stamps and
+  says so rather than promising a screen that does not exist.
 - 2026-08-23 — **C5: Dig Here saves its matches as a situational stamp**
   ([`migrations/seo_stamp_system_c5_condition_matchers.sql`](../../../migrations/seo_stamp_system_c5_condition_matchers.sql),
   `…_c5b_no_silent_cap.sql`, `…_c5c_compare_parity.sql`). A rule becomes ONE
