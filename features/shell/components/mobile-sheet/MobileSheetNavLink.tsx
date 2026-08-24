@@ -14,6 +14,8 @@ interface MobileSheetNavLinkProps {
   external?: boolean;
   /** Internal destination that should preserve the current workspace tab. */
   openInNewTab?: boolean;
+  /** Optional parent label shown under a search result. */
+  contextLabel?: string;
 }
 
 export default function MobileSheetNavLink({
@@ -23,6 +25,7 @@ export default function MobileSheetNavLink({
   isChild = false,
   external = false,
   openInNewTab = false,
+  contextLabel,
 }: MobileSheetNavLinkProps) {
   const className = isChild
     ? "shell-mobile-nav-item shell-mobile-nav-child"
@@ -44,7 +47,14 @@ export default function MobileSheetNavLink({
             strokeWidth={1.75}
           />
         </span>
-        <span>{label}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate">{label}</span>
+          {contextLabel ? (
+            <span className="block truncate text-xs font-normal text-muted-foreground">
+              {contextLabel}
+            </span>
+          ) : null}
+        </span>
         <span className="shell-nav-external">
           <ShellIcon name="ArrowUpRight" size={14} strokeWidth={1.75} />
         </span>
@@ -66,7 +76,14 @@ export default function MobileSheetNavLink({
           strokeWidth={1.75}
         />
       </span>
-      <span>{label}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate">{label}</span>
+        {contextLabel ? (
+          <span className="block truncate text-xs font-normal text-muted-foreground">
+            {contextLabel}
+          </span>
+        ) : null}
+      </span>
     </Link>
   );
 }

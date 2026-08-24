@@ -27,7 +27,9 @@ interface BottomSheetProps {
    * on every keystroke and every drill-in, which reads as the panel jumping.
    */
   size?: "adaptive" | "full";
-  /** Merged onto the sheet panel — e.g. `bg-card` to override the default glass. */
+  /** Visual treatment for the panel. Solid is intended for dense, long-lived surfaces. */
+  surface?: "glass" | "solid";
+  /** Merged onto the sheet panel. */
   contentClassName?: string;
   children: React.ReactNode;
 }
@@ -37,6 +39,7 @@ function BottomSheet({
   onOpenChange,
   title = "Bottom Sheet",
   size = "adaptive",
+  surface = "glass",
   contentClassName,
   children,
 }: BottomSheetProps) {
@@ -51,15 +54,21 @@ function BottomSheet({
           className={cn(
             "fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl overflow-hidden",
             size === "full" ? "h-[92dvh]" : "min-h-[60dvh] max-h-[90dvh]",
+            surface === "solid" &&
+              "border border-b-0 border-border bg-background shadow-2xl",
             contentClassName,
           )}
-          style={{
-            background: "var(--matrx-glass-bg)",
-            backdropFilter: "blur(20px) saturate(180%)",
-            WebkitBackdropFilter: "blur(20px) saturate(180%)",
-            border: "1px solid var(--matrx-glass-border-color)",
-            borderBottom: "none",
-          }}
+          style={
+            surface === "glass"
+              ? {
+                  background: "var(--matrx-glass-bg)",
+                  backdropFilter: "blur(20px) saturate(180%)",
+                  WebkitBackdropFilter: "blur(20px) saturate(180%)",
+                  border: "1px solid var(--matrx-glass-border-color)",
+                  borderBottom: "none",
+                }
+              : undefined
+          }
         >
           <VisuallyHidden>
             <DrawerTitle>{title}</DrawerTitle>

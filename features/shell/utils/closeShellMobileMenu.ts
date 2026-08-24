@@ -3,5 +3,8 @@ export function closeShellMobileMenu(): void {
   const checkbox = document.getElementById(
     "shell-mobile-menu",
   ) as HTMLInputElement | null;
-  if (checkbox?.checked) checkbox.checked = false;
+  if (checkbox?.checked) {
+    checkbox.checked = false;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+  }
 }

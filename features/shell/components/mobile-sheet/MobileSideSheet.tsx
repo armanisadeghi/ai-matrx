@@ -15,11 +15,7 @@ import {
   primaryNavItems,
   settingsItem,
 } from "../../constants/nav-data";
-import MobileSheetNavLink from "./MobileSheetNavLink";
-import MobileNavGroup from "./MobileNavGroup";
-import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
-import MobileSheetHamburgerToggle from "./MobileSheetHamburgerToggle";
-import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
+import MobileNavigationDrawer from "./MobileNavigationDrawer";
 
 interface MobileSideSheetProps {
   isAuthenticated: boolean;
@@ -29,82 +25,10 @@ interface MobileSideSheetProps {
 
 export default function MobileSideSheet({
   isAuthenticated,
-  pathname,
+  pathname: _pathname,
 }: MobileSideSheetProps) {
   const visibleItems = navItemsForViewer(primaryNavItems, isAuthenticated);
   return (
-    <div className="shell-mobile-sheet-wrapper">
-      {/* Backdrop — clicking closes the sheet */}
-      <label
-        htmlFor="shell-mobile-menu"
-        className="shell-mobile-sheet-backdrop"
-        aria-label="Close navigation menu"
-      />
-
-      {/* Duplicate header hamburger — same screen position for open/close */}
-      <MobileSheetHamburgerToggle />
-
-      {/* Sheet panel */}
-      <div
-        className="shell-mobile-sheet matrx-glass-thin-border"
-        data-sidebar-view="main"
-      >
-        {/* Brand — wordmark only (no logo icon). */}
-        <div className="shell-mobile-sheet-brand">
-          <span className="shell-mobile-sheet-brand-text">MATRX</span>
-        </div>
-
-        {/* Navigation with dual-view support */}
-        <nav aria-label="Mobile navigation">
-          {/* Route menu switch + content — client island */}
-          <MobileRouteMenuSlot />
-
-          {/* Standard nav — groups collapse by default; only the active route's
-              group starts expanded (see MobileNavGroup). */}
-          <div className="shell-mobile-main-nav">
-            {visibleItems.map((item) => {
-              if (!item.children || item.children.length === 0) {
-                return (
-                  <MobileSheetNavLink
-                    key={item.label}
-                    href={item.href}
-                    iconName={item.iconName}
-                    label={item.label}
-                    external={item.external}
-                    openInNewTab={item.openInNewTab}
-                  />
-                );
-              }
-              return (
-                <MobileNavGroup
-                  key={item.label}
-                  item={item}
-                  initialPathname={pathname}
-                />
-              );
-            })}
-
-            {/* Settings */}
-            <div className="shell-mobile-section-divider" />
-            {settingsItem.children && settingsItem.children.length > 0 ? (
-              <MobileNavGroup item={settingsItem} initialPathname={pathname} />
-            ) : (
-              <MobileSheetNavLink
-                href={settingsItem.href}
-                iconName={settingsItem.iconName}
-                label={settingsItem.label}
-              />
-            )}
-
-            {/* Admin section — single "Administration" entry, self-gated by
-                selectIsAdmin (client component) */}
-            <AdminMobileMenuItem />
-          </div>
-
-          {/* Route menu — populated by MobileRouteMenuSlot client island */}
-          <div className="shell-mobile-route-nav" />
-        </nav>
-      </div>
-    </div>
+    <MobileNavigationDrawer items={visibleItems} settingsItem={settingsItem} />
   );
 }
