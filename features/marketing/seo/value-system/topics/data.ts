@@ -33,6 +33,8 @@ import type {
   TopicPlacementStatus,
   TopicStatRow,
   KeywordTopicResult,
+  TopicDeleteImpact,
+  TopicDeleteResult,
 } from "./types";
 
 async function seoDb() {
@@ -87,8 +89,12 @@ export async function listAllTopics(): Promise<TopicNode[]> {
 }
 
 /** This site's per-topic worth rulings. Small, site-scoped, direct under RLS. */
-export async function listTopicWorth(siteId: string): Promise<SiteTopicValue[]> {
-  const response = await (await seoDb())
+export async function listTopicWorth(
+  siteId: string,
+): Promise<SiteTopicValue[]> {
+  const response = await (
+    await seoDb()
+  )
     .from("site_topic_value")
     .select("id, site_id, topic_id, weight, lead_quality, service_match, notes")
     .eq("site_id", siteId)
@@ -107,7 +113,9 @@ export async function getTopicStats(
   end: string,
   signal?: AbortSignal,
 ): Promise<TopicStatRow[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_topic_stats", { p_site_id: siteId, p_start: start, p_end: end })
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error) as TopicStatRow[];
@@ -120,7 +128,9 @@ export async function getOfferingSplit(
   end: string,
   signal?: AbortSignal,
 ): Promise<OfferingSplitRow[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_topic_offering_split", {
       p_site_id: siteId,
       p_start: start,
@@ -138,12 +148,18 @@ export async function setTopicParent(
   topicId: string,
   parentId: string | null,
 ): Promise<string> {
-  const response = await (await seoDb()).rpc("gsc_topic_set_parent", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_topic_set_parent", {
     p_site_id: siteId,
     p_topic_id: topicId ?? undefined,
     p_parent_id: parentId ?? undefined,
   });
-  return assertGoverned(response.data, response.error, "pin the parent") as string;
+  return assertGoverned(
+    response.data,
+    response.error,
+    "pin the parent",
+  ) as string;
 }
 
 /** Create a topic (parent travels with the create) or rename / retype one. */
@@ -157,7 +173,9 @@ export async function saveTopic(
     parentId?: string | null;
   },
 ): Promise<string> {
-  const response = await (await seoDb()).rpc("gsc_topic_save", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_topic_save", {
     p_site_id: siteId,
     p_topic_id: input.topicId ?? undefined,
     p_name: input.name ?? undefined,
@@ -165,7 +183,11 @@ export async function saveTopic(
     p_description: input.description ?? undefined,
     p_parent_id: input.parentId ?? undefined,
   });
-  return assertGoverned(response.data, response.error, "save the topic") as string;
+  return assertGoverned(
+    response.data,
+    response.error,
+    "save the topic",
+  ) as string;
 }
 
 /**
@@ -184,7 +206,9 @@ export async function setTopicWorth(
     clear?: boolean;
   },
 ): Promise<string | null> {
-  const response = await (await seoDb()).rpc("gsc_set_topic_value", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_set_topic_value", {
     p_site_id: siteId,
     p_topic_id: topicId ?? undefined,
     p_weight: input.weight ?? undefined,
@@ -198,6 +222,54 @@ export async function setTopicWorth(
     response.error,
     "save this topic's worth",
   ) as string | null;
+}
+
+/** Full global impact of deleting one shared topic, before any write occurs. */
+export async function getTopicDeleteImpact(
+  siteId: string,
+  topicId: string,
+): Promise<TopicDeleteImpact> {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_topic_delete_impact", {
+    p_site_id: siteId,
+    p_topic_id: topicId,
+  });
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    "preview this topic's deletion",
+  );
+  const row = rows[0];
+  if (!row) throw new Error("The topic no longer exists.");
+  return row;
+}
+
+/**
+ * Atomically remove a shared topic, optionally merging every keyword link into
+ * a replacement. Children are promoted; worth and pack judgments are removed
+ * because neither can be safely guessed onto a different meaning.
+ */
+export async function deleteTopic(
+  siteId: string,
+  topicId: string,
+  replacementTopicId: string | null,
+): Promise<TopicDeleteResult> {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_topic_delete", {
+    p_site_id: siteId,
+    p_topic_id: topicId,
+    p_replacement_topic_id: replacementTopicId ?? undefined,
+  });
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    "delete this topic",
+  );
+  const row = rows[0];
+  if (!row) throw new Error("The topic could not be deleted.");
+  return row;
 }
 
 // Placing keywords on the tree is NOT written here. There is ONE placement
@@ -224,13 +296,19 @@ export async function getTopicPlacementStatus(
   minImpressions: number,
   signal?: AbortSignal,
 ): Promise<TopicPlacementStatus> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("topic_placement_status", {
       p_site_id: siteId,
       p_min_impressions: minImpressions,
     })
     .abortSignal(signal ?? new AbortController().signal);
-  const rows = assertData(response.data, response.error, "read the placement status");
+  const rows = assertData(
+    response.data,
+    response.error,
+    "read the placement status",
+  );
   const row = Array.isArray(rows) ? rows[0] : rows;
   return row as TopicPlacementStatus;
 }
@@ -244,7 +322,9 @@ export async function confirmKeywordTopics(
   siteId: string,
   keywordIds: string[],
 ): Promise<KeywordTopicResult[]> {
-  const response = await (await seoDb()).rpc("gsc_confirm_keyword_topic", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_confirm_keyword_topic", {
     p_site_id: siteId,
     p_keyword_ids: keywordIds,
   });

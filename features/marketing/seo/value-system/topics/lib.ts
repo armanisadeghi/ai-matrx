@@ -87,6 +87,30 @@ export interface BuiltTree {
   orphanedParents: string[];
 }
 
+export type TopicTreeSortKey =
+  "name" | "worth" | "keywords" | "clicks" | "impressions";
+
+export interface TopicTreeSort {
+  key: TopicTreeSortKey;
+  direction: "asc" | "desc";
+}
+
+function compareTopicNodes(
+  a: TopicTreeNode,
+  b: TopicTreeNode,
+  sort: TopicTreeSort,
+): number {
+  const direction = sort.direction === "asc" ? 1 : -1;
+  if (sort.key === "name") {
+    return direction * a.topic.name.localeCompare(b.topic.name);
+  }
+  const aValue = sort.key === "worth" ? a.effectiveWeight : a.subtree[sort.key];
+  const bValue = sort.key === "worth" ? b.effectiveWeight : b.subtree[sort.key];
+  return (
+    direction * (aValue - bValue) || a.topic.name.localeCompare(b.topic.name)
+  );
+}
+
 /**
  * Build the forest. `worthByTopic` and `statsByTopic` are per-site; the topic
  * rows themselves are the shared catalog.
@@ -220,24 +244,76 @@ export function scopeToSite(tree: BuiltTree): Set<string> {
 /** Depth-first flatten, honouring a collapsed set and an optional scope filter. */
 export function flattenTree(
   roots: TopicTreeNode[],
-  options: { collapsed: Set<string>; scope: Set<string> | null },
+  options: {
+    collapsed: Set<string>;
+    scope: Set<string> | null;
+    sort?: TopicTreeSort;
+  },
 ): TopicTreeNode[] {
   const out: TopicTreeNode[] = [];
+  const sort = options.sort;
   const visit = (node: TopicTreeNode) => {
     if (options.scope && !options.scope.has(node.topic.id)) return;
     out.push(node);
     if (options.collapsed.has(node.topic.id)) return;
-    node.children.forEach(visit);
+    const children = sort
+      ? [...node.children].sort((a, b) => compareTopicNodes(a, b, sort))
+      : node.children;
+    children.forEach(visit);
   };
-  roots.forEach(visit);
+  const sortedRoots = sort
+    ? [...roots].sort((a, b) => compareTopicNodes(a, b, sort))
+    : roots;
+  sortedRoots.forEach(visit);
   return out;
 }
 
-/** Root → … → node, for showing a lineage as one line of text. */
-export function lineageOf(
+/**
+ * Search and keyword-presence filters never tear a tree apart: matching nodes
+ * keep their full lineage, and a matching branch name keeps its descendants.
+ */
+export function filterTopicTreeScope(
   tree: BuiltTree,
-  topicId: string,
-): TopicNode[] {
+  baseScope: Set<string> | null,
+  search: string,
+  keywordFilter: "all" | "with-keywords" | "without-keywords",
+): Set<string> | null {
+  const needle = search.trim().toLocaleLowerCase();
+  if (!needle && keywordFilter === "all") return baseScope;
+
+  const keep = new Set<string>();
+  const includeDown = (node: TopicTreeNode) => {
+    if (!baseScope || baseScope.has(node.topic.id)) keep.add(node.topic.id);
+    node.children.forEach(includeDown);
+  };
+  const includeUp = (node: TopicTreeNode) => {
+    let current: TopicTreeNode | undefined = node;
+    while (current) {
+      if (!baseScope || baseScope.has(current.topic.id)) {
+        keep.add(current.topic.id);
+      }
+      const parentId: string | null = current.topic.parent_id;
+      current = parentId ? tree.byId.get(parentId) : undefined;
+    }
+  };
+
+  for (const node of tree.byId.values()) {
+    if (baseScope && !baseScope.has(node.topic.id)) continue;
+    const matchesName =
+      !needle || node.topic.name.toLocaleLowerCase().includes(needle);
+    const matchesKeywords =
+      keywordFilter === "all" ||
+      (keywordFilter === "with-keywords" && node.subtree.keywords > 0) ||
+      (keywordFilter === "without-keywords" && node.subtree.keywords === 0);
+    if (!matchesName || !matchesKeywords) continue;
+    includeUp(node);
+    if (needle) includeDown(node);
+  }
+  return keep;
+}
+
+/** Root → … → node, for showing a lineage as one line of text. */
+export function lineageOf(tree: BuiltTree, topicId: string): TopicNode[] {
   const chain: TopicNode[] = [];
   let current = tree.byId.get(topicId);
   let guard = 0;

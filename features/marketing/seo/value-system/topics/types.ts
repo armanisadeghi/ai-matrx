@@ -7,6 +7,8 @@
  * can this traffic ever become money, or is it only ever authority?
  */
 
+import type { Database } from "@/types/database.types";
+
 export interface TopicStatRow {
   topic_id: string;
   value_band: string;
@@ -81,6 +83,14 @@ export interface KeywordTopicResult {
   value_score: number | null;
 }
 
+/** Exact generated contract for the global impact preview shown before delete. */
+export type TopicDeleteImpact =
+  Database["seo"]["Functions"]["gsc_topic_delete_impact"]["Returns"][number];
+
+/** Exact generated contract for the atomic delete/reassignment result. */
+export type TopicDeleteResult =
+  Database["seo"]["Functions"]["gsc_topic_delete"]["Returns"][number];
+
 /**
  * THE MISMATCH RULE (USER.md): the person choosing this is a subject-matter
  * expert in their business, not in SEO taxonomy. So every option is written as
@@ -118,13 +128,15 @@ export const ROOT_TYPE_META: RootTypeMeta[] = [
   {
     value: "audience",
     label: "A group of people you sell to",
-    meaning: "The searcher is the kind of buyer you want — this can become money.",
+    meaning:
+      "The searcher is the kind of buyer you want — this can become money.",
     offering: true,
   },
   {
     value: "brand",
     label: "Your name or your brand",
-    meaning: "People looking for you by name — the closest traffic to a sale there is.",
+    meaning:
+      "People looking for you by name — the closest traffic to a sale there is.",
     offering: true,
   },
   {
@@ -162,12 +174,15 @@ export const ROOT_TYPE_META: RootTypeMeta[] = [
   },
 ];
 
-export function rootTypeMeta(nodeType: string | null | undefined): RootTypeMeta {
+export function rootTypeMeta(
+  nodeType: string | null | undefined,
+): RootTypeMeta {
   return (
     ROOT_TYPE_META.find((meta) => meta.value === nodeType) ?? {
       value: nodeType ?? "unknown",
       label: nodeType ?? "Not set",
-      meaning: "This type is not in the vocabulary — the tree cannot say what it is worth.",
+      meaning:
+        "This type is not in the vocabulary — the tree cannot say what it is worth.",
       offering: false,
     }
   );

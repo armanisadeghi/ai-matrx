@@ -85,6 +85,7 @@ language plpgsql
 security definer
 set search_path = ''
 as $function$
+#variable_conflict use_column
 declare
   v_topic seo.topic%rowtype;
   v_primary_keyword_ids uuid[] := array[]::uuid[];
@@ -259,4 +260,3 @@ grant execute on function seo.gsc_topic_delete_impact(uuid, uuid) to authenticat
 
 revoke all on function seo.gsc_topic_delete(uuid, uuid, uuid) from public, anon;
 grant execute on function seo.gsc_topic_delete(uuid, uuid, uuid) to authenticated;
-

@@ -1038,7 +1038,9 @@ function ListingsMatrix({
           data={matrix}
           columns={columns}
           getRowId={(row) => row.publisher.id}
-          pageSize={0}
+          /* Paged, not all 814 at once: the old hand-table mounted a Select and
+             an Input for every publisher in the registry on first paint. Sort,
+             filter and search are what make a page enough. */
           zebra
           copy={{
             label: "Publisher listing",

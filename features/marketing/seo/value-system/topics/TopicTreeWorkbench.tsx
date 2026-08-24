@@ -24,11 +24,34 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ListTree, Plus } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CircleDollarSign,
+  GitBranchPlus,
+  ListTree,
+  PanelTop,
+  Pencil,
+  Pin,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SearchInput } from "@/components/official/SearchInput";
 import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
+import { formatCount } from "@/features/marketing/search-console/types";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
@@ -36,7 +59,9 @@ import { getValueVocabulary } from "../data";
 import { buildBandMeta, reviewWindow } from "../lib";
 import {
   getOfferingSplit,
+  getTopicDeleteImpact,
   getTopicStats,
+  deleteTopic,
   listAllTopics,
   listTopicWorth,
   saveTopic,
@@ -45,20 +70,27 @@ import {
 } from "./data";
 import {
   buildTopicTree,
+  filterTopicTreeScope,
   flattenTree,
   forbiddenParents,
   lineageOf,
   scopeToSite,
   tallyByTopic,
   type TopicTreeNode,
+  type TopicTreeSort,
+  type TopicTreeSortKey,
 } from "./lib";
 import { OfferingSplitHeadline } from "./OfferingSplitHeadline";
 import { ProposedQueue } from "./ProposedQueue";
 import { TopicPlacementStrip } from "./TopicPlacementStrip";
-import { TopicTreeRow } from "./TopicTreeRow";
+import { TopicTreeRow, type TopicRowActions } from "./TopicTreeRow";
 import { TopicEditDialog, type TopicEditDraft } from "./TopicEditDialog";
 import { TopicWorthDialog } from "./TopicWorthDialog";
-import { TopicPickerDialog, type TopicPickerRequest } from "./TopicPickerDialog";
+import {
+  TopicPickerDialog,
+  type TopicPickerRequest,
+} from "./TopicPickerDialog";
+import { TopicDeleteDialog, type TopicDeleteMode } from "./TopicDeleteDialog";
 // THE ONE placement write for the whole product. The topic tree used to have
 // its own wrapper over the same RPC that silently dropped the reason (P24).
 import { setKeywordService } from "@/features/marketing/seo/keyword-workbench/data";
@@ -78,6 +110,7 @@ export function TopicTreeWorkbench() {
   const focusTopicId = searchParams.get("topic");
   const focusWorth = searchParams.get("worth") === "1";
   const queryClient = useQueryClient();
+  const openDrilldown = useOpenGscDrilldownWindow();
   const window28 = reviewWindow();
   const windowLabel = `${window28.start} → ${window28.end}`;
 
@@ -87,6 +120,20 @@ export function TopicTreeWorkbench() {
   const [editDraft, setEditDraft] = useState<TopicEditDraft | null>(null);
   const [worthNode, setWorthNode] = useState<TopicTreeNode | null>(null);
   const [picker, setPicker] = useState<TopicPickerRequest | null>(null);
+  const [search, setSearch] = useState("");
+  const [keywordFilter, setKeywordFilter] = useState<
+    "all" | "with-keywords" | "without-keywords"
+  >("all");
+  const [sort, setSort] = useState<TopicTreeSort>({
+    key: "keywords",
+    direction: "desc",
+  });
+  const [deleteNode, setDeleteNode] = useState<TopicTreeNode | null>(null);
+  const [deleteMode, setDeleteMode] = useState<TopicDeleteMode>("unassign");
+  const [replacementNode, setReplacementNode] = useState<TopicTreeNode | null>(
+    null,
+  );
+  const contextNodeRef = useRef<TopicTreeNode | null>(null);
 
   // ── Reads ─────────────────────────────────────────────────────────────────
   const topics = useQuery({
@@ -111,6 +158,15 @@ export function TopicTreeWorkbench() {
     queryKey: ["seo", "value", "vocab", siteId, "value_band"],
     queryFn: ({ signal }) => getValueVocabulary(siteId, "value_band", signal),
   });
+  const deleteImpact = useQuery({
+    queryKey: ["seo", "topics", "delete-impact", siteId, deleteNode?.topic.id],
+    queryFn: () => {
+      const topicId = deleteNode?.topic.id;
+      if (!topicId) throw new Error("Choose a topic to delete.");
+      return getTopicDeleteImpact(siteId, topicId);
+    },
+    enabled: Boolean(deleteNode),
+  });
   const refreshTree = () => {
     void queryClient.invalidateQueries({ queryKey: ["seo", "topics"] });
   };
@@ -128,7 +184,8 @@ export function TopicTreeWorkbench() {
       setPicker(null);
       refreshTree();
       toast.success("Parent pinned", {
-        description: "Every keyword below it re-resolves against the new branch.",
+        description:
+          "Every keyword below it re-resolves against the new branch.",
       });
     },
     onError: failed("pin that parent"),
@@ -177,14 +234,11 @@ export function TopicTreeWorkbench() {
     onSuccess: (_data, variables) => {
       setWorthNode(null);
       refreshTree();
-      toast.success(
-        variables.clear ? "Ruling removed" : "Worth saved",
-        {
-          description: variables.clear
-            ? "This topic falls back to its nearest ruled ancestor."
-            : "It flows down to every topic beneath it.",
-        },
-      );
+      toast.success(variables.clear ? "Ruling removed" : "Worth saved", {
+        description: variables.clear
+          ? "This topic falls back to its nearest ruled ancestor."
+          : "It flows down to every topic beneath it.",
+      });
     },
     onError: failed("save that worth"),
   });
@@ -219,11 +273,33 @@ export function TopicTreeWorkbench() {
     onError: failed("place those keywords"),
   });
 
+  const removeTopic = useMutation({
+    mutationFn: (input: {
+      topicId: string;
+      replacementTopicId: string | null;
+    }) => deleteTopic(siteId, input.topicId, input.replacementTopicId),
+    onSuccess: (result) => {
+      setDeleteNode(null);
+      setReplacementNode(null);
+      setSelectedId(null);
+      refreshTree();
+      void queryClient.invalidateQueries({ queryKey: ["marketing", "gsc"] });
+      toast.success(`“${result.topic_name}” deleted`, {
+        description:
+          result.keyword_links_reassigned > 0
+            ? `${formatCount(result.keyword_links_reassigned)} keyword associations were reassigned.`
+            : `${formatCount(result.keyword_links_removed)} keyword associations were removed.`,
+      });
+    },
+    onError: failed("delete that topic"),
+  });
+
   const busy =
     pinParent.isPending ||
     upsertTopic.isPending ||
     saveWorth.isPending ||
-    placeKeywords.isPending;
+    placeKeywords.isPending ||
+    removeTopic.isPending;
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const loadingTree = topics.isPending || worth.isPending || stats.isPending;
@@ -233,8 +309,9 @@ export function TopicTreeWorkbench() {
     worth.data ?? [],
     tallyByTopic(stats.data ?? []),
   );
-  const scope = showWholeCatalog ? null : scopeToSite(tree);
-  const rows = flattenTree(tree.roots, { collapsed, scope });
+  const baseScope = showWholeCatalog ? null : scopeToSite(tree);
+  const scope = filterTopicTreeScope(tree, baseScope, search, keywordFilter);
+  const rows = flattenTree(tree.roots, { collapsed, scope, sort });
   const metas = buildBandMeta(vocab.data ?? []);
   const selected = selectedId ? (tree.byId.get(selectedId) ?? null) : null;
 
@@ -247,23 +324,29 @@ export function TopicTreeWorkbench() {
     if (!node) return;
     focusedRef.current = focusTopicId;
     const ancestors = lineageOf(tree, focusTopicId).map((topic) => topic.id);
-    setCollapsed((current) => {
-      const next = new Set(current);
-      for (const id of ancestors) next.delete(id);
-      return next;
-    });
-    // A node outside the site's own slice is invisible until the whole
-    // catalog is shown — a link that resolves to nothing is the dead end.
-    if (!scopeToSite(tree)?.has(focusTopicId)) setShowWholeCatalog(true);
-    setSelectedId(focusTopicId);
-    if (focusWorth) setWorthNode(node);
-    // Let the expansion paint before scrolling to the row.
+    let scrollFrame = 0;
     const frame = requestAnimationFrame(() => {
-      document
-        .getElementById(`topic-node-${focusTopicId}`)
-        ?.scrollIntoView({ block: "center" });
+      setCollapsed((current) => {
+        const next = new Set(current);
+        for (const id of ancestors) next.delete(id);
+        return next;
+      });
+      // A node outside the site's own slice is invisible until the whole
+      // catalog is shown — a link that resolves to nothing is the dead end.
+      if (!scopeToSite(tree)?.has(focusTopicId)) setShowWholeCatalog(true);
+      setSelectedId(focusTopicId);
+      if (focusWorth) setWorthNode(node);
+      // Let the expansion paint before scrolling to the row.
+      scrollFrame = requestAnimationFrame(() => {
+        document
+          .getElementById(`topic-node-${focusTopicId}`)
+          ?.scrollIntoView({ block: "center" });
+      });
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelAnimationFrame(scrollFrame);
+    };
   }, [focusTopicId, focusWorth, loadingTree, tree]);
 
   const toggleNode = (id: string) => {
@@ -303,6 +386,85 @@ export function TopicTreeWorkbench() {
         placeKeywords.mutate({ keywordIds, topicId, notes }),
     });
 
+  const openTopicKeywords = (node: TopicTreeNode) =>
+    openDrilldown({
+      siteId,
+      siteName: site.domain,
+      dimension: "query",
+      filters: { topic: node.topic.id },
+      title: `Keywords in ${node.topic.name}`,
+    });
+
+  const openDelete = (node: TopicTreeNode) => {
+    setDeleteNode(node);
+    setDeleteMode("unassign");
+    setReplacementNode(null);
+  };
+
+  const openReplacementPicker = () => {
+    if (!deleteNode) return;
+    setPicker({
+      mode: "parent",
+      title: `Reassign “${deleteNode.topic.name}” associations`,
+      description:
+        "Every keyword association will move to the topic you choose. Site-specific worth and starter-pack judgments will still be removed.",
+      subject: deleteNode.topic.name,
+      currentTopicId: replacementNode?.topic.id ?? null,
+      forbidden: new Set([deleteNode.topic.id]),
+      clearLabel: null,
+      reasonPrompt: null,
+      onChoose: (topicId) => {
+        const replacement = topicId ? (tree.byId.get(topicId) ?? null) : null;
+        setReplacementNode(replacement);
+        setDeleteMode("reassign");
+        setPicker(null);
+      },
+    });
+  };
+
+  const openEdit = (target: TopicTreeNode) =>
+    setEditDraft({
+      topicId: target.topic.id,
+      name: target.topic.name,
+      nodeType: target.topic.node_type,
+      description: target.topic.description ?? "",
+      parentId: null,
+      parentName: null,
+    });
+
+  const openAddChild = (target: TopicTreeNode) =>
+    setEditDraft({
+      topicId: null,
+      name: "",
+      nodeType: target.topic.node_type,
+      description: "",
+      parentId: target.topic.id,
+      parentName: target.topic.name,
+    });
+
+  const topicActions: TopicRowActions = {
+    onPinParent: openParentPicker,
+    onMakeRoot: (target) =>
+      pinParent.mutate({ topicId: target.topic.id, parentId: null }),
+    onSetWorth: (target) => setWorthNode(target),
+    onEdit: openEdit,
+    onAddChild: openAddChild,
+    onViewKeywords: openTopicKeywords,
+    onDelete: openDelete,
+  };
+
+  const runContextAction = (action: keyof TopicRowActions) => {
+    const node = contextNodeRef.current;
+    if (node) topicActions[action](node);
+  };
+
+  const changeSort = (key: TopicTreeSortKey) =>
+    setSort((current) => ({
+      key,
+      direction:
+        current.key === key && current.direction === "desc" ? "asc" : "desc",
+    }));
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-textured p-3">
       {split.isPending ? (
@@ -316,7 +478,10 @@ export function TopicTreeWorkbench() {
           onRetry={() => void split.refetch()}
         />
       ) : (
-        <OfferingSplitHeadline rows={split.data ?? []} windowLabel={windowLabel} />
+        <OfferingSplitHeadline
+          rows={split.data ?? []}
+          windowLabel={windowLabel}
+        />
       )}
 
       <section className="flex shrink-0 flex-col rounded-lg border border-border bg-card">
@@ -371,6 +536,39 @@ export function TopicTreeWorkbench() {
           </div>
         </div>
 
+        <div className="flex flex-col gap-2 border-b border-border px-3 py-2 sm:flex-row sm:items-center">
+          <SearchInput
+            value={search}
+            onValueChange={setSearch}
+            placeholder="Filter topics…"
+            aria-label="Filter the topic tree"
+            className="w-full sm:max-w-sm"
+            inputClassName="text-base sm:text-sm"
+          />
+          <Select
+            value={keywordFilter}
+            onValueChange={(value) =>
+              setKeywordFilter(
+                value === "with-keywords" || value === "without-keywords"
+                  ? value
+                  : "all",
+              )
+            }
+          >
+            <SelectTrigger className="w-full text-base sm:w-44 sm:text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All topics</SelectItem>
+              <SelectItem value="with-keywords">Has keywords</SelectItem>
+              <SelectItem value="without-keywords">No keywords</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground sm:ml-auto">
+            Column sorting preserves the tree and reorders siblings only.
+          </p>
+        </div>
+
         {loadingTree ? (
           <TableLoadingComponent />
         ) : treeError ? (
@@ -385,51 +583,163 @@ export function TopicTreeWorkbench() {
           />
         ) : rows.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
-            No topic touches this site yet. Create one, then place keywords under
-            it from the queue below.
+            {search || keywordFilter !== "all"
+              ? "No topic matches these filters."
+              : "No topic touches this site yet. Create one, then place keywords under it from the queue below."}
           </div>
         ) : (
-          <div className="max-h-[55vh] overflow-y-auto">
-            {rows.map((node) => (
-              <div key={node.topic.id} id={`topic-node-${node.topic.id}`}>
-              <TopicTreeRow
-                node={node}
-                metas={metas}
-                selected={node.topic.id === selectedId}
-                collapsed={collapsed.has(node.topic.id)}
-                onToggle={() => toggleNode(node.topic.id)}
-                onSelect={() =>
-                  setSelectedId(node.topic.id === selectedId ? null : node.topic.id)
-                }
-                busy={busy}
-                actions={{
-                  onPinParent: openParentPicker,
-                  onMakeRoot: (target) =>
-                    pinParent.mutate({ topicId: target.topic.id, parentId: null }),
-                  onSetWorth: (target) => setWorthNode(target),
-                  onEdit: (target) =>
-                    setEditDraft({
-                      topicId: target.topic.id,
-                      name: target.topic.name,
-                      nodeType: target.topic.node_type,
-                      description: target.topic.description ?? "",
-                      parentId: null,
-                      parentName: null,
-                    }),
-                  onAddChild: (target) =>
-                    setEditDraft({
-                      topicId: null,
-                      name: "",
-                      nodeType: target.topic.node_type,
-                      description: "",
-                      parentId: target.topic.id,
-                      parentName: target.topic.name,
-                    }),
-                }}
-              />
+          <NonEditableContextMenu
+            sourceFeature="marketing"
+            menuVersion={1}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(target) => {
+              const topicId = target
+                ?.closest("[data-topic-id]")
+                ?.getAttribute("data-topic-id");
+              const node = topicId ? (tree.byId.get(topicId) ?? null) : null;
+              contextNodeRef.current = node;
+              if (!node) return null;
+              setSelectedId(node.topic.id);
+              return {
+                [CONTEXT_MENU_ENTITY_KEY]: {
+                  type: "seo_topic",
+                  id: node.topic.id,
+                  title: node.topic.name,
+                },
+                content: [
+                  node.topic.name,
+                  `${node.subtree.keywords.toLocaleString()} keywords`,
+                  `${node.subtree.clicks.toLocaleString()} clicks`,
+                  `${node.subtree.impressions.toLocaleString()} impressions`,
+                  `effective worth ${node.effectiveWeight}`,
+                ].join(" · "),
+                topic_id: node.topic.id,
+                topic_name: node.topic.name,
+                keyword_count: node.subtree.keywords,
+                clicks: node.subtree.clicks,
+                impressions: node.subtree.impressions,
+              };
+            }}
+            extraSections={[
+              {
+                id: "topic-actions",
+                label: "Topic",
+                items: [
+                  {
+                    kind: "item",
+                    id: "topic-view-keywords",
+                    label: "See keywords in this branch",
+                    icon: PanelTop,
+                    description:
+                      "Open the filtered keyword report in a floating panel",
+                    onSelect: () => runContextAction("onViewKeywords"),
+                  },
+                  {
+                    kind: "item",
+                    id: "topic-pin-parent",
+                    label: "Pin a parent…",
+                    icon: Pin,
+                    onSelect: () => runContextAction("onPinParent"),
+                  },
+                  {
+                    kind: "item",
+                    id: "topic-make-root",
+                    label: "Make this the top of its own branch",
+                    icon: ListTree,
+                    onSelect: () => runContextAction("onMakeRoot"),
+                  },
+                  {
+                    kind: "item",
+                    id: "topic-add-child",
+                    label: "Add a topic under this…",
+                    icon: GitBranchPlus,
+                    onSelect: () => runContextAction("onAddChild"),
+                  },
+                  { kind: "separator", id: "topic-actions-separator-1" },
+                  {
+                    kind: "item",
+                    id: "topic-set-worth",
+                    label: "Set what it’s worth here…",
+                    icon: CircleDollarSign,
+                    onSelect: () => runContextAction("onSetWorth"),
+                  },
+                  {
+                    kind: "item",
+                    id: "topic-edit",
+                    label: "Rename or change its type…",
+                    icon: Pencil,
+                    onSelect: () => runContextAction("onEdit"),
+                  },
+                  { kind: "separator", id: "topic-actions-separator-2" },
+                  {
+                    kind: "item",
+                    id: "topic-delete",
+                    label: "Delete topic…",
+                    icon: Trash2,
+                    destructive: true,
+                    onSelect: () => runContextAction("onDelete"),
+                  },
+                ],
+              },
+            ]}
+          >
+            <div className="max-h-[55vh] overflow-auto">
+              <div className="sticky top-0 z-10 grid min-w-[900px] grid-cols-[minmax(24rem,1fr)_minmax(14rem,18rem)_7rem_7rem_8rem_2.75rem] items-center border-b border-border bg-muted/90 px-2 py-1.5 text-[11px] font-medium text-muted-foreground backdrop-blur">
+                <SortHeader
+                  label="Topic"
+                  sortKey="name"
+                  sort={sort}
+                  onSort={changeSort}
+                />
+                <SortHeader
+                  label="Worth"
+                  sortKey="worth"
+                  sort={sort}
+                  onSort={changeSort}
+                />
+                <SortHeader
+                  label="Keywords"
+                  sortKey="keywords"
+                  sort={sort}
+                  onSort={changeSort}
+                  align="right"
+                />
+                <SortHeader
+                  label="Clicks"
+                  sortKey="clicks"
+                  sort={sort}
+                  onSort={changeSort}
+                  align="right"
+                />
+                <SortHeader
+                  label="Impressions"
+                  sortKey="impressions"
+                  sort={sort}
+                  onSort={changeSort}
+                  align="right"
+                />
+                <span className="sr-only">Actions</span>
               </div>
-            ))}
-          </div>
+              {rows.map((node) => (
+                <div key={node.topic.id} id={`topic-node-${node.topic.id}`}>
+                  <TopicTreeRow
+                    node={node}
+                    metas={metas}
+                    selected={node.topic.id === selectedId}
+                    collapsed={collapsed.has(node.topic.id)}
+                    onToggle={() => toggleNode(node.topic.id)}
+                    onSelect={() =>
+                      setSelectedId(
+                        node.topic.id === selectedId ? null : node.topic.id,
+                      )
+                    }
+                    busy={busy}
+                    actions={topicActions}
+                  />
+                </div>
+              ))}
+            </div>
+          </NonEditableContextMenu>
         )}
 
         {selected ? (
@@ -444,8 +754,9 @@ export function TopicTreeWorkbench() {
         {tree.orphanedParents.length > 0 ? (
           <p className="border-t border-border px-3 py-1.5 text-[11px] text-warning">
             {tree.orphanedParents.length} topic
-            {tree.orphanedParents.length === 1 ? "" : "s"} point at a parent this
-            account cannot see; they are drawn as roots so nothing is hidden.
+            {tree.orphanedParents.length === 1 ? "" : "s"} point at a parent
+            this account cannot see; they are drawn as roots so nothing is
+            hidden.
           </p>
         ) : null}
       </section>
@@ -510,6 +821,36 @@ export function TopicTreeWorkbench() {
         />
       ) : null}
 
+      {deleteNode && !picker ? (
+        <TopicDeleteDialog
+          topicName={deleteNode.topic.name}
+          impact={deleteImpact.data ?? null}
+          loading={deleteImpact.isPending}
+          error={
+            deleteImpact.error ? extractErrorMessage(deleteImpact.error) : null
+          }
+          mode={deleteMode}
+          replacementName={replacementNode?.topic.name ?? null}
+          busy={removeTopic.isPending}
+          onModeChange={setDeleteMode}
+          onChooseReplacement={openReplacementPicker}
+          onRetry={() => void deleteImpact.refetch()}
+          onCancel={() => {
+            setDeleteNode(null);
+            setReplacementNode(null);
+          }}
+          onDelete={() =>
+            removeTopic.mutate({
+              topicId: deleteNode.topic.id,
+              replacementTopicId:
+                deleteMode === "reassign"
+                  ? (replacementNode?.topic.id ?? null)
+                  : null,
+            })
+          }
+        />
+      ) : null}
+
       {picker ? (
         <TopicPickerDialog
           request={picker}
@@ -519,6 +860,43 @@ export function TopicTreeWorkbench() {
         />
       ) : null}
     </div>
+  );
+}
+
+function SortHeader({
+  label,
+  sortKey,
+  sort,
+  onSort,
+  align = "left",
+}: {
+  label: string;
+  sortKey: TopicTreeSortKey;
+  sort: TopicTreeSort;
+  onSort: (key: TopicTreeSortKey) => void;
+  align?: "left" | "right";
+}) {
+  const active = sort.key === sortKey;
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(sortKey)}
+      className={cn(
+        "flex items-center gap-1 rounded px-1 py-1 hover:bg-muted hover:text-foreground",
+        align === "right" && "justify-self-end",
+        active && "text-foreground",
+      )}
+      aria-label={`Sort by ${label}`}
+    >
+      {label}
+      {active ? (
+        sort.direction === "asc" ? (
+          <ArrowUp className="h-3 w-3" />
+        ) : (
+          <ArrowDown className="h-3 w-3" />
+        )
+      ) : null}
+    </button>
   );
 }
 
@@ -552,9 +930,7 @@ function SelectedTopicFooter({
           : node.inheritedFrom
             ? `It has no ruling of its own, so it inherits ${node.effectiveWeight} from “${node.inheritedFrom.name}”.`
             : "Nothing above it carries a ruling, so the resolver uses its neutral default."}
-        {node.negativeGuard
-          ? " Keywords under this never count as wins."
-          : ""}
+        {node.negativeGuard ? " Keywords under this never count as wins." : ""}
       </p>
       {node.ownWorth?.notes ? (
         <p className={cn("mt-0.5 italic text-foreground")}>

@@ -10,7 +10,14 @@
  *   - how many of this site's keywords resolve through it, and where they land.
  */
 
-import { ChevronRight, CornerDownRight, MoreVertical, TriangleAlert } from "lucide-react";
+import {
+  ChevronRight,
+  CornerDownRight,
+  MoreVertical,
+  PanelTop,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,6 +38,8 @@ export interface TopicRowActions {
   onEdit: (node: TopicTreeNode) => void;
   onAddChild: (node: TopicTreeNode) => void;
   onMakeRoot: (node: TopicTreeNode) => void;
+  onViewKeywords: (node: TopicTreeNode) => void;
+  onDelete: (node: TopicTreeNode) => void;
 }
 
 export function TopicTreeRow({
@@ -60,72 +69,68 @@ export function TopicTreeRow({
 
   return (
     <div
+      data-topic-id={node.topic.id}
       className={cn(
-        "group flex items-start gap-1.5 border-b border-border px-2 py-1.5 text-sm last:border-b-0",
+        "group grid min-w-[900px] grid-cols-[minmax(24rem,1fr)_minmax(14rem,18rem)_7rem_7rem_8rem_2.75rem] items-center border-b border-border px-2 py-1.5 text-sm last:border-b-0",
         selected ? "bg-primary/5" : "hover:bg-muted/40",
       )}
-      style={{ paddingLeft: `${8 + node.depth * 14}px` }}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={collapsed ? "Expand" : "Collapse"}
-        className={cn(
-          "mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted",
-          !hasChildren && "invisible",
-        )}
+      <div
+        className="flex min-w-0 items-start gap-1.5"
+        style={{ paddingLeft: `${node.depth * 14}px` }}
       >
-        <ChevronRight
-          className={cn("h-3.5 w-3.5 transition-transform", !collapsed && "rotate-90")}
-        />
-      </button>
-
-      <button
-        type="button"
-        onClick={onSelect}
-        className="min-w-0 flex-1 text-left"
-      >
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className="truncate font-medium text-foreground">
-            {node.topic.name}
-          </span>
-          <span
-            className={cn(
-              "shrink-0 rounded border px-1 py-px text-[10px] leading-tight",
-              root.offering
-                ? "border-success/40 bg-success/10 text-success"
-                : "border-info/40 bg-info/10 text-info",
-            )}
-            title={root.meaning}
-          >
-            {node.depth === 0
-              ? root.label
-              : `under ${root.offering ? "a money root" : "an authority root"}`}
-          </span>
-          {node.negativeGuard ? (
-            <span className="flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/10 px-1 py-px text-[10px] leading-tight text-destructive">
-              <TriangleAlert className="h-2.5 w-2.5" />
-              never counts as a win
-            </span>
-          ) : null}
-        </span>
-
-        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-          <WorthBadge node={node} />
-          {node.subtree.keywords > 0 ? (
-            <span className="tabular-nums">
-              {formatCount(node.subtree.keywords)} keyword
-              {node.subtree.keywords === 1 ? "" : "s"}
-              {node.own.keywords !== node.subtree.keywords
-                ? ` (${formatCount(node.own.keywords)} here)`
-                : ""}
-              {node.subtree.clicks > 0
-                ? ` · ${formatCount(node.subtree.clicks)} clicks`
-                : ""}
-            </span>
-          ) : (
-            <span>no keywords resolve through this yet</span>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={collapsed ? "Expand" : "Collapse"}
+          className={cn(
+            "mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted",
+            !hasChildren && "invisible",
           )}
+        >
+          <ChevronRight
+            className={cn(
+              "h-3.5 w-3.5 transition-transform",
+              !collapsed && "rotate-90",
+            )}
+          />
+        </button>
+
+        <button
+          type="button"
+          onClick={onSelect}
+          className="min-w-0 flex-1 text-left"
+        >
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span className="truncate font-medium text-foreground">
+              {node.topic.name}
+            </span>
+            <span
+              className={cn(
+                "shrink-0 rounded border px-1 py-px text-[10px] leading-tight",
+                root.offering
+                  ? "border-success/40 bg-success/10 text-success"
+                  : "border-info/40 bg-info/10 text-info",
+              )}
+              title={root.meaning}
+            >
+              {node.depth === 0
+                ? root.label
+                : `under ${root.offering ? "a money root" : "an authority root"}`}
+            </span>
+            {node.negativeGuard ? (
+              <span className="flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/10 px-1 py-px text-[10px] leading-tight text-destructive">
+                <TriangleAlert className="h-2.5 w-2.5" />
+                never counts as a win
+              </span>
+            ) : null}
+          </span>
+        </button>
+      </div>
+
+      <div className="min-w-0 pr-2">
+        <WorthBadge node={node} />
+        <span className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
           {bandEntries.map(([band, count]) => {
             const meta = bandMetaFor(metas, band);
             return (
@@ -141,7 +146,29 @@ export function TopicTreeRow({
             );
           })}
         </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => actions.onViewKeywords(node)}
+        className="justify-self-end rounded px-1.5 py-1 text-right tabular-nums text-foreground hover:bg-muted hover:text-primary"
+        title={`Open ${node.subtree.keywords.toLocaleString()} keywords in this branch`}
+      >
+        <span className="block font-medium">
+          {formatCount(node.subtree.keywords)}
+        </span>
+        {node.own.keywords !== node.subtree.keywords ? (
+          <span className="block text-[10px] text-muted-foreground">
+            {formatCount(node.own.keywords)} here
+          </span>
+        ) : null}
       </button>
+      <span className="justify-self-end pr-1 tabular-nums text-muted-foreground">
+        {formatCount(node.subtree.clicks)}
+      </span>
+      <span className="justify-self-end pr-1 tabular-nums text-muted-foreground">
+        {formatCount(node.subtree.impressions)}
+      </span>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -168,11 +195,23 @@ export function TopicTreeRow({
             Add a topic under this…
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => actions.onViewKeywords(node)}>
+            <PanelTop className="h-3.5 w-3.5" />
+            See keywords in this branch
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => actions.onSetWorth(node)}>
             Set what it&apos;s worth here…
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => actions.onEdit(node)}>
             Rename or change its type…
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={() => actions.onDelete(node)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete topic…
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

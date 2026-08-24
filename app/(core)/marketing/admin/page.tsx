@@ -485,6 +485,15 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/value/topics",
+      label: "Keyword Value topic tree",
+      description:
+        "Shared topic hierarchy with aligned sortable metrics, delegated universal context menu, impact-previewed deletion/reassignment, and filtered keyword drill-down panels.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/topics/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/admin",
       label: "Feature admin map",
       description:
@@ -528,7 +537,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
     {
       overlayId: "gscDrilldownWindow",
       description:
-        "Search Console drill-down panel (multi-instance): any (site, dimension, filters, period) slice as KPI band + mini chart + dimension table; panel rows re-drill into further panels for side-by-side comparison. Opened from row right-clicks on /marketing/search-console via useOpenGscDrilldownWindow.",
+        "Search Console drill-down panel (multi-instance): any (site, dimension, filters, period) slice as KPI band + mini chart + dimension table; panel rows re-drill into further panels for side-by-side comparison. Opened from Search Console rows and Keyword Value topic rows via useOpenGscDrilldownWindow.",
     },
   ],
   components: [
