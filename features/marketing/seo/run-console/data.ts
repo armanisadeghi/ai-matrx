@@ -148,8 +148,7 @@ export interface ScheduleDraft {
   organizationId: string;
 }
 
-/** Matrx System — the org that owns platform-wide rows. Never NULL, never invented. */
-export const SYSTEM_ORGANIZATION_ID = "39c38960-d30c-4840-b0c1-c9960de95582";
+
 
 export async function saveEngineSchedule(
   draft: ScheduleDraft,

@@ -149,6 +149,8 @@ which tier is winning. It saves storage and nothing else.
 
 ## Change log
 
+- `2026-08-24` — **The admin console travels under the system org (Arman's ruling) + rejoin carries scope.** Two defects fixed after Arman was blocked by "Could not pick up a background run": (1) this surface never declared a request organization, so `callApi`'s selected-org guard refused both launch and rejoin for any operator without an explicitly selected org (an admin on the system panel by definition has none); it now passes `scopeOverrides.organization_id` — Matrx System for the system tier, the org's own id for the organization tier. (2) `useDurableRun` forwarded `scopeOverrides` on launch but NOT on rejoin (the type's comment promised both), so even a configured surface failed pickup after refresh — fixed in `lib/durable-run/useDurableRun.ts`. Also deduped the local `SYSTEM_ORGANIZATION_ID` copy onto `@/constants/platform-orgs`. Verified live: cap-10 run on Data Destruction placed 10/10 with a mid-run reload picking the run back up; the engine's row writes are NOT governed by the envelope org (see the register's placement-org finding).
+
 - **2026-08-24** — Created (KI-049 v1): `seo.engine_schedule` table, the
   tier-aware console, the system-tier admin route, and the schedule cascade
   panel. Manual runs only; no dispatcher.

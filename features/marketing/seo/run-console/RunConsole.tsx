@@ -60,6 +60,7 @@ import { ProposedQueue } from "@/features/marketing/seo/value-system/topics/Prop
 import { UnplacedQueue } from "@/features/marketing/seo/value-system/topics/UnplacedQueue";
 import { TOPIC_PLACEMENT_ENGINE, type ConsoleEngine } from "./engines";
 import { listConsoleSites, listEngineSchedules } from "./data";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { ScheduleCascadePanel } from "./ScheduleCascadePanel";
 import type { ConsoleSiteRow, RunConsoleScope, RunOutcome } from "./types";
 
@@ -241,12 +242,30 @@ export function RunConsole({
     staleTime: 60 * 1000,
   });
 
+  // THE CONSOLE'S ORG (Arman's ruling, 2026-08-24): work done from the admin
+  // panel travels under the Matrx System organization, EXPLICITLY — never the
+  // operator's header org, and never a transport-invented one. The org tier
+  // declares its own; the site tier (unmounted in v1) rides the operator's
+  // selected org like any normal surface. This rides launch AND rejoin, so a
+  // refreshed page can pick its run back up without a selected org.
+  // Engine writes stay scoped by the SITE the pass runs over — the request
+  // org is context, never row ownership (no-db-assigned-org law).
+  const requestOrganizationId =
+    scope.tier === "system"
+      ? SYSTEM_ORGANIZATION_ID
+      : scope.tier === "organization"
+        ? scope.organizationId
+        : undefined;
+
   const pass = useSeoCommandRun<TopicPlacementPassResult>({
     key: "run-console-topic-placement",
     path: engine.path,
     finalKind: engine.finalKind,
     stageLabels: engine.stageLabels,
     live: { label: engine.liveLabel },
+    ...(requestOrganizationId
+      ? { scopeOverrides: { organization_id: requestOrganizationId } }
+      : {}),
   });
 
   const siteRows = sites.data ?? [];

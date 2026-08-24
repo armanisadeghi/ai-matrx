@@ -591,7 +591,7 @@ export function useDurableRun<TResult>(
   useEffect(() => {
     if (rejoinedRef.current) return;
     rejoinedRef.current = true;
-    const { wire, key } = optionsRef.current;
+    const { wire, key, scopeOverrides } = optionsRef.current;
     const pointer = readPointer(wire, key);
     if (!pointer) return;
     // A settled pointer is a finished ANSWER being restored, not a run being
@@ -607,6 +607,7 @@ export function useDurableRun<TResult>(
     void rejoinDurableRun({
       dispatch,
       wire,
+      scopeOverrides,
       runId: pointer.runId,
       streamOptions: streamOptions((event) =>
         handleEvent(event, { rejoin: true }),
@@ -666,12 +667,18 @@ export function useDurableRun<TResult>(
 async function rejoinDurableRun({
   dispatch,
   wire,
+  scopeOverrides,
   runId,
   streamOptions,
   onUnreachable,
 }: {
   dispatch: AppDispatch;
   wire: DurableRunWire;
+  /** Same request-context redirection the launch carried — a rejoin is the
+   *  SAME conversation, so it must travel under the same organization. Losing
+   *  these on rejoin is what made an admin-surface pickup demand a selected
+   *  org the surface deliberately does not have. */
+  scopeOverrides?: Record<string, string>;
   runId: string;
   /** Either the plain event callback or the adopted-stream consumer. */
   streamOptions:
@@ -685,6 +692,7 @@ async function rejoinDurableRun({
         path: wire.rejoinPath,
         method: "POST",
         pathParams: { run_id: runId },
+        ...(scopeOverrides ? { scopeOverrides } : {}),
         stream: true,
         ...streamOptions,
       }),

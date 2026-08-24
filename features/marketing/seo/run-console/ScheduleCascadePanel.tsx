@@ -37,12 +37,12 @@ import { extractErrorMessage } from "@/utils/errors";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { ConsoleEngine } from "./engines";
 import {
-  SYSTEM_ORGANIZATION_ID,
   resolveScheduleForSite,
   retireEngineSchedule,
   saveEngineSchedule,
   type ScheduleDraft,
 } from "./data";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import type {
   ConsoleSiteRow,
   EngineScheduleRow,
