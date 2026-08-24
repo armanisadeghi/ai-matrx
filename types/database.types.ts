@@ -52921,7 +52921,21 @@ export type Database = {
         }[]
       }
       fn_value_baseline: { Args: { p_site_id: string }; Returns: number }
+      fn_value_baseline_source: { Args: { p_site_id: string }; Returns: string }
+      fn_value_levels: {
+        Args: { p_site_id: string }
+        Returns: {
+          label: string
+          min_score: number
+          source_scope: string
+          value: string
+        }[]
+      }
       fn_value_rule_sync_meaning: { Args: { p_rule_id: string }; Returns: Json }
+      fn_value_settings_may_edit: {
+        Args: { p_id: string; p_scope: string }
+        Returns: boolean
+      }
       geo_place_search: {
         Args: { p_kinds: string[]; p_limit: number; p_query: string }
         Returns: {
@@ -54411,6 +54425,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_value_settings: {
+        Args: {
+          p_baseline?: number
+          p_clear?: string[]
+          p_id?: string
+          p_levels?: Json
+          p_scope: string
+        }
+        Returns: Json
+      }
       site_keyword_performance_page: {
         Args: {
           p_filters?: Json
@@ -54866,6 +54890,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      value_settings_scope: {
+        Args: { p_id?: string; p_scope: string }
+        Returns: Json
       }
       vocabulary_registry_list: {
         Args: { p_dimension?: string }

@@ -268,6 +268,14 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "BookOpenText",
         destinations: [destination("/administration/knowledge/seo-facets")],
       },
+      {
+        // Top of the settings ladder: platform → organization → brand → site.
+        name: "Keyword Value Settings",
+        iconName: "SlidersHorizontal",
+        destinations: [
+          destination("/administration/knowledge/seo-value-settings"),
+        ],
+      },
     ],
   },
   {

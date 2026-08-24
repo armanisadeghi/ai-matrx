@@ -110,6 +110,9 @@ export const marketingRoutes = {
   brand: (brandId: string) => `/marketing/brands/${brandId}`,
   /** Brand-wide review inbox for discovered assets, properties, and facts. */
   brandDiscovery: (brandId: string) => `/marketing/brands/${brandId}/discovery`,
+  /** Keyword value settings for this brand — the ladder's brand rung (KI-046). */
+  brandValueSettings: (brandId: string) =>
+    `/marketing/brands/${brandId}/settings`,
   /**
    * The brand's asset desk — Library, Research, Sources, Generate.
    *

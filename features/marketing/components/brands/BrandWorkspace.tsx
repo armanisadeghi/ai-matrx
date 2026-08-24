@@ -27,7 +27,7 @@ import {
   Star,
   Trash2,
   Type,
-} from "lucide-react";
+  SlidersHorizontal,} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -608,6 +608,17 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               {current.name}
             </h1>
           </div>
+        }
+        right={
+          // THE DOOR to this brand's rung of the value ladder: what its sites
+          // use for the score baseline and level thresholds unless a site
+          // overrides them (KI-046).
+          <Button asChild size="sm" variant="ghost" className="h-7 gap-1.5">
+            <Link href={marketingRoutes.brandValueSettings(brandId)}>
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Value settings
+            </Link>
+          </Button>
         }
       />
       <main className="h-full overflow-y-auto bg-textured p-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:p-4 sm:pt-[calc(var(--shell-header-h)+0.75rem)]">
