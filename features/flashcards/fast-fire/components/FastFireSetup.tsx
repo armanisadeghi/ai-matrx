@@ -129,32 +129,43 @@ export function FastFireSetup() {
   } | null>(null);
   const [helpPrepDone, setHelpPrepDone] = useState(false);
 
+  // The instant-help batch is one `education.card_enrichment` spend per
+  // missing card (capability enforced 2026-08-22) — guard before the batch,
+  // commit the real generated count after success.
+  const enrichGuard = useEntitlementGuard("education.card_enrichment");
+
   const prepareHelpAudio = async (): Promise<void> => {
-    if (!config.setId) return;
+    const setId = config.setId;
+    if (!setId) return;
     if (!(await coppa.ensureAllowed())) return;
-    setHelpPrepping(true);
-    setHelpPrepDone(false);
-    setHelpPrepProgress(null);
-    try {
-      let total = 0;
-      const result = await dispatch(
-        ensureHelperAudioForSet(config.setId, (done, t) => {
-          total = t;
-          setHelpPrepProgress({ done, total: t });
-        }),
-      );
-      // Done means DONE — count what actually persisted, never the attempts.
-      const ready = Object.keys(result).length;
-      setHelpPrepProgress({ done: ready, total });
-      setHelpPrepDone(total > 0 && ready >= total);
-      if (ready < total) {
-        toast.error(
-          `Instant help ready for ${ready} of ${total} cards — the rest failed; try again.`,
+    await enrichGuard.guard(async () => {
+      setHelpPrepping(true);
+      setHelpPrepDone(false);
+      const before = helpPrepProgress?.done ?? 0;
+      setHelpPrepProgress(null);
+      try {
+        let total = 0;
+        const result = await dispatch(
+          ensureHelperAudioForSet(setId, (done, t) => {
+            total = t;
+            setHelpPrepProgress({ done, total: t });
+          }),
         );
+        // Done means DONE — count what actually persisted, never the attempts.
+        const ready = Object.keys(result).length;
+        const generated = Math.max(ready - before, 0);
+        if (generated > 0) await enrichGuard.commit({ quantity: generated });
+        setHelpPrepProgress({ done: ready, total });
+        setHelpPrepDone(total > 0 && ready >= total);
+        if (ready < total) {
+          toast.error(
+            `Instant help ready for ${ready} of ${total} cards — the rest failed; try again.`,
+          );
+        }
+      } finally {
+        setHelpPrepping(false);
       }
-    } finally {
-      setHelpPrepping(false);
-    }
+    });
   };
 
   // Reflect the PERSISTED helper-audio state when a set is (re)selected — same
@@ -639,6 +650,7 @@ export function FastFireSetup() {
         </p>
         {/* Respectful paywall — opens only on a real cap; self-controls visibility. */}
         <liveGrade.Paywall />
+        <enrichGuard.Paywall />
 
         {/* Entry-flow affordances: create a new set, or review past results. */}
         <div className="mt-5 flex items-center justify-center gap-4 text-xs text-muted-foreground">

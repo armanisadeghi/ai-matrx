@@ -29,6 +29,7 @@ import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import { SessionAudio } from "@/features/education/study/components/SessionAudio";
 import { ensureSpokenFrontsForSet } from "@/features/flashcards/fast-fire/spoken-front/generateSpokenFront.thunk";
 import { ensureHelperAudioForSet } from "@/features/flashcards/fast-fire/helper-audio/generateHelperAudio.thunk";
+import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { fcService } from "../../data/fcService";
 import { buildDeckOverviewRequest } from "../../data/podcastOverview";
 import type { FcSetRow, CardWithDetails } from "../../data/types";
@@ -79,19 +80,31 @@ function CardAudioPrep({
     total: number;
   } | null>(null);
   const cfg = DETAIL_PREP_LANES[lane];
+  // The instant-help batch runs ONE enrich call per missing card — the exact
+  // spend `education.card_enrichment` (enforced 2026-08-22) meters. Guard
+  // before the batch, commit the real generated count after. The spoken-front
+  // lane is TTS-only and has no registered capability yet (tracked in the
+  // education STATE doc) — the hook is called unconditionally (rules of
+  // hooks); only the helper lane consults it.
+  const enrichGuard = useEntitlementGuard("education.card_enrichment");
 
   const withAudio = cards.filter((c) =>
     c.details.some((d) => d.kind === lane && !!d.audio_file_id),
   ).length;
   const allDone = cards.length > 0 && withAudio === cards.length;
 
-  const prepare = async (): Promise<void> => {
+  const runPrep = async (): Promise<void> => {
+    const before = withAudio;
     setProgress({ done: 0, total: cards.length });
     try {
       const result = await dispatch(
         cfg.ensure(setId, (done, total) => setProgress({ done, total })),
       );
       const ready = Object.keys(result).length;
+      const generated = Math.max(ready - before, 0);
+      if (lane === "helper" && generated > 0) {
+        await enrichGuard.commit({ quantity: generated });
+      }
       if (ready < cards.length) {
         toast.error(
           `${cfg.noun} ready for ${ready} of ${cards.length} cards — the rest failed; try again.`,
@@ -103,6 +116,11 @@ function CardAudioPrep({
     } finally {
       setProgress(null);
     }
+  };
+
+  const prepare = async (): Promise<void> => {
+    if (lane === "helper") await enrichGuard.guard(runPrep);
+    else await runPrep();
   };
 
   if (cards.length === 0) return null;
@@ -120,21 +138,24 @@ function CardAudioPrep({
 
   const Icon = cfg.icon;
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      className="gap-1.5"
-      onClick={() => void prepare()}
-      disabled={allDone}
-      title={allDone ? cfg.doneTitle : cfg.idleTitle}
-    >
-      <Icon className="h-4 w-4" />
-      {allDone
-        ? cfg.doneLabel
-        : withAudio > 0
-          ? `Prepare ${cfg.noun} (${withAudio}/${cards.length} done)`
-          : `Prepare ${cfg.noun}`}
-    </Button>
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1.5"
+        onClick={() => void prepare()}
+        disabled={allDone || enrichGuard.isChecking}
+        title={allDone ? cfg.doneTitle : cfg.idleTitle}
+      >
+        <Icon className="h-4 w-4" />
+        {allDone
+          ? cfg.doneLabel
+          : withAudio > 0
+            ? `Prepare ${cfg.noun} (${withAudio}/${cards.length} done)`
+            : `Prepare ${cfg.noun}`}
+      </Button>
+      {lane === "helper" && <enrichGuard.Paywall />}
+    </>
   );
 }
 

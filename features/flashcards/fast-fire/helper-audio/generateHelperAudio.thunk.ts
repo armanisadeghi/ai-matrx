@@ -241,13 +241,27 @@ export function ensureHelperAudioForSet(
     onProgress?.(done, total);
     if (todo.length === 0) return result;
 
+    // Bounded worker pool — deliberately NOT the spoken-front "dispatch all"
+    // shape (2026-08-18 ruling): that lane is ONE call per card; this one
+    // chains TWO AI calls per card (enrich text → TTS), so an unbounded 500-
+    // card fan-out is 1000 concurrent runs. Pool size is a knob-in-code
+    // (agent-set 2026-08-24, review 2026-10-24).
+    const HELPER_PREP_CONCURRENCY = 6;
+    const queue = [...todo];
     await Promise.all(
-      todo.map(async (card) => {
-        const fileId = await dispatch(generateHelperAudio(card));
-        if (fileId) result[card.id] = fileId;
-        done += 1;
-        onProgress?.(done, total);
-      }),
+      Array.from(
+        { length: Math.min(HELPER_PREP_CONCURRENCY, queue.length) },
+        async () => {
+          for (;;) {
+            const card = queue.shift();
+            if (!card) return;
+            const fileId = await dispatch(generateHelperAudio(card));
+            if (fileId) result[card.id] = fileId;
+            done += 1;
+            onProgress?.(done, total);
+          }
+        },
+      ),
     );
     return result;
   };
