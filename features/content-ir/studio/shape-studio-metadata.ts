@@ -49,7 +49,7 @@ type ShapeKindMetadataOptions = {
   titlePrefix?: string;
   description?: string;
   /** Route segment after `[kind]` — e.g. `test` → `/shapes/<kind>/test`. */
-  pathSuffix?: "test" | "instances" | "schema";
+  pathSuffix?: "test" | "instances" | "schema" | "stream";
 };
 
 export async function createShapeKindMetadata(
