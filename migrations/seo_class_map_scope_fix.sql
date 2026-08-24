@@ -132,23 +132,22 @@ BEGIN
   resolved AS MATERIALIZED (
     SELECT * FROM seo.keyword_value_map(p_site_id, v_ids)
   ),
-  -- THE SCOPE RULE: the class map resolves this window, not the 196k corpus —
-  -- and the class PIN is applied inside this CTE so the join below prunes the
-  -- fact rows (hash join) instead of filtering them after the walk. Filtering
-  -- after is what made the class-pinned page view take 10 s and time out.
-  -- Safe as an INNER join: the map returns a row for every keyword in scope.
+  -- THE SCOPE RULE: the class map resolves this window, not the 196k corpus.
+  -- (Pushing the class pin INTO this CTE and inner-joining was tried and
+  --  REVERTED: it collapses the planner's estimate to ~5 rows, and the
+  --  unfiltered page view went 889 ms -> over 45 s. Measured, not guessed.)
   classes AS MATERIALIZED (
-    SELECT * FROM seo.gsc_keyword_class_map(p_site_id, v_ids) m
-    WHERE p_class IS NULL OR m.traffic_class = p_class
+    SELECT * FROM seo.gsc_keyword_class_map(p_site_id, v_ids)
   ),
   classed AS (
     SELECT l.*,
            COALESCE(cm.traffic_class, 'unclassified') AS cls,
            COALESCE(vm.value_band, 'unvalued') AS bnd
     FROM latest l
-    JOIN classes cm ON cm.keyword_id = l.kid
+    LEFT JOIN classes cm ON cm.keyword_id = l.kid
     LEFT JOIN resolved vm ON vm.keyword_id = l.kid
     WHERE l.k IS NOT NULL
+      AND (p_class IS NULL OR COALESCE(cm.traffic_class, 'unclassified') = p_class)
       AND (v_levels IS NULL OR COALESCE(vm.value_band, 'unvalued') = ANY (v_levels))
   ),
   bucketed AS (
