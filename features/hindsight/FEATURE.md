@@ -210,6 +210,18 @@ findings list refreshed itself, and the original finding was deprioritized to
 
 ## Change Log
 
+- **2026-08-24** — Review honesty (blind-test item 4, both UIs):
+  `PendingExamplesPanel` (shared by the admin detail panel and the workspace
+  sidebar) lists what the NEXT review would read — doors + each run's own
+  timestamp — flags runs still inside the 30-min settle window ("Review now"
+  will not read them), and offers "Review just this" (the `example_ids`
+  focused review; gated on the enrollment's subject kind — agent/orchestra/
+  workflow only, what the server supports). `triggerReview` carries optional
+  `exampleIds`; `getPendingExamples` reads
+  `GET /hindsight/enrollments/{id}/pending-examples`; `ReviewRow` example
+  chips carry timestamps. A panel fetch failure renders a visible notice —
+  never a silent blank.
+
 - **2026-08-18** — The product workspace now clears the glass Agent header,
   keeps the reviewer conversation usable at ordinary desktop/tablet widths,
   and moves both secondary rails into named `MobilePanelShell` drawers below
