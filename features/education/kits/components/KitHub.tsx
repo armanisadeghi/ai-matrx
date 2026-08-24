@@ -25,6 +25,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
+import { peekHref } from "@/features/organizations/peek/peekHref";
+import {
+  resolveEntityToken,
+  tryGetEntityInfo,
+} from "@/features/scopes/registry/entityRegistry";
 import type { GeneratedArtifact } from "@/features/education/convert/lineage";
 import { readKit, type StudyKit } from "../kitService";
 import {
@@ -144,6 +149,14 @@ export function KitHub({
     );
   }
 
+  // The origin's own route + icon, for any anchor kind the registry knows.
+  const originToken = resolveEntityToken(kit.sourceType);
+  const materialHref =
+    originToken === "file"
+      ? `/files/f/${kit.sourceId}`
+      : (peekHref(originToken, kit.sourceId) ?? null);
+  const MaterialIcon = tryGetEntityInfo(originToken)?.Icon ?? FileSearch;
+
   const ordered = [...kit.artifacts].sort(
     (a, b) =>
       (KIND_ORDER[a.targetKind ?? ""] ?? 99) -
@@ -160,10 +173,15 @@ export function KitHub({
             from this material — everything for it lives here.
           </p>
           <div className="flex items-center gap-2">
-            {kit.sourceType === "file" && (
+            {/* THE DOOR LAW: the material opens whatever it IS. A kit anchored
+                on a note or a deck (note→deck, deck→quiz) is as real as a file
+                kit, and omitting the button for those left the learner with no
+                way back to what the kit was made from. Resolved through the
+                canonical entity registry, exactly like `MadeFromSource`. */}
+            {materialHref && (
               <Button asChild variant="outline" size="sm" className="gap-1.5">
-                <Link href={`/files/f/${kit.sourceId}`}>
-                  <FileSearch className="h-4 w-4" />
+                <Link href={materialHref}>
+                  <MaterialIcon className="h-4 w-4" />
                   The material
                 </Link>
               </Button>

@@ -16,6 +16,7 @@ import type {
   TargetKind,
 } from "@/features/education/convert/types";
 import { useContentConverter } from "@/features/education/convert/useContentConverter";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { useIngest } from "./useIngest";
 import type {
   IngestProgress,
@@ -142,10 +143,20 @@ export function useKitGeneration(): UseKitGeneration {
       // `source.title` WINS over the agent's title — so this single value is
       // what all eight artifacts end up called. Best-effort by construction:
       // `resolveKitTitle` never throws and always returns a usable name.
+      //
+      // 🚨 The org is resolved HERE, the same way `convertMany` resolves it for
+      // every generator (`ensureOrgId`). Without it the namer launches with no
+      // organization and, for a learner who has never touched the org picker —
+      // i.e. exactly the new user whose filenames are the messiest — the run
+      // throws before any network call and the kit silently falls back to the
+      // humanized filename. The AI namer would have been dead code for the
+      // whole audience it exists to serve.
+      const orgId = await ensureOrgId(undefined);
       const resolvedTitle = await resolveKitTitle(dispatch, store, {
         text: normalized.text,
         rawTitle: normalized.title,
         focus: options?.focus,
+        orgId,
       });
       setKitTitle(resolvedTitle);
 

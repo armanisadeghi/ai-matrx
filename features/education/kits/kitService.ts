@@ -22,13 +22,18 @@
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { listGeneratedFrom, type GeneratedArtifact } from "@/features/education/convert/lineage";
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
+import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import type { Json } from "@/types/database.types";
 
 /** Artifact entity tokens a kit can contain (the converter's four writers). */
 const KIT_ARTIFACT_TYPES = ["fc_set", "study_media", "assessment", "note"] as const;
 
-/** How many of the learner's artifacts one kit-list read scans. */
-const KIT_SCAN_LIMIT = 500;
+/** Page size for the artifact scan. PostgREST caps a bare select at 1000, so
+ *  this stays well under it and the read PAGES to exhaustion instead. */
+const KIT_SCAN_PAGE = 500;
+
+/** Hard stop so a pathological library cannot spin forever (25k artifacts). */
+const KIT_SCAN_MAX_PAGES = 50;
 
 export interface StudyKit {
   /** The anchor's entity token — `file` for every ingested kit. */
@@ -106,27 +111,41 @@ function metaString(meta: Json | undefined, key: string): string | null {
  * anchor. An artifact with no origin edge simply belongs to no kit.
  */
 export async function listKits(): Promise<StudyKit[]> {
-  const page = await fetchEducationLibraryPage(
-    {
-      scope: { kind: "mine" },
-      search: "",
-      filters: {},
-      page: 1,
-    } as Parameters<typeof fetchEducationLibraryPage>[0],
-    {
-      sort: "created_at",
-      direction: "desc",
-      pageSize: KIT_SCAN_LIMIT,
-    } as Parameters<typeof fetchEducationLibraryPage>[1],
-  );
-
+  // Real query/sort objects built from the canonical default — never a cast.
+  // `archived`/`deep`/`favoritesFirst` are required fields, and forcing them
+  // through with `as` would silently change meaning the day the RPC starts
+  // honouring them.
   const byType = new Map<string, string[]>();
-  for (const row of page.rows) {
-    const token = row.kind;
-    if (!(KIT_ARTIFACT_TYPES as readonly string[]).includes(token)) continue;
-    const list = byType.get(token) ?? [];
-    list.push(row.id);
-    byType.set(token, list);
+  for (let pageNo = 1; pageNo <= KIT_SCAN_MAX_PAGES; pageNo++) {
+    const page = await fetchEducationLibraryPage(
+      {
+        ...DEFAULT_ENTITY_LIST_QUERY,
+        scope: { kind: "mine" },
+        page: pageNo,
+      },
+      {
+        sort: "created_at",
+        direction: "desc",
+        favoritesFirst: false,
+        pageSize: KIT_SCAN_PAGE,
+      },
+    );
+    for (const row of page.rows) {
+      const token = row.kind;
+      if (!(KIT_ARTIFACT_TYPES as readonly string[]).includes(token)) continue;
+      const list = byType.get(token) ?? [];
+      list.push(row.id);
+      byType.set(token, list);
+    }
+    // A short page is the last page. Without this loop a learner past the first
+    // page lost their OLDER kits from this index while their direct links kept
+    // working — an index that quietly lies about being "every kit".
+    if (page.rows.length < KIT_SCAN_PAGE) break;
+    if (pageNo === KIT_SCAN_MAX_PAGES) {
+      console.warn(
+        `[kits] artifact scan hit ${KIT_SCAN_MAX_PAGES} pages; older kits may be missing from the index.`,
+      );
+    }
   }
 
   const kits = new Map<string, StudyKit>();
@@ -134,6 +153,9 @@ export async function listKits(): Promise<StudyKit[]> {
     [...byType.entries()].map(async ([token, ids]) => {
       const res = await associationsService.listForSources(token, ids);
       if (!res.ok) {
+        // Per-type best-effort, matching the codebase convention — but say what
+        // it costs: one failed type drops THAT artifact kind from every kit in
+        // this list, and the page still renders as though it were complete.
         console.error(`[kits] origin read failed for ${token}:`, res.error);
         return;
       }

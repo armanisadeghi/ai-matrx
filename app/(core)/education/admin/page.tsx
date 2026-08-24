@@ -68,6 +68,22 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       ],
     },
     {
+      url: "/education/kits",
+      label: "Study Kits index (P9)",
+      description:
+        "Every kit the learner has — one row per source material, showing what came out of it. Derived from the converter's `source` lineage edges (features/education/kits/kitService.ts); no kit table.",
+      filePath: "app/(core)/education/kits/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/kits/[sourceId]",
+      label: "Study Kit hub (P9)",
+      description:
+        "ONE kit: the source material plus every artifact generated from it, study-first (mastery + due + primary study action via kits/kitStudy.ts). The kit id IS the ingest anchor id.",
+      filePath: "app/(core)/education/kits/[sourceId]/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/education/summaries/[id]",
       label: "Study summary viewer (P9)",
       description:

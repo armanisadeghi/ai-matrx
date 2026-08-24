@@ -44,11 +44,38 @@ const JUNK_TOKENS = new Set([
   "compressed", "merged", "combined", "export", "exported", "print",
 ]);
 
+/**
+ * Deliberate lowercase-initial capitalizations the camelCase split would
+ * destroy ("iPhone" → "I Phone"). Matched case-insensitively and restored
+ * verbatim — the pattern is a real product name, not a run-together filename.
+ */
+const LOWERCASE_INITIAL_BRANDS = [
+  "iPhone", "iPad", "iOS", "iMac", "iTunes", "iCloud", "iMovie",
+  "eBay", "eBook", "eBooks", "eCommerce", "eSports", "iWork",
+  "macOS", "tvOS", "watchOS", "pH", "mRNA", "tRNA", "rRNA", "dNTP",
+];
+
 /** Small words that stay lowercase inside a title. */
 const SMALL_WORDS = new Set([
   "a", "an", "and", "as", "at", "but", "by", "for", "from", "in", "nor",
   "of", "on", "or", "the", "to", "vs", "via", "with",
 ]);
+
+/** Restore a brand token the split broke apart ("I Phone" → "iPhone"). */
+function restoreBrands(text: string): string {
+  let out = text;
+  for (const brand of LOWERCASE_INITIAL_BRANDS) {
+    // The split inserts a space after the leading lowercase letter, so match
+    // both the broken form and the intact one, and normalize to the real name.
+    const broken = new RegExp(
+      `\\b${brand[0]}\\s+${brand.slice(1)}\\b`,
+      "gi",
+    );
+    out = out.replace(broken, brand);
+    out = out.replace(new RegExp(`\\b${brand}\\b`, "gi"), brand);
+  }
+  return out;
+}
 
 function titleCase(words: string[]): string {
   return words
@@ -72,6 +99,8 @@ function titleCase(words: string[]): string {
  * `MatterandMeasurements.pdf`  → `Matterand Measurements`  (only the namer
  *                                 recovers the missing space — no dictionary
  *                                 here, and inventing one would be worse)
+ * `iPhone_notes.pdf`           → `iPhone Notes`  (deliberate lowercase-initial
+ *                                 names are restored, not split)
  */
 export function humanizeSourceTitle(raw: string): string {
   const noExt = raw.replace(/\.[A-Za-z0-9]{1,5}$/, "");
@@ -95,8 +124,14 @@ export function humanizeSourceTitle(raw: string): string {
     .filter((w) => !/^\d{6,}$/.test(w))
     .filter((w) => !/^\d{4}[-/]?\d{2}[-/]?\d{2}$/.test(w));
 
-  if (kept.length === 0) return titleCase(spaced.split(" ").filter(Boolean));
-  return titleCase(kept);
+  // Honour the contract in the name: NEVER empty. A filename that is nothing
+  // but junk tokens (or nothing but an extension) still yields a usable title,
+  // so no caller has to defend against "".
+  if (kept.length === 0) {
+    const fallback = titleCase(spaced.split(" ").filter(Boolean));
+    return fallback ? restoreBrands(fallback) : "Study material";
+  }
+  return restoreBrands(titleCase(kept));
 }
 
 export interface KitTitle {

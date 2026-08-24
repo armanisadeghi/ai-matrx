@@ -66,3 +66,17 @@ describe("humanizeSourceTitle", () => {
     expect(humanizeSourceTitle("document.pdf").length).toBeGreaterThan(0);
   });
 });
+
+describe("humanizeSourceTitle — edge cases the camelCase split can break", () => {
+  it("restores deliberate lowercase-initial names instead of splitting them", () => {
+    expect(humanizeSourceTitle("iPhone_notes.pdf")).toBe("iPhone Notes");
+    expect(humanizeSourceTitle("eBay-research.docx")).toBe("eBay Research");
+    expect(humanizeSourceTitle("mRNA_vaccines.pdf")).toBe("mRNA Vaccines");
+  });
+
+  it("honours the never-empty contract even for a bare extension", () => {
+    expect(humanizeSourceTitle(".pdf")).toBe("Study material");
+    expect(humanizeSourceTitle("")).toBe("Study material");
+    expect(humanizeSourceTitle("final_v2_copy.pdf")).not.toBe("");
+  });
+});
