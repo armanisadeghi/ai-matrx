@@ -23985,6 +23985,13 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: string
       }
+      entity_read_lane_preflight: {
+        Args: never
+        Returns: {
+          function_signature: string
+          role_name: string
+        }[]
+      }
       entity_read_probe_users: {
         Args: { p_limit?: number }
         Returns: {
