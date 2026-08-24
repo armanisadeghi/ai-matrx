@@ -24,8 +24,15 @@
  */
 
 import { useState } from "react";
-import { AlertTriangle, EyeOff, Globe, Loader2, ShieldCheck } from "lucide-react";
+import { AlertTriangle, EyeOff, Globe, Loader2, ServerCog, ShieldCheck } from "lucide-react";
 import { useBackendApi } from "@/hooks/useBackendApi";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectActiveServer,
+  selectLoopbackTargetsAllowed,
+  selectResolvedBaseUrl,
+  switchServer,
+} from "@/lib/redux/slices/apiConfigSlice";
 import { consumeStream } from "@/lib/api/stream-parser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -172,6 +179,15 @@ const SCALARS: [string, string][] = [
 
 export default function ScraperKindsDemoPage() {
   const { post } = useBackendApi();
+  const dispatch = useAppDispatch();
+  // WHICH BACKEND THIS PAGE IS TALKING TO IS PART OF THE PAGE.
+  // `/scraper-kinds/*` is a new router: a server that predates it answers 404,
+  // and a bare "Request failed (404)" sends the reader hunting through the
+  // admin server switcher for a setting they had no reason to suspect.
+  const activeServer = useAppSelector(selectActiveServer);
+  const backendUrl = useAppSelector(selectResolvedBaseUrl);
+  const loopbackAllowed = useAppSelector(selectLoopbackTargetsAllowed);
+  const [missingRoute, setMissingRoute] = useState(false);
   const [url, setUrl] = useState("https://en.wikipedia.org/wiki/Python_(programming_language)");
   const [includeRaw, setIncludeRaw] = useState(true);
   const [useProxy, setUseProxy] = useState(false);
@@ -183,6 +199,7 @@ export default function ScraperKindsDemoPage() {
     if (!trimmed || busy) return;
     setBusy(true);
     setOutcome(null);
+    setMissingRoute(false);
     try {
       const response = await post("/scraper-kinds/scrape", {
         url: trimmed,
@@ -207,7 +224,17 @@ export default function ScraperKindsDemoPage() {
       if (!received) throw new Error("The stream ended without a scraped_page_result event.");
       setOutcome(received);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Scrape failed.");
+      // A 404 on THIS path is never "your page was not found" — the endpoint
+      // takes a URL in its body and returns a scrape. It means the selected
+      // backend has no such route, which is a deployment fact, not a bad
+      // request. Say that instead of forwarding the transport's wording.
+      const status = isRecord(err) && typeof err.status === "number" ? err.status : null;
+      if (status === 404) {
+        setMissingRoute(true);
+        toast.error(`${backendUrl} has no /scraper-kinds route yet.`);
+      } else {
+        toast.error(err instanceof Error ? err.message : "Scrape failed.");
+      }
     } finally {
       setBusy(false);
     }
@@ -269,6 +296,51 @@ export default function ScraperKindsDemoPage() {
           </div>
         </div>
       </form>
+
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+        <ServerCog className="h-3.5 w-3.5" />
+        <span>
+          Calling <code className="text-[11px] text-foreground">{backendUrl}</code> ({activeServer})
+        </span>
+        {activeServer !== "localhost" && loopbackAllowed && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-[11px]"
+            onClick={() => void dispatch(switchServer({ env: "localhost" }))}
+          >
+            Use localhost:8000
+          </Button>
+        )}
+        {activeServer === "localhost" && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-[11px]"
+            onClick={() => void dispatch(switchServer({ env: "production" }))}
+          >
+            Back to production
+          </Button>
+        )}
+      </div>
+
+      {missingRoute && (
+        <div className="rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-xs">
+          <div className="flex items-center gap-2 font-medium text-foreground">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <code className="text-[11px]">{backendUrl}</code> has no{" "}
+            <code className="text-[11px]">/scraper-kinds/scrape</code> route.
+          </div>
+          <p className="mt-1 text-muted-foreground">
+            The endpoint is new, so any server built before it answers 404. Either point this page
+            at a server that has it — the <strong>Use localhost:8000</strong> button above, with{" "}
+            <code className="text-[11px]">python run.py</code> running — or wait for the next
+            production deploy. Nothing is wrong with the URL you entered.
+          </p>
+        </div>
+      )}
 
       {busy && (
         <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
