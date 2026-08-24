@@ -64,10 +64,15 @@ export async function getValueSettings(
   id: string | null,
   signal?: AbortSignal,
 ): Promise<ValueSettingsScopePayload> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("value_settings_scope", { p_scope: scope, p_id: id ?? undefined })
     .abortSignal(signal ?? new AbortController().signal);
-  return assertData(response.data, response.error) as unknown as ValueSettingsScopePayload;
+  return assertData(
+    response.data,
+    response.error,
+  ) as unknown as ValueSettingsScopePayload;
 }
 
 /**
@@ -83,7 +88,9 @@ export async function setValueSettings(input: {
   levels?: ValueLevel[] | null;
   clear?: Array<"baseline" | "levels">;
 }): Promise<ValueSettingsScopePayload> {
-  const response = await (await seoDb()).rpc("set_value_settings", {
+  const response = await (
+    await seoDb()
+  ).rpc("set_value_settings", {
     p_scope: input.scope,
     p_id: input.id ?? undefined,
     ...(input.baseline === undefined || input.baseline === null
@@ -114,12 +121,7 @@ export interface MeaningCopySource {
 }
 
 export type MeaningCopyPart =
-  | "matchers"
-  | "worth"
-  | "geo"
-  | "topics"
-  | "combos"
-  | "guidelines";
+  "matchers" | "worth" | "geo" | "topics" | "combos" | "guidelines";
 
 export interface MeaningCopyResult {
   dry_run: boolean;
@@ -139,10 +141,13 @@ export async function getMeaningCopySources(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<MeaningCopySource[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("site_meaning_copy_sources", { p_to_site: siteId })
     .abortSignal(signal ?? new AbortController().signal);
-  return (assertData(response.data, response.error) ?? []) as MeaningCopySource[];
+  return (assertData(response.data, response.error) ??
+    []) as MeaningCopySource[];
 }
 
 /**
@@ -155,13 +160,18 @@ export async function copySiteMeaning(input: {
   parts: MeaningCopyPart[];
   dryRun: boolean;
 }): Promise<MeaningCopyResult> {
-  const response = await (await seoDb()).rpc("site_meaning_copy", {
+  const response = await (
+    await seoDb()
+  ).rpc("site_meaning_copy", {
     p_from_site: input.fromSiteId,
     p_to_site: input.toSiteId,
     p_parts: input.parts,
     p_dry_run: input.dryRun,
   });
-  return assertData(response.data, response.error) as unknown as MeaningCopyResult;
+  return assertData(
+    response.data,
+    response.error,
+  ) as unknown as MeaningCopyResult;
 }
 
 // ── Autonomy modes (KI-044) ────────────────────────────────────────────────
@@ -170,10 +180,7 @@ export async function copySiteMeaning(input: {
 // Policy: /policies/human-in-the-loop-autonomy-modes.md
 
 export type AutonomyMode =
-  | "auto_platform"
-  | "auto_org"
-  | "review_timeout"
-  | "review_required";
+  "auto_platform" | "auto_org" | "review_timeout" | "review_required";
 
 export interface AutonomyCapability {
   slug: string;
@@ -186,7 +193,11 @@ export interface AutonomyCapability {
   enforcement_note: string | null;
   own_mode: AutonomyMode | null;
   own_timeout_hours: number | null;
-  effective: { mode: AutonomyMode; source: string; timeout_hours?: number | null };
+  effective: {
+    mode: AutonomyMode;
+    source: string;
+    timeout_hours?: number | null;
+  };
 }
 
 export interface AutonomyScopePayload {
@@ -203,10 +214,15 @@ export async function getAutonomyModes(
   id: string | null,
   signal?: AbortSignal,
 ): Promise<AutonomyScopePayload> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("ai_autonomy_scope", { p_scope: scope, p_id: id ?? undefined })
     .abortSignal(signal ?? new AbortController().signal);
-  return assertData(response.data, response.error) as unknown as AutonomyScopePayload;
+  return assertData(
+    response.data,
+    response.error,
+  ) as unknown as AutonomyScopePayload;
 }
 
 export async function setAutonomyMode(input: {
@@ -217,7 +233,9 @@ export async function setAutonomyMode(input: {
   timeoutHours?: number | null;
   clear?: boolean;
 }): Promise<AutonomyScopePayload> {
-  const response = await (await seoDb()).rpc("set_ai_autonomy", {
+  const response = await (
+    await seoDb()
+  ).rpc("set_ai_autonomy", {
     p_scope: input.scope,
     p_capability: input.capability,
     p_id: input.id ?? undefined,
@@ -227,5 +245,8 @@ export async function setAutonomyMode(input: {
       : { p_timeout_hours: input.timeoutHours }),
     p_clear: input.clear ?? false,
   });
-  return assertData(response.data, response.error) as unknown as AutonomyScopePayload;
+  return assertData(
+    response.data,
+    response.error,
+  ) as unknown as AutonomyScopePayload;
 }

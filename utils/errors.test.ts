@@ -1,7 +1,4 @@
-import {
-  makeGovernedDataAsserter,
-  operationFailed,
-} from "./errors";
+import { makeGovernedDataAsserter, operationFailed } from "./errors";
 
 describe("governed data errors", () => {
   const assertGoverned = makeGovernedDataAsserter(
@@ -12,7 +9,8 @@ describe("governed data errors", () => {
   it("surfaces an allow-listed governance sentence and preserves its cause", () => {
     const cause = {
       code: "P0001",
-      message: "gsc_vocab_missing_negative: The reserved Negative level must stay.",
+      message:
+        "gsc_vocab_missing_negative: The reserved Negative level must stay.",
     };
 
     expect(() => assertGoverned(null, cause)).toThrow(

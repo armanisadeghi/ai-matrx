@@ -6,7 +6,9 @@ import {
 } from "../vocabulary/lib";
 import type { SettingsScope, ValueLevel } from "./data";
 
-export function isReservedValueLevel(level: Pick<ValueLevel, "value">): boolean {
+export function isReservedValueLevel(
+  level: Pick<ValueLevel, "value">,
+): boolean {
   return level.value === RESERVED_NEGATIVE;
 }
 
@@ -23,9 +25,7 @@ function toVocabularyRows(levels: ValueLevel[]): VocabularyDraftRow[] {
     label: level.label ?? level.value,
     description: null,
     sort: index,
-    config: isReservedValueLevel(level)
-      ? {}
-      : { min_score: level.min_score },
+    config: isReservedValueLevel(level) ? {} : { min_score: level.min_score },
   }));
 }
 

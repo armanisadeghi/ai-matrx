@@ -14,7 +14,14 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, Check, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  Check,
+  Loader2,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -125,7 +132,8 @@ export function ValueSettingsEditor({
   }
 
   const readOnly = !data.may_edit;
-  const baselineIsOwn = data.own.baseline !== null && data.own.baseline !== undefined;
+  const baselineIsOwn =
+    data.own.baseline !== null && data.own.baseline !== undefined;
   const levelsAreOwn = Boolean(data.own.levels && data.own.levels.length > 0);
 
   return (
@@ -152,7 +160,9 @@ export function ValueSettingsEditor({
       <section className="rounded-md border border-border bg-card p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-xs font-semibold text-foreground">Starting score</h3>
+            <h3 className="text-xs font-semibold text-foreground">
+              Starting score
+            </h3>
             <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
               Every keyword begins here before anything you have said about it
               adds, subtracts or scales. Below it reads as worse than neutral.
@@ -228,69 +238,72 @@ export function ValueSettingsEditor({
               const reserved = isReservedValueLevel(level);
               const removable = mayRemoveValueLevel(scope, level);
               return (
-              <tr key={`${level.value}-${index}`} className="border-t border-border">
-                <td className="py-1.5 pr-2">
-                  <Input
-                    className="h-7 w-full max-w-[16rem] text-xs"
-                    value={level.label ?? level.value}
-                    disabled={readOnly}
-                    aria-label={`Name for ${level.value}`}
-                    onChange={(event) => {
-                      const next = [...effectiveLevels];
-                      next[index] = { ...level, label: event.target.value };
-                      setLevels(next);
-                    }}
-                  />
-                </td>
-                <td className="py-1.5 pr-2">
-                  {reserved ? (
-                    <span className="rounded border border-border bg-muted/40 px-2 py-1 text-[10px] text-muted-foreground">
-                      guard — no score range
-                    </span>
-                  ) : (
+                <tr
+                  key={`${level.value}-${index}`}
+                  className="border-t border-border"
+                >
+                  <td className="py-1.5 pr-2">
                     <Input
-                      type="number"
-                      min={0}
-                      className="h-7 w-28 text-xs"
-                      value={level.min_score ?? ""}
+                      className="h-7 w-full max-w-[16rem] text-xs"
+                      value={level.label ?? level.value}
                       disabled={readOnly}
-                      aria-label={`Score ${level.label ?? level.value} starts at`}
+                      aria-label={`Name for ${level.value}`}
                       onChange={(event) => {
                         const next = [...effectiveLevels];
-                        next[index] = {
-                          ...level,
-                          min_score:
-                            event.target.value === ""
-                              ? null
-                              : Number(event.target.value),
-                        };
+                        next[index] = { ...level, label: event.target.value };
                         setLevels(next);
                       }}
                     />
-                  )}
-                </td>
-                <td className="py-1.5 text-right">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2 text-muted-foreground"
-                    disabled={readOnly || !removable}
-                    aria-label={`Remove ${level.label ?? level.value}`}
-                    title={
-                      reserved
-                        ? "The Negative level is reserved — you may rename it, never remove it."
-                        : scope === "platform"
-                          ? "Platform level identities are governed in the vocabulary registry."
-                          : undefined
-                    }
-                    onClick={() =>
-                      setLevels(effectiveLevels.filter((_, i) => i !== index))
-                    }
-                  >
-                    <Trash2 className="h-3 w-3" aria-hidden />
-                  </Button>
-                </td>
-              </tr>
+                  </td>
+                  <td className="py-1.5 pr-2">
+                    {reserved ? (
+                      <span className="rounded border border-border bg-muted/40 px-2 py-1 text-[10px] text-muted-foreground">
+                        guard — no score range
+                      </span>
+                    ) : (
+                      <Input
+                        type="number"
+                        min={0}
+                        className="h-7 w-28 text-xs"
+                        value={level.min_score ?? ""}
+                        disabled={readOnly}
+                        aria-label={`Score ${level.label ?? level.value} starts at`}
+                        onChange={(event) => {
+                          const next = [...effectiveLevels];
+                          next[index] = {
+                            ...level,
+                            min_score:
+                              event.target.value === ""
+                                ? null
+                                : Number(event.target.value),
+                          };
+                          setLevels(next);
+                        }}
+                      />
+                    )}
+                  </td>
+                  <td className="py-1.5 text-right">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-muted-foreground"
+                      disabled={readOnly || !removable}
+                      aria-label={`Remove ${level.label ?? level.value}`}
+                      title={
+                        reserved
+                          ? "The Negative level is reserved — you may rename it, never remove it."
+                          : scope === "platform"
+                            ? "Platform level identities are governed in the vocabulary registry."
+                            : undefined
+                      }
+                      onClick={() =>
+                        setLevels(effectiveLevels.filter((_, i) => i !== index))
+                      }
+                    >
+                      <Trash2 className="h-3 w-3" aria-hidden />
+                    </Button>
+                  </td>
+                </tr>
               );
             })}
           </tbody>
@@ -306,7 +319,11 @@ export function ValueSettingsEditor({
               onClick={() =>
                 setLevels([
                   ...effectiveLevels,
-                  { value: `level_${effectiveLevels.length + 1}`, label: "", min_score: 0 },
+                  {
+                    value: `level_${effectiveLevels.length + 1}`,
+                    label: "",
+                    min_score: 0,
+                  },
                 ])
               }
             >

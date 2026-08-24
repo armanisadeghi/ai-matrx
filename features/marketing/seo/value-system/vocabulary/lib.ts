@@ -62,19 +62,29 @@ export function findDraftIssues(
 ): DraftIssue[] {
   const issues: DraftIssue[] = [];
   if (rows.length < 2) {
-    issues.push({ value: null, message: "A vocabulary needs at least two entries." });
+    issues.push({
+      value: null,
+      message: "A vocabulary needs at least two entries.",
+    });
   }
 
   const seenLabels = new Map<string, string>();
   for (const row of rows) {
     if (!row.label.trim()) {
-      issues.push({ value: row.value, message: "Needs a name — the name is what every keyword is labelled with." });
+      issues.push({
+        value: row.value,
+        message:
+          "Needs a name — the name is what every keyword is labelled with.",
+      });
       continue;
     }
     const key = row.label.trim().toLowerCase();
     const owner = seenLabels.get(key);
     if (owner && owner !== row.value) {
-      issues.push({ value: row.value, message: "Another band already has this name." });
+      issues.push({
+        value: row.value,
+        message: "Another band already has this name.",
+      });
     } else {
       seenLabels.set(key, row.value);
     }
@@ -84,7 +94,8 @@ export function findDraftIssues(
     if (!rows.some(isReservedNegative)) {
       issues.push({
         value: null,
-        message: "The reserved Negative band must stay — the resolver emits it for excluded geo, not-offered services and actively-avoided topics.",
+        message:
+          "The reserved Negative band must stay — the resolver emits it for excluded geo, not-offered services and actively-avoided topics.",
       });
     }
     const scored = rows.filter((row) => !isReservedNegative(row));
@@ -101,7 +112,11 @@ export function findDraftIssues(
       }
       const owner = seenScores.get(min);
       if (owner && owner !== row.value) {
-        issues.push({ value: row.value, message: "Another band already starts here — a score would land in both." });
+        issues.push({
+          value: row.value,
+          message:
+            "Another band already starts here — a score would land in both.",
+        });
       } else {
         seenScores.set(min, row.value);
       }
@@ -109,7 +124,8 @@ export function findDraftIssues(
     if (scored.length > 0 && !scored.some((row) => minScoreOf(row) === 0)) {
       issues.push({
         value: null,
-        message: "One band must start at 0, or the lowest-scoring keywords land in no band at all.",
+        message:
+          "One band must start at 0, or the lowest-scoring keywords land in no band at all.",
       });
     }
   } else {
@@ -131,7 +147,9 @@ export function orderedForDisplay(
   rows: VocabularyDraftRow[],
 ): VocabularyDraftRow[] {
   if (kind === "geo_band") {
-    return [...rows].sort((a, b) => (multiplierOf(b) ?? 0) - (multiplierOf(a) ?? 0));
+    return [...rows].sort(
+      (a, b) => (multiplierOf(b) ?? 0) - (multiplierOf(a) ?? 0),
+    );
   }
   return [...rows].sort((a, b) => {
     if (isReservedNegative(a)) return 1;
@@ -156,7 +174,10 @@ export function renamedValues(
 ): Array<{ value: string; from: string; to: string }> {
   const before = new Map(saved.map((def) => [def.value, def.label]));
   return rows
-    .filter((row) => before.has(row.value) && before.get(row.value) !== row.label.trim())
+    .filter(
+      (row) =>
+        before.has(row.value) && before.get(row.value) !== row.label.trim(),
+    )
     .map((row) => ({
       value: row.value,
       from: before.get(row.value) as string,

@@ -1,8 +1,5 @@
 import type { ValueLevel } from "./data";
-import {
-  findValueLevelIssues,
-  mayRemoveValueLevel,
-} from "./lib";
+import { findValueLevelIssues, mayRemoveValueLevel } from "./lib";
 
 const coherent: ValueLevel[] = [
   { value: "platinum", label: "Platinum", min_score: 200 },

@@ -233,7 +233,8 @@ export function BandVocabularyEditor({
     if (!row) return;
     const nextValue = slugifyVocabValue(row.label);
     if (!nextValue || nextValue === value) return;
-    if (draft.some((item) => item.value !== value && item.value === nextValue)) return;
+    if (draft.some((item) => item.value !== value && item.value === nextValue))
+      return;
     setRows(
       draft.map((item) =>
         item.value === value ? { ...item, value: nextValue } : item,
@@ -327,10 +328,13 @@ export function BandVocabularyEditor({
   const adopt = useMutation({
     mutationFn: () => adoptValueVocabulary(siteId, kind),
     onSuccess: () => {
-      toast.success(`${siteDomain} now governs its own ${copy.title.toLowerCase()}`, {
-        description:
-          "The platform starter set was copied in. Edit it freely — the template stays untouched.",
-      });
+      toast.success(
+        `${siteDomain} now governs its own ${copy.title.toLowerCase()}`,
+        {
+          description:
+            "The platform starter set was copied in. Edit it freely — the template stays untouched.",
+        },
+      );
       void queryClient.invalidateQueries({ queryKey: ["marketing"] });
     },
     onError: (error) => {
@@ -413,7 +417,9 @@ export function BandVocabularyEditor({
             ) : null}
 
             {displayRows.map((row) => {
-              const rowIssues = issues.filter((issue) => issue.value === row.value);
+              const rowIssues = issues.filter(
+                (issue) => issue.value === row.value,
+              );
               const reserved = kind === "value_band" && isReservedNegative(row);
               const impact = previewByBand.get(row.value);
               const renamedRow = renamed.find((r) => r.value === row.value);
@@ -422,7 +428,9 @@ export function BandVocabularyEditor({
                   key={row.value}
                   className={cn(
                     "rounded-md border bg-card px-3 py-2",
-                    rowIssues.length > 0 ? "border-destructive/50" : "border-border",
+                    rowIssues.length > 0
+                      ? "border-destructive/50"
+                      : "border-border",
                   )}
                 >
                   <div className="flex flex-wrap items-center gap-2">
@@ -513,12 +521,13 @@ export function BandVocabularyEditor({
 
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px]">
                     <span className="text-muted-foreground/70">
-                      identity <code className="text-muted-foreground">{row.value}</code>
+                      identity{" "}
+                      <code className="text-muted-foreground">{row.value}</code>
                     </span>
                     {renamedRow ? (
                       <span className="flex items-center gap-1 text-info">
-                        “{renamedRow.from}” <ArrowRight className="h-3 w-3" />{" "}
-                        “{renamedRow.to}” on every keyword
+                        “{renamedRow.from}” <ArrowRight className="h-3 w-3" /> “
+                        {renamedRow.to}” on every keyword
                       </span>
                     ) : null}
                     {impact ? (
@@ -590,7 +599,10 @@ export function BandVocabularyEditor({
                       value={reassign[value] ?? ""}
                       disabled={busy}
                       onValueChange={(next) =>
-                        setReassign((current) => ({ ...current, [value]: next }))
+                        setReassign((current) => ({
+                          ...current,
+                          [value]: next,
+                        }))
                       }
                     >
                       <SelectTrigger className="h-8 w-52 text-xs">
@@ -600,7 +612,11 @@ export function BandVocabularyEditor({
                         {draft
                           .filter((row) => row.label.trim())
                           .map((row) => (
-                            <SelectItem key={row.value} value={row.value} className="text-xs">
+                            <SelectItem
+                              key={row.value}
+                              value={row.value}
+                              className="text-xs"
+                            >
                               {row.label}
                             </SelectItem>
                           ))}
@@ -675,8 +691,8 @@ export function BandVocabularyEditor({
                     <ul className="space-y-1">
                       {(preview.data ?? []).map((row) => {
                         const label =
-                          draft.find((item) => item.value === row.value_band)?.label ??
-                          row.value_band;
+                          draft.find((item) => item.value === row.value_band)
+                            ?.label ?? row.value_band;
                         return (
                           <li
                             key={row.value_band}
@@ -703,10 +719,12 @@ export function BandVocabularyEditor({
                     key={area.id}
                     className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11px]"
                   >
-                    <span className="min-w-0 truncate text-foreground">{area.label}</span>
+                    <span className="min-w-0 truncate text-foreground">
+                      {area.label}
+                    </span>
                     <span className="shrink-0 text-muted-foreground">
-                      {draft.find((row) => row.value === area.geo_band)?.label ??
-                        area.geo_band}
+                      {draft.find((row) => row.value === area.geo_band)
+                        ?.label ?? area.geo_band}
                     </span>
                   </li>
                 ))}
@@ -797,7 +815,9 @@ export function BandVocabularyEditor({
                   : undefined
               }
             >
-              {save.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              {save.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : null}
               {isTemplate ? "Adopt & save" : "Save"}
             </Button>
           </div>

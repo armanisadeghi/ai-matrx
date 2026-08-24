@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const migration = readFileSync(
-  join(__dirname, "../../../../../migrations/seo_value_settings_contract_repair.sql"),
+  join(
+    __dirname,
+    "../../../../../migrations/seo_value_settings_contract_repair.sql",
+  ),
   "utf8",
 );
 
@@ -16,7 +19,9 @@ function functionBody(name: string): string {
 describe("value settings migration contract", () => {
   it("keeps the reserved guard in every settings payload", () => {
     const body = functionBody("value_settings_scope");
-    expect(body).toContain("c.dimension='seo_value_band' AND c.deleted_at IS NULL");
+    expect(body).toContain(
+      "c.dimension='seo_value_band' AND c.deleted_at IS NULL",
+    );
     expect(body).not.toContain(
       "c.dimension='seo_value_band' AND c.deleted_at IS NULL AND c.metadata ? 'min_score'",
     );
