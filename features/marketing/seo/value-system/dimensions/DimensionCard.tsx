@@ -3,12 +3,24 @@
 /**
  * One dimension, with its allowed answers.
  *
- * NOTHING IS DELETED BLIND. Every answer carries how many keywords already
- * wear it, and the dimension header carries how many value rules point at it.
- * That is why there is no delete button on this screen at all: a row can
- * disappear, the 196k classifications that name it cannot, and a soft-delete
- * that silently orphans facts is worse than no button. Retirement is its own
- * change with its own proof.
+ * NOTHING IS DELETED BLIND — AND EVERYTHING CAN BE DELETED. Until 2026-08-24
+ * this screen had no delete button at all, on the reasoning that a row can
+ * disappear while the classifications naming it cannot, so a delete would
+ * silently orphan facts. The reasoning was right about the danger and wrong
+ * about the remedy. Arman's ruling: *"Make sure you can delete the entire
+ * thing and for everything delete by default = remove matches (One thing)."*
+ *
+ * So an answer and a whole dimension both delete, and each takes what it was
+ * keeping with it — its matches and the answers it put on keywords — in ONE
+ * server transaction (`seo.facet_value_archive` / `seo.facet_dimension_archive`,
+ * which re-derive the touched keywords through the one matcher engine). What
+ * survives from the old rule is the HONESTY: every count on this card is the
+ * blast radius, the confirm states it in words before anything happens, and
+ * nothing is ever left behind for the user to go clean up.
+ *
+ * Two things still refuse, with a sentence the DB writes for the reader: the
+ * "not clear" option (the AI picks it instead of guessing) and the last real
+ * answer on a dimension (a question with no answers cannot be asked).
  *
  * Platform dimensions render with the same anatomy but locked: they are facts
  * every tenant shares, and comparability across sites is the reason.
