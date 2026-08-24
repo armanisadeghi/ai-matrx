@@ -11,8 +11,10 @@
  * MATERIALIZE-ON-WRITE (the load-bearing contract): a working document has NO
  * durable row until the first byte of content is written by either party. The
  * client reserves the row id up front (a UUID) and `materializeWorkingDocument`
- * creates the row + the conversation association on that first write — never on
- * mere activation. So an enabled-but-untouched document leaves zero records.
+ * creates the row on that first write — never on mere activation. The thunk
+ * layer sends the separate conversation edge through its persistence-aware
+ * queue, because the backend can announce a conversation id before that row is
+ * committed. So an enabled-but-untouched document leaves zero records.
  *
  * RELATIONSHIPS: chat↔doc links are `platform.associations` edges
  * (`working_document` source → `conversation` target), reached ONLY through the
@@ -388,9 +390,15 @@ const inFlightMaterialize = new Map<string, Promise<CxWorkingDocument>>();
 
 /**
  * Create (or resolve, idempotently) the durable `workbench.working_documents`
- * row for a reserved id, writing the first content + title, and ensure the
- * conversation association edge exists. The owner (`created_by`) is stamped by
- * the DB trigger from `auth.uid()`. Returns the row (with its `version`).
+ * row for a reserved id, writing the first content + title. The owner
+ * (`created_by`) is stamped by the DB trigger from `auth.uid()`. Returns the row
+ * (with its `version`).
+ *
+ * This function deliberately does NOT write the conversation association. A
+ * `record_reserved` event announces the conversation id before the backend's
+ * atomic turn transaction commits its row, so a direct `assoc_add` here races a
+ * missing endpoint and is correctly rejected with 42501. The thunk layer owns
+ * that second step through `persistOrQueueLink`.
  *
  * Idempotent: ON CONFLICT (id) updates content/title, so a concurrent first
  * write resolves to one row. Provenance rides `metadata.origin_conversation_id`
@@ -432,21 +440,7 @@ async function materializeWorkingDocumentImpl(
       `[working-document] materialize failed: ${error?.message ?? "no row"}`,
     );
   }
-  const doc = rowToCxWorkingDocument(data as CxWorkingDocumentRow);
-  // Create the conversation link on the SAME first-content transition. Idempotent
-  // (assoc_add upserts the edge), so re-materialize is a no-op on the edge.
-  // User-global scratchpads (no origin conversation) get NO edge — they attach
-  // to conversations only when the user explicitly attaches them.
-  if (args.conversationId) {
-    await linkDocumentToConversation({
-      documentId: doc.id,
-      conversationId: args.conversationId,
-      organizationId: args.organizationId,
-      kind: args.kind,
-      enabled: true,
-    });
-  }
-  return doc;
+  return rowToCxWorkingDocument(data as CxWorkingDocumentRow);
 }
 
 /**

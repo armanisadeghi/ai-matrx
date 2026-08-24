@@ -13,9 +13,9 @@
  * unchanged.
  *
  * - `enabled`  — whether this document is active for the conversation. OPT-IN:
- *                defaults OFF; the durable on/off lives in the
- *                `cx_conversation_documents` junction and is restored on mount
- *                by `hydrateConversationDocumentsThunk`.
+ *                defaults OFF; the durable on/off lives on the canonical
+ *                `platform.associations` edge and is restored on mount by
+ *                `hydrateConversationDocumentsThunk`.
  * - `content`  — canonical document text shared by every mount.
  * - `binding`  — durable source. `{ kind: "none" }` = ephemeral;
  *                `{ kind: "cx_working_document", id }` = a row in
@@ -111,7 +111,7 @@ export function workingDocKey(
  * Durable source the document is bound to.
  *   - "none"               — ephemeral (Redux only).
  *   - "note"               — a `workbench.notes` row (working kind only).
- *   - "cx_working_document"— a `public.cx_working_documents` row: the durable,
+ *   - "cx_working_document"— a `workbench.working_documents` row: the durable,
  *                            conversation-scoped default backing. The agent's
  *                            ctx_patch edits persist here (working kind) and
  *                            round-trip back via Supabase realtime.

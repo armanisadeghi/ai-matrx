@@ -79,7 +79,10 @@ second symptom instead of deduping the incident.
   listeners, every environment) and a `console.error` wrapper (noise-filtered via
   `lib/console-noise.ts`). Installed once for **every user** from
   `app/DeferredSingletons.tsx`. This is the single owner of those listeners — the
-  old `adminDebugSlice` listeners were retired.
+  old `adminDebugSlice` listeners were retired. Console raw payloads recursively
+  serialize nested `Error` instances (`name`/`message`/`stack`/`cause` + custom
+  fields) and terminate circular objects; `{ err: Error(...) }` must never become
+  `{ err: {} }` in Copy for AI or persistence.
   - **The `console.error` wrapper runs only OUTSIDE development.** Reassigning
     global `console.error` inserts our frame between the caller and Next.js's dev
     error overlay, corrupting its origin attribution (it would blame this file).
@@ -146,7 +149,7 @@ per-site — pinned by
 
 The in-memory store is per-session. `lib/diagnostics/persistCapturedErrors.ts`
 (`installErrorPersistence`, mounted in `DeferredSingletons`) persists **selected**
-captures to the canonical universal error sink **`public.system_error`** (the same
+captures to the canonical universal error sink **`ops.system_error`** (the same
 queryable store + admin dashboard the server writes), so client + server errors
 live in one place. Conservative — **NOT** the in-memory firehose: **red-tier for
 established accounts; every tier for guests and accounts in their first seven
@@ -162,7 +165,7 @@ deleted, transient-`ok`, signed-out, or still-unknown outcomes remain red and
 persist. The flush re-reads the entry after async setup so it never sends a
 stale pre-reconciliation snapshot.
 
-Direct client INSERT into `system_error` is RLS-denied — the canonical browser
+Direct client INSERT into `ops.system_error` is denied — the canonical browser
 path is the auth-checked `SECURITY DEFINER` RPC **`public.log_client_error`**
 (`migrations/log_client_error.sql`): attributes to `auth.uid()`, resolves
 `organization_id` (personal org → `matrx-system` fallback) so the NOT NULL never
@@ -311,10 +314,11 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-24 — **Nested console errors retain their diagnostics, and structured Supabase failures persist once.** The global console serializer now walks arrays/objects, preserves nested `Error` name/message/stack/cause/custom fields, and terminates cycles, so the common `console.error(label, { err })` shape cannot degrade to `{}`. Working-document association failures already captured as `supabase-postgrest` no longer mirror through the console fallback; focused tests pin both the serializer and the deferred-edge incident.
 - 2026-08-23 — **Study PostgREST failures persist once, with their structured cause.** `study/serviceError.fail()` still returns the complete message/details/hint/code string to callers, but recognizes the canonical PostgREST result shape and no longer mirrors that already-captured error through `console.error`. The captured `study_streak` `PGRST116` had produced two in-memory red entries and two `ops.system_error` rows—one actionable `supabase-postgrest` record and one generic console symptom. Non-PostgREST failures still scream through the console fallback; focused tests pin both branches.
 - 2026-08-22 — **Expected Rulebook concurrency feedback stays local.** The exact `/masterwork/` stale-version toast is yellow because compare-and-swap prevented an overwrite and kept the draft on screen; unrelated save failures and concurrency messages remain red.
 - 2026-08-19 — **Guests and first-seven-day accounts retain every diagnostic tier.** Existing Supabase Auth `created_at` and `is_anonymous` fields now flow into Redux, making eligibility a zero-query local check; established accounts remain red-only.
-- 2026-08-19 — **Guest red errors survive the browser session.** Known guest fingerprints now persist through the internal diagnostics endpoint into `public.system_error`, retaining the same red-only, production, dedupe, and throttle boundaries as authenticated capture.
+- 2026-08-19 — **Guest red errors survive the browser session.** Known guest fingerprints now persist through the internal diagnostics endpoint into `ops.system_error`, retaining the same red-only, production, dedupe, and throttle boundaries as authenticated capture.
 - 2026-08-18 — **Guarded Hindsight transcript delimiters stay local.** Raw model/tool transcript tokens can legitimately form malformed Markdown pairs; the renderer guard still neutralizes and records them locally, while only this route is yellow so ordinary answer delimiter defects remain red.
 - 2026-08-18 — **Supabase browser transport loss stays local across every route.** The structured adapter tags only classifier-proven status-0 network failures as `TypeError`; the tier rule keeps them visible for retry UX without filing client wifi/sleep/deployment handoffs as server repair work. HTTP and database responses stay red.
 - 2026-08-18 — **Transient PostgREST schema-cache restarts recover before alarming.** The global Supabase boundary retries the exact request on `PGRST002` (the query did not execute); success produces no capture, while exhaustion produces one canonical structured error. The scopes result mapper and organization loader no longer mirror that already-captured error through `console.error`, eliminating two causal duplicate repair rows.

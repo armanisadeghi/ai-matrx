@@ -23,21 +23,54 @@ let installed = false;
 /** Guards against capturing a console.error that fires from inside capture. */
 let inConsoleCapture = false;
 
-/** JSON-safe serialization of a thrown value (Error or arbitrary object). */
-function serializeThrown(err: unknown): unknown {
-  if (err instanceof Error) {
+/** JSON-safe serialization that preserves Error objects at any nesting depth. */
+export function serializeForErrorCapture(
+  value: unknown,
+  includeStack = true,
+  seen: WeakSet<object> = new WeakSet<object>(),
+): unknown {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "undefined"
+  ) {
+    return value;
+  }
+  if (typeof value === "bigint" || typeof value === "symbol") {
+    return String(value);
+  }
+  if (typeof value === "function") {
+    return `[Function ${value.name || "anonymous"}]`;
+  }
+  if (seen.has(value)) return "[Circular]";
+  seen.add(value);
+
+  if (value instanceof Error) {
     const out: Record<string, unknown> = {
-      name: err.name,
-      message: err.message,
-      stack: err.stack,
+      name: value.name,
+      message: value.message,
     };
-    // Copy the instance's own enumerable props (custom error subclasses often
-    // attach fields like `code`/`status`/`details`) — Object.assign does the
-    // reflection without needing a cast on the non-indexable Error type.
-    Object.assign(out, err);
+    if (includeStack && value.stack) out.stack = value.stack;
+    if (value.cause !== undefined) {
+      out.cause = serializeForErrorCapture(value.cause, includeStack, seen);
+    }
+    for (const [key, nested] of Object.entries(value)) {
+      out[key] = serializeForErrorCapture(nested, includeStack, seen);
+    }
     return out;
   }
-  return err;
+  if (Array.isArray(value)) {
+    return value.map((item) =>
+      serializeForErrorCapture(item, includeStack, seen),
+    );
+  }
+  const out: Record<string, unknown> = {};
+  for (const [key, nested] of Object.entries(value)) {
+    out[key] = serializeForErrorCapture(nested, includeStack, seen);
+  }
+  return out;
 }
 
 /**
@@ -61,7 +94,7 @@ export function installGlobalErrorCapture(): void {
       const scriptColumn = event.colno || undefined;
       const baseRaw =
         err != null
-          ? serializeThrown(err)
+          ? serializeForErrorCapture(err)
           : event.message
             ? { message: event.message }
             : undefined;
@@ -100,7 +133,7 @@ export function installGlobalErrorCapture(): void {
           message: extractErrorMessage(reason) || "Unhandled promise rejection",
           name: reason instanceof Error ? reason.name : undefined,
           stack: reason instanceof Error ? reason.stack : undefined,
-          raw: serializeThrown(reason),
+          raw: serializeForErrorCapture(reason),
         });
       } catch {
         /* capture must never break the page */
@@ -136,7 +169,7 @@ export function installGlobalErrorCapture(): void {
                 ? a.message
                 : (() => {
                     try {
-                      return JSON.stringify(a);
+                      return JSON.stringify(serializeForErrorCapture(a, false));
                     } catch {
                       return String(a);
                     }
@@ -150,7 +183,7 @@ export function installGlobalErrorCapture(): void {
           message: message || "console.error",
           name: errArg?.name,
           stack: errArg?.stack,
-          raw: errArg ? serializeThrown(errArg) : args,
+          raw: serializeForErrorCapture(args),
         });
       } catch {
         /* capture must never break the caller */

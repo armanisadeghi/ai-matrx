@@ -5,10 +5,12 @@
  * scratch). MATERIALIZE-ON-WRITE model:
  *
  *   - Enabling a document only RESERVES a client id (binding) — no DB row. The
- *     durable `workbench.working_documents` row + the `platform.associations`
- *     edge to the conversation are created on the FIRST byte of content, by
- *     whichever party writes first (`materializeWorkingDocumentThunk` for the
- *     user; the server's writeback for the agent, reflected via the stream).
+ *     durable `workbench.working_documents` row is created on the FIRST byte of
+ *     content, by whichever party writes first
+ *     (`materializeWorkingDocumentThunk` for the user; the server's writeback
+ *     for the agent, reflected via the stream). The separate association edge
+ *     always goes through the pending-edge coordinator so an announced but
+ *     uncommitted conversation cannot race `assoc_add`.
  *   - `hydrateConversationDocumentsThunk` restores the conversation's enabled
  *     documents from its association edges on mount.
  *   - `setConversationDocumentEnabledThunk` toggles on (reserve id) / off
@@ -604,16 +606,17 @@ export const setConversationDocumentEnabledThunk = createAsyncThunk<
 );
 
 // =============================================================================
-// Materialize-on-write — create the row + edge on the first byte of content
+// Materialize-on-write — create the row, then queue/persist its separate edge
 // =============================================================================
 
 /**
- * Create the durable row + conversation edge for the conversation's reserved
- * working/scratch document, seeding it with the current content + an auto-derived
- * title. Idempotent and gated: a no-op if already materialized, if there is no
- * content yet (create-on-first-content), or while the conversation is `cacheOnly`
- * (not server-confirmed — the edge would target a not-yet-real conversation id;
- * the content stays in Redux and this re-fires once it's confirmed).
+ * Create the durable row for the conversation's reserved working/scratch
+ * document, seed it with the current content + an auto-derived title, then
+ * persist or queue the separate conversation edge. Idempotent and gated: a
+ * no-op if already materialized, if there is no content yet
+ * (create-on-first-content), or before the conversation id is announced. After
+ * announcement the document row may materialize immediately, while the edge
+ * stays queued until the conversation row is actually readable.
  */
 export const materializeWorkingDocumentThunk = createAsyncThunk<
   void,
@@ -657,6 +660,10 @@ export const materializeWorkingDocumentThunk = createAsyncThunk<
         title,
         content,
       });
+      // Row durability and edge durability are separate proof gates. Latch the
+      // row immediately so a temporarily-uncommitted conversation cannot cause
+      // repeated UPSERTs (or replay stale content) while its edge waits in the
+      // existing coordinator.
       dispatch(
         markWorkingDocMaterialized({
           conversationId,
@@ -664,6 +671,29 @@ export const materializeWorkingDocumentThunk = createAsyncThunk<
           version: doc.version,
         }),
       );
+      if (!isGlobalScratch) {
+        try {
+          await persistOrQueueLink(getState, {
+            conversationId,
+            documentId: doc.id,
+            organizationId: orgId,
+            kind,
+            enabled: true,
+          });
+        } catch {
+          // associationsService already captured/logged the originating
+          // structured failure at its chokepoint. Do not create a second,
+          // generic console-error symptom for the same request.
+          dispatch(
+            markWorkingDocError({
+              conversationId,
+              kind,
+              error:
+                "The document was saved, but its attachment to this chat could not be saved.",
+            }),
+          );
+        }
+      }
       // CATCH-UP: the materialize captured a snapshot of `content`, but the user
       // may have typed more while it (or a concurrent dedup'd materialize) was in
       // flight. Push the latest slice content — VERSION-AWARE, so if a concurrent
@@ -704,12 +734,10 @@ export const materializeWorkingDocumentThunk = createAsyncThunk<
       if (title && !currentTitle) {
         dispatch(setWorkingDocTitle({ conversationId, kind, title }));
       }
-    } catch (err) {
-      console.error("[working-document] materialize failed", {
-        conversationId,
-        kind,
-        err,
-      });
+    } catch {
+      // The Supabase adapter owns structured DB diagnostics. Mirroring its
+      // failure through console.error produced a second persisted incident and
+      // serialized the nested Error as `{}`.
       dispatch(
         markWorkingDocError({
           conversationId,
@@ -1249,9 +1277,9 @@ export const syncWorkingDocumentFromAgentThunk = createAsyncThunk<
  * Reflect the AGENT's first write to a working document — the materialize-on-
  * write transition reported by a `context_persisted` event with `materialized`.
  * The server created the durable ROW (at the reserved id) but not the
- * conversation EDGE, so we create the edge here, adopt the id as the binding,
- * mark it enabled + materialized, and re-read the content. Only the working
- * kind is agent-writable, so this is always `kind = "working"`.
+ * conversation EDGE, so we queue/persist the edge here, adopt the id as the
+ * binding, mark it enabled + materialized, and re-read the content. Only the
+ * working kind is agent-writable, so this is always `kind = "working"`.
  */
 export const reflectAgentMaterializedThunk = createAsyncThunk<
   void,
@@ -1272,17 +1300,22 @@ export const reflectAgentMaterializedThunk = createAsyncThunk<
     const orgId = resolveOrgId(getState(), conversationId);
     if (orgId) {
       try {
-        await linkDocumentToConversation({
+        await persistOrQueueLink(getState, {
           documentId,
           conversationId,
           organizationId: orgId,
           kind,
           enabled: true,
         });
-      } catch (err) {
-        console.error(
-          "[working-document] reflectAgentMaterialized: link failed",
-          { conversationId, documentId, err },
+      } catch {
+        // associationsService already owns the structured diagnostic.
+        dispatch(
+          markWorkingDocError({
+            conversationId,
+            kind,
+            error:
+              "The document was saved, but its attachment to this chat could not be saved.",
+          }),
         );
       }
     }
