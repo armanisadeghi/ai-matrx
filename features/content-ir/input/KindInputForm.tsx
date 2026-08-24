@@ -18,7 +18,8 @@
  *               structured-JSON textarea v1, never a fake sub-form
  *   assemble  → `assembleKindInstance` (./kind-input-values.ts)
  *   validate  → `validateStructuralLeg` (registry/kind-dual-gate.ts — the REAL
- *               activation-gate ajv leg with its `__kind`-strip semantics)
+ *               activation-gate ajv leg — the marker is DATA, validated as
+ *               written, never stripped)
  *   emit      → `onSubmit(instance)` — only after the structural leg passes
  *
  * Kinds with no stored field list (python-owned, non-object roots) fall back to

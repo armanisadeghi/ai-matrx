@@ -25,7 +25,7 @@
  *
  * Validation itself delegates to `validateStructuralLeg` — the activation
  * gate's own leg — so this is never a parallel validator. One ajv config, one
- * `__kind`-stripping rule, one answer.
+ * marker rule, one answer.
  *
  * Deliberately NOT reported here: `kind_definition.is_active`. That is a
  * RENDER-trust verdict (R6), not a statement about the contract — an inactive

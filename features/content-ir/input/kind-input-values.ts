@@ -241,7 +241,7 @@ export function coerceInputValueToKindValue(
 // ---------------------------------------------------------------------------
 
 export interface AssembledKindInstance {
-  /** The `__kind`-stamped object. `validateStructuralLeg` strips `__kind` before ajv. */
+  /** The `__kind`-stamped object — the marker is part of what ajv validates. */
   instance: Record<string, unknown>;
   /** fieldKey → why its value could not be coerced. Those keys are absent from `instance`. */
   coercionErrors: Record<string, string>;
