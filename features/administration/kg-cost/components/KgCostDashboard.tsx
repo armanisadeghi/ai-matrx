@@ -1037,6 +1037,392 @@ function BatchDetailDialog({
 }
 
 // ---------------------------------------------------------------------------
+// Unit economics — per-run ledger (public.fn_kg_cost_unit_economics)
+// ---------------------------------------------------------------------------
+
+function StageSplit({
+  embed,
+  extract,
+  cleanup,
+  enrich,
+}: {
+  embed: number | string;
+  extract: number | string;
+  cleanup: number | string;
+  enrich: number | string;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5 text-[11px] leading-tight text-muted-foreground tabular-nums">
+      <span>emb {fmtUsdShort(num(embed))}</span>
+      <span>ext {fmtUsdShort(num(extract))}</span>
+      <span>cln {fmtUsdShort(num(cleanup))}</span>
+      <span>enr {fmtUsdShort(num(enrich))}</span>
+    </div>
+  );
+}
+
+function BySourceKindTable({
+  rows,
+  loading,
+}: {
+  rows: UnitEconomicsBySourceKindRow[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-full" />
+        ))}
+      </div>
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        No ingest runs in this window.
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-md border border-border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Kind</TableHead>
+            <TableHead className="text-right">Runs (ok/err/skip)</TableHead>
+            <TableHead className="text-right">p50</TableHead>
+            <TableHead className="text-right">p90</TableHead>
+            <TableHead className="text-right">Max</TableHead>
+            <TableHead className="text-right">$ / 1k chars</TableHead>
+            <TableHead>Stage split</TableHead>
+            <TableHead className="text-right">Cache hit %</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.source_kind}>
+              <TableCell className="font-mono text-xs">
+                {row.source_kind}
+                {num(row.stuck_running) > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="ml-2 font-mono text-[10px]"
+                  >
+                    {num(row.stuck_running)} stuck
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell className="text-right tabular-nums text-xs">
+                {row.runs}{" "}
+                <span className="text-muted-foreground">
+                  ({row.successes}/{row.errors}/{row.skips})
+                </span>
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {fmtUsdShort(num(row.p50_cost_usd))}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {fmtUsdShort(num(row.p90_cost_usd))}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {fmtUsdShort(num(row.max_cost_usd))}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {fmtUsdShort(num(row.cost_per_1k_chars_usd))}
+              </TableCell>
+              <TableCell>
+                <StageSplit
+                  embed={row.embedding_cost_usd}
+                  extract={row.extraction_cost_usd}
+                  cleanup={row.cleanup_cost_usd}
+                  enrich={row.enrichment_cost_usd}
+                />
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {num(row.cache_hit_pct).toFixed(1)}%
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function RecentRunsTable({
+  rows,
+  loading,
+}: {
+  rows: UnitEconomicsRecentRun[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-full" />
+        ))}
+      </div>
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        No runs recorded yet.
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-md border border-border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Started</TableHead>
+            <TableHead>Source</TableHead>
+            <TableHead>Triggered by</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Chunks (w/r)</TableHead>
+            <TableHead>Stage split</TableHead>
+            <TableHead className="text-right">Total</TableHead>
+            <TableHead className="text-right">Duration</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => {
+            const stuck = isStuckRun(row);
+            return (
+              <TableRow
+                key={row.id}
+                className={stuck ? "bg-destructive/5" : undefined}
+              >
+                <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                  {fmtCompactTime(row.started_at)}
+                </TableCell>
+                <TableCell className="font-mono text-xs">
+                  {row.source_id ? (
+                    <>
+                      {row.source_kind}:{" "}
+                      <EntityRef
+                        token={row.source_kind}
+                        id={row.source_id}
+                        name={row.source_id}
+                        showIcon={false}
+                        openInNewTab
+                        wrap
+                      />
+                    </>
+                  ) : (
+                    row.source_kind
+                  )}
+                </TableCell>
+                <TableCell className="max-w-[10rem] truncate text-xs text-muted-foreground">
+                  {row.triggered_by ?? "—"}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-0.5">
+                    <Badge
+                      variant={
+                        row.status === "success"
+                          ? "outline"
+                          : row.status === "error"
+                            ? "destructive"
+                            : "secondary"
+                      }
+                      className="w-fit font-mono text-[10px]"
+                    >
+                      {row.status}
+                    </Badge>
+                    {stuck && (
+                      <span className="text-[10px] font-semibold text-destructive">
+                        stuck &gt; 10m
+                      </span>
+                    )}
+                    {row.status === "skipped" && row.skip_reason && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {row.skip_reason}
+                      </span>
+                    )}
+                    {!row.cost_is_exact && (
+                      <span className="text-[10px] text-muted-foreground">
+                        inexact
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-xs">
+                  {num(row.chunks_written)}/{num(row.chunks_reused)}
+                </TableCell>
+                <TableCell>
+                  <StageSplit
+                    embed={row.embedding_cost_usd}
+                    extract={row.extraction_cost_usd}
+                    cleanup={row.cleanup_cost_usd}
+                    enrich={row.enrichment_cost_usd}
+                  />
+                </TableCell>
+                <TableCell className="text-right tabular-nums font-medium">
+                  {fmtUsdShort(num(row.total_cost_usd))}
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
+                  {fmtDuration(row.duration_ms)}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+const UNIT_ECON_DAY_OPTIONS = [7, 30, 90] as const;
+
+function UnitEconomicsSection() {
+  const [data, setData] = useState<UnitEconomicsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [days, setDays] = useState<(typeof UNIT_ECON_DAY_OPTIONS)[number]>(30);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+    fetchUnitEconomics(days, { signal: controller.signal })
+      .then(setData)
+      .catch((e: unknown) => {
+        if (controller.signal.aborted) return;
+        setError(
+          e instanceof Error ? e.message : "Failed to load unit economics",
+        );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [days]);
+
+  const stuckRunning =
+    data?.by_source_kind.reduce((sum, r) => sum + num(r.stuck_running), 0) ??
+    0;
+  const cacheHits =
+    data?.by_source_kind.reduce(
+      (sum, r) => sum + num(r.embedding_cache_hits),
+      0,
+    ) ?? 0;
+  const cacheCalls =
+    data?.by_source_kind.reduce((sum, r) => sum + num(r.embedding_calls), 0) ??
+    0;
+  const cacheHitPct =
+    cacheHits + cacheCalls > 0 ? (100 * cacheHits) / (cacheHits + cacheCalls) : null;
+
+  const rawMultiplier = data?.enrichment.multiplier;
+  const multiplierValue =
+    rawMultiplier === null || rawMultiplier === undefined
+      ? null
+      : num(rawMultiplier);
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold">
+          Unit economics — per-run ledger
+        </h2>
+        <div className="flex items-center gap-1">
+          {UNIT_ECON_DAY_OPTIONS.map((d) => (
+            <Button
+              key={d}
+              variant={days === d ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDays(d)}
+              disabled={loading && days === d}
+            >
+              {d}d
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div className="mb-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+        <KpiTile
+          label={`Window total (${days}d)`}
+          value={data ? fmtUsdShort(num(data.totals.total_cost_usd)) : null}
+          icon={<Wallet className="h-3.5 w-3.5" />}
+          loading={loading}
+        />
+        <KpiTile
+          label="Projected monthly"
+          value={
+            data ? fmtUsdShort(num(data.totals.projected_monthly_usd)) : null
+          }
+          icon={<TrendingUp className="h-3.5 w-3.5" />}
+          loading={loading}
+          hint={
+            data
+              ? `10x load: ${fmtUsdShort(num(data.totals.projected_monthly_10x_usd))}`
+              : undefined
+          }
+        />
+        <KpiTile
+          label="Enrichment multiplier"
+          value={
+            data
+              ? multiplierValue !== null
+                ? `${multiplierValue.toFixed(1)}x`
+                : "n/a"
+              : null
+          }
+          icon={<Layers className="h-3.5 w-3.5" />}
+          loading={loading}
+          hint={
+            data && multiplierValue === null
+              ? "n/a — need runs both with and without enrich"
+              : undefined
+          }
+        />
+        <KpiTile
+          label="Embedding cache-hit rate"
+          value={
+            data ? (cacheHitPct !== null ? `${cacheHitPct.toFixed(1)}%` : "—") : null
+          }
+          icon={<Database className="h-3.5 w-3.5" />}
+          loading={loading}
+        />
+        <KpiTile
+          label="Stuck running"
+          value={data ? `${stuckRunning}` : null}
+          icon={<AlertTriangle className="h-3.5 w-3.5" />}
+          loading={loading}
+          highlight={stuckRunning > 0}
+        />
+        <KpiTile
+          label="Inexact-cost runs"
+          value={data ? `${data.totals.inexact_cost_runs}` : null}
+          icon={<Gauge className="h-3.5 w-3.5" />}
+          loading={loading}
+        />
+      </div>
+
+      <div className="mt-4">
+        <h3 className="mb-2 text-sm font-semibold">By source kind</h3>
+        <BySourceKindTable rows={data?.by_source_kind ?? []} loading={loading} />
+      </div>
+
+      <div className="mt-4">
+        <h3 className="mb-2 text-sm font-semibold">Recent runs</h3>
+        <RecentRunsTable rows={data?.recent_runs ?? []} loading={loading} />
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main dashboard
 // ---------------------------------------------------------------------------
 
@@ -1130,6 +1516,8 @@ export function KgCostDashboard() {
       <ScrollArea className="flex-1">
         <div className="space-y-6 p-4">
           <KpiTiles summary={summary} loading={summaryLoading} />
+
+          <UnitEconomicsSection />
 
           <section>
             <h2 className="mb-3 text-sm font-semibold">Organizations</h2>
