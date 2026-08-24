@@ -443,15 +443,10 @@ export async function assembleManualRequest(
       injection.tools_replace as ChatRequestPayload["tools_replace"];
   if (injection.client)
     request.client = injection.client as ChatRequestPayload["client"];
-  // Promote the sandbox binding to the top-level `sandbox` field — aidream
-  // reads `ctx.metadata["active_sandbox"]` (the key the fs/shell tools route
-  // on) only from here, not from `client.state["sandbox-fs"]`. See the same
-  // promotion in execute-instance.thunk.ts.
-  {
-    const sandboxBinding = injection.client?.state?.["sandbox-fs"];
-    if (sandboxBinding)
-      request.sandbox = sandboxBinding as ChatRequestPayload["sandbox"];
-  }
+  // Sandbox binding travels solely as `client.state["sandbox-fs"]` — aidream
+  // bridges the capability payload into `active_sandbox` server-side
+  // (binding_from_client_state, live since 2026-08-24); the old top-level
+  // `sandbox` promotion here is gone.
   if (structuredSystemInstruction) {
     // ChatRequest.system_instruction accepts `string | SystemInstruction`
     // (OpenAPI `SystemInstructionInput` object, or a plain string) — the structured
@@ -778,7 +773,9 @@ export const executeManualInstance = createAsyncThunk<
               channel: backend.channel,
               activeServer: selectActiveServer(state),
               sandboxRef: resolveAgentSandboxRef(state, conversationId),
-              sandboxAttached: payload.sandbox != null,
+              sandboxAttached:
+                payload.sandbox != null ||
+                (payload.client as { state?: Record<string, unknown> } | undefined)?.state?.["sandbox-fs"] != null,
               capabilities:
                 (payload.client as { capabilities?: string[] } | undefined)
                   ?.capabilities ?? [],
@@ -825,7 +822,9 @@ export const executeManualInstance = createAsyncThunk<
         activeServer: selectActiveServer(state),
         conversationId,
         requestId,
-        sandboxAttached: payload.sandbox != null,
+        sandboxAttached:
+                payload.sandbox != null ||
+                (payload.client as { state?: Record<string, unknown> } | undefined)?.state?.["sandbox-fs"] != null,
       });
 
       const submitAt = performance.now();

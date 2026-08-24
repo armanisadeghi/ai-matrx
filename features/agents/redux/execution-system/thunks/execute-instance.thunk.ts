@@ -738,16 +738,10 @@ export const executeInstance = createAsyncThunk<
 
       attachSkillConfigFromState(state, conversationId, payload);
 
-      // Promote the sandbox binding to the top-level `sandbox` field. aidream
-      // hydrates `ctx.metadata["active_sandbox"]` — the key the matrx-ai
-      // fs/shell tools read to route into the container — ONLY from this
-      // top-level field. The same payload rides in `client.state["sandbox-fs"]`
-      // (for forward-compat + surface declaration), but that lands on a
-      // different metadata key the proxy never reads. Until aidream bridges
-      // the capability payload to `active_sandbox`, this promotion is what
-      // actually makes the agent's tools execute inside the box.
-      const sandboxBinding = injection.client?.state?.["sandbox-fs"];
-      if (sandboxBinding) payload.sandbox = sandboxBinding;
+      // Sandbox binding travels solely as `client.state["sandbox-fs"]` —
+      // aidream bridges the capability payload into `active_sandbox`
+      // server-side (binding_from_client_state, live since 2026-08-24), so
+      // the old top-level `sandbox` promotion here is gone.
 
       // Observational Memory — if we emitted a `memory` signal this turn,
       // (a) optimistically mirror it into the observational-memory slice so
