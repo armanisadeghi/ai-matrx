@@ -285,16 +285,6 @@ Found while converging the value workbench (2026-08-22). Not fixed there because
 that task was explicitly scoped "do NOT change any SQL/RPC".
 
 
-### D247 — DM inbox loads every conversation with no pagination (2026-08-22)
-
-`public.get_dm_conversations_with_details(p_user_id)` returns ALL of a user's DM
-conversations (505 rows for the owner, ~74 ms warm / ~600 ms observed in-browser)
-and is called on ordinary page loads (seen on /marketing/sites). Fix: page it
-(limit/offset or keyset on last_message_at) and have the client fetch the first
-~30; the messaging panel already renders incrementally. Found during the
-2026-08-22 slowness investigation; unrelated to that session's access scope.
-
-
 ### D239 — 48,493 `scheduler.sch_run` rows are un-updatable by anyone (NOT VALID check constraint) (2026-08-21)
 
 `scheduler.sch_run_claim_protocol_by_claimed_at_chk` is
@@ -1825,6 +1815,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D247** — `get_dm_conversations_with_details` now keyset-paginates (`p_limit` default 50, cursor on last-message time + `conversation_id`); the messaging panel loads page 1 and "Show more" continues from the last row (`features/messaging/data/conversationsWithDetails.ts`, `features/messaging/redux/messagingSlice.ts`, `features/messaging/components/ConversationList.tsx`, `app/api/messages/conversations/route.ts`); `migrations/dm_conversations_with_details_pagination.sql`. 2026-08-24.
 - **SEO topic demand contract** — `gsc_topic_stats` no longer scans all historical site observations before reducing to linked topics; all five topic reads/ledger refreshes now use one winning GSC `query` run per date, and stale queue rows reconcile on refresh (`migrations/seo_topic_demand_accuracy_and_timeout.sql`, `seo_topic_demand_membership_index.sql`). 2026-08-24.
 
 - **D241** — the `org_not_null_no_backstop` DDL-guard rule compared a schema-qualified name against `tgfoid::regproc::text`, which drops the schema for search_path-resident functions, so the `IN` never matched any of the 282 live `_stamp_org_default` triggers: the predicate was unconditionally true and the rule carried no signal for nine days (875 rows, its largest group). Now compares by OID via `to_regproc()`, and the accept-list of legal backstops went from **two to four** — `plan._stamp_from_node` and `platform.stamp_run_org` were both missing, and `stamp_run_org` was missing from aidream's **blocking** gate too (green only because its 2 solo tables are ownerless; a `created_by` on either would have blocked every release over a correctly-backstopped table). Old predicate flagged 269 of 379 qualifying tables; fixed one flags 4 of 384, all `iam` org-keyed tables that are correctly un-backstopped. `migrations/ddl_guard_org_backstop_oid_comparison.sql` (idempotent surgical transform — the guard has concurrent writers) + aidream `matrx_orm/catalog.py`; smoke-tested live across all five directions, gate `--strict` green, 38 unacked rows acked with per-object proof. 2026-08-21.

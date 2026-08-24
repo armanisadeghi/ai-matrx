@@ -12,12 +12,23 @@
  * hiccup then multiplies into hundreds of identical captured failures (the
  * 2026-08-21 `supabase-browser-transport-loss` storm: 909 errors in 0.6s).
  *
- * Dedup contract:
+ * Pagination (D247): the RPC defaults to `p_limit=50` (keyset on last-message
+ * time, falling back to `conversation_updated_at`, tiebroken by
+ * `conversation_id`) — a page load no longer fetches every DM conversation the
+ * user has ever had (505+ rows for the busiest account). `fetchConversationsWithDetails`
+ * always returns page 1. `fetchMoreConversationsWithDetails` continues from a
+ * cursor built with `nextConversationsCursor` off the last row of the previous
+ * page — use it for "load more" / scroll-triggered pagination, never a second
+ * unbounded call.
+ *
+ * Dedup contract (page 1 only):
  *  - Concurrent callers for the same user share ONE in-flight request. Realtime
  *    bursts across many conversations collapse instead of stampeding.
  *  - A completed response is reusable for `maxAgeMs` (default 1s). Callers that
  *    must observe a just-written row pass `maxAgeMs: 0` — they still share an
  *    in-flight request, they just never read a settled-but-stale one.
+ *  - `fetchMoreConversationsWithDetails` is a one-shot, user-driven action (a
+ *    "load more" click / scroll threshold) and is never cached or deduped.
  */
 
 import type { createClient } from "@/utils/supabase/client";
@@ -27,6 +38,28 @@ import type { DmConversationRpcRow } from "@/features/messaging/data/conversatio
 type BrowserSupabaseClient = ReturnType<typeof createClient>;
 
 const DEFAULT_MAX_AGE_MS = 1000;
+
+/** Default page size for `get_dm_conversations_with_details` — must match the RPC's `p_limit` default. */
+export const DM_CONVERSATIONS_PAGE_SIZE = 50;
+
+/** Keyset cursor into the conversation list, built from the last row of the previous page. */
+export interface ConversationsPageCursor {
+  beforeSortAt: string;
+  beforeConversationId: string;
+}
+
+/** Build the next-page cursor from the last row of a fetched page. Returns `null` when the page was short (no more rows). */
+export function nextConversationsCursor(
+  rows: DmConversationRpcRow[],
+  pageSize: number = DM_CONVERSATIONS_PAGE_SIZE,
+): ConversationsPageCursor | null {
+  if (rows.length === 0 || rows.length < pageSize) return null;
+  const last = rows[rows.length - 1];
+  return {
+    beforeSortAt: last.last_message_at ?? last.conversation_updated_at,
+    beforeConversationId: last.conversation_id,
+  };
+}
 
 interface CacheEntry {
   /** Shared promise while the request is in flight; cleared on settle. */
@@ -82,4 +115,28 @@ export async function fetchConversationsWithDetails(
   } finally {
     if (entry.inFlight === request) entry.inFlight = null;
   }
+}
+
+/**
+ * Fetch the next page of conversations, continuing from `cursor` (built by
+ * `nextConversationsCursor` off the previous page's last row). Uncached and
+ * undeduped — this is a one-shot, user-driven "load more" call.
+ */
+export async function fetchMoreConversationsWithDetails(
+  supabase: BrowserSupabaseClient,
+  userId: string,
+  cursor: ConversationsPageCursor,
+  pageSize: number = DM_CONVERSATIONS_PAGE_SIZE,
+): Promise<DmConversationRpcRow[]> {
+  const { data, error } = await supabase.rpc(
+    "get_dm_conversations_with_details",
+    {
+      p_user_id: userId,
+      p_limit: pageSize,
+      p_before_sort_at: cursor.beforeSortAt,
+      p_before_conversation_id: cursor.beforeConversationId,
+    },
+  );
+  if (error) throw error;
+  return (data ?? []) as DmConversationRpcRow[];
 }

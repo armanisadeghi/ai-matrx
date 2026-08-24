@@ -1,7 +1,9 @@
 /**
  * DM Conversations API Routes
  *
- * GET /api/messages/conversations - List all conversations for current user
+ * GET /api/messages/conversations - List a page of conversations for the
+ *   current user (`limit`, default 20 / max 50; keyset pagination via
+ *   `before_sort_at` + `before_conversation_id`, echoed back as `nextCursor`)
  * POST /api/messages/conversations - Create new conversation or return existing
  *
  * Uses dm_ prefixed tables
@@ -46,15 +48,25 @@ export async function GET(request: NextRequest) {
 
     const userId = user.id;
 
-    // Parse query params
+    // Parse query params. D247: pagination is keyset on last-message time
+    // (the RPC's own sort key), not limit/offset — `before_sort_at` +
+    // `before_conversation_id` continue from the previous page's last row
+    // (both echoed back as `nextCursor` below).
     const searchParams = request.nextUrl.searchParams;
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const beforeSortAt = searchParams.get("before_sort_at");
+    const beforeConversationId = searchParams.get("before_conversation_id");
 
-    // Get conversations using the helper function
+    // Get conversations using the helper function — paginated at the RPC
+    // level so the 500+-row unbounded read (D247) is never issued here.
     const { data: conversations, error: fetchError } = await supabase.rpc(
       "get_dm_conversations_with_details",
-      { p_user_id: userId },
+      {
+        p_user_id: userId,
+        p_limit: limit,
+        p_before_sort_at: beforeSortAt ?? undefined,
+        p_before_conversation_id: beforeConversationId ?? undefined,
+      },
     );
 
     if (fetchError) {
@@ -65,11 +77,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Apply pagination
-    const paginatedConversations =
-      conversations?.slice(offset, offset + limit) || [];
+    const pageConversations = conversations ?? [];
+    const hasMore = pageConversations.length === limit;
+    const lastRow = pageConversations[pageConversations.length - 1];
+    const nextCursor = hasMore && lastRow
+      ? {
+          before_sort_at: lastRow.last_message_at ?? lastRow.conversation_updated_at,
+          before_conversation_id: lastRow.conversation_id,
+        }
+      : null;
 
-    const conversationsWithParticipants = paginatedConversations.map((conv) => {
+    const conversationsWithParticipants = pageConversations.map((conv) => {
       const participantsWithUser = parseConversationParticipants(
         conv.participants,
       );
@@ -122,7 +140,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: conversationsWithParticipants,
-      total: conversations?.length || 0,
+      total: pageConversations.length,
+      hasMore,
+      nextCursor,
       msg: "Conversations fetched successfully",
     });
   } catch (error) {

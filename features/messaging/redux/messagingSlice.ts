@@ -29,6 +29,13 @@ interface MessagingState {
   // Conversations data (cached for quick access)
   conversations: ConversationWithDetails[];
 
+  // Pagination (D247): the conversation list loads one page (~50) at a time.
+  // `hasMoreConversations` is false once a page comes back short of the page
+  // size; `isLoadingMoreConversations` guards the "load more" affordance
+  // against duplicate triggers from a fast scroll or a double click.
+  hasMoreConversations: boolean;
+  isLoadingMoreConversations: boolean;
+
   // Unread counts
   unreadCounts: Record<string, number>;
   totalUnreadCount: number;
@@ -46,6 +53,8 @@ const initialState: MessagingState = {
   sheetWidth: 400,
   currentConversationId: null,
   conversations: [],
+  hasMoreConversations: false,
+  isLoadingMoreConversations: false,
   unreadCounts: {},
   totalUnreadCount: 0,
   isLoading: false,
@@ -128,7 +137,7 @@ export const messagingSlice = createSlice({
     // ========== Conversations Data ==========
 
     /**
-     * Set conversations list
+     * Set conversations list (replaces the list — page 1 of the paginated read).
      * Note: totalUnreadCount = number of CONVERSATIONS with unread (for header badge)
      *       unreadCounts = individual unread message counts per conversation
      *
@@ -137,15 +146,22 @@ export const messagingSlice = createSlice({
      */
     setConversations: (
       state,
-      action: PayloadAction<ConversationWithDetails[]>,
+      action: PayloadAction<
+        ConversationWithDetails[] | { conversations: ConversationWithDetails[]; hasMore: boolean }
+      >,
     ) => {
-      state.conversations = action.payload;
+      const payload = Array.isArray(action.payload)
+        ? { conversations: action.payload, hasMore: false }
+        : action.payload;
+
+      state.conversations = payload.conversations;
+      state.hasMoreConversations = payload.hasMore;
 
       // Recalculate unread counts
       state.unreadCounts = {};
       let conversationsWithUnread = 0;
 
-      action.payload.forEach((conv) => {
+      payload.conversations.forEach((conv) => {
         // Safety net: if this is the currently active conversation, force unread to 0
         const isActive = state.currentConversationId === conv.id;
         const count = isActive ? 0 : conv.unread_count || 0;
@@ -163,6 +179,45 @@ export const messagingSlice = createSlice({
 
       // Header badge shows number of conversations with unread messages
       state.totalUnreadCount = conversationsWithUnread;
+    },
+
+    /**
+     * Append the next page of conversations (D247 "load more"). Merges by id
+     * (a realtime event may have already inserted a row this page also
+     * returns), recomputes unread bookkeeping for the newly-added rows only,
+     * and re-sorts once.
+     */
+    appendConversations: (
+      state,
+      action: PayloadAction<{ conversations: ConversationWithDetails[]; hasMore: boolean }>,
+    ) => {
+      const existingIds = new Set(state.conversations.map((c) => c.id));
+      const newOnes = action.payload.conversations.filter(
+        (c) => !existingIds.has(c.id),
+      );
+
+      newOnes.forEach((conv) => {
+        const isActive = state.currentConversationId === conv.id;
+        const count = isActive ? 0 : conv.unread_count || 0;
+        if (isActive && conv.unread_count > 0) conv.unread_count = 0;
+
+        state.unreadCounts[conv.id] = count;
+        if (count > 0) state.totalUnreadCount += 1;
+      });
+
+      state.conversations.push(...newOnes);
+      state.conversations.sort((a, b) => {
+        const aTime = a.last_message?.created_at || a.updated_at;
+        const bTime = b.last_message?.created_at || b.updated_at;
+        return new Date(bTime).getTime() - new Date(aTime).getTime();
+      });
+
+      state.hasMoreConversations = action.payload.hasMore;
+    },
+
+    /** Guard the "load more" affordance against duplicate triggers. */
+    setLoadingMoreConversations: (state, action: PayloadAction<boolean>) => {
+      state.isLoadingMoreConversations = action.payload;
     },
 
     /**
@@ -446,6 +501,8 @@ export const {
   setCurrentConversation,
   clearCurrentConversation,
   setConversations,
+  appendConversations,
+  setLoadingMoreConversations,
   updateConversation,
   updateConversationLastMessage,
   removeConversation,
@@ -474,6 +531,10 @@ export const selectCurrentConversationId = (state: WithMessaging) =>
   state.messaging.currentConversationId;
 export const selectConversations = (state: WithMessaging) =>
   state.messaging.conversations;
+export const selectHasMoreConversations = (state: WithMessaging) =>
+  state.messaging.hasMoreConversations;
+export const selectIsLoadingMoreConversations = (state: WithMessaging) =>
+  state.messaging.isLoadingMoreConversations;
 export const selectUnreadCounts = (state: WithMessaging) =>
   state.messaging.unreadCounts;
 export const selectTotalUnreadCount = (state: WithMessaging) =>

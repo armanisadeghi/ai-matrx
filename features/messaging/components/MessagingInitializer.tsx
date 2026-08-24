@@ -15,7 +15,10 @@ import { createClient } from "@/utils/supabase/client";
 import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { summarizeMatrxText } from "@/features/matrx-envelope/referenceText";
 import { toConversationWithDetails } from "@/features/messaging/data/conversation-list";
-import { fetchConversationsWithDetails } from "@/features/messaging/data/conversationsWithDetails";
+import {
+  fetchConversationsWithDetails,
+  nextConversationsCursor,
+} from "@/features/messaging/data/conversationsWithDetails";
 import type { ConversationWithDetails, Message } from "../types";
 import {
   playNotificationSound,
@@ -154,7 +157,9 @@ export function MessagingInitializer() {
     try {
       // Use the database function for efficient loading. The shared reader
       // dedupes concurrent callers so a mount racing a realtime refresh issues
-      // ONE request, not two.
+      // ONE request, not two. This is always page 1 (D247: RPC defaults to
+      // p_limit=50) — ConversationList's "load more" continues from the
+      // cursor built off this page's last row.
       const data = await fetchConversationsWithDetails(supabase, userId);
 
       if (!mountedRef.current) return;
@@ -166,7 +171,12 @@ export function MessagingInitializer() {
       if (!mountedRef.current) return;
 
       // Store in Redux - this also calculates totalUnreadCount
-      dispatch(setConversations(conversationsWithParticipants));
+      dispatch(
+        setConversations({
+          conversations: conversationsWithParticipants,
+          hasMore: nextConversationsCursor(data) !== null,
+        }),
+      );
     } catch (err) {
       if (!mountedRef.current) return;
       console.error("[Messaging] Failed to load conversations:", err);

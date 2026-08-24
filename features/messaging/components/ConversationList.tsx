@@ -1,14 +1,25 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   selectConversations,
   selectMessagingIsLoading,
+  selectHasMoreConversations,
+  selectIsLoadingMoreConversations,
+  appendConversations,
+  setLoadingMoreConversations,
 } from "../redux/messagingSlice";
+import { createClient } from "@/utils/supabase/client";
+import { toConversationWithDetails } from "@/features/messaging/data/conversation-list";
+import {
+  fetchMoreConversationsWithDetails,
+  nextConversationsCursor,
+  type ConversationsPageCursor,
+} from "@/features/messaging/data/conversationsWithDetails";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -48,14 +59,52 @@ export function ConversationList({
 }: ConversationListProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
   const [isPending, startTransition] = useTransition();
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(null);
+  const supabaseRef = useRef(createClient());
 
   // Read conversations from Redux (centralized state managed by MessagingInitializer)
   const conversations = useAppSelector(selectConversations);
   const isLoading = useAppSelector(selectMessagingIsLoading);
+  const hasMore = useAppSelector(selectHasMoreConversations);
+  const isLoadingMore = useAppSelector(selectIsLoadingMoreConversations);
+
+  // D247: the panel loads one page (~50 conversations) at a time. "Load more"
+  // continues from a cursor built off the last (oldest-by-sort-key) row of
+  // the currently-loaded list — the same order the RPC returns.
+  const handleLoadMore = useCallback(async () => {
+    if (!userId || !hasMore || isLoadingMore || conversations.length === 0)
+      return;
+
+    const last = conversations[conversations.length - 1];
+    const cursor: ConversationsPageCursor = {
+      beforeSortAt: last.last_message?.created_at || last.updated_at,
+      beforeConversationId: last.id,
+    };
+
+    dispatch(setLoadingMoreConversations(true));
+    try {
+      const rows = await fetchMoreConversationsWithDetails(
+        supabaseRef.current,
+        userId,
+        cursor,
+      );
+      const more = rows.map((row) => toConversationWithDetails(row, userId));
+      dispatch(
+        appendConversations({
+          conversations: more,
+          hasMore: nextConversationsCursor(rows) !== null,
+        }),
+      );
+    } catch (error) {
+      console.error("[Messaging] Failed to load more conversations:", error);
+    } finally {
+      dispatch(setLoadingMoreConversations(false));
+    }
+  }, [userId, hasMore, isLoadingMore, conversations, dispatch]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewConversation, setShowNewConversation] = useState(false);
@@ -212,6 +261,29 @@ export function ConversationList({
                 isClicked={selectedConversationId === conversation.id}
               />
             ))}
+            {/* D247: paginated list — "Load more" continues from the last
+                loaded row. Search filters the loaded page client-side, so the
+                affordance only makes sense against the unfiltered list. */}
+            {!searchQuery && hasMore && (
+              <div className="px-3 py-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs text-zinc-500 dark:text-zinc-400"
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      Loading more…
+                    </>
+                  ) : (
+                    "Show more conversations"
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </ScrollArea>

@@ -1,5 +1,7 @@
 import {
   fetchConversationsWithDetails,
+  fetchMoreConversationsWithDetails,
+  nextConversationsCursor,
   resetConversationsWithDetailsCache,
 } from "@/features/messaging/data/conversationsWithDetails";
 
@@ -81,6 +83,77 @@ describe("fetchConversationsWithDetails", () => {
     await expect(
       fetchConversationsWithDetails(client, "user-1"),
     ).resolves.toEqual([]);
+    expect(calls).toBe(2);
+  });
+});
+
+describe("nextConversationsCursor (D247 pagination)", () => {
+  it("returns null when the page is shorter than the page size (no more rows)", () => {
+    const rows = [
+      { conversation_id: "c1", last_message_at: "2026-01-01T00:00:00Z" },
+    ] as never;
+    expect(nextConversationsCursor(rows, 50)).toBeNull();
+  });
+
+  it("builds a cursor from the last row when the page is full", () => {
+    const rows = Array.from({ length: 50 }, (_, i) => ({
+      conversation_id: `c${i}`,
+      last_message_at: `2026-01-${String(i + 1).padStart(2, "0")}T00:00:00Z`,
+      conversation_updated_at: `2026-01-${String(i + 1).padStart(2, "0")}T00:00:00Z`,
+    })) as never[];
+    const cursor = nextConversationsCursor(rows, 50);
+    expect(cursor).toEqual({
+      beforeSortAt: "2026-01-50T00:00:00Z",
+      beforeConversationId: "c49",
+    });
+  });
+
+  it("falls back to conversation_updated_at when the last row has no last message", () => {
+    const rows = Array.from({ length: 2 }, (_, i) => ({
+      conversation_id: `c${i}`,
+      last_message_at: null,
+      conversation_updated_at: "2026-02-01T00:00:00Z",
+    })) as never[];
+    const cursor = nextConversationsCursor(rows, 2);
+    expect(cursor).toEqual({
+      beforeSortAt: "2026-02-01T00:00:00Z",
+      beforeConversationId: "c1",
+    });
+  });
+});
+
+describe("fetchMoreConversationsWithDetails", () => {
+  it("passes the cursor and page size through to the RPC, uncached", async () => {
+    let calls = 0;
+    let capturedArgs: unknown;
+    const client = {
+      rpc: async (_name: string, args: unknown) => {
+        calls += 1;
+        capturedArgs = args;
+        return { data: [{ conversation_id: "c2" }], error: null };
+      },
+    } as unknown as Client;
+
+    const rows = await fetchMoreConversationsWithDetails(client, "user-1", {
+      beforeSortAt: "2026-01-01T00:00:00Z",
+      beforeConversationId: "c1",
+    });
+
+    expect(calls).toBe(1);
+    expect(capturedArgs).toEqual({
+      p_user_id: "user-1",
+      p_limit: 50,
+      p_before_sort_at: "2026-01-01T00:00:00Z",
+      p_before_conversation_id: "c1",
+    });
+    expect(rows).toEqual([{ conversation_id: "c2" }]);
+
+    // A second call for the same user is NOT deduped/cached — pagination is
+    // a one-shot, user-driven action.
+    await fetchMoreConversationsWithDetails(client, "user-1", {
+      beforeSortAt: "2026-01-01T00:00:00Z",
+      beforeConversationId: "c1",
+    });
     expect(calls).toBe(2);
   });
 });
