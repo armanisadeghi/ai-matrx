@@ -67,6 +67,16 @@ export interface KindComponentProjection {
 }
 
 /**
+ * THE generic fallback's component key. MUST equal
+ * `GENERIC_STRUCTURED_COMPONENT_KEY` (@ai-matrx/content-ir-react) and
+ * `content_ir.evaluate_kind_activation`'s render leg. The literal is
+ * duplicated rather than imported for the same reason system-components.ts
+ * duplicates it: importing it pulls this registry module into the react layer
+ * and closes an import cycle.
+ */
+export const GENERIC_FALLBACK_COMPONENT_KEY = "generic_structured";
+
+/**
  * THE deterministic row order — the ingest contract (first row per (kind,
  * platform, role) wins): `fallback LAST, is_default DESC, sort_order ASC,
  * created_at ASC, id ASC`. `is_default` is a PREFERENCE among db rows, not a
@@ -135,7 +145,10 @@ function asConfigRecord(value: Json, kind: string): JsonObject {
 /**
  * Warm tier: every non-deleted resolver row in one pair of reads, ordered
  * is_default-first then sort_order so the FIRST row per (kind, platform,
- * role) is the one the registry keeps.
+ * role) is the one the registry keeps. The fallback cannot win here either:
+ * `content_ir.kind_component`'s `zzz_demote_generic_fallback` trigger pins
+ * every `generic_structured` row to is_default=false / sort_order=1000, and
+ * `sortKindComponentRows` demotes it again client-side.
  */
 export async function listKindComponentsFromTables(): Promise<
   KindComponentProjection[]

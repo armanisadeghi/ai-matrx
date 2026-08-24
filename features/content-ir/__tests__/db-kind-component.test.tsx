@@ -467,6 +467,50 @@ describe("deterministic db-row ordering", () => {
       ["e", "d", "c", "a", "b"],
     );
   });
+
+  it("sorts the generic fallback LAST even when it is is_default with the best sort_order — a fallback may never outrank a real component", () => {
+    // The planted bad case (Arman, 2026-08-23): this is exactly the row pair
+    // that made `seo_keyword_relationship_research_result` render as the
+    // generic key/value dump while its purpose-built board sat unused.
+    const rows = [
+      {
+        id: "11111111-0000-0000-0000-000000000000",
+        component_key: "generic_structured",
+        is_default: true,
+        sort_order: -999,
+        created_at: "2020-01-01T00:00:00Z",
+      },
+      {
+        id: "22222222-0000-0000-0000-000000000000",
+        component_key: "keyword_research_result_board",
+        is_default: false,
+        sort_order: 10,
+        created_at: "2026-08-22T08:34:07Z",
+      },
+    ];
+    expect(sortKindComponentRows(rows).map((r) => r.component_key)).toEqual([
+      "keyword_research_result_board",
+      "generic_structured",
+    ]);
+    expect(
+      sortKindComponentRows([...rows].reverse()).map((r) => r.component_key),
+    ).toEqual(["keyword_research_result_board", "generic_structured"]);
+  });
+
+  it("keeps the fallback when it is the ONLY row — demotion is a ranking rule, never a filter", () => {
+    const rows = [
+      {
+        id: "11111111-0000-0000-0000-000000000000",
+        component_key: "generic_structured",
+        is_default: false,
+        sort_order: 1000,
+        created_at: "2026-08-21T00:00:00Z",
+      },
+    ];
+    expect(sortKindComponentRows(rows).map((r) => r.component_key)).toEqual([
+      "generic_structured",
+    ]);
+  });
 });
 
 describe("allowlist expansion (2026-07-17)", () => {
