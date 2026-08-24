@@ -64,13 +64,19 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { FilterBar } from "@/features/marketing/search-console/components/FilterBar";
-import { useGscBreakdown, useGscFreshness } from "@/features/marketing/search-console/hooks/useGscQuery";
+import {
+  useGscBreakdown,
+  useGscFreshness,
+} from "@/features/marketing/search-console/hooks/useGscQuery";
 import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
 import {
   buildGscMetricColumns,
   gscMetricCopyLines,
 } from "@/features/marketing/search-console/lib/columns";
-import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
 import {
@@ -116,7 +122,13 @@ import { SavedViewTabs } from "./SavedViewTabs";
 import { WhyBody, WhyPopover } from "./WhyPopover";
 
 /** Server-sortable ids. Anything else sorts the rows on screen — and says so. */
-const SERVER_SORTABLE = new Set(["key", "clicks", "impressions", "ctr", "position"]);
+const SERVER_SORTABLE = new Set([
+  "key",
+  "clicks",
+  "impressions",
+  "ctr",
+  "position",
+]);
 
 export function KeywordWorkbench() {
   const { site, brandId, sitePath } = useMarketingSite();
@@ -127,23 +139,31 @@ export function KeywordWorkbench() {
 
   const state = parseWorkbenchState(params);
   const push = (next: WorkbenchState) => {
-    router.replace(`${sitePath}/keywords?${workbenchSearchParams(next).toString()}`, {
-      scroll: false,
-    });
+    router.replace(
+      `${sitePath}/keywords?${workbenchSearchParams(next).toString()}`,
+      {
+        scroll: false,
+      },
+    );
   };
   const patch = (partial: Partial<WorkbenchState>) =>
     push({ ...state, page: 1, ...partial });
 
   /* ---------------------------------------------------------------- periods */
   const freshness = useGscFreshness(site.id);
-  const dataThrough = resolveGscDataThrough(freshness.data, ["query", "query_page"]);
+  const dataThrough = resolveGscDataThrough(freshness.data, [
+    "query",
+    "query_page",
+  ]);
   const periods = resolvePeriods(state, new Date(), dataThrough);
 
   /* ------------------------------------------------------------------- data */
   const breakdown = useGscBreakdown(site.id, periods, state.filters, {
     dimension: "query",
     search: state.search,
-    sort: SERVER_SORTABLE.has(state.sort) ? (state.sort as GscSortKey) : "clicks",
+    sort: SERVER_SORTABLE.has(state.sort)
+      ? (state.sort as GscSortKey)
+      : "clicks",
     sortDir: state.sortDir,
     page: state.page,
     pageSize: state.pageSize,
@@ -331,10 +351,16 @@ export function KeywordWorkbench() {
     patch({ filters });
   };
 
-  const dimensionColumns: MatrxColumnDef<GscBreakdownRow>[] = state.dimensions.map(
-    (slug) => {
+  const dimensionColumns: MatrxColumnDef<GscBreakdownRow>[] =
+    state.dimensions.map((slug) => {
       const dimension = dimensions.find((d) => d.slug === slug);
-      const label = dimension?.label ?? humanizeSlug(slug);
+      // A site dimension's slug carries a `site_<8 hex>_` prefix that exists
+      // so two sites can both own "Buyer stage". It is plumbing, and a header
+      // that reads "SITE 38EFF4C9 BUYER STAGE" for the second the catalog is
+      // still loading is plumbing on the user's screen.
+      const label =
+        dimension?.label ??
+        humanizeSlug(slug.replace(/^site_[0-9a-f]{8}_/, ""));
       return {
         id: `dim:${slug}`,
         header: label,
@@ -380,8 +406,7 @@ export function KeywordWorkbench() {
           );
         },
       };
-    },
-  );
+    });
 
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [
     {
@@ -478,7 +503,8 @@ export function KeywordWorkbench() {
       accessorFn: (row) => valueFor(row)?.value_band ?? "",
       cell: (row) => {
         const value = valueFor(row);
-        if (!value) return <span className="text-[11px] text-muted-foreground">—</span>;
+        if (!value)
+          return <span className="text-[11px] text-muted-foreground">—</span>;
         return (
           <span className="flex items-center gap-1">
             <span
@@ -606,116 +632,125 @@ export function KeywordWorkbench() {
         "Last 28 days");
 
   /* ------------------------------------------------------------------ render */
+  // The context menu's trigger renders `asChild`, so its child MUST be a real
+  // DOM element — handing `asChild` a component that does not forward props
+  // drops the right-click handler on the floor, silently and with no error.
+  // (It did. That is why this div is not decorative.)
   const table = (
-    <MatrxDataTable<GscBreakdownRow>
-      data={displayRows}
-      columns={columns}
-      getRowId={(row) => row.key}
-      isLoading={breakdown.isLoading}
-      isFetching={breakdown.isFetching || values.isFetching || stamps.isFetching}
-      query={{
-        mode: "controlled",
-        totalItems: total,
-        state: tableQuery,
-        onStateChange: onQueryStateChange,
-      }}
-      selection={{
-        selectedIds,
-        onSelectedIdsChange: setSelectedIds,
-        noun: "keyword",
-        isRowSelectable: (row) => !!row.keyword_id,
-        actions: (_selected, ids) => (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Button
-              size="sm"
-              className="h-7 gap-1 text-xs"
-              disabled={selectedKeywordIds.length === 0}
-              onClick={() =>
-                setAssignTarget({
-                  keywordIds: selectedKeywordIds,
-                  label: `${selectedKeywordIds.length.toLocaleString()} keyword${selectedKeywordIds.length === 1 ? "" : "s"}`,
-                })
-              }
-            >
-              <Tag className="h-3.5 w-3.5" />
-              Assign…
-            </Button>
-            {lastUsed ? (
+    <div className="flex h-full min-h-0 flex-col">
+      <MatrxDataTable<GscBreakdownRow>
+        data={displayRows}
+        columns={columns}
+        getRowId={(row) => row.key}
+        isLoading={breakdown.isLoading}
+        isFetching={
+          breakdown.isFetching || values.isFetching || stamps.isFetching
+        }
+        query={{
+          mode: "controlled",
+          totalItems: total,
+          state: tableQuery,
+          onStateChange: onQueryStateChange,
+        }}
+        selection={{
+          selectedIds,
+          onSelectedIdsChange: setSelectedIds,
+          noun: "keyword",
+          isRowSelectable: (row) => !!row.keyword_id,
+          actions: (_selected, ids) => (
+            <div className="flex flex-wrap items-center gap-1.5">
               <Button
-                variant="outline"
                 size="sm"
                 className="h-7 gap-1 text-xs"
                 disabled={selectedKeywordIds.length === 0}
-                onClick={() => void quickAssign(selectedKeywordIds, lastUsed)}
+                onClick={() =>
+                  setAssignTarget({
+                    keywordIds: selectedKeywordIds,
+                    label: `${selectedKeywordIds.length.toLocaleString()} keyword${selectedKeywordIds.length === 1 ? "" : "s"}`,
+                  })
+                }
               >
-                {lastUsed.valueLabel}
-              </Button>
-            ) : null}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs text-muted-foreground"
-              onClick={() => setSelectedIds([])}
-            >
-              Clear {ids.length}
-            </Button>
-          </div>
-        ),
-      }}
-      toolbar={{
-        searchPlaceholder: "Search keywords…",
-        leading:
-          total > rows.length ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 gap-1 whitespace-nowrap text-xs"
-              onClick={() => void selectAllMatching()}
-              disabled={selectingAll}
-            >
-              {selectingAll ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
                 <Tag className="h-3.5 w-3.5" />
-              )}
-              Assign all {formatCount(total)} matching
-            </Button>
-          ) : undefined,
-      }}
-      copy={{
-        label: "Keyword",
-        listLabel: "Keyword workbench",
-        location: webLocation("Marketing — Keyword workbench"),
-        rowKind: "web-keyword-workbench-row",
-        listKind: "web-keyword-workbench-table",
-        rowDescription:
-          "One keyword's search performance, class, score, level and stamped dimensions for this site.",
-        listDescription:
-          "The visible keyword workbench rows (respecting search, filters, sort and pagination).",
-        humanRow: (row) => humanLines(gscMetricCopyLines("Keyword", "query", row)),
-        rowAttributes: (row) => ({
-          ...gscScopeAttributes(site.id, site.domain, periods, state.filters),
-          key: row.key,
-          keyword_id: row.keyword_id ?? "",
-        }),
-        listAttributes: (visible) => ({
-          ...gscScopeAttributes(site.id, site.domain, periods, state.filters),
-          visible_rows: visible.length,
-          total_rows: total,
-          dimension_columns: state.dimensions.join(","),
-        }),
-      }}
-      detail={{ enabled: false }}
-      window={{ enabled: false }}
-      pageSize={state.pageSize}
-      emptyState={{
-        icon: <SearchX className="h-8 w-8 text-muted-foreground" />,
-        title: "No keywords match",
-        description:
-          "Nothing in this window carries every filter you set. Widen the date range, drop a filter chip, or clear the search.",
-      }}
-      className="flex-1"
-    />
+                Assign…
+              </Button>
+              {lastUsed ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1 text-xs"
+                  disabled={selectedKeywordIds.length === 0}
+                  onClick={() => void quickAssign(selectedKeywordIds, lastUsed)}
+                >
+                  {lastUsed.valueLabel}
+                </Button>
+              ) : null}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-muted-foreground"
+                onClick={() => setSelectedIds([])}
+              >
+                Clear {ids.length}
+              </Button>
+            </div>
+          ),
+        }}
+        toolbar={{
+          searchPlaceholder: "Search keywords…",
+          leading:
+            total > rows.length ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 whitespace-nowrap text-xs"
+                onClick={() => void selectAllMatching()}
+                disabled={selectingAll}
+              >
+                {selectingAll ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Tag className="h-3.5 w-3.5" />
+                )}
+                Assign all {formatCount(total)} matching
+              </Button>
+            ) : undefined,
+        }}
+        copy={{
+          label: "Keyword",
+          listLabel: "Keyword workbench",
+          location: webLocation("Marketing — Keyword workbench"),
+          rowKind: "web-keyword-workbench-row",
+          listKind: "web-keyword-workbench-table",
+          rowDescription:
+            "One keyword's search performance, class, score, level and stamped dimensions for this site.",
+          listDescription:
+            "The visible keyword workbench rows (respecting search, filters, sort and pagination).",
+          humanRow: (row) =>
+            humanLines(gscMetricCopyLines("Keyword", "query", row)),
+          rowAttributes: (row) => ({
+            ...gscScopeAttributes(site.id, site.domain, periods, state.filters),
+            key: row.key,
+            keyword_id: row.keyword_id ?? "",
+          }),
+          listAttributes: (visible) => ({
+            ...gscScopeAttributes(site.id, site.domain, periods, state.filters),
+            visible_rows: visible.length,
+            total_rows: total,
+            dimension_columns: state.dimensions.join(","),
+          }),
+        }}
+        detail={{ enabled: false }}
+        window={{ enabled: false }}
+        pageSize={state.pageSize}
+        emptyState={{
+          icon: <SearchX className="h-8 w-8 text-muted-foreground" />,
+          title: "No keywords match",
+          description:
+            "Nothing in this window carries every filter you set. Widen the date range, drop a filter chip, or clear the search.",
+        }}
+        className="flex-1"
+      />
+    </div>
   );
 
   return (
@@ -857,7 +892,9 @@ export function KeywordWorkbench() {
               ) {
                 // You just gave these keywords a meaning; you should be able
                 // to SEE it without hunting for the column chooser.
-                patch({ dimensions: [...state.dimensions, picked.dimensionSlug] });
+                patch({
+                  dimensions: [...state.dimensions, picked.dimensionSlug],
+                });
               }
             }}
           />
@@ -891,11 +928,14 @@ export function KeywordWorkbench() {
                           id: "kw-quick-assign",
                           label: `${lastUsed.dimensionLabel}: ${lastUsed.valueLabel}`,
                           icon: Tag,
-                          description: "Assign the value you used last — one click, no dialog",
+                          description:
+                            "Assign the value you used last — one click, no dialog",
                           onSelect: () => {
                             const row = clickedRow.current;
                             if (!row?.keyword_id) {
-                              toast.error("Right-click a keyword row to assign it.");
+                              toast.error(
+                                "Right-click a keyword row to assign it.",
+                              );
                               return;
                             }
                             void quickAssign([row.keyword_id], lastUsed);
@@ -933,7 +973,9 @@ export function KeywordWorkbench() {
                       const row = clickedRow.current;
                       const value = row ? valueFor(row) : undefined;
                       if (!value) {
-                        toast.error("No score has been worked out for that row yet.");
+                        toast.error(
+                          "No score has been worked out for that row yet.",
+                        );
                         return;
                       }
                       setWhyRow(row);
