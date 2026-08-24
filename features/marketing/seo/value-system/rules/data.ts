@@ -39,6 +39,8 @@ import type {
   ComboEffect,
   GeoAreaHealthRow,
   GeoAreaReconnectResult,
+  ValueRuleHealthRow,
+  ValueRuleReconnectResult,
 } from "./types";
 import type { SiteGeoArea, ValueCombo } from "../types";
 
@@ -92,6 +94,8 @@ export const geoPlaceSearchQueryKey = (query: string, kinds: string[]) =>
   ["seo", "value-rules", "geo-places", query, kinds.join("|")] as const;
 export const geoAreaHealthQueryKey = (siteId: string) =>
   ["seo", "value-rules", "geo-area-health", siteId] as const;
+export const valueRuleHealthQueryKey = (siteId: string) =>
+  ["seo", "value-rules", "rule-health", siteId] as const;
 
 /** Every query key the value workbench keeps in cache for this site. Saving a
  *  rule or an area changes what EVERY one of them says, so they invalidate
@@ -102,6 +106,7 @@ export function valueSurfaceQueryKeys(siteId: string) {
     valueRulesQueryKey(siteId),
     geoAreasQueryKey(siteId),
     geoAreaHealthQueryKey(siteId),
+    valueRuleHealthQueryKey(siteId),
     valueCombosQueryKey(siteId),
     // The LIVE workbench ("marketing/value/...") — its review table, summary,
     // band vocabulary and meaning health all hang off this one prefix. It was
@@ -340,6 +345,48 @@ export async function reconnectGeoAreas(siteId: string): Promise<GeoAreaReconnec
     response.error,
     "reconnect your service areas",
   ) as unknown as GeoAreaReconnectResult;
+}
+
+/**
+ * IS THIS RULE ACTUALLY CHANGING A SCORE?
+ *
+ * 🚨 2026-08-24 — the rules half of the geo regression. `seo.keyword_class_rule`
+ * had no meaning-minting trigger, and the write path in
+ * `features/marketing/search-console/data-class-rules.ts` saved the row and
+ * nothing else, so a rule authored in this UI produced no dimension value, no
+ * matcher and no worth. The C2 resolver reads STAMPS only, so it never saw the
+ * rule at all: the screen said "certified × 2.5" and the score did not move.
+ * The rules that worked did so only because C1's one-off migration minted them
+ * by hand.
+ *
+ * A trigger mints the meaning now, so `disconnected` should be unreachable —
+ * which is precisely why this read stays and the alarm stays on the page. A
+ * state that can no longer happen and is no longer watched for is how the same
+ * silence comes back.
+ */
+export async function listValueRuleHealth(siteId: string): Promise<ValueRuleHealthRow[]> {
+  const response = await (await seoDb()).rpc("gsc_value_rule_health", {
+    p_site_id: siteId,
+  });
+  return assertGoverned(
+    response.data,
+    response.error,
+    "check whether your value rules are changing any scores",
+  ) as unknown as ValueRuleHealthRow[];
+}
+
+/** The one-click fix behind that alarm: re-mint every rule's meaning, then run
+ *  the matcher engine over exactly the keywords those rules can reach, so the
+ *  stamps land before the page refetches. Nothing typed is lost. */
+export async function reconnectValueRules(siteId: string): Promise<ValueRuleReconnectResult> {
+  const response = await (await seoDb()).rpc("gsc_value_rule_reconnect", {
+    p_site_id: siteId,
+  });
+  return assertGoverned(
+    response.data,
+    response.error,
+    "reconnect your value rules",
+  ) as unknown as ValueRuleReconnectResult;
 }
 
 /** Archive = soft delete. The resolver stops seeing it the moment it lands. */

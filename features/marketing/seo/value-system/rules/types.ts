@@ -273,6 +273,67 @@ export interface GeoAreaHealthRow {
   state: GeoAreaState;
 }
 
+// ── Does this RULE actually change a score? (2026-08-24) ────────────────────
+
+/**
+ * `seo.gsc_value_rule_health` — one row per live value rule.
+ *
+ * The rules half of the geo silence. A rule is complete on this screen the
+ * moment its words and its multiplier are typed, and until 2026-08-24 that was
+ * ALL it was: the resolver reads stamps, and authoring a rule minted no value,
+ * no matcher and no worth. The trigger mints them now, so `disconnected` should
+ * be unreachable — which is exactly why it is still read and still shown.
+ *
+ *   empty        — nothing mintable on the row at all.
+ *   unresolved   — it scores a dimension value that does not exist.
+ *   shadowed     — another live rule already scores that value; the incumbent
+ *                  wins and this one is inert, for an honest reason.
+ *   disconnected — complete and minting nothing. The regression class.
+ *   held         — a class rule waiting on auto_apply, deliberately not live.
+ *   no_hits      — wired correctly; no keyword has matched it yet.
+ *   live         — matching keywords and counting in their value.
+ */
+export type ValueRuleState =
+  | "empty"
+  | "unresolved"
+  | "shadowed"
+  | "disconnected"
+  | "held"
+  | "no_hits"
+  | "live";
+
+export interface ValueRuleHealthRow {
+  rule_id: string;
+  name: string;
+  is_class: boolean;
+  is_qualifier: boolean;
+  is_facet: boolean;
+  target_class: string | null;
+  pattern: string | null;
+  value_multiplier: number | null;
+  auto_apply: boolean;
+  value_id: string | null;
+  matchers: number;
+  enabled_matchers: number;
+  worth: number;
+  stamps: number;
+  /** Name of the live rule already scoring this value, when `shadowed`. */
+  conflict_rule: string | null;
+  state: ValueRuleState;
+}
+
+/** What `seo.gsc_value_rule_reconnect` reports back after re-minting + stamping. */
+export interface ValueRuleReconnectResult {
+  rules_synced: number;
+  conflicts: number;
+  scope_keywords: number;
+  matchers: number;
+  stamped: number;
+  removed: number;
+  single_cardinality_conflicts: number;
+  evaluated_at: string;
+}
+
 /** What `seo.gsc_geo_area_reconnect` reports back after re-minting + stamping. */
 export interface GeoAreaReconnectResult {
   areas_synced: number;

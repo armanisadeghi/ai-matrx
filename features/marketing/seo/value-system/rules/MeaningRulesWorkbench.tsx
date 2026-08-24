@@ -96,14 +96,17 @@ import { PlaceDetectionStrip } from "./PlaceDetectionStrip";
 import { LocationPanel } from "../locations/LocationPanel";
 import {
   geoAreaHealthQueryKey,
+  valueRuleHealthQueryKey,
   geoAreasQueryKey,
   getMeaningUsage,
   listGeoAreaHealth,
   meaningUsageQueryKey,
   reconnectGeoAreas,
+  listValueRuleHealth,
+  reconnectValueRules,
   valueRulesQueryKey,
 } from "./data";
-import type { GeoAreaHealthRow, MeaningUsageRow } from "./types";
+import type { GeoAreaHealthRow, MeaningUsageRow, ValueRuleHealthRow } from "./types";
 
 /** The honest usage chip: measuring · unavailable · fires on nothing · N keywords. */
 function UsageChip({
@@ -150,6 +153,72 @@ function UsageChip({
   return (
     <span className="shrink-0 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
       {formatCount(usage.keywords)} keywords · {formatCount(usage.clicks)} clicks
+    </span>
+  );
+}
+
+/**
+ * Why a rule is or is not counting, said on the row itself.
+ *
+ * `live` is deliberately silent — a chip that appears on every healthy row is
+ * decoration. Only the states a person can act on get a word, and each one says
+ * what is true rather than grading the rule: `held` and `shadowed` are working
+ * as designed, `disconnected` is the defect the banner above owns.
+ */
+function RuleStateChip({ health }: { health: ValueRuleHealthRow | undefined }) {
+  if (!health || health.state === "live") return null;
+  const chip = {
+    disconnected: {
+      label: "changes no score",
+      title:
+        "This rule mints no matcher and no worth, so the scoring system has never heard of it. Reconnect it with the button above.",
+      className: "border-destructive/50 bg-destructive/10 text-destructive",
+      warn: true,
+    },
+    unresolved: {
+      label: "no such value",
+      title:
+        "It scores a dimension value that does not exist on this site, so nothing can ever carry it.",
+      className: "border-destructive/50 bg-destructive/10 text-destructive",
+      warn: true,
+    },
+    shadowed: {
+      label: health.conflict_rule ? `“${health.conflict_rule}” wins` : "another rule wins",
+      title:
+        "Another live rule already sets what this value is worth here. Two multipliers on one value is a contradiction, so the first one keeps it — edit or archive that rule to hand this one the value.",
+      className: "border-warning/40 bg-warning/10 text-warning",
+      warn: true,
+    },
+    held: {
+      label: "waiting on auto-apply",
+      title:
+        "A classification rule stays switched off until you turn auto-apply on, so it can never reclassify your keywords behind your back.",
+      className: "border-border bg-muted/40 text-muted-foreground",
+      warn: false,
+    },
+    no_hits: {
+      label: "no matches yet",
+      title: "Wired up correctly — no keyword on this site has matched it so far.",
+      className: "border-border bg-muted/40 text-muted-foreground",
+      warn: false,
+    },
+    empty: {
+      label: "nothing to apply",
+      title: "The row carries neither a class nor a multiplier, so there is nothing to score.",
+      className: "border-warning/40 bg-warning/10 text-warning",
+      warn: true,
+    },
+  }[health.state];
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]",
+        chip.className,
+      )}
+      title={chip.title}
+    >
+      {chip.warn ? <TriangleAlert className="h-3 w-3" aria-hidden /> : null}
+      {chip.label}
     </span>
   );
 }
@@ -312,6 +381,7 @@ export function MeaningRulesWorkbench() {
   const placeDetectionRef = useRef<HTMLDivElement | null>(null);
   const [flashPlaceDetection, setFlashPlaceDetection] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
+  const [reconnectingRules, setReconnectingRules] = useState(false);
   const goToPlaceDetection = () => {
     placeDetectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     setFlashPlaceDetection(true);
@@ -349,6 +419,17 @@ export function MeaningRulesWorkbench() {
     queryFn: () => listGeoAreaHealth(siteId),
     staleTime: 60_000,
   });
+  /**
+   * 🚨 AND IS EACH RULE ACTUALLY CHANGING A SCORE? The same question, the same
+   * answer for months: a rule was "written" the moment its words and its
+   * multiplier were typed, while the resolver — which reads stamps — had never
+   * heard of it. This read is the rules half of the alarm above.
+   */
+  const ruleHealth = useQuery({
+    queryKey: valueRuleHealthQueryKey(siteId),
+    queryFn: () => listValueRuleHealth(siteId),
+    staleTime: 60_000,
+  });
   const usage = useQuery({
     queryKey: meaningUsageQueryKey(siteId, window.start, window.end),
     queryFn: ({ signal }) => getMeaningUsage(siteId, window.start, window.end, signal),
@@ -378,6 +459,10 @@ export function MeaningRulesWorkbench() {
     (areaHealth.data ?? []).map((row) => [row.area_id, row]),
   );
   const disconnectedAreas = (areaHealth.data ?? []).filter((row) => row.state === "disconnected");
+  const healthByRule = new Map<string, ValueRuleHealthRow>(
+    (ruleHealth.data ?? []).map((row) => [row.rule_id, row]),
+  );
+  const disconnectedRules = (ruleHealth.data ?? []).filter((row) => row.state === "disconnected");
   const geoBandMultiplier = (value: string): number | null => {
     const band = (geoBands.data ?? []).find((b) => b.value === value);
     const raw = band?.config?.multiplier;
@@ -497,6 +582,34 @@ export function MeaningRulesWorkbench() {
       );
     } finally {
       setReconnecting(false);
+    }
+  };
+
+  /** The rules twin of `runReconnect`, and server-side for the same reason: the
+   *  re-mint and the stamping happen in one call, so the page never refetches
+   *  into a half-fixed state. */
+  const runRuleReconnect = async () => {
+    setReconnectingRules(true);
+    try {
+      const result = await reconnectValueRules(siteId);
+      toast.success(
+        result.stamped > 0
+          ? `Reconnected — ${formatCount(result.stamped)} keywords now carry a rule.`
+          : "Reconnected. No keyword matches these rules yet.",
+        result.conflicts > 0
+          ? {
+              description: `${result.conflicts} rule${result.conflicts === 1 ? "" : "s"} score a value another rule already owns, so ${result.conflicts === 1 ? "it was" : "they were"} left alone.`,
+            }
+          : undefined,
+      );
+      await queryClient.invalidateQueries({ queryKey: ["seo"] });
+      await queryClient.invalidateQueries({ queryKey: ["marketing"] });
+    } catch (error) {
+      toast.error(extractErrorMessage(error), {
+        description: "Your value rules were not changed.",
+      });
+    } finally {
+      setReconnectingRules(false);
     }
   };
 
@@ -693,6 +806,41 @@ export function MeaningRulesWorkbench() {
             </p>
           ) : null}
 
+          {/* 🚨 THE LOUDEST STATE IN THIS SECTION, and the exact twin of the one
+              on service areas below. A rule whose words and multiplier are
+              typed reads as finished on every screen; until 2026-08-24 that was
+              all it ever was, because authoring minted no matcher and no worth
+              and the resolver reads stamps. Stated plainly, fixed in one click. */}
+          {disconnectedRules.length > 0 ? (
+            <div className="flex flex-wrap items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2">
+              <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-destructive" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-destructive">
+                  {disconnectedRules.length} value rule
+                  {disconnectedRules.length === 1 ? "" : "s"} change
+                  {disconnectedRules.length === 1 ? "s" : ""} no score
+                </p>
+                <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                  The words and the multipliers are typed —{" "}
+                  {disconnectedRules.map((r) => r.name).join(", ")} — but nothing connects them
+                  to your value tiers, so they count for nothing in what any keyword is worth.
+                  Reconnecting takes one click and changes nothing you typed.
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                disabled={reconnectingRules}
+                onClick={() => void runRuleReconnect()}
+                className="h-7 shrink-0 gap-1 text-xs"
+              >
+                <PlugZap className="h-3.5 w-3.5" aria-hidden />
+                {reconnectingRules ? "Reconnecting…" : "Reconnect them"}
+              </Button>
+            </div>
+          ) : null}
+
           <ul className="space-y-1.5">
             {visibleRules.map((rule) => (
               <li key={rule.id}>
@@ -706,6 +854,7 @@ export function MeaningRulesWorkbench() {
                       {rule.name}
                     </span>
                     {chipFor(rule.id, rule.metadata)}
+                    <RuleStateChip health={healthByRule.get(rule.id)} />
                     <UsageChip
                       usage={usageByRule.get(rule.id)}
                       loading={usage.isPending}
