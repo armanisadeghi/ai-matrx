@@ -99,7 +99,7 @@ export interface GuidelineEditProposal {
   baseVersion: number;
   /** The FULL proposed document, not a patch — what will be saved verbatim. */
   proposedText: string;
-  /** One line: what changed and why. Rendered above the diff. */
+  /** One-line headline only; proposedText is the exact replacement payload. */
   summary: string;
 }
 

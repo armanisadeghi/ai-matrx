@@ -183,7 +183,7 @@ export function AssistsManager() {
                 className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
               />
             )}
-            <AssistChip assist={row} />
+            <AssistChip assist={row} inlineOnMobile={false} />
             {isLowConfidence(row.confidence) && (
               <span className="shrink-0 text-[11px] text-amber-600 dark:text-amber-500">
                 low confidence

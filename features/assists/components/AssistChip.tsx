@@ -36,11 +36,17 @@ export function AssistChip({
   assist,
   className,
   ambient = false,
+  inlineOnMobile = true,
 }: {
   assist: Assist;
   className?: string;
   /** Scarce global presentation: friendly, never alarm-coloured or timed. */
   ambient?: boolean;
+  /**
+   * Keep the expanded card in its parent's mobile scroll chain. The manager's
+   * desktop-shaped table opts out until it has a real mobile row layout.
+   */
+  inlineOnMobile?: boolean;
 }) {
   const { dismissAssist } = useAssistRunner();
   const isMobile = useIsMobile();
@@ -123,7 +129,7 @@ export function AssistChip({
   // keyboard shortened the visual viewport, that left the expanded card
   // clipped and unreachable. Mobile expands inline so the drawer owns the one
   // scroll surface and the original chip disappears naturally while open.
-  if (isMobile) {
+  if (isMobile && inlineOnMobile) {
     return open ? (
       <div
         className="w-full max-w-full overflow-hidden rounded-lg border border-border bg-card"
