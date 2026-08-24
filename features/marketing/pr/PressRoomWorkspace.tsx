@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/select";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
+  evaluateSourceRequest,
   generateStoryAngles,
   type GenerateAnglesResult,
 } from "@/features/marketing/pr/api";
@@ -294,6 +295,24 @@ export default function PressRoomWorkspace() {
       });
     }
   }, [dispatch, siteId, press]);
+
+  // Score/re-score one request row — the recovery door for rows that landed
+  // unscored. One in flight at a time; the refetch pulls the verdict in.
+  const [scoringRequestId, setScoringRequestId] = useState<string | null>(null);
+  const scoreRequest = useCallback(
+    async (requestId: string) => {
+      setScoringRequestId(requestId);
+      try {
+        await evaluateSourceRequest(dispatch, requestId);
+        press.refetch();
+      } catch {
+        // The row is unchanged on failure; the button stays available.
+      } finally {
+        setScoringRequestId(null);
+      }
+    },
+    [dispatch, press],
+  );
   const selectedBrand = brands.data?.find((brand) => brand.id === brandId);
   const selectedSite = sites.data?.find((site) => site.id === siteId);
 
@@ -797,6 +816,8 @@ export default function PressRoomWorkspace() {
                     set({ focus: id ? { kind: "request", id } : null })
                   }
                   onRuleRequest={rulings.ruleRequest}
+                  onScoreRequest={(id) => void scoreRequest(id)}
+                  scoringRequestId={scoringRequestId}
                   action={
                     siteId ? (
                       <IngestRequestsDialog
