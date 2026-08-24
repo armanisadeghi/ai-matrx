@@ -34,6 +34,7 @@ import {
   Users,
 } from "lucide-react";
 
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
 import {
@@ -250,6 +251,16 @@ export interface CrmRowMenu {
   ) => ResolvedContextMenuContext | null;
   /** Hand straight to `NonEditableContextMenu.extraSections`. */
   sections: ContextMenuExtraSection[];
+  /**
+   * Hand straight to `NonEditableContextMenu.getApplicationScope`.
+   *
+   * 🚨 `getApplicationScope` REPLACES `contextData` as the menu's base scope
+   * (`value-resolution.ts`), so a surface that hands v3 its manifest scope and
+   * ALSO resolves per-row content must merge them — otherwise Copy / Export /
+   * AI act on the DOM text of the whole pane instead of the clicked record.
+   * This does that merge: the surface's declared values, plus the row.
+   */
+  getApplicationScope: () => ApplicationScope;
   /** The row the menu is open on — for a surface that needs it directly. */
   target: CrmMenuTarget | null;
 }
@@ -267,6 +278,11 @@ export interface CrmRowMenuOptions<T extends { id: string }> {
    * button can never drift apart and no write path is re-implemented here.
    */
   rowMenu?: (row: T) => ItemMenuConfigInput;
+  /**
+   * The surface's live manifest scope — the SAME builder its
+   * `SurfaceRuntimeProvider` uses. Omit only on a surface with no manifest.
+   */
+  getSurfaceScope?: () => ApplicationScope;
   /** Anything genuinely local to ONE surface (e.g. "Add to outreach list"). */
   extraItems?: (target: CrmMenuTarget) => ContextMenuExtraItem[];
 }
@@ -417,6 +433,13 @@ export function useCrmRowMenu<T extends { id: string }>(
 
   return {
     resolveContextOnOpen,
+    getApplicationScope: () => {
+      const scope: ApplicationScope = { ...(opts.getSurfaceScope?.() ?? {}) };
+      // Empty when the click missed a row — v3's DOM fallback then supplies
+      // the pane's text, which is the right answer for a pane-level open.
+      scope.content = target ? crmMenuContent(target) : "";
+      return scope;
+    },
     target,
     sections: [
       {

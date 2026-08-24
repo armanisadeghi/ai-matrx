@@ -66,9 +66,7 @@ export function AddToOutreachListDialog({
   // the enforcement layer either way — this is early honesty, not the gate.
   const dncIds = useMemo(
     () =>
-      new Set(
-        selectedRows.filter((r) => r.do_not_contact).map((r) => r.id),
-      ),
+      new Set(selectedRows.filter((r) => r.do_not_contact).map((r) => r.id)),
     [selectedRows],
   );
   const enrollIds = useMemo(
@@ -106,7 +104,9 @@ export function AddToOutreachListDialog({
           (skippedExisting > 0
             ? ` · ${skippedExisting.toLocaleString()} already enrolled`
             : "") +
-          (skippedDnc > 0 ? ` · ${skippedDnc.toLocaleString()} DNC skipped` : ""),
+          (skippedDnc > 0
+            ? ` · ${skippedDnc.toLocaleString()} DNC skipped`
+            : ""),
         { action: toastDoor("crm_outreach_list", list.id) },
       );
     } catch (e) {
@@ -163,9 +163,7 @@ export function AddToOutreachListDialog({
             disabled={saving || enrollIds.length === 0 || !ctx || !choice.ready}
           >
             <Megaphone className="h-3.5 w-3.5" />
-            {saving
-              ? "Adding…"
-              : `Add ${enrollIds.length.toLocaleString()}`}
+            {saving ? "Adding…" : `Add ${enrollIds.length.toLocaleString()}`}
           </Button>
         </DialogFooter>
       </DialogContent>

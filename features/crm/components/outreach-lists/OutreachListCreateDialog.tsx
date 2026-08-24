@@ -21,7 +21,10 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { createOutreachList } from "../../outreach-lists/service";
-import type { OutreachListKind, OutreachListRow } from "../../outreach-lists/types";
+import type {
+  OutreachListKind,
+  OutreachListRow,
+} from "../../outreach-lists/types";
 import { LIST_KINDS } from "../../outreach-lists/types";
 import { cn } from "@/lib/utils";
 
@@ -60,7 +63,9 @@ export function OutreachListCreateDialog({
       return;
     }
     if (!orgId) {
-      toast.error("No active organization resolved yet — try again in a moment");
+      toast.error(
+        "No active organization resolved yet — try again in a moment",
+      );
       return;
     }
     setSaving(true);
@@ -132,7 +137,8 @@ export function OutreachListCreateDialog({
           </div>
           <div className="space-y-1">
             <Label htmlFor="outreach list-desc" className="text-xs">
-              Description <span className="text-muted-foreground">(optional)</span>
+              Description{" "}
+              <span className="text-muted-foreground">(optional)</span>
             </Label>
             <Textarea
               id="outreach list-desc"

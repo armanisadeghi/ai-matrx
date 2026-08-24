@@ -231,8 +231,13 @@ export function auditSurfaceScope(
   for (const value of manifest.values) {
     if (baseline.has(value.name)) continue; // floored — never an error
     if (!value.alwaysAvailable) continue; // optional by declaration
+    // EMITTED-vs-EMPTY. A surface that emits the key has wired the value; an
+    // empty string is a legal value for a text control nobody has typed into
+    // (`crm.manifest.ts` declares exactly that for `search_query`). Screaming
+    // at it made a correctly-wired surface look broken every time a search box
+    // was empty — a false alarm is how a real scream gets ignored.
     const present = scope[value.name];
-    if (present === undefined || present === null || present === "") {
+    if (!(value.name in scope) || present === undefined || present === null) {
       warnings.push(
         `declared value "${value.name}" is alwaysAvailable but was not emitted into the scope`,
       );

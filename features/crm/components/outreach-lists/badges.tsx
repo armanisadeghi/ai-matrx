@@ -67,8 +67,7 @@ const MEMBER_STATUS_TONE: Record<MemberStatus, string> = {
   delivered:
     "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
   opened: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  clicked:
-    "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
+  clicked: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
   replied:
     "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   bounced: "bg-destructive/15 text-destructive border-destructive/20",

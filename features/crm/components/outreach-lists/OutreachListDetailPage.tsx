@@ -867,9 +867,12 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
         </div>
       ) : (
         <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
+          {/* No `surfaceName`: this is the DETAIL of one list, and
+              `matrx-user/crm-outreach-lists` declares the LISTS surface's
+              values. Claiming it here would emit a scope this page cannot
+              honestly fill — v3 would (rightly) scream a value-mapping gap. */}
           <NonEditableContextMenu
             sourceFeature="crm"
-            surfaceName={CRM_OUTREACH_LISTS_SURFACE_NAME}
             contentSource={{ type: "raw" }}
             contextData={{ content: "" }}
             resolveContextOnOpen={rowMenu.resolveContextOnOpen}

@@ -104,7 +104,10 @@ export function useOutreachListChoice(open: boolean): OutreachListChoice {
         throw new Error(
           "No organization resolved for the new outreach list. Pick an existing list instead.",
         );
-      return { ...(await createOutreachList({ name, kind, orgId: owner })), members: [] };
+      return {
+        ...(await createOutreachList({ name, kind, orgId: owner })),
+        members: [],
+      };
     }
     const found = lists?.find((row) => row.id === chosenId);
     if (!found) throw new Error("Pick an outreach list first.");
@@ -135,8 +138,15 @@ export function OutreachListPickerFields({
   /** Enter inside the name field submits the caller's action. */
   onSubmitKey?: () => void;
 }) {
-  const { lists, chosenId, setChosenId, creating, setCreating, newName, setNewName } =
-    choice;
+  const {
+    lists,
+    chosenId,
+    setChosenId,
+    creating,
+    setCreating,
+    newName,
+    setNewName,
+  } = choice;
   return (
     <div className="space-y-3">
       {!creating && (

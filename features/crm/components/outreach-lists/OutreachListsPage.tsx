@@ -259,11 +259,38 @@ export function OutreachListsPage() {
       ],
     });
 
+  /**
+   * The surface's live scope — ONE builder for BOTH the Agents chrome and the
+   * right-click menu, so a menu-launched agent receives every value
+   * `crm-outreach-lists.manifest.ts` declares (v3 screams otherwise).
+   */
+  const getScope = () =>
+    createCrmOutreachListsScope({
+      visible_lists: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        list_kind: row.list_kind,
+        status: row.status,
+        member_count: memberCount(row),
+        started_at: row.started_at,
+        updated_at: row.updated_at,
+      })),
+      visible_list_ids: rows.map((row) => row.id),
+      list_count: rows.length,
+      available_organizations: ctx
+        ? Object.entries(ctx.orgNames).map(([id, name]) => ({ id, name }))
+        : undefined,
+      is_loading: isLoading || !ctx,
+      load_error: error ?? undefined,
+    });
+
   // ONE menu for the pane; the clicked row's own "…" verbs (lifecycle,
   // delete) ride in from the SAME `menuFor` config the button uses.
   const rowMenu = useCrmRowMenu<OutreachListWithCount>({
     rows: () => rows,
     toTarget: outreachListMenuTarget,
+    getSurfaceScope: getScope,
     rowMenu: menuFor,
   });
 
@@ -281,27 +308,7 @@ export function OutreachListsPage() {
   return (
     <SurfaceRuntimeProvider
       surfaceName={CRM_OUTREACH_LISTS_SURFACE_NAME}
-      getScope={() =>
-        createCrmOutreachListsScope({
-          visible_lists: rows.map((row) => ({
-            id: row.id,
-            name: row.name,
-            description: row.description,
-            list_kind: row.list_kind,
-            status: row.status,
-            member_count: memberCount(row),
-            started_at: row.started_at,
-            updated_at: row.updated_at,
-          })),
-          visible_list_ids: rows.map((row) => row.id),
-          list_count: rows.length,
-          available_organizations: ctx
-            ? Object.entries(ctx.orgNames).map(([id, name]) => ({ id, name }))
-            : undefined,
-          is_loading: isLoading || !ctx,
-          load_error: error ?? undefined,
-        })
-      }
+      getScope={getScope}
     >
       <div className="flex h-full flex-col overflow-hidden">
         <div className="shrink-0 px-3 pt-[calc(var(--shell-header-h)+0.375rem)]">
@@ -357,7 +364,7 @@ export function OutreachListsPage() {
               sourceFeature="crm"
               surfaceName={CRM_OUTREACH_LISTS_SURFACE_NAME}
               contentSource={{ type: "raw" }}
-              contextData={{ content: "" }}
+              getApplicationScope={rowMenu.getApplicationScope}
               resolveContextOnOpen={rowMenu.resolveContextOnOpen}
               extraSections={rowMenu.sections}
             >

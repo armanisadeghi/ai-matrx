@@ -809,12 +809,41 @@ export function CrmListPage({
     });
   };
 
+  /**
+   * The surface's live scope — ONE builder feeding BOTH the Agents chrome
+   * (SurfaceRuntimeProvider) and the right-click menu. Without handing it to
+   * the menu, v3 screams VALUE MAPPING GAP: every value `crm.manifest.ts`
+   * declares alwaysAvailable would reach a menu-launched agent as nothing.
+   */
+  const getScope = () =>
+    buildCrmListContextData({
+      scopeKind: list.query.scope.kind,
+      scopeOrganizationId:
+        list.query.scope.kind === "orgs"
+          ? (list.query.scope.organizationId ?? null)
+          : null,
+      search: list.query.search,
+      partyKindFilter: list.query.kind,
+      columnFilters: list.query.filters,
+      sortKey: prefs.sort,
+      sortDirection: prefs.direction,
+      page: list.query.page,
+      pageSize: prefs.pageSize,
+      rows: list.rows,
+      totalCount: list.total,
+      scopeCounts: list.counts,
+      orgNames: list.ctx?.orgNames ?? {},
+      isLoading: list.isLoading || list.isFetching,
+      loadError: list.error,
+    });
+
   // ONE right-click menu for the whole pane — the row is resolved from the
   // DOM at open (`data-row-id`), and the row's OWN "…" config rides in as
   // extra sections, so both affordances offer exactly the same verbs.
   const rowMenu = useCrmRowMenu<PartyListRow>({
     rows: () => list.rows,
     toTarget: partyMenuTarget,
+    getSurfaceScope: getScope,
     rowMenu: menuFor,
     extraItems: (target) =>
       inTrash
@@ -1002,28 +1031,7 @@ export function CrmListPage({
   return (
     <SurfaceRuntimeProvider
       surfaceName={surfaceName}
-      getScope={() =>
-        buildCrmListContextData({
-          scopeKind: list.query.scope.kind,
-          scopeOrganizationId:
-            list.query.scope.kind === "orgs"
-              ? (list.query.scope.organizationId ?? null)
-              : null,
-          search: list.query.search,
-          partyKindFilter: list.query.kind,
-          columnFilters: list.query.filters,
-          sortKey: prefs.sort,
-          sortDirection: prefs.direction,
-          page: list.query.page,
-          pageSize: prefs.pageSize,
-          rows: list.rows,
-          totalCount: list.total,
-          scopeCounts: list.counts,
-          orgNames: list.ctx?.orgNames ?? {},
-          isLoading: list.isLoading || list.isFetching,
-          loadError: list.error,
-        })
-      }
+      getScope={getScope}
       getWriteHandlers={buildCrmWriteHandlers}
     >
       <div className="flex h-full flex-col overflow-hidden">
@@ -1129,7 +1137,7 @@ export function CrmListPage({
             sourceFeature="crm"
             surfaceName={surfaceName}
             contentSource={{ type: "raw" }}
-            contextData={{ content: "" }}
+            getApplicationScope={rowMenu.getApplicationScope}
             resolveContextOnOpen={rowMenu.resolveContextOnOpen}
             extraSections={rowMenu.sections}
           >

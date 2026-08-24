@@ -24,7 +24,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import type { CrmQueryContext, PartyKindFilter, PartyListQuery } from "../../types";
+import type {
+  CrmQueryContext,
+  PartyKindFilter,
+  PartyListQuery,
+} from "../../types";
 import type { OutreachListRow } from "../../outreach-lists/types";
 import {
   addMembersByPartyIds,
@@ -143,9 +147,7 @@ export function AddMembersDialog({
         } catch (e) {
           if (!cancelled) {
             setPreview(null);
-            toast.error(
-              e instanceof Error ? e.message : "Preview failed",
-            );
+            toast.error(e instanceof Error ? e.message : "Preview failed");
           }
         } finally {
           if (!cancelled) setPreviewing(false);
@@ -254,7 +256,8 @@ export function AddMembersDialog({
                   >
                     /crm
                   </Link>{" "}
-                  and press Save view — then enroll everyone it matches from here.
+                  and press Save view — then enroll everyone it matches from
+                  here.
                 </div>
               ) : (
                 <div className="max-h-44 space-y-1 overflow-y-auto pr-0.5">
@@ -291,47 +294,51 @@ export function AddMembersDialog({
             </div>
           ) : (
             <>
-            <div className="space-y-1">
-              <Label className="text-xs">Record kind</Label>
-              <div className="flex gap-1.5">
-                {(
-                  [
-                    { value: "person", label: "People", icon: Contact },
-                    { value: "organization", label: "Companies", icon: Building2 },
-                    { value: "all", label: "Both", icon: Users },
-                  ] as const
-                ).map(({ value, label, icon: Icon }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setKind(value)}
-                    className={cn(
-                      "flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
-                      kind === value
-                        ? "border-primary/40 bg-accent text-foreground"
-                        : "border-border text-muted-foreground hover:bg-accent/50",
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {label}
-                  </button>
-                ))}
+              <div className="space-y-1">
+                <Label className="text-xs">Record kind</Label>
+                <div className="flex gap-1.5">
+                  {(
+                    [
+                      { value: "person", label: "People", icon: Contact },
+                      {
+                        value: "organization",
+                        label: "Companies",
+                        icon: Building2,
+                      },
+                      { value: "all", label: "Both", icon: Users },
+                    ] as const
+                  ).map(({ value, label, icon: Icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setKind(value)}
+                      className={cn(
+                        "flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                        kind === value
+                          ? "border-primary/40 bg-accent text-foreground"
+                          : "border-border text-muted-foreground hover:bg-accent/50",
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="member-filter-search" className="text-xs">
-                Name / title / domain contains{" "}
-                <span className="text-muted-foreground">(optional)</span>
-              </Label>
-              <Input
-                id="member-filter-search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="e.g. oncology, VP, acme.com"
-                className="h-9 text-sm"
-              />
-            </div>
+              <div className="space-y-1">
+                <Label htmlFor="member-filter-search" className="text-xs">
+                  Name / title / domain contains{" "}
+                  <span className="text-muted-foreground">(optional)</span>
+                </Label>
+                <Input
+                  id="member-filter-search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="e.g. oncology, VP, acme.com"
+                  className="h-9 text-sm"
+                />
+              </div>
             </>
           )}
 
