@@ -1,15 +1,42 @@
 "use client";
 
 /**
- * Small, reusable URL-state primitive for view controls.
+ * 🚨 THE canonical URL-state core. Every surface that puts view state in the
+ * address bar goes through here — `pnpm check:url-state` flags anything that
+ * does not.
  *
  * The URL is the source of truth: refresh, copied links, and browser
  * back/forward all reproduce the same value. Discrete controls push a history
- * entry by default; high-frequency text inputs can opt into `replace` so a
- * single search does not create one entry per keystroke.
+ * entry by default; high-frequency text inputs opt into `replace` so a single
+ * search does not create one entry per keystroke.
+ *
+ * WHY A RAW `history.pushState` IS A BUG, not just a style choice. It fires no
+ * event and no popstate, so every OTHER url-backed control on the page keeps
+ * rendering stale values until something unrelated re-renders it.
+ * `commitUrlParams` dispatches `matrx:url-state`, which is what
+ * `useUrlSearchParams` subscribes to. Measured 2026-08-25: 33 hand-rolled
+ * writes across 21 files, every one of them silent.
+ *
+ * PICK THE RIGHT ONE:
+ *   one control owns one parameter       → `useUrlState` + a codec
+ *   a cluster of values moving together  → `useMirroredUrlState`
+ *   a MatrxDataTable                     → `lib/data-table/useTableUrlState`
+ *   a bespoke grid                       → compose `useMirroredUrlState`
+ *                                          (see features/data-tables)
+ *
+ * Codecs below cover string / enum / boolean / positive-integer / JSON, and all
+ * of them OMIT the default rather than writing it, so a pristine surface has a
+ * clean URL and a link carries only what the user actually chose.
  */
 
-import { useMemo, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 const URL_STATE_EVENT = "matrx:url-state";
 
@@ -178,4 +205,103 @@ export function jsonUrlCodec<T>(
         ? null
         : JSON.stringify(value),
   };
+}
+
+/**
+ * Mirror a whole view-state OBJECT into the URL, in both directions.
+ *
+ * THE PATTERN 18 FILES WERE HAND-ROLLING. `useUrlState` is right when one
+ * control owns one parameter. It is the wrong shape when a surface holds a
+ * cluster of related values (search + sort + filters + page) that must move
+ * together, be seeded from the URL on first render, and follow Back/Forward.
+ * Every surface that needed that wrote its own `history.pushState` — and NONE
+ * of them dispatched the sync event, so any other URL-backed control on the
+ * same page silently kept showing stale values after they wrote.
+ *
+ * 🚨 THE LOOP IS BROKEN BY VALUE, NEVER BY BOOKKEEPING. The obvious guard —
+ * remember the last URL you wrote and ignore anything matching it — looks
+ * equivalent and is not: pressing Forward to a view already visited produces a
+ * URL you did indeed write before, so the guard swallows it and the address bar
+ * moves while the surface does not. Compare the DECODED value to the current
+ * one instead; your own write compares equal and stops.
+ *
+ * Seeding happens in the `useState` initialiser, not an effect, so the first
+ * render already shows the requested view rather than flashing the default and
+ * fetching the wrong page before correcting itself.
+ */
+export interface MirroredUrlStateOptions<T> {
+  /** Decode the whole value from the query string. Must never throw. */
+  parse: (params: URLSearchParams) => T;
+  /** Encode it; `null` for a key means "omit", which keeps defaults out of the URL. */
+  toParams: (value: T) => Record<string, string | null>;
+  /** Value equality — what stops the two directions fighting. */
+  isSame: (a: T, b: T) => boolean;
+  /** Keys that REPLACE instead of pushing (search boxes, dragged sliders). */
+  textKeys?: readonly string[];
+  /**
+   * Changing this clears the mirrored state and its parameters — for when the
+   * surface switches to a different subject and the old view would be a lie.
+   */
+  resetKey?: string;
+}
+
+export function useMirroredUrlState<T>(
+  options: MirroredUrlStateOptions<T>,
+): readonly [T, (updater: T | ((prev: T) => T)) => void] {
+  const { parse, toParams, isSame, textKeys = [], resetKey } = options;
+  const params = useUrlSearchParams();
+
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
+  const [value, setValue] = useState<T>(() =>
+    parse(
+      typeof window === "undefined"
+        ? new URLSearchParams()
+        : new URLSearchParams(window.location.search),
+    ),
+  );
+
+  // value → URL
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const current = new URLSearchParams(window.location.search);
+    const patch = optionsRef.current.toParams(value);
+
+    const next = new URLSearchParams(current);
+    for (const [key, v] of Object.entries(patch)) {
+      if (v === null || v === "") next.delete(key);
+      else next.set(key, v);
+    }
+    if (next.toString() === current.toString()) return;
+
+    commitUrlParams(patch, historyModeForParamChange(current, next, textKeys));
+    // `textKeys` is a literal in every caller; `value` is the real trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  // URL → value (Back/Forward, a pasted link, another control writing)
+  useEffect(() => {
+    const fromUrl = optionsRef.current.parse(params);
+    setValue((prev) => (optionsRef.current.isSame(prev, fromUrl) ? prev : fromUrl));
+  }, [params]);
+
+  const previousResetKey = useRef(resetKey);
+  useEffect(() => {
+    if (previousResetKey.current === resetKey) return;
+    previousResetKey.current = resetKey;
+    const cleared = optionsRef.current.parse(new URLSearchParams());
+    setValue(cleared);
+    commitUrlParams(optionsRef.current.toParams(cleared), "replace");
+  }, [resetKey]);
+
+  const update = useCallback((updater: T | ((prev: T) => T)) => {
+    setValue((prev) =>
+      typeof updater === "function"
+        ? (updater as (p: T) => T)(prev)
+        : updater,
+    );
+  }, []);
+
+  return [value, update] as const;
 }

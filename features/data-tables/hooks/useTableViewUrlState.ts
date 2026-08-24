@@ -29,13 +29,9 @@
  */
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo } from "react";
 
-import {
-  commitUrlParams,
-  historyModeForParamChange,
-  useUrlSearchParams,
-} from "@/lib/url-state/useUrlState";
+import { useMirroredUrlState } from "@/lib/url-state/useUrlState";
 
 import type { ColumnFilterMap } from "../column-filters";
 import {
@@ -81,73 +77,26 @@ export function useTableViewUrlState(options: {
     [options.defaultPageSize],
   );
 
-  const params = useUrlSearchParams();
-
-  // Seeded from the URL so the FIRST render already shows the requested view.
-  // Reading it in an effect instead would render the default view for a frame
-  // and fetch the wrong page before correcting itself.
-  const [state, setState] = useState<TableViewState>(() =>
-    parseTableViewParams(
-      typeof window === "undefined"
-        ? new URLSearchParams()
-        : new URLSearchParams(window.location.search),
-      defaults,
+  // The whole two-way mirror is `useMirroredUrlState` — the canonical
+  // primitive. This hook only supplies the codec and names the fields.
+  const [state, patchWhole] = useMirroredUrlState<TableViewState>({
+    parse: useCallback(
+      (p: URLSearchParams) => parseTableViewParams(p, defaults),
+      [defaults],
     ),
-  );
-
-  // ── state → URL ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const current = new URLSearchParams(window.location.search);
-    const patch = tableViewParamPatch(state, defaults);
-
-    const next = new URLSearchParams(current);
-    for (const [key, value] of Object.entries(patch)) {
-      if (value === null) next.delete(key);
-      else next.set(key, value);
-    }
-    if (next.toString() === current.toString()) return;
-
-    commitUrlParams(
-      patch,
-      historyModeForParamChange(current, next, TABLE_VIEW_TEXT_KEYS),
-    );
-  }, [state, defaults]);
-
-  // ── URL → state (Back/Forward, pasted link) ──────────────────────────────
-  //
-  // THE LOOP IS BROKEN BY VALUE, NOT BY BOOKKEEPING. `sameTableView` returns
-  // the previous object unchanged when the URL already describes the current
-  // view, so our own write lands here, compares equal, and stops — no state
-  // change, no re-render, no second write.
-  //
-  // An earlier version instead remembered the last URL string it wrote and
-  // skipped anything matching it. That looked equivalent and was not: pressing
-  // Forward to a view the user had ALREADY visited produced a URL we had indeed
-  // written before, so the guard swallowed it — the address bar moved and the
-  // grid did not. Identity of a past write says nothing about whether the
-  // current URL still matches the current state.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const fromUrl = parseTableViewParams(params, defaults);
-    setState((prev) => (sameTableView(prev, fromUrl) ? prev : fromUrl));
-  }, [params, defaults]);
-
-  // ── switching tables clears the view ─────────────────────────────────────
-  const previousResetKey = useRef(options.resetKey);
-  useEffect(() => {
-    if (previousResetKey.current === options.resetKey) return;
-    previousResetKey.current = options.resetKey;
-    const cleared = parseTableViewParams(new URLSearchParams(), defaults);
-    setState(cleared);
-    commitUrlParams(tableViewParamPatch(cleared, defaults), "replace");
-  }, [options.resetKey, defaults]);
+    toParams: useCallback(
+      (v: TableViewState) => tableViewParamPatch(v, defaults),
+      [defaults],
+    ),
+    isSame: sameTableView,
+    textKeys: TABLE_VIEW_TEXT_KEYS,
+    resetKey: options.resetKey,
+  });
 
   const patchState = useCallback(
     (patch: Partial<TableViewState>) =>
-      setState((prev) => ({ ...prev, ...patch })),
-    [],
+      patchWhole((prev) => ({ ...prev, ...patch })),
+    [patchWhole],
   );
 
   return {
@@ -182,8 +131,8 @@ export function useTableViewUrlState(options: {
       [patchState],
     ),
     resetView: useCallback(() => {
-      setState(parseTableViewParams(new URLSearchParams(), defaults));
-    }, [defaults]),
+      patchWhole(parseTableViewParams(new URLSearchParams(), defaults));
+    }, [defaults, patchWhole]),
     isViewCustomized:
       state.search.trim() !== "" ||
       state.sortField !== null ||

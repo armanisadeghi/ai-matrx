@@ -216,6 +216,7 @@ if $STRICT; then
         # repo instead of the DB (Arman, 2026-08-16: the codebase is the
         # CONNECTION, never the definition). Advisory in both modes; the
         # allowlist is a reason-required ratchet whose count only goes down.
+        "URL state written outside the canonical primitive|pnpm check:url-state"
         "Retired-database project id handed to agents|pnpm check:retired-db-ref"
         "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
         # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md
@@ -369,6 +370,7 @@ else
         # repo instead of the DB (Arman, 2026-08-16: the codebase is the
         # CONNECTION, never the definition). Advisory in both modes; the
         # allowlist is a reason-required ratchet whose count only goes down.
+        "URL state written outside the canonical primitive|pnpm check:url-state"
         "Retired-database project id handed to agents|pnpm check:retired-db-ref"
         "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
         # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md

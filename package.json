@@ -137,6 +137,7 @@
     "check:sync-fields:live": "tsx scripts/check-agent-sync-fields.ts --live",
     "check:sync-fields:strict": "tsx scripts/check-agent-sync-fields.ts --strict",
     "check:sync-fields:refresh": "tsx scripts/check-agent-sync-fields.ts --refresh",
+    "check:url-state": "npx tsx scripts/check-url-state.ts",
     "check:retired-db-ref": "npx tsx scripts/check-retired-db-ref.ts",
     "check:release-gates": "bash scripts/run-release-gates.sh",
     "check:release-gates:advisory": "bash scripts/run-release-gates.sh --advisory",
