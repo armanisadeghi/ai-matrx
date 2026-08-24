@@ -191,6 +191,46 @@ export interface ContextMenuEntityRef {
   isOwner?: boolean;
 }
 
+/**
+ * RESERVED KEY — the per-row entity a delegated menu resolves at open.
+ *
+ * 🚨 THE PER-ROW ENTITY RULE. `entity` is a menu-level prop, and a table wires
+ * ONE menu for the whole pane (`resolveContextOnOpen`), so before 2026-08-24 a
+ * table menu could not offer a correct **Attach To / Share** — the actions
+ * targeted the pane's entity (or nothing) no matter which row was clicked.
+ * Now `resolveContextOnOpen` may return this key alongside its values and the
+ * shell rebuilds the entity-bound actions from it:
+ *
+ * ```ts
+ * resolveContextOnOpen={(target) => {
+ *   const row = rowFor(target);
+ *   if (!row) return null;
+ *   return {
+ *     content: row.text,
+ *     [CONTEXT_MENU_ENTITY_KEY]: {
+ *       type: "seo_keyword", id: row.id, title: row.phrase,
+ *     },
+ *   };
+ * }}
+ * ```
+ *
+ * Semantics: key ABSENT → the `entity` prop stands (a surface with ONE entity
+ * keeps working untouched); key PRESENT with a value → that row's entity wins;
+ * key PRESENT and `null` → this target has no entity, so Attach/Share hide
+ * rather than target the wrong record. The key never leaks into the
+ * `ApplicationScope` as a value (`SKIP_MERGE_KEYS`, `value-resolution.ts`).
+ */
+export const CONTEXT_MENU_ENTITY_KEY = "__entity";
+
+/**
+ * What `resolveContextOnOpen` returns: the target's values, plus the optional
+ * reserved per-row `__entity`.
+ */
+export interface ResolvedContextMenuContext {
+  [CONTEXT_MENU_ENTITY_KEY]?: ContextMenuEntityRef | null;
+  [key: string]: unknown;
+}
+
 // ---------------------------------------------------------------------------
 // Core props — shared by the shell and both wrappers.
 // ---------------------------------------------------------------------------
@@ -231,12 +271,16 @@ export interface ContextMenuV3CoreProps {
   contextData?: ContextMenuContextData;
   /**
    * Single-instance delegation: one menu serving many targets (e.g. a whole
-   * conversation). Called with the right-clicked element before the menu
-   * opens; the returned per-target context is merged over `contextData`.
+   * conversation, or every row of a table). Called with the right-clicked
+   * element before the menu opens; the returned per-target context is merged
+   * over `contextData`.
+   *
+   * May also carry the reserved `[CONTEXT_MENU_ENTITY_KEY]` so the row's OWN
+   * entity drives Attach To / Share — see `CONTEXT_MENU_ENTITY_KEY`.
    */
   resolveContextOnOpen?: (
     target: HTMLElement | null,
-  ) => Record<string, unknown> | null;
+  ) => ResolvedContextMenuContext | null;
   /**
    * Rich-document content source for this surface's primary content (note /
    * chat-message / artifact / …). Drives Copy-as variants, Export, and Convert
@@ -244,7 +288,12 @@ export interface ContextMenuV3CoreProps {
    * to the right parent. Defaults to `{ type: "raw" }`.
    */
   contentSource?: ContentSource;
-  /** The entity this content belongs to — enables Attach To + Share. */
+  /**
+   * The entity this content belongs to — enables Attach To + Share. Correct
+   * whenever the surface has ONE entity. A delegated menu (one menu, many
+   * rows) supplies the per-row entity through `resolveContextOnOpen` instead
+   * (`CONTEXT_MENU_ENTITY_KEY`), which overrides this prop for that open.
+   */
   entity?: ContextMenuEntityRef;
   /**
    * Rich-document action ids to EXCLUDE from the menu's Copy-as / Export /
@@ -378,9 +427,13 @@ export interface MenuContentProps {
   surfaceName?: string;
   menuVersion: number;
   getApplicationScope?: () => ApplicationScope;
-  /** Effective contextData — `resolveContextOnOpen` already merged by the shell. */
+  /**
+   * Effective contextData — `resolveContextOnOpen` already merged by the shell,
+   * with the reserved `__entity` key stripped back out.
+   */
   contextData: Record<string, unknown>;
   contentSource?: ContentSource;
+  /** EFFECTIVE entity for this open: the resolved per-row one, else the prop. */
   entity?: ContextMenuEntityRef;
   excludedRichActions?: string[];
   richDocCtxExtras?: Pick<

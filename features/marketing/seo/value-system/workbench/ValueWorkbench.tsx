@@ -141,7 +141,9 @@ import { ClassCell } from "@/features/marketing/seo/keyword-workbench/components
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
 import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
+  keywordEntityRef,
   useKeywordAssignSurfaces,
   useKeywordMenuSection,
 } from "@/features/marketing/seo/keyword/keyword-actions";
@@ -1022,6 +1024,14 @@ export function ValueWorkbench() {
           clickedRow.current = row;
           if (!row) return null;
           return {
+            // ONE menu serves every row, so the ROW's entity — not the pane's —
+            // owns Attach To. v3 rebuilds the entity actions from this key
+            // (`CONTEXT_MENU_ENTITY_KEY`); Share stays hidden because a keyword
+            // is not a shareable resource, which is honest rather than fake.
+            [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
+              phrase: row.keyword,
+              keywordId: row.keyword_id,
+            }),
             content: [
               `Keyword: ${row.keyword}`,
               `Level: ${bandMetaFor(metas, row.value_band).label}`,

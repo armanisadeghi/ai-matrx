@@ -27,9 +27,15 @@ import {
 } from "@/features/surfaces/manifests/_baseline.manifest";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import type { SelectionRange } from "./utils/selection-tracking";
+import { CONTEXT_MENU_ENTITY_KEY } from "./types";
 
-/** Keys the menu manages internally and must not leak into the scope as values. */
-const SKIP_MERGE_KEYS = new Set(["contextFilter"]);
+/**
+ * Keys the menu manages internally and must not leak into the scope as values.
+ * `__entity` is the reserved per-row entity (`utils/per-row-entity.ts`) — the
+ * shell already strips it; this is the belt for a surface that puts it in
+ * static `contextData`.
+ */
+const SKIP_MERGE_KEYS = new Set(["contextFilter", CONTEXT_MENU_ENTITY_KEY]);
 
 const isDev = process.env.NODE_ENV !== "production";
 

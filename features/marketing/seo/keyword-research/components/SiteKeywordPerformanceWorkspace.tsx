@@ -66,7 +66,9 @@ import { buildSiteKeywordsScope } from "@/features/marketing/lib/scopes/site-key
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
 import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
+  keywordEntityRef,
   useKeywordAssignSurfaces,
   useKeywordMenuSection,
 } from "@/features/marketing/seo/keyword/keyword-actions";
@@ -678,6 +680,12 @@ export function SiteKeywordPerformanceWorkspace() {
             content: humanKeywordPerformanceRow(row),
             keyword: row.query ?? "",
             keyword_id: row.keyword_id ?? "",
+            // The RIGHT-CLICKED row owns Attach To — one menu, N rows, so the
+            // pane can never be the target (`CONTEXT_MENU_ENTITY_KEY`).
+            [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
+              phrase: row.query ?? "",
+              keywordId: row.keyword_id ?? null,
+            }),
           };
         }}
         extraSections={[keywordSection]}

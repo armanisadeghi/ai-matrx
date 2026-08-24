@@ -37,6 +37,7 @@ import {
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import type {
+  ContextMenuEntityRef,
   ContextMenuExtraItem,
   ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
@@ -91,6 +92,28 @@ export interface KeywordAssignSurfaces {
    * itself mid-assignment (caught live on the Value Workbench, 2026-08-24).
    */
   node: ReactNode;
+}
+
+/**
+ * THE ROW'S OWN ENTITY — what a delegated table menu hands v3 so **Attach To**
+ * targets the keyword that was right-clicked, not the pane.
+ *
+ * Return this under `CONTEXT_MENU_ENTITY_KEY` from `resolveContextOnOpen`:
+ *
+ * ```ts
+ * return { content: …, [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef(row) };
+ * ```
+ *
+ * `null` for a query with no library keyword — there is no record to attach to,
+ * so v3 hides Attach rather than offering an item that writes a broken edge.
+ * No `resourceType`: a keyword is not a shareable resource, so Share correctly
+ * stays hidden (an absent item, never a fake one).
+ */
+export function keywordEntityRef(
+  row: KeywordMenuRow | null,
+): ContextMenuEntityRef | null {
+  if (!row?.keywordId) return null;
+  return { type: "seo_keyword", id: row.keywordId, title: row.phrase };
 }
 
 /**

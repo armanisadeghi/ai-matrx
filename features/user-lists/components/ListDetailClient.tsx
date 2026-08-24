@@ -12,7 +12,10 @@ import {
 } from "@/features/surfaces/manifests/lists.manifest";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
 import { buildListSurfaceWriteHandlers } from "../surface-write-handlers";
 import {
   LIST_GROUP_DOM_ATTR,
@@ -247,9 +250,19 @@ export function ListDetailClient({
     const next = { item: itemId ? findItemById(itemId) : null, group };
     menuTargetRef.current = next;
     setMenuTarget(next);
-    // Nothing is merged over `contextData` here — the surface values already
-    // flow through `getApplicationScope`, which reads the same ref.
-    return null;
+    // No VALUES are merged over `contextData` here — the surface values already
+    // flow through `getApplicationScope`, which reads the same ref. What IS
+    // returned is the right-clicked ITEM's entity, so "Attach To" targets the
+    // item the user actually clicked; right-clicking anywhere else omits the
+    // key and the menu-level entity (the list itself) stands.
+    if (!next.item) return null;
+    return {
+      [CONTEXT_MENU_ENTITY_KEY]: {
+        type: "udt_structured_list_items" as const,
+        id: next.item.id,
+        title: next.item.label || "Untitled item",
+      },
+    };
   };
 
   const menuSections: ContextMenuExtraSection[] = (() => {

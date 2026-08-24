@@ -53,7 +53,12 @@ import {
   DEFAULT_MENU_LAYOUT,
   type ContextMenuV3Props,
   type MenuContentProps,
+  type ResolvedContextMenuContext,
 } from "./types";
+import {
+  mergeResolvedContextData,
+  resolveEffectiveEntity,
+} from "./utils/per-row-entity";
 
 // Re-exported for the few callers that read the revision (admin tooling).
 export { CANONICAL_MENU_VERSION_V3 };
@@ -200,10 +205,8 @@ export function ContextMenuV3({
   // delegation). State, not a ref — it's written only at right-click (which
   // re-renders to open the menu anyway), and the lazy MenuContent must read it
   // during render to build the effective scope (a ref read in render is banned).
-  const [resolvedContext, setResolvedContext] = useState<Record<
-    string,
-    unknown
-  > | null>(null);
+  const [resolvedContext, setResolvedContext] =
+    useState<ResolvedContextMenuContext | null>(null);
   // Set by MenuContent (via suppressSelectionRestore) when an action opens an
   // overlay that should keep focus — so closing the menu doesn't yank it back.
   const skipSelectionRestoreRef = useRef(false);
@@ -229,11 +232,19 @@ export function ContextMenuV3({
     : null;
   const widgetHandleId = useOptionalWidgetHandle(widgetHandle);
 
-  // Effective contextData for THIS invocation: static prop + per-target merge.
-  const getEffectiveContextData = (): Record<string, unknown> => {
-    const base = (contextData ?? {}) as Record<string, unknown>;
-    return resolvedContext ? { ...base, ...resolvedContext } : base;
-  };
+  // Effective contextData for THIS invocation: static prop + per-target merge,
+  // minus the reserved `__entity` key (which is not a value — see below).
+  const getEffectiveContextData = (): Record<string, unknown> =>
+    mergeResolvedContextData(
+      contextData as Record<string, unknown> | undefined,
+      resolvedContext,
+    );
+
+  // Effective entity for THIS invocation. ONE menu serves N rows, so the row
+  // the user actually right-clicked — not the pane — must own Attach To /
+  // Share. `resolveContextOnOpen` supplies it via `CONTEXT_MENU_ENTITY_KEY`;
+  // when it doesn't, the menu-level `entity` prop stands unchanged.
+  const effectiveEntity = resolveEffectiveEntity(entity, resolvedContext);
 
   // ── Selection tracking — SCOPED to this instance's wrapped subtree ───────
   // The listener is document-global (that's the only selectionchange there
@@ -580,7 +591,7 @@ export function ContextMenuV3({
     getApplicationScope,
     contextData: getEffectiveContextData(),
     contentSource,
-    entity,
+    entity: effectiveEntity,
     excludedRichActions,
     richDocCtxExtras,
     selectedText,
