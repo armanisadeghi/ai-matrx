@@ -126,7 +126,9 @@ Per-panel rows live in [`docs/inventory/`](./docs/inventory/) (code · notes-tas
 
 ### Systemic platform gaps (build once, roll out — biggest leverage)
 
-- **[S1/S2/S3 · P1] Surfaces + Agents/Help header controls + help-context = 0% across the ENTIRE fleet.** Build the two standard header controls (Agents list / Help side-panel) into `WindowPanel`, register every panel as a surface, wire KV-context + page-awareness. First adopters (already agent-bound): agent panels, scraperWindow (the only existing surface), workingDocumentWindow, notesWindow.
+- **[S1/S2/S3 · P1] Surfaces + Agents/Help header controls + help-context ≈ 0% across the fleet.** Build the two standard header controls (Agents list / Help side-panel) into `WindowPanel`, register every panel as a surface, wire KV-context + page-awareness. First adopters (already agent-bound): agent panels, scraperWindow, workingDocumentWindow, notesWindow.
+  - **Declared so far (2026-08-24):** `canvasViewerWindow` → `matrx-user/canvas-viewer` · **`tableViewerWindow` → `matrx-user/table-viewer`** · **`DocumentsWorkspace` (the shell inside `workingDocumentWindow`, the context drawer, run-controls and canvas) → `matrx-user/documents-workspace`**. Each has a manifest in `features/surfaces/manifests/`, `ui_surface` + value rows, a `SurfaceRuntimeProvider` emitter, and passes `surfaceName` to its `NonEditableContextMenu`. Follow the `surface-authoring` skill for the rest.
+  - 🚨 **THE `asChild` TRAP, measured live 2026-08-24:** put the `SurfaceRuntimeProvider` AROUND the menu, never between the menu and its child. `ContextMenuTrigger asChild` clones its ONE child and hands it the trigger ref + `onContextMenu`; a non-DOM component in that slot swallows them and the window's right-click menu silently stops opening.
 
 ### Orphans / unreachable — delete or wire (`remove-window-panel`)
 
