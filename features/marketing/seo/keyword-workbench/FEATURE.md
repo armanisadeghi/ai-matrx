@@ -12,8 +12,18 @@ timestamp: 2026-08-24
 (sibling sub-views on the same route: `performance`, `classification` — the
 latter folds into this one at parity, C18).
 
+> 🚨 **The GRID here is not this feature's.** Since 2026-08-24 the workbench
+> renders `<KeywordTable>` — see
+> [`../keyword-table/FEATURE.md`](../keyword-table/FEATURE.md). Its rows, its
+> columns, its sort/filter dialect and its URL state are shared with every
+> other keyword list in the product (**P26 + P28 — ONE TABLE**). What lives in
+> this folder is the workbench's own chrome: saved-view tabs, the right-click
+> menu, "assign everything these filters match", and the cells and panels the
+> shared table renders. **Never add a column or a filter here — add it to the
+> shared column builder, where every surface gets it.**
+
 **Cross-repo SoR:** `common-docs/systems/marketing/seo/seo-keywords/value-system.md`
-§ THE KEYWORD WORKBENCH · principles **P23–P26** in `keyword-system-decisions.md`
+§ THE KEYWORD WORKBENCH · principles **P23–P28** in `keyword-system-decisions.md`
 · Arman's words in `VISION.md` § "Assignment, tables, and panels" · the campaign
 plan in `common-docs/projects/keyword-intelligence-convergence/PLAN.md` (C13/C14).
 
@@ -24,7 +34,8 @@ plan in `common-docs/projects/keyword-intelligence-convergence/PLAN.md` (C13/C14
 | **P23** | Every picker takes new input | The value picker's footer offers `Create "what you typed"`, and naming a dimension that does not exist creates it with its first value. A platform vocabulary refuses with a sentence and a door, never a grey-out. |
 | **P24** | The WHY is captured at the moment of assignment | One reason box on every assignment, single or bulk, stored ON the stamp. It is the training material an AI later learns the pattern from. |
 | **P25** | Never lose the view | "See pages for this keyword" and "Why this score" open as floating panels beside the table you built. |
-| **P26** | The table is the user's | Any dimension can be a column; every column sorts and filters; the arrangement saves as a named tab; and the why is an (i), never a novel in a cell. |
+| **P26** | The table is the user's — ONE TABLE | Any dimension can be a column; every column sorts and filters; the arrangement saves as a named tab; and the why is an (i), never a novel in a cell. Extended 2026-08-24: this is now literally the SAME table component every keyword list uses, and the Columns chooser adds AND removes core columns too. |
+| **P28** | One data access system | Rows come from `useKeywordRows` → `seo.gsc_perf_breakdown`. There is no second keyword query in the product. |
 
 Plus one negative requirement that shapes the layout more than any of them:
 *"the current page is far too busy at the top with things that add no value…
@@ -202,6 +213,31 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
   classification window, outreach-list members). Repaired the workbench's
   stale raw-value column-filter adapter too: Service, Class, and dimension
   options now select, clear, and remain selected through URL navigation.
+- **2026-08-24** — The workbench's action set stopped being the workbench's.
+  `features/marketing/seo/keyword/keyword-actions.tsx` now holds ONE definition
+  of "what you can do to a keyword row" — `useKeywordAssignSurfaces` (this
+  feature's own `AssignPanel` / `ServiceAssignPanel` + the value system's
+  `RulingDialog`, so still no second write path) plus the v3 menu section — and
+  the Keyword Intelligence window, the Value Workbench and the Performance tab
+  all mount it. Adding the set to a new keyword surface is two hook calls; do
+  not re-implement it beside a new table.
+- **2026-08-24** — **P26 + P28: the grid moved out.** The topic tree's keyword
+  queues turned out to be hand-rolled `<div>` lists — 26,458 unplaced keywords
+  with no table header, no sortable column, no filter and none of these
+  dimension columns. Rather than copy the workbench, the workbench's grid was
+  EXTRACTED to `features/marketing/seo/keyword-table/` (one data access, one
+  column builder, one URL dialect) and all three surfaces now render it. This
+  file keeps the saved-view tabs, the right-click menu and "assign all
+  matching". Gained on the way: real server-side range filters on Clicks /
+  Impressions / Position, a server-side Level filter reading the site's own
+  band vocabulary, and a Columns chooser that removes core columns as well as
+  adding them. Live-verified on All Green (27,517 keywords) — saved a view,
+  reloaded it, and confirmed the arrangement restored.
+  Two stale-closure defects were found and fixed during that verification: with
+  the React Compiler on, memoized handlers closed over an older
+  `useSearchParams()`, so the sort header's second click (asc → desc) silently
+  no-opped and opening a saved view did nothing. Both now read the LIVE query
+  string (`liveSearchParams`).
 - **2026-08-24** — **THE SERVICE COLUMN** (Arman's "that's gone"). Service is a
   first-class column next to the keyword; the cell places, the picker invents,
   bulk places the checked rows and everything-matching with a reason, and the

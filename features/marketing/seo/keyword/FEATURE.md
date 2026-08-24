@@ -17,6 +17,8 @@ keyword payload for AI — call `buildKeywordBrief`.**
 | `KeywordInput`          | `KeywordInput.tsx`                                                                                     | THE canonical keyword input: live library resolution, data chips underneath, contextual + library suggestion dropdown (source-tagged: GSC / Analyzer / Library), Keyword Intelligence launcher. Controlled; callers own save. Repeat-entry surfaces use `onSubmit` + `showDetails={false}` for type→Enter batching without a second-line lookup jump. |
 | `KeywordIntelPanel`     | `KeywordIntelPanel.tsx`                                                                                | **THE canonical per-keyword dossier.** It owns pipeline status, first-run/rerun UX, result tabs, provider evidence, and drill-down navigation. The live six-tab build is transitional; the contract below is authoritative.                                                                                                                           |
 | `keywordWindow` overlay | `features/window-panels/windows/seo/KeywordWindow.tsx` + `features/overlays/openers/keywordWindow.tsx` | The panel as a floating window. Open from anywhere: `useOpenKeywordWindow({ phrase, organizationId, siteId, pageId, brandId, tab })`. A site binding always travels with its owning organization; site-scoped compute tabs stay off without both. `?panels=keyword`.                                                                                  |
+| `KeywordMeaningPanel`   | `KeywordMeaningPanel.tsx` + `keyword-meaning.ts`                                                        | **THE MEANING HALF of the dossier.** What THIS site says the keyword is — Class (+source), Service (+lineage and where its worth comes from), Score + Level (+whether a person ruled it), the full receipt, every dimension stamp with provenance, and the count of dimensions with no answer. `useKeywordMeaning` composes `gsc_keyword_value_for` + `gsc_keyword_topics_for` + `gsc_keyword_stamps_for` + `facet_dimension_catalog`, scoped to the one keyword. Replaced the 13 retired mirror facets on 2026-08-24.                                                        |
+| Keyword row actions     | `keyword-actions.tsx`                                                                                  | **ONE definition of what you can do to a keyword row**, shared by every surface that shows one: `useKeywordAssignSurfaces` (the AssignPanel / ServiceAssignPanel / RulingDialog trio, so no second write path) + `useKeywordMenuSection` (the v3 `extraSections` entry). A surface adds the whole set — set the class · which service · answer a dimension · pin a level · why this score · pages for this keyword · open the dossier — in two hook calls.                                                        |
 | `buildKeywordBrief`     | `keyword-brief.ts`                                                                                     | The condensed keyword+data payload (`{ data, lines }`) for Copy-for-AI envelopes and agent payloads.                                                                                                                                                                                                                                                  |
 | `KeywordDataChips`      | `KeywordDataChips.tsx`                                                                                 | Inline condensed data row (volume, trend, competition, CPC, site position).                                                                                                                                                                                                                                                                           |
 | `KeywordUsageChips`     | `KeywordUsageChips.tsx` + `keywordUsedIn`                                                              | Presence checks of a phrase across observed fields (title/description/H1/URL).                                                                                                                                                                                                                                                                        |
@@ -166,7 +168,7 @@ per-keyword baseline.
 
 `matrx-user/keyword-intelligence` (manifest
 `features/surfaces/manifests/keyword-intelligence.manifest.ts`, overlay twin of
-`keywordWindow`): 17 values (read `keyword_brief` first) + 3 agent roles
+`keywordWindow`): 17 values (read `keyword_brief` first, then `keyword_meaning`) + 3 agent roles
 (`keyword_strategist`, `content_brief_writer`, `serp_analyst`, unbound).
 Emitter: `SurfaceRuntimeProvider` inside `KeywordIntelPanel` — user-created
 agents bound to the window receive the full dossier. The marketing-page
@@ -175,6 +177,29 @@ target keyword) via `buildMarketingPageScope`. Adding a value → declare in
 the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 
 ## Invariants
+
+- 🚨 **THE 13 MIRROR FACETS ARE RETIRED FROM THIS DOSSIER.** `seo.keyword`'s
+  intent_class / funnel_stage / specificity / query_form / local_intent /
+  urgency / audience_type / brand_presence / comparison_intent /
+  price_sensitivity / transaction_direction / fulfillment_mode /
+  compliance_framing columns MIRROR the fact store (`seo.keyword_facet`).
+  Meaning renders from the stamp system through `KeywordMeaningPanel`; the
+  surface value is `keyword_meaning`, never `keyword_classification`. A brief
+  built WITH meaning drops the mirror fields so one payload never answers
+  "what is this keyword" twice. Do not reintroduce a facet-column reader.
+- 🚨 **THE WINDOW MOUNTS ITS OWN MENU.** An overlay with no
+  `NonEditableContextMenu` hands the right-click to the page underneath —
+  THAT page's surface, values and agents, silently wrong and looking like it
+  worked. The panel wraps itself, passes `surfaceName`, `contentSource` and
+  (for a library keyword) `entity: { type: "seo_keyword" }`, and puts the
+  surface emitter's payload in `contextData` so the value-mapping guard stays
+  quiet. Adding a `surfaceName` without the emitter's values is the mistake
+  that guard exists to catch.
+- **Every keyword surface gets the same actions through `keyword-actions.tsx`.**
+  Never re-implement "set the class" / "which service" / "pin a level" beside
+  a new table — call `useKeywordAssignSurfaces` + `useKeywordMenuSection`, and
+  render `surfaces.node` ABOVE the table (never inside a Dialog: the value
+  picker portals its own popover and a Dialog closes itself mid-assignment).
 
 - **Reads direct to Supabase, compute to aidream** (two-lane rule). Research
   streaming REUSES `useKeywordResearch` and renders through the ONE canonical
@@ -222,6 +247,15 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 
 ## Change Log
 
+- 2026-08-24 — Claude: the dossier carries the NEW system. Retired the 13
+  mirror facets; added `KeywordMeaningPanel` + `keyword-meaning.ts` (Class,
+  Service, Score, Level, receipt, every stamp with provenance, all settable in
+  place); added `keyword-actions.tsx` as the ONE keyword-row action set and
+  wired it into the window, the Value Workbench and the Performance tab; the
+  window now mounts its own v3 menu with `contentSource` + `entity`; surface
+  value `keyword_classification` → `keyword_meaning` (manifest + the
+  `ui.ui_surface_value` row). Measured gap: keyword-intelligence-convergence
+  ADOPTION-SWEEP.md #1, #2, #4, #8, #9, #19.
 - 2026-08-14 — Codex: shipped the optional SERP-informed intent pass end to
   end: pinned AI Dream agent/slot, stored-snapshot-only streaming endpoint,
   server evidence validation, non-destructive JSONB writer, adopted Redux live
