@@ -417,14 +417,23 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
     measured finding against LIVE code immediately before it becomes a drop reason, and
     re-capture the fixtures if the engine moved.** In a shared checkout this is normal, not
     exceptional.
-15. **The compatibility gate refuses a `default` on `__kind`, which makes a whole class of live
-    rows un-evolvable.** `_field_compatible` compares non-`$ref` fields by literal equality after
-    stripping only `description`/`title`/`examples`. Every `@kind` model emits
-    `{"const": …, "default": …}` for `__kind`; a live row patched by the `__kind` campaign has
-    `{"const": …}` with no default. So the gate reports "changes the type/constraints of field
-    '__kind'" when nothing about validation changed — `default` is annotation-only in JSON Schema
-    (2020-12 §9.2) and cannot make an old payload stop validating. Until it is fixed, expect to
-    reach for `--breaking` on any curated slug the campaign touched.
+15. **FIXED 2026-08-23 — the compatibility gate no longer refuses a `default` on `__kind`.**
+    It used to: `_field_compatible` compared non-`$ref` fields by literal equality after stripping
+    only `description`/`title`/`examples`. Every `@kind` model emits `{"const": …, "default": …}`
+    for `__kind`; a live row patched by the `__kind` campaign has `{"const": …}` with no default,
+    so the gate reported "changes the type/constraints of field '__kind'" when nothing about
+    validation had changed — and forced every distillation of such a slug through `--breaking`,
+    which hid any REAL break behind a flag the author already had to pass. The fix
+    (`matrx-graph/matrx_graph/content_ir/sdk.py`) adds `_ANNOTATION_KEYS = {"default"}` and a
+    `_compat_normalize` used ONLY by `_field_compatible` / `compatibility_verdict`: `default` is a
+    pure annotation (JSON Schema 2020-12 §9.2), so it cannot make an old payload stop validating
+    in either direction. Deliberately NOT folded into `_COSMETIC_KEYS` — drift detection
+    (`_structurally_equal`) still sees a changed default, so the update is still planned and never
+    silent. `required` membership is untouched and exactly as strict as before. Measured on
+    `scraped_page`: 11 phantom "type/constraints" reasons before, 0 after, while the genuine
+    `additionalProperties:false` tightening is still reported. Tests: `test_kind_sdk.py`
+    (`test_kind_marker_default_no_longer_forces_a_breaking_publish` plus a planted failure proving
+    a re-slugged const and a type change are still refused).
 16. **Stage A publishing BREAKS matrx-frontend's release gate, and the skill puts the fix in
     Stage B.** The publisher re-versions rows, and `pnpm check:kind-types` fails from that moment
     — a red gate in a repo Stage A never opens. **Rule: Stage A finishes with
