@@ -504,26 +504,64 @@ classification and valuation run for that site.
   such limit — the standing guidelines lead the business context, because what
   the expert wrote about who they serve is exactly what topic worth encodes.
 
-## Brand identity — the system and what remains
+## Brand identity — the settled model (KI-043, 2026-08-24)
 
-Deterministic matching covers the derivable identity (domain / site name /
-brand name). Two writers exist side by side after 2026-08-25 (KI-036):
+**P29 ruling: `web.brand.profile->'brand_aliases'` is the PHYSICAL FACT
+(the brand's names — domain, site name, brand name, custom aliases: DBAs,
+officers, misspellings), authored on the brand via the site intake wizard.
+The MEANING is the site-scoped `seo.dimension_value_matcher` row of kind
+`brand_identity`, on the platform "Brand" value (`traffic_class:brand`,
+id `78d0685d-6b2f-4859-8a7e-6719c914e21a`). Saving the fact mints the
+meaning — the geo pattern (`seo.fn_geo_area_sync_meaning`), applied here.**
 
+`brand_identity` is architecturally UNLIKE `geo`: `dvm_target_check` forces
+`pattern`/`place_id`/`fact_value_id`/`condition_rule_id` all NULL for this
+kind — there is no per-alias pattern row to mint. ONE dynamic matcher row
+per site (`pattern` NULL) is the whole shape; `seo.fn_evaluate_matchers_internal`
+special-cases `kind='brand_identity'` and re-derives hits from
+`seo.gsc_brand_hits(site_id)` — which reads `gsc_brand_aliases(site_id)`
+(domain + site name + brand name + `profile->'brand_aliases'`) **LIVE, every
+evaluation pass**. So editing an alias already reaches every future match
+with zero extra plumbing — the gap KI-043 found was purely EXISTENCE: 8 of
+17 sites with a `brand_id` had no `brand_identity` matcher row at all
+(created before/after the 2026-08-23 one-time migration, or never backfilled).
+
+**The sync** (`migrations/seo_brand_identity_fact_to_meaning_sync.sql`):
+`seo.fn_brand_identity_sync_meaning(site_id)` mints the site's ONE matcher
+row if none exists, revives it if it was auto-retired (e.g. by a prior site
+archive) and the site is active again, and retires it if the site is
+archived — **never touching a row with `origin='human'`** (a human's decision
+to keep/drop brand matching for a site is a standing ruling, not a stale
+artifact). Two triggers call it: `web.site` (`AFTER INSERT OR UPDATE OF
+brand_id, domain, name, deleted_at`) — a new/re-domained/re-branded/archived
+site — and `web.brand` (`AFTER UPDATE OF profile, name`, guarded to fire only
+when `brand_aliases` or `name` actually changed) — every site under that
+brand gets checked. Backfill: **9/17 → 17/17** sites now carry the matcher.
+Verified live on Data Destruction (2026-08-24): adding then removing a test
+alias reached `gsc_brand_aliases`/`gsc_brand_hits` immediately with no matcher
+change needed; a matcher manually set `origin='human'` + retired survived an
+unrelated alias save on the same brand untouched.
+
+**Two writers still exist side by side** (unchanged by KI-043, both read
+live today — KI-036, 2026-08-25):
 - **Legacy custom aliases** — `web.brand.profile->'brand_aliases'`, written
   by `gsc_set_brand_aliases` and consumed by `gsc_brand_aliases` (derive) →
   `gsc_brand_hits` (corpus scan) → `gsc_keyword_class_map` /
   `gsc_brand_identity` (the narrator: alias, origin, match counts, genericity
   demotion). The classification workspace's Brand panel that used to write
   this array is DELETED; existing aliases in it keep matching unchanged, and
-  the intake wizard's accepted proposals still land here (server-side apply)
-  — but nothing in the app writes NEW rows to it any more.
-- **Going forward** — a new alias is a `brand_identity` matcher on the
-  platform "Brand" value (`traffic_class:brand`), added through THE MATCHER
-  EDITOR (`value-system/dimensions/MatcherEditor.tsx`, `…/value/dimensions`)
-  and the same `dimension_matcher_upsert` RPC every other matcher uses — see
-  KI-036 in the register. Whether/how these two alias stores should converge
-  (migrate the legacy array into matcher rows) is not decided; both are read
-  live today.
+  the intake wizard's accepted proposals still land here (server-side apply).
+- **THE MATCHER EDITOR** (`value-system/dimensions/MatcherEditor.tsx`,
+  `…/value/dimensions`) also lets a human add a `brand_identity` "matcher"
+  with its own pattern text, through the same `dimension_matcher_upsert` RPC
+  every other matcher uses (KI-036). **Known defect, not yet fixed:**
+  `dvm_target_check` requires `pattern IS NULL` for `kind='brand_identity'`,
+  so a UI-submitted brand_identity matcher that carries pattern text fails
+  the CHECK constraint at insert — the editor's own doc comment ("an alias IS
+  a `brand_identity` matcher... added, disabled and removed through the same
+  two canonical functions as every other pattern") describes a write path the
+  schema does not allow. Flagged for follow-up; out of scope for KI-043
+  (which fixed the fact→meaning EXISTENCE gap, not this UI/schema mismatch).
 
 Live legacy aliases: All Green + Titanium → "arman sadeghi"; IOPBM
 → "angie sadeghi", "angizeh sadeghi"; datadestruction → "arman
@@ -714,6 +752,17 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-24 — **KI-043: brand_aliases fact→meaning sync (the geo pattern,
+  applied to brand identity).** `migrations/seo_brand_identity_fact_to_meaning_sync.sql`
+  — `seo.fn_brand_identity_sync_meaning(site_id)` mints/revives/retires a
+  site's ONE `brand_identity` matcher row, triggered off `web.site` (brand_id/
+  domain/name/deleted_at) and `web.brand` (profile/name), never touching an
+  `origin='human'` row. Backfill 9/17 → 17/17 sites with a `brand_id`.
+  Verified live on Data Destruction (add/remove test alias, human-pin
+  survival); see "Brand identity — the settled model" above. Found in the
+  same pass, not fixed: the Matcher Editor's brand_identity pattern field
+  writes a shape `dvm_target_check` rejects (pattern must be NULL for that
+  kind) — flagged as a follow-up, not part of this fix.
 - 2026-08-25 — **KI-036: the classification UI retired.** Deleted the whole
   `?view=classification` component tree (`components/classification/`, the
   floating panel + its overlay registration) and every link that offered it.
