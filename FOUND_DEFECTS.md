@@ -1825,6 +1825,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **SEO topic demand contract** — `gsc_topic_stats` no longer scans all historical site observations before reducing to linked topics; all five topic reads/ledger refreshes now use one winning GSC `query` run per date, and stale queue rows reconcile on refresh (`migrations/seo_topic_demand_accuracy_and_timeout.sql`, `seo_topic_demand_membership_index.sql`). 2026-08-24.
+
 - **D241** — the `org_not_null_no_backstop` DDL-guard rule compared a schema-qualified name against `tgfoid::regproc::text`, which drops the schema for search_path-resident functions, so the `IN` never matched any of the 282 live `_stamp_org_default` triggers: the predicate was unconditionally true and the rule carried no signal for nine days (875 rows, its largest group). Now compares by OID via `to_regproc()`, and the accept-list of legal backstops went from **two to four** — `plan._stamp_from_node` and `platform.stamp_run_org` were both missing, and `stamp_run_org` was missing from aidream's **blocking** gate too (green only because its 2 solo tables are ownerless; a `created_by` on either would have blocked every release over a correctly-backstopped table). Old predicate flagged 269 of 379 qualifying tables; fixed one flags 4 of 384, all `iam` org-keyed tables that are correctly un-backstopped. `migrations/ddl_guard_org_backstop_oid_comparison.sql` (idempotent surgical transform — the guard has concurrent writers) + aidream `matrx_orm/catalog.py`; smoke-tested live across all five directions, gate `--strict` green, 38 unacked rows acked with per-object proof. 2026-08-21.
 - **D235** — CX overview KPIs moved into `chat.cx_overview_kpis` (aidream migration 0437): SECURITY DEFINER, EXECUTE for `service_role` only, returning KPI totals + per-tool usage + daily rollups in one indexed pass. `fetchOverviewKpisInner` is now that RPC plus the existing usage aggregate; the `readAllRows` paging (and its `rowKey` churn-tolerance consumer) is gone from this path. Verified live 2026-08-21 through the real admin-client → PostgREST path: **0.45s all-time** (was ~10s), totals matching the prior scan, and **403 `permission denied`** for an authenticated non-service caller.
 - **D218** — the `/crm` record-class facet works: new `MatrxColumnDef.filterSingle` renders single-choice (replace) semantics on record_class/expert_status/date buckets, CrmListPage takes the last valid value. Browser-proven 2026-08-21: switching to "Found by the platform" surfaced all discovered rows.
@@ -1915,14 +1917,3 @@ One line per fix — title, date, pointer. History lives in git. Entries older t
 - **D102** — `callApi` surfaces server messages instead of bare "HTTP 422". 2026-07-28.
 - **D97** — Univer autosave filtered to mutations; scrolling no longer writes snapshots. 2026-07-28.
 - **D99 / D98 / D75 / D73c / D72 / D68 / D69 / D109 / D82 / D71** — assorted one-file fixes, 2026-07-28 (git history has the detail).
-
-## SEO topic reads disagree with the facet queue about which collection run counts (2026-08-22)
-
-`seo.gsc_topic_stats`, `gsc_topic_offering_split`, `gsc_topic_unassigned_keywords` and the new
-`seo.topic_placement_queue` rollup all sum `seo.search_performance_daily` directly, while
-`seo.keyword_classification_queue` (and `gsc_perf_class_summary`) first resolve ONE winning
-collection run per (site, date). A re-collected day therefore double-counts demand on the topic
-side. The placement ledger deliberately matches the screen it renders on rather than the facet
-queue — a strip that disagreed with the headline directly above it would read as a lie — so the
-fix is to move every seo topic read onto winner-run dedupe in ONE change, not to flip the ledger
-alone. Not mine to do inside the placement build; the numbers are internally consistent today.
