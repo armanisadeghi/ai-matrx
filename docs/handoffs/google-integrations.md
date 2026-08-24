@@ -107,9 +107,17 @@ Notes ↔ Docs both directions, Workbooks ↔ Sheets, widening `drive.file` past
 a connections directory page. Each carries a real design question stated there.
 
 ### 6. Smaller, known
-- **Attach is web-only.** The `__google_files` context key works on the web client; the
-  extension and desktop offer the Google tools but have no attach affordance. Their agents can
-  still reach files via `list_resources`.
+- ~~Attach is web-only~~ **DONE 2026-08-24 — all three clients attach.** Extension: a Files
+  chip in the composer toolbar, conversation-scoped tray, failure state distinct from empty
+  (`matrx-extend` commits `e7c11ca` + `bc5a561`; contract in its
+  `docs/REQUEST_PAYLOAD_CONTRACT.md` §2.2). Desktop: a "Google files" plus-menu section,
+  cloud-target-only with an explicit `Cloud only` state, context plumbing added to the request
+  builder (`matrx-local` commits `06167f7ea` + `de39914a9`; `docs/CLOUD_CHAT_SURFACE.md`).
+  Both list registered resources only and door out to the web for Picker; both send the raw
+  `__google_files` id array; both adversarially reviewed and unit-tested. Still unproven: a
+  live attach-and-ask against a connected account (review-queue rows exist for Arman).
+  Related ruling filed as feedback `543af8aa`: should Doc/Sheet WRITES get a review card like
+  Gmail send, or is attach-is-consent the contract?
 - ~~The connector strip's directory half has no page~~ **DONE 2026-08-22.** The claim was also
   half-wrong: `/user-settings/integrations` existed all along (MCP catalog + GitHub) but never
   consumed the connectors registry. Now `features/connectors/DirectoryConnectorCards.tsx`
