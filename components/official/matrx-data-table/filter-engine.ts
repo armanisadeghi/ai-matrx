@@ -145,6 +145,7 @@ export function filterAndSortRows<T>(
   anyOf?: { columnIds: string[]; query: string },
   layeredFilters?: readonly LayeredFilterRule[],
   globalSearchMode: TableSearchMatchMode = "contains",
+  searchText?: (row: T) => string,
 ): T[] {
   const colById = new Map(columns.map((c) => [columnId(c), c]));
   const q = globalSearch.trim().toLowerCase();
@@ -184,6 +185,8 @@ export function filterAndSortRows<T>(
           col.filter !== false || Boolean(col.accessorKey || col.accessorFn),
       )
       .map((col) => stringifyCellValue(getCellValue(row, col)));
+    const additionalSearchText = searchText?.(row);
+    if (additionalSearchText) searchableValues.push(additionalSearchText);
     if (globalSearchMode === "contains") {
       return searchableValues.some((value) =>
         matchesTableSearch(value, q, "contains"),

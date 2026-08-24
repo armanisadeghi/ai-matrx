@@ -71,6 +71,38 @@ describe("MatrxDataTable layered filters", () => {
     ).toEqual([{ query: "we are ready" }]);
   });
 
+  it("searches a canonical row identity without adding a visible column", () => {
+    const columns: MatrxColumnDef<{
+      feature: string;
+      mandate: string;
+      mandateKey: string;
+    }>[] = [
+      { accessorKey: "feature", header: "Feature" },
+      { accessorKey: "mandate", header: "Mandate" },
+    ];
+    const rows = [
+      {
+        feature: "hindsight",
+        mandate: "reviewer",
+        mandateKey: "hindsight.reviewer",
+      },
+    ];
+
+    expect(
+      filterAndSortRows(
+        rows,
+        columns,
+        {},
+        null,
+        "hindsight.reviewer",
+        undefined,
+        undefined,
+        "contains",
+        (row) => row.mandateKey,
+      ),
+    ).toEqual(rows);
+  });
+
   it("round-trips ordered rules through URL state", () => {
     expect(decodeLayeredFilterRules(encodeLayeredFilterRules(RULES))).toEqual(
       RULES,

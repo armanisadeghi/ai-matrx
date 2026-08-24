@@ -55,6 +55,10 @@ tables (AI Models, relationships, …) can cut over to one contract.
   matching. Whole words tokenizes Unicode letters/numbers and requires every
   entered word as a complete token (`are` never matches `hardware`). Controlled
   data sources must enforce the same mode before count and pagination.
+- **Composite identities stay searchable without fake columns.** Local tables
+  may pass `searchText={(row) => row.canonicalKey}` to add a canonical key or
+  aliases to global search without changing visible column sort/filter values.
+  Controlled remote tables enforce the equivalent in their query owner.
 - **Layered filters use one shared rule contract.** Set
   `toolbar.layeredFilters.fields`; the compact Advanced control emits ordered,
   AND-combined text/select/number rules into `query.state.layeredFilters`.
@@ -212,6 +216,10 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-23 — Added local `searchText(row)` so canonical composite identities
+  and aliases participate in global search without becoming fake table columns.
+  First consumer: the Mandates console's dotted `<feature>.<mandate>` key.
 
 - 2026-08-16 — **`MatrxColumnDef.compact` — real support for an icon column.** A star
   column declaring `width: 40` actually rendered 66px (`/work/conversations`) and 106px

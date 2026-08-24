@@ -203,6 +203,7 @@ function MatrxDataTableCore<T>({
   data,
   columns,
   getRowId,
+  searchText,
   isLoading = false,
   isFetching = false,
   query,
@@ -439,6 +440,7 @@ function MatrxDataTableCore<T>({
         : undefined,
       layeredFilters,
       searchMatchMode,
+      searchText,
     );
   }, [
     data,
@@ -450,6 +452,7 @@ function MatrxDataTableCore<T>({
     anyOfValue,
     layeredFilters,
     searchMatchMode,
+    searchText,
     remoteQuery,
   ]);
 

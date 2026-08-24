@@ -543,6 +543,14 @@ export interface MatrxDataTableProps<T> {
   data: T[];
   columns: MatrxColumnDef<T>[];
   getRowId: (row: T) => string;
+  /**
+   * Additional row identity included in local global search without becoming
+   * a visible/sortable/filterable column. Use for canonical composite keys or
+   * aliases whose displayed parts live in separate columns.
+   *
+   * Ignored in remote controlled mode, where the query owner applies search.
+   */
+  searchText?: (row: T) => string;
   isLoading?: boolean;
   /**
    * Background refresh state. Unlike `isLoading`, this preserves rendered rows
