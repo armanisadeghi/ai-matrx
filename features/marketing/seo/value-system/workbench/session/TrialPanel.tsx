@@ -46,6 +46,8 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/styles/themes/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
@@ -129,6 +131,7 @@ export function TrialPanel({
 }) {
   const queryClient = useQueryClient();
   const agent = useHeadlessAgentJson();
+  const userId = useAppSelector(selectUserId);
 
   const [phase, setPhase] = useState<Phase>("gathering");
   const [gatherError, setGatherError] = useState<string | null>(null);
@@ -138,6 +141,12 @@ export function TrialPanel({
   const [rules, setRules] = useState<RuleCard[]>([]);
   const [ruleNote, setRuleNote] = useState<string | null>(null);
   const [engine, setEngine] = useState<MatcherRunResult | null>(null);
+  /**
+   * Set when the proposals went to SOMEONE ELSE — `keyword_meaning_suggest`
+   * addresses every one to the site's owner. Telling an editor to "approve it
+   * below" next to an empty list is the lie this state exists to prevent.
+   */
+  const [awaitingOwner, setAwaitingOwner] = useState(false);
   const [correcting, setCorrecting] = useState<string | null>(null);
 
   // One gather per mount. A second pass would re-ask the model for keywords the
@@ -495,12 +504,16 @@ export function TrialPanel({
       setRules((previous) =>
         previous.map((card, i) => (i === index ? { ...card, sent: true } : card)),
       );
+      const mine = !receipt.addressee || receipt.addressee === userId;
+      if (!mine) setAwaitingOwner(true);
       toast.success(
-        receipt.status === "created"
-          ? "Sent for your approval — it is in the list below this session."
-          : receipt.status === "already_pending"
-            ? "That rule was already waiting for you below."
-            : "You already decided on that exact rule.",
+        receipt.status === "already_decided"
+          ? "That exact rule was already decided on."
+          : mine
+            ? receipt.status === "created"
+              ? "Sent for your approval — it is in the list below this session."
+              : "That rule was already waiting for you below."
+            : "Sent to the site's owner to approve — it will not appear in your own list.",
       );
       await queryClient.invalidateQueries({ queryKey: ["assists"] });
     },
@@ -668,8 +681,9 @@ export function TrialPanel({
             <div className="rounded-lg border border-border bg-card p-3">
               <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
                 <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                Approve them in the list below this session — nothing has changed
-                yet.
+                {awaitingOwner
+                  ? "Sent to the site's owner to approve — nothing has changed yet, and these will not appear in your own list."
+                  : "Approve them in the list below this session — nothing has changed yet."}
               </p>
               <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
                 A rule you approve does not stamp anything by itself. Run it over

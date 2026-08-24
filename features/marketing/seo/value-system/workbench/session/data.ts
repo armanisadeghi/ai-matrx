@@ -306,13 +306,22 @@ export type SuggestionStatus = "created" | "already_pending" | "already_decided"
 export interface SuggestionReceipt {
   assistId: string;
   status: SuggestionStatus;
+  /**
+   * WHO has to say yes. `seo.keyword_meaning_suggest` addresses every proposal
+   * to the SITE'S OWNER, which is not always the person who made it — an editor
+   * on someone else's site proposes a rule and then waits for them. Carrying the
+   * addressee back is what lets the UI say so, instead of telling that editor to
+   * "approve it below" next to an empty list (found live on datadestruction.com,
+   * 2026-08-24).
+   */
+  addressee: string | null;
 }
 
 /**
  * PROPOSE, never write (P12). The proposal lands as a `platform.assists` row
- * addressed to the site's owner and shows up in the keyword-meaning approval
- * queue on this same page; until a human accepts it, the next agent run cannot
- * see it and nothing about the site has changed.
+ * addressed to the site's OWNER and shows up in that person's keyword-meaning
+ * approval queue; until they accept it, the next agent run cannot see it and
+ * nothing about the site has changed.
  *
  * There is deliberately no "apply" here: approval replays the proposal through
  * the ORDINARY HUMAN WRITE PATH in `suggestions/apply.ts`.
@@ -351,5 +360,6 @@ export async function proposeKeywordMeaning(input: {
   return {
     assistId: row.assist_id,
     status: row.status as SuggestionStatus,
+    addressee: row.addressee ?? null,
   };
 }
