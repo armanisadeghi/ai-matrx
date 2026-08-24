@@ -99,9 +99,9 @@ const FULLY_VALID_SAMPLE = {
 };
 
 describe("structural leg vs a schema that REQUIRES the declared __kind", () => {
-  // RED — the defect: a fully valid instance is rejected because the leg
-  // strips the very field the schema requires.
-  test.failing(
+  // Regression: a fully valid instance must retain the declared marker and
+  // pass the structural leg.
+  test(
     "a schema-true instance (with __kind) passes the structural leg",
     () => {
       const result = validateStructuralLeg(
