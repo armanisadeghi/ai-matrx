@@ -92,6 +92,7 @@ import {
   readSetupDraft,
   readSiteResearchTopicId,
   recordAppliedEntityAttachments,
+  readAppliedKeywordStrategy,
   recordAppliedKeywordStrategy,
   recordSiteResearchTopic,
   saveSetupDraft,
@@ -419,7 +420,16 @@ export function SetupView() {
           }
           if (draft.keywordStrategy) {
             setKeywordStrategy(draft.keywordStrategy);
-            setKeywordsAppliedAt(draft.keywordsAppliedAt);
+            // The DURABLE record wins over draft state (keyword-chain audit
+            // finding 7, 2026-08-24): the draft can expire or be re-run while
+            // web.page already carries the applied keywords — showing "Apply"
+            // again for work that landed is the UI/DB drift the owner keeps
+            // hitting. `recordAppliedKeywordStrategy` writes the durable half.
+            setKeywordsAppliedAt(
+              draft.keywordsAppliedAt ??
+                readAppliedKeywordStrategy(site?.settings)?.appliedAt ??
+                null,
+            );
           }
           if (draft.entityPlan) {
             setEntityPlan(draft.entityPlan);
