@@ -46,10 +46,14 @@ import {
   ShiftsView,
 } from "@/features/marketing/search-console/components/insights/ClassInsights";
 import { withPrevCompare } from "@/features/marketing/search-console/lib/url-state";
-import { describeGscWindow } from "@/features/marketing/search-console/lib/format";
+import {
+  describeGscWindow,
+  formatGscWindow,
+} from "@/features/marketing/search-console/lib/format";
 import { GscPeriodStrip } from "@/features/marketing/search-console/components/PeriodStrip";
 import type { RangeCompareValue } from "@/features/marketing/search-console/components/RangeCompareControl";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
+import { LocationPanel } from "@/features/marketing/seo/value-system/locations/LocationPanel";
 import type {
   GscCannibalizationRow,
   GscCtrGapRow,
@@ -103,6 +107,8 @@ function ErrorPanel({ error }: { error: unknown }) {
 export function InsightsTab({
   siteId,
   siteName,
+  brandId,
+  organizationId,
   periods,
   panelRange,
   onRangeChange,
@@ -113,6 +119,9 @@ export function InsightsTab({
 }: {
   siteId: string;
   siteName: string | null;
+  /** Only used by the "By location" view — LocationPanel's own props. */
+  brandId: string | null;
+  organizationId: string | null;
   periods: GscResolvedPeriods;
   panelRange: RangeCompareValue;
   /** Writes range/compare back to URL state — same sink as the header. */
@@ -144,7 +153,7 @@ export function InsightsTab({
     active === "growth" ||
     active === "shifts" ||
     active === "juice";
-  const showsThreshold = active !== "quality";
+  const showsThreshold = active !== "quality" && active !== "location";
 
   // What the strip states depends on which window the ACTIVE view actually
   // evaluates: class views compare (auto-deriving under compare=none), the
@@ -280,6 +289,26 @@ export function InsightsTab({
             minImpressions={minImpressions}
             onDrill={onDrill}
           />
+        ) : active === "location" ? (
+          brandId ? (
+            <LocationPanel
+              siteId={siteId}
+              brandId={brandId}
+              organizationId={organizationId}
+              window={{
+                start: periods.current.start,
+                end: periods.current.end,
+                compareStart: periods.compare?.start ?? null,
+                compareEnd: periods.compare?.end ?? null,
+              }}
+              windowLabel={formatGscWindow(periods.current)}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-md border border-dashed border-border bg-card/60 p-8 text-center text-xs text-muted-foreground">
+              This site could not be resolved — pick it again from the site
+              list.
+            </div>
+          )
         ) : trendTooShort ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/60 p-8 text-center">
             <Lightbulb className="h-8 w-8 text-muted-foreground" />

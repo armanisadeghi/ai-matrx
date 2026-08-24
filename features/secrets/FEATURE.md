@@ -52,10 +52,13 @@ Field metadata (inject flag, env alias set/clear, description, `is_active`, hand
 
 Every Vault and Authenticator aidream transport requires the explicitly
 selected request organization from `appContext.organization_id` and sends it
-as `X-Organization-Id`. `personal_organization_id` is never substituted. The
+through `lib/api/organization-context.ts` as `X-Organization-Id`.
+`personal_organization_id` is never substituted. The
 transport itself refuses to call `fetch` when that request context is absent,
 including for personal Vault rows; organization context accompanies the
 request but does not replace the `user_id = auth.uid()` ownership boundary.
+The server's `/vault` and `/authenticator` routers independently require the
+same header and exact middleware-context agreement before any handler runs.
 
 Attachments keep the same split: `CREDENTIAL_ATTACHMENT_COLUMNS` reads only
 safe metadata directly from Supabase; `features/files/vault/vaultAttachmentTransport.ts`
@@ -319,6 +322,11 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-08-24** — Moved Vault and Authenticator JSON calls onto the shared
+  organization-context kernel, rejected a conflicting caller header instead of
+  letting it override selected context, and pinned JSON plus protected-file
+  multipart zero-I/O behavior in the non-skippable frontend release gate.
 
 - **2026-08-24** — Vault gained its canonical v3 right-click menu
   (`components/VaultContextMenu.tsx`), mounted by `VaultWorkspace` so `/vault`,

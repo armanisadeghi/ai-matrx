@@ -10,6 +10,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import type {
   AuthenticatorCode,
   AuthenticatorEntry,
@@ -21,7 +22,10 @@ function backendBase(): string {
   );
 }
 
-async function authHeaders(json: boolean): Promise<Record<string, string>> {
+async function authHeaders(json: boolean): Promise<{
+  organizationId: string;
+  headers: Record<string, string>;
+}> {
   const organizationId = requireSelectedOrgId();
   const supabase = createClient();
   const {
@@ -30,20 +34,24 @@ async function authHeaders(json: boolean): Promise<Record<string, string>> {
   if (!session?.access_token) throw new Error("Not signed in");
   const headers: Record<string, string> = {
     Authorization: `Bearer ${session.access_token}`,
-    "X-Organization-Id": organizationId,
   };
   if (json) headers["Content-Type"] = "application/json";
-  return headers;
+  return { organizationId, headers };
 }
 
 async function authFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const isForm = init?.body instanceof FormData;
-  const headers = await authHeaders(!isForm);
+  const { organizationId, headers: auth } = await authHeaders(!isForm);
+  const suppliedHeaders = Object.fromEntries(new Headers(init?.headers).entries());
+  const headers = applyOrganizationContextHeader(
+    { ...auth, ...suppliedHeaders },
+    organizationId,
+  );
   let resp: Response;
   try {
     resp = await fetch(`${backendBase()}/api/authenticator${path}`, {
       ...init,
-      headers: { ...headers, ...init?.headers },
+      headers,
     });
   } catch {
     throw new Error(

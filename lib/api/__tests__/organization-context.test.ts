@@ -66,6 +66,12 @@ describe("callApi organization context", () => {
     );
   });
 
+  it("rejects a non-UUID organization before networking", () => {
+    expect(() => requireOrganizationContext("personal-default")).toThrow(
+      "The selected organization ID is invalid.",
+    );
+  });
+
   it("injects the required organization into the request body", () => {
     expect(buildRequestBody({ user_input: "hello" }, scope)).toEqual({
       organization_id: ORGANIZATION_ID,

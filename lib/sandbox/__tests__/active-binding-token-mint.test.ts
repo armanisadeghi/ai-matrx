@@ -13,7 +13,7 @@ function hostedBindingState(): RootState {
       byConversationId: {
         [CONVERSATION_ID]: {
           conversationId: CONVERSATION_ID,
-          sourceFeature: "chat-route",
+          sourceFeature: "chat",
           isEphemeral: false,
           sandboxBinding: {
             rowId: ROW_ID,

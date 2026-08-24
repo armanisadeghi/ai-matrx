@@ -91,6 +91,19 @@ import { wasStreamErrorCaptured } from "@/lib/diagnostics/captureStreamError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { isV2Path, toV1FallbackUrl } from "@/lib/api/ai-api-version";
 import { applyDesktopTargetToRequestBody } from "@/lib/api/desktop-target-request";
+import {
+  applyOrganizationContextHeader,
+  assertQueryOrganizationMatchesContext,
+  OrganizationContextError,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
+
+export {
+  applyOrganizationContextHeader,
+  assertQueryOrganizationMatchesContext,
+  OrganizationContextError,
+  requireOrganizationContext,
+} from "@/lib/api/organization-context";
 
 // ─── Auto-generated types (source of truth for all request/response shapes) ──
 
@@ -201,23 +214,6 @@ export interface CallScope {
 
 export interface ResolvedCallScope extends CallScope {
   organization_id: string;
-}
-
-export class OrganizationContextError extends Error {
-  readonly code:
-    | "organization_context_required"
-    | "organization_context_mismatch";
-
-  constructor(
-    code:
-      | "organization_context_required"
-      | "organization_context_mismatch",
-    message: string,
-  ) {
-    super(message);
-    this.name = "OrganizationContextError";
-    this.code = code;
-  }
 }
 
 // ============================================================================
@@ -606,20 +602,6 @@ function buildUrl(
  *
  * Fields that are null/undefined are omitted from the final scope object.
  */
-export function requireOrganizationContext(
-  selectedOrganizationId: string | null | undefined,
-  overrideOrganizationId?: string,
-): string {
-  const candidate = overrideOrganizationId ?? selectedOrganizationId;
-  if (typeof candidate !== "string" || candidate.trim().length === 0) {
-    throw new OrganizationContextError(
-      "organization_context_required",
-      "Select an organization before sending this request.",
-    );
-  }
-  return candidate.trim();
-}
-
 function resolveScope(
   state: RootState,
   overrides?: Partial<CallScope>,
@@ -734,48 +716,6 @@ export function buildRequestBody(
   // The required organization is already proven identical above. Other scope
   // fields preserve the existing caller-wins behavior.
   return { ...scopeFields, ...base };
-}
-
-export function applyOrganizationContextHeader(
-  headers: Record<string, string>,
-  organizationId: string,
-): Record<string, string> {
-  const normalizedOrganizationId = requireOrganizationContext(
-    organizationId,
-  );
-  for (const [name, value] of Object.entries(headers)) {
-    if (
-      name.toLowerCase() === "x-organization-id" &&
-      value.trim() !== normalizedOrganizationId
-    ) {
-      throw new OrganizationContextError(
-        "organization_context_mismatch",
-        "X-Organization-Id must match the request context organization.",
-      );
-    }
-  }
-  const withoutOrganizationHeader = Object.fromEntries(
-    Object.entries(headers).filter(
-      ([name]) => name.toLowerCase() !== "x-organization-id",
-    ),
-  );
-  return {
-    ...withoutOrganizationHeader,
-    "X-Organization-Id": normalizedOrganizationId,
-  };
-}
-
-export function assertQueryOrganizationMatchesContext(
-  queryParams: Record<string, string | number | boolean> | undefined,
-  organizationId: string,
-): void {
-  if (!queryParams || queryParams.organization_id === undefined) return;
-  if (String(queryParams.organization_id).trim() !== organizationId) {
-    throw new OrganizationContextError(
-      "organization_context_mismatch",
-      "Query organization_id must match the request context organization.",
-    );
-  }
 }
 
 // ============================================================================

@@ -113,7 +113,9 @@ contract after a backend change, every drifted callsite lights up red in the
 same PR.
 
 **3. Every compute request has one explicit organization before networking.**
-`callApi` reads only the explicitly selected organization or an entity-local
+[`organization-context.ts`](./organization-context.ts) is the one transport
+kernel for required UUID validation and header/query agreement. `callApi`
+reads only the explicitly selected organization or an entity-local
 `scopeOverrides.organization_id`; it never substitutes a personal organization.
 It refuses missing context, rejects body/query/header disagreement, injects the
 organization into the JSON body, and sends the same value as
@@ -251,6 +253,12 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-08-24 — Extracted the fail-closed organization transport kernel into
+  `organization-context.ts`, made it reject malformed UUIDs, migrated Vault and
+  Authenticator JSON transports onto it, and added the blocking
+  `check:organization-context` CI/release gate. Multipart Vault attachments are
+  pinned by the same zero-I/O regression suite while their byte adapter remains
+  separate from JSON transport.
 - 2026-08-24 — Made `callApi` fail closed on missing organization context,
   removed its personal-organization fallback, bound the same organization into
   `X-Organization-Id` and JSON bodies, and rejected body/query/header mismatch

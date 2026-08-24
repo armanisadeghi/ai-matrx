@@ -316,6 +316,16 @@ fi
 # record certifies the exact candidate and places it in the delivery queue.
 verify_patrol_delivery
 
+# This gate is deliberately outside --no-gates. A release may skip broad
+# advisory suites, but it may never ship a frontend that can send the migrated
+# Vault/Authenticator traffic without one explicit organization context.
+info "Enforcing the organization-context transport contract..."
+if pnpm check:organization-context; then
+    ok "Organization-context transport contract passed."
+else
+    fail "ORGANIZATION CONTEXT VIOLATION — release stopped before migrations, version changes, tags, or pushes."
+fi
+
 # ── Apply pending matrx-frontend migrations (via aidream applier) ─────────────
 # Same shared DB + ledger as aidream. This repo cannot run DDL itself (PostgREST
 # only); the co-located aidream checkout owns the Postgres write path.

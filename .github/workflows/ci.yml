@@ -129,6 +129,25 @@ jobs:
         run: NODE_OPTIONS='--max-old-space-size=6144' pnpm type-check
 
   # ---------------------------------------------------------------------------
+  # organization-context — every migrated first-party API call must fail before
+  # auth lookup/network I/O unless one explicit organization UUID is present.
+  # ---------------------------------------------------------------------------
+  organization-context:
+    name: ORGANIZATION CONTEXT (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Refuse org-less or mismatched API transport
+        run: pnpm check:organization-context
+
+  # ---------------------------------------------------------------------------
   # suites — the two feature suites that pin cross-repo contracts, so a change
   # here can break a producer in aidream (and vice versa):
   #   content-ir      the kind registry, block dispatch, the partial-kind wire

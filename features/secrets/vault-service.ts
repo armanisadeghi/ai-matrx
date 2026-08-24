@@ -15,6 +15,7 @@
 import { createClient } from "@/utils/supabase/client";
 import { makeAssertData } from "@/utils/errors";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import {
   downloadVaultAttachment as downloadVaultAttachmentBytes,
   replaceVaultAttachment as replaceVaultAttachmentBytes,
@@ -71,7 +72,10 @@ function backendBase(): string {
   );
 }
 
-async function authHeaders(): Promise<Record<string, string>> {
+async function authHeaders(): Promise<{
+  organizationId: string;
+  headers: Record<string, string>;
+}> {
   const organizationId = requireSelectedOrgId();
   const supabase = createClient();
   const {
@@ -79,19 +83,26 @@ async function authHeaders(): Promise<Record<string, string>> {
   } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not signed in");
   return {
-    Authorization: `Bearer ${session.access_token}`,
-    "X-Organization-Id": organizationId,
-    "Content-Type": "application/json",
+    organizationId,
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
   };
 }
 
 async function vaultFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = await authHeaders();
+  const { organizationId, headers: auth } = await authHeaders();
+  const suppliedHeaders = Object.fromEntries(new Headers(init?.headers).entries());
+  const headers = applyOrganizationContextHeader(
+    { ...auth, ...suppliedHeaders },
+    organizationId,
+  );
   let resp: Response;
   try {
     resp = await fetch(`${backendBase()}/api/vault${path}`, {
       ...init,
-      headers: { ...headers, ...init?.headers },
+      headers,
     });
   } catch {
     throw new Error(

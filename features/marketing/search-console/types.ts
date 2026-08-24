@@ -424,7 +424,8 @@ export type GscInsightKind =
   | "ctr-gap"
   | "cannibalization"
   | "decay"
-  | "growth";
+  | "growth"
+  | "location";
 
 export const GSC_INSIGHTS: readonly {
   key: GscInsightKind;
@@ -472,6 +473,12 @@ export const GSC_INSIGHTS: readonly {
     label: "Rising",
     description:
       "Sustained risers: what is genuinely taking off across the period, beyond one lucky day.",
+  },
+  {
+    key: "location",
+    label: "By location",
+    description:
+      "For a business with more than one address, traffic decomposed by WHICH branch — readiness of the location signal, then how the selected window's clicks split across places (and what could not be placed).",
   },
 ];
 

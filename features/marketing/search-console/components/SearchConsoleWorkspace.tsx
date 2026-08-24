@@ -919,6 +919,8 @@ export function SearchConsoleWorkspace() {
                 <InsightsTab
                   siteId={state.siteId}
                   siteName={siteName}
+                  brandId={site?.brand_id ?? null}
+                  organizationId={site?.organization_id ?? null}
                   periods={periods}
                   panelRange={panelRange}
                   onRangeChange={(next) => applyState({ ...state, ...next })}
