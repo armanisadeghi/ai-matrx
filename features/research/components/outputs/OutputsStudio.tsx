@@ -36,7 +36,6 @@ import type { PodcastType } from "@/features/podcasts/generator/types";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
 import { ProductionTeaser } from "@/features/podcasts/generator/components/ProductionTeaser";
 import { MediaOptionsGrid } from "@/features/podcasts/generator/components/MediaOptionsGrid";
-import { useMandateRunner } from "@/features/agents/mandates/useMandateRunner";
 import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
 import MarkdownStream from "@/components/MarkdownStream";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
@@ -45,6 +44,11 @@ import KindInstanceRender from "@/features/content-ir/studio/components/KindInst
 import { useMandate } from "@/features/agents/mandates/useMandate";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
+import {
+  coercePresentationDeck,
+  coerceSeoPackage,
+  type PresentationDeck,
+} from "./parsers";
 import {
   parseOutputs,
   assetsFor,
@@ -87,31 +91,6 @@ function buildGeneratorVariables(
     report_markdown: reportMarkdown,
     voice_lens: toneProfile.trim(),
   };
-}
-
-/** Parse a JSON object out of an agent's text output, tolerating code fences
- *  or stray prose around it. Returns null if no valid object is found. */
-function parseJsonLoose<T = Record<string, unknown>>(s: string): T | null {
-  if (!s) return null;
-  let t = s.trim();
-  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fence) t = fence[1].trim();
-  if (!t.startsWith("{")) {
-    const i = t.indexOf("{");
-    const j = t.lastIndexOf("}");
-    if (i >= 0 && j > i) t = t.slice(i, j + 1);
-  }
-  try {
-    return JSON.parse(t) as T;
-  } catch {
-    return null;
-  }
-}
-
-interface PresentationDeck {
-  title?: string;
-  theme?: Record<string, unknown>;
-  slides?: Array<Record<string, unknown>>;
 }
 
 const HOST_COUNTS = [1, 2, 3, 4] as const;
@@ -845,52 +824,65 @@ function BlogOutputCard({
   existing: OutputAsset[];
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
-  const { runMandate, running, unavailable, mandateError } = useMandateRunner(BLOG_MANDATE);
-  const [streamText, setStreamText] = useState("");
+  // Resolution is read here only to DISABLE the affordance and say why; the
+  // run itself resolves the mandate inside the canonical launcher. ONE
+  // invocation shape for the three publishing generators (D12): `useMandate`
+  // for the disable-reason, `useLiveAgentRun` for the watched run streaming in
+  // the floating window — identical to the slides/seo siblings.
+  const { error: mandateError } = useMandate(BLOG_MANDATE);
+  const blogRun = useLiveAgentRun();
   const [viewing, setViewing] = useState<OutputAsset | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
-    if (!hasReport || running) return;
-    setStreamText("");
+    if (!hasReport || blogRun.isRunning) return;
     setViewing(null);
+    setError(null);
     try {
-      const md = await runMandate({
-        // Non-structured kick phrase, not the payload — the report and voice
-        // note ride `variables` above. This agent's whole prompt lives in its
-        // SYSTEM message (both {{report_markdown}}/{{voice_lens}} placeholders
-        // are there), so a run with a genuinely empty user_input produces zero
-        // renderable Gemini "user" turns and the provider refuses the request.
-        userInput: "Write the article now.",
+      // NO user turn on this button: the report and Voice & Lens note ride
+      // `variables`, and the agent's own authored conversational user turn
+      // (rebuilt wave 4, D2) carries the request. The fabricated kick phrase
+      // that used to sit here was the workaround for the era when the whole
+      // prompt lived in the SYSTEM message — verified dead 2026-08-23 (all
+      // three publishing agents stream cleanly with no user message at all).
+      const md = await blogRun.run<string>({
+        mandateKey: BLOG_MANDATE,
+        surfaceKey: `research-outputs-blog:${topicId}`,
+        sourceFeature: "research",
         variables: buildGeneratorVariables(reportMarkdown, toneProfile),
         organizationId,
         contextAnchor: {
           resource_type: "research_topic",
           resource_id: topicId,
         },
-        sourceApp: "matrx-frontend",
-        sourceFeature: "research",
-        onChunk: (full) => setStreamText(full),
+        // The article is markdown prose — the answer TEXT is the product.
+        expect: "text",
+        // A long report writes a long article; match the slides ceiling.
+        timeoutMs: 300_000,
+        failureMessages: {
+          noText: "The blog generator returned no content.",
+        },
+        coerce: (value) => {
+          if (typeof value !== "string" || !value.trim()) {
+            throw new Error("The blog generator returned no content.");
+          }
+          return value;
+        },
       });
-      if (md && md.trim()) {
-        const asset: OutputAsset = {
-          id: crypto.randomUUID(),
-          kind: "blog",
-          title: extractMarkdownTitle(md) || `${defaultTitle} — blog`,
-          status: "ready",
-          created_at: new Date().toISOString(),
-          meta: { markdown: md },
-        };
-        await onPersisted(asset);
-        setStreamText("");
-        setViewing(asset);
-        toast.success("Blog article saved to outputs");
-      } else {
-        toast.error("The blog generator returned no content.");
-      }
+      const asset: OutputAsset = {
+        id: crypto.randomUUID(),
+        kind: "blog",
+        title: extractMarkdownTitle(md) || `${defaultTitle} — blog`,
+        status: "ready",
+        created_at: new Date().toISOString(),
+        meta: { markdown: md },
+      };
+      await onPersisted(asset);
+      setViewing(asset);
+      blogRun.dismiss();
+      toast.success("Blog article saved to outputs");
     } catch (e) {
-      toast.error(
-        `Blog generation failed: ${e instanceof Error ? e.message : "unknown error"}`,
-      );
+      setError(extractErrorMessage(e));
     }
   };
 
@@ -909,35 +901,42 @@ function BlogOutputCard({
     >
       <>
         {mandateError && <MandateUnavailableNote message={mandateError} />}
-        {!running && !viewing && (
+        {!blogRun.isRunning && !viewing && (
           <Button
             size="sm"
             className="gap-1.5 h-8"
             onClick={handleGenerate}
-            disabled={!hasReport || unavailable}
+            disabled={!hasReport || mandateError !== null}
           >
             <FileText className="h-3.5 w-3.5" />
             Generate blog
           </Button>
         )}
-
-        {running && (
-          <div className="rounded-lg border border-primary/30 bg-primary/[0.04] overflow-hidden">
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
-              <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
-              <span className="text-xs font-medium text-primary">
-                Writing the article…
-              </span>
-            </div>
-            {streamText && (
-              <div className="px-3 py-3 max-h-[420px] overflow-y-auto">
-                <MarkdownStream content={streamText} isStreamActive />
-              </div>
-            )}
-          </div>
+        {error && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
+            <AlertCircle className="h-3.5 w-3.5" />
+            {error}
+          </span>
         )}
 
-        {!running && viewing && (
+        {/* THE FLOATING LAW: the article streams in the floating run window,
+            so this card — and every card under it — never moves. */}
+        {blogRun.hasLiveRun && (
+          <LiveRunWindowController
+            instanceId={`research-blog:${topicId}`}
+            conversationId={blogRun.conversationId}
+            pending={blogRun.conversationId === null}
+            label="Writing the article"
+          />
+        )}
+        {blogRun.isRunning && (
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-primary">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Writing the article — watch it stream in the run window.
+          </span>
+        )}
+
+        {!blogRun.isRunning && viewing && (
           <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
@@ -975,7 +974,7 @@ function BlogOutputCard({
                   key={a.id}
                   onClick={() => {
                     setViewing(a);
-                    setStreamText("");
+                    setError(null);
                   }}
                   className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5 text-left hover:bg-accent/40 transition-colors"
                 >
@@ -1059,15 +1058,6 @@ function MandateUnavailableNote({ message }: { message: string }) {
   );
 }
 
-function GeneratingNote({ label }: { label: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-2.5">
-      <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
-      <span className="text-xs font-medium text-primary">{label}</span>
-    </div>
-  );
-}
-
 // ── Slides output ────────────────────────────────────────────────────────────
 //
 // The deck IS the `presentation_deck` content-IR kind: the mandate's agent emits a
@@ -1097,34 +1087,25 @@ function SlidesOutputCard({
   existing: OutputAsset[];
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
-  // Mandate resolution stays the identity layer (the header's MandateAgentPicker
-  // still swaps the agent); the RUN goes through the live posture so the deck
-  // streams instead of hiding behind a spinner.
+  // Resolution is read here only to DISABLE the affordance and say why; the
+  // RUN goes through the live posture so the deck streams instead of hiding
+  // behind a spinner. Same shape as the blog/seo siblings (D12).
   const { error: mandateError } = useMandate(SLIDES_MANDATE);
-  const unavailable = mandateError !== null;
-  const {
-    run,
-    isRunning: running,
-    conversationId,
-    hasLiveRun,
-  } = useLiveAgentRun();
+  const slidesRun = useLiveAgentRun();
   const [viewing, setViewing] = useState<OutputAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
-    if (!hasReport || running) return;
+    if (!hasReport || slidesRun.isRunning) return;
     setViewing(null);
     setError(null);
     try {
-      const deck = await run<PresentationDeck>({
+      // NO user turn — see BlogOutputCard's identical comment: the rebuilt
+      // agent's own authored user turn carries the request (wave 4, D2).
+      const deck = await slidesRun.run<PresentationDeck>({
         mandateKey: SLIDES_MANDATE,
         surfaceKey: `research-outputs-slides:${topicId}`,
         sourceFeature: "research",
-        // Non-structured kick phrase — see BlogOutputCard's identical comment;
-        // this agent's whole prompt (incl. {{report_markdown}}/{{voice_lens}})
-        // lives in its SYSTEM message, so an empty user_input produces zero
-        // renderable Gemini "user" turns.
-        userInput: "Build the deck now.",
         variables: buildGeneratorVariables(reportMarkdown, toneProfile),
         organizationId,
         contextAnchor: {
@@ -1137,23 +1118,7 @@ function SlidesOutputCard({
         // nothing" and "the run produced the wrong shape" are different bugs
         // and must never share a sentence, or the next person debugging this
         // cannot tell which one they are looking at.
-        coerce: (value) => {
-          const candidate = value as PresentationDeck | null;
-          if (
-            !candidate ||
-            !Array.isArray(candidate.slides) ||
-            candidate.slides.length === 0
-          ) {
-            const shape =
-              candidate && typeof candidate === "object"
-                ? `keys: ${Object.keys(candidate).join(", ") || "(none)"}`
-                : `type: ${typeof candidate}`;
-            throw new Error(
-              `The slides generator returned something that isn't a deck (${shape}). Try again.`,
-            );
-          }
-          return candidate;
-        },
+        coerce: coercePresentationDeck,
         failureMessages: {
           noJson:
             "The slides generator finished but produced no deck at all. Try again.",
@@ -1172,6 +1137,7 @@ function SlidesOutputCard({
       };
       await onPersisted(asset);
       setViewing(asset);
+      slidesRun.dismiss();
       toast.success("Slide deck saved to outputs");
     } catch (e) {
       setError(extractErrorMessage(e));
@@ -1190,12 +1156,12 @@ function SlidesOutputCard({
       mandateKey={SLIDES_MANDATE}
     >
       {mandateError && <MandateUnavailableNote message={mandateError} />}
-      {!running && !viewing && (
+      {!slidesRun.isRunning && !viewing && (
         <Button
           size="sm"
           className="gap-1.5 h-8"
           onClick={handleGenerate}
-          disabled={!hasReport || unavailable}
+          disabled={!hasReport || mandateError !== null}
         >
           <Presentation className="h-3.5 w-3.5" />
           Generate slides
@@ -1209,22 +1175,22 @@ function SlidesOutputCard({
       )}
       {/* THE FLOATING LAW: the run streams in a floating window, so this card
           — and every card under it — never moves while the deck is built. */}
-      {hasLiveRun ? (
+      {slidesRun.hasLiveRun ? (
         <LiveRunWindowController
           instanceId={`research-slides:${topicId}`}
-          conversationId={conversationId}
+          conversationId={slidesRun.conversationId}
           label="Designing the deck"
-          pending={running && !conversationId}
+          pending={slidesRun.conversationId === null}
         />
       ) : null}
-      {running && (
+      {slidesRun.isRunning && (
         <span className="inline-flex items-center gap-1.5 text-[11px] text-primary">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           Designing the deck — watch it build in the run window.
         </span>
       )}
 
-      {!running && viewing && deck && (
+      {!slidesRun.isRunning && viewing && deck && (
         <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
             <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
@@ -1345,23 +1311,10 @@ function SeoOutputCard({
           resource_type: "research_topic",
           resource_id: topicId,
         },
-        // Non-structured kick phrase — see BlogOutputCard's identical comment;
-        // this agent's whole prompt lives in its SYSTEM message, so an empty
-        // user_input produces zero renderable Gemini "user" turns.
-        userInput: "Generate the SEO package now.",
+        // NO user turn — see BlogOutputCard's identical comment: the rebuilt
+        // agent's own authored user turn carries the request (wave 4, D2).
         variables: buildGeneratorVariables(reportMarkdown, toneProfile),
-        coerce: (value) => {
-          if (
-            typeof value !== "object" ||
-            value === null ||
-            typeof (value as { title?: unknown }).title !== "string"
-          ) {
-            throw new Error(
-              "The SEO generator didn't return a valid package. Try again.",
-            );
-          }
-          return value as Record<string, unknown>;
-        },
+        coerce: coerceSeoPackage,
       });
       const asset: OutputAsset = {
         id: crypto.randomUUID(),

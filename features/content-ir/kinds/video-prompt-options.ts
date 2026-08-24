@@ -55,7 +55,7 @@ export const videoPromptOptionsKindSchema: KindSchema = {
   fields: {
     concept_received: {
       type: "string",
-      description: "Echo of the user's raw concept that the variations interpret.",
+      description: "Echo of the user's raw concept the variations interpret.",
     },
     action: {
       type: "inline_object",

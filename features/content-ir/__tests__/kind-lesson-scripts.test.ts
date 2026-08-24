@@ -121,8 +121,8 @@ describe("lesson_script_set — streaming bridge", () => {
     expect(serverData?.sections.length).toBeGreaterThanOrEqual(1);
     expect(serverData?.sections[0]).toMatchObject({
       heading: "What the theory says",
-      durationSeconds: 45,
-      keyPoints: ["Plates are rigid pieces of the lithosphere."],
+      duration_seconds: 45,
+      key_points: ["Plates are rigid pieces of the lithosphere."],
     });
     expect(typeof serverData?.sections[0].script).toBe("string");
     // The still-streaming second section, if surfaced, shows its loader.
@@ -153,7 +153,7 @@ describe("lesson_script_set — streaming bridge", () => {
     expect(serverData?.sections).toHaveLength(2);
     expect(serverData?.sections[1]).toMatchObject({
       heading: "Where plates meet",
-      durationSeconds: 60,
+      duration_seconds: 60,
     });
     expect(serverData?.sections[1].script).toContain("boundaries");
     session.dispose();

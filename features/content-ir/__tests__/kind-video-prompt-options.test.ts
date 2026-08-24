@@ -176,14 +176,14 @@ describe("video_prompt_options kind — structural gate (the applied kind_exampl
 // ---------------------------------------------------------------------------
 
 describe("video_prompt_options kind — legacy bridge (toLegacyServerData)", () => {
-  it("canonical example → camelCase serverData with the action declaration", () => {
+  it("canonical example → registry-named serverData with the action declaration", () => {
     const serverData = videoPromptOptionsServerDataFromEnvelope(
       envelopeFromCompleteValue(CANONICAL_EXAMPLE, "video_prompt_options"),
     );
     expect(serverData).toBeDefined();
     if (!serverData) throw new Error("unreachable");
 
-    expect(serverData.concept).toBe(
+    expect(serverData.concept_received).toBe(
       "A short cover video for a science podcast episode about cell division.",
     );
     // The action contract KindAgentActionButton executes.
@@ -197,8 +197,8 @@ describe("video_prompt_options kind — legacy bridge (toLegacyServerData)", () 
     expect(prompts).toHaveLength(3);
     expect(prompts[0]).toMatchObject({
       variation: 1,
-      aspectRatio: "16:9",
-      clipLength: "8s",
+      aspect_ratio: "16:9",
+      clip_length: "8s",
     });
     expect(typeof prompts[0].prompt).toBe("string");
     expect((prompts[0].prompt as string).length).toBeGreaterThan(0);
