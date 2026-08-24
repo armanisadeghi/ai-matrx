@@ -101,6 +101,46 @@ regenerated against it. Old and new builds both read successfully — no deploy 
 Vercel projects, drop `orchestrator_id` and `set_label` from the `returns table(...)` list and
 from the select body. Nothing else reads them — verified by grep across both repos.
 
+### D254 — the `component` read lane has the SAME per-row `has_access` defect D249 just fixed for `entity`; `files.file_versions` is unreadable (2026-08-23)
+
+**Measured live as the real non-admin `test@test.com`, immediately after D249's rollout:**
+
+| query | result |
+|---|---|
+| `select count(*) from files.file_versions` | **TIMES OUT** (>90s) |
+| `select count(*) from files.files` (same user, D249 lane) | 3,391 rows, fast |
+
+The generated `component` `std_select` is:
+
+```sql
+(select is_platform_admin())
+  OR file_id IN (select unnest(iam.accessible_entity_ids('file', 'viewer')))
+  OR iam.has_access('file_version', id, 'viewer')
+```
+
+The parent arm is already set-wise — that is the `component` lane's whole design and it works. The **trailing arm is not**, and it is the identical D146 shape D249 removed from `entity`: for every row the parent arm does not admit, Postgres calls a SECURITY DEFINER function once. Broken down live:
+
+| component | cost |
+|---|---|
+| `files.file_versions` row count | 50,423 |
+| `iam.accessible_entity_ids('file','viewer')` | 2.78s → 3,623 ids (once per query — fine) |
+| `iam.has_access('file_version', id, 'viewer')` | ~7ms per row → **~350s over 50,423 rows** |
+
+**Pre-existing, and NOT caused by the D249 work** — `iam.apply_rls`'s `component` branch was not touched by migrations 0476–0481, and its policy text is byte-identical to what that branch has always emitted.
+
+**Why it matters:** `files.file_versions` is a file's version history. A user cannot read the history of files they own.
+
+**The fix is the same technique, already built and proved.** For a component, the trailing `has_access(child_token, id, 'viewer')` can only be true via id-PRODUCING lanes — a direct grant (`iam.permissions`), a membership on the child, `platform.reachability`, or the parent walk that arm 1 already covers set-wise. So it bounds exactly the way `iam.entity_read_expr` bounds the entity lane:
+
+```sql
+OR (id IN (<permissions ∪ memberships ∪ reachability ∪ entity_grants for the child token>)
+    AND iam.has_access('<child_token>', id, 'viewer'))
+```
+
+`iam.entity_read_equivalence` and `scripts/_verify_entity_read_equivalence.py` generalise to components unchanged — the prover compares two expressions and does not care which variant produced them. The kernel-fingerprint guard (`iam.entity_read_kernel_expected()`) already covers the functions a component lane would mirror.
+
+**Filed rather than done in the same session as D249**, deliberately: that was six live migrations across every entity table's read policy, and starting a seventh on a second variant at the end of it is how the mistakes in D249's own history happened (a bound that admitted half the table, a mirror that went stale mid-rollout, a lockout the proof could not see). This one wants its own measurement pass. **191 component tables** carry the lane.
+
 ### D249 — RESOLVED 2026-08-23 — a user listing their OWN files times out: the generated `entity` std_select is a per-row `has_access` over the whole table (2026-08-22)
 
 **Measured live 2026-08-22** as the real non-admin `test@test.com` (owns 3 files), under `SET LOCAL ROLE authenticated` + `request.jwt.claims`, with `statement_timeout = 25s`:
