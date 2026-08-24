@@ -39,8 +39,8 @@ bulk-published, URLs verified 200 with full shell on
 runner + p2/p6/p7 arrows), the same eight steps exist at the SITE level
 (`GET /content-plan/sites/{id}/pipeline` → `SitePipelineStrip`), and every real publish is
 shell-inspected (`cms_verify/shell_check.py`). **What it is NOT yet:** deep (p2 is not real
-content research), specialized (no per-page-type builders), or robust at the publish seam —
-see the new defects below.
+content research) or specialized (no per-page-type builders). The publish seam is now robust
+(queue + gates, 2026-08-24).
 
 🚨 **Templates are an OPTION, never a requirement.** Never build a required/opt-out flag; there is
 nothing to opt out of. The standing requirement is the THEME. Canonical ruling and Arman's
