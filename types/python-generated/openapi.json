@@ -131458,6 +131458,137 @@
         "type": "object",
         "title": "PipelineProgress"
       },
+      "PlacementPassResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "keywords.topic_placement",
+            "title": "Result Kind",
+            "default": "keywords.topic_placement"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "territory": {
+            "type": "string",
+            "title": "Territory",
+            "default": ""
+          },
+          "refreshed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QueueRefreshResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "claimed": {
+            "type": "integer",
+            "title": "Claimed",
+            "default": 0
+          },
+          "placed": {
+            "type": "integer",
+            "title": "Placed",
+            "default": 0
+          },
+          "proposed": {
+            "type": "integer",
+            "title": "Proposed",
+            "default": 0
+          },
+          "human_protected": {
+            "type": "integer",
+            "title": "Human Protected",
+            "default": 0
+          },
+          "topics_created": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Topics Created"
+          },
+          "returned_to_queue": {
+            "type": "integer",
+            "title": "Returned To Queue",
+            "default": 0
+          },
+          "quarantined": {
+            "type": "integer",
+            "title": "Quarantined",
+            "default": 0
+          },
+          "placed_today": {
+            "type": "integer",
+            "title": "Placed Today",
+            "default": 0
+          },
+          "daily_ceiling": {
+            "type": "integer",
+            "title": "Daily Ceiling",
+            "default": 0
+          },
+          "ceiling_reached": {
+            "type": "boolean",
+            "title": "Ceiling Reached",
+            "default": false
+          },
+          "queue_pending": {
+            "type": "integer",
+            "title": "Queue Pending",
+            "default": 0
+          },
+          "queue_deferred": {
+            "type": "integer",
+            "title": "Queue Deferred",
+            "default": 0
+          },
+          "pending_clicks": {
+            "type": "integer",
+            "title": "Pending Clicks",
+            "default": 0
+          },
+          "confidence_floor": {
+            "type": "integer",
+            "title": "Confidence Floor",
+            "default": 0
+          },
+          "guidelines_applied": {
+            "type": "boolean",
+            "title": "Guidelines Applied",
+            "default": false
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "top_phrases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Top Phrases"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id"
+        ],
+        "title": "PlacementPassResult",
+        "description": "What one pass actually did. Every field is measured, never assumed."
+      },
       "PlanAiRunDetail": {
         "properties": {
           "run_id": {
@@ -149705,6 +149836,9 @@
                   },
                   {
                     "$ref": "#/components/schemas/StructuredDataValidateResult"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PlacementPassResult"
                   }
                 ],
                 "discriminator": {
@@ -149719,6 +149853,7 @@
                     "keywords.classify": "#/components/schemas/KeywordClassifyResult",
                     "keywords.facet_backfill": "#/components/schemas/BackfillPassResult",
                     "keywords.relationship_research": "#/components/schemas/KeywordResearchResult",
+                    "keywords.topic_placement": "#/components/schemas/PlacementPassResult",
                     "keywords.volume_refresh": "#/components/schemas/KeywordVolumeRefreshResult",
                     "pages.analyze": "#/components/schemas/PageAnalysisResult",
                     "pages.map_keywords": "#/components/schemas/PageKeywordMapResult",

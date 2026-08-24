@@ -50669,6 +50669,101 @@ export interface components {
             total_documents?: number;
         };
         /**
+         * PlacementPassResult
+         * @description What one pass actually did. Every field is measured, never assumed.
+         */
+        PlacementPassResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "keywords.topic_placement";
+            /** Site Id */
+            site_id: string;
+            /**
+             * Territory
+             * @default
+             */
+            territory?: string;
+            refreshed?: components["schemas"]["QueueRefreshResult"] | null;
+            /**
+             * Claimed
+             * @default 0
+             */
+            claimed?: number;
+            /**
+             * Placed
+             * @default 0
+             */
+            placed?: number;
+            /**
+             * Proposed
+             * @default 0
+             */
+            proposed?: number;
+            /**
+             * Human Protected
+             * @default 0
+             */
+            human_protected?: number;
+            /** Topics Created */
+            topics_created?: string[];
+            /**
+             * Returned To Queue
+             * @default 0
+             */
+            returned_to_queue?: number;
+            /**
+             * Quarantined
+             * @default 0
+             */
+            quarantined?: number;
+            /**
+             * Placed Today
+             * @default 0
+             */
+            placed_today?: number;
+            /**
+             * Daily Ceiling
+             * @default 0
+             */
+            daily_ceiling?: number;
+            /**
+             * Ceiling Reached
+             * @default false
+             */
+            ceiling_reached?: boolean;
+            /**
+             * Queue Pending
+             * @default 0
+             */
+            queue_pending?: number;
+            /**
+             * Queue Deferred
+             * @default 0
+             */
+            queue_deferred?: number;
+            /**
+             * Pending Clicks
+             * @default 0
+             */
+            pending_clicks?: number;
+            /**
+             * Confidence Floor
+             * @default 0
+             */
+            confidence_floor?: number;
+            /**
+             * Guidelines Applied
+             * @default false
+             */
+            guidelines_applied?: boolean;
+            /** Error */
+            error?: string | null;
+            /** Top Phrases */
+            top_phrases?: string[];
+        };
+        /**
          * PlanAiRunDetail
          * @description A past run, opened. The FULL request and result — this is the whole
          *     point of recording the run rather than a column projection of it.
@@ -58043,7 +58138,7 @@ export interface components {
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
             /** Result */
-            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BackfillPassResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["SourceRequestIngestResult"] | components["schemas"]["StoryAngleGenerateResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
+            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BackfillPassResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["FindingFixResult"] | components["schemas"]["KeywordClassifyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["SiteStrategyResult"] | components["schemas"]["TopicAssignResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["SourceRequestIngestResult"] | components["schemas"]["StoryAngleGenerateResult"] | components["schemas"]["StructuredDataValidateResult"] | components["schemas"]["PlacementPassResult"]) | null;
         };
         /** SeoSpendSummaryResponse */
         SeoSpendSummaryResponse: {
