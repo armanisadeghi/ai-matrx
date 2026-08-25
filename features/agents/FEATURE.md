@@ -43,6 +43,22 @@ Files: `features/agents/components/agent-listings/` — `AgentListDropdown.tsx`,
 
 ---
 
+## 🚨 `autoRun` is a UI control. It never decides whether a run happens.
+
+It answers one question — does the interface pause and let the person act
+before the request goes out — and it has NO authority over whether the agent
+runs or whether its component renders. This gets misread as a run gate every
+few weeks and it costs a real feature each time.
+
+**Before touching `autoRun` anywhere, read
+[`docs/AUTORUN_IS_A_UI_CONTROL.md`](docs/AUTORUN_IS_A_UI_CONTROL.md).** It
+carries the rule, why a headless mode (`background`) ignores the flag outright
+rather than deleting the run, why `direct` is deliberately not headless, and
+the one lawful deferral (`callerExecutes`). Guards: `pnpm check:autorun-headless`
+(release gates, blocking) + `autorun-is-a-ui-control.test.ts`.
+
+---
+
 ## Purpose
 
 Agents are autonomous AI specialists. The AI Matrx Harness turns a raw model into one by providing persistent context, tool execution, orchestration, and multi-surface invocation. Everything in the product that does AI work is ultimately an agent invocation — Chat, Runner, Shortcuts, Agent Apps, Builder.
@@ -52,7 +68,7 @@ Agents are autonomous AI specialists. The AI Matrx Harness turns a raw model int
 ## Portable client runtime
 
 Matrix consumes the public `@ai-matrx/agents` package directly; there is no
-repo-private agents facade or host bootstrap. Version `0.2.1` owns the portable
+repo-private agents facade or host bootstrap. Version `0.3.0` owns the portable
 NDJSON normalization, presentation projection, and first request-state
 projector. Matrix's live parser boundary is `lib/api/stream-parser.ts`; host
 effects and the richer Redux request model remain local.
@@ -61,19 +77,13 @@ The golden-event parity harness lives in
 `redux/execution-system/thunks/__tests__/portable-request-parity.test.ts`, with
 shared fixtures and the pure Matrix projection under `runtime/`. It feeds the
 same event arrays to the package projector and Matrix's real `processStream`
-path. The harness currently proves the shared fields that agree and pins three
-known divergences, so they cannot be mistaken for completed parity:
-
-- the package normalizer drops top-level `stream_seq`, so Matrix cannot advance
-  its replay cursor and a replayed chunk can duplicate answer text;
-- the package answer projection omits answer-bearing explicit render blocks
-  that Matrix includes in its canonical answer;
-- the package suspends on every `tool_started`, while Matrix suspends only for
-  delegated client tools.
-
-Those divergences must be fixed and released in the public package before the
-Matrix request reducer can be replaced. See the cross-repo execution-runtime
-source of truth in
+path. Public `0.3.0` closes every portable divergence: `stream_seq` survives
+normalization and makes replay idempotent, only delegated tools suspend the
+request, and the raw chunk answer is compared separately from explicit render
+blocks so neither channel can be lost or double-counted. All shared projection
+fields pass the same-event parity fixture. Matrix retains its richer local
+Redux model for host effects and persistence, not because of a portable-kernel
+gap. See the cross-repo execution-runtime source of truth in
 `../../../common-docs/systems/agents/execution-runtime/FEATURE.md`.
 
 ---
@@ -398,6 +408,7 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-25` — **Upgraded the live Matrix stream boundary to public `@ai-matrx/agents@0.3.0` and closed portable request-state parity.** Identical settled, replayed, and server-tool fixtures now agree on every shared field. `stream_seq` survives normalization and deduplicates replay, normal server tools no longer cause false suspension, and the package's raw-chunk answer is compared independently from explicit render blocks so both portable channels remain lossless. Matrix's host-effect and persistence reducers remain local by design.
 - `2026-08-25` — **Agent access-level reads recover the transient browser-session gap.** `fetchAgentAccessLevel` now uses the shared one-shot `runWithSessionRetry` boundary, so `/chat/new` and other ownership-sync surfaces re-resolve a real signed-in session after PostgREST briefly executes `agx_get_access_level` as `anon`; authenticated grant defects remain non-retryable. A forcing thunk test pins the 401/42501 → recovered session → successful second RPC sequence.
 - `2026-08-24` — **Converged the portable agents client onto the public package without claiming reducer parity.** `@ai-matrx/agents` is pinned to `0.2.1`; the zero-caller repo-private `@matrx/agents` facade and `configureAgentsForHost` bootstrap were deleted with their workspace/alias/audit references. A golden-event harness now drives identical settled, replayed, and server-tool streams through the package's pure request projector and Matrix's real `processStream` path. It proves the matching shared fields and locks three exact blockers: normalized events lose `stream_seq`, package answer text omits answer-bearing explicit render blocks, and normal server tools are incorrectly projected as `awaiting-tools`. Matrix therefore retains its local reducer/effects until a public package release closes those gaps.
 - `2026-08-24` — **Restored the canonical stored-PDF attachment contract end to end.** Stored files now remain file-ID `resource_ref` context on a fresh/cache-only first turn instead of degrading into provider-native PDF bytes; the server persists the canonical `file → conversation` edge from that explicit reference before execution, then the client drops its provisional reference only when association inventory proves the edge readable (`record_reserved` alone is not persistence proof). Automatic primary selection is exactly Clean → Raw → Original PDF, while the restored primary chooser is independent of the existing inline-promotion/exclusion family controls. Policy edits preserve primary metadata, explicit overrides flow through the request and durable edge, unavailable/empty representations cannot win fallback, and Original PDF materializes as the canonical stored document reference. Focused request, reducer-lifecycle, resolver, and durable-association tests pin the contract.

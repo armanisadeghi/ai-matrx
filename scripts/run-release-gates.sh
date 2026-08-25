@@ -175,6 +175,13 @@ if $STRICT; then
         # advisory carve-out. `pnpm check:kind-marker-law --list` explains every
         # lawful door.
         "The __kind marker law (no stripping)|pnpm check:kind-marker-law"
+        # autoRun is a UI control; a mode that paints no interface has nothing
+        # for it to control, so `autoRun: false` there deletes the run instead
+        # of deferring it. Zero violations at introduction (2026-08-25) and one
+        # measured victim before it (image-studio DESCRIBE never ran), so there
+        # is no backlog to grandfather — a finding is new, and it is a run the
+        # user will never get.
+        "autoRun never paired with a headless mode|pnpm check:autorun-headless"
         "Content IR / kinds test suite|pnpm test:content-ir"
         # Docs guards went STRICT 2026-08-15 (guards-advisory-to-strict): both
         # repos reached zero violations, so a finding here is new drift, not
@@ -340,6 +347,13 @@ else
         # advisory carve-out. `pnpm check:kind-marker-law --list` explains every
         # lawful door.
         "The __kind marker law (no stripping)|pnpm check:kind-marker-law"
+        # autoRun is a UI control; a mode that paints no interface has nothing
+        # for it to control, so `autoRun: false` there deletes the run instead
+        # of deferring it. Zero violations at introduction (2026-08-25) and one
+        # measured victim before it (image-studio DESCRIBE never ran), so there
+        # is no backlog to grandfather — a finding is new, and it is a run the
+        # user will never get.
+        "autoRun never paired with a headless mode|pnpm check:autorun-headless"
         "Content IR / kinds test suite|pnpm test:content-ir"
         "URL identity twins (TS vs Python)|pnpm exec tsx scripts/check-url-identity.ts"
         # STRICT since 2026-08-15 (also in the strict list above): the Wave-5
