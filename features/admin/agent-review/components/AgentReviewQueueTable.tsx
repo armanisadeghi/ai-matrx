@@ -21,6 +21,7 @@ import {
   type ReviewQueueRow,
   type ReviewStatus,
 } from "@/features/admin/agent-review/types";
+import { reviewTargetPageDisplay } from "@/features/admin/agent-review/target-page";
 
 const FLOW = [
   { statuses: ["submitted"], label: "1. Submitted" },
@@ -159,15 +160,22 @@ export default function AgentReviewQueueTable() {
         accessorKey: "url",
         header: "Target page",
         cellKind: "text",
-        cell: (row) => (
-          <Link
-            href={row.url}
-            className="inline-flex items-center gap-1 text-primary hover:underline"
-            target="_blank"
-          >
-            {row.url} <ExternalLink className="h-3 w-3" />
-          </Link>
-        ),
+        cell: (row) => {
+          const target = reviewTargetPageDisplay(row.url);
+          return (
+            <Link
+              href={target.href}
+              title={target.href}
+              aria-label={`Open target page: ${target.href}`}
+              className="flex min-w-0 max-w-full items-center gap-1 text-primary hover:underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span className="min-w-0 truncate">{target.label}</span>
+              <ExternalLink className="h-3 w-3 shrink-0" />
+            </Link>
+          );
+        },
         width: 260,
         mobileHidden: true,
       },
