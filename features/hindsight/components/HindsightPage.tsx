@@ -61,48 +61,54 @@ export function HindsightPage() {
     active[0]?.id,
   );
 
+  // Height model: the admin tree pins `--shell-header-h` to 2.5rem and cancels
+  // `.shell-main`'s negative pull (styles/shell.css), so a page owns exactly
+  // `100dvh - 2.5rem`. Locking that height on `lg` is what lets the two panes
+  // scroll INDEPENDENTLY — the enrollment list must never ride the detail
+  // pane's scroll. Below `lg` the grid collapses to one column and the page
+  // returns to normal document scroll, because two nested scrollers stacked on
+  // a phone is the worse failure.
   return (
-    <div className="space-y-4 p-4">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">Hindsight</h1>
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            The platform reads its own history and improves itself. Enroll an
-            agent, workflow, one workflow step, tool, or environment; every N
-            real runs a reviewer agent reads the actual transcripts — never
-            metrics alone — and
-            proposes fixes across four levers: instructions, resources, tool
-            design, and architecture.
-          </p>
-        </div>
+    <div className="flex flex-col gap-4 p-4 lg:h-[calc(100dvh-2.5rem)] lg:overflow-hidden">
+      {/*
+        No page title and no description here on purpose: the route's own
+        `metadata.title` already names this page in the tab and the shell
+        chrome, and a dashboard surface never repeats it as an in-body h1
+        (Arman, 2026-08-25). The toolbar carries spend + the one action.
+      */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {costs.data ? (
+          <Card className="flex flex-wrap items-center gap-x-8 gap-y-2 p-3 text-sm">
+            <span className="text-xs uppercase text-muted-foreground">
+              Platform-wide Hindsight spend
+            </span>
+            <span>
+              <strong className="tabular-nums">{fmtCost(costs.data.total_cost)}</strong>{" "}
+              total
+            </span>
+            <span className="text-muted-foreground">
+              {fmtCost(costs.data.review_cost)} across {costs.data.review_count}{" "}
+              review{costs.data.review_count === 1 ? "" : "s"}
+            </span>
+            <span className="text-muted-foreground">
+              {fmtCost(costs.data.replay_cost)} across {costs.data.replay_count}{" "}
+              replay{costs.data.replay_count === 1 ? "" : "s"}
+            </span>
+          </Card>
+        ) : (
+          <span />
+        )}
         <Button onClick={() => setEnrollOpen(true)} data-testid="hindsight-enroll-open">
           <Plus className="mr-1 h-4 w-4" />
           Enroll
         </Button>
-      </header>
+      </div>
 
-      {costs.data && (
-        <Card className="flex flex-wrap items-center gap-x-8 gap-y-2 p-3 text-sm">
-          <span className="text-xs uppercase text-muted-foreground">
-            Platform-wide Hindsight spend
-          </span>
-          <span>
-            <strong className="tabular-nums">{fmtCost(costs.data.total_cost)}</strong>{" "}
-            total
-          </span>
-          <span className="text-muted-foreground">
-            {fmtCost(costs.data.review_cost)} across {costs.data.review_count}{" "}
-            review{costs.data.review_count === 1 ? "" : "s"}
-          </span>
-          <span className="text-muted-foreground">
-            {fmtCost(costs.data.replay_cost)} across {costs.data.replay_count}{" "}
-            replay{costs.data.replay_count === 1 ? "" : "s"}
-          </span>
-        </Card>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-        <div className="space-y-2">
+      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[320px_1fr]">
+        <div
+          className="space-y-2 lg:min-h-0 lg:overflow-y-auto lg:pr-1"
+          data-testid="hindsight-enrollment-list"
+        >
           {enrollments.isLoading && <Skeleton className="h-32" />}
           {enrollments.isError && (
             <Card className="p-4 text-sm text-red-600 dark:text-red-400">
@@ -157,7 +163,7 @@ export function HindsightPage() {
           )}
         </div>
 
-        <div>
+        <div className="space-y-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           {selected ? (
             <EnrollmentDetailPanel
               enrollmentId={selected}
@@ -168,19 +174,22 @@ export function HindsightPage() {
               Select an enrollment to see its reviews and findings.
             </Card>
           )}
+
+          {/*
+            Internal Affairs (C-19). Not a separate system — a view of the SAME
+            substrate: what the platform changed about itself, and whether that
+            advice held up. It rides the DETAIL column's scroll (it used to sit
+            below the whole grid): once the enrollment list owns its own
+            scroller, a section outside both panes would be unreachable without
+            re-coupling the two scrolls. It stays the cross-cutting read, below
+            the per-enrollment panel.
+          */}
+          <section className="space-y-4">
+            <FindingEffectivenessPanel />
+            <ChangeHistoryPanel />
+          </section>
         </div>
       </div>
-
-      {/*
-        Internal Affairs (C-19). Not a separate system — a view of the SAME
-        substrate: what the platform changed about itself, and whether that
-        advice held up. It sits below the enrollments because it is the
-        cross-cutting read; the panel above is per-enrollment.
-      */}
-      <section className="space-y-4">
-        <FindingEffectivenessPanel />
-        <ChangeHistoryPanel />
-      </section>
 
       <EnrollDialog
         open={enrollOpen}
