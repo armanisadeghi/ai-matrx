@@ -28,9 +28,9 @@
  *     through ONE RPC (`setKeywordValue`) and beats everything.
  *  2. Meaning is data — the "How value is computed" panel shows the exact
  *     bands, rules, geo areas, and topic worth the arithmetic uses.
- *  3. Every number explains itself — the Why column renders each row's
- *     reasons chain on EVERY row, never behind a click; a tier without its
- *     why never renders.
+ *  3. Every number explains itself — the table stays compact, while row
+ *     context and the detail surface keep the complete reasons chain one
+ *     gesture away.
  *
  * Unvalued is the loudest tile and the default working filter target: it is
  * the work queue, never a silently-guessed middle tier. And "Your setup, as it
@@ -139,7 +139,10 @@ import {
   type BandMeta,
 } from "../lib";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
-import { ClassCell, StampCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
+import {
+  ClassCell,
+  StampCell,
+} from "@/features/marketing/seo/keyword-workbench/components/cells";
 import { ColumnChooser } from "@/features/marketing/seo/keyword-table/ColumnChooser";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
 import {
@@ -196,7 +199,9 @@ const SOURCE_META: Record<
   },
 };
 
-function singleSelectValue(filter: ColumnFilterValue | undefined): string | null {
+function singleSelectValue(
+  filter: ColumnFilterValue | undefined,
+): string | null {
   if (filter?.kind !== "select") return null;
   return filter.values?.[0] ?? filter.value ?? null;
 }
@@ -383,7 +388,8 @@ export function ValueWorkbench() {
    */
   const suggestedColumns = useQuery({
     queryKey: ["seo", "suggested-dimension-columns", siteId],
-    queryFn: ({ signal }) => getSuggestedDimensionColumns(siteId as string, 3, signal),
+    queryFn: ({ signal }) =>
+      getSuggestedDimensionColumns(siteId as string, 3, signal),
     enabled: !!siteId && urlDimensionColumns.length === 0,
     staleTime: 5 * 60 * 1000,
   });
@@ -393,7 +399,9 @@ export function ValueWorkbench() {
       : (suggestedColumns.data ?? []).map((entry) => entry.slug);
   const setDimensionColumns = (next: string[]) => {
     const params = new URLSearchParams(searchParams.toString());
-    next.length > 0 ? params.set("cols", next.join(",")) : params.delete("cols");
+    next.length > 0
+      ? params.set("cols", next.join(","))
+      : params.delete("cols");
     // P27 — adding or removing a column is a discrete change, so Back undoes
     // exactly it.
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
@@ -574,7 +582,10 @@ export function ValueWorkbench() {
    * Four hand-rolled copies of this object spread was how the same filter
    * ended up behaving three different ways.
    */
-  function filterBy(column: "value_band" | "value_source", value: string | null) {
+  function filterBy(
+    column: "value_band" | "value_source",
+    value: string | null,
+  ) {
     table.onStateChange({
       ...table.state,
       page: 1,
@@ -671,8 +682,7 @@ export function ValueWorkbench() {
     ],
     queryFn: ({ signal }) =>
       getKeywordStamps(siteId, visibleKeywordIds, dimensionColumns, signal),
-    enabled:
-      visibleKeywordIds.length > 0 && dimensionColumns.length > 0,
+    enabled: visibleKeywordIds.length > 0 && dimensionColumns.length > 0,
     staleTime: 60_000,
   });
 
@@ -781,13 +791,13 @@ export function ValueWorkbench() {
     // THE QUESTIONS COME FIRST (Arman, 2026-08-25). These sat after Clicks
     // and Impressions, which put them off the right edge of the screen — so
     // the page still read as "set the level" even once the columns defaulted
-    // on. The answers a person is meant to give now sit beside the keyword,
-    // and the LEVEL they produce follows them.
+    // on. The answers a person is meant to give now sit beside Class and the
+    // compact performance/score columns finish the row.
     //
     // KI-026 — the site's own dimensions, in the order they were picked. The
-    // SAME `StampCell` the Keyword Workbench renders, and the SAME assign
-    // path (`surfaces.openDimension`), so a value set here is a value set
-    // there. Filtering is deliberately off: this table's server query is the
+    // SAME `StampCell` the Keyword Workbench renders, and the SAME stamp write,
+    // so a value set here is a value set there. Filtering is deliberately off:
+    // this table's server query is the
     // value-review RPC, which does not speak the stamp filter, and a filter
     // that silently only knew this page would be the quiet lie P28 exists to
     // stop.
@@ -796,7 +806,8 @@ export function ValueWorkbench() {
       // A site dimension's slug carries a `site_<8 hex>_` prefix that is
       // plumbing — it never reaches a header.
       const label =
-        dimension?.label ?? humanizeSlug(slug.replace(/^site_[0-9a-f]{8}_/, ""));
+        dimension?.label ??
+        humanizeSlug(slug.replace(/^site_[0-9a-f]{8}_/, ""));
       return {
         id: `dim:${slug}`,
         header: label,
@@ -834,7 +845,7 @@ export function ValueWorkbench() {
               }
               source={stamp?.source ?? null}
               notes={stamp?.notes ?? null}
-              loading={dimensionCatalog.isLoading}
+              loading={catalog.isLoading}
               onPick={(picked) => void quickAssignStamp(row.keyword_id, picked)}
               onAssignWithReason={() =>
                 surfaces.openDimension(
@@ -864,9 +875,10 @@ export function ValueWorkbench() {
       sortable: false,
       filter: "select",
       filterSingle: true,
-      filterOptions: (
-        Object.keys(SOURCE_META) as ValueSource[]
-      ).map((key) => ({ value: key, label: SOURCE_META[key].label })),
+      filterOptions: (Object.keys(SOURCE_META) as ValueSource[]).map((key) => ({
+        value: key,
+        label: SOURCE_META[key].label,
+      })),
       mobileHidden: true,
       cell: (row) => <SourceChip source={row.value_source} />,
     },
@@ -963,8 +975,7 @@ export function ValueWorkbench() {
               label: row.keyword,
               mode: "set",
               tier:
-                row.value_source === "override" &&
-                row.value_band !== "unvalued"
+                row.value_source === "override" && row.value_band !== "unvalued"
                   ? row.value_band
                   : null,
             })
@@ -1007,7 +1018,7 @@ export function ValueWorkbench() {
       surfaceName={KEYWORD_VALUE_WORKBENCH_SURFACE_NAME}
       getScope={getScope}
     >
-    {/*
+      {/*
       The page scrolls; the TABLE does not scroll inside it.
 
       This was a fixed-viewport pane (`overflow-hidden`, the table bounded by
@@ -1018,552 +1029,557 @@ export function ValueWorkbench() {
       One scroll surface, at natural height, is what the rest of this family
       does (topics, rules, packs) and what a 50-row page wants.
     */}
-    <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto bg-textured p-3 sm:p-4">
-      {/* HEADER — one line. The window used to be spelled out in a
+      <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto bg-textured p-3 sm:p-4">
+        {/* HEADER — one line. The window used to be spelled out in a
           sentence under the title; it is a fact, so it is a chip. */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 pr-14">
-        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            <CircleDollarSign className="h-4 w-4 text-primary" />
-            Keyword value
-          </h1>
-          <span
-            className="truncate text-xs text-muted-foreground"
-            title={`What ${site.domain}'s search traffic is actually worth. Every number on this page covers ${window.start} to ${window.end}, compared with the 28 days before it.`}
-          >
-            {site.domain} · {formatWindowLabel(window)} vs prior 28 days
-          </span>
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 pr-14">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <CircleDollarSign className="h-4 w-4 text-primary" />
+              Keyword value
+            </h1>
+            <span
+              className="truncate text-xs text-muted-foreground"
+              title={`What ${site.domain}'s search traffic is actually worth. Every number on this page covers ${window.start} to ${window.end}, compared with the 28 days before it.`}
+            >
+              {site.domain} · {formatWindowLabel(window)} vs prior 28 days
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <ValueDoors brandId={brandId} siteId={siteId} />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => setMeaningOpen((open) => !open)}
+            >
+              <BookOpenText className="h-3.5 w-3.5" />
+              How value is computed
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <ValueDoors brandId={brandId} siteId={siteId} />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1.5 text-xs"
-            onClick={() => setMeaningOpen((open) => !open)}
-          >
-            <BookOpenText className="h-3.5 w-3.5" />
-            How value is computed
-          </Button>
-        </div>
-      </div>
 
-      {/* THE KPI BAND — first, always. The numbers a person came for, and the
+        {/* THE KPI BAND — first, always. The numbers a person came for, and the
           only block on this page allowed to be the biggest thing on it. */}
-      {summary.isError ? (
-        <InlineQueryError
-          what="the value decomposition"
-          error={summary.error}
-          onRetry={() => void summary.refetch()}
-        />
-      ) : (
-        <ValueKpiBand
-          kpis={kpis}
-          rulings={rulings.data ?? null}
-          // isPending, not isLoading: a paused fetch (offline) must show the
-          // skeleton — zero-filled tiles for data that never arrived are a lie.
-          isLoading={summary.isPending}
-          activeBand={bandFilter}
-          activeSource={sourceFilter}
-          onFilterBand={(band) => filterBy("value_band", band)}
-          onFilterSource={(source) => filterBy("value_source", source)}
-          onClearFilters={() =>
-            table.onStateChange({
-              ...table.state,
-              page: 1,
-              columnFilters: {},
-            })
-          }
-          onShowLevels={() => {
-            setLevelsOpen(true);
-            levelsRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-            });
-          }}
-          onStartSession={() => setSessionOpen(true)}
-          onQuickAnswers={() =>
-            dispatch(
-              openOverlay({
-                overlayId: "keywordQuickAnswersWindow",
-                data: {
-                  siteId,
-                  siteLabel: site.name ?? site.domain,
-                  dimensionSlug: dimensionColumns[0] ?? null,
-                },
-              }),
-            )
-          }
-          sessionOpen={sessionOpen}
-        />
-      )}
+        {summary.isError ? (
+          <InlineQueryError
+            what="the value decomposition"
+            error={summary.error}
+            onRetry={() => void summary.refetch()}
+          />
+        ) : (
+          <ValueKpiBand
+            kpis={kpis}
+            rulings={rulings.data ?? null}
+            // isPending, not isLoading: a paused fetch (offline) must show the
+            // skeleton — zero-filled tiles for data that never arrived are a lie.
+            isLoading={summary.isPending}
+            activeBand={bandFilter}
+            activeSource={sourceFilter}
+            onFilterBand={(band) => filterBy("value_band", band)}
+            onFilterSource={(source) => filterBy("value_source", source)}
+            onClearFilters={() =>
+              table.onStateChange({
+                ...table.state,
+                page: 1,
+                columnFilters: {},
+              })
+            }
+            onShowLevels={() => {
+              setLevelsOpen(true);
+              levelsRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
+            }}
+            onStartSession={() => setSessionOpen(true)}
+            onQuickAnswers={() =>
+              dispatch(
+                openOverlay({
+                  overlayId: "keywordQuickAnswersWindow",
+                  data: {
+                    siteId,
+                    siteLabel: site.name ?? site.domain,
+                    dimensionSlug: dimensionColumns[0] ?? null,
+                  },
+                }),
+              )
+            }
+            sessionOpen={sessionOpen}
+          />
+        )}
 
-      {/* THE VERDICT — grafted from variant B. Composed English that names the
+        {/* THE VERDICT — grafted from variant B. Composed English that names the
           divergence the totals hide. One sentence, under the numbers it is
           about; the contrast band is clickable because the sentence is a claim
           the user must be able to inspect. */}
-      {verdict ? (
-        <p className="shrink-0 text-xs leading-5 text-foreground">
-          <span className="font-medium">{verdict.headline}</span>
-          {verdict.detail ? (
-            verdict.contrastBand ? (
-              <button
-                type="button"
-                className="ml-1 text-left text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
-                title={`Filter the table to ${bandMetaFor(metas, verdict.contrastBand).label}`}
-                onClick={() => filterBy("value_band", verdict.contrastBand)}
-              >
-                {verdict.detail}
-              </button>
-            ) : (
-              <span className="ml-1 text-muted-foreground">
-                {verdict.detail}
-              </span>
-            )
-          ) : null}
-        </p>
-      ) : null}
+        {verdict ? (
+          <p className="shrink-0 text-xs leading-5 text-foreground">
+            <span className="font-medium">{verdict.headline}</span>
+            {verdict.detail ? (
+              verdict.contrastBand ? (
+                <button
+                  type="button"
+                  className="ml-1 text-left text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+                  title={`Filter the table to ${bandMetaFor(metas, verdict.contrastBand).label}`}
+                  onClick={() => filterBy("value_band", verdict.contrastBand)}
+                >
+                  {verdict.detail}
+                </button>
+              ) : (
+                <span className="ml-1 text-muted-foreground">
+                  {verdict.detail}
+                </span>
+              )
+            ) : null}
+          </p>
+        ) : null}
 
-      {/* What is unfinished about this site's setup — states and doors, never
+        {/* What is unfinished about this site's setup — states and doors, never
           the page's headline (see ./MeaningHealth for why it is a row now). */}
-      <MeaningHealth
-        rows={health.data}
-        isLoading={health.isPending}
-        error={health.isError ? health.error : null}
-        onRetry={() => void health.refetch()}
-        brandId={brandId}
-        siteId={siteId}
-      />
+        <MeaningHealth
+          rows={health.data}
+          isLoading={health.isPending}
+          error={health.isError ? health.error : null}
+          onRetry={() => void health.refetch()}
+          brandId={brandId}
+          siteId={siteId}
+        />
 
-      <ReadyDefaultsBanner />
+        <ReadyDefaultsBanner />
 
-      {/* WHAT THE AGENTS PROPOSED and you have not answered yet — rendered in
+        {/* WHAT THE AGENTS PROPOSED and you have not answered yet — rendered in
           BOTH postures. The ruling session's trial proposes rule changes into
           exactly this queue, so a session that hid it would tell a person to
           "approve it below" and then show them nothing. */}
-      {sessionOpen ? (
-        <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
-      ) : null}
+        {sessionOpen ? (
+          <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
+        ) : null}
 
-      {sessionOpen ? (
-        <RulingSession
-          siteId={siteId}
-          siteLabel={`${site.name ?? site.domain} (${site.domain})`}
-          organizationId={site.organization_id}
-          window={window}
-          metas={metas}
-          dimensions={dimensions}
-          dimensionsLoading={catalog.isLoading}
-          totalUnvalued={unvaluedQueries}
-          ruledCount={sessionRuled}
-          rulingPending={ruling.isPending}
-          onRule={(input) =>
-            ruling.mutate({
-              keywordIds: input.keywordIds,
-              tier: input.tier,
-              notes: input.notes,
-              label: input.label,
-            })
-          }
-          onExit={() => {
-            setSessionOpen(false);
-            setSessionRuled(0);
-          }}
-        />
-      ) : (
-        <>
-      {/* THE LEVEL BREAKDOWN — kept on Arman's explicit instruction ("don't
+        {sessionOpen ? (
+          <RulingSession
+            siteId={siteId}
+            siteLabel={`${site.name ?? site.domain} (${site.domain})`}
+            organizationId={site.organization_id}
+            window={window}
+            metas={metas}
+            dimensions={dimensions}
+            dimensionsLoading={catalog.isLoading}
+            totalUnvalued={unvaluedQueries}
+            ruledCount={sessionRuled}
+            rulingPending={ruling.isPending}
+            onRule={(input) =>
+              ruling.mutate({
+                keywordIds: input.keywordIds,
+                tier: input.tier,
+                notes: input.notes,
+                label: input.label,
+              })
+            }
+            onExit={() => {
+              setSessionOpen(false);
+              setSessionRuled(0);
+            }}
+          />
+        ) : (
+          <>
+            {/* THE LEVEL BREAKDOWN — kept on Arman's explicit instruction ("don't
           get rid of them yet") and marked for exactly what he said about it:
           he is not sure the tiles are meaningful. So they render UNDER the
           KPIs, at tile size, behind a header that says so. Every tile is
           still a live filter into the table. */}
-      <section ref={levelsRef} className="shrink-0 space-y-1.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setLevelsOpen((open) => !open)}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground transition-colors hover:text-primary"
-          >
-            <ChevronDown
-              className={cn(
-                "h-3 w-3 transition-transform",
-                !levelsOpen && "-rotate-90",
-              )}
-            />
-            By level
-          </button>
-          <span
-            className="rounded border border-border bg-muted/40 px-1.5 py-px text-[10px] uppercase tracking-wide text-muted-foreground"
-            title="Provisional. These tiles predate the level system and Arman has not yet ruled on whether the split is the right one — they are kept, and deliberately subordinate to the KPIs above, until he does."
-          >
-            provisional
-          </span>
-          {bandFilter ? (
-            <button
-              type="button"
-              onClick={() => filterBy("value_band", null)}
-              className="text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
-            >
-              Showing {bandMetaFor(metas, bandFilter).label} only — clear
-            </button>
-          ) : (
-            <span className="text-[11px] text-muted-foreground">
-              click a level to filter the table
-            </span>
-          )}
-        </div>
+            <section ref={levelsRef} className="shrink-0 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLevelsOpen((open) => !open)}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground transition-colors hover:text-primary"
+                >
+                  <ChevronDown
+                    className={cn(
+                      "h-3 w-3 transition-transform",
+                      !levelsOpen && "-rotate-90",
+                    )}
+                  />
+                  By level
+                </button>
+                <span
+                  className="rounded border border-border bg-muted/40 px-1.5 py-px text-[10px] uppercase tracking-wide text-muted-foreground"
+                  title="Provisional. These tiles predate the level system and Arman has not yet ruled on whether the split is the right one — they are kept, and deliberately subordinate to the KPIs above, until he does."
+                >
+                  provisional
+                </span>
+                {bandFilter ? (
+                  <button
+                    type="button"
+                    onClick={() => filterBy("value_band", null)}
+                    className="text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+                  >
+                    Showing {bandMetaFor(metas, bandFilter).label} only — clear
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-muted-foreground">
+                    click a level to filter the table
+                  </span>
+                )}
+              </div>
 
-        {vocab.isError ? (
-          <InlineQueryError
-            what="the value-band vocabulary"
-            error={vocab.error}
-            onRetry={() => void vocab.refetch()}
-          />
-        ) : levelsOpen && !summary.isError ? (
-          <BandScoreboard
-            metas={metas}
-            summary={summary.data}
-            isLoading={summary.isPending || vocab.isPending}
-            activeBand={bandFilter}
-            onSelectBand={(band) => filterBy("value_band", band)}
-          />
-        ) : null}
-      </section>
+              {vocab.isError ? (
+                <InlineQueryError
+                  what="the value-band vocabulary"
+                  error={vocab.error}
+                  onRetry={() => void vocab.refetch()}
+                />
+              ) : levelsOpen && !summary.isError ? (
+                <BandScoreboard
+                  metas={metas}
+                  summary={summary.data}
+                  isLoading={summary.isPending || vocab.isPending}
+                  activeBand={bandFilter}
+                  onSelectBand={(band) => filterBy("value_band", band)}
+                />
+              ) : null}
+            </section>
 
-      {/* WHAT THE AGENTS PROPOSED and you have not answered yet. Nothing here
+            {/* WHAT THE AGENTS PROPOSED and you have not answered yet. Nothing here
           has touched a matcher, a worth row, a stamp or the guidelines — that
           is P12. It used to sit above every number, which put a suggestion
           ahead of the site's own facts; it is one chip row, below them, and
           it renders nothing at all when the queue is empty. */}
-      <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
+            <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
 
-      {/* ONE assignment surface, borrowed whole from the shared keyword
+            {/* ONE assignment surface, borrowed whole from the shared keyword
           actions — never a second implementation of "assign with a reason".
           MOUNTED INLINE, not in a Dialog: the value picker inside it opens its
           own portalled popover, and a Radix Dialog reads that click as an
           outside interaction and closes itself mid-assignment. Caught in the
           live pass on 2026-08-24 — if you move this into an overlay, that bug
           comes straight back. */}
-      {surfaces.isOpen ? (
-        <div className="shrink-0">{surfaces.node}</div>
-      ) : null}
+            {surfaces.isOpen ? (
+              <div className="shrink-0">{surfaces.node}</div>
+            ) : null}
 
-      {/* Review table — ONE v3 menu around the whole pane. */}
-      <NonEditableContextMenu
-        sourceFeature="marketing"
-        surfaceName={KEYWORD_VALUE_WORKBENCH_SURFACE_NAME}
-        contentSource={{ type: "raw" }}
-        // The surface's declared values ride along — the SAME emitter the page
-        // provider uses. A `surfaceName` without them makes the v3
-        // value-mapping guard scream, and it would be right to.
-        contextData={{ ...getScope(), content: "" }}
-        resolveContextOnOpen={(target) => {
-          const id = target
-            ?.closest("[data-row-id]")
-            ?.getAttribute("data-row-id");
-          const row = (id && rows.find((r) => r.keyword_id === id)) || null;
-          clickedRow.current = row;
-          if (!row) return null;
-          return {
-            // ONE menu serves every row, so the ROW's entity — not the pane's —
-            // owns Attach To. v3 rebuilds the entity actions from this key
-            // (`CONTEXT_MENU_ENTITY_KEY`); Share stays hidden because a keyword
-            // is not a shareable resource, which is honest rather than fake.
-            [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
-              phrase: row.keyword,
-              keywordId: row.keyword_id,
-            }),
-            content: [
-              `Keyword: ${row.keyword}`,
-              `Level: ${bandMetaFor(metas, row.value_band).label}`,
-              `Score: ${formatScore(row.value_score)}`,
-              `Class: ${row.traffic_class ? humanizeSlug(row.traffic_class) : "not set"}`,
-              `Decided by: ${SOURCE_META[row.value_source]?.label ?? row.value_source}`,
-              `Clicks: ${formatCount(row.clicks)} · Impressions: ${formatCount(row.impressions)}`,
-            ].join("\n"),
-            keyword: row.keyword,
-            keyword_id: row.keyword_id,
-          };
-        }}
-        extraSections={[keywordSection]}
-      >
-      <div className="flex flex-col rounded-lg border border-border bg-card p-2">
-        {review.isError ? (
-          <InlineQueryError
-            what="the keyword value review"
-            error={review.error}
-            onRetry={() => void review.refetch()}
-          />
-        ) : null}
-        <MatrxDataTable<ValueReviewRow>
-          data={rows}
-          columns={columns}
-          getRowId={(row) => row.keyword_id}
-          isLoading={review.isPending}
-          isFetching={review.isFetching}
-          query={{
-            mode: "controlled",
-            state: table.state,
-            totalItems: total,
-            onStateChange: table.onStateChange,
-          }}
-          toolbar={{
-            searchPlaceholder: "Search keywords…",
-            // KI-026 — the site's own dimensions, offered as columns. Same
-            // chooser the Keyword Workbench uses; its core-column half is
-            // omitted because this page's other columns are its own ruled
-            // layout, not the shared core set.
-            actions: (
-              <ColumnChooser
-                dimensions={dimensions}
-                loading={catalog.isLoading}
-                selected={dimensionColumns}
-                onSelectedChange={setDimensionColumns}
-                newDimensionHref={`/marketing/brands/${brandId}/sites/${siteId}/value/dimensions`}
-              />
-            ),
-          }}
-          selection={{
-            selectedIds,
-            onSelectedIdsChange: setSelectedIds,
-            noun: "keyword",
-            actions: (_selected, ids) => (
-              <>
-                <Button
-                  type="button"
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
-                  disabled={ruling.isPending}
-                  onClick={() =>
-                    setDraft({
-                      keywordIds: ids,
-                      label: `${ids.length} keywords`,
-                      mode: "set",
-                      tier: null,
-                    })
-                  }
-                >
-                  <Gavel className="h-3 w-3" /> Set value…
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="h-7 gap-1 px-2 text-xs text-muted-foreground"
-                  disabled={ruling.isPending}
-                  onClick={() =>
-                    setDraft({
-                      keywordIds: ids,
-                      label: `${ids.length} keywords`,
-                      mode: "clear",
-                      tier: null,
-                    })
-                  }
-                >
-                  <Undo2 className="h-3 w-3" /> Clear rulings
-                </Button>
-              </>
-            ),
-          }}
-          detail={{
-            title: (row) => row.keyword,
-            defaultWidth: 440,
-            headerActions: (row) => (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1.5 px-2 text-xs"
-                title="Everything the platform knows about this keyword"
-                onClick={() =>
-                  openKeywordWindow({
+            {/* Review table — ONE v3 menu around the whole pane. */}
+            <NonEditableContextMenu
+              sourceFeature="marketing"
+              surfaceName={KEYWORD_VALUE_WORKBENCH_SURFACE_NAME}
+              contentSource={{ type: "raw" }}
+              // The surface's declared values ride along — the SAME emitter the page
+              // provider uses. A `surfaceName` without them makes the v3
+              // value-mapping guard scream, and it would be right to.
+              contextData={{ ...getScope(), content: "" }}
+              resolveContextOnOpen={(target) => {
+                const id = target
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row =
+                  (id && rows.find((r) => r.keyword_id === id)) || null;
+                clickedRow.current = row;
+                if (!row) return null;
+                return {
+                  // ONE menu serves every row, so the ROW's entity — not the pane's —
+                  // owns Attach To. v3 rebuilds the entity actions from this key
+                  // (`CONTEXT_MENU_ENTITY_KEY`); Share stays hidden because a keyword
+                  // is not a shareable resource, which is honest rather than fake.
+                  [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
                     phrase: row.keyword,
-                    siteId,
-                    brandId,
-                    organizationId: site.organization_id,
-                  })
-                }
-              >
-                <PanelRightOpen className="h-3.5 w-3.5" /> Keyword intel
-              </Button>
-            ),
-            render: (row) => {
-              const meta = bandMetaFor(metas, row.value_band);
-              return (
-                <div className="space-y-4 p-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={cn(
-                        "rounded border px-2 py-0.5 text-xs font-medium",
-                        meta.chip,
-                      )}
-                    >
-                      {meta.label}
-                    </span>
-                    <SourceChip source={row.value_source} />
-                    <span className="text-xs tabular-nums text-muted-foreground">
-                      score {formatScore(row.value_score)}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    {[
-                      ["Clicks", formatCount(row.clicks)],
-                      ["Impressions", formatCount(row.impressions)],
-                    ].map(([label, value]) => (
-                      <div
-                        key={label}
-                        className="rounded-md border border-border bg-muted/30 px-2 py-1.5"
-                      >
-                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                          {label}
-                        </p>
-                        <p className="text-sm font-semibold tabular-nums">
-                          {value}
-                        </p>
-                      </div>
-                    ))}
-                    {/* Class is SETTABLE, so it is never a stat tile here
-                        either — same rule as the column. */}
-                    <button
-                      type="button"
-                      disabled={!row.keyword_id}
-                      onClick={() =>
-                        surfaces.openDimension(
-                          { phrase: row.keyword, keywordId: row.keyword_id },
-                          "traffic_class",
-                        )
-                      }
-                      className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-center transition-colors hover:border-primary/40 hover:bg-accent"
-                      title="Set this keyword's class — the same write as the Keyword Workbench, with room for your reason."
-                    >
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        Class
-                      </p>
-                      <p className="text-sm font-semibold">
-                        {row.traffic_class
-                          ? humanizeSlug(row.traffic_class)
-                          : "Set it"}
-                      </p>
-                    </button>
-                  </div>
-                  <div>
-                    <p className="mb-1.5 text-xs font-semibold text-foreground">
-                      Why this level
-                    </p>
-                    <ReasonChainDetail
-                      reasons={row.reasons}
-                      source={row.value_source}
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-2 border-t border-border pt-3">
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="h-7 gap-1 px-2 text-xs"
-                      disabled={ruling.isPending}
-                      onClick={() =>
-                        setDraft({
-                          keywordIds: [row.keyword_id],
-                          label: row.keyword,
-                          mode: "set",
-                          tier:
-                            row.value_source === "override" &&
-                            row.value_band !== "unvalued"
-                              ? row.value_band
-                              : null,
-                        })
-                      }
-                    >
-                      <Gavel className="h-3 w-3" />
-                      {row.value_source === "override"
-                        ? "Change your ruling…"
-                        : "Rule the tier…"}
-                    </Button>
-                    {row.value_source === "override" ? (
+                    keywordId: row.keyword_id,
+                  }),
+                  content: [
+                    `Keyword: ${row.keyword}`,
+                    `Level: ${bandMetaFor(metas, row.value_band).label}`,
+                    `Score: ${formatScore(row.value_score)}`,
+                    `Class: ${row.traffic_class ? humanizeSlug(row.traffic_class) : "not set"}`,
+                    `Decided by: ${SOURCE_META[row.value_source]?.label ?? row.value_source}`,
+                    `Clicks: ${formatCount(row.clicks)} · Impressions: ${formatCount(row.impressions)}`,
+                  ].join("\n"),
+                  keyword: row.keyword,
+                  keyword_id: row.keyword_id,
+                };
+              }}
+              extraSections={[keywordSection]}
+            >
+              <div className="flex flex-col rounded-lg border border-border bg-card p-2">
+                {review.isError ? (
+                  <InlineQueryError
+                    what="the keyword value review"
+                    error={review.error}
+                    onRetry={() => void review.refetch()}
+                  />
+                ) : null}
+                <MatrxDataTable<ValueReviewRow>
+                  data={rows}
+                  columns={columns}
+                  getRowId={(row) => row.keyword_id}
+                  isLoading={review.isPending}
+                  isFetching={review.isFetching}
+                  query={{
+                    mode: "controlled",
+                    state: table.state,
+                    totalItems: total,
+                    onStateChange: table.onStateChange,
+                  }}
+                  toolbar={{
+                    searchPlaceholder: "Search keywords…",
+                    // KI-026 — the site's own dimensions, offered as columns. Same
+                    // chooser the Keyword Workbench uses; its core-column half is
+                    // omitted because this page's other columns are its own ruled
+                    // layout, not the shared core set.
+                    actions: (
+                      <ColumnChooser
+                        dimensions={dimensions}
+                        loading={catalog.isLoading}
+                        selected={dimensionColumns}
+                        onSelectedChange={setDimensionColumns}
+                        newDimensionHref={`/marketing/brands/${brandId}/sites/${siteId}/value/dimensions`}
+                      />
+                    ),
+                  }}
+                  selection={{
+                    selectedIds,
+                    onSelectedIdsChange: setSelectedIds,
+                    noun: "keyword",
+                    actions: (_selected, ids) => (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 gap-1 px-2 text-xs"
+                          disabled={ruling.isPending}
+                          onClick={() =>
+                            setDraft({
+                              keywordIds: ids,
+                              label: `${ids.length} keywords`,
+                              mode: "set",
+                              tier: null,
+                            })
+                          }
+                        >
+                          <Gavel className="h-3 w-3" /> Set value…
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                          disabled={ruling.isPending}
+                          onClick={() =>
+                            setDraft({
+                              keywordIds: ids,
+                              label: `${ids.length} keywords`,
+                              mode: "clear",
+                              tier: null,
+                            })
+                          }
+                        >
+                          <Undo2 className="h-3 w-3" /> Clear rulings
+                        </Button>
+                      </>
+                    ),
+                  }}
+                  detail={{
+                    title: (row) => row.keyword,
+                    defaultWidth: 440,
+                    headerActions: (row) => (
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="h-7 gap-1 px-2 text-xs text-muted-foreground"
-                        disabled={ruling.isPending}
+                        className="h-7 gap-1.5 px-2 text-xs"
+                        title="Everything the platform knows about this keyword"
                         onClick={() =>
-                          ruling.mutate({
-                            keywordIds: [row.keyword_id],
-                            tier: null,
-                            label: row.keyword,
+                          openKeywordWindow({
+                            phrase: row.keyword,
+                            siteId,
+                            brandId,
+                            organizationId: site.organization_id,
                           })
                         }
                       >
-                        <Undo2 className="h-3 w-3" /> Clear ruling
+                        <PanelRightOpen className="h-3.5 w-3.5" /> Keyword intel
                       </Button>
-                    ) : null}
-                  </div>
-                </div>
-              );
-            },
-          }}
-          window={{ enabled: false }}
-          pageSize={50}
-          emptyState={{
-            icon: <CircleDollarSign className="h-8 w-8 text-muted-foreground" />,
-            title:
-              bandFilter || sourceFilter || state.search
-                ? "No keywords match this view"
-                : "No GSC-active keywords in this window",
-            description:
-              bandFilter || sourceFilter || state.search
-                ? "Clear the tier tile, the filters, or the search to widen the view."
-                : "Connect Search Console and run a sync — keyword value starts from real search traffic.",
-          }}
-        />
+                    ),
+                    render: (row) => {
+                      const meta = bandMetaFor(metas, row.value_band);
+                      return (
+                        <div className="space-y-4 p-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={cn(
+                                "rounded border px-2 py-0.5 text-xs font-medium",
+                                meta.chip,
+                              )}
+                            >
+                              {meta.label}
+                            </span>
+                            <SourceChip source={row.value_source} />
+                            <span className="text-xs tabular-nums text-muted-foreground">
+                              score {formatScore(row.value_score)}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-center">
+                            {[
+                              ["Clicks", formatCount(row.clicks)],
+                              ["Impressions", formatCount(row.impressions)],
+                            ].map(([label, value]) => (
+                              <div
+                                key={label}
+                                className="rounded-md border border-border bg-muted/30 px-2 py-1.5"
+                              >
+                                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                  {label}
+                                </p>
+                                <p className="text-sm font-semibold tabular-nums">
+                                  {value}
+                                </p>
+                              </div>
+                            ))}
+                            {/* Class is SETTABLE, so it is never a stat tile here
+                        either — same rule as the column. */}
+                            <button
+                              type="button"
+                              disabled={!row.keyword_id}
+                              onClick={() =>
+                                surfaces.openDimension(
+                                  {
+                                    phrase: row.keyword,
+                                    keywordId: row.keyword_id,
+                                  },
+                                  "traffic_class",
+                                )
+                              }
+                              className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-center transition-colors hover:border-primary/40 hover:bg-accent"
+                              title="Set this keyword's class — the same write as the Keyword Workbench, with room for your reason."
+                            >
+                              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                Class
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {row.traffic_class
+                                  ? humanizeSlug(row.traffic_class)
+                                  : "Set it"}
+                              </p>
+                            </button>
+                          </div>
+                          <div>
+                            <p className="mb-1.5 text-xs font-semibold text-foreground">
+                              Why this level
+                            </p>
+                            <ReasonChainDetail
+                              reasons={row.reasons}
+                              source={row.value_source}
+                            />
+                          </div>
+                          <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="h-7 gap-1 px-2 text-xs"
+                              disabled={ruling.isPending}
+                              onClick={() =>
+                                setDraft({
+                                  keywordIds: [row.keyword_id],
+                                  label: row.keyword,
+                                  mode: "set",
+                                  tier:
+                                    row.value_source === "override" &&
+                                    row.value_band !== "unvalued"
+                                      ? row.value_band
+                                      : null,
+                                })
+                              }
+                            >
+                              <Gavel className="h-3 w-3" />
+                              {row.value_source === "override"
+                                ? "Change your ruling…"
+                                : "Rule the tier…"}
+                            </Button>
+                            {row.value_source === "override" ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                                disabled={ruling.isPending}
+                                onClick={() =>
+                                  ruling.mutate({
+                                    keywordIds: [row.keyword_id],
+                                    tier: null,
+                                    label: row.keyword,
+                                  })
+                                }
+                              >
+                                <Undo2 className="h-3 w-3" /> Clear ruling
+                              </Button>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    },
+                  }}
+                  window={{ enabled: false }}
+                  pageSize={50}
+                  emptyState={{
+                    icon: (
+                      <CircleDollarSign className="h-8 w-8 text-muted-foreground" />
+                    ),
+                    title:
+                      bandFilter || sourceFilter || state.search
+                        ? "No keywords match this view"
+                        : "No GSC-active keywords in this window",
+                    description:
+                      bandFilter || sourceFilter || state.search
+                        ? "Clear the tier tile, the filters, or the search to widen the view."
+                        : "Connect Search Console and run a sync — keyword value starts from real search traffic.",
+                  }}
+                />
+              </div>
+            </NonEditableContextMenu>
+          </>
+        )}
+
+        {meaningOpen ? (
+          <MeaningPanel
+            siteId={siteId}
+            siteDomain={site.domain}
+            brandId={brandId}
+            window={window}
+            bandMetas={metas}
+            bandsAreTemplate={bandsAreTemplate}
+            focusComboId={focusComboId}
+            onClose={() => setMeaningOpen(false)}
+          />
+        ) : null}
+
+        {addingLevel !== null ? (
+          <AddLevelDialog
+            siteId={siteId}
+            kind="value_band"
+            initialLabel={addingLevel}
+            onCancel={() => setAddingLevel(null)}
+            onCreated={() => setAddingLevel(null)}
+          />
+        ) : null}
+
+        {draft ? (
+          <RulingDialog
+            siteId={siteId}
+            draft={draft}
+            metas={metas}
+            busy={ruling.isPending}
+            onCancel={() => setDraft(null)}
+            onApply={(tier, notes) =>
+              ruling.mutate({
+                keywordIds: draft.keywordIds,
+                tier: draft.mode === "clear" ? null : tier,
+                notes: notes || undefined,
+                label: draft.label,
+              })
+            }
+          />
+        ) : null}
       </div>
-      </NonEditableContextMenu>
-
-        </>
-      )}
-
-      {meaningOpen ? (
-        <MeaningPanel
-          siteId={siteId}
-          siteDomain={site.domain}
-          brandId={brandId}
-          window={window}
-          bandMetas={metas}
-          bandsAreTemplate={bandsAreTemplate}
-          focusComboId={focusComboId}
-          onClose={() => setMeaningOpen(false)}
-        />
-      ) : null}
-
-      {addingLevel !== null ? (
-        <AddLevelDialog
-          siteId={siteId}
-          kind="value_band"
-          initialLabel={addingLevel}
-          onCancel={() => setAddingLevel(null)}
-          onCreated={() => setAddingLevel(null)}
-        />
-      ) : null}
-
-      {draft ? (
-        <RulingDialog
-          siteId={siteId}
-          draft={draft}
-          metas={metas}
-          busy={ruling.isPending}
-          onCancel={() => setDraft(null)}
-          onApply={(tier, notes) =>
-            ruling.mutate({
-              keywordIds: draft.keywordIds,
-              tier: draft.mode === "clear" ? null : tier,
-              notes: notes || undefined,
-              label: draft.label,
-            })
-          }
-        />
-      ) : null}
-    </div>
     </SurfaceRuntimeProvider>
   );
 }
