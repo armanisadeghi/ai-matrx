@@ -547,6 +547,11 @@ export interface MatrxDataTableMobileCardControls {
   selectable: boolean;
   /** Update selection through the table's controlled/URL-backed contract. */
   onSelectedChange: (selected: boolean) => void;
+  /**
+   * The table's canonical per-row copy controls plus consumer row actions.
+   * Render this instead of rebuilding either action path inside the card.
+   */
+  actions: ReactNode;
 }
 
 export interface MatrxDataTableProps<T> {
@@ -629,7 +634,8 @@ export interface MatrxDataTableProps<T> {
    * product surface knows which values and actions are essential on a phone;
    * MatrxDataTable still owns query state, loading/empty states, and pagination.
    *
-   * Desktop and tablet keep the canonical table. Prefer the default horizontal
+   * `controls.actions` carries the table-owned copy controls and consumer row
+   * actions, so a card does not fork them. Desktop and tablet keep the canonical table. Prefer the default horizontal
    * table unless the product explicitly requires every essential value/action
    * to be discoverable without horizontal scrolling.
    */

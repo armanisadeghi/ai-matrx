@@ -49,6 +49,13 @@ And **both** configurations are real: the opening set is the developer's, the
 arrangement the person builds on top of it is theirs — saved as a named view,
 which is why it lives in the URL.
 
+**Phone rows use one explicit card configuration.** `<KeywordTable>` supplies
+`MatrxDataTable.mobileCards` below `sm`: keyword, Offering, editable Class,
+Clicks, Impressions, CTR, class provenance (`Site value` / `Brand match` /
+`AI intent` / `No signal`), Level/Why, selection, and the table's canonical row
+actions. Tablet and desktop keep the one grid. Cards never open another query
+or write path.
+
 ## The files
 
 | File | What it owns |
@@ -106,6 +113,11 @@ Guard: `pnpm check:one-table-law`.
   top band "Core revenue"). The Level filter's options are read, never listed.
 
 ## Change Log
+
+- 2026-08-25 — Phone rows now use the canonical table's `mobileCards` seam to
+  expose the complete classification evidence and touch-sized assignment/copy
+  actions without horizontal discovery. The shared loading state no longer
+  presents `0 keywords` while the count query is pending.
 
 - 2026-08-25 — **Dimension cells are dropdowns in every state.** The shared
   `StampCell` now renders `DimensionValuePicker` directly for assigned and

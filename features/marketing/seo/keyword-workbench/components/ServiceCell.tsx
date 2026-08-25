@@ -39,6 +39,8 @@ export function ServiceCell({
   onPlace,
   onFilter,
   onNotOffered,
+  triggerClassName,
+  filterClassName,
 }: {
   siteId: string;
   services: SiteServices;
@@ -54,6 +56,10 @@ export function ServiceCell({
    * door; the caller writes it through the one class path.
    */
   onNotOffered?: () => void;
+  /** Responsive sizing only; the picker and write path stay canonical. */
+  triggerClassName?: string;
+  /** Responsive discoverability only; the filter action stays canonical. */
+  filterClassName?: string;
 }) {
   const hint = sourceHint(placement?.assignedBy ?? null);
   const title = placement
@@ -61,9 +67,7 @@ export function ServiceCell({
         placement.lineage
           ? `${placement.lineage} › ${placement.topicName}`
           : placement.topicName,
-        placement.rootType
-          ? `Root: ${placement.rootName}`
-          : null,
+        placement.rootType ? `Root: ${placement.rootName}` : null,
         placement.hasOwnWorth
           ? "This offering carries this site's own worth ruling."
           : placement.worthFromName
@@ -82,15 +86,16 @@ export function ServiceCell({
         siteId={siteId}
         services={services}
         value={placement?.topicId ?? null}
-        onSelect={(next) =>
-          onPlace(next === OFFERING_UNPLACED ? null : next)
-        }
+        onSelect={(next) => onPlace(next === OFFERING_UNPLACED ? null : next)}
         disabled={disabled}
         unplacedLabel={placement ? "Take it off the tree" : undefined}
         placeholder="Not placed yet"
         ariaLabel="Offering this keyword maps to"
         onNotOffered={onNotOffered}
-        className="h-auto min-h-6 border-0 px-1 py-0.5 shadow-none hover:bg-accent"
+        className={cn(
+          "h-auto min-h-6 border-0 px-1 py-0.5 shadow-none hover:bg-accent",
+          triggerClassName,
+        )}
         renderSelected={
           placement ? (
             // TWO LINES, deliberately: the offering is the first thing Arman
@@ -108,7 +113,8 @@ export function ServiceCell({
                   </span>
                 ) : null}
               </span>
-              {placement.rootName && placement.rootName !== placement.topicName ? (
+              {placement.rootName &&
+              placement.rootName !== placement.topicName ? (
                 <span className="min-w-0 max-w-full truncate text-[10px] text-muted-foreground">
                   {placement.rootName}
                 </span>
@@ -126,6 +132,7 @@ export function ServiceCell({
           className={cn(
             "shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity",
             "hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/cell:opacity-100",
+            filterClassName,
           )}
         >
           <Filter className="h-3 w-3" />

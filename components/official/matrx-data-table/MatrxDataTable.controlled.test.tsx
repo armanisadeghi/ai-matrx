@@ -203,4 +203,31 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).toContain('data-selected="true"');
     expect(markup).toContain("1 row selected");
   });
+
+  it("hands phone cards the canonical row actions", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        detail={{ enabled: false }}
+        copy={{
+          label: "Record",
+          location: "Test",
+          rowKind: "test-record",
+          listKind: "test-record-list",
+          humanRow: (row) => row.name,
+        }}
+        mobileCards={(row, _index, controls) => (
+          <article>
+            Mobile {row.name}
+            {controls.actions}
+          </article>
+        )}
+      />,
+    );
+
+    expect(markup).toContain("Mobile Alpha");
+    expect(markup).toContain("Copy Record");
+  });
 });

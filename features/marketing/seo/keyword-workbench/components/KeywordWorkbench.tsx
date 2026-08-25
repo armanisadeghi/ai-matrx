@@ -261,6 +261,7 @@ export function KeywordWorkbench() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 bg-textured p-3">
+      <h1 className="sr-only">Keyword workbench</h1>
       {/* The shared keyword actions' own surface — here that is only the
           ruling dialog ("Pin a level…"), because the dimension and service
           panels are delegated to the table's. */}
@@ -462,7 +463,9 @@ export function KeywordWorkbench() {
                 // The ROW's entity owns Attach To — one menu serves every row,
                 // so the pane must never be the target.
                 [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef(menuRow()),
-                content: humanLines(gscMetricCopyLines("Keyword", "query", row)),
+                content: humanLines(
+                  gscMetricCopyLines("Keyword", "query", row),
+                ),
               };
             }}
             extraSections={[

@@ -126,6 +126,7 @@ export function ClassCell({
   onAssignWithReason,
   onMakeYourOwn,
   onClear,
+  triggerClassName,
 }: {
   current: string | null;
   source: string | null;
@@ -140,6 +141,8 @@ export function ClassCell({
    * answer is not a control. Only offered once something is actually set.
    */
   onClear?: () => void;
+  /** Responsive sizing only; the dropdown and write path stay canonical. */
+  triggerClassName?: string;
 }) {
   const active = options.find((v) => v.key === current);
   const hint = sourceHint(source);
@@ -149,7 +152,10 @@ export function ClassCell({
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 max-w-full justify-start gap-1 px-1 text-[11px] font-normal"
+          className={cn(
+            "h-6 max-w-full justify-start gap-1 px-1 text-[11px] font-normal",
+            triggerClassName,
+          )}
         >
           <span className="truncate">
             {active?.label ??

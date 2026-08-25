@@ -39,6 +39,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SearchX } from "lucide-react";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { Checkbox } from "@/components/ui/checkbox";
 import type {
   ColumnFiltersState,
   MatrxColumnDef,
@@ -52,7 +53,10 @@ import { FilterBar } from "@/features/marketing/search-console/components/Filter
 import { RangeCompareControl } from "@/features/marketing/search-console/components/RangeCompareControl";
 import { useGscFreshness } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { gscMetricCopyLines } from "@/features/marketing/search-console/lib/columns";
-import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
 import {
   allowedFilterKeysForTab,
@@ -64,9 +68,11 @@ import type {
   GscFilters,
 } from "@/features/marketing/search-console/types";
 import {
+  GSC_CLASS_SOURCES,
   GSC_RANGE_PRESETS,
   encodeStampFilter,
   formatCount,
+  formatCtr,
   parseLevelFilter,
   parseStampFilter,
 } from "@/features/marketing/search-console/types";
@@ -74,10 +80,17 @@ import {
   setKeywordService,
   setKeywordStamps,
 } from "@/features/marketing/seo/keyword-workbench/data";
-import { AssignPanel, type AssignTarget } from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
+import {
+  AssignPanel,
+  type AssignTarget,
+} from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
 import { OfferingAssignPanel } from "@/features/marketing/seo/keyword-workbench/components/OfferingAssignPanel";
 import { ServiceFilterControl } from "@/features/marketing/seo/keyword-workbench/components/ServiceFilterControl";
+import { ServiceCell } from "@/features/marketing/seo/keyword-workbench/components/ServiceCell";
+import { ClassCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
+import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
+import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { ColumnChooser } from "./ColumnChooser";
 import { buildKeywordColumns } from "./columns";
 import {
@@ -89,7 +102,11 @@ import {
   type KeywordCoreColumnId,
   type KeywordTableState,
 } from "./state";
-import { SERVER_SORTABLE, useKeywordRows, type KeywordRowsResult } from "./useKeywordRows";
+import {
+  SERVER_SORTABLE,
+  useKeywordRows,
+  type KeywordRowsResult,
+} from "./useKeywordRows";
 
 export interface KeywordTableSurface {
   /** Stable id — names the copy payloads and the surface in a toast. */
@@ -240,7 +257,9 @@ export function KeywordTable({
    * character, so a large site can interrupt the next keystroke.
    */
   const [searchDraft, setSearchDraft] = useState(state.search);
-  const [urlSearchAtDraftSync, setUrlSearchAtDraftSync] = useState(state.search);
+  const [urlSearchAtDraftSync, setUrlSearchAtDraftSync] = useState(
+    state.search,
+  );
   const lastSearchCommit = useRef(state.search);
   if (state.search !== urlSearchAtDraftSync) {
     setUrlSearchAtDraftSync(state.search);
@@ -287,8 +306,10 @@ export function KeywordTable({
     lastSearchCommit.current = debouncedSearch;
     // Free text is one evolving search session, not one Back-stack entry per
     // pause. Discrete table decisions still push().
-    push({ ...state, page: 1, search: debouncedSearch }, { history: "replace" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    push(
+      { ...state, page: 1, search: debouncedSearch },
+      { history: "replace" },
+    );
   }, [debouncedSearch, state.search]);
 
   /* ---------------------------------------------------------------- periods */
@@ -457,7 +478,8 @@ export function KeywordTable({
    */
   const filterByLocation = (location: string | undefined) => {
     const filters: GscFilters = { ...state.filters };
-    if (!location || location === state.filters.location) delete filters.location;
+    if (!location || location === state.filters.location)
+      delete filters.location;
     else filters.location = location;
     patch({ filters });
   };
@@ -534,7 +556,11 @@ export function KeywordTable({
   }
   for (const [id, min, max] of [
     ["clicks", state.filters.clicks_min, state.filters.clicks_max],
-    ["impressions", state.filters.impressions_min, state.filters.impressions_max],
+    [
+      "impressions",
+      state.filters.impressions_min,
+      state.filters.impressions_max,
+    ],
     ["position", state.filters.position_min, state.filters.position_max],
   ] as const) {
     if (min || max) {
@@ -547,7 +573,9 @@ export function KeywordTable({
   }
   for (const pair of stampPairs) {
     const id =
-      pair.dimension === "traffic_class" ? "traffic_class" : `dim:${pair.dimension}`;
+      pair.dimension === "traffic_class"
+        ? "traffic_class"
+        : `dim:${pair.dimension}`;
     const existing = tableColumnFilters[id];
     const values =
       existing?.kind === "select"
@@ -628,7 +656,9 @@ export function KeywordTable({
     const selectedValue = (id: string) => {
       const filter = next.columnFilters[id];
       if (!filter || filter.kind !== "select") return undefined;
-      return (filter.values?.length ? filter.values[0] : filter.value) || undefined;
+      return (
+        (filter.values?.length ? filter.values[0] : filter.value) || undefined
+      );
     };
 
     const nextTopic = selectedValue("topic");
@@ -652,7 +682,11 @@ export function KeywordTable({
     const nextLevels = (() => {
       const filter = next.columnFilters.value_band;
       if (!filter || filter.kind !== "select") return [];
-      return filter.values?.length ? filter.values : filter.value ? [filter.value] : [];
+      return filter.values?.length
+        ? filter.values
+        : filter.value
+          ? [filter.value]
+          : [];
     })();
     if (nextLevels.join("|") !== levels.join("|")) {
       const filters: GscFilters = { ...state.filters };
@@ -714,7 +748,207 @@ export function KeywordTable({
     rows,
     search: state.search,
   };
-  if (viewRef) viewRef.current = view;
+  useEffect(() => {
+    if (!viewRef) return;
+    viewRef.current = view;
+    return () => {
+      if (viewRef.current === view) viewRef.current = null;
+    };
+  }, [view, viewRef]);
+
+  const renderMobileCard = (
+    row: GscBreakdownRow,
+    index: number,
+    mobile: {
+      selected: boolean;
+      selectable: boolean;
+      onSelectedChange: (selected: boolean) => void;
+      actions: ReactNode;
+    },
+  ) => {
+    const value = data.valueFor(row);
+    const classSource = GSC_CLASS_SOURCES.find(
+      (source) => source.key === value?.class_source,
+    );
+    const classValue = (data.classDimension?.values ?? []).find(
+      (option) => option.key === value?.traffic_class,
+    );
+    const headingId = `keyword-card-${index}`;
+
+    return (
+      <article
+        data-row-id={row.key}
+        data-selected={mobile.selected}
+        aria-labelledby={headingId}
+        className="rounded-lg border border-border bg-background p-3 shadow-sm"
+      >
+        <div className="flex items-start gap-2">
+          <label className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md hover:bg-accent">
+            <Checkbox
+              checked={mobile.selected}
+              disabled={!mobile.selectable}
+              onCheckedChange={(checked) =>
+                mobile.onSelectedChange(checked === true)
+              }
+              aria-label={`Select ${row.key}`}
+            />
+          </label>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Keyword
+            </p>
+            <h2
+              id={headingId}
+              className="break-words text-sm font-semibold text-foreground"
+            >
+              {row.key}
+            </h2>
+          </div>
+        </div>
+
+        <div className="mt-3 grid gap-2">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Offering
+            </p>
+            <ServiceCell
+              siteId={siteId}
+              services={data.services}
+              placement={data.serviceFor(row)}
+              disabled={!row.keyword_id}
+              onPlace={(topicId) => {
+                if (!row.keyword_id) return;
+                void placeService(row.keyword_id, topicId, row.key);
+              }}
+              onFilter={filterByService}
+              triggerClassName="min-h-11 w-full justify-start px-2"
+              filterClassName="min-h-11 min-w-11 opacity-100"
+            />
+          </div>
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Class
+            </p>
+            <ClassCell
+              current={value?.traffic_class ?? null}
+              source={value?.class_source ?? null}
+              options={(data.classDimension?.values ?? []).filter(
+                (option) => !option.abstain,
+              )}
+              disabled={!row.keyword_id}
+              onPick={(picked) => {
+                if (!row.keyword_id || !data.classDimension) return;
+                void quickAssign([row.keyword_id], {
+                  dimensionId: data.classDimension.dimension_id,
+                  dimensionSlug: data.classDimension.slug,
+                  dimensionLabel: data.classDimension.label,
+                  valueId: picked.value_id,
+                  valueLabel: picked.label,
+                });
+              }}
+              onAssignWithReason={() => {
+                if (!row.keyword_id) return;
+                setAssignTarget({
+                  keywordIds: [row.keyword_id],
+                  label: `“${row.key}”`,
+                  lockedDimensionSlug: "traffic_class",
+                });
+              }}
+              onClear={
+                row.keyword_id && classValue && data.classDimension
+                  ? () =>
+                      void quickClear(
+                        [row.keyword_id as string],
+                        classValue.value_id,
+                        data.classDimension?.label ?? "Class",
+                      )
+                  : undefined
+              }
+              onMakeYourOwn={() => {
+                if (!row.keyword_id) return;
+                setAssignTarget({
+                  keywordIds: [row.keyword_id],
+                  label: `“${row.key}”`,
+                });
+              }}
+              triggerClassName="min-h-11 w-full justify-start px-2 text-xs"
+            />
+          </div>
+        </div>
+
+        <dl className="mt-3 grid grid-cols-3 gap-2 rounded-md bg-muted/40 p-2 text-xs">
+          <div>
+            <dt className="text-[10px] uppercase text-muted-foreground">
+              Clicks
+            </dt>
+            <dd className="font-medium tabular-nums text-foreground">
+              {formatCount(row.clicks)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] uppercase text-muted-foreground">
+              Impressions
+            </dt>
+            <dd className="font-medium tabular-nums text-foreground">
+              {formatCount(row.impressions)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] uppercase text-muted-foreground">CTR</dt>
+            <dd className="font-medium tabular-nums text-foreground">
+              {formatCtr(row.ctr)}
+            </dd>
+          </div>
+        </dl>
+
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Why
+            </p>
+            <p className="font-medium text-foreground">
+              {classSource?.label ?? "No signal"}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Level
+            </p>
+            <span className="flex min-h-11 items-center gap-1">
+              <span className="font-medium text-foreground">
+                {value?.value_band
+                  ? humanizeSlug(value.value_band)
+                  : "Unvalued"}
+              </span>
+              {value ? (
+                <WhyScoreHint
+                  subject={{
+                    keywordId: row.keyword_id,
+                    keyword: row.key,
+                    valueBand: value.value_band,
+                    valueScore: value.value_score,
+                    valueSource: value.value_source,
+                    reasons: value.reasons,
+                  }}
+                  context={{ brandId, siteId, keyword: row.key }}
+                />
+              ) : null}
+            </span>
+          </div>
+        </div>
+
+        {mobile.actions ? (
+          <div
+            className="mt-2 flex min-h-11 items-center justify-end border-t border-border pt-2"
+            aria-label={`Actions for ${row.key}`}
+            role="group"
+          >
+            {mobile.actions}
+          </div>
+        ) : null}
+      </article>
+    );
+  };
 
   /* ------------------------------------------------------------------ render */
   // The context menu's trigger renders `asChild`, so `wrapTable` must return a
@@ -768,7 +1002,8 @@ export function KeywordTable({
           "One keyword's search performance, class, score, level and stamped dimensions for this site.",
         listDescription:
           "The visible keyword rows (respecting search, filters, sort and pagination).",
-        humanRow: (row) => humanLines(gscMetricCopyLines("Keyword", "query", row)),
+        humanRow: (row) =>
+          humanLines(gscMetricCopyLines("Keyword", "query", row)),
         rowAttributes: (row) => ({
           ...gscScopeAttributes(siteId, siteDomain, periods, effectiveFilters),
           key: row.key,
@@ -783,6 +1018,7 @@ export function KeywordTable({
       }}
       detail={{ enabled: false }}
       window={{ enabled: false }}
+      mobileCards={renderMobileCard}
       pageSize={state.pageSize}
       emptyState={
         emptyState ?? {
@@ -817,11 +1053,23 @@ export function KeywordTable({
             )}
           </>
         ) : null}
-        <span className="whitespace-nowrap text-[11px] text-muted-foreground">
-          {formatCount(total)} keywords · {rangeLabel}
-          {dataThrough ? ` · through ${dataThrough}` : ""}
-          {SERVER_SORTABLE.has(state.sort) ? "" : " · sorted on this page only"}
-        </span>
+        {data.isLoading ? (
+          <span
+            role="status"
+            aria-live="polite"
+            className="text-[11px] text-muted-foreground"
+          >
+            Preparing keyword totals and rows
+          </span>
+        ) : (
+          <span className="whitespace-nowrap text-[11px] text-muted-foreground">
+            {formatCount(total)} keywords · {rangeLabel}
+            {dataThrough ? ` · through ${dataThrough}` : ""}
+            {SERVER_SORTABLE.has(state.sort)
+              ? ""
+              : " · sorted on this page only"}
+          </span>
+        )}
         <div className="ml-auto flex items-center gap-1.5">
           {headerActions}
           {surface.showRangeControl !== false ? (
@@ -878,7 +1126,9 @@ export function KeywordTable({
               ) {
                 // You just gave these keywords a meaning; you should be able to
                 // SEE it without hunting for the column chooser.
-                patch({ dimensions: [...state.dimensions, picked.dimensionSlug] });
+                patch({
+                  dimensions: [...state.dimensions, picked.dimensionSlug],
+                });
               }
             }}
           />
@@ -912,8 +1162,10 @@ export function KeywordTable({
           error={data.error}
           onRetry={data.refetch}
         />
+      ) : wrapTable ? (
+        wrapTable(table)
       ) : (
-        wrapTable ? wrapTable(table) : table
+        table
       )}
     </div>
   );

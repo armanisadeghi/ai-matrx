@@ -1008,6 +1008,35 @@ function MatrxDataTableCore<T>({
                         else next.delete(id);
                         setSelectedIds(next);
                       },
+                      actions:
+                        showRowCopy || rowActions ? (
+                          <div
+                            className="inline-flex items-center gap-1"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {showRowCopy && copy ? (
+                              <CopyButtons
+                                size="icon"
+                                label={copy.label}
+                                human={() => copy.humanRow(displayRow)}
+                                json={() =>
+                                  copy.agentRow
+                                    ? copy.agentRow(displayRow)
+                                    : displayRow
+                                }
+                                agent={() =>
+                                  buildRowAgentInput(copy, displayRow)
+                                }
+                              />
+                            ) : null}
+                            {rowActions?.(row, {
+                              closeDetail: () => setSelectedId(null),
+                              openDetail: () => openDetail(row),
+                              openWindow: () => openWindow(row),
+                              closeWindow,
+                            })}
+                          </div>
+                        ) : null,
                     })}
                   </Fragment>
                 );
