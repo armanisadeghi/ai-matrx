@@ -17,10 +17,22 @@ const MS_PER_DAY = 86_400_000;
 const MS_PER_WEEK = 7 * MS_PER_DAY;
 
 /** Human labels for known item types; unknown types titleize their token. */
+/**
+ * Student-facing names for the study spine's REAL `item_mastery.item_type`
+ * values (verified live). `quiz_question` / `practice_test_item` were listed
+ * here but have never been written by the spine, so every assessment item fell
+ * through to the auto-title-caser and a learner's progress read "Assessment
+ * Item" instead of "Quiz & test questions".
+ *   select distinct item_type from education.item_mastery;
+ */
 const ITEM_TYPE_LABELS: Record<string, string> = {
   fc_card: "Flashcards",
-  quiz_question: "Quizzes",
-  practice_test_item: "Practice tests",
+  // Pre-`fc_card` spelling; still has rows, and a learner must never see two
+  // separate "Flashcards" and "Flashcard" lines for the same thing.
+  flashcard: "Flashcards",
+  assessment_item: "Quiz & test questions",
+  spoken_prompt: "Spoken practice",
+  handwritten_work: "Graded work",
 };
 
 export function itemTypeLabel(itemType: string): string {
