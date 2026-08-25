@@ -158,6 +158,10 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Neighbours
 
+- The entity vocabulary is **generated** from `platform.entity_types`
+  (`pnpm gen:entity-types`), never hand-maintained. `features/scopes/docs/scopeable_entities.md`
+  — a 2026-era hand-written "working list" naming tables that no longer exist — was deleted
+  2026-08-25; do not re-create one.
 - Legacy scope surfaces awaiting teardown: `features/scope-system/`, `features/agent-context/`.
   The teardown order and delete list are in the node's `HANDOFF.md`.
 - [`features/agent-context/FEATURE.md`](../agent-context/FEATURE.md) — the invocation-time consumer.
