@@ -1,11 +1,11 @@
 # Knowledge System — Master Tasklist (the road to reality)
 
-> **What this is.** The single tracker for everything that must get done — big and small — before the Knowledge System vision is real. It is the **gap analysis**: the [vision](01_KNOWLEDGE_OVERVIEW.md) (what we want) minus the [code reality](../rag_and_ner/reality/00_REALITY_MAP.md) (what we have) = the tasks below.
+> **What this is.** The single tracker for everything that must get done — big and small — before the Knowledge System vision is real. It is the **gap analysis**: the [vision](01_KNOWLEDGE_OVERVIEW.md) (what we want) minus the [code reality](/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/code-truth/00_REALITY_MAP.md) (what we have) = the tasks below.
 >
 > **How it relates to the other docs:**
 > - **Vision** (what we're building): [`01_KNOWLEDGE_OVERVIEW.md`](01_KNOWLEDGE_OVERVIEW.md) → its detail docs.
-> - **Reality** (what the code does today): [`../rag_and_ner/reality/`](../rag_and_ner/reality/00_REALITY_MAP.md).
-> - **Backlog inventory + evidence** (every item, with file:line proof and bucket): [`../rag_and_ner/00_CLEANUP.md`](../rag_and_ner/00_CLEANUP.md) — **§2.0 is the bucket index**.
+> - **Reality** (what the code does today): [`/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/code-truth/`](/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/code-truth/00_REALITY_MAP.md).
+> - **Backlog inventory + evidence** (every item, with file:line proof and bucket): [`/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/00_CLEANUP.md`](/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/00_CLEANUP.md) — **§2.0 is the bucket index**.
 > - **This doc** is the *prioritized, trackable* layer on top of that inventory. Each task links to its backlog `#N` for the evidence; update **status here** as work happens.
 >
 > **Keep it honest:** a task is `✅ done` only when the code does it (cite where). Truth-checked against live code 2026-06-04.
@@ -17,7 +17,7 @@
 **Status:** `☐` not started · `◐` in progress · `⛔` blocked · `✅` done · `💤` deferred
 **Priority:** `P0` the crux / unblocks everything · `P1` high value, do soon · `P2` real work, not urgent · `P3` nice-to-have / scale
 **Bucket** (from `00_CLEANUP` §2.0): **BUILD** code task · **VISION** concept · **DROP** dead · **OPS** one-shot · **UNDECIDED** decide first.
-`#N` = the item number in [`00_CLEANUP.md`](../rag_and_ner/00_CLEANUP.md) §2 (evidence + notes live there).
+`#N` = the item number in [`00_CLEANUP.md`](/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/00_CLEANUP.md) §2 (evidence + notes live there).
 
 ---
 
@@ -40,7 +40,7 @@ Building before these are answered will encode the wrong thing. Owner: **you** (
 
 ## E1 · The crux — wire NER/KG into retrieval (biggest vision↔reality gap)
 
-> Today: NER writes entities on ingest; `search()` **never reads them**. This epic closes the seam. See [`reality/03_CONNECTION_REALITY.md`](../rag_and_ner/reality/03_CONNECTION_REALITY.md).
+> Today: NER writes entities on ingest; `search()` **never reads them**. This epic closes the seam. See [`reality/03_CONNECTION_REALITY.md`](/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/code-truth/03_CONNECTION_REALITY.md).
 
 | Status | P | Task | Depends on | Ref |
 |---|---|---|---|---|
@@ -226,7 +226,7 @@ These are concept/goal items. They live in the [vision docs](01_KNOWLEDGE_OVERVI
 
 ## Done since last audit · Dropped
 
-- ✅ **#78 — `rag` schema in ORM generation** (2026-06-03): generated managers in `db/managers/rag/`, `db/models_rag.py`, `kg_managers.py` imports them. See [`reality/04`](../rag_and_ner/reality/04_ORM_AND_SCHEMA.md) §3.
+- ✅ **#78 — `rag` schema in ORM generation** (2026-06-03): generated managers in `db/managers/rag/`, `db/models_rag.py`, `kg_managers.py` imports them. See [`reality/04`](/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/code-truth/04_ORM_AND_SCHEMA.md) §3.
 - ✅ **pgvector codec bug** (2026-06-03): vector columns now decode to `list[float]`. `reality/04` §2.
 - ❌ **Dropped:** #23 matrx-medical (0 files in repo) · #25 `aidream/cli/repo_ingest.py` (never existed) · #53 4-pane viewer (superseded by 3-pane preview) · #98 `ctx_get` search-mode (excluded by design).
 
@@ -235,5 +235,5 @@ These are concept/goal items. They live in the [vision docs](01_KNOWLEDGE_OVERVI
 ## Maintaining this file
 
 - When you start/finish a task, flip its **status** here and (if done) add a one-line "where in code" note.
-- New work: add the row here **and** an evidence entry in [`00_CLEANUP.md`](../rag_and_ner/00_CLEANUP.md) §2 with a `#N`.
-- Vision (concepts) → `docs/knowledge/`. Code truth → `docs/rag_and_ner/reality/`. Never scatter RAG markdown elsewhere.
+- New work: add the row here **and** an evidence entry in [`00_CLEANUP.md`](/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/00_CLEANUP.md) §2 with a `#N`.
+- Vision (concepts) → `docs/knowledge/`. Code truth → `/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/code-truth/`. Never scatter RAG markdown elsewhere.

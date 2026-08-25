@@ -4,7 +4,7 @@
 // aidream `/api/kg-suggestions` HTTP API is DELETED; aidream is a pure PRODUCER
 // of suggestion rows. The frontend reads and decides DIRECTLY against Supabase
 // (RLS-scoped tables + the `set_context_value` RPC), per the handoff:
-//   aidream/docs/rag_and_ner/handoffs/scope_suggestions_direct_supabase.md
+//   /Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/handoffs/scope_suggestions_direct_supabase.md
 //
 // Two ledgers (migration kg_013), both RLS-scoped to `auth.uid() = user_id`:
 //   - scope_association_suggestions (Stage A) — doc → scope links

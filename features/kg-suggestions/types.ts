@@ -3,7 +3,7 @@
 // FE model for KG → scope suggestions. As of 2026-06-07 the aidream HTTP API
 // (`/api/kg-suggestions`) is DELETED — the frontend reads and decides DIRECTLY
 // against Supabase (RLS-scoped tables + the `set_context_value` RPC). See
-// `/Users/armanisadeghi/code/aidream/docs/rag_and_ner/handoffs/scope_suggestions_direct_supabase.md`.
+// `/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/handoffs/scope_suggestions_direct_supabase.md`.
 //
 // There are now TWO ledgers (migration kg_013), each RLS-scoped to
 // `auth.uid() = user_id`:
