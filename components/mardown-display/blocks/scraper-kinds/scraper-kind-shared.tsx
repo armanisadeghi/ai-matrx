@@ -16,6 +16,7 @@
 import React, { useState } from "react";
 import { Globe, ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   getFaviconUrl,
   getBreadcrumbParts,
@@ -175,22 +176,33 @@ export const SectionHeading: React.FC<{
   </div>
 );
 
-/** A collapsible card section — large sections stay closed until asked for. */
+/**
+ * A collapsible card section — large sections stay closed until asked for.
+ *
+ * EVERY section carries copy controls. Arman, 2026-08-24: *"when you have
+ * something like this, in almost all instances, you're going to want to copy
+ * things. And considering the fact that we specialize in AI, that's one of the
+ * most important things we need to offer."* Pass `copy` and the canonical
+ * `CopyButtons` pair (plain Copy + Copy-for-AI) sits in the section header,
+ * clicking without toggling the section.
+ */
 export const Disclosure: React.FC<{
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   count?: number | null;
   summary?: React.ReactNode;
   defaultOpen?: boolean;
+  /** Data behind this section — becomes its Copy / Copy-for-AI pair. */
+  copy?: { label: string; human?: () => string; data: unknown; description: string };
   children: React.ReactNode;
-}> = ({ icon: Icon, label, count, summary, defaultOpen = false, children }) => {
+}> = ({ icon: Icon, label, count, summary, defaultOpen = false, copy, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
+    <div className="relative overflow-hidden rounded-lg border border-border bg-card">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/40"
+        className="flex w-full items-center gap-2 px-3 py-2 pr-24 text-left transition-colors hover:bg-muted/40"
       >
         <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="text-sm font-medium text-foreground">{label}</span>
@@ -204,6 +216,22 @@ export const Disclosure: React.FC<{
           <span aria-hidden>{open ? "▾" : "▸"}</span>
         </span>
       </button>
+      {copy && (
+        <div className="absolute right-9 top-1.5">
+          <CopyButtons
+            size="xs"
+            label={copy.label}
+            human={copy.human ?? (() => JSON.stringify(copy.data, null, 2))}
+            agent={() => ({
+              kind: "scraped_page_section",
+              location: "AI Matrx — Scraped Page",
+              description: copy.description,
+              data: copy.data,
+            })}
+            json={() => copy.data}
+          />
+        </div>
+      )}
       {open && <div className="border-t border-border px-3 py-3">{children}</div>}
     </div>
   );
