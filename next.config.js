@@ -65,8 +65,8 @@ function sidemenuStubAliases() {
 // gitignored. app/(dev) is NEVER parked — prod code imports helper files
 // under it ("fake demos" debt); its route leaves are excluded via
 // pageExtensions instead (route leaves are *.dev.tsx).
-// WARNING: parking renames real folders — do not run a parked-profile build
-// while a dev server on another profile watches the same tree.
+// Parking renames real folders, so it is fenced by THE TWO PARK LAWS below:
+// a dev server never parks, and whoever parks unparks on exit.
 //
 // Cross-group imports break parked builds: route-group code may only import
 // from features/ components/ lib/ etc., never another group's app/(x) path.
@@ -118,7 +118,89 @@ const MATRX_PROFILE = VALID_PROFILES.has(rawProfile)
   ? rawProfile
   : FORCE_MATRX_PROFILE || "full";
 const INCLUDE_DEV = PROFILES[MATRX_PROFILE].includeDev;
-const PARK_SET = new Set(PROFILES[MATRX_PROFILE].park);
+
+// ─── THE TWO PARK LAWS ──────────────────────────────────────────────────────
+// Parking RENAMES git-tracked folders. On this shared checkout (Arman plus
+// dozens of concurrent agents) a parked tree reads as mass deletion, and a
+// broad `git add -A` from any session commits it. That already cost the entire
+// app/(admin) surface once (2026-08-25, commit d17df60895) and nearly cost
+// app/(core) the same day. Two laws make it structurally impossible:
+//
+//   LAW 1 — A DEV SERVER NEVER PARKS. Parking is a BUILD slicing mechanism.
+//     A dev server holds the tree for hours, so it is the only process that
+//     can leave it broken long enough for another session to commit it.
+//     MATRX_PROFILE still applies in dev — proxy.ts gates routes on the
+//     baked NEXT_PUBLIC_MATRX_PROFILE, so `MATRX_PROFILE=admin pnpm dev`
+//     still behaves like manage.aimatrx.com. It just moves ZERO files.
+//
+//   LAW 2 — WHOEVER PARKS, UNPARKS. A build that parks restores on exit —
+//     normal exit, crash, or Ctrl-C. Only the process that performed the
+//     rename restores it (workers that find a group already parked never
+//     registered a restore), so concurrent build workers cannot unpark
+//     mid-build.
+//
+// Net effect: a parked directory cannot outlive the process that made it, and
+// no long-lived process can make one. Recovery, if one ever appears anyway:
+// `pnpm check:parked-route-groups --fix`.
+// ────────────────────────────────────────────────────────────────────────────
+// `next dev` sets NODE_ENV=development before loading this file and its
+// workers inherit it; the argv check is a second, independent signal so a
+// missed detection cannot silently fall through to parking.
+const IS_DEV_SERVER =
+  process.env.NODE_ENV === "development" || process.argv.includes("dev");
+const REQUESTED_PARK = PROFILES[MATRX_PROFILE].park;
+if (IS_DEV_SERVER && REQUESTED_PARK.length) {
+  console.warn(
+    `[matrx] MATRX_PROFILE=${MATRX_PROFILE} would park ` +
+      `${REQUESTED_PARK.map((g) => `app/(${g})`).join(", ")} — NOT parking: ` +
+      `a dev server never renames tracked route groups (see THE TWO PARK ` +
+      `LAWS above). Route gating still applies via NEXT_PUBLIC_MATRX_PROFILE.`,
+  );
+}
+const PARK_SET = new Set(IS_DEV_SERVER ? [] : REQUESTED_PARK);
+
+/** Groups THIS process renamed away — the only ones it may restore (LAW 2). */
+const parkedByThisProcess = [];
+let restoreRegistered = false;
+
+/** Rename every group this process parked back to its tracked path. */
+function unparkOwnedGroups() {
+  while (parkedByThisProcess.length) {
+    const { liveName, parkedName } = parkedByThisProcess.pop();
+    const live = path.join(__dirname, "app", liveName);
+    const parked = path.join(__dirname, "app", parkedName);
+    try {
+      if (fs.existsSync(parked) && !fs.existsSync(live)) {
+        fs.renameSync(parked, live);
+        console.log(`[matrx] unparked app/${liveName} on exit`);
+      }
+    } catch (err) {
+      // Screams — a failed restore is the state that costs a route group.
+      console.error(
+        `[matrx] ⚠ FAILED to unpark app/${liveName} from app/${parkedName}: ` +
+          `${err && err.message}. Run \`pnpm check:parked-route-groups --fix\`.`,
+      );
+    }
+  }
+}
+
+/** Arm the exit/signal restore once, the first time this process parks. */
+function registerUnparkOnExit() {
+  if (restoreRegistered) return;
+  restoreRegistered = true;
+  // `exit` covers normal completion, process.exit(), and uncaught exceptions.
+  // The signals do not fire `exit` on their own, so they restore then re-exit
+  // with the conventional 128+signo status.
+  process.on("exit", unparkOwnedGroups);
+  process.on("SIGINT", () => {
+    unparkOwnedGroups();
+    process.exit(130);
+  });
+  process.on("SIGTERM", () => {
+    unparkOwnedGroups();
+    process.exit(143);
+  });
+}
 
 /**
  * Park a route group as a Next private `_` folder (not routed/compiled), or
@@ -147,6 +229,9 @@ function syncRouteGroupPark(exclude, liveName, parkedName) {
   if (exclude) {
     if (fs.existsSync(live)) {
       fs.renameSync(live, parked);
+      // LAW 2: only the process that renamed it is allowed to restore it.
+      parkedByThisProcess.push({ liveName, parkedName });
+      registerUnparkOnExit();
       console.log(`[matrx] parked app/${liveName} → app/${parkedName}`);
     } else if (fs.existsSync(parked)) {
       console.log(

@@ -19,10 +19,17 @@
  *      Screams with the exact restore command.
  *
  * Advisory by default (screams, exit 0) — `--strict` exits non-zero for the
- * release gates. Recovery is always the same: restore from the commit before
- * the deletion, never re-create by hand.
+ * release gates, `--fix` renames any park back to its tracked path.
+ *
+ * SINCE 2026-08-25 next.config.js also enforces THE TWO PARK LAWS (a dev
+ * server never parks; whoever parks unparks on exit), so case 1 should now be
+ * unreachable. This guard stays as the independent check that says so.
+ *
+ * Recovery for case 1: `pnpm check:parked-routes:fix`. Recovery for case 2 (a
+ * group already committed away): restore from the commit before the deletion,
+ * never re-create by hand.
  */
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, renameSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 
@@ -44,6 +51,7 @@ function trackedFileCount(group: string): number {
 
 function main(): number {
   const strict = process.argv.includes("--strict");
+  const fix = process.argv.includes("--fix");
   const problems: string[] = [];
 
   const parkedOnDisk = existsSync(APP_DIR)
@@ -55,11 +63,28 @@ function main(): number {
     // A `.stale-` quarantine is next.config.js's own recovery artifact; it is
     // inert (the live path exists beside it) and must not read as mid-park.
     if (entry.includes(".stale-")) continue;
+    // `--fix` is the one-command recovery: rename the park back to the
+    // tracked path it came from. Only ever moves a park whose live path is
+    // MISSING, so it can never clobber real files.
+    const group = entry.replace(/^_/, "").replace(/_build_excluded$/, "");
+    const live = resolve(APP_DIR, `(${group})`);
+    if (fix && PARKABLE.includes(group as (typeof PARKABLE)[number])) {
+      if (existsSync(live)) {
+        problems.push(
+          `app/${entry} and app/(${group}) BOTH exist — not touching it. ` +
+            `The live path is the source of truth; inspect the park by hand.`,
+        );
+        continue;
+      }
+      renameSync(resolve(APP_DIR, entry), live);
+      console.log(`✓ unparked app/${entry} → app/(${group})`);
+      continue;
+    }
     problems.push(
       `app/${entry} exists — this tree is MID-PARK from a profile build. ` +
         `Do NOT commit with \`git add -A\`/\`git commit -a\` until it is gone: ` +
-        `git would record the whole group as deleted. Restore by running a ` +
-        `full-profile build, or rename it back to its app/(x) name.`,
+        `git would record the whole group as deleted. Restore it with ` +
+        `\`pnpm check:parked-routes:fix\`.`,
     );
   }
 
