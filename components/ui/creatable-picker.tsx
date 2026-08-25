@@ -172,7 +172,11 @@ export function CreatablePicker({
   ariaLabel?: string;
   lockedNote?: string;
   lockedAction?: { label: string; onSelect: () => void };
-  createExtra?: ReactNode;
+  /**
+   * A function receives what the person typed, so a slot can offer matching
+   * suggestions (e.g. a shared catalog) instead of a fixed block.
+   */
+  createExtra?: ReactNode | ((typed: string) => ReactNode);
   manageAction?: { label: string; href: string };
   footerActions?: Array<{
     label: string;
@@ -332,7 +336,11 @@ export function CreatablePicker({
           {canCreate ? (
             <div className="space-y-1 border-t border-border p-1">
               {createExtra && typed && !exactMatch ? (
-                <div className="px-1 pt-0.5">{createExtra}</div>
+                <div className="px-1 pt-0.5">
+                  {typeof createExtra === "function"
+                    ? createExtra(typed)
+                    : createExtra}
+                </div>
               ) : null}
               <button
                 type="button"

@@ -124,26 +124,28 @@ export function OfferingPicker({
       ),
     });
   }
-  // Yours first, the rest of the shared catalog after — tree order preserved
-  // inside each heading, and whole roots kept together (see `usedByThisSite`).
-  const anyShared = services.options.some((option) => !option.usedByThisSite);
-  const ordered = anyShared
-    ? [
-        ...services.options.filter((option) => option.usedByThisSite),
-        ...services.options.filter((option) => !option.usedByThisSite),
-      ]
-    : services.options;
+  /**
+   * THE CATALOG IS NOT A MENU. Arman, 2026-08-25: offerings from the shared
+   * `seo.topic` catalog that this business does not offer were listed as
+   * directly selectable choices — "that's just crazy and stupid… those should
+   * be completely out of the normal drop down." Assigning a keyword to
+   * something you do not sell is never a thing to make one click away.
+   *
+   * So the list a person picks from is THIS SITE'S offerings, full stop. The
+   * shared catalog survives where he put it: inside the ADD flow, as
+   * suggestions offered the moment someone types a name that is not theirs yet
+   * ("you can put your custom one, or here are some you can choose from") —
+   * see `createExtra` below.
+   */
+  const mine = services.options.filter((option) => option.usedByThisSite);
+  const shared = services.options.filter((option) => !option.usedByThisSite);
 
-  for (const option of ordered) {
+  for (const option of mine) {
     const meta = rootTypeMeta(option.rootType);
     options.push({
       value: option.topicId,
       label: option.name,
-      group: anyShared
-        ? option.usedByThisSite
-          ? "Your offerings"
-          : "Shared catalog — not used by this site yet"
-        : undefined,
+      group: undefined,
       keywords: `${option.lineage} ${option.rootName} ${meta.label}`,
       hint: option.keywords > 0 ? `${option.keywords} kw` : undefined,
       render: (
@@ -202,6 +204,41 @@ export function OfferingPicker({
     }
   };
 
+  /** The shared catalog, offered ONLY while adding — never as a plain choice. */
+  const sharedSuggestions = (typed: string) => {
+    const needle = typed.trim().toLowerCase();
+    if (!needle) return null;
+    const matches = shared
+      .filter(
+        (option) =>
+          option.name.toLowerCase().includes(needle) ||
+          option.lineage.toLowerCase().includes(needle),
+      )
+      .slice(0, 5);
+    if (matches.length === 0) return null;
+    return (
+      <div className="rounded-sm border border-border bg-muted/40 p-1.5">
+        <p className="px-1 pb-1 text-[11px] text-muted-foreground">
+          Already in the shared catalog — adopt one instead of creating a
+          duplicate:
+        </p>
+        {matches.map((option) => (
+          <button
+            key={option.topicId}
+            type="button"
+            onClick={() => onSelect(option.topicId)}
+            className="flex w-full min-w-0 items-center gap-1.5 rounded-sm px-1.5 py-1 text-left text-xs transition-colors hover:bg-accent"
+          >
+            <span className="min-w-0 truncate text-foreground">{option.name}</span>
+            <span className="min-w-0 shrink truncate text-[10px] text-muted-foreground">
+              {option.rootName}
+            </span>
+          </button>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <CreatablePicker
       value={value}
@@ -231,28 +268,31 @@ export function OfferingPicker({
           : undefined
       }
       manageAction={{ label: "Manage offerings", href: manageHref }}
-      createExtra={
-        <Select
-          value={newParentId || "__root__"}
-          onValueChange={(next) =>
-            setNewParentId(next === "__root__" ? "" : next)
-          }
-        >
-          <SelectTrigger className="h-7 text-[11px]" aria-label="Where the new offering goes">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__root__" className="text-xs">
-              Its own root — an offering you sell
-            </SelectItem>
-            {services.roots.map((root) => (
-              <SelectItem key={root.topicId} value={root.topicId} className="text-xs">
-                Under {root.name}
+      createExtra={(typed) => (
+        <div className="flex flex-col gap-1.5">
+          {sharedSuggestions(typed)}
+          <Select
+            value={newParentId || "__root__"}
+            onValueChange={(next) =>
+              setNewParentId(next === "__root__" ? "" : next)
+            }
+          >
+            <SelectTrigger className="h-7 text-[11px]" aria-label="Where the new offering goes">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__root__" className="text-xs">
+                Its own root — an offering you sell
               </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      }
+              {services.roots.map((root) => (
+                <SelectItem key={root.topicId} value={root.topicId} className="text-xs">
+                  Under {root.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     />
   );
 }
