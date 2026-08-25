@@ -1,4 +1,4 @@
-// matrx blob-cache SW — built 2026-08-25T00:41:23.564Z
+// matrx blob-cache SW — built 2026-08-25T18:07:35.245Z
 "use strict";(()=>{function p(t,e,s,n,r){return t==="GET"&&e==="navigate"&&s===r&&(n==="/education"||n.startsWith("/education/"))}function w(t,e,s,n){if(t!=="GET"||e!==n||!s.startsWith("/_next/static/"))return!1;let r=s.slice(s.lastIndexOf("/")+1);return M.test(r)}var M=/(?:^|[.-])(?=[a-z0-9]*\d)[a-z0-9]{8,}\.[a-z0-9]+$/i;var L="1",v="matrx-blob-cache",B=1,d="blobs",g="urlMap",a={backendUrl:null,filesUrl:null,userId:null},b="matrx-study-shell-v1",I="/education/offline",E=`<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Offline</title>
