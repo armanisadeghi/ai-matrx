@@ -92,17 +92,18 @@ describe("AccountsTableClient", () => {
     });
 
     if (!mockTableProps) throw new Error("Accounts table did not render");
-    expect(mockTableProps.urlState).toBeUndefined();
-    expect(mockTableProps.query?.mode).toBe("controlled-local");
+    const tableProps = mockTableProps;
+    expect(tableProps.urlState).toBeUndefined();
+    expect(tableProps.query?.mode).toBe("controlled-local");
 
-    if (!mockTableProps.query || mockTableProps.query.mode === "local") {
+    if (!tableProps.query || tableProps.query.mode === "local") {
       throw new Error("Accounts query is not controlled");
     }
 
     act(() => {
-      mockTableProps.query?.mode !== "local" &&
-        mockTableProps.query?.onStateChange({
-          ...mockTableProps.query.state,
+      tableProps.query?.mode !== "local" &&
+        tableProps.query?.onStateChange({
+          ...tableProps.query.state,
           search: "gmail",
         });
     });

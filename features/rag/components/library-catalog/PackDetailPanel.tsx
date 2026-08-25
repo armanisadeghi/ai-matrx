@@ -275,8 +275,8 @@ export function PackDetailPanel({
                 />
                 <Stat
                   icon={ListChecks}
-                  count={parts?.rules.length ?? 0}
-                  label="rules"
+                  count={parts?.meaning.length ?? 0}
+                  label="meanings"
                 />
                 <Stat
                   icon={Layers}
@@ -329,12 +329,12 @@ export function PackDetailPanel({
 function PackPreviewLists({
   detail,
 }: {
-  detail: { topics: { item_id: string; name: string }[]; rules: { rule_id: string; name: string }[] } | null;
+  detail: { topics: { item_id: string; name: string }[]; meaning: { item_id: string; label: string }[] } | null;
 }) {
   if (!detail) return null;
   const topics = detail.topics.slice(0, 8);
-  const rules = detail.rules.slice(0, 8);
-  if (topics.length === 0 && rules.length === 0) {
+  const meanings = detail.meaning.slice(0, 8);
+  if (topics.length === 0 && meanings.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
         This pack has no rows yet.
@@ -362,20 +362,20 @@ function PackPreviewLists({
           </ul>
         </div>
       ) : null}
-      {rules.length > 0 ? (
+      {meanings.length > 0 ? (
         <div className="rounded-md border">
           <div className="border-b bg-muted/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Rules
+            Meanings
           </div>
           <ul className="divide-y">
-            {rules.map((r) => (
-              <li key={r.rule_id} className="px-3 py-1.5 text-xs">
-                {r.name}
+            {meanings.map((item) => (
+              <li key={item.item_id} className="px-3 py-1.5 text-xs">
+                {item.label}
               </li>
             ))}
-            {detail.rules.length > rules.length ? (
+            {detail.meaning.length > meanings.length ? (
               <li className="px-3 py-1.5 text-[11px] text-muted-foreground">
-                +{detail.rules.length - rules.length} more
+                +{detail.meaning.length - meanings.length} more
               </li>
             ) : null}
           </ul>

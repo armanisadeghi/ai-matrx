@@ -533,7 +533,7 @@ export function MeaningRulesWorkbench() {
 
   const provenanceFor = (
     rowId: string,
-    part: "rules" | "geo_areas",
+    part: "meaning" | "geo_areas",
     summarize: (v: Record<string, unknown>) => string,
   ): EditorProvenance | undefined => {
     const prov = bySiteRow.get(rowId);
@@ -549,7 +549,7 @@ export function MeaningRulesWorkbench() {
         await adoptStarterPack(siteId, prov.packId, {
           reset: true,
           parts: [part],
-          ...(part === "rules" ? { ruleIds: [prov.item.ref] } : { itemIds: [prov.item.ref] }),
+          itemIds: [prov.item.ref],
           seedGuidelines: false,
         });
         await queryClient.invalidateQueries({ queryKey: ["seo"] });
@@ -1213,7 +1213,7 @@ export function MeaningRulesWorkbench() {
           windowLabel={windowLabel}
           bandMetas={bandMetas}
           rule={editingRule}
-          provenance={editingRule ? provenanceFor(editingRule.id, "rules", ruleSummary) : undefined}
+          provenance={editingRule ? provenanceFor(editingRule.id, "meaning", ruleSummary) : undefined}
           onClose={() => setEditingRule(undefined)}
         />
       ) : null}

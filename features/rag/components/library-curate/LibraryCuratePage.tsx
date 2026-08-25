@@ -276,7 +276,7 @@ export function LibraryCuratePage() {
                                     {p.name}
                                   </span>
                                   <span className="block truncate text-[11px] text-muted-foreground">
-                                    v{p.pack_version} · {p.topic_count} topics · {p.rule_count} rules
+                                    v{p.pack_version} · {p.topic_count} topics · {p.meaning_count} meanings
                                   </span>
                                 </span>
                                 <Badge

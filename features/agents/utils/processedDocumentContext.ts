@@ -13,7 +13,12 @@
  */
 
 import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
-import type { FileDocumentLookup } from "@/features/files/api/document-lookup";
+import type { UseFileDocumentState } from "@/features/files/hooks/useFileDocument";
+
+type FileDocumentLookup = Extract<
+  UseFileDocumentState,
+  { status: "found" }
+>["doc"];
 
 /** The `source` value describing an attached processed document. */
 export interface ProcessedDocumentSource {
