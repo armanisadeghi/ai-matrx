@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 456 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 457 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,12 +21,79 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "78d5acc9d4cf";
+export const KIND_REGISTRY_FINGERPRINT = "f0a60411e44f";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
 // identical `$defs` entry carried by many kinds is ONE interface here.
 // ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * One prompt message. The system message comes first.
+ *  *
+ *  * From kind `agent_definition`.
+ */
+export interface AgentDefinitionMessage {
+  role: "system" | "user" | "assistant";
+  content: AgentDefinitionTextBlock[];
+}
+
+/**
+ * Run settings. A reasoning agent spends ``max_output_tokens`` on reasoning
+ * FIRST and the answer second — the birth floor reconciles a ceiling too small
+ * to hold both (``agent_factory.guards.enforce_reasoning_output_budget``).
+ *  *
+ *  * From kind `agent_definition`.
+ */
+export interface AgentDefinitionSettings {
+  top_p?: number | null;
+  stream?: boolean;
+  temperature?: number | null;
+  reasoning_effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | null;
+  max_output_tokens?: number | null;
+  reasoning_summary?: "auto" | "concise" | "detailed" | "always" | "never" | null;
+  internal_web_search?: boolean | null;
+  internal_url_context?: boolean | null;
+}
+
+/**
+ * One content block of a prompt message. Content is ALWAYS a list of these
+ * — never a bare string (the PromptJSON rule the builder is trained on).
+ *  *
+ *  * From kind `agent_definition`.
+ */
+export interface AgentDefinitionTextBlock {
+  text: string;
+  type?: "text";
+}
+
+/**
+ * One ``{{name}}`` placeholder the agent's messages reference.
+ *  *
+ *  * From kind `agent_definition`.
+ */
+export interface AgentDefinitionVariable {
+  name: string;
+  helpText?: string | null;
+  required?: boolean;
+  defaultValue?: string;
+  customComponent?: AgentDefinitionVariableComponent | null;
+}
+
+/**
+ * The input control a variable renders as. Omit for a plain textarea.
+ *  *
+ *  * From kind `agent_definition`.
+ */
+export interface AgentDefinitionVariableComponent {
+  max?: number | null;
+  min?: number | null;
+  step?: number | null;
+  type: "textarea" | "toggle" | "radio" | "checkbox" | "select" | "number";
+  options?: string[] | null;
+  allowOther?: boolean | null;
+  toggleValues?: string[] | null;
+}
 
 /**
  * * Shared by 2 kinds (ai_answer, serp_placement).
@@ -4962,6 +5029,32 @@ export interface AgentAssignmentBatchResult {
    */
   __kind: "agent_assignment_batch_result";
   session: AssignmentSessionSummary;
+}
+
+/**
+ * A complete agent, exactly as a model may author it.
+ *
+ * Applied through ``directive_v1_action_create_agent_definition`` it becomes a
+ * live ``agent.definition`` row (with its v1 snapshot); rendered, it is the
+ * agent a person is watching being built.
+ *  *
+ *  * Kind `agent_definition` (registry v2).
+ */
+export interface AgentDefinition {
+  name: string;
+  tags?: string[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "agent_definition";
+  category: string;
+  messages: AgentDefinitionMessage[];
+  model_id: string;
+  settings: AgentDefinitionSettings;
+  description?: string;
+  custom_tools?: string[];
+  context_policies?: string[];
+  variable_definitions?: AgentDefinitionVariable[];
 }
 
 /**
@@ -17825,6 +17918,7 @@ export interface WorkflowRunResult {
 /** Every active kind slug. An unregistered slug is a COMPILE error. */
 export type GeneratedKindSlug =
   | "agent_assignment_batch_result"
+  | "agent_definition"
   | "agent_function_spec"
   | "agent_input_qme_report"
   | "agent_react_result"
@@ -18284,6 +18378,7 @@ export type GeneratedKindSlug =
 /** Slug → the complete-instance payload type for that kind. */
 export interface KindPayloadBySlug {
   "agent_assignment_batch_result": AgentAssignmentBatchResult;
+  "agent_definition": AgentDefinition;
   "agent_function_spec": AgentFunctionSpec;
   "agent_input_qme_report": AgentInputQmeReport;
   "agent_react_result": AgentReactResult;
@@ -18747,6 +18842,7 @@ export type KindPayload<S extends GeneratedKindSlug> = KindPayloadBySlug[S];
 /** Every active slug, sorted — the iteration/validation source. */
 export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "agent_assignment_batch_result",
+  "agent_definition",
   "agent_function_spec",
   "agent_input_qme_report",
   "agent_react_result",
