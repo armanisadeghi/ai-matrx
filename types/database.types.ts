@@ -53033,6 +53033,27 @@ export type Database = {
           last_backfill_at: string
         }[]
       }
+      gsc_batch_question: {
+        Args: {
+          p_days?: number
+          p_dimension?: string
+          p_exclude?: string[]
+          p_site_id: string
+          p_size?: number
+          p_word_overlap?: number
+        }
+        Returns: {
+          clicks: number
+          dimension_label: string
+          dimension_slug: string
+          dimension_why: string
+          impressions: number
+          keyword: string
+          keyword_id: string
+          picked_for: string
+          remaining: number
+        }[]
+      }
       gsc_brand_alias_match_strength: {
         Args: {
           p_joined: string
