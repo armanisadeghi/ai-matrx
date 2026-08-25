@@ -19,7 +19,11 @@ import {
   formatKindSchemaVariable,
 } from "@/features/content-ir/studio/kind-agent-intents";
 
-export type KindRegistryCatalogTab = "catalog" | "board" | "export";
+export type KindRegistryCatalogTab =
+  | "catalog"
+  | "board"
+  | "export"
+  | "incidents";
 export type KindRegistryDetailTab =
   | "preview"
   | "code"

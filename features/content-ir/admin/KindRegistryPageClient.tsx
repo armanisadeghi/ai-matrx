@@ -3,7 +3,8 @@
 /**
  * Kind Registry page shell — /administration/utilities/kind-registry.
  *
- * ONE page, three tabs over ONE server-side shape-doctor run:
+ * ONE page, four tabs — three over ONE server-side shape-doctor run, plus the
+ * live incident queue:
  *  - Catalog (default): the canonical MatrxDataTable of every kind — sort /
  *    filter / sticky header / facets; row click → the per-kind detail page.
  *  - Board: the live shape-doctor matrix diffed against the committed
@@ -11,6 +12,10 @@
  *  - Schema Export: browse compiled + DB kinds, the uses/used-by reference
  *    graph, and provider-ready JSON Schema export with $defs — unchanged
  *    capability (code-split; ajv/editor stack stays out of the default tab).
+ *  - Incidents: content_ir.kind_component_incident — every render failure a
+ *    Shape produced in front of a real reader, filed by the browser and by the
+ *    server's generic-floor alarm. THE DOOR the agent-facing queue never had
+ *    (code-split; it reads live at view time, not from the doctor run).
  *
  * This replaced the old split-brain layout (doctor matrix stacked on top of a
  * second list+viewer system on one scroll) on 2026-07-17.
@@ -40,12 +45,26 @@ const KindSchemaExplorer = dynamic(
   },
 );
 
-const TABS = ["catalog", "board", "export"] as const;
+const KindIncidentsTab = dynamic(
+  () => import("@/features/content-ir/admin/KindIncidentsTab"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center gap-2 p-6 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="text-sm">Loading the incident queue</span>
+      </div>
+    ),
+  },
+);
+
+const TABS = ["catalog", "board", "export", "incidents"] as const;
 type TabId = (typeof TABS)[number];
 const TAB_LABELS: Record<TabId, string> = {
   catalog: "Catalog",
   board: "Board",
   export: "Schema Export",
+  incidents: "Incidents",
 };
 
 function isTabId(value: string | undefined): value is TabId {
@@ -153,6 +172,11 @@ export default function KindRegistryPageClient({
           {tab === "export" && (
             <div className="h-full overflow-hidden">
               <KindSchemaExplorer />
+            </div>
+          )}
+          {tab === "incidents" && (
+            <div className="h-full overflow-hidden">
+              <KindIncidentsTab />
             </div>
           )}
         </main>

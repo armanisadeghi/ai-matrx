@@ -6,7 +6,7 @@
  * `kind_surface` / `kind_component` / `kind_example` (see
  * `features/content-ir/FEATURE.md`). Three sub-routes:
  *
- *   /administration/utilities/kind-registry          catalog (list + status board + export)
+ *   /administration/utilities/kind-registry          catalog (list + status board + export + incidents)
  *   /administration/utilities/kind-registry/[kind]    one kind's detail (schema, examples, assets)
  *   /administration/utilities/kind-registry/build      agent-assisted kind builder (compose a prompt for kind_architect)
  *
@@ -87,7 +87,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "catalog_tab",
     label: "Catalog tab",
     description:
-      'Which of the three catalog-page tabs is active: "catalog" (table), "board" (status board), or "export" (schema/reference-graph explorer). Present only on kind_registry_section=catalog.',
+      'Which catalog-page tab is active: "catalog" (table), "board" (status board), "export" (schema/reference-graph explorer), or "incidents" (the live content_ir.kind_component_incident queue — render failures filed by browsers and by the server generic-floor alarm). Present only on kind_registry_section=catalog.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 8,
@@ -446,7 +446,7 @@ export function createAdminKindRegistryScope(values: {
   kind_registry_section: "catalog" | "detail" | "build";
   // alwaysAvailable: false → optional
   context?: Record<string, unknown>;
-  catalog_tab?: "catalog" | "board" | "export";
+  catalog_tab?: "catalog" | "board" | "export" | "incidents";
   kind_catalog_rows?: unknown[];
   kind_catalog_totals?: Record<string, unknown>;
   kind_catalog_facets?: Record<string, unknown>;
