@@ -152,12 +152,85 @@ directly (it bypasses the RLS check)"* is a landmine, not meaning. A guard nobod
 | **Bannered "STALE"/"SUPERSEDED" doc in a LIVE path** | Extract anything still true, then DELETE. A banner is not a home — leaving 4,000 lines of contradicted spec in a live directory is the disease, not the cure. |
 | **CODE ARTIFACT — a `.md` that code reads or a guard scans** | Never absorbed, never deleted, whatever it contains. Confirm by grepping the repo's `.py`/`.ts`/scripts for its filename before you touch it. (Wave 2: 11 `ner_*.md` files are the declared source of truth for agent slots and a guard script scans them — deleting them would have broken the guard.) |
 | **PUBLISHED PAYLOAD — shipped inside a package tarball** (a `README.md`/`CHANGELOG.md` listed in `package.json` `files:`) | Never deleted; it is a public artifact. Plant the pointer, leave it. |
-| **A repo's working-backlog lane** (`.research/`, `.arman/`, `.matrx/`, `FOUND_DEFECTS.md`, task registers) | Left standing, recorded as survivors. **A repo `.arman/` is Arman's lane by the same law as `common-docs/inbox/` — never delete from it, ever**, even when it holds a byte-identical duplicate of something you just removed. Report it instead. A register that cites a doc you deleted gets a one-line annotation, not a rewrite. |
+| **A repo's working-backlog lane** (`.research/`, `.matrx/`, `FOUND_DEFECTS.md`, task registers) | Left standing, recorded as survivors. A register that cites a doc you deleted gets a one-line annotation, not a rewrite. |
+| **A PROTECTED lane — `common-docs/inbox/` and any repo's `.arman/`** | 🚨 **Never deleted, never edited, never "tidied" — no exceptions, whatever it looks like.** And never called a duplicate without a byte-level diff: **the protected copy is frequently the fuller ORIGINAL**, and the repo copy the trimmed derivative. Wave 2 nearly deleted a folder literally named `junk/` on the assumption it duplicated deleted repo docs — a diff showed the protected copies were LONGER, carried a whole route-architecture section the repo copies had dropped, and two files had no repo twin at all. **Diff first, report second, delete never.** |
 
 🚨 **The classification pressure runs one way.** Calling meaning "local mechanics" is how 148 fat
 `FEATURE.md` files got there in the first place. **When a passage could be read either way, it is
 MEANING.** A landmine is one or two imperative sentences; if it takes a paragraph to explain, the
 explanation is meaning and belongs in the node's STATE.md with the imperative left behind.
+
+## Step 3.5 — Provenance: whose document is this? (the step that decides who wins)
+
+Before you merge anything, establish who WROTE each source. This decides every conflict downstream,
+and getting it wrong is how the platform's worst drift happened.
+
+**Arman's documents are the bible.** His design records, his rulings, his vision — those state how
+the system is SUPPOSED to work. Everything else is a report on how some agent believed it worked on
+some day.
+
+🚨 **THE DISEASE, in his words (2026-08-25):** *"agents tend to not use my documents, and they tend
+to use the wrong ones… the ones that are agent authored feel easier to follow and usually include
+the shortcuts and will affirm what you see in the code, because some agent made a stupid mistake and
+then justified their stupid mistake by creating a document that backs it up — but it'll be totally
+contrary to my rules."*
+
+**The canonical example — read it before you rule on any conflict:**
+[`/systems/workflows/dynamic-agent-graph-design-v2.md`](/systems/workflows/dynamic-agent-graph-design-v2.md)
+— 1,371 lines of his architecture session stating exactly how workflows and Masterwork should work.
+Things were then built in both systems directly contrary to it and nobody noticed. Note the
+structural trap: that document is typed `Reference`, one of ~188 undifferentiated `Reference` docs,
+so the type-based authority ladder ranks his bible BELOW any agent-written `State` doc.
+**Type is not provenance. Check provenance.**
+
+**How to read provenance when nothing declares it:**
+
+| Signal | Reading |
+|---|---|
+| `authority: owner` in frontmatter | Settled — his. Highest authority, whatever its `type`. |
+| First-person design reasoning, spoken cadence, verbatim quotes, an "Arman said/ruled" attribution with a date | Probably his → **nominate it** (below). |
+| Reads as a tidy summary, has "Status: ✅ shipped" tables, agent changelogs, or restates the code back to you | Agent-authored. Useful, never authoritative. |
+| Git author | **Useless here** — every commit in every repo is authored as Arman, including agents'. Do not use it. |
+
+**You may NEVER set `authority: owner` yourself.** When you believe a document is his, you
+**nominate** it: report it in Step 8 with its path and one line of evidence, and file one
+attention-board row asking him to confirm. Marking your own writing as his authority is the
+single worst thing you can do to this corpus — an agent already fabricated a `VISION.md` of
+invented quotes this way.
+
+**Dates arbitrate only between documents of EQUAL provenance.** A newer agent doc NEVER outranks an
+older owner doc — recency is not authority. Between two agent docs, the newer wins on fact and the
+older is corrected. Between two owner docs, you do not rule at all (see Step 3.6).
+
+## Step 3.6 — Conflicts: resolve what you can, escalate what you cannot
+
+**Resolve yourself, and say what you did:**
+
+- **Fact vs fact** → reality arbitrates. Query the live DB, read the live code, check the deployed
+  state. The doc that loses is corrected with the evidence in its changelog.
+- **Stale vs current at equal provenance** → the verified-against-reality one wins.
+- **Vocabulary drift** → [`/systems/platform/vocabulary/FEATURE.md`](/systems/platform/vocabulary/FEATURE.md) wins, always.
+- **An owner doc's claim about BUILD STATE being out of date** → correct the build state; his
+  intent is untouched. His docs go stale on facts like any other; they never go stale on intent.
+
+🚨 **Escalate, and do NOT resolve:**
+
+- **An owner document vs the code.** THE CODE IS THE DEFECT — never "fix" his doc to match what got
+  built, and never record the code's behavior as the design. Write both readings into `DECISIONS.md`
+  as an open conflict, file the attention-board row, and leave his document untouched.
+- **Owner doc vs owner doc** — two of his statements that genuinely disagree. Never resolved by an
+  agent, ever.
+- **An agent doc that contradicts an owner doc and matches the code.** This is the disease above,
+  not evidence. The agent doc is deleted or corrected; what it justified goes on the board.
+- **Interpretation vs interpretation** — nobody disputes the measurements, two docs read them
+  differently. Record both readings, decide neither.
+
+**The escalation must be one he can act on cold** — a row on
+[`operations/attention.md`](/operations/attention.md), guided-session shaped: plain-language
+background in two or three sentences with no jargon or doc numbering, **a clickable path to the
+document**, the two readings side by side, **the concrete consequence of each**, and your
+recommendation. A question he cannot answer from what you gave him is a defect in your question,
+not a hard question. Batch them; never page him one at a time.
 
 ## Step 4 — Extract into the node kit
 
@@ -330,7 +403,18 @@ on disk still holds the old copies — out of scope, but say so if you find one.
    back empty, or what it found.
 5. **Flagged, not resolved** — contradictions, `VISION MISSING`, UNVERIFIABLE claims, attention-board
    rows filed, code defects spotted.
-6. **Blockers and friction** — anything that stopped you, and anything in THIS SKILL that was
+
+   🚨 **These three go at the TOP of your report, each with a clickable path — never buried at the
+   end, never summarised away:**
+   - **Owner-doc conflicts** — anything built or written contrary to one of Arman's documents.
+   - **Claims that were WRONG** — a doc that sent agents at a dead table, a fictional contract, a
+     "shipped" that isn't, a "pending" that is. Say what was wrong, what is true, and how you
+     proved it. You will find these constantly; they are the most valuable thing you produce.
+   - **Anything found in a PROTECTED lane** (`inbox/`, a repo `.arman/`) — reported with its path
+     and your byte-level comparison, for HIM to decide. You touched nothing.
+6. **Nominated as owner-authored** — documents you believe are Arman's, each with path and one line
+   of evidence, so he can confirm and they can be marked `authority: owner`.
+7. **Blockers and friction** — anything that stopped you, and anything in THIS SKILL that was
    ambiguous, missing, or wrong when you tried to follow it. Be blunt; the skill is being revised
    from these reports.
 
@@ -341,6 +425,11 @@ on disk still holds the old copies — out of scope, but say so if you find one.
       of the four verdicts; OUT files grouped by class.
 - [ ] All MEANING lives in the node kit; vision merged verbatim and attributed; claims verified
       against live code/DB, not copied on faith.
+- [ ] **Provenance established for every source before merging.** No agent doc was allowed to
+      outrank an owner doc; no owner doc was edited to match the code; every owner-vs-code and
+      owner-vs-owner conflict is on the attention board with a clickable path and both readings.
+- [ ] Nothing in a protected lane was deleted or edited; anything found there is reported with a
+      byte-level comparison.
 - [ ] Every pure-meaning source file DELETED; every mixed file cut under the cap; every inbound
       reference repointed; pointer lines planted in surviving repo docs.
 - [ ] All three proof-gate checks ran after the deletions: the deleted-path grep came back empty,
@@ -350,6 +439,22 @@ on disk still holds the old copies — out of scope, but say so if you find one.
 
 # Changelog
 
+- 2026-08-25 (v4 — Arman's provenance ruling; the corpus-level fix). **Provenance now outranks
+  type**, in this skill (new Steps 3.5/3.6) and in the ladder itself
+  ([`document-types.md` Rung 0](/policies/document-types.md)). His documents are the bible whatever
+  their `type:` — the trigger was his own 1,371-line agent-graph-v2 design record being typed
+  `Reference`, so the type ladder ranked it below any agent's `State` doc while work got built
+  contrary to it. Adds: the named disease (an agent justifies its mistake with a doc that reads
+  easier than his, matches the code, and contradicts his rules — that is drift, not truth); dates
+  arbitrate only at equal provenance; the resolve-vs-escalate split (reality arbitrates fact-vs-fact;
+  owner-doc-vs-code means the CODE is the defect and his doc is never edited to match it; owner-vs-owner
+  and interpretation-vs-interpretation are never agent-resolved); escalation shaped as a
+  guided attention-board row with a clickable path, both readings, and each one's consequence;
+  `authority: owner` as the marker with agents NOMINATING only; owner-conflicts, wrong-claims, and
+  protected-lane finds reported at the TOP with links, never buried; and protected lanes
+  (`inbox/`, any repo `.arman/`) never deleted or edited AND never called duplicates without a
+  byte-level diff — wave 2 nearly deleted a `junk/` folder whose protected copies turned out to be
+  the FULLER originals.
 - 2026-08-25 (v3, revised from wave-2 evidence — 5 more parallel runs; both waves together deleted
   201 repo docs and 62,836 lines, measured from git). Fixes: **`git commit -m "msg" -- <paths>`** —
   v2's own mandated syntax was broken (git parses everything after `--` as pathspecs) and two runs
