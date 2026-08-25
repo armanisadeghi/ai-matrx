@@ -192,6 +192,7 @@ export const OVERLAY_IDS = [
   "undoHistory",
   "userPreferences",
   "userPreferencesWindow",
+  "userSearchWindow",
   "voicePad",
   "voicePadAdvanced",
   "whatsappMedia",

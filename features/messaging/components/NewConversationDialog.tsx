@@ -8,12 +8,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Search,
   Loader2,
   User,
   Mail,
@@ -33,6 +31,8 @@ import {
 import type { UserBasicInfo } from "../types";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { DbRpcRow } from "@/types/supabase-rpc";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
+import type { UserSearchCandidate } from "@/features/user-search/types";
 
 interface NewConversationDialogProps {
   open: boolean;
@@ -73,6 +73,42 @@ export function NewConversationDialog({
   const currentUserId = user?.id;
 
   const { connections, isLoading: connectionsLoading } = useUserConnections();
+
+  const userSearchCandidates: UserSearchCandidate[] = (() => {
+    const byId = new Map<string, UserSearchCandidate>();
+    for (const connection of connections) {
+      byId.set(connection.user_id, {
+        id: connection.user_id,
+        email: connection.email,
+        displayName: connection.display_name,
+        avatarUrl: connection.avatar_url,
+        phone: null,
+        adminLevel: null,
+        organizations:
+          connection.source === "organization" && connection.sourceDetails
+            ? [connection.sourceDetails]
+            : [],
+        source: connection.source,
+        createdAt: null,
+        lastSignInAt: null,
+      });
+    }
+    for (const result of searchResults) {
+      byId.set(result.user_id, {
+        id: result.user_id,
+        email: result.email,
+        displayName: result.display_name,
+        avatarUrl: result.avatar_url,
+        phone: null,
+        adminLevel: null,
+        organizations: [],
+        source: "Search result",
+        createdAt: null,
+        lastSignInAt: null,
+      });
+    }
+    return [...byId.values()];
+  })();
 
   // Use ref to avoid recreating supabase client on every render
   const supabaseRef = useRef(createClient());
@@ -287,18 +323,25 @@ export function NewConversationDialog({
         <div className="flex flex-col flex-1 min-h-0 px-4 pb-4">
           {/* Search Input - Always visible */}
           <div className="relative flex-shrink-0 mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+            <UserSearchField
               placeholder="Search by name or email..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 text-base" // text-base for iOS zoom prevention
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
+              onValueChange={setSearchQuery}
+              onUserSelect={(selected) =>
+                void handleSelectUser({
+                  user_id: selected.id,
+                  email: selected.email,
+                  display_name: selected.displayName,
+                  avatar_url: selected.avatarUrl,
+                })
+              }
+              candidates={userSearchCandidates}
+              excludeUserIds={currentUserId ? [currentUserId] : []}
+              title="Choose someone to message"
+              inputClassName="text-base"
             />
             {isSearching && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+              <Loader2 className="absolute right-12 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
             )}
           </div>
 

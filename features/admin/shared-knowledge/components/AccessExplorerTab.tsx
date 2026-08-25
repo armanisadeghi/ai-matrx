@@ -25,7 +25,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -57,6 +56,7 @@ import { searchUserByEmail } from "@/features/organizations/userSearch";
 import type { StarterPackSummary } from "@/features/marketing/seo/value-system/types";
 import { fetchAdminPackCatalog } from "../packs/data";
 import type { SharedKnowledgeDirectory } from "../types";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
 
 type ExplorerMode = "organization" | "user" | "resource";
 
@@ -82,36 +82,69 @@ export function packHref(packId: string) {
 
 function ResourceName({ r, className }: { r: Resource; className?: string }) {
   if (r.type === "data_store") {
-    return <EntityRef token="data_store" id={r.id} name={r.name} className={className} alwaysShowActions />;
+    return (
+      <EntityRef
+        token="data_store"
+        id={r.id}
+        name={r.name}
+        className={className}
+        alwaysShowActions
+      />
+    );
   }
   return (
-    <Link href={packHref(r.id)} className={`inline-flex items-center gap-1 underline-offset-2 hover:underline ${className ?? ""}`}>
+    <Link
+      href={packHref(r.id)}
+      className={`inline-flex items-center gap-1 underline-offset-2 hover:underline ${className ?? ""}`}
+    >
       <Package className="size-3.5 text-muted-foreground" aria-hidden />
       {r.name}
-      <span className="text-[10px] text-muted-foreground">starter pack{r.status ? ` · ${r.status}` : ""}</span>
+      <span className="text-[10px] text-muted-foreground">
+        starter pack{r.status ? ` · ${r.status}` : ""}
+      </span>
     </Link>
   );
 }
 
-export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDirectory }) {
+export function AccessExplorerTab({
+  directory,
+}: {
+  directory: SharedKnowledgeDirectory;
+}) {
   const [mode, setMode] = useState<ExplorerMode>("organization");
   const [orgId, setOrgId] = useState("");
   const [resourceId, setResourceId] = useState("");
   const [email, setEmail] = useState("");
-  const [lookedUpUser, setLookedUpUser] = useState<{ id: string; email: string } | null>(null);
-  const [lookupState, setLookupState] = useState<"idle" | "loading" | "not_found">("idle");
+  const [lookedUpUser, setLookedUpUser] = useState<{
+    id: string;
+    email: string;
+  } | null>(null);
+  const [lookupState, setLookupState] = useState<
+    "idle" | "loading" | "not_found"
+  >("idle");
 
   const { assignments } = useAllOrgIndustries();
 
   const [packs, setPacks] = useState<StarterPackSummary[]>([]);
-  const [grantsByResource, setGrantsByResource] = useState<Map<string, LibraryGrant[]>>(new Map());
+  const [grantsByResource, setGrantsByResource] = useState<
+    Map<string, LibraryGrant[]>
+  >(new Map());
   const [grantsLoading, setGrantsLoading] = useState(true);
   const [grantsError, setGrantsError] = useState<string | null>(null);
 
   const resources: Resource[] = useMemo(
     () => [
-      ...directory.stores.map((s) => ({ type: "data_store" as const, id: s.id, name: s.name })),
-      ...packs.map((p) => ({ type: "seo_starter_pack" as const, id: p.id, name: p.name, status: p.status })),
+      ...directory.stores.map((s) => ({
+        type: "data_store" as const,
+        id: s.id,
+        name: s.name,
+      })),
+      ...packs.map((p) => ({
+        type: "seo_starter_pack" as const,
+        id: p.id,
+        name: p.name,
+        status: p.status,
+      })),
     ],
     [directory.stores, packs],
   );
@@ -128,15 +161,30 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
         if (cancelled) return;
         setPacks(packRows);
         const all: Resource[] = [
-          ...directory.stores.map((s) => ({ type: "data_store" as const, id: s.id, name: s.name })),
-          ...packRows.map((p) => ({ type: "seo_starter_pack" as const, id: p.id, name: p.name, status: p.status })),
+          ...directory.stores.map((s) => ({
+            type: "data_store" as const,
+            id: s.id,
+            name: s.name,
+          })),
+          ...packRows.map((p) => ({
+            type: "seo_starter_pack" as const,
+            id: p.id,
+            name: p.name,
+            status: p.status,
+          })),
         ];
         const entries = await Promise.all(
-          all.map(async (r) => [resourceKey(r), await fetchLibraryGrants(r.type, r.id)] as const),
+          all.map(
+            async (r) =>
+              [resourceKey(r), await fetchLibraryGrants(r.type, r.id)] as const,
+          ),
         );
         if (!cancelled) setGrantsByResource(new Map(entries));
       } catch (e) {
-        if (!cancelled) setGrantsError(e instanceof Error ? e.message : "Could not load grants");
+        if (!cancelled)
+          setGrantsError(
+            e instanceof Error ? e.message : "Could not load grants",
+          );
       } finally {
         if (!cancelled) setGrantsLoading(false);
       }
@@ -179,8 +227,15 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
     for (const resource of resources) {
       for (const g of grantsByResource.get(resourceKey(resource)) ?? []) {
         if (g.audience === "global") {
-          rows.push({ resource, grant: g, reason: "Published to everyone (global grant)" });
-        } else if (g.audience === "organization" && g.organizationId === targetOrgId) {
+          rows.push({
+            resource,
+            grant: g,
+            reason: "Published to everyone (global grant)",
+          });
+        } else if (
+          g.audience === "organization" &&
+          g.organizationId === targetOrgId
+        ) {
           rows.push({
             resource,
             grant: g,
@@ -189,7 +244,11 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
                 ? `${orgName} subscribed to it (or was granted a pilot) directly`
                 : `Published directly to ${orgName}`,
           });
-        } else if (g.audience === "industry" && g.industryId && orgIndustries.has(g.industryId)) {
+        } else if (
+          g.audience === "industry" &&
+          g.industryId &&
+          orgIndustries.has(g.industryId)
+        ) {
           rows.push({
             resource,
             grant: g,
@@ -216,7 +275,9 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
 
   const userOrgIds = useMemo(() => {
     if (!lookedUpUser) return [];
-    return directory.memberships.filter((m) => m.user_id === lookedUpUser.id).map((m) => m.organization_id);
+    return directory.memberships
+      .filter((m) => m.user_id === lookedUpUser.id)
+      .map((m) => m.organization_id);
   }, [directory.memberships, lookedUpUser]);
 
   const renderEntitlements = (rows: EntitlementRow[], emptyText: string) => {
@@ -244,7 +305,10 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
     return (
       <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
         {rows.map((r, idx) => (
-          <li key={`${resourceKey(r.resource)}-${r.grant.id}-${idx}`} className="group/entity-ref px-3 py-2">
+          <li
+            key={`${resourceKey(r.resource)}-${r.grant.id}-${idx}`}
+            className="group/entity-ref px-3 py-2"
+          >
             <div className="flex flex-wrap items-center gap-2 text-sm text-foreground">
               <ResourceName r={r.resource} className="min-w-0 font-medium" />
               <Badge variant="outline" className="shrink-0 text-[10px]">
@@ -254,14 +318,17 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
                 {r.grant.audience}
               </Badge>
             </div>
-            <div className="mt-0.5 text-xs text-muted-foreground">{r.reason}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              {r.reason}
+            </div>
           </li>
         ))}
       </ul>
     );
   };
 
-  const selectedResource = resources.find((r) => resourceKey(r) === resourceId) ?? null;
+  const selectedResource =
+    resources.find((r) => resourceKey(r) === resourceId) ?? null;
 
   return (
     <div className="max-w-3xl space-y-4">
@@ -298,10 +365,19 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
           {orgId ? (
             <>
               <div className="group/entity-ref flex items-center gap-2 text-sm text-foreground">
-                <EntityRef token="organization" id={orgId} name={orgNameById.get(orgId) ?? orgId} className="min-w-0 font-medium" alwaysShowActions />
+                <EntityRef
+                  token="organization"
+                  id={orgId}
+                  name={orgNameById.get(orgId) ?? orgId}
+                  className="min-w-0 font-medium"
+                  alwaysShowActions
+                />
               </div>
               <div className="text-xs text-muted-foreground">
-                Industries: {(industriesByOrg.get(orgId) ?? []).length === 0 ? "none assigned" : (industriesByOrg.get(orgId) ?? []).length}
+                Industries:{" "}
+                {(industriesByOrg.get(orgId) ?? []).length === 0
+                  ? "none assigned"
+                  : (industriesByOrg.get(orgId) ?? []).length}
                 {" · "}
                 <Link
                   href={`/administration/users/organizations?org=${encodeURIComponent(orgId)}`}
@@ -310,7 +386,12 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
                   className="underline-offset-2 hover:text-foreground "
                   title="Open this organization's members"
                 >
-                  Members: {directory.memberships.filter((m) => m.organization_id === orgId).length}
+                  Members:{" "}
+                  {
+                    directory.memberships.filter(
+                      (m) => m.organization_id === orgId,
+                    ).length
+                  }
                 </Link>
               </div>
               {renderEntitlements(
@@ -324,25 +405,44 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
 
       {mode === "user" ? (
         <div className="space-y-3">
-          <div className="flex max-w-md gap-2">
-            <Input
+          <div className="flex max-w-xl gap-2">
+            <UserSearchField
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
+              onValueChange={(value) => {
+                setEmail(value);
+                setLookedUpUser(null);
                 setLookupState("idle");
               }}
-              placeholder="user@example.com"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void onLookupUser();
+              onEnter={() => void onLookupUser()}
+              onUserSelect={(user) => {
+                const label = user.email ?? user.displayName ?? user.id;
+                setEmail(label);
+                setLookedUpUser({ id: user.id, email: label });
+                setLookupState("idle");
               }}
+              directory="admin"
+              title="Choose a user to inspect"
+              placeholder="Search by name, email, organization, or ID…"
+              className="min-w-0 flex-1"
             />
-            <Button onClick={onLookupUser} disabled={!email.trim() || lookupState === "loading"} size="sm" className="shrink-0">
-              {lookupState === "loading" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Search className="mr-1.5 h-3.5 w-3.5" />}
+            <Button
+              onClick={onLookupUser}
+              disabled={!email.trim() || lookupState === "loading"}
+              size="sm"
+              className="shrink-0"
+            >
+              {lookupState === "loading" ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Search className="mr-1.5 h-3.5 w-3.5" />
+              )}
               Look up
             </Button>
           </div>
           {lookupState === "not_found" ? (
-            <div className="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">No user with that email.</div>
+            <div className="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
+              No user with that email.
+            </div>
           ) : null}
           {lookedUpUser ? (
             <div className="space-y-3">
@@ -352,22 +452,38 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
                   <span>no organizations</span>
                 ) : (
                   userOrgIds.map((id) => (
-                    <EntityRef key={id} token="organization" id={id} name={orgNameById.get(id) ?? id} className="text-foreground" alwaysShowActions />
+                    <EntityRef
+                      key={id}
+                      token="organization"
+                      id={id}
+                      name={orgNameById.get(id) ?? id}
+                      className="text-foreground"
+                      alwaysShowActions
+                    />
                   ))
                 )}
               </div>
               {userOrgIds.length === 0 ? (
                 <div className="rounded-md border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
-                  Not a member of any organization — Library grants reach users only through org membership, so this user reaches nothing.
+                  Not a member of any organization — Library grants reach users
+                  only through org membership, so this user reaches nothing.
                 </div>
               ) : (
                 userOrgIds.map((oid) => (
                   <div key={oid} className="space-y-1.5">
                     <div className="group/entity-ref flex items-center gap-1.5 text-sm font-medium text-foreground">
                       <span>Via membership in</span>
-                      <EntityRef token="organization" id={oid} name={orgNameById.get(oid) ?? oid} alwaysShowActions />
+                      <EntityRef
+                        token="organization"
+                        id={oid}
+                        name={orgNameById.get(oid) ?? oid}
+                        alwaysShowActions
+                      />
                     </div>
-                    {renderEntitlements(entitlementsForOrg(oid), "This organization reaches no shared resources.")}
+                    {renderEntitlements(
+                      entitlementsForOrg(oid),
+                      "This organization reaches no shared resources.",
+                    )}
                   </div>
                 ))
               )}
@@ -395,7 +511,8 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
                 <SelectLabel>Starter packs</SelectLabel>
                 {packs.map((p) => (
                   <SelectItem key={p.id} value={`seo_starter_pack:${p.id}`}>
-                    {p.name} <span className="text-muted-foreground">· {p.status}</span>
+                    {p.name}{" "}
+                    <span className="text-muted-foreground">· {p.status}</span>
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -403,7 +520,10 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
           </Select>
           {selectedResource ? (
             <div className="group/entity-ref flex items-center gap-2 text-sm text-foreground">
-              <ResourceName r={selectedResource} className="min-w-0 font-medium" />
+              <ResourceName
+                r={selectedResource}
+                className="min-w-0 font-medium"
+              />
             </div>
           ) : null}
           {selectedResource ? (
@@ -415,20 +535,29 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
               <div className="space-y-2">
                 {(grantsByResource.get(resourceId) ?? []).length === 0 ? (
                   <div className="rounded-md border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
-                    Not published to any audience — only admins{selectedResource.type === "seo_starter_pack" ? " and the industry's curators" : " and curators"} can read it.
+                    Not published to any audience — only admins
+                    {selectedResource.type === "seo_starter_pack"
+                      ? " and the industry's curators"
+                      : " and curators"}{" "}
+                    can read it.
                   </div>
                 ) : (
                   (grantsByResource.get(resourceId) ?? []).map((g) => {
                     const reachedOrgIds =
                       g.audience === "global"
-                        ? directory.organizations.filter((o) => !o.is_personal).map((o) => o.id)
+                        ? directory.organizations
+                            .filter((o) => !o.is_personal)
+                            .map((o) => o.id)
                         : g.audience === "organization" && g.organizationId
                           ? [g.organizationId]
                           : g.audience === "industry" && g.industryId
                             ? (orgsByIndustry.get(g.industryId) ?? [])
                             : [];
                     return (
-                      <div key={g.id} className="rounded-md border border-border px-3 py-2">
+                      <div
+                        key={g.id}
+                        className="rounded-md border border-border px-3 py-2"
+                      >
                         <div className="group/entity-ref flex items-center gap-2 text-sm font-medium text-foreground">
                           {g.audience === "global" ? (
                             <Globe className="h-3.5 w-3.5 text-muted-foreground" />
@@ -438,11 +567,22 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
                           {g.audience === "global" ? (
                             "Everyone (global grant)"
                           ) : g.audience === "industry" ? (
-                            <span>Industry — {g.industryName ?? g.industrySlug ?? "unknown"}</span>
+                            <span>
+                              Industry —{" "}
+                              {g.industryName ?? g.industrySlug ?? "unknown"}
+                            </span>
                           ) : g.organizationId ? (
                             <>
-                              <span>{selectedResource.type === "seo_starter_pack" ? "Subscribed / pilot —" : "Organization —"}</span>
-                              <EntityRef token="organization" id={g.organizationId} name={g.organizationName ?? g.organizationId} />
+                              <span>
+                                {selectedResource.type === "seo_starter_pack"
+                                  ? "Subscribed / pilot —"
+                                  : "Organization —"}
+                              </span>
+                              <EntityRef
+                                token="organization"
+                                id={g.organizationId}
+                                name={g.organizationName ?? g.organizationId}
+                              />
                             </>
                           ) : (
                             <span>Organization — unknown</span>
@@ -457,7 +597,13 @@ export function AccessExplorerTab({ directory }: { directory: SharedKnowledgeDir
                             <span className="group/entity-ref flex flex-wrap items-center gap-x-2 gap-y-1">
                               <span>Reaches:</span>
                               {reachedOrgIds.map((id) => (
-                                <EntityRef key={id} token="organization" id={id} name={orgNameById.get(id) ?? id} showIcon={false} />
+                                <EntityRef
+                                  key={id}
+                                  token="organization"
+                                  id={id}
+                                  name={orgNameById.get(id) ?? id}
+                                  showIcon={false}
+                                />
                               ))}
                             </span>
                           )}

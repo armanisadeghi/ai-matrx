@@ -11,9 +11,6 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import SearchableSelect, {
-  type Option,
-} from "@/components/matrx/SearchableSelect";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -44,6 +41,8 @@ import type {
   AdminOrganizationRow,
   AdminUserRow,
 } from "@/features/admin/users/types";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
+import type { UserSearchCandidate } from "@/features/user-search/types";
 import {
   getRoleLabel,
   isOrgRole,
@@ -76,6 +75,7 @@ export function OrganizationsAdminClient() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
   const [addUserId, setAddUserId] = useState<string>();
+  const [addUserQuery, setAddUserQuery] = useState("");
   const [addRole, setAddRole] = useState<OrgRole>("member");
   const [savingMembershipId, setSavingMembershipId] = useState<string | null>(
     null,
@@ -164,7 +164,7 @@ export function OrganizationsAdminClient() {
   const currentMemberIds = new Set(
     selectedMemberships.map((membership) => membership.user_id),
   );
-  const availableUserOptions: Option[] = users
+  const availableUserOptions: UserSearchCandidate[] = users
     .filter(
       (user) =>
         !currentMemberIds.has(user.id) &&
@@ -172,8 +172,18 @@ export function OrganizationsAdminClient() {
           user.id === selectedOrganization.created_by),
     )
     .map((user) => ({
-      value: user.id,
-      label: `${user.display_name ?? user.full_name ?? "Unnamed user"} — ${user.email ?? user.id}`,
+      id: user.id,
+      email: user.email,
+      displayName: user.display_name ?? user.full_name,
+      avatarUrl: user.avatar_url,
+      phone: user.phone,
+      adminLevel: user.admin_level,
+      organizations: user.organizations.map(
+        (organization) => organization.name,
+      ),
+      source: "Account directory",
+      createdAt: user.created_at,
+      lastSignInAt: user.last_sign_in_at,
     }));
   const editableRoleOptions: OrgRole[] = selectedOrganization?.is_personal
     ? ["owner"]
@@ -228,6 +238,7 @@ export function OrganizationsAdminClient() {
       toast.success("Organization member added");
       setAddOpen(false);
       setAddUserId(undefined);
+      setAddUserQuery("");
       setAddRole("member");
     } catch (mutationError) {
       toast.error(
@@ -645,7 +656,16 @@ export function OrganizationsAdminClient() {
         </section>
       </div>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog
+        open={addOpen}
+        onOpenChange={(open) => {
+          setAddOpen(open);
+          if (!open) {
+            setAddUserId(undefined);
+            setAddUserQuery("");
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add organization member</DialogTitle>
@@ -658,13 +678,20 @@ export function OrganizationsAdminClient() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <label className="text-sm font-medium">User</label>
-              <SearchableSelect
-                options={availableUserOptions}
-                value={addUserId}
-                onChange={(option) => setAddUserId(option.value)}
-                placeholder="Select an existing user"
-                searchPlaceholder="Search name, email, or ID…"
-                noResultsText="Every user is already a member."
+              <UserSearchField
+                value={addUserQuery}
+                onValueChange={(value) => {
+                  setAddUserQuery(value);
+                  setAddUserId(undefined);
+                }}
+                onUserSelect={(user) => {
+                  setAddUserId(user.id);
+                  setAddUserQuery(user.email ?? user.displayName ?? user.id);
+                }}
+                candidates={availableUserOptions}
+                directory="provided"
+                title={`Choose a member for ${selectedOrganization?.name ?? "organization"}`}
+                placeholder="Search name, email, organization, or ID…"
               />
             </div>
             <div className="space-y-1.5">

@@ -30,7 +30,6 @@ import {
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -49,6 +48,7 @@ import { DeepLinkMissNotice } from "@/components/official/deep-link/DeepLinkMiss
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useDeepLinkParam } from "@/components/official/deep-link/useDeepLinkParam";
 import type { Database } from "@/types/database.types";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Admins & Levels (/administration/users/admins)";
@@ -512,17 +512,33 @@ function AdminsManagementPageContent() {
                 User email
               </label>
               <div className="flex gap-2">
-                <Input
-                  type="email"
-                  placeholder="user@example.com"
+                <UserSearchField
+                  inputType="email"
+                  placeholder="Search by name, email, phone, organization, or ID…"
                   value={emailQuery}
-                  onChange={(e) => {
-                    setEmailQuery(e.target.value);
+                  onValueChange={(value) => {
+                    setEmailQuery(value);
                     setLookupResult(null);
                     setLookupError(null);
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !lookupBusy) handleLookup();
+                  onEnter={() => {
+                    if (!lookupBusy) void handleLookup();
+                  }}
+                  directory="admin"
+                  excludeUserIds={admins.map((admin) => admin.user_id)}
+                  title="Choose an account to promote"
+                  disabled={lookupBusy}
+                  className="min-w-0 flex-1"
+                  onUserSelect={(user) => {
+                    const label = user.email ?? user.displayName ?? user.id;
+                    setEmailQuery(label);
+                    setLookupResult({
+                      user_id: user.id,
+                      email: label,
+                      is_admin: false,
+                      admin_level: null,
+                    });
+                    setLookupError(null);
                   }}
                 />
                 <Button

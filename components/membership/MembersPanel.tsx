@@ -31,7 +31,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -82,6 +81,7 @@ import {
   type MembershipCopyContainer,
 } from "./copy";
 import type { MembershipRole, MembershipRoleOption } from "./types";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
 
 /**
  * A member, shaped neutrally so org members, project members, and any future
@@ -230,16 +230,32 @@ export function MembersPanel({
       {/* Search and count */}
       <div className="flex items-center gap-3">
         {members.length > 3 && (
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder={`Search ${memberNoun}s...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9"
-            />
-          </div>
+          <UserSearchField
+            value={searchTerm}
+            onValueChange={setSearchTerm}
+            onUserSelect={(user) =>
+              setSearchTerm(user.email ?? user.displayName ?? user.id)
+            }
+            candidates={members.map((member) => ({
+              id: member.userId,
+              email: member.user?.email ?? null,
+              displayName:
+                member.user?.displayName ?? member.user?.display_name ?? null,
+              avatarUrl:
+                member.user?.avatarUrl ?? member.user?.avatar_url ?? null,
+              phone: null,
+              adminLevel: null,
+              organizations: [],
+              source: member.role,
+              createdAt: null,
+              lastSignInAt: null,
+            }))}
+            title={`Find a ${memberNoun}`}
+            placeholder={`Search ${memberNoun}s...`}
+            ariaLabel={`Open advanced ${memberNoun} search`}
+            className="max-w-xs flex-1"
+            inputClassName="h-9"
+          />
         )}
         <span className="text-sm text-muted-foreground ml-auto">
           {members.length} {memberNoun}

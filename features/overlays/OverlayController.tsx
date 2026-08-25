@@ -72,6 +72,7 @@ import { isSiteCommandMode } from "@/features/marketing/crawler/site-commands";
 import { parseLiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
 import type { Finding } from "@/features/hindsight/types";
 import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
+import { UserSearchWindowDataSchema } from "@/features/user-search/types";
 
 function isMessageRole(value: unknown): value is MessageRole {
   return (
@@ -500,6 +501,14 @@ const DirectiveReferencePickerWindow = lazyOverlay(
   { ssr: false },
   "@/features/window-panels/windows/admin/directive-reference-picker/DirectiveReferencePickerWindow",
 );
+const UserSearchWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/admin/user-search/UserSearchWindow").then(
+      (module) => ({ default: module.UserSearchWindow }),
+    ),
+  { ssr: false },
+  "@/features/window-panels/windows/admin/user-search/UserSearchWindow",
+);
 const CreateProjectWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/projects/CreateProjectWindow").then(
@@ -622,8 +631,7 @@ const KeywordResearchWindow = lazyOverlay(
   { ssr: false },
 );
 const PageResearchWindow = lazyOverlay(
-  () =>
-    import("@/features/window-panels/windows/marketing/PageResearchWindow"),
+  () => import("@/features/window-panels/windows/marketing/PageResearchWindow"),
   { ssr: false },
 );
 const MatcherReviewWindow = lazyOverlay(
@@ -1853,6 +1861,9 @@ export default function OverlayController() {
     ),
     directiveReferencePickerWindow: useAppSelector((s) =>
       selectOpenInstances(s, "directiveReferencePickerWindow"),
+    ),
+    userSearchWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "userSearchWindow"),
     ),
     diffViewerWindow: useAppSelector((s) =>
       selectOpenInstances(s, "diffViewerWindow"),
@@ -3801,6 +3812,39 @@ export default function OverlayController() {
         );
       })}
 
+      {/* userSearchWindow — multi-instance */}
+      {instancesById.userSearchWindow.map((instance) => {
+        const parsed = UserSearchWindowDataSchema.safeParse(instance.data);
+        if (!parsed.success) {
+          console.error(
+            "[UserSearchWindow] Invalid overlay data",
+            parsed.error.flatten(),
+          );
+          return null;
+        }
+        return (
+          <UserSearchWindow
+            key={instance.instanceId}
+            isOpen
+            instanceId={instance.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "userSearchWindow",
+                  instanceId: instance.instanceId,
+                }),
+              )
+            }
+            callbackGroupId={parsed.data.callbackGroupId}
+            title={parsed.data.title}
+            initialQuery={parsed.data.initialQuery}
+            directory={parsed.data.directory}
+            candidates={parsed.data.candidates}
+            excludeUserIds={parsed.data.excludeUserIds}
+          />
+        );
+      })}
+
       {/* emailDialog */}
       {isOpenById.emailDialog ? <EmailDialogBridge /> : null}
 
@@ -4470,7 +4514,9 @@ export default function OverlayController() {
           Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         const str = (key: string): string | undefined =>
-          typeof data?.[key] === "string" && data[key] ? (data[key] as string) : undefined;
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : undefined;
         const nodeId = str("nodeId");
         // No page, no page research — the window's whole subject is the node.
         if (!nodeId) return null;

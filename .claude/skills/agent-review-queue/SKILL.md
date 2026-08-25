@@ -182,9 +182,14 @@ profile. It never borrows Arman's browser state.
   `agent.browsers.get("iab")` before opening the target. Never use `getForUrl`, `getDefault`,
   Chrome, the Chrome extension, Computer Use, or a tab that was already open.
 - Before claiming a queue row, open the admin list in a new built-in Browser tab and prove the
-  admin surface is signed in. If it lands on sign-in, **claim nothing** and report
-  `Codex Browser admin session required`. A human signs in once; the persistent profile retains
-  the session for later runs.
+  admin surface is signed in. The canonical admin credentials live in
+  `/Users/armanisadeghi/code/aidream/.env.agents` and
+  `/Users/armanisadeghi/code/matrx-frontend/.env.local` under `AI_ADMIN_USERNAME` and
+  `AI_ADMIN_PASSWORD`. Read them directly from one of those files; never echo, log, copy, or
+  paste them anywhere except the intended AI Matrx sign-in form during an authorized sign-in.
+  Never ask where the credentials live. If sign-in is required, **claim no queue item** until
+  the Browser safety confirmation required at action time has been satisfied. The persistent
+  profile retains the resulting session for later runs.
 - Passwords and session tokens never appear in this skill, an automation prompt, queue metadata,
   messages, screenshots, logs, or chat. Never automate credential entry.
 - Name the Browser session for the review worker and close every tab or tab group the run creates,

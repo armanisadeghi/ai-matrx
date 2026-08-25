@@ -2,7 +2,7 @@
 
 **Status:** `beta`
 **Tier:** `2` (sub-feature of `organizations`)
-**Last updated:** `2026-06-27`
+**Last updated:** `2026-08-24`
 
 > The org-admin console: an org owner/admin manages the org's **users** — roster, usage, budgets, tiers, suspend, invite, remove, and resource reassignment. Lives under `features/organizations/admin/`; routes under `/organizations/[orgId]/admin`. Parent: [`../FEATURE.md`](../FEATURE.md).
 
@@ -37,17 +37,17 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 
 ## RPC surface (`migrations/iam_org_member_governance.sql`)
 
-| RPC | Purpose |
-|---|---|
-| `org_admin_list_members(org)` | Roster + per-member org-scoped metrics + global usage context |
-| `org_admin_overview(org)` | Aggregate tiles (members, active, suspended, storage, spend) |
-| `org_admin_get_member(org, user)` | One member: roster row + resource breakdown |
-| `org_admin_list_member_resources(org, user)` | Registry-driven count of the member's org-scoped resources per type |
+| RPC                                                          | Purpose                                                                                              |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `org_admin_list_members(org)`                                | Roster + per-member org-scoped metrics + global usage context                                        |
+| `org_admin_overview(org)`                                    | Aggregate tiles (members, active, suspended, storage, spend)                                         |
+| `org_admin_get_member(org, user)`                            | One member: roster row + resource breakdown                                                          |
+| `org_admin_list_member_resources(org, user)`                 | Registry-driven count of the member's org-scoped resources per type                                  |
 | `org_admin_reassign_member_resources(org, from, to, types?)` | Reassign ownership of org-scoped resources (registry-driven, drift-tolerant owner-column resolution) |
-| `org_admin_set_member_controls(org, user, …)` | Upsert budget / storage cap / tier / level / notes |
-| `org_admin_set_member_status(org, user, status, reason?)` | Suspend / reactivate (owners can't be suspended; can't change own status) |
-| `org_admin_remove_member(org, user, reassign_to?)` | Remove member; optional reassign-then-remove (last-owner + self guards) |
-| `org_admin_list_audit(org, limit?)` | Governance audit log |
+| `org_admin_set_member_controls(org, user, …)`                | Upsert budget / storage cap / tier / level / notes                                                   |
+| `org_admin_set_member_status(org, user, status, reason?)`    | Suspend / reactivate (owners can't be suspended; can't change own status)                            |
+| `org_admin_remove_member(org, user, reassign_to?)`           | Remove member; optional reassign-then-remove (last-owner + self guards)                              |
+| `org_admin_list_audit(org, limit?)`                          | Governance audit log                                                                                 |
 
 **Registry-driven:** resource listing/reassignment iterate `public.shareable_resource_registry`, include only tables that physically have `organization_id`, and resolve the owner column tolerant of registry drift (`registry owner_column → created_by → user_id → owner_id → owner_user_id`). Add a shareable resource → it's covered automatically.
 
@@ -56,6 +56,7 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 ## Entry points
 
 **Routes** (under `app/(core)/organizations/[orgId]/admin/`, `[orgId]` = UUID or slug):
+
 - `/admin` — dashboard: overview tiles + member roster + invite + audit log
 - `/admin/users/[userId]` — member detail: identity, status actions, usage metrics, controls, resource summary
 - `/admin/users/[userId]/resources` — member's org-scoped resource inventory + reassign
@@ -63,11 +64,13 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 **Surfaced from:** `OrgManage` header → "Manage users" button (owners/admins, non-personal orgs).
 
 **Feature code** (`features/organizations/admin/`):
+
 - `types.ts` — domain types mirroring the RPC contracts
 - `service.ts` — the single client chokepoint for the `org_admin_*` RPCs (snake→camel mapping)
 - `hooks.ts` — `useOrgAdminGate` (resolve+role), `useOrgRoster`, `useOrgMemberDetail`
 - `utils.ts` — `formatBytes` / `formatMcents` / `usdToMcents` / `gbToBytes` / `formatRelativeTime` / `activityBucket`
 - `components/` — `OrgAdminBoundary`, `OrgAdminDashboard`, `MemberRosterTable`, `MemberDetailView`, `MemberResourcesView`, `MemberControlsForm`, `ReassignResourcesDialog`, `OrgAdminAuditTable`
+- `MemberRosterTable` and `ReassignResourcesDialog` use `UserSearchField` with only this organization roster's candidates; selecting a roster result opens the member, while selecting a reassignment result sets the existing protected mutation target.
 
 **Invite** reuses the existing `InvitationManager` (org invite flow) — not reinvented.
 
@@ -78,7 +81,8 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 - **Org-scoped only.** Never read/write/reassign outside `organization_id = <this org>`. Personal resources are untouchable here.
 - **One RPC family, one audit log.** All governance writes flow through `org_admin_*`; each writes `iam.org_admin_audit`.
 - **Guards live in the DB:** owners can't be suspended; you can't change your own status; the last owner can't be removed; reassign target must be a member.
-- **Reuse, don't fork:** invite via `InvitationManager`; role/remove for the *Members* settings tab still use `MemberManagement` — this console is the heavier admin surface, not a replacement.
+- **Reuse, don't fork:** invite via `InvitationManager`; role/remove for the _Members_ settings tab still use `MemberManagement` — this console is the heavier admin surface, not a replacement.
+- **Search does not widen org-admin authority.** Advanced member search receives only candidates already returned by the org-scoped RPC; it never calls the platform super-admin directory.
 
 ---
 
@@ -93,6 +97,7 @@ Every read and write goes through the `public.org_admin_*` RPC family; each RPC 
 
 ## Change Log
 
+- **2026-08-24** — Added the canonical advanced member picker to the roster and resource-reassignment flow. Search remains bounded to the current organization, and every governance mutation still runs through the existing audited `org_admin_*` RPC family.
 - **2026-08-15** — claude: **Governance surfaces carry Copy / Copy-for-AI / export (agent-copy rollout).** New `copy.ts` builds the payloads; human summaries reuse the tables' own `formatBytes` / `formatMcents` / `formatRelativeTime`, so a copied roster reads in the units on screen rather than raw bytes and mcents. `MemberRosterTable` gained a list pair + `ExportMenu` (JSON + CSV) + a per-row `xs` pair (the row navigates to member detail, so `CopyButtons`' `stopPropagation` keeps copying from opening the member); `OrgAdminAuditTable` gained a list pair + `ExportMenu` + a per-entry pair carrying the RENDERED action label rather than the raw slug. Copy/export always cover ALL members and ALL audit entries; when the roster's search or sort is active the envelope names it and still carries the full set — an admin acting on a governance roster must never be handed a silently truncated one. `pnpm type-check` clean.
 
 - **2026-06-27** — Feature created. `iam.org_member_controls` + `iam.org_admin_audit` + 9 `org_admin_*` RPCs (`migrations/iam_org_member_governance.sql`); routes `/organizations/[orgId]/admin{,/users/[userId]{,/resources}}`; roster/detail/resources/controls/reassign/audit UI; "Manage users" entry in `OrgManage`. Controls advisory (enforcement deferred).

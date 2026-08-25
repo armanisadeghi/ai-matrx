@@ -890,6 +890,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: false,
   },
+  userSearchWindow: {
+    label: "User Search",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   voicePad: {
     label: "Voice Pad",
     instanceMode: "multi",

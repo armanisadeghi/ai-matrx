@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Loader2, Mail, Search, Users, Send } from "lucide-react";
+import { Loader2, Mail, Users, Send } from "lucide-react";
 import type { OrganizationMemberWithUser } from "@/features/organizations/types";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
 
 interface OrgEmailTabProps {
   organizationId: string;
@@ -160,16 +160,31 @@ export function OrgEmailTab({
       {/* Search + Select all/none */}
       <div className="flex items-center gap-2">
         {emailableMembers.length > 5 && (
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              aria-label="Search organization members"
-              placeholder="Search members..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 pl-8 text-xs"
-            />
-          </div>
+          <UserSearchField
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+            onUserSelect={(user) => {
+              setSelectedIds((previous) => new Set(previous).add(user.id));
+              setSearchQuery(user.email ?? user.displayName ?? user.id);
+            }}
+            candidates={emailableMembers.map((member) => ({
+              id: member.userId,
+              email: member.user.email,
+              displayName: member.user.displayName ?? null,
+              avatarUrl: member.user.avatarUrl ?? null,
+              phone: null,
+              adminLevel: null,
+              organizations: [organizationName],
+              source: "Organization member",
+              createdAt: null,
+              lastSignInAt: null,
+            }))}
+            title={`Choose a ${organizationName} member`}
+            placeholder="Search members..."
+            inputClassName="h-8 text-xs"
+            ariaLabel="Open advanced member search"
+            className="flex-1"
+          />
         )}
         <div className="flex gap-1.5 flex-shrink-0">
           <Button

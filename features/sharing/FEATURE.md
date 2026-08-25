@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1` — foundation for every collaborative surface
-**Last updated:** `2026-08-13`
+**Last updated:** `2026-08-24`
 
 > Single source of truth for the sharing and permissions system. For hands-on usage patterns (copy-paste snippets for wiring sharing into a new feature), see [`README.md`](./README.md). This doc covers the architecture, invariants, and agent-relevant internals.
 
@@ -25,7 +25,7 @@ One RLS-backed permissions system that makes any resource type shareable with us
 - `resourceIcons.ts` — token → Lucide icon map for share cards/previews (fallback: `Share2`)
 - `PermissionsList.tsx` — list of current grants with inline level edit + revoke
 - `PermissionBadge.tsx` — visual permission-level badge (viewer / editor / admin)
-- `tabs/ShareWithUserTab.tsx` — user search + invite form
+- `tabs/ShareWithUserTab.tsx` — contact-scoped canonical user search plus exact-email fallback
 - `tabs/ShareWithOrgTab.tsx` — org picker (constrained to caller's orgs)
 - `tabs/PublicAccessTab.tsx` — toggle + link copy for `is_public = true`
 
@@ -79,7 +79,7 @@ One RLS-backed permissions system that makes any resource type shareable with us
 | `<resource>.is_public`                                                    | Public visibility lives on the **resource row**, not the permissions table. Owner-controlled, toggled via `make_resource_public` / `make_resource_private`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `<resource>.user_id`                                                      | Ownership is always the resource row's `user_id`. No explicit "owner" permission row exists.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `shareable_resource_registry.content_role` / `.is_scopeable` (2026-06-06) | The knowledge-model classification on the registry: `content_role` ∈ source/destination/utility/container/hybrid; `is_scopeable` bool. Backend (scope-association pipeline) + the FE org catalogue read these.                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `org_module_settings` (2026-06-06)                                        | Per-org per-module rules. `(organization_id, module_key)` unique; `module_key` is the canonical entity token (`shareable_resource_registry.resource_type`), never a physical or bare table name. Columns: `members_can_add`, `requires_approval`, `default_permission`, `auto_ingest`, `is_scopeable`. RLS: org members SELECT; writes only via `set_org_module_setting` (owner/admin). `members_can_add` + `requires_approval` are enforced in `share_resource_with_org`.                                                                                                                                                                                         |
+| `org_module_settings` (2026-06-06)                                        | Per-org per-module rules. `(organization_id, module_key)` unique; `module_key` is the canonical entity token (`shareable_resource_registry.resource_type`), never a physical or bare table name. Columns: `members_can_add`, `requires_approval`, `default_permission`, `auto_ingest`, `is_scopeable`. RLS: org members SELECT; writes only via `set_org_module_setting` (owner/admin). `members_can_add` + `requires_approval` are enforced in `share_resource_with_org`.                                                                                                                                                 |
 
 ### Key RPCs (all `SECURITY DEFINER`)
 
@@ -145,7 +145,7 @@ Canonical entity tokens live in the registry's `resource_type` column. Physical 
 ### 1. Sharing a resource with a user
 
 1. Owner opens `ShareButton` → `ShareModal` mounts → `useSharing(resourceType, resourceId, isOpen)` fires `listPermissions()` via `get_resource_permissions` RPC.
-2. Owner submits `ShareWithUserTab` form → `shareWithUser({ resourceType, resourceId, userId, permissionLevel })`.
+2. Owner selects an existing permitted contact through `UserSearchField` (inline search or the advanced sortable/filterable window), or uses the exact-email fallback, then submits `ShareWithUserTab` → `shareWithUser({ resourceType, resourceId, userId, permissionLevel })`.
 3. `service.shareWithUser` calls `share_resource_with_user` RPC — RPC validates auth, ownership, level, duplicate.
 4. On success, a fire-and-forget `fetch('/api/sharing/notify', ...)` sends only the recipient/resource identifiers. The route derives the sharer identity from the authenticated session, proves a matching active `iam.permissions` row created by that caller, then uses its server client to resolve recipient preferences/email. Notification failure does **not** fail the grant.
 5. `useSharing.refresh()` re-fetches permissions; modal UI updates.
@@ -308,6 +308,7 @@ and token landing, `acquisition` flag for conversion chrome). Charter + plan:
 
 - 🚨 **A share surface may never claim access it cannot deliver — and the Public tab must ALWAYS answer "where is the link?"** Three mechanisms produce anonymous reach and they are NOT interchangeable: a **share link** (`platform.share_links` → `/s/[token]`, gated by the registry's `is_link_shareable`), the **indexable public page** (`/p/e/[type]/[id]`, gated by the public-lane list), and **`visibility='public'`** (a DATA state — the `pub_read` RLS policy — which by itself gives an anonymous person NO address to open). Shipped defect (2026-08-13, `web_brand`): `ShareLinkPanel` returned `null` whenever `is_link_shareable` was false, the five web share points had it false with empty `public_columns`, and the tab still told the owner "Anyone with the link can access this" — a promise with no link anywhere on screen, for a type with no public page either. The fixes are permanent rules: **`ShareLinkPanel` never renders null for an owner** (no link lane ⇒ it says so), **the public-lane list lives in `utils/permissions/publicLane.ts`** so the UI and the `/p/e/` loader read ONE list and the tab can surface the real public URL (with copy) exactly when one exists, and the toggle's copy states the true consequence for that type.
 - **Never render an entity token in user-facing copy.** "Anyone with the link can access this web_brand" shipped to a real screen. Use the registry `displayLabel` (`getShareableResource(type)?.displayLabel`) — the token is an internal identifier, and the vocabulary guard (`pnpm check:visibility-vocab`) does not catch this class.
+- **Sharing user discovery never widens the contact boundary.** `ShareWithUserTab` passes only `useUserConnections()` candidates into `UserSearchField`; it must never use the super-admin directory. The exact-email lookup stays available for a known address.
 
 - **NEVER claim privacy from a `visibility` column alone — and never say "Only you".** `visibility` is ONE of the six ways `iam.has_access_for_base` grants access (owner · visibility+org · direct grant · membership · education assignment · **reachability through a container**). A `personal` file attached to an org-internal scope is readable by that whole org. Any surface that reads `row.visibility` and renders a privacy claim is lying: it cannot see grants, memberships, or containers. Lists may describe the **setting** ("Personal", "Organization"); only `public.entity_access_summary` may describe **who can see it**.
 - **The honest answer is `public.entity_access_summary(p_type, p_id)` — one entity at a time.** Returns every reason an entity is reachable: owner, visibility, org, direct grants, memberships, and each reachability container (with its name, level, org and member count). Client: `features/sharing/service/accessSummary.ts` → `useAccessSummary` → `<AccessSummaryPanel entityType entityId />`. Generic across entity tokens — do NOT write a per-feature copy. It walks reachability and resolves container titles, so it is **too expensive for a list**; lists stay on cheap bulk signals. Requires `viewer`; grantee identities are returned only to `admin` callers, and container names are filtered to containers the caller can already see. Mounted on: file Info tab, agent detail (`AgentViewContent`), agent Share tab (`AgentSharePanel`), note info (`NoteInfoPanel`), data-store detail (`DataStoresPage`), site access (`SiteAccessWorkspace`). Any entity token with a `platform.entity_types.title_column` works — mount, don't fork. **On a surface that MUTATES grants beside the panel, pass `refreshToken`** (a signature of the grant state, as `AgentSharePanel` does) — otherwise the RPC-backed summary keeps its first answer and contradicts the freshly-refreshed list next to it.
@@ -320,7 +321,7 @@ and token landing, `acquisition` flag for conversion chrome). Charter + plan:
 - **A share surface that can't act must say why.** Empty space where controls belong reads as a broken dialog. Non-owner gets "Only the owner can change sharing"; unresolvable ownership gets a loud error with the underlying message; an unregistered resource type or missing id refuses to render controls at all and logs.
 - **RLS is the security boundary.** `useIsOwner` / `useCanEdit` / etc. are UX only. A bypassed client check must not be a privilege escalation.
 - 🚨 **The Public tab has TWO shapes, and enum types get a THREE-state picker — never the switch as well.** For a type whose `get_share_capabilities` reports `kind: "enum"`, `PublicAccessTab` renders Only me / My organization / Anyone and writes through `setResourceVisibility()`. Legacy `kind: "boolean"` types keep the original two-state switch. **A type never renders both** — the switch is a strict subset of the picker, and two controls over one column is how they drift. `setResourceVisibility()` **refuses** a boolean-backed type rather than mapping `internal` onto "not public": that mapping would tell a user their team can open something when nobody but them can. Reason this shipped (2026-08-15): `internal` — the entire org-sharing state — was **unreachable from the UI on every enum-backed type**, so a row could carry an `organization_id` and still have no way to be shared with that org.
-- **A bare-table-name in a `has_permission()` RLS predicate is an OUTAGE, not a silent no-op.** `has_permission_for` RAISES on an unknown token, and a raise inside a row predicate takes down the **whole query** — so the table returns zero rows to *everyone, including each row's own author*, not just to would-be grantees. `workbench.udt_workbooks` and `udt_documents` sat like this until 2026-08-15 (measured: 0 of 17 workbooks and 0 of 24 documents readable by any of the 18 identities that own data there). Always pass the entity **token**; `iam.apply_rls` reads it from `platform.entity_types` so generated policies cannot get this wrong. Hand-written policies can, and did.
+- **A bare-table-name in a `has_permission()` RLS predicate is an OUTAGE, not a silent no-op.** `has_permission_for` RAISES on an unknown token, and a raise inside a row predicate takes down the **whole query** — so the table returns zero rows to _everyone, including each row's own author_, not just to would-be grantees. `workbench.udt_workbooks` and `udt_documents` sat like this until 2026-08-15 (measured: 0 of 17 workbooks and 0 of 24 documents readable by any of the 18 identities that own data there). Always pass the entity **token**; `iam.apply_rls` reads it from `platform.entity_types` so generated policies cannot get this wrong. Hand-written policies can, and did.
 - **Public state lives on the resource row, not `permissions`.**
   `get_share_capabilities()` names the verified enum or boolean column;
   `getResourceVisibility()` / `useSharingStatus()` consume that answer. A null
@@ -366,6 +367,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-24 — Replaced the share dialog's ad hoc contact selector with the canonical `UserSearchField`. The advanced window can search, sort, and filter the caller's existing permitted contacts; the exact-email fallback remains, and no admin-directory access was added.
 - 2026-08-15 — **Canonical share links now have a real organization edge.** `platform.share_links.organization_id` was created as a bare UUID even though it stores `iam.organizations.id`. That made it the lone organization-scoped table missed by the FK-discovered guest→OAuth personal-workspace merge: two links moved to the permanent creator but retained the restored guest workspace id. `share_links_organization_fk_guest_repair.sql` re-homes every historical audited match and adds `share_links_organization_id_fkey`; future guest transfers now discover this table automatically.
 - 2026-08-15 — Claude: **the four workbench UDT entities canonicalized, and a live outage on two
   of them fixed.** `workbook` / `udt_document` / `dataset` / `structured_list` were the last
@@ -374,7 +376,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   - Migrations `workbench_udt_canonical_step1..3`: added `visibility` (backfilled `is_public=true`
     → `public` / org present → `internal` / else `personal`, i.e. 9 / 192 / 8 rows), `created_by`
     NOT NULL, `iam.apply_rls(...,'entity')`, and registry rows → `created_by` + `is_public_column
-    NULL`. 181 of the 192 `internal` rows sit in personal or single-member orgs where `internal`
+NULL`. 181 of the 192 `internal` rows sit in personal or single-member orgs where `internal`
     reaches only the owner — **11 rows** genuinely widened, into real multi-member orgs, which was
     the intent.
   - **The outage:** both `udt_workbooks` and `udt_documents` called `has_permission()` with the
@@ -396,7 +398,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
     and `code_folder`'s `?folder=`.
   - `AllContextItemsHub` (`features/scope-system/components/ContextItemsHub.tsx`) resolves `?item=`
     to `pending | found | missing` and **waits for every org's scope types AND every type's items
-    before judging**. That gate is load-bearing in *both* directions: resolving `missing` early is
+    before judging**. That gate is load-bearing in _both_ directions: resolving `missing` early is
     the race that makes a working link look broken, and resolving `found` early is the race that
     makes the scroll land nowhere.
   - **A one-shot `scrollIntoView` does not work on this hub and the failures were not subtle.**
@@ -427,15 +429,15 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   table has a legacy BOOLEAN public flag" and routes `makePublic` through `make_resource_public`
   instead of the canonical `setVisibilityColumn` enum path.
   - **The fix is NULL, permanently — not a new column.** A context item is a **component of its
-    scope type** (it is the *column* of a dimension; the cells live in `context.context_item_values`
+    scope type** (it is the _column_ of a dimension; the cells live in `context.context_item_values`
     per scope). Four measurements agree: it has **no `organization_id`** (its org is reachable only
     through `context.scope_types`); **all four RLS policies key on the parent** (`SELECT` = scope
     type in `iam.my_orgs()`, `INSERT/UPDATE/DELETE` = `iam.has_org_admin(parent org)`) and **none
     calls `has_permission`**, so an `iam.permissions` grant on a context item conveys **nothing**;
     `iam.permissions` has **zero** `context_item` rows across 203 live items; and the row's own note
     admitted it was auto-registered "from the Relationship Manager drift report" — a naming-
-    convention guess, never a sharing decision. Arman's 2026-08-15 ruling is already satisfied *by
-    the parent*: every member of the owning org sees every context item on that org's scope types.
+    convention guess, never a sharing decision. Arman's 2026-08-15 ruling is already satisfied _by
+    the parent_: every member of the owning org sees every context item on that org's scope types.
     Adding a per-item `visibility` enum would create a **second access authority no policy reads**
     and contradict THE COMPONENT OWNERSHIP LAW (on a component the owner is the parent).
   - **"Non-independently-shareable" is the three flags together**, and now all three agree:
@@ -452,9 +454,9 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
     true" by adding the column.
   - **Proven live** as `admin@admin.com` through the real client path: `get_share_capabilities` →
     `supports_public:false / public_state_column:null`; `select visibility from
-    context.context_items` → **`42703: column context_items.visibility does not exist`** (the lie,
+context.context_items` → **`42703: column context_items.visibility does not exist`** (the lie,
     demonstrated); `make_resource_public('context_item', …)` → refused,
-    *"does not support public visibility"*. No row lost access — the migration writes ONE row of
+    _"does not support public visibility"_. No row lost access — the migration writes ONE row of
     `platform.shareable_resource_registry` and touches neither `context.context_items` (203 rows,
     0 soft-deleted, newest row update still 2026-07-27) nor any of its 4 policies; 97 items remain
     visible to that user under RLS.
@@ -486,7 +488,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   **Browser-verified on the running preview server, not from the route-scan test** — which still
   only validates the PATH and is blind to every one of these query params.
   Building it surfaced a one-day-old bug in the `?open=` fix below: it flipped the panel with
-  `setActiveView("library")`, and that reducer *collapses* the panel when the requested view is
+  `setActiveView("library")`, and that reducer _collapses_ the panel when the requested view is
   already active — which `"library"` is by default. So `?open=` opened the file and hid the Library
   panel it meant to reveal. Both deep links now use a new non-toggling `revealView`.
 - 2026-08-14 — Claude: **The `code_file` Open door now actually opens the file.** D138's spin-off,
@@ -514,7 +516,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   live 404 wherever a sharing surface rendered it.
   - **Six repointed** at their real routes (`app`, `scope`, `transcript`, `wc_claim`,
     `data_store`, `code_file`); **nineteen emptied** because no route exists. An EMPTY template
-    is the registry saying *this record has no signed-in destination*, so `getResourceSharePath`
+    is the registry saying _this record has no signed-in destination_, so `getResourceSharePath`
     returns null and the surface renders **no link** — a 404 is strictly worse than an honest
     absence. `canvas_item` is deliberately emptied, not invented: `/canvas/{id}` has no route
     and the canonical canvas route is Arman's call (D137).
@@ -541,12 +543,12 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   - Two adjacent defects found and spun off, NOT fixed here: `code_file`'s entity-registry href
     `/code?tab=code-file:{id}` is aspirational (the code workspace never reads `?tab=`, so the
     Open door lands on the workspace without the file); and root `CLAUDE.md` still claims `.md`
-    links route through `/admin/docs/<path>`, which resolves nowhere. *(The first was closed
+    links route through `/admin/docs/<path>`, which resolves nowhere. _(The first was closed
     2026-08-14 — see the entry below. The second was closed
     2026-08-14: `/admin/docs` was the pre-2026-06-29 viewer, deleted in `fd132b06a` when the
     DB-backed feature-docs viewer replaced it; `CLAUDE.md` now names the real route and
     `featureDocViewHref`. The emptied `feature_doc` registry row stays empty — that viewer is
-    keyed by repo PATH, which no `{id}`/`{slug}` template can express.)*
+    keyed by repo PATH, which no `{id}`/`{slug}` template can express.)_
 - 2026-08-13 — **D158 key shape hardened.** Sharing and organization-module RPCs now accept canonical entity tokens only; bare physical table aliases were removed. Unknown tokens raise. The frontend resolver and visibility service removed their table-name fallback, and module catalogue keys no longer fall back to a physical table name. Guard/queue identities use exact `schema.table` pairs.
 - 2026-08-13 — **No share page sends its recipient to an auth wall** (Arman ruling, above). New
   `lenses/source-surface.ts` resolves the per-share-type destination; consumed by the `/s/[token]`
@@ -577,7 +579,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 - 2026-08-13 — **Pilot 1 of the sharing experience: keyword research shares as a presentation
   report.** `content_ir_kind_instance` flipped link-shareable (`public_columns =
-  id,title,data,created_at`; label "Kind Instance" → "Saved Result" — jargon in a
+id,title,data,created_at`; label "Kind Instance" → "Saved Result" — jargon in a
   non-technical user's share dialog), and its `urlPathTemplate` route
   `/shapes/instances/[id]` now DISPATCHES on the instance's kind (report for keyword
   research, previous studio redirect for every other kind, `<AccessGate>` when RLS hides
@@ -619,7 +621,7 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 - `2026-08-15` — **Vocabulary guard hardened after three blind spots.** `check:visibility-vocab` now (1) reports `[STALE]` allowlist entries — an exemption that suppresses nothing blinds its whole file, which is how two fixed surfaces kept theirs; (2) reads multi-line `as const` vocabularies, not just one-line unions — `features/user-lists` had modernized its shape and its live retired `'private'` had silently stopped being reported; (3) requires a named second party for the "Only you, …" exemption, so `"Only you, until you share"` (the education-FAQ lie) no longer passes on the strength of a comma. Deleted the two stale `CanvasShareSheet` / `StructuredListManagerV2` entries.
 - `2026-08-08` — **Access truth consumed beyond files + the vocabulary gets a guard.** `<AccessSummaryPanel>` mounted on four more surfaces: agent detail (`features/agents/route/AgentViewContent.tsx`, deleting two false "Private" badges), agent Share tab (`AgentSharePanel`), note info (`NoteInfoPanel`, "Private" chip demoted to a public-only chip), data-store detail (`DataStoresPage`, replacing a raw org-uuid chip). New advisory gate `pnpm check:visibility-vocab` (`scripts/check-visibility-vocab.ts` + allowlist) blocks retired visibility spellings, `internal`-omitting unions, and bare "Only you" claims; 23-finding baseline allowlisted with justifications tied to D105/D106b. `features/image-studio/api/python.ts#EditOutput.visibility` fixed to the canonical union.
-- `2026-08-15` — **Access-truth work closed; its handoff deleted.** The guard earned its keep immediately: it caught two surfaces that had drifted back and proved `VaultItemDetail` (the highest-stakes D106b surface) was genuinely fixed. Detector taught two principled exemptions — a JSX comment citing this doctrine is not a violation, and an enumeration ("Only you, people you share with, and members of…") is the *sanctioned* honest form, not a claim. Allowlist entries are file-level (line drift was pure churn) and now carry the correct status: D105 is RULED (`internal` stays — never propose flipping defaults), so the 2 remaining surfaces are unblocked work tracked in `FOUND_DEFECTS.md` D106b.
+- `2026-08-15` — **Access-truth work closed; its handoff deleted.** The guard earned its keep immediately: it caught two surfaces that had drifted back and proved `VaultItemDetail` (the highest-stakes D106b surface) was genuinely fixed. Detector taught two principled exemptions — a JSX comment citing this doctrine is not a violation, and an enumeration ("Only you, people you share with, and members of…") is the _sanctioned_ honest form, not a claim. Allowlist entries are file-level (line drift was pure churn) and now carry the correct status: D105 is RULED (`internal` stays — never propose flipping defaults), so the 2 remaining surfaces are unblocked work tracked in `FOUND_DEFECTS.md` D106b.
 - `2026-07-26` — **"Only you" eliminated: access is now explained, not guessed — and the files visibility dialect is dead.** Two bugs, one root cause (a UI inferring access from a single column). (1) New `public.entity_access_summary(type,id)` + `public.entity_titles(type,ids[])` + `platform.entity_title()` (`migrations/entity_access_summary.sql`) report every reason an entity is reachable, including reachability containers; consumed by `features/sharing/service/accessSummary.ts` / `useAccessSummary` / `<AccessSummaryPanel>`, now rendered in the file Info tab's Sharing section. Backfilled the missing `title_column` on `entity_types` for `scope` and `data_store` (both had names but no declared title column, so nothing could name them). (2) The files domain spoke `public|personal|shared` and translated at the boundary — it folded `internal` into `personal` (34 of ~50 rows on one page of `/files` were mislabelled "Only you" while the whole org could read them) and treated `shared` as a synonym for `link`, when `shared` was retired from the enum 2026-07-21 and the server maps it to `personal` — so writing it back silently downgraded the file. `Visibility` and `MediaVisibility` are now the canonical enum end to end; Organization was added to the file/folder menus, bulk actions, Share tab and the Access column filter. The list Access column reuses the row-scope data already fetched for the Context column to say "Via N scopes" — zero extra queries — and says "Personal" (a setting) rather than "Only you" (a claim) when it does not know. Also: `AssociationCard` on scope pages swallowed its own click, so "2 attached" had no drill-in; the card body now opens `<AttachedItemsSheet>` with live-resolved titles, per-row links and detach.
 - `2026-07-25` — **`isOwner` is no longer a required prop — `ShareModal` resolves ownership itself.** Root cause of "Share Note opens an empty dialog": ownership was computed by 14 different call sites and could silently arrive `false`. Fixes: (1) `resolveResourceOwnership()` added to `service.ts` — `isResourceOwner` no longer discards the PostgREST `error` on the owner-column read nor swallows throws in a bare `catch`, and distinguishes "not owner" from "couldn't determine"; (2) `useIsOwner` returns `{isOwner, loading, error}`, no longer parks in a permanent `loading` state when given an empty id; (3) `ShareModal.isOwner` is optional — the modal calls `useIsOwner` itself, shows a skeleton while resolving, an explicit "Only the owner can change sharing" panel for real sharees, and a loud error panel when ownership is unknown; (4) `OverlayController`'s `shareModal` block no longer defaults `isOwner` to `false` and now validates `resourceType` against the registry (matching the `shareModalWindow` block) instead of bare-casting it; (5) deleted `features/notes/components/NoteShareModal.tsx` (a wrapper that existed only to supply `isOwner`, and discarded its `loading`) — its 4 call sites now render `ShareModal` directly; (6) stripped the wrong `isOwner` value from every remaining call site (hardcoded `true` in cx-chat / public-chat / conversation actions, `?? true` in AgentCard/AgentListItem, `task.userId === currentUserId` in the task surfaces) and from `ShareButton`, `overlaySchemaRegistry`, and the `shareModal` opener.
 - `2026-07-19` — **General contact pickers no longer cross the invitation-manager boundary.** `useUserConnections()` now omits pending invitations unless a caller supplies one exact `invitationOrganizationId`; the hook verifies owner/admin role and rejects personal orgs before `inv_list`. `ShareWithUserTab`, task assignment, and new-message pickers therefore use conversations + existing org members without privileged invitation RPCs. The org invitation manager is the sole opt-in consumer.

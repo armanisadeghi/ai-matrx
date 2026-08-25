@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -18,7 +17,6 @@ import {
   UserPlus,
   CheckCircle,
   XCircle,
-  Search,
   Users,
   MessageSquare,
   Building2,
@@ -41,6 +39,8 @@ import {
   sharingLocation,
   type SharingCopyContext,
 } from "@/features/sharing/format";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
+import type { UserSearchCandidate } from "@/features/user-search/types";
 
 interface ShareWithUserTabProps {
   onShare: (
@@ -121,6 +121,24 @@ export function ShareWithUserTab({
         (c.email && c.email.toLowerCase().includes(q)),
     );
   }, [connections, searchQuery]);
+
+  const userSearchCandidates: UserSearchCandidate[] = connections.map(
+    (connection) => ({
+      id: connection.user_id,
+      email: connection.email,
+      displayName: connection.display_name,
+      avatarUrl: connection.avatar_url,
+      phone: null,
+      adminLevel: null,
+      organizations:
+        connection.source === "organization" && connection.sourceDetails
+          ? [connection.sourceDetails]
+          : [],
+      source: SOURCE_LABELS[connection.source],
+      createdAt: null,
+      lastSignInAt: null,
+    }),
+  );
 
   const resetStatus = () => {
     setStatus({ type: "idle", message: "" });
@@ -291,9 +309,7 @@ export function ShareWithUserTab({
                 })}
                 agent={() => ({
                   kind: "share-with-user-failure",
-                  location: sharingLocation(
-                    copy?.surface ?? "Share with user",
-                  ),
+                  location: sharingLocation(copy?.surface ?? "Share with user"),
                   description:
                     "A share-with-user attempt that failed, with the error sentence on screen and the live form state that produced it.",
                   data: {
@@ -351,14 +367,22 @@ export function ShareWithUserTab({
             ) : (
               <>
                 {connections.length > 5 && (
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                    <Input
+                  <div>
+                    <UserSearchField
                       placeholder="Search contacts..."
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onValueChange={setSearchQuery}
+                      onUserSelect={(user) => {
+                        const contact = connections.find(
+                          (candidate) => candidate.user_id === user.id,
+                        );
+                        if (contact) selectContact(contact);
+                      }}
+                      candidates={userSearchCandidates}
+                      title="Search your contacts"
                       disabled={isLoading}
-                      className="h-8 pl-8 text-xs"
+                      className="w-full"
+                      inputClassName="h-8 text-xs"
                     />
                   </div>
                 )}
@@ -454,17 +478,25 @@ export function ShareWithUserTab({
             <Label htmlFor="user-email" className="text-xs">
               Or enter email manually
             </Label>
-            <Input
+            <UserSearchField
               id="user-email"
-              type="email"
               placeholder="user@example.com"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
+              onValueChange={(value) => {
+                setEmail(value);
                 if (status.type === "error") resetStatus();
               }}
+              onUserSelect={(user) => {
+                const contact = connections.find(
+                  (candidate) => candidate.user_id === user.id,
+                );
+                if (contact) selectContact(contact);
+              }}
+              candidates={userSearchCandidates}
+              title="Choose a user to share with"
+              inputType="email"
               disabled={isLoading}
-              className="h-9"
+              inputClassName="h-9"
             />
           </div>
         )}

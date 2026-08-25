@@ -20,15 +20,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { reassignMemberResources, removeMember } from "../service";
 import type { OrgMemberResource } from "../types";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
 
 export interface ReassignCandidate {
   userId: string;
@@ -69,6 +63,7 @@ export function ReassignResourcesDialog({
   onDone,
 }: Props) {
   const [target, setTarget] = useState<string>(mode === "remove" ? NONE : "");
+  const [targetQuery, setTargetQuery] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(
     () => new Set(resources.map((r) => r.resourceType)),
   );
@@ -103,7 +98,11 @@ export function ReassignResourcesDialog({
           : undefined;
 
       if (mode === "remove") {
-        const result = await removeMember(orgId, sourceUserId, hasTarget ? target : undefined);
+        const result = await removeMember(
+          orgId,
+          sourceUserId,
+          hasTarget ? target : undefined,
+        );
         const moved = result.reassigned.reduce((s, r) => s + r.reassigned, 0);
         toast.success(
           hasTarget
@@ -113,12 +112,22 @@ export function ReassignResourcesDialog({
         );
       } else {
         const types =
-          selectedTypes.size === resources.length ? undefined : Array.from(selectedTypes);
-        const result = await reassignMemberResources(orgId, sourceUserId, target, types);
+          selectedTypes.size === resources.length
+            ? undefined
+            : Array.from(selectedTypes);
+        const result = await reassignMemberResources(
+          orgId,
+          sourceUserId,
+          target,
+          types,
+        );
         const moved = result.reduce((s, r) => s + r.reassigned, 0);
-        toast.success(`Reassigned ${moved} resource${moved === 1 ? "" : "s"}.`, {
-          action: destinationDoor,
-        });
+        toast.success(
+          `Reassigned ${moved} resource${moved === 1 ? "" : "s"}.`,
+          {
+            action: destinationDoor,
+          },
+        );
       }
       onOpenChange(false);
       onDone();
@@ -129,16 +138,13 @@ export function ReassignResourcesDialog({
     }
   };
 
-
   /**
    * THE DOOR LAW on a DESTRUCTIVE dialog: this is about to move or delete this
    * person's work, and their name was plain text with their id right there in
    * props. Links to the member's page in THIS shell, never to the platform
    * admin console — see routes.ts for why.
    */
-  const memberHref = orgSlug
-    ? orgAdminMemberHref(orgSlug, sourceUserId)
-    : null;
+  const memberHref = orgSlug ? orgAdminMemberHref(orgSlug, sourceUserId) : null;
   const sourceName = memberHref ? (
     <Link
       href={memberHref}
@@ -162,18 +168,20 @@ export function ReassignResourcesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{mode === "remove" ? "Remove member" : "Reassign resources"}</DialogTitle>
+          <DialogTitle>
+            {mode === "remove" ? "Remove member" : "Reassign resources"}
+          </DialogTitle>
           <DialogDescription>
             {mode === "remove" ? (
               <>
-                Remove {sourceName} from this
-                organization. Optionally reassign their {totalResources} org-scoped resource
+                Remove {sourceName} from this organization. Optionally reassign
+                their {totalResources} org-scoped resource
                 {totalResources === 1 ? "" : "s"} to another member first.
               </>
             ) : (
               <>
-                Move {sourceName}&apos;s
-                org-scoped resources to another member. Their personal resources are never affected.
+                Move {sourceName}&apos;s org-scoped resources to another member.
+                Their personal resources are never affected.
               </>
             )}
           </DialogDescription>
@@ -184,19 +192,50 @@ export function ReassignResourcesDialog({
             <label className="text-sm font-medium text-foreground">
               {mode === "remove" ? "Reassign to (optional)" : "Reassign to"}
             </label>
-            <Select value={target} onValueChange={setTarget}>
-              <SelectTrigger>
-                <SelectValue placeholder={candidates.length ? "Select a member" : "No other members"} />
-              </SelectTrigger>
-              <SelectContent>
-                {mode === "remove" && <SelectItem value={NONE}>Don&apos;t reassign</SelectItem>}
-                {candidates.map((c) => (
-                  <SelectItem key={c.userId} value={c.userId}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <UserSearchField
+              value={targetQuery}
+              onValueChange={(value) => {
+                setTargetQuery(value);
+                setTarget("");
+              }}
+              onUserSelect={(user) => {
+                setTarget(user.id);
+                setTargetQuery(user.displayName ?? user.id);
+              }}
+              candidates={candidates.map((candidate) => ({
+                id: candidate.userId,
+                email: null,
+                displayName: candidate.label,
+                avatarUrl: null,
+                phone: null,
+                adminLevel: null,
+                organizations: [],
+                source: "Organization member",
+                createdAt: null,
+                lastSignInAt: null,
+              }))}
+              excludeUserIds={[sourceUserId]}
+              title="Choose a reassignment recipient"
+              placeholder={
+                candidates.length ? "Search members" : "No other members"
+              }
+              disabled={busy || candidates.length === 0}
+              ariaLabel="Open advanced reassignment recipient search"
+            />
+            {mode === "remove" ? (
+              <Button
+                type="button"
+                variant={target === NONE ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => {
+                  setTarget(NONE);
+                  setTargetQuery("");
+                }}
+                disabled={busy}
+              >
+                Don&apos;t reassign
+              </Button>
+            ) : null}
           </div>
 
           {resources.length === 0 ? (
@@ -205,7 +244,9 @@ export function ReassignResourcesDialog({
             </p>
           ) : mode === "reassign" ? (
             <div className="space-y-1.5">
-              <p className="text-sm font-medium text-foreground">Resources to move</p>
+              <p className="text-sm font-medium text-foreground">
+                Resources to move
+              </p>
               <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border p-2">
                 {resources.map((r) => (
                   <label
@@ -221,21 +262,28 @@ export function ReassignResourcesDialog({
                       />
                       {r.displayLabel}
                     </span>
-                    <span className="text-xs text-muted-foreground">{r.count}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {r.count}
+                    </span>
                   </label>
                 ))}
               </div>
             </div>
           ) : (
             <div className="rounded-md border border-border p-2 text-sm text-muted-foreground">
-              {totalResources} resource{totalResources === 1 ? "" : "s"} across {resources.length}{" "}
-              type{resources.length === 1 ? "" : "s"} will be reassigned (all).
+              {totalResources} resource{totalResources === 1 ? "" : "s"} across{" "}
+              {resources.length} type{resources.length === 1 ? "" : "s"} will be
+              reassigned (all).
             </div>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={busy}
+          >
             Cancel
           </Button>
           <Button

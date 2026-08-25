@@ -24,7 +24,6 @@ import {
   Loader2,
   Clock,
   Copy,
-  Search,
   Users,
   MessageSquare,
   Building2,
@@ -71,6 +70,7 @@ import {
   type MembershipCopyContainer,
 } from "./copy";
 import type { MembershipRole, MembershipRoleOption } from "./types";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
 
 export interface PanelInvitation {
   id: string;
@@ -257,16 +257,33 @@ export function InvitationsPanel({
                 ) : (
                   <>
                     {contacts.length > 5 && (
-                      <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                        <Input
-                          placeholder="Search contacts..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          disabled={operationLoading}
-                          className="h-8 pl-8 text-xs"
-                        />
-                      </div>
+                      <UserSearchField
+                        value={searchQuery}
+                        onValueChange={setSearchQuery}
+                        onUserSelect={(user) => {
+                          const contact = availableContacts.find(
+                            (candidate) => candidate.user_id === user.id,
+                          );
+                          if (contact) selectContact(contact);
+                        }}
+                        candidates={availableContacts.map((contact) => ({
+                          id: contact.user_id,
+                          email: contact.email,
+                          displayName: contact.display_name,
+                          avatarUrl: contact.avatar_url,
+                          phone: null,
+                          adminLevel: null,
+                          organizations: [],
+                          source: contact.source,
+                          createdAt: null,
+                          lastSignInAt: null,
+                        }))}
+                        title="Choose a contact to invite"
+                        placeholder="Search contacts..."
+                        disabled={operationLoading}
+                        inputClassName="h-8 text-xs"
+                        ariaLabel="Open advanced contact search"
+                      />
                     )}
                     <ScrollArea className="h-36 rounded-md border bg-background">
                       <div className="p-1">

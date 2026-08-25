@@ -6,9 +6,8 @@
  */
 import React, { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Search, ShieldCheck, UserCog } from "lucide-react";
+import { ChevronRight, ShieldCheck, UserCog } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -36,6 +35,7 @@ import {
   rosterMemberRow,
   rosterMemberSummary,
 } from "../copy";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
 
 type SortKey = "name" | "role" | "lastActive" | "storage" | "spend";
 
@@ -120,15 +120,27 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search members by name or email"
-            className="pl-8"
-          />
-        </div>
+        <UserSearchField
+          value={query}
+          onValueChange={setQuery}
+          onUserSelect={(user) => go(user.id)}
+          candidates={members.map((member) => ({
+            id: member.userId,
+            email: member.email,
+            displayName: member.displayName,
+            avatarUrl: member.avatarUrl,
+            phone: null,
+            adminLevel: null,
+            organizations: [],
+            source: member.role,
+            createdAt: null,
+            lastSignInAt: member.lastOrgActivityAt,
+          }))}
+          title="Find an organization member"
+          placeholder="Search members by name or email"
+          ariaLabel="Open advanced member search"
+          className="min-w-[200px] flex-1"
+        />
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           {(
             [

@@ -1153,6 +1153,27 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
 
+  // ── User Search ──────────────────────────────────────────────────────────
+  // Caller-scoped account selection. Callback-only and tied to an in-progress
+  // form, so each picker is isolated and never restored.
+  {
+    slug: "user-search-window",
+    overlayId: "userSearchWindow",
+    kind: "window",
+    label: "User Search",
+    defaultData: {
+      callbackGroupId: null as string | null,
+      title: "Search users",
+      initialQuery: "",
+      directory: "provided",
+      candidates: [],
+      excludeUserIds: [],
+    },
+    mobilePresentation: "fullscreen",
+    instanceMode: "multi",
+    ephemeral: true,
+  },
+
   // ── Create Project ────────────────────────────────────────────────────────
   // The canonical ProjectFormCore wrapped in WindowPanel chrome. Open via
   // `useOpenCreateProjectWindow()` and listen for the `created` event to grab

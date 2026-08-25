@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Search, X, Users, Building2, MessageSquare, Mail } from "lucide-react";
+import { X, Users, Building2, MessageSquare, Mail } from "lucide-react";
 import {
   useUserConnections,
   type ConnectionUser,
@@ -13,6 +13,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/utils/cn";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
 
 const SOURCE_ICON: Record<ConnectionUser["source"], typeof Users> = {
   conversation: MessageSquare,
@@ -139,16 +140,27 @@ export default function TaskAssigneePicker({
         align="start"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border/50">
-          <Search className="w-3 h-3 text-muted-foreground shrink-0" />
-          <input
-            autoFocus
-            type="text"
+        <div className="border-b border-border/50 p-2">
+          <UserSearchField
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onValueChange={setSearch}
+            onUserSelect={(user) => select(user.id)}
+            candidates={connections.map((user) => ({
+              id: user.user_id,
+              email: user.email,
+              displayName: user.display_name,
+              avatarUrl: user.avatar_url,
+              phone: null,
+              adminLevel: null,
+              organizations: [],
+              source: user.source,
+              createdAt: null,
+              lastSignInAt: null,
+            }))}
+            title="Choose task assignee"
             placeholder="Search people..."
-            className="flex-1 min-w-0 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
-            style={{ fontSize: "16px" }}
+            inputClassName="h-8 text-xs"
+            ariaLabel="Open advanced assignee search"
           />
         </div>
         <div className="max-h-80 overflow-y-auto">

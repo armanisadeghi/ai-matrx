@@ -50,13 +50,13 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 - The admin layout and `agent.review_queue` super-admin RLS gate the review surface.
 - Messaging keeps its participant access and real-time/unread machinery; Agent Review adds no parallel permissions or message store.
 - The data path is direct `supabase-js`; no Next.js database proxy.
-- `Agent Review First Pass` is the approved recurring Codex reviewer: every 30 minutes, exactly one item per run. It uses only Codex's built-in Browser and stops before claiming work when that persistent profile is not signed in as an admin. The Codex automation remains paused until that one-time persistent admin sign-in is complete.
+- `Agent Review First Pass` is the active recurring Codex reviewer: every 30 minutes, exactly one item per run. It uses only Codex's built-in Browser and stops before claiming work when that persistent profile is not signed in as an admin. Canonical credential locations are documented in the shared skill; secrets never enter automation text or queue evidence.
 - Every transition to `ready_for_human` requires recorded verifier identity, verification time, and `assignment.state='awaiting_review'`. The rollout returned all 16 legacy rows missing that evidence to `submitted`, then validated the database constraint.
 - The list defaults to the human inbox (`ready_for_human`) and exposes all workflow activity only through the explicit **All activity** view.
 
 ## Change log
 
-- 2026-08-24 — Staged the approved 30-minute, one-item Codex reviewer; isolated browser testing to Codex's built-in Browser; added and validated a database evidence gate; requeued 16 legacy unverified rows; and made the human list default to verified `ready_for_human` work only. Activation is held only for the one-time persistent admin sign-in.
+- 2026-08-24 — Activated the approved 30-minute, one-item Codex reviewer after a live pilot; isolated browser testing to Codex's built-in Browser; added and validated a database evidence gate; requeued 16 legacy unverified rows; and made the human list default to verified `ready_for_human` work only.
 - 2026-08-20 — Rebuilt Agent Review as an agent-first workflow; migrated every active row from human-first `pending` to `submitted`; linked all 456 rows to durable DM conversations; added atomic thread creation, routed item workspaces, visible stage rails, semi-tabular URL-state list, effective agent actors in Messages, and preserved multi-round feedback.
 - 2026-08-20 — Added registry-backed domain, feature, and repository classification with complete counts.
 - 2026-08-14 — Feedback editors adopted `ProTextarea`; target page became an explicit button.

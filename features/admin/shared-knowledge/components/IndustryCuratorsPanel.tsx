@@ -11,7 +11,6 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Loader2, Plus, ShieldCheck, X } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -24,13 +23,17 @@ import {
   type IndustryCurator,
 } from "@/features/industries/service";
 import type { Industry } from "@/features/industries/types";
+import { UserSearchField } from "@/features/user-search/UserSearchField";
 
 export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
   const [curators, setCurators] = useState<IndustryCurator[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [granting, setGranting] = useState(false);
-  const [revokeTarget, setRevokeTarget] = useState<IndustryCurator | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<IndustryCurator | null>(
+    null,
+  );
   const [revokeBusy, setRevokeBusy] = useState(false);
   const [bumper, setBumper] = useState(0);
 
@@ -57,14 +60,19 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
     if (!value) return;
     setGranting(true);
     try {
-      const found = await searchUserByEmail(value);
-      if (!found.exists) {
-        toast.error("No account with that email — curators are normal platform accounts.");
+      const found = selectedUserId ? null : await searchUserByEmail(value);
+      if (!selectedUserId && !found?.exists) {
+        toast.error(
+          "No account with that email — curators are normal platform accounts.",
+        );
         return;
       }
-      await grantIndustryCurator(found.id, industry.id);
-      toast.success(`${found.email} can now author ${industry.name} packs`);
+      const userId = selectedUserId ?? found?.id;
+      if (!userId) return;
+      await grantIndustryCurator(userId, industry.id);
+      toast.success(`${value} can now author ${industry.name} packs`);
       setEmail("");
+      setSelectedUserId(null);
       setBumper((b) => b + 1);
     } catch (e) {
       toast.error(extractErrorMessage(e));
@@ -91,25 +99,44 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
   return (
     <div className="mt-5 space-y-2">
       <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-        <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+        <ShieldCheck
+          className="h-3.5 w-3.5 text-muted-foreground"
+          aria-hidden
+        />
         Curators of “{industry.name}”
       </div>
       <p className="text-xs text-muted-foreground">
-        Outside experts who may author and propose starter packs for this industry. They never
-        ratify or publish — that stays with platform admins.
+        Outside experts who may author and propose starter packs for this
+        industry. They never ratify or publish — that stays with platform
+        admins.
       </p>
       <div className="flex gap-2">
-        <Input
+        <UserSearchField
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void onGrant();
+          onValueChange={(value) => {
+            setEmail(value);
+            setSelectedUserId(null);
           }}
-          placeholder="expert@company.com"
-          type="email"
+          onEnter={() => void onGrant()}
+          onUserSelect={(user) => {
+            setEmail(user.email ?? user.displayName ?? user.id);
+            setSelectedUserId(user.id);
+          }}
+          directory="admin"
+          excludeUserIds={curators.map((curator) => curator.userId)}
+          title={`Choose a curator for ${industry.name}`}
+          placeholder="Search an existing account…"
+          inputType="email"
+          disabled={granting}
           className="min-w-0 flex-1"
+          inputClassName="h-9"
         />
-        <Button onClick={onGrant} disabled={!email.trim() || granting} size="sm" className="shrink-0">
+        <Button
+          onClick={onGrant}
+          disabled={!email.trim() || granting}
+          size="sm"
+          className="shrink-0"
+        >
           {granting ? (
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
           ) : (
@@ -124,15 +151,21 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
         </div>
       ) : curators.length === 0 ? (
         <div className="rounded-md border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
-          No curators yet — only platform admins can author packs for this industry.
+          No curators yet — only platform admins can author packs for this
+          industry.
         </div>
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
           {curators.map((c) => (
-            <li key={c.userId} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+            <li
+              key={c.userId}
+              className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+            >
               <span className="min-w-0 truncate text-foreground">
                 {c.displayName ? `${c.displayName} · ` : ""}
-                <span className="text-muted-foreground">{c.email ?? c.userId}</span>
+                <span className="text-muted-foreground">
+                  {c.email ?? c.userId}
+                </span>
               </span>
               <Button
                 variant="ghost"

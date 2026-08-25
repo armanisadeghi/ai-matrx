@@ -68,6 +68,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `features/organizations/components/OrgScopeTree.tsx` — read-only scope-type→scope tree (no items) for the Manage Scopes section, with edit links.
 - `features/organizations/components/OrganizationAbbreviation.tsx` — canonical compact org identity mark. Renders the database-backed 2–3 letter value in cards, pickers, headers, and logo fallbacks instead of recalculating initials at each callsite.
 - `features/organizations/components/OrgModuleSettings.tsx` — **live** per-module org-rule matrix (members-can-add, needs-approval, scopeable, auto-ingest, default access). Loads/saves via `features/organizations/orgModuleSettings.ts` → `org_module_settings` (admin-gated `set_org_module_setting` RPC). Members-can-add + needs-approval are enforced server-side in `share_resource_with_org`; the rest are saved for upcoming enforcement.
+- `components/membership/MembersPanel.tsx` / `InvitationsPanel.tsx` and `features/organizations/components/OrgEmailTab.tsx` — member/contact selection uses the canonical `UserSearchField`, with advanced search limited to the roster or contacts the caller already has.
 - `features/marketing/competitors/OrgCompetitorLabelsSettings.tsx` — first
   platform setting-door consumer. Stores the `seo_competitor` shared-label
   vocabulary and member-add policy in `platform.org_module_config`; admins
@@ -208,6 +209,7 @@ The `mbr_*`, `inv_*`, and ownership RPCs enforce these at the database layer aga
 - **Team organization creation goes through `org_create` only.** Authenticated direct INSERT on `iam.organizations` is revoked; the RPC atomically creates the row and its first owner. Personal-org provisioning remains the separate service/trigger flow.
 - **No Redux cache for org data.** Each hook refetches from Supabase. `refresh()` is exposed on every list hook — call it after any mutation (the operation hooks in `hooks.ts` already do this internally; external callers of `service.ts` directly must do it themselves).
 - **`lookup_user_by_email` is an RPC, not a table read.** Never query `profiles.email` directly — email lives in `auth.users` which is not directly selectable from the client.
+- **Member and invitation pickers never become a global directory.** They pass only the current container roster or the caller's existing contacts into `UserSearchField`; the super-admin directory mode is forbidden on ordinary organization/project surfaces.
 
 ---
 
@@ -248,6 +250,7 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-08-24` — Replaced compact member/contact search inputs in shared membership, invitation, organization-email, org-admin roster, and reassignment surfaces with the canonical `UserSearchField`. Their advanced windows are bounded to the roster/candidate list already visible to the caller; invitation email entry remains available for people without accounts.
 - `2026-08-23` — **The org nudge moved into header flow; the floating card is
   deleted.** `HeaderOrgReminder.tsx` was a `fixed` z-50 card pinned just under
   the header, so on every route it landed on the page's own top-right chrome —
