@@ -566,6 +566,16 @@ export interface MatrxDataTableProps<T> {
    * Ignored in remote controlled mode, where the query owner applies search.
    */
   searchText?: (row: T) => string;
+  /**
+   * Hierarchy-aware local processing seam. The canonical table still owns the
+   * toolbar, URL state, headers, pagination, editing, copy, and rendering; the
+   * consumer only preserves domain ordering that a flat sort would destroy.
+   *
+   * The processor must honor every active query control in `state` and return
+   * the complete filtered/sorted local result before pagination. It is ignored
+   * in remote controlled mode, where `data` is already the queried page.
+   */
+  processLocalRows?: (rows: T[], state: MatrxDataTableQueryState) => T[];
   isLoading?: boolean;
   /**
    * Background refresh state. Unlike `isLoading`, this preserves rendered rows

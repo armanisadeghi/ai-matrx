@@ -21,6 +21,37 @@ const CONTROLLED_STATE: MatrxDataTableQueryState = {
 };
 
 describe("MatrxDataTable controlled mode", () => {
+  it("lets a hierarchy preserve domain ordering while the table keeps local pagination", () => {
+    const processLocalRows = jest.fn((rows: Row[]) => [...rows].reverse());
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[
+          { id: "parent", name: "Parent" },
+          { id: "child", name: "Child" },
+        ]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        processLocalRows={processLocalRows}
+        pageSize={1}
+        detail={{ enabled: false }}
+      />,
+    );
+
+    expect(processLocalRows).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({
+        page: 1,
+        pageSize: 1,
+        search: "",
+        columnFilters: {},
+        sort: null,
+      }),
+    );
+    expect(markup).toContain("Child");
+    expect(markup).not.toContain("Parent");
+    expect(markup).toContain("1-1 of 2");
+  });
+
   it("shows an explicit primary-search matching mode when enabled", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable

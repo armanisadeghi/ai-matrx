@@ -204,6 +204,7 @@ function MatrxDataTableCore<T>({
   columns,
   getRowId,
   searchText,
+  processLocalRows,
   isLoading = false,
   isFetching = false,
   query,
@@ -430,6 +431,18 @@ function MatrxDataTableCore<T>({
 
   const processed = useMemo(() => {
     if (remoteQuery) return data;
+    if (processLocalRows) {
+      return processLocalRows(data, {
+        page,
+        pageSize,
+        search: searchValue,
+        searchMatchMode,
+        anyOf: anyOfValue,
+        layeredFilters,
+        columnFilters,
+        sort,
+      });
+    }
     return filterAndSortRows(
       data,
       visibleColumns,
@@ -454,6 +467,9 @@ function MatrxDataTableCore<T>({
     layeredFilters,
     searchMatchMode,
     searchText,
+    processLocalRows,
+    page,
+    pageSize,
     remoteQuery,
   ]);
 
@@ -1443,7 +1459,7 @@ function MatrxDataTableCore<T>({
         ) : null}
       </div>
 
-      {(controlledQuery || defaultPageSize !== 0) && totalItems > 0 ? (
+      {defaultPageSize !== 0 && totalItems > 0 ? (
         <div className="shrink-0">
           <GenericTablePagination
             totalItems={totalItems}
