@@ -7,7 +7,15 @@
  *
  *   { __kind:"quiz_set", title, description?, questions: [
  *       { __kind:"quiz_question", type, question, options?, correct_answer,
- *         explanation? } ] }
+ *         explanation?, acceptable_answers?, rubric?, depth?, topic?,
+ *         points?, trust? } ] }
+ *
+ * Widened 2026-08-25 (feedback 499a460f): per-question `trust`
+ * (trust_envelope), depth/topic/rubric/acceptable_answers/points, nullable
+ * correct_answer — the fields the Assessment Quiz agents emit that the kind
+ * used to silently strip when `ai.agent.produce` bound it. The bridge also
+ * tolerates the agents' `prompt`/`question_type` spellings of
+ * `question`/`type`.
  *
  * The bridge derives the CANONICAL camelCase quiz payload
  * (`{ quizTitle, multipleChoice: [{ id, question, options, correctAnswer,
@@ -37,7 +45,18 @@ import {
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 
-const MAPPED_QUESTION_KEYS = new Set(["question", "options", "explanation", KIND_KEY]);
+// `prompt` / `question_type` are the Assessment agents' spellings of
+// `question` / `type` (education.quiz_generate*, quizGenerator.ts reads both
+// the same way). The bridge maps them onto the canonical names, so they are
+// "mapped", not extras — without this, a prompt-spelled payload rendered as
+// an EMPTY quiz (every question dropped at the no-text gate).
+const MAPPED_QUESTION_KEYS = new Set([
+  "question",
+  "prompt",
+  "options",
+  "explanation",
+  KIND_KEY,
+]);
 const MAPPED_SET_KEYS = new Set(["title", "questions", KIND_KEY]);
 
 function resolveCorrectIndex(options: string[], correct: unknown): number {
@@ -80,11 +99,26 @@ function isTrueFalse(type: unknown): boolean {
   );
 }
 
+function questionText(question: Record<string, unknown>): string {
+  if (typeof question.question === "string" && question.question !== "") {
+    return question.question;
+  }
+  // Assessment-agent spelling (education.quiz_generate*): `prompt`.
+  if (typeof question.prompt === "string" && question.prompt !== "") {
+    return question.prompt;
+  }
+  return "";
+}
+
+function questionType(question: Record<string, unknown>): unknown {
+  return question.type ?? question.question_type;
+}
+
 function mapQuestion(
   question: Record<string, unknown>,
   index: number,
 ): Record<string, unknown> | null {
-  const text = typeof question.question === "string" ? question.question : "";
+  const text = questionText(question);
   if (!text) return null;
 
   let options = Array.isArray(question.options)
@@ -92,7 +126,7 @@ function mapQuestion(
         (option): option is string => typeof option === "string",
       )
     : [];
-  if (options.length === 0 && isTrueFalse(question.type)) {
+  if (options.length === 0 && isTrueFalse(questionType(question))) {
     options = ["True", "False"];
   }
   // FIRST-RENDERABLE-UNIT gate (Arman, 2026-08-24): a question is renderable
@@ -168,7 +202,9 @@ export const quizServerDataFromEnvelope = makeCompleteEnvelopeBridge(
 
 const MD_QUESTION_KNOWN_KEYS = [
   "type",
+  "question_type",
   "question",
+  "prompt",
   "options",
   "correct_answer",
   "explanation",
@@ -183,9 +219,8 @@ function questionMarkdown(
 ): string {
   const blocks: Array<string | null> = [`## Question ${index + 1}`];
 
-  if (typeof question.question === "string" && question.question !== "") {
-    blocks.push(question.question);
-  }
+  const text = questionText(question);
+  if (text) blocks.push(text);
 
   const options = Array.isArray(question.options)
     ? question.options.filter(

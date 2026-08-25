@@ -139,11 +139,25 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
 
                     <div className="bg-black/60 backdrop-blur-xl rounded-3xl p-4 border border-white/10 shadow-2xl">
                         <PodcastAudioPlayer
+                            ref={playerRef}
                             audioUrl={episode.audio_url}
                             title={episode.title}
                             coverImageUrl={thumbnailImage ?? undefined}
                             dark
                         />
+                        {hasChapters && (
+                            // The glass panel is pinned to the bottom of a
+                            // full-bleed video, so the list gets a hard cap and
+                            // its own scroller — the transport never moves.
+                            <div className="mt-3 max-h-[22vh] overflow-y-auto overscroll-contain border-t border-white/10 pt-2.5">
+                                <MediaChaptersBlock
+                                    className="my-0"
+                                    dark
+                                    serverData={{ chapters, isComplete: true }}
+                                    onSeek={seekToChapter}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
                 {fallbackDialog}

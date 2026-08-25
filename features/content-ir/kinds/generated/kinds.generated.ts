@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "f57fd61be7e6";
+export const KIND_REGISTRY_FINGERPRINT = "66e9c62b70c5";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2977,9 +2977,31 @@ export interface QuestionnaireQuestion {
 }
 
 /**
- * * Shared by 2 kinds (quiz_set, study_pack_set).
+ * * From kind `quiz_set`.
  */
-export interface QuizQuestion {
+export interface QuizQuestion_QuizSet {
+  type: string;
+  depth?: string;
+  topic?: string | null;
+  trust?: TrustEnvelope;
+  /**
+   * Block discriminator for render pipeline.
+   */
+  __kind: "quiz_question";
+  points?: number;
+  rubric?: string | null;
+  options?: string[];
+  question: string;
+  explanation?: string;
+  correct_answer: string | null;
+  additionalDetails?: Record<string, unknown>;
+  acceptable_answers?: string[] | null;
+}
+
+/**
+ * * From kind `study_pack_set`.
+ */
+export interface QuizQuestion_StudyPackSet {
   type: string;
   /**
    * The registered kind this payload is an instance of.
@@ -10570,16 +10592,17 @@ export interface QuizItem {
 }
 
 /**
- * Kind `quiz_set` (registry v6).
+ * Kind `quiz_set` (registry v7).
  */
 export interface QuizSet {
   title: string;
   /**
-   * The registered kind this payload is an instance of.
+   * Block discriminator for render pipeline.
    */
   __kind: "quiz_set";
-  questions: QuizQuestion[];
-  description?: string;
+  questions: QuizQuestion_QuizSet[];
+  description?: string | null;
+  additionalDetails?: Record<string, unknown>;
 }
 
 /**

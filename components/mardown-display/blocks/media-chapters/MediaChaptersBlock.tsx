@@ -46,6 +46,13 @@ export interface MediaChaptersBlockProps {
   emptyHint?: string;
   /** Hide the header row — for a host frame that already draws its own. */
   hideHeader?: boolean;
+  /**
+   * Light text for a hard-dark substrate (the episode page's video mode draws
+   * its player on black regardless of theme, so theme tokens read as invisible
+   * there). A VARIANT of this one component, exactly like
+   * `PodcastAudioPlayer`'s `dark` — never a second chapter list.
+   */
+  dark?: boolean;
   className?: string;
 }
 
@@ -75,22 +82,38 @@ export function readMediaChaptersData(
 export function MediaChapterRow({
   chapter,
   onSeek,
+  dark = false,
 }: {
   chapter: MediaChapterData;
   onSeek?: (seconds: number, chapter: MediaChapterData) => void;
+  dark?: boolean;
 }) {
   const seconds = chapterStartSeconds(chapter.start_hint);
   const seekable = onSeek != null && seconds != null;
 
   const body = (
     <>
-      <span className="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+      <span
+        className={cn(
+          "mt-0.5 shrink-0 rounded px-1.5 py-0.5 font-mono text-[11px] tabular-nums",
+          dark
+            ? "bg-white/15 text-white/70"
+            : "bg-muted text-muted-foreground",
+        )}
+      >
         {chapter.start_hint || "—"}
       </span>
       <span className="min-w-0 text-left text-sm">
-        <span className="font-medium text-foreground">{chapter.title}</span>
+        <span
+          className={cn("font-medium", dark ? "text-white/90" : "text-foreground")}
+        >
+          {chapter.title}
+        </span>
         {chapter.summary && (
-          <span className="text-muted-foreground"> — {chapter.summary}</span>
+          <span className={dark ? "text-white/60" : "text-muted-foreground"}>
+            {" "}
+            — {chapter.summary}
+          </span>
         )}
       </span>
     </>
@@ -108,7 +131,10 @@ export function MediaChapterRow({
         type="button"
         onClick={() => onSeek(seconds, chapter)}
         title={`Jump to ${chapter.start_hint}`}
-        className="flex w-full items-start gap-2.5 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+        className={cn(
+          "flex w-full items-start gap-2.5 rounded-md px-1 py-0.5 text-left transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+          dark ? "hover:bg-white/10" : "hover:bg-accent",
+        )}
       >
         {body}
       </button>
@@ -126,24 +152,43 @@ export default function MediaChaptersBlock({
   actions,
   emptyHint,
   hideHeader = false,
+  dark = false,
   className,
 }: MediaChaptersBlockProps) {
   const data = readMediaChaptersData(serverData);
   if (!data) return null;
 
+  const mutedText = dark ? "text-white/60" : "text-muted-foreground";
+
   return (
     <div className={cn("my-2 space-y-2", className)}>
       {!hideHeader && (
         <div className="flex flex-wrap items-center gap-2">
-          <Bookmark className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold text-foreground">Chapters</span>
+          <Bookmark
+            className={cn("h-4 w-4", dark ? "text-white/70" : "text-primary")}
+          />
+          <span
+            className={cn(
+              "text-sm font-semibold",
+              dark ? "text-white/90" : "text-foreground",
+            )}
+          >
+            Chapters
+          </span>
           {data.chapters.length > 0 && (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.5 text-[10px] tabular-nums",
+                dark ? "bg-white/15 text-white/70" : "bg-muted text-muted-foreground",
+              )}
+            >
               {data.chapters.length}
             </span>
           )}
           {!data.isComplete && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <span
+              className={cn("inline-flex items-center gap-1 text-xs", mutedText)}
+            >
               <Loader2 className="h-3 w-3 animate-spin" />
               Segmenting
             </span>
@@ -153,7 +198,7 @@ export default function MediaChaptersBlock({
       )}
 
       {data.chapters.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
+        <p className={cn("text-xs", mutedText)}>
           {data.isComplete
             ? (emptyHint ?? "No chapters.")
             : "Reading the script…"}
@@ -165,6 +210,7 @@ export default function MediaChaptersBlock({
               key={`${chapter.start_hint}-${index}`}
               chapter={chapter}
               onSeek={onSeek}
+              dark={dark}
             />
           ))}
         </ol>
