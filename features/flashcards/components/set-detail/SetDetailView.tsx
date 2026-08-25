@@ -17,7 +17,6 @@ import {
   Layers,
   BookOpen,
   Lightbulb,
-  Quote,
   Volume2,
   Image as ImageIcon,
   Zap,
@@ -91,6 +90,14 @@ import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
 import { AudioOverviewSection } from "./AudioOverviewSection";
 import { EnhanceSetDialog } from "./EnhanceSetDialog";
 import { IllustrateSetWindow } from "./IllustrateSetWindow";
+import { BulkEnrichWindow } from "./BulkEnrichWindow";
+import { useBulkEnrichRun, bulkEnrichSummary } from "./bulkEnrichRun";
+import {
+  cardHasDetailLayers,
+  selectCardDetailLayers,
+} from "../../data/cardDetailLayers";
+import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   useIllustrateSetRun,
   type IllustrateCardState,
@@ -176,6 +183,7 @@ function CardPeek({
   selected = false,
   onToggleSelected,
   onOpen,
+  onEnhance,
 }: {
   card: CardWithDetails;
   index: number;
@@ -186,9 +194,16 @@ function CardPeek({
   onToggleSelected?: () => void;
   /** Opens the canonical flashcard window when the tile is not in selection mode. */
   onOpen?: () => void;
+  /**
+   * Per-card "make this deeper", initiated FROM THIS TILE. The set-level action
+   * is Enrich all (one button, whole deck); a modal LIST of every card you
+   * scroll and pick from was the nonsense flow this replaces.
+   */
+  onEnhance?: () => void;
 }) {
-  const hasHelper = card.details.some((d) => d.kind === "helper");
-  const hasExample = card.details.some((d) => d.kind === "example");
+  // ONE reader for "is this card enriched" — the same selector the study
+  // surface renders from, so a badge can never disagree with the card.
+  const layerCount = selectCardDetailLayers(card.details).length;
   const hasAudio = card.details.some((d) => !!d.audio_file_id);
   const images = getCardImages(card);
   const kind = asCardKind(card.card_kind);
@@ -261,22 +276,13 @@ function CardPeek({
               Match · {pairs.length}
             </span>
           )}
-          {hasHelper && (
+          {layerCount > 0 && (
             <span
-              title="Has helper detail"
-              className="inline-flex items-center gap-0.5 rounded border border-border px-1 py-0 text-[10px] text-muted-foreground"
+              title={`${layerCount} detail layer${layerCount === 1 ? "" : "s"} — read them under "More on this card" while studying`}
+              className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-[10px] font-medium text-primary"
             >
               <Lightbulb className="h-2.5 w-2.5" />
-              Helper
-            </span>
-          )}
-          {hasExample && (
-            <span
-              title="Has example detail"
-              className="inline-flex items-center gap-0.5 rounded border border-border px-1 py-0 text-[10px] text-muted-foreground"
-            >
-              <Quote className="h-2.5 w-2.5" />
-              Example
+              {layerCount}
             </span>
           )}
           {hasAudio && (
@@ -294,6 +300,20 @@ function CardPeek({
             >
               <ImageIcon className="h-2.5 w-2.5" />
             </span>
+          )}
+          {onEnhance && !selectable && (
+            <button
+              type="button"
+              title="Make THIS card deeper"
+              aria-label={`Make card ${index + 1} deeper`}
+              className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+              onClick={(event) => {
+                event.stopPropagation();
+                onEnhance();
+              }}
+            >
+              <Sparkles className="h-3 w-3" />
+            </button>
           )}
         </div>
       </div>
