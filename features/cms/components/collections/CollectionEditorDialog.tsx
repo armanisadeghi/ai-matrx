@@ -680,11 +680,13 @@ export function CollectionEditorDialog({
               <label className="text-sm font-medium block mb-1.5">
                 Default order
               </label>
-              <div className="flex items-center gap-2">
+              {/* Stacks on narrow screens: this dialog is `overflow-x-clip`, so
+                  anything wider than it is silently CUT, not scrollable. */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <select
                   value={form.orderField}
                   onChange={(e) => set("orderField", e.target.value)}
-                  className="h-9 flex-1 min-w-0 rounded-md border border-input bg-background px-2 text-sm"
+                  className="h-9 w-full sm:flex-1 min-w-0 rounded-md border border-input bg-background px-2 text-sm"
                 >
                   <option value="">Newest first (default)</option>
                   <option value="created_at">Date added</option>
@@ -700,7 +702,7 @@ export function CollectionEditorDialog({
                   value={form.orderAscending ? "asc" : "desc"}
                   onChange={(e) => set("orderAscending", e.target.value === "asc")}
                   disabled={!form.orderField}
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm disabled:opacity-50"
+                  className="h-9 w-full sm:w-auto rounded-md border border-input bg-background px-2 text-sm disabled:opacity-50"
                 >
                   <option value="asc">Ascending</option>
                   <option value="desc">Descending</option>
