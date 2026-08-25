@@ -50,45 +50,97 @@ import {
 export type { ComponentResolution, ComponentRole };
 
 /**
- * The `kind_component` projection is already row-shaped; only `role` is typed
- * wider here (the column is free text in the generated types) than the
- * resolver's union.
- */
-function toRow(
-  projection: KindComponentProjection | KindComponentRow,
-): KindComponentRow {
-  return { ...projection, role: asComponentRole(projection.role) };
-}
-
-/**
  * Roles the OUTPUT/INPUT resolver dispatches on. `loading` rows are real and
  * valid (content_ir.kind_component_role_check allows them since 2026-08-25)
  * but they are the kind's LOADING face, resolved by the loading layer — never
  * by this resolver. They are dropped here rather than coerced, because
- * `asComponentRole`'s fallback would register a kind's LOADING component as
- * its OUTPUT component: the reader would see the skeleton where the finished
- * shape belongs, permanently.
+ * registering a kind's LOADING component as its OUTPUT component would show
+ * the reader the skeleton where the finished shape belongs, permanently.
+ *
+ * 🚨 THE DROP MUST HAPPEN BEFORE ANY NARROWING, AND ON EVERY INGRESS.
+ * There is deliberately no `asComponentRole`-style coercion in this file. A
+ * coercion that rewrote an unknown role to `"output"` is not a lenient
+ * fallback, it is a data-destroying merge: the resolver keys rows by
+ * `(kind, platform, role)` and keeps the FIRST row per key, so two
+ * semantically different rows land on one key and FETCH ORDER alone decides
+ * which one renders (`is_default DESC, sort_order ASC, created_at ASC`).
+ *
+ * Proven live 2026-08-25: `study_plan` and `kit_title` each had a `loading`
+ * row with the SAME `is_default` and `sort_order` as that kind's real output
+ * row — only `created_at` separated them, and the output rows happened to be
+ * authored 27 and 29 seconds earlier. Author the loading component first and
+ * the skeleton becomes the kind's output component everywhere, forever.
+ *
+ * The earlier repair filtered on `role` but ran AFTER a map that had already
+ * rewritten `loading` to `output`, so every row it meant to drop had already
+ * become an output row and passed the filter. Both DB loaders below therefore
+ * funnel through this function, which is the only place a role is narrowed.
  */
-const RESOLVER_ROLES = new Set(["output", "input"]);
+const RESOLVER_ROLES: ReadonlySet<string> = new Set<ComponentRole>([
+  "output",
+  "input",
+]);
+
+function isRoutableRole(role: string): role is ComponentRole {
+  return RESOLVER_ROLES.has(role);
+}
 
 function dispatchableRows(
   rows: readonly (KindComponentProjection | KindComponentRow)[],
 ): KindComponentRow[] {
-  return rows.filter((r) => RESOLVER_ROLES.has(r.role)).map(toRow);
+  const dispatchable: KindComponentRow[] = [];
+  for (const row of rows) {
+    if (isRoutableRole(row.role)) {
+      dispatchable.push({ ...row, role: row.role });
+      continue;
+    }
+    reportUnroutableRole(row);
+  }
+  return dispatchable;
 }
 
-/**
- * `kind_component.role` is free text in the generated DB types; the resolver
- * models the two roles it actually dispatches on. An unrecognised role is a
- * malformed row, not a new tier — it screams and falls back to `output` so one
- * bad row can never blank a kind.
- */
-function asComponentRole(role: string): ComponentRole {
-  if (role === "output" || role === "input") return role;
-  const message = `[content-ir] kind_component.role "${role}" is not a known component role — treating it as "output".`;
+/** One report per (kind, role) per session — a warm sweep re-reports nothing. */
+const reportedUnroutableRoles = new Set<string>();
+
+/** Test seam — resets the once-per-(kind, role) dedupe. */
+export function resetUnroutableRoleReports(): void {
+  reportedUnroutableRoles.clear();
+}
+
+function reportUnroutableRole(
+  row: KindComponentProjection | KindComponentRow,
+): void {
+  const seenKey = `${row.kind} ${row.role}`;
+  if (reportedUnroutableRoles.has(seenKey)) return;
+  reportedUnroutableRoles.add(seenKey);
+  // NAME THE ROW. The previous message carried only the role string, so the
+  // first question triage asks — which kind is affected? — could be answered
+  // only by querying the database by hand.
+  const message =
+    `[content-ir] kind_component role "${row.role}" is not routable by this build — the row ` +
+    `for kind "${row.kind}" (component_key "${row.componentKey}", platform "${row.platform}") ` +
+    `is IGNORED. It is deliberately NOT treated as an "output" component: an unknown role ` +
+    `coerced to "output" collides with the kind's real output row under one resolver key, and ` +
+    `fetch order alone would decide which one renders. To make this role live, widen ` +
+    `ComponentRole in @ai-matrx/content-ir-react AND implement its dispatch.`;
   console.error(message);
-  captureError({ source: "content-ir", message, raw: { role } });
-  return "output";
+  try {
+    captureError({
+      source: "content-ir",
+      message,
+      relation: row.kind,
+      callSite: "ComponentRegistry.dispatchableRows",
+      hint: "content_ir.kind_component.role was widened ahead of the rendering consumer.",
+      raw: {
+        role: row.role,
+        kind: row.kind,
+        componentKey: row.componentKey,
+        platform: row.platform,
+      },
+    });
+  } catch {
+    /* diagnostics must never break registry ingest */
+  }
 }
 
 /**
@@ -99,9 +151,14 @@ export class ComponentRegistry extends ComponentResolver {
   constructor(entries: () => SystemComponentEntry[]) {
     super({
       compiledEntries: entries,
-      loadAll: async () => (await listKindComponentsFromTables()).map(toRow),
+      // Both loaders drop unroutable roles HERE, at the DB boundary — this is
+      // the path the package's ensureWarm / refresh / requestComponent all
+      // take, so a guard that only sat on the ingest overrides never saw a
+      // `loading` row at all.
+      loadAll: async () =>
+        dispatchableRows(await listKindComponentsFromTables()),
       loadForKind: async (kind, platform) =>
-        (await getKindComponentBySlug(kind, platform)).map(toRow),
+        dispatchableRows(await getKindComponentBySlug(kind, platform)),
       reportError: captureError,
     });
   }

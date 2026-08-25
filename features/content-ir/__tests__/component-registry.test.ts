@@ -337,3 +337,110 @@ describe("D115 inversion — module init registers the kind-components invalidat
     expect(mockList).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("unroutable roles — a role this build cannot dispatch is DROPPED, never re-typed", () => {
+  // Regression for the live 2026-08-25 incident: `content_ir.kind_component`'s
+  // role CHECK was widened to allow 'loading' and DB-authored loading
+  // components were written for `study_plan` and `kit_title` — but this build
+  // has no loading-role dispatch. Coercing the unknown role to "output" merged
+  // the two rows onto one resolver key, where FETCH ORDER alone decided which
+  // rendered. The real rows shared `is_default` and `sort_order`, so only
+  // `created_at` separated them.
+  beforeEach(async () => {
+    const { resetUnroutableRoleReports } = await import(
+      "../registry/component-registry"
+    );
+    resetUnroutableRoleReports();
+  });
+
+  it("a loading row NEVER becomes the kind's output component, even when it is fetched FIRST", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      // The dangerous order: the loading row arrives ahead of the real output
+      // row, which is exactly what happens if the loading component is
+      // authored first. `first row per key wins`, so a coercion here handed
+      // the skeleton to every reader as the finished shape.
+      mockList.mockResolvedValue([
+        dbRow({
+          kind: "adv_loading_kind",
+          componentKey: "adv_loading_skeleton",
+          role: "loading",
+          id: "11111111-1111-1111-1111-111111111111",
+        }),
+        dbRow({
+          kind: "adv_loading_kind",
+          componentKey: "adv_real_output",
+          role: "output",
+          id: "22222222-2222-2222-2222-222222222222",
+        }),
+      ]);
+
+      const registry = new ComponentRegistry(() => []);
+      await registry.ensureWarm();
+
+      const resolved = registry.resolve("adv_loading_kind", "web", "output");
+      expect(resolved?.componentKey).toBe("adv_real_output");
+      // And the loading row is not silently reachable under its own role
+      // either — this build has no dispatch for it.
+      expect(registry.resolve("adv_loading_kind", "web", "input")).toBeNull();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("screams ONCE per (kind, role) and names the row, not just the role string", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      mockList.mockResolvedValue([
+        dbRow({
+          kind: "adv_named_kind",
+          componentKey: "adv_named_skeleton",
+          role: "loading",
+        }),
+      ]);
+
+      const registry = new ComponentRegistry(() => []);
+      await registry.ensureWarm();
+      // A second ingest of the same row must not re-report.
+      registry.ingestDbRows([
+        dbRow({
+          kind: "adv_named_kind",
+          componentKey: "adv_named_skeleton",
+          role: "loading",
+        }),
+      ]);
+
+      expect(consoleError).toHaveBeenCalledTimes(1);
+      const message = String(consoleError.mock.calls[0]?.[0] ?? "");
+      // Triage must be able to find the offending row from the message alone.
+      expect(message).toContain("adv_named_kind");
+      expect(message).toContain("adv_named_skeleton");
+      expect(message).toContain("loading");
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("routable rows are unaffected — input and output both still resolve", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      mockList.mockResolvedValue([
+        dbRow({ kind: "adv_ok_kind", componentKey: "adv_out", role: "output" }),
+        dbRow({ kind: "adv_ok_kind", componentKey: "adv_in", role: "input" }),
+      ]);
+
+      const registry = new ComponentRegistry(() => []);
+      await registry.ensureWarm();
+
+      expect(registry.resolve("adv_ok_kind", "web", "output")?.componentKey).toBe(
+        "adv_out",
+      );
+      expect(registry.resolve("adv_ok_kind", "web", "input")?.componentKey).toBe(
+        "adv_in",
+      );
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+});

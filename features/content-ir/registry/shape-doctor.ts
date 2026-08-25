@@ -865,9 +865,15 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
     // `n/a` only ever replaces the missing/warn branch — never a positive.
     // A dangling row is NOT evidence of a component, so it cannot make the cell
     // green (that is exactly the lie the red above names).
+    // ROLE MATTERS. This column asks "can this kind RENDER?", which only an
+    // `output` row answers. Counting every web row made a kind green on the
+    // strength of an `input` row — or, since the role CHECK was widened on
+    // 2026-08-25, a `loading` row: the board would report a renderer for a
+    // kind that owns nothing but a skeleton. The dangling-key red above
+    // already filters `role === "output"`; this cell now agrees with it.
     const danglingIds = new Set(danglingComponents.map((c) => c.id));
     const webComponents = componentRows.filter(
-      (c) => c.platform === "web" && !danglingIds.has(c.id),
+      (c) => c.platform === "web" && c.role === "output" && !danglingIds.has(c.id),
     );
     let component: AssetCell;
     if (webComponents.length > 0) {
