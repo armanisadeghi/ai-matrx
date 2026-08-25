@@ -235,7 +235,7 @@ begin
                     where c.dimension = 'seo_facet'
                       and c.slug = 'traffic_class:' || s.target_class
                       and c.deleted_at is null), initcap(s.target_class)),
-         'Phrases this industry reads as ' || s.target_class || ' traffic. Off until you switch them on.',
+         'Phrases this industry reads as ' || s.target_class || ' traffic.',
          s.matchers, null, null,
          300 + row_number() over (order by s.target_class)::int,
          jsonb_build_object('converted_from_rules', to_jsonb(s.rule_ids))
