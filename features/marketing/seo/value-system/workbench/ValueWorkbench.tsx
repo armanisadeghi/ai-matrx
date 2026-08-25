@@ -812,11 +812,30 @@ export function ValueWorkbench() {
       align: "right",
       width: 70,
       mobileHidden: true,
-      cell: (row) => (
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {formatScore(row.value_score)}
-        </span>
-      ),
+      // KI-051 — an overridden row used to show a dash here, because the
+      // resolver did not compute a score for it at all. It does now, so the
+      // machine's number is shown in brackets: your ruling decides the level,
+      // and you can still see the working-out you overruled.
+      cell: (row) => {
+        const override = row.reasons?.find((r) => r.kind === "override");
+        const computed =
+          override && override.kind === "override" ? override.computed_score : null;
+        if (row.value_score == null && computed != null) {
+          return (
+            <span
+              className="text-xs tabular-nums text-muted-foreground/70"
+              title="What this works out to. Your ruling decides the level; this is the number it overruled."
+            >
+              ({formatScore(computed)})
+            </span>
+          );
+        }
+        return (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {formatScore(row.value_score)}
+          </span>
+        );
+      },
     },
     {
       id: "why",

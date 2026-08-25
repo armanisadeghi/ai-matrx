@@ -130,14 +130,34 @@ function reasonView(reason: ValueReason): ReasonView {
               : undefined,
       };
     }
-    case "override":
+    case "override": {
+      // KI-051 — the ruling no longer stands alone. When the working-out has
+      // moved away from what you ruled, the chain says so ON THE ROW: nothing
+      // is overwritten, but a disagreement you cannot see is a disagreement you
+      // can never settle.
+      const computed = reason.computed_band
+        ? `${humanizeSlug(reason.computed_band)}${
+            reason.computed_score != null ? ` (${reason.computed_score})` : ""
+          }`
+        : null;
+      const disagrees = reason.agrees === false && computed;
       return {
         icon: Gavel,
-        text: "Your ruling",
-        detail:
+        text: disagrees ? `Your ruling · works out to ${computed}` : "Your ruling",
+        detail: [
           "An explicit expert ruling — it beats every computed signal until you clear it.",
-        tone: "text-primary",
+          computed
+            ? disagrees
+              ? `The working-out below says ${computed}. Your ruling stands; this is only here so you can see what you are disagreeing with.`
+              : `The working-out below agrees: ${computed}.`
+            : null,
+          reason.note ? `Your reason: ${reason.note}` : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
+        tone: disagrees ? "text-warning" : "text-primary",
       };
+    }
     case "topic":
       return {
         icon: TreePine,

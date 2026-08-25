@@ -51,7 +51,27 @@ export interface ValueCombo {
 }
 
 export type ValueReason =
-  | { kind: "override"; level?: string | null }
+  /**
+   * KI-051 — A HUMAN RULING SITS ON TOP OF THE MACHINE'S ANSWER, NOT INSTEAD OF
+   * IT. Until 2026-08-25 this object was the WHOLE receipt for an overridden
+   * keyword: a level, and nothing else, forever. The resolver now works the
+   * score out for every keyword and hands the disagreement back here, so the
+   * row can say what you ruled AND what the working-out says. Everything past
+   * `level` is optional because receipts written before that date carry only
+   * the level.
+   */
+  | {
+      kind: "override";
+      level?: string | null;
+      /** The reason typed at ruling time (P24) — the only receipt there used to be. */
+      note?: string | null;
+      ruled_at?: string | null;
+      /** What the system works this keyword out to, ignoring the ruling. */
+      computed_band?: string | null;
+      computed_score?: number | null;
+      /** False when the ruling and the working-out now say different things. */
+      agrees?: boolean | null;
+    }
   /** C2: the leading summary row — Σ adds → × factor (capped) → never. */
   | {
       kind: "summary";
