@@ -269,7 +269,13 @@ async function runSeoDiscoveryStream<T>({
       describeBackendFailure(parseCallApiError(result.error)).headline ?? fallbackError,
     );
   }
-  if (!finalResult) throw new Error(`${fallbackError}: the run returned no result.`);
+  // No final event and no error event: the run either never reported back or
+  // the response was not the stream this client expects. Say something the
+  // person reading it can act on — never the developer sentence.
+  if (!finalResult)
+    throw new Error(
+      "The search ran but its results never came back. Nothing was charged twice — try it again in a moment.",
+    );
   return finalResult;
 }
 
