@@ -488,14 +488,13 @@ function AdminsManagementPageContent() {
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <header className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
-              <ShieldCheck className="h-6 w-6 text-rose-500" />
-              Admins &amp; Levels
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Promote, demote, or revoke admin access. Guarded at the database
-              layer — not just here.
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-6 w-6 text-rose-500" />
+            <p
+              className="truncate text-sm text-muted-foreground"
+              title="Guarded at the database layer — not just here."
+            >
+              Guarded at the database layer — not just here.
             </p>
           </div>
         </header>

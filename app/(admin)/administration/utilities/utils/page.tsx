@@ -54,13 +54,6 @@ function UtilityCard({ title, description, href, icon: Icon }: (typeof utilities
 export default function UtilitiesPage() {
     return (
         <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
-            <div className="flex-shrink-0 px-6 py-5 border-b bg-card">
-                <h1 className="text-2xl font-bold tracking-tight">Utilities</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Developer and admin tools for data processing and transformation.
-                </p>
-            </div>
-
             <div className="flex-1 overflow-y-auto pb-safe">
                 <div className="p-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl">

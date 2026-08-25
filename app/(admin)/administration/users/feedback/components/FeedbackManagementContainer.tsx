@@ -157,15 +157,6 @@ export default function FeedbackManagementContainer() {
         <FeedbackConsoleEditorProvider>
             <FeedbackConsoleSurface activeTab={activeTab}>
                 <div className="container mx-auto p-4 md:p-6 max-w-full">
-                    <div className="mb-6">
-                        <h1 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">
-                            Feedback & Announcements
-                        </h1>
-                        <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
-                            Manage user feedback, bug reports, and system announcements
-                        </p>
-                    </div>
-
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                             <TabsList>
