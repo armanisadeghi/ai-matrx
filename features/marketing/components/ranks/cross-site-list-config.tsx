@@ -192,8 +192,6 @@ export const crossSiteRankListConfig: EntityListConfig<CrossSiteRankRow> = {
       keyword: row.keyword,
     }),
     listAttributes: (rows) => ({ loaded_targets: rows.length }),
-    showRow: false,
-    showToolbar: false,
   },
   mobileCards: (row, _index, controls) => (
     <CrossSiteRankMobileCard row={row} controls={controls} />

@@ -36,6 +36,9 @@ Panel header keeps `pr-10` on right dock so panel controls clear the stand-in.
 
 ## Change log
 
+- `2026-08-25` — **One centered header row:** host titles, caller actions, and
+  the three built-in panel controls share a 24px centered track; icon buttons
+  use identical 32×24 boxes, fixing optical drift in every dynamic panel.
 - `2026-07-16` — **Avatar cover:** automatic elevated shell user menu while a
   right/top/fullscreen/mobile dynamic panel would bury the header avatar.
   Mirrors the Canvas pane pattern; callers unchanged.

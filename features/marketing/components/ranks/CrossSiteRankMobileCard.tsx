@@ -39,7 +39,7 @@ export function CrossSiteRankMobileCard({
           {href ? (
             <Link
               href={href}
-              className="block rounded-md text-sm font-semibold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex min-h-11 w-full items-start rounded-md py-1 text-sm font-semibold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
             >
               {keyword}
             </Link>

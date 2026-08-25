@@ -65,5 +65,6 @@ describe("CrossSiteRankMobileCard", () => {
     expect(html).toContain("desktop");
     expect(html).toContain("Copy and actions");
     expect(html).toContain("Open ranks");
+    expect(html).toContain("min-h-11");
   });
 });

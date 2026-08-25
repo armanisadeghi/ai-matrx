@@ -129,8 +129,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 - 2026-08-25 — Refined Build with me: the four starter prompts now form a centered, balanced
   group, and the Conductor no longer auto-adopts the mounted Rulebook surface because it already
-  receives the complete Rulebook through its required named variable. Additional user-added
-  context remains available through the composer's compact right-aligned count menu.
+  receives the complete Rulebook through its required named variable. The composer mirrors that
+  real attachment behind its compact right-aligned count without adding a second payload.
 - 2026-08-25 — Separated Rulebook rules from built Masterworks on the detail page: each now has
   its own KPIs and actions, while the Masterworks summary stays out of the way for a new Rulebook.
 - 2026-08-25 — Standardized Rulebook, Masterworks, Understudy, and Sources card padding, header
