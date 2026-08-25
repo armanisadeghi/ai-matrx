@@ -1285,7 +1285,7 @@
      in the app, edit HERE — nowhere else.
 
      Structure per button:
-       .matrx-tap-target — outer 40px invisible touch target = the interactive
+       .matrx-tap-target — outer 44px invisible touch target = the interactive
                            element (<button>/<a>/<label>). It owns the tap
                            hygiene (touch-action + tap-highlight) so it applies
                            to the WHOLE 44px target AND to the link variants —
@@ -1302,8 +1302,8 @@
      ========================================================================= */
   .matrx-tap-target {
     display: flex;
-    height: 2.5rem; /* 40px outer tap target */
-    width: 2.5rem;
+    height: 2.75rem; /* 44px outer tap target */
+    width: 2.75rem;
     flex-shrink: 0; /* a tap target never squishes under flex pressure —
                        flexible neighbors (truncating labels) absorb it */
     align-items: center;
@@ -1349,7 +1349,7 @@
   /* Inline label — icon + text on one row inside the pill */
   .matrx-tap-target-inline {
     width: auto;
-    min-width: 2.5rem;
+    min-width: 2.75rem;
     padding-inline: 0.25rem;
   }
   .matrx-tap-pill-inline {

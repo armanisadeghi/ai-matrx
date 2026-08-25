@@ -197,6 +197,24 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
     (viewParam === "plan" && !crawlId)
       ? viewParam
       : "graph";
+  const workspaceTitle = crawlId
+    ? "Crawl link edges"
+    : view === "external"
+      ? "External links"
+      : view === "plan"
+        ? "Internal link compliance"
+        : view === "table"
+          ? "Link edge table"
+          : "Site link graph";
+  const workspaceDescription = crawlId
+    ? "Links observed in this crawl's immutable snapshots."
+    : view === "external"
+      ? "Outbound links grouped by destination domain."
+      : view === "plan"
+        ? "Current internal links scored against declared page link plans."
+        : view === "table"
+          ? "Recorded link edges with search, filters, and complete pagination."
+          : "Links observed across all retained snapshots for this site.";
   // This component serves TWO routes. As the site's Links section its views are
   // in the site header (registry `links`), so it must not draw them again. On a
   // crawl the header already carries that crawl's six modes, so the switcher
@@ -475,12 +493,10 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
       <section className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
         <div className="min-w-0">
           <h1 className="text-sm font-semibold text-foreground">
-            {crawlId ? "Crawl link edges" : "Site link graph"}
+            {workspaceTitle}
           </h1>
           <p className="truncate text-[11px] text-muted-foreground">
-            {crawlId
-              ? "Links observed in this crawl's immutable snapshots."
-              : "Links observed across all retained snapshots for this site."}
+            {workspaceDescription}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-3">
@@ -489,19 +505,23 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
               {(links.data?.total ?? 0).toLocaleString()} edges
             </span>
           ) : null}
-          <CopyButtons
-            size="icon"
-            label={
-              crawlId
-                ? `Crawl link edges (${crawlId})`
-                : `Site link graph (${site.domain})`
-            }
-            human={pageHuman}
-            json={pageFullData}
-            agent={pageAgentPayload}
-            aiVariants={groomerPresetVariants(groomerConfig)}
-          />
-          <AgentCopyGroomerLauncher config={groomerConfig} />
+          {view !== "plan" ? (
+            <>
+              <CopyButtons
+                size="icon"
+                label={
+                  crawlId
+                    ? `Crawl link edges (${crawlId})`
+                    : `${workspaceTitle} (${site.domain})`
+                }
+                human={pageHuman}
+                json={pageFullData}
+                agent={pageAgentPayload}
+                aiVariants={groomerPresetVariants(groomerConfig)}
+              />
+              <AgentCopyGroomerLauncher config={groomerConfig} />
+            </>
+          ) : null}
           {showLocalSwitcher ? (
             <div className="flex items-center rounded-md border border-border p-0.5">
               {(

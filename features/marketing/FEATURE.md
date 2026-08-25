@@ -562,6 +562,13 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-25 — Codex: **Link-plan review is deterministic and honestly
+  bounded.** The Titanium Marketing review fixture now carries linked,
+  wrong-anchor, and missing planned-link cases; the Plan surface names itself
+  “Internal link compliance,” keeps its own truthful copy controls, and states
+  that a 5,000-edge hit scores only the bounded slice. The shared header tap
+  target now matches its documented 44 px contract.
+
 - 2026-08-25 — Codex: **The natural-height page workspace now has a persistent
   section rail.** Its scrollport keeps a 44 px, horizontally scrollable jump
   control pinned at the top with direct anchors for every Current/Plan pair and
