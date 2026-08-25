@@ -13,6 +13,10 @@ const coverageIndexMigration = readFileSync(
 
 describe("GSC ingestion health migration contract", () => {
   it("indexes the exact all-history coverage read without blocking ingestion", () => {
+    expect(coverageIndexMigration).toContain("SET statement_timeout = 0");
+    expect(coverageIndexMigration).toContain(
+      "DROP INDEX CONCURRENTLY IF EXISTS seo.idx_seo_sperf_gsc_health_coverage",
+    );
     expect(coverageIndexMigration).toContain(
       "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_seo_sperf_gsc_health_coverage",
     );
