@@ -1,5 +1,5 @@
 {
-  "generatedFor": 484,
+  "generatedFor": 485,
   "results": [
     {
       "kind": "agent_assignment_batch_result",
@@ -29,6 +29,21 @@
       "growthSteps": 5,
       "firstUnitChunk": 2,
       "totalChunks": 13,
+      "failures": []
+    },
+    {
+      "kind": "agent_definition",
+      "isActive": true,
+      "detectedWhileStreaming": true,
+      "kindResolvedWhileStreaming": true,
+      "noRawJsonFlash": true,
+      "completedAsKind": true,
+      "loaderShownFirst": false,
+      "realComponentWhileStreaming": true,
+      "loaderNeverReturns": true,
+      "growthSteps": 5,
+      "firstUnitChunk": 2,
+      "totalChunks": 41,
       "failures": []
     },
     {
@@ -206,9 +221,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 7,
+      "growthSteps": 5,
       "firstUnitChunk": 2,
-      "totalChunks": 13,
+      "totalChunks": 8,
       "failures": []
     },
     {
@@ -733,12 +748,14 @@
       "noRawJsonFlash": true,
       "completedAsKind": true,
       "loaderShownFirst": false,
-      "realComponentWhileStreaming": true,
+      "realComponentWhileStreaming": false,
       "loaderNeverReturns": true,
       "growthSteps": 5,
-      "firstUnitChunk": 1,
+      "firstUnitChunk": null,
       "totalChunks": 9,
-      "failures": []
+      "failures": [
+        "no-live-render"
+      ]
     },
     {
       "kind": "claim_evidence",
@@ -1007,9 +1024,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 3,
+      "growthSteps": 1,
       "firstUnitChunk": 2,
-      "totalChunks": 8,
+      "totalChunks": 4,
       "failures": []
     },
     {
@@ -1495,9 +1512,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 3,
+      "growthSteps": 4,
       "firstUnitChunk": 2,
-      "totalChunks": 4,
+      "totalChunks": 5,
       "failures": []
     },
     {
@@ -1510,7 +1527,7 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 4,
+      "growthSteps": 5,
       "firstUnitChunk": 2,
       "totalChunks": 10,
       "failures": []
@@ -1790,9 +1807,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 3,
+      "growthSteps": 4,
       "firstUnitChunk": 2,
-      "totalChunks": 6,
+      "totalChunks": 7,
       "failures": []
     },
     {
@@ -2341,7 +2358,7 @@
     },
     {
       "kind": "image_qc_verdict",
-      "isActive": false,
+      "isActive": true,
       "detectedWhileStreaming": true,
       "kindResolvedWhileStreaming": true,
       "noRawJsonFlash": true,
@@ -2351,7 +2368,7 @@
       "loaderNeverReturns": true,
       "growthSteps": 4,
       "firstUnitChunk": 2,
-      "totalChunks": 24,
+      "totalChunks": 46,
       "failures": []
     },
     {
@@ -2409,9 +2426,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 6,
+      "growthSteps": 3,
       "firstUnitChunk": 2,
-      "totalChunks": 11,
+      "totalChunks": 5,
       "failures": []
     },
     {
@@ -3332,9 +3349,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 10,
+      "growthSteps": 13,
       "firstUnitChunk": 2,
-      "totalChunks": 12,
+      "totalChunks": 15,
       "failures": []
     },
     {
@@ -3497,9 +3514,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 5,
+      "growthSteps": 2,
       "firstUnitChunk": 2,
-      "totalChunks": 7,
+      "totalChunks": 4,
       "failures": []
     },
     {
@@ -3985,12 +4002,14 @@
       "noRawJsonFlash": true,
       "completedAsKind": true,
       "loaderShownFirst": false,
-      "realComponentWhileStreaming": true,
+      "realComponentWhileStreaming": false,
       "loaderNeverReturns": true,
       "growthSteps": 6,
-      "firstUnitChunk": 2,
+      "firstUnitChunk": null,
       "totalChunks": 26,
-      "failures": []
+      "failures": [
+        "no-live-render"
+      ]
     },
     {
       "kind": "press_story_angle_generation_result",
@@ -4002,9 +4021,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 3,
+      "growthSteps": 5,
       "firstUnitChunk": 2,
-      "totalChunks": 14,
+      "totalChunks": 17,
       "failures": []
     },
     {
@@ -4842,7 +4861,7 @@
       "loaderShownFirst": true,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 24,
+      "growthSteps": 20,
       "firstUnitChunk": 30,
       "totalChunks": 30,
       "failures": []
@@ -4994,9 +5013,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 13,
+      "growthSteps": 34,
       "firstUnitChunk": 2,
-      "totalChunks": 17,
+      "totalChunks": 38,
       "failures": []
     },
     {
@@ -5186,11 +5205,11 @@
       "kindResolvedWhileStreaming": true,
       "noRawJsonFlash": true,
       "completedAsKind": true,
-      "loaderShownFirst": false,
+      "loaderShownFirst": true,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
       "growthSteps": 11,
-      "firstUnitChunk": 3,
+      "firstUnitChunk": 24,
       "totalChunks": 24,
       "failures": []
     },
@@ -5219,9 +5238,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 5,
+      "growthSteps": 4,
       "firstUnitChunk": 2,
-      "totalChunks": 9,
+      "totalChunks": 7,
       "failures": []
     },
     {
@@ -5579,9 +5598,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 22,
+      "growthSteps": 21,
       "firstUnitChunk": 2,
-      "totalChunks": 32,
+      "totalChunks": 24,
       "failures": []
     },
     {
@@ -5791,9 +5810,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 2,
+      "growthSteps": 5,
       "firstUnitChunk": 2,
-      "totalChunks": 4,
+      "totalChunks": 7,
       "failures": []
     },
     {
@@ -6794,12 +6813,14 @@
       "noRawJsonFlash": true,
       "completedAsKind": true,
       "loaderShownFirst": false,
-      "realComponentWhileStreaming": true,
+      "realComponentWhileStreaming": false,
       "loaderNeverReturns": true,
       "growthSteps": 12,
-      "firstUnitChunk": 2,
+      "firstUnitChunk": null,
       "totalChunks": 20,
-      "failures": []
+      "failures": [
+        "no-live-render"
+      ]
     },
     {
       "kind": "uploaded_asset",
@@ -6826,9 +6847,9 @@
       "loaderShownFirst": false,
       "realComponentWhileStreaming": true,
       "loaderNeverReturns": true,
-      "growthSteps": 1,
+      "growthSteps": 2,
       "firstUnitChunk": 1,
-      "totalChunks": 3,
+      "totalChunks": 4,
       "failures": []
     },
     {
@@ -6886,12 +6907,14 @@
       "noRawJsonFlash": true,
       "completedAsKind": true,
       "loaderShownFirst": false,
-      "realComponentWhileStreaming": true,
+      "realComponentWhileStreaming": false,
       "loaderNeverReturns": true,
       "growthSteps": 102,
-      "firstUnitChunk": 2,
+      "firstUnitChunk": null,
       "totalChunks": 278,
-      "failures": []
+      "failures": [
+        "no-live-render"
+      ]
     },
     {
       "kind": "visual_qc_result",
