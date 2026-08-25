@@ -114865,6 +114865,11 @@
             "title": "Task Id",
             "description": "Optional associated task selected by the caller."
           },
+          "site_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Site Id"
+          },
           "primary_keyword": {
             "type": "string",
             "minLength": 1,
@@ -114904,6 +114909,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "site_id",
           "primary_keyword"
         ],
         "title": "KeywordResearchBody"
@@ -114940,6 +114946,11 @@
           "edges_skipped_self": {
             "type": "integer",
             "title": "Edges Skipped Self",
+            "default": 0
+          },
+          "site_keyword_values_created": {
+            "type": "integer",
+            "title": "Site Keyword Values Created",
             "default": 0
           }
         },
@@ -114991,6 +115002,10 @@
             "type": "string",
             "title": "Primary Keyword"
           },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
           "research_doc_id": {
             "type": "string",
             "title": "Research Doc Id"
@@ -115026,6 +115041,7 @@
         "type": "object",
         "required": [
           "primary_keyword",
+          "site_id",
           "research_doc_id",
           "artifact",
           "ingest"

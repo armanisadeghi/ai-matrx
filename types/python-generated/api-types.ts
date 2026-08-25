@@ -44121,6 +44121,8 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
+            /** Site Id */
+            site_id: string;
             /** Primary Keyword */
             primary_keyword: string;
             /**
@@ -44183,6 +44185,11 @@ export interface components {
              * @default 0
              */
             edges_skipped_self?: number;
+            /**
+             * Site Keyword Values Created
+             * @default 0
+             */
+            site_keyword_values_created?: number;
         };
         /**
          * KeywordResearchList
@@ -44216,6 +44223,8 @@ export interface components {
             result_kind: "keywords.relationship_research";
             /** Primary Keyword */
             primary_keyword: string;
+            /** Site Id */
+            site_id: string;
             /** Research Doc Id */
             research_doc_id: string;
             artifact: components["schemas"]["KeywordResearchArtifact"];
