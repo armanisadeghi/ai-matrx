@@ -85,7 +85,10 @@ describe("compiled bootstrap (system-components)", () => {
 
   it("covers every known bridge by name", () => {
     const byKind = new Map(OUTPUT_ENTRIES.map((e) => [e.kind, e.componentKey]));
-    expect(Object.fromEntries(byKind)).toEqual({
+    // This is the named legacy-bridge contract. New compiled bridges are
+    // covered exhaustively by the preceding mirror test and must not make this
+    // historical name check stale every time a purpose-built renderer lands.
+    expect(Object.fromEntries(byKind)).toEqual(expect.objectContaining({
       flashcard_set: "flashcards",
       quiz_set: "quiz",
       presentation_deck: "presentation",
@@ -160,7 +163,7 @@ describe("compiled bootstrap (system-components)", () => {
       seo_rank_portfolio: "seo_rank_portfolio",
       seo_rank_target_removal: "seo_rank_target_removal",
       provider_run_receipt: "provider_run_receipt",
-    });
+    }));
   });
 });
 

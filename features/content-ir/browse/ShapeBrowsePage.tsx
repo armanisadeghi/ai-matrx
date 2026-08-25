@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { Loader2, Plus } from "lucide-react";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -10,11 +11,9 @@ import type { EntityListController } from "@/lib/entity-list/config";
 import { produceMissingComponentAssists } from "@/features/content-ir/studio/shape-assists-producer";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 import {
+  SHAPES_NEW_HREF,
   SHAPES_SURFACE_NAME,
-  SHAPE_BUILDER_ROLE,
 } from "@/features/content-ir/studio/constants";
-import { composeNewShapeIntent } from "@/features/content-ir/studio/kind-agent-intents";
-import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
 import { shapeListConfig } from "./listConfig";
 import type { ShapeBrowseRow } from "./types";
 
@@ -35,36 +34,20 @@ function ShapeAssistProducer({
 }
 
 /**
- * New shape — opens the studio's `shape_builder` role in a window ON THIS
- * PAGE, with the list's live surface scope attached. It deliberately does not
- * navigate to a form first: the builder's own composer is the input, and
- * asking for the same description twice was the whole complaint.
+ * New shape — GOES to `/shapes/new`, deliberately. You are at the home of
+ * Shapes and you came here to make one; that earns the dedicated create
+ * experience, not the generic agent window. The floating-window builder is
+ * for making a shape from ANYWHERE ELSE, where the whole point is not leaving.
  */
-function NewShapeButton() {
-  const { launch, launching } = useKindAgentLaunch(
-    SHAPES_SURFACE_NAME,
-    SHAPE_BUILDER_ROLE,
-  );
-  return (
-    <Button
-      size="sm"
-      className="h-11 lg:h-7"
-      aria-label="New shape"
-      disabled={launching}
-      onClick={() => void launch(composeNewShapeIntent())}
-    >
-      {launching ? (
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-      ) : (
-        <Plus className="h-4 w-4" aria-hidden />
-      )}
-      <span className="max-sm:sr-only">New shape</span>
+export function ShapeBrowsePage() {
+  const newShapeButton = (
+    <Button asChild size="sm" className="h-11 lg:h-7">
+      <Link href={SHAPES_NEW_HREF} aria-label="New shape">
+        <Plus className="h-4 w-4" />
+        <span className="max-sm:sr-only">New shape</span>
+      </Link>
     </Button>
   );
-}
-
-export function ShapeBrowsePage() {
-  const newShapeButton = <NewShapeButton />;
 
   return (
     <EntityListPage

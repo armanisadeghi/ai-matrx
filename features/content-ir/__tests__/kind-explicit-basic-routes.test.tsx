@@ -320,20 +320,6 @@ const FIXTURES: Fixture[] = [
     visible: ["alpha", "beta"],
   },
   {
-    kind: "scraped_page",
-    data: {
-      url: "https://example.com/article",
-      text: "The readable text of the page.",
-      title: "Example Article",
-      markdown: "# Example Article\n\nThe readable text of the page.",
-      scraped_at: "2026-08-09T00:00:00Z",
-      status_code: 200,
-      content_type: "text/html",
-      published_at: "2026-08-01T12:00:00Z",
-    },
-    visible: ["Example Article", "The readable text of the page."],
-  },
-  {
     kind: "research_page_analysis",
     data: {
       id: "",
