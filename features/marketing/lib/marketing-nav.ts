@@ -438,6 +438,13 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     ],
     entries: [
       {
+        label: "Keyword Intelligence",
+        iconName: "Brain",
+        href: "/marketing/keyword-intelligence",
+        description:
+          "The front door: every screen that gives your keywords meaning, for every website you run.",
+      },
+      {
         label: "SEO Capabilities",
         href: marketingRoutes.capabilities(),
         description:
