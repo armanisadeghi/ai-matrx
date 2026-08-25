@@ -4,11 +4,11 @@ Code-first declarations of each UI surface's full contract: registered label, va
 
 This directory **owns the declarations**. The DB is a synced reflection. Admin UI for surface values is read-only — to change what a surface offers, you change the manifest here.
 
-**Invoke `surface-authoring` for the full lifecycle:** manifest contract, registration, runtime rollout, canonical menu, Pro inputs, bindings, DB sync, and verification.
+**Invoke `surface-authoring` for the full lifecycle:** manifest contract, registration, runtime rollout, shared menu, Pro inputs, bindings, DB sync, and verification.
 
 ## The two laws
 
-- **THE NAMING LAW — `label` is REQUIRED.** The ONE canonical display name (unique per client); every value/group `label` is equally canonical. No chrome hand-types or overrides labels — surface names render via `getSurfaceDisplayLabel`, on-page value/group text via `surfaceValueLabels(manifest)` / `surfaceGroupLabels(manifest)` (`../utils/surface-display.ts`). The `surfaceLabel` override prop is deleted and ESLint-banned.
+- **THE NAMING LAW — `label` is REQUIRED.** Each surface has ONE display name (unique per client), and every value/group `label` comes from the same manifest. No chrome hand-types or overrides labels — surface names render via `getSurfaceDisplayLabel`, on-page value/group text via `surfaceValueLabels(manifest)` / `surfaceGroupLabels(manifest)` (`../utils/surface-display.ts`). The `surfaceLabel` override prop is deleted and ESLint-banned.
 - **THE COMPLETENESS LAW — declare everything the page loads.** Individual fields AND natural composite values are mandatory. Undeclared runtime keys show as "Undeclared (runtime only)" in the Surface Context window — defects.
 
 ## Adding a new manifest
@@ -92,7 +92,7 @@ Delete the file and remove the import from `registry.ts`. The DB rows are NOT au
 ## See also
 
 - `features/surfaces/types.ts` — type definitions (`SurfaceManifest`, `SurfaceValue`, `SurfaceValueGroup`).
-- `features/surfaces/utils/surface-display.ts` — canonical label seam.
+- `features/surfaces/utils/surface-display.ts` — shared label seam.
 - `features/surfaces/services/manifest-sync.service.ts` — diff + sync logic.
 - `features/surfaces/utils/value-mapping-resolver.ts` — runtime resolver.
 - `features/scopes/FEATURE.md` — multi-scope binding contract.
