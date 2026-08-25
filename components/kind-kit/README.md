@@ -275,7 +275,7 @@ commits, Esc cancels), and an inline "Add" input.
 |---|---|---|---|
 | `label` | `string` | required | The phrase, shown in full. |
 | `meta` | `ReactNode` | — | Small trailing detail (count, volume, score). |
-| `icon` | `ComponentType<{ className?: string }>` | — | Leading icon. |
+| `icon` | `ComponentType<{ className?: string }> \| ReactElement` | — | Leading icon; accepts either the Lucide component or an already-created element. |
 | `selected` | `boolean` | `false` | Selected state (pass `onSelect` to make it a toggle). |
 | `onSelect` | `(selected: boolean) => void` | — | Makes the chip a toggle; called with the next state. |
 | `onRemove` | `() => void` | — | Adds an X control. |
@@ -331,6 +331,9 @@ commits, Esc cancels), and an inline "Add" input.
 
 ## Change log
 
+- 2026-08-25 — `KeywordChip.icon` joined the shared icon-slot contract. A
+  DB-authored component may pass either `icon={Search}` or `icon={<Search />}`;
+  the latter is cloned instead of being used as a React component type.
 - 2026-08-25 — Every public kind-kit icon slot now accepts both a Lucide
   component reference and an already-created element. Header stats and panels
   share the same renderer as the header icon, preventing stored DB components

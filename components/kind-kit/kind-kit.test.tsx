@@ -74,6 +74,26 @@ describe("kind-kit", () => {
     expect(scope.TagList).toBe(TagList);
   });
 
+  it("KeywordChip accepts both component and already-created element icons", () => {
+    const TestIcon = ({ className }: { className?: string }) => (
+      <svg data-testid="chip-icon" className={className} />
+    );
+    act(() => {
+      root.render(
+        <div>
+          <KeywordChip label="component" icon={TestIcon} />
+          <KeywordChip
+            label="element"
+            icon={<TestIcon className="authored-icon" />}
+          />
+        </div>,
+      );
+    });
+    const icons = container.querySelectorAll('[data-testid="chip-icon"]');
+    expect(icons).toHaveLength(2);
+    expect(icons[1]?.getAttribute("class")).toContain("authored-icon");
+  });
+
   it("SortableList reorders via the arrow fallback and removes via onRemove", () => {
     const onReorder = jest.fn();
     const onRemove = jest.fn();

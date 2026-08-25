@@ -14,13 +14,18 @@
 import * as React from "react";
 import { Check, Pencil, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  renderKindKitIcon,
+  type KindKitIcon,
+} from "@/components/kind-kit/icon-slot";
 
 export interface KeywordChipProps {
   /** The phrase. Rendered in full — wraps, never truncates. */
   label: string;
   /** Small trailing detail (a count, a volume, a score). */
   meta?: React.ReactNode;
-  icon?: React.ComponentType<{ className?: string }>;
+  /** Lucide component or an already-created icon element. */
+  icon?: KindKitIcon;
   /** Selected state; pass `onSelect` to make the chip a toggle. */
   selected?: boolean;
   /** Makes the chip a toggle; called with the next selected state. */
@@ -45,7 +50,7 @@ const TONE = {
 export function KeywordChip({
   label,
   meta,
-  icon: Icon,
+  icon,
   selected = false,
   onSelect,
   onRemove,
@@ -113,7 +118,10 @@ export function KeywordChip({
           {selected && <Check className="h-2.5 w-2.5" />}
         </button>
       )}
-      {Icon && <Icon className={cn("shrink-0 text-muted-foreground", ctl)} />}
+      {renderKindKitIcon(
+        icon,
+        cn("shrink-0 text-muted-foreground", ctl),
+      )}
       {editing ? (
         <input
           ref={inputRef}
