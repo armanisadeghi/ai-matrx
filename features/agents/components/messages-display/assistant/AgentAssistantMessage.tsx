@@ -522,18 +522,20 @@ export function AgentAssistantMessage({
             parts={attachmentParts}
             className="mb-2"
           />
-          <MarkdownStream
-            requestId={effectiveRequestId}
-            turnId={messageId}
-            conversationId={conversationId}
-            messageId={messageId ?? undefined}
-            content={renderedText}
-            isStreamActive={isStreamActive && !failed}
-            hideCopyButton={true}
-            allowFullScreenEditor={false}
-            serverProcessedBlocks={serverProcessedBlocks}
-            onContentChange={handleInlineContentChange}
-          />
+          <div data-message-content>
+            <MarkdownStream
+              requestId={effectiveRequestId}
+              turnId={messageId}
+              conversationId={conversationId}
+              messageId={messageId ?? undefined}
+              content={renderedText}
+              isStreamActive={isStreamActive && !failed}
+              hideCopyButton={true}
+              allowFullScreenEditor={false}
+              serverProcessedBlocks={serverProcessedBlocks}
+              onContentChange={handleInlineContentChange}
+            />
+          </div>
           {/* Per-message citation sources footer — numbered chips matching
               the inline markers above; renders only when sources exist.
               During a live stream it appears as soon as the first citation

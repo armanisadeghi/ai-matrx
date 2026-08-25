@@ -90,7 +90,13 @@ export function resolveMarkdownContext(
       if (text) ctx.content = text;
     }
   } else if (messageEl) {
-    const text = messageEl.textContent?.trim();
+    // Assistant messages include action bars, source chips, and status UI in
+    // the same outer message container. Prefer the explicitly tagged response
+    // body so actions never receive labels such as Copy, Speak, or Print.
+    const contentEl =
+      messageEl.querySelector<HTMLElement>("[data-message-content]") ??
+      messageEl;
+    const text = contentEl.textContent?.trim();
     if (text) ctx.content = text;
   }
 
