@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 455 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 456 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "06be359a5c15";
+export const KIND_REGISTRY_FINGERPRINT = "78d5acc9d4cf";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -1874,23 +1874,6 @@ export interface ImagePromptSpecKind {
   prompt: string;
   aspect_ratio?: string;
   negative_prompt?: string;
-}
-
-/**
- * Vision-model verdict, nested inside ``ai.image.qc_judge``'s output.
- *  *
- *  * From kind `image_qc_result`.
- */
-export interface ImageQcVerdictKind {
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "image_qc_verdict";
-  passed: boolean;
-  reasoning: string;
-  confidence: number;
-  failure_modes?: string[];
-  suggested_retry_prompt?: string | null;
 }
 
 /**
@@ -7800,8 +7783,25 @@ export interface ImageQcResult {
    * The registered kind this payload is an instance of.
    */
   __kind: "image_qc_result";
-  verdict: ImageQcVerdictKind;
+  verdict: ImageQcVerdict;
   image_url?: string;
+}
+
+/**
+ * Vision-model verdict, nested inside ``ai.image.qc_judge``'s output.
+ *  *
+ *  * Kind `image_qc_verdict` (registry v5).
+ */
+export interface ImageQcVerdict {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "image_qc_verdict";
+  passed: boolean;
+  reasoning: string;
+  confidence: number;
+  failure_modes?: string[];
+  suggested_retry_prompt?: string | null;
 }
 
 /**
@@ -17940,6 +17940,7 @@ export type GeneratedKindSlug =
   | "image_metadata"
   | "image_prompts_result"
   | "image_qc_result"
+  | "image_qc_verdict"
   | "ingested_sources"
   | "interview_finalize_result"
   | "interview_gate_decision"
@@ -18398,6 +18399,7 @@ export interface KindPayloadBySlug {
   "image_metadata": ImageMetadata;
   "image_prompts_result": ImagePromptsResult;
   "image_qc_result": ImageQcResult;
+  "image_qc_verdict": ImageQcVerdict;
   "ingested_sources": IngestedSources;
   "interview_finalize_result": InterviewFinalizeResult;
   "interview_gate_decision": InterviewGateDecision;
@@ -18860,6 +18862,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "image_metadata",
   "image_prompts_result",
   "image_qc_result",
+  "image_qc_verdict",
   "ingested_sources",
   "interview_finalize_result",
   "interview_gate_decision",
