@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 450 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 452 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "0ff8042808ab";
+export const KIND_REGISTRY_FINGERPRINT = "040beec36899";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -4516,6 +4516,121 @@ export interface SlideSpec {
 }
 
 /**
+ * WHERE in the source the citation points.
+ *
+ * One locator rather than a page field here and a timecode field there: a PDF
+ * cites pages, a video cites seconds, a long document cites a character span,
+ * and a consumer that wants "take me to the exact spot" should not have to
+ * know which kind of source it is holding to find out.
+ *  *
+ *  * From kind `rag_synthesize_result`.
+ */
+export interface SourceLocator {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Human rendering when the source's own convention is not numeric ('§ 4.2(a)').
+   */
+  display?: string | null;
+  /**
+   * Named section, heading or clause, when the source has them.
+   */
+  section?: string | null;
+  end_index?: number | null;
+  last_page?: number | null;
+  first_page?: number | null;
+  end_seconds?: number | null;
+  /**
+   * Character offset into the source text.
+   */
+  start_index?: number | null;
+  /**
+   * Offset into a time-based source (audio, video).
+   */
+  start_seconds?: number | null;
+  /**
+   * Finer classification of the section, when the corpus declares one. Measured empty on every capture to date and MAPPED anyway rather than dropped — a field that is empty today and populated next quarter must not need a schema change to start arriving.
+   */
+  section_subtype?: string | null;
+}
+
+/**
+ * A pointer to something we can show the reader, with enough on it to show.
+ *
+ * The bar this shape must clear: a person looking at a claim can OPEN the
+ * thing it came from, and see enough to judge whether to trust it. That is why
+ * `url` and `title` are here beside the internal ids, and why `authority`,
+ * `version` and the effective dates survive — for a regulation, "which version,
+ * still in force?" is the whole question.
+ *
+ * Every field but `source_kind` is optional, because the four producers this
+ * replaces know different amounts. That is provider asymmetry, and the
+ * distillation laws say it becomes an optional field on ONE shape, never two
+ * shapes or a dropped field.
+ *  *
+ *  * From kind `rag_synthesize_result`.
+ */
+export interface SourceRef {
+  /**
+   * Where a reader can open it.
+   */
+  url?: string | null;
+  title?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "source_ref";
+  author?: string | null;
+  /**
+   * How we came to cite this — 'retrieval', 'model_citation', 'user_supplied'.
+   */
+  origin?: string | null;
+  /**
+   * The quoted passage this reference supports.
+   */
+  excerpt?: string | null;
+  favicon?: string | null;
+  /**
+   * Where in the source the citation points.
+   */
+  locator?: SourceLocator | null;
+  /**
+   * Edition or revision of the source.
+   */
+  version?: string | null;
+  /**
+   * How authoritative the source is, as the corpus declares it.
+   */
+  authority?: string | null;
+  publisher?: string | null;
+  site_name?: string | null;
+  /**
+   * Our internal id for the source, when it is ours.
+   */
+  source_id?: string | null;
+  /**
+   * Canonical short handle, e.g. 'NIST-SP-800-61r3'.
+   */
+  short_code?: string | null;
+  /**
+   * What the source is. Documented vocabulary: web_page, library_doc, file, note, message, transcript, dataset_row, opinion, docket, unknown.
+   */
+  source_kind: string;
+  /**
+   * When it stopped being in force. NULL means still current.
+   */
+  effective_to?: string | null;
+  jurisdiction?: string | null;
+  /**
+   * ISO-8601 date(time); may be approximate.
+   */
+  published_at?: string | null;
+  effective_from?: string | null;
+}
+
+/**
  * * From kind `cms_starter_kit_result`.
  */
 export interface StarterKitComponent {
@@ -5856,6 +5971,26 @@ export interface ClaimEvidence {
   recentDevelopments: string;
   supportingEvidence: EvidenceSource[];
   contrastingEvidence: EvidenceSource[];
+}
+
+/**
+ * Kind `client_site_audit` (registry v3).
+ */
+export interface ClientSiteAudit {
+  __kind: "client_site_audit";
+  issues: ({
+    title?: string;
+    __kind: "site_audit_issue";
+    category?: string;
+    severity?: string;
+    description?: string;
+    recommendation?: string;
+  })[];
+  summary?: string;
+  site_url: string;
+  site_name?: string;
+  audited_on: string;
+  overall_score: number;
 }
 
 /**
@@ -10557,18 +10692,40 @@ export interface RagSourceIngestionResult {
 }
 
 /**
- * Output of ``rag.synthesize`` — a grounded answer with inline [TAG] citations.
+ * An answer written from retrieved passages, with what it stood on.
+ *
+ * ADDITIVE SUPERSEDE — and this one genuinely is: `answer`, `model` and
+ * `used_chunk_ids` are untouched, and everything new is optional-with-default,
+ * so it ships with `--evolve` and needs no cutover gate.
+ *
+ * `citations` is the point. Measured on a real grounded answer: the output
+ * carried five bare chunk UUIDs and nothing else — no title, no URL, no page.
+ * A reader could not check a single claim without a second lookup they had no
+ * way to perform. `used_chunk_ids` stays because it is the machine join key;
+ * `citations` is what a person reads.
  *  *
- *  * Kind `rag_synthesize_result` (registry v3).
+ *  * Kind `rag_synthesize_result` (registry v4).
  */
 export interface RagSynthesizeResult {
   model?: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_synthesize_result";
+  __kind?: "rag_synthesize_result";
   answer?: string;
+  /**
+   * The question this answers.
+   */
+  question?: string | null;
+  /**
+   * The sources the answer stands on, ready to render.
+   */
+  citations?: SourceRef[];
   used_chunk_ids?: string[];
+  /**
+   * Claims the writer could not ground. Empty is a claim; absent is not.
+   */
+  unsupported_claims?: string[];
 }
 
 /**
@@ -13199,6 +13356,35 @@ export interface TaskList {
    * The registered kind this payload is an instance of.
    */
   __kind: "task_list";
+}
+
+/**
+ * Kind `tasting_note` (registry v2).
+ */
+export interface TastingNote {
+  aroma?: {
+    __kind: "tasting_impression";
+    summary?: string;
+    descriptors?: ({
+    term?: string;
+    __kind: "tasting_descriptor";
+    intensity?: string;
+  })[];
+  };
+  score?: number;
+  __kind: "tasting_note";
+  palate?: {
+    __kind: "tasting_impression";
+    summary?: string;
+    descriptors?: ({
+    term?: string;
+    __kind: "tasting_descriptor";
+    intensity?: string;
+  })[];
+  };
+  vintage?: number;
+  producer?: string;
+  wine_name: string;
 }
 
 /**
@@ -17530,6 +17716,7 @@ export type GeneratedKindSlug =
   | "card_verification"
   | "citation"
   | "claim_evidence"
+  | "client_site_audit"
   | "cms_align_result"
   | "cms_page_build"
   | "cms_publish_result"
@@ -17819,6 +18006,7 @@ export type GeneratedKindSlug =
   | "study_tip"
   | "table_rows"
   | "task_list"
+  | "tasting_note"
   | "template_render_result"
   | "test_card"
   | "text"
@@ -17983,6 +18171,7 @@ export interface KindPayloadBySlug {
   "card_verification": CardVerification;
   "citation": Citation;
   "claim_evidence": ClaimEvidence;
+  "client_site_audit": ClientSiteAudit;
   "cms_align_result": CmsAlignResult;
   "cms_page_build": CmsPageBuild;
   "cms_publish_result": CmsPublishResult;
@@ -18272,6 +18461,7 @@ export interface KindPayloadBySlug {
   "study_tip": StudyTip;
   "table_rows": TableRows;
   "task_list": TaskList;
+  "tasting_note": TastingNote;
   "template_render_result": TemplateRenderResult;
   "test_card": TestCard;
   "text": Text;
@@ -18440,6 +18630,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "card_verification",
   "citation",
   "claim_evidence",
+  "client_site_audit",
   "cms_align_result",
   "cms_page_build",
   "cms_publish_result",
@@ -18729,6 +18920,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "study_tip",
   "table_rows",
   "task_list",
+  "tasting_note",
   "template_render_result",
   "test_card",
   "text",
