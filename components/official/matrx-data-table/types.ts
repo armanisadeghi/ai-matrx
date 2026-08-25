@@ -539,6 +539,16 @@ export interface MatrxDataTableSelectionConfig<T> {
   noun?: string;
 }
 
+/** Table-owned state and actions exposed to an opt-in phone card renderer. */
+export interface MatrxDataTableMobileCardControls {
+  /** Whether this row is in the canonical selection set. */
+  selected: boolean;
+  /** Whether the consumer allows this row to be selected. */
+  selectable: boolean;
+  /** Update selection through the table's controlled/URL-backed contract. */
+  onSelectedChange: (selected: boolean) => void;
+}
+
 export interface MatrxDataTableProps<T> {
   data: T[];
   columns: MatrxColumnDef<T>[];
@@ -623,7 +633,11 @@ export interface MatrxDataTableProps<T> {
    * table unless the product explicitly requires every essential value/action
    * to be discoverable without horizontal scrolling.
    */
-  mobileCards?: (row: T, index: number) => ReactNode;
+  mobileCards?: (
+    row: T,
+    index: number,
+    controls: MatrxDataTableMobileCardControls,
+  ) => ReactNode;
   /**
    * Mobile (< sm) presentation. Default `"scroll"` — a deliberate horizontal
    * scroll surface: the table sizes to its content, the first (identity)

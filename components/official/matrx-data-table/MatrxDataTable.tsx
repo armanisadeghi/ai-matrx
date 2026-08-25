@@ -988,8 +988,28 @@ function MatrxDataTableCore<T>({
               paginated.map((row, index) => {
                 const id = getRowId(row);
                 const displayRow = applyRowEdits(row, edits[id]);
+                const selectable =
+                  selection?.isRowSelectable?.(row) ?? Boolean(selection);
                 return (
-                  <Fragment key={id}>{mobileCards(displayRow, index)}</Fragment>
+                  <Fragment key={id}>
+                    {mobileCards(displayRow, index, {
+                      selected: selectedIdSet.has(id),
+                      selectable,
+                      onSelectedChange: (nextSelected) => {
+                        if (
+                          !selection ||
+                          !selectable ||
+                          nextSelected === selectedIdSet.has(id)
+                        ) {
+                          return;
+                        }
+                        const next = new Set(selectedIdSet);
+                        if (nextSelected) next.add(id);
+                        else next.delete(id);
+                        setSelectedIds(next);
+                      },
+                    })}
+                  </Fragment>
                 );
               })
             )}

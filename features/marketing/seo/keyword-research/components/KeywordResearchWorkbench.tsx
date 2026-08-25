@@ -23,9 +23,13 @@ import {
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableMobileCardControls,
+} from "@/components/official/matrx-data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildKeywordResearchScope } from "@/features/marketing/lib/scopes/keyword-research-scope";
@@ -328,7 +332,6 @@ export default function KeywordResearchWorkbench() {
   useEffect(() => {
     const ids = visibleIdsKey ? visibleIdsKey.split(",") : [];
     if (ids.length === 0) {
-      setCompleteness(null);
       return;
     }
     const idSet = new Set(ids);
@@ -621,6 +624,123 @@ export default function KeywordResearchWorkbench() {
       ),
     },
   ];
+  const keywordMenuConfig = (row: KeywordWithMarket): ItemMenuConfig => ({
+    header: { title: row.phrase },
+    sections: [
+      {
+        items: [
+          {
+            id: "intel",
+            label: "Keyword Intelligence",
+            icon: BrainCircuit,
+            onSelect: () => {
+              openKeywordIntel({ phrase: row.phrase });
+            },
+          },
+        ],
+      },
+      {
+        items: [
+          {
+            id: "archive",
+            label: "Archive from library",
+            icon: Archive,
+            tone: "destructive",
+            onSelect: () =>
+              void archiveRows([{ id: row.id, phrase: row.phrase }]),
+          },
+        ],
+      },
+    ],
+  });
+  const renderMobileKeywordCard = (
+    row: KeywordWithMarket,
+    _index: number,
+    controls: MatrxDataTableMobileCardControls,
+  ) => {
+    const market = usMarket(row);
+    const discovered = researchIds === null ? null : researchIds.has(row.id);
+
+    return (
+      <article
+        aria-label={`Keyword ${row.phrase}`}
+        className="shrink-0 rounded-lg border border-border/80 bg-card p-3 shadow-sm"
+      >
+        <header className="flex items-start gap-1.5">
+          <Checkbox
+            checked={controls.selected}
+            disabled={!controls.selectable}
+            onCheckedChange={(checked) =>
+              controls.onSelectedChange(checked === true)
+            }
+            aria-label={`Select keyword ${row.phrase}`}
+            className="!h-11 !min-h-11 !w-11 !min-w-11 rounded-md border-border bg-muted/30 hover:bg-accent"
+          />
+          <button
+            type="button"
+            onClick={() => openKeywordIntel({ phrase: row.phrase })}
+            className="min-w-0 flex-1 break-words rounded-md px-1 text-left text-sm font-semibold text-foreground [overflow-wrap:anywhere] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {row.phrase}
+          </button>
+          <ItemMenu config={() => keywordMenuConfig(row)} align="end">
+            <button
+              type="button"
+              aria-label={`Options for ${row.phrase}`}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-accent"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+          </ItemMenu>
+        </header>
+
+        <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 pt-3">
+          <div>
+            <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Source
+            </dt>
+            <dd className="mt-1">
+              <KeywordSourceChip discovered={discovered} />
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Volume
+            </dt>
+            <dd className="mt-1 text-sm font-semibold tabular-nums text-foreground">
+              {formatSearchVolume(market?.search_volume)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Intent
+            </dt>
+            <dd className="mt-1">
+              <KeywordIntentChip intentClass={row.intent_class} />
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Trajectory
+            </dt>
+            <dd className="mt-1">
+              <TrajectoryBadge value={market?.demand_trajectory ?? null} />
+            </dd>
+          </div>
+        </dl>
+
+        <footer className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Dossier
+          </span>
+          <DossierCompletenessCell
+            completeness={completeness?.get(row.id) ?? null}
+            hasClassification={Boolean(row.intent_class)}
+          />
+        </footer>
+      </article>
+    );
+  };
   const toolbar = {
     searchValue: search,
     onSearchChange: (value: string) => {
@@ -766,6 +886,7 @@ export default function KeywordResearchWorkbench() {
               data={sorted}
               columns={columns}
               getRowId={(row) => row.id}
+              mobileCards={renderMobileKeywordCard}
               isLoading={loading}
               toolbar={toolbar}
               copy={{
@@ -844,39 +965,8 @@ export default function KeywordResearchWorkbench() {
               window={{ enabled: false }}
               onRowOpen={(row) => openKeywordIntel({ phrase: row.phrase })}
               rowActions={(row) => {
-                const menuConfig = (): ItemMenuConfig => ({
-                  header: { title: row.phrase },
-                  sections: [
-                    {
-                      items: [
-                        {
-                          id: "intel",
-                          label: "Keyword Intelligence",
-                          icon: BrainCircuit,
-                          onSelect: () => {
-                            openKeywordIntel({ phrase: row.phrase });
-                          },
-                        },
-                      ],
-                    },
-                    {
-                      items: [
-                        {
-                          id: "archive",
-                          label: "Archive from library",
-                          icon: Archive,
-                          tone: "destructive",
-                          onSelect: () =>
-                            void archiveRows([
-                              { id: row.id, phrase: row.phrase },
-                            ]),
-                        },
-                      ],
-                    },
-                  ],
-                });
                 return (
-                  <ItemMenu config={menuConfig}>
+                  <ItemMenu config={() => keywordMenuConfig(row)}>
                     <button
                       type="button"
                       aria-label={`Options for ${row.phrase}`}

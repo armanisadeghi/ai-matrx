@@ -182,4 +182,25 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).toContain("<table");
     expect(markup).not.toContain("max-sm:sticky");
   });
+
+  it("hands phone cards the canonical selection state", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        detail={{ enabled: false }}
+        selection={{
+          selectedIds: ["row-a"],
+          onSelectedIdsChange: jest.fn(),
+        }}
+        mobileCards={(row, _index, controls) => (
+          <article data-selected={controls.selected}>Mobile {row.name}</article>
+        )}
+      />,
+    );
+
+    expect(markup).toContain('data-selected="true"');
+    expect(markup).toContain("1 row selected");
+  });
 });

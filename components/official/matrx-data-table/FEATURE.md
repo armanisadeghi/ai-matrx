@@ -103,9 +103,11 @@ rather than raw overflow.
   phone row presentation when a product surface must expose every essential
   value and action without horizontal discovery. The caller owns the card's
   information hierarchy; MatrxDataTable still owns the single query, toolbar,
-  loading/empty states, and pagination, and the canonical table remains mounted
-  from `sm` upward. This is opt-in because a primitive cannot guess which record
-  fields earn scarce phone space.
+  loading/empty states, pagination, and selection. Its third argument exposes
+  `selected`, `selectable`, and `onSelectedChange`, so a card never forks or
+  bypasses controlled/URL-backed selection. The canonical table remains
+  mounted from `sm` upward. This is opt-in because a primitive cannot guess
+  which record fields earn scarce phone space.
 - The first visible column is the identity column — order columns so the
   row's name/title/id comes first.
 
@@ -226,7 +228,9 @@ Do not drop these when replacing `AiModelTable`:
 
 - 2026-08-25 — Added the opt-in `mobileCards` presentation seam so an explicit
   product requirement can render essential phone summaries and actions without
-  forking MatrxDataTable's query, toolbar, states, pagination, or desktop table.
+  forking MatrxDataTable's query, toolbar, states, pagination, selection, or
+  desktop table. Card renderers receive the canonical selection state/actions;
+  URL-backed selection remains the one authority.
 
 - 2026-08-23 — Added local `searchText(row)` so canonical composite identities
   and aliases participate in global search without becoming fake table columns.
