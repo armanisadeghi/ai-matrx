@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -25,6 +25,7 @@ import {
   Library,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -546,6 +547,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [search, setSearch] = useState("");
+  const descriptionRef = useRef<HTMLParagraphElement | null>(null);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [descriptionOverflows, setDescriptionOverflows] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<RulebookRule | undefined>();
   const [editorSection, setEditorSection] = useState<string | undefined>();
@@ -708,6 +712,29 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // second surface over the same rows. Cleared on the first settle.
   const [coherenceFlash, setCoherenceFlash] = useState(false);
   const assistKey = searchParams.get("assist");
+
+  useEffect(() => {
+    setDescriptionExpanded(false);
+  }, [rulebookId, rulebook?.description]);
+
+  useEffect(() => {
+    if (descriptionExpanded) return;
+    const description = descriptionRef.current;
+    if (!description) {
+      setDescriptionOverflows(false);
+      return;
+    }
+    const measure = () => {
+      setDescriptionOverflows(
+        description.scrollHeight > description.clientHeight + 1,
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(description);
+    return () => observer.disconnect();
+  }, [descriptionExpanded, rulebook?.description]);
+
   useEffect(() => {
     if (!assistKey) return;
     let cancelled = false;
@@ -1365,7 +1392,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         >
           {/* Rulebook summary */}
           <div className="rounded-lg border border-border bg-card p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4 text-muted-foreground" />
@@ -1375,38 +1402,6 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   >
                     {rulebook.name}
                   </h2>
-                </div>
-                {rulebook.description ? (
-                  <p
-                    className="mt-1 text-sm text-muted-foreground"
-                    data-surface-value="rulebook_description"
-                  >
-                    {rulebook.description}
-                  </p>
-                ) : null}
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  {rulebook.source.author ? (
-                    <span>
-                      {rulebook.source.title
-                        ? `“${rulebook.source.title}” — `
-                        : ""}
-                      {rulebook.source.author}
-                      {rulebook.source.year ? `, ${rulebook.source.year}` : ""}
-                    </span>
-                  ) : null}
-                  {/* THE DOOR LAW — the version number is an identity, so it
-                      opens: the full version log from `rulebook_versions`. */}
-                  <RulebookVersionHistory
-                    rulebookId={rulebook.id}
-                    version={rulebook.version}
-                  />
-                  <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                    {rulebook.status === "draft"
-                      ? "Draft"
-                      : rulebook.status === "active"
-                        ? "Active"
-                        : "Archived"}
-                  </Badge>
                 </div>
               </div>
               {/* THE ACTION CLASSES (Arman, 2026-08-21). His verdict on the
@@ -1544,6 +1539,54 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 ) : null}
               </div>
             </div>
+            {rulebook.description ? (
+              <div className="mt-2">
+                <p
+                  ref={descriptionRef}
+                  className={cn(
+                    "text-sm leading-5 text-muted-foreground",
+                    !descriptionExpanded && "line-clamp-2",
+                  )}
+                  data-surface-value="rulebook_description"
+                >
+                  {rulebook.description}
+                </p>
+                {descriptionOverflows || descriptionExpanded ? (
+                  <button
+                    type="button"
+                    className="mt-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
+                    onClick={() => setDescriptionExpanded((expanded) => !expanded)}
+                    aria-expanded={descriptionExpanded}
+                  >
+                    {descriptionExpanded ? "Show less" : "Read more"}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              {rulebook.source.author ? (
+                <span>
+                  {rulebook.source.title
+                    ? `“${rulebook.source.title}” — `
+                    : ""}
+                  {rulebook.source.author}
+                  {rulebook.source.year ? `, ${rulebook.source.year}` : ""}
+                </span>
+              ) : null}
+              {/* THE DOOR LAW — the version number is an identity, so it
+                  opens: the full version log from `rulebook_versions`. */}
+              <RulebookVersionHistory
+                rulebookId={rulebook.id}
+                version={rulebook.version}
+              />
+              <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                {rulebook.status === "draft"
+                  ? "Draft"
+                  : rulebook.status === "active"
+                    ? "Active"
+                    : "Archived"}
+              </Badge>
+            </div>
             <div className="mt-3">
               <RulebookKpiStrip
                 kpis={kpis}
@@ -1556,18 +1599,18 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 the KPIs rather than beside the build actions. Every one of them
                 used to be a row inside `More`, where none of them had a tooltip
                 and none of them said what it was. */}
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     asChild
                     size="sm"
                     variant="outline"
-                    className="h-7"
+                    className="h-8 w-full min-w-0 justify-center px-2 text-xs"
                   >
                     <Link href={`/masterwork/${rulebook.id}/masterworks`}>
                       <Workflow className="h-3.5 w-3.5" />
-                      What you&apos;ve built
+                      Built
                       {builtCount > 0 ? (
                         <span className="text-xs text-muted-foreground">
                           {builtCount}
@@ -1589,11 +1632,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7"
+                      className="h-8 w-full min-w-0 justify-center px-2 text-xs"
                       onClick={() => openCheckup({ rulebookId: rulebook.id })}
                     >
                       <Stethoscope className="h-3.5 w-3.5" />
-                      Check for what&apos;s missing
+                      Check gaps
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
@@ -1616,11 +1659,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7"
+                      className="h-8 w-full min-w-0 justify-center px-2 text-xs"
                       onClick={() => setConfirmActivate(true)}
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      Mark as ready
+                      Ready
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
@@ -1632,33 +1675,36 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   </TooltipContent>
                 </Tooltip>
               ) : null}
-              <WhatsWhatDialog />
-            </div>
-            {draftCount > 0 && canEdit ? (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+              <WhatsWhatDialog
+                triggerLabel="Guide"
+                triggerClassName="h-8 w-full min-w-0 justify-center px-2 text-xs"
+              />
+              {draftCount > 0 && canEdit ? (
+                <>
                 <Button
                   size="sm"
-                  className="h-7"
+                  className="h-8 w-full min-w-0 justify-center px-2 text-xs"
                   onClick={() => setWizardOpen(true)}
                 >
                   <ListTodo className="h-3.5 w-3.5" />
-                  Review one by one
+                  Review
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7"
+                  className="h-8 w-full min-w-0 justify-center px-2 text-xs"
                   onClick={() => void approveAllDrafts()}
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Approve all
                 </Button>
-                {approvedCount === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    Approved rules are what power a Masterwork — none yet.
-                  </p>
-                ) : null}
-              </div>
+                </>
+              ) : null}
+            </div>
+            {draftCount > 0 && canEdit && approvedCount === 0 ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Approved rules are what power a Masterwork — none yet.
+              </p>
             ) : null}
           </div>
 

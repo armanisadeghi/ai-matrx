@@ -924,6 +924,10 @@ same computation feeds both halves of the page:
 
 ## Change log
 
+- 2026-08-25 — The Rulebook summary now gives its description the full card width,
+  clamps it to two lines with measured Read more/Show less disclosure, and consolidates
+  the five post-KPI actions into one equal-width desktop row with short labels and the
+  existing explanatory tooltips.
 - 2026-08-25 — The Rulebook Sources area now separates Interviews and Resources into
   two clearly framed list sections. Each item gets a full-width, consistently padded row
   with aligned metadata and actions; section headers, counts, hover states, and empty/loading

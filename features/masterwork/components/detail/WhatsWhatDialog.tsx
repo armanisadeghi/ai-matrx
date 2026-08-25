@@ -10,6 +10,7 @@
 
 import { HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -46,13 +47,23 @@ const ROWS: { name: string; what: string }[] = [
   },
 ];
 
-export function WhatsWhatDialog() {
+export function WhatsWhatDialog({
+  triggerLabel = "What's what here?",
+  triggerClassName,
+}: {
+  triggerLabel?: string;
+  triggerClassName?: string;
+}) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="h-7 text-muted-foreground">
+        <Button
+          size="sm"
+          variant="ghost"
+          className={cn("h-7 text-muted-foreground", triggerClassName)}
+        >
           <HelpCircle className="h-3.5 w-3.5" />
-          What&apos;s what here?
+          {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg">
