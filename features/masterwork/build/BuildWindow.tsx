@@ -194,11 +194,15 @@ function BuildWindowInner({
   }, [error]);
 
   const build = useCallback(() => {
+    if (!name.trim()) {
+      toast.error("Name this Masterwork first.");
+      return;
+    }
     run.launch(
       {
         rulebook_id: rulebookId,
         masterwork_kind: chosenKind,
-        name: name.trim() || undefined,
+        name: name.trim(),
         deliverable:
           chosenKind === "generate"
             ? buildDeliverableValue(deliverable)
@@ -384,36 +388,38 @@ function BuildWindowInner({
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <Label htmlFor="masterwork-name">Masterwork name</Label>
+            <Input
+              id="masterwork-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={fallbackName}
+              maxLength={255}
+              required
+            />
+          </div>
+
           <div className="space-y-2">
-            <Label>What will this Masterwork do?</Label>
+            <Label>What will someone give this Masterwork?</Label>
             <div className="grid gap-3 sm:grid-cols-2">
               <KindCard
                 icon={<PenLine className="h-4 w-4 text-muted-foreground" />}
-                title="Review and revise"
-                body="Checks existing work, fixes rule violations, and explains each change."
+                title="Existing work"
+                body="The Masterwork reviews the draft, fixes rule violations, and explains each change."
                 selected={chosenKind === "edit"}
                 recommended={recommended === "edit"}
                 onSelect={() => setKind("edit")}
               />
               <KindCard
                 icon={<Hammer className="h-4 w-4 text-muted-foreground" />}
-                title="Create new work"
-                body="Creates a new result from your instructions and checks the result against every rule."
+                title="Instructions"
+                body="The Masterwork creates new work from the brief and checks the result against every rule."
                 selected={chosenKind === "generate"}
                 recommended={recommended === "generate"}
                 onSelect={() => setKind("generate")}
               />
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="masterwork-name">Masterwork name (optional)</Label>
-            <Input
-              id="masterwork-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={fallbackName}
-            />
           </div>
 
           {chosenKind === "generate" ? (
@@ -479,6 +485,7 @@ function BuildWindowInner({
             disabled={
               running ||
               !rulebook ||
+              !name.trim() ||
               approvedCount === 0 ||
               (chosenKind === "generate" && !deliverableIsValid)
             }

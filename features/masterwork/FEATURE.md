@@ -135,3 +135,6 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 - 2026-08-25 — Reframed Quick build around explicit Masterwork language: a compact approved-rule
   summary, concise review-versus-create choices, an explicit Masterwork name, and no ambiguous
   "it" or recommendation paragraph in the setup.
+- 2026-08-25 — Quick build now requires the Masterwork name before asking for its input model:
+  existing work routes to the review-and-correct workflow; instructions route to new-work
+  generation and require the intended deliverable.
