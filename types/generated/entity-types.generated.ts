@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 430 active entity tokens. A token here is FK-valid for
+// 432 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -239,6 +239,8 @@ export type EntityTypeToken =
   | "notification_event_type"
   | "notification_preference"
   | "ops_issue_event"
+  | "ops_proof_check"
+  | "ops_proof_run"
   | "organization"
   | "output_feedback"
   | "page_extraction_job"
@@ -647,6 +649,7 @@ export type ComponentEntityToken =
   | "masterwork_corpus_item"
   | "masterwork_run"
   | "message"
+  | "ops_proof_run"
   | "party_contact_point"
   | "pc_studio_run_asset"
   | "plan_cms_fill_item"
@@ -949,6 +952,8 @@ export type ScopeableEntityToken =
   | "notification_event_type"
   | "notification_preference"
   | "ops_issue_event"
+  | "ops_proof_check"
+  | "ops_proof_run"
   | "organization"
   | "output_feedback"
   | "page_extraction_job"
@@ -1211,6 +1216,7 @@ export type ListedEntityToken =
   | "mandate_binding"
   | "mandate_exemplar"
   | "marketing_initiative"
+  | "ops_proof_check"
   | "party"
   | "plan_entity"
   | "plan_node"
@@ -1436,6 +1442,8 @@ export const ENTITY_TYPE_METADATA = {
   "notification_event_type": { token: "notification_event_type", schema: "communication", table: "notification_event_type", label: "Notification Event Type", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "notification_preference": { token: "notification_preference", schema: "communication", table: "notification_preference", label: "Notification Preference", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "ops_issue_event": { token: "ops_issue_event", schema: "ops", table: "ops_issue_event", label: "Ops Issue Event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "ops_proof_check": { token: "ops_proof_check", schema: "ops", table: "proof_check", label: "Proof Check", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "ops_proof_run": { token: "ops_proof_run", schema: "ops", table: "proof_run", label: "Proof Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "organization": { token: "organization", schema: "iam", table: "organizations", label: "Organization", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "output_feedback": { token: "output_feedback", schema: "platform", table: "output_feedback", label: "Output Feedback", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "page_extraction_job": { token: "page_extraction_job", schema: "docproc", table: "page_extraction_jobs", label: "Extraction Dataset", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -1870,6 +1878,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "notification_event_type",
   "notification_preference",
   "ops_issue_event",
+  "ops_proof_check",
+  "ops_proof_run",
   "organization",
   "output_feedback",
   "page_extraction_job",

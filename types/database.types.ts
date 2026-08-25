@@ -26763,6 +26763,200 @@ export type Database = {
           },
         ]
       }
+      proof_check: {
+        Row: {
+          consecutive_failures: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string
+          id: string
+          is_active: boolean
+          label: string
+          last_live_run_at: string | null
+          last_run_at: string | null
+          last_verdict: string | null
+          latest_recording_run_id: string | null
+          live_every_seconds: number
+          max_cost_usd: number
+          metadata: Json
+          organization_id: string
+          slug: string
+          source_app: string
+          source_feature: string
+          surface: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          consecutive_failures?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description: string
+          id?: string
+          is_active?: boolean
+          label: string
+          last_live_run_at?: string | null
+          last_run_at?: string | null
+          last_verdict?: string | null
+          latest_recording_run_id?: string | null
+          live_every_seconds: number
+          max_cost_usd: number
+          metadata?: Json
+          organization_id: string
+          slug: string
+          source_app: string
+          source_feature: string
+          surface: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          consecutive_failures?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_live_run_at?: string | null
+          last_run_at?: string | null
+          last_verdict?: string | null
+          latest_recording_run_id?: string | null
+          live_every_seconds?: number
+          max_cost_usd?: number
+          metadata?: Json
+          organization_id?: string
+          slug?: string
+          source_app?: string
+          source_feature?: string
+          surface?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      proof_run: {
+        Row: {
+          check_id: string
+          conversation_id: string | null
+          cost_usd: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          duration_ms: number | null
+          environment: string | null
+          external_run_ref: string | null
+          failure_reason: string | null
+          finished_at: string | null
+          git_sha: string | null
+          id: string
+          metadata: Json
+          mode: string
+          nonce: string
+          organization_id: string
+          proofs: Json
+          provider_calls: number
+          recording: Json | null
+          recording_sha256: string | null
+          replayed_from_run_id: string | null
+          started_at: string
+          status: string
+          summary: string | null
+          total_tokens: number
+          trigger_source: string
+          updated_at: string
+          updated_by: string | null
+          user_request_id: string | null
+          verdict: string | null
+          version: number
+        }
+        Insert: {
+          check_id: string
+          conversation_id?: string | null
+          cost_usd?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duration_ms?: number | null
+          environment?: string | null
+          external_run_ref?: string | null
+          failure_reason?: string | null
+          finished_at?: string | null
+          git_sha?: string | null
+          id?: string
+          metadata?: Json
+          mode: string
+          nonce: string
+          organization_id: string
+          proofs?: Json
+          provider_calls?: number
+          recording?: Json | null
+          recording_sha256?: string | null
+          replayed_from_run_id?: string | null
+          started_at?: string
+          status?: string
+          summary?: string | null
+          total_tokens?: number
+          trigger_source: string
+          updated_at?: string
+          updated_by?: string | null
+          user_request_id?: string | null
+          verdict?: string | null
+          version?: number
+        }
+        Update: {
+          check_id?: string
+          conversation_id?: string | null
+          cost_usd?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duration_ms?: number | null
+          environment?: string | null
+          external_run_ref?: string | null
+          failure_reason?: string | null
+          finished_at?: string | null
+          git_sha?: string | null
+          id?: string
+          metadata?: Json
+          mode?: string
+          nonce?: string
+          organization_id?: string
+          proofs?: Json
+          provider_calls?: number
+          recording?: Json | null
+          recording_sha256?: string | null
+          replayed_from_run_id?: string | null
+          started_at?: string
+          status?: string
+          summary?: string | null
+          total_tokens?: number
+          trigger_source?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_request_id?: string | null
+          verdict?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proof_run_check_id_fkey"
+            columns: ["check_id"]
+            isOneToOne: false
+            referencedRelation: "proof_check"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_error: {
         Row: {
           agent_id: string | null
