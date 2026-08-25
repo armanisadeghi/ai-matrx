@@ -11,6 +11,8 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 | -------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Public index               | `/podcast`                                              | `app/(core)/podcast/page.tsx` → `PodcastIndexClient.tsx` → `PodcastGrid.tsx` — Studio/create CTAs + "Your podcasts" (owned via `useMyPodcasts`, incl. drafts, Manage links) vs "On the platform" (published, minus yours) |
 | Public episode/show        | `/podcast/[slug]` (slug or UUID)                        | `app/(core)/podcast/[slug]/page.tsx` → `features/podcasts/components/player/{PodcastEpisodePage,PodcastShowPage}.tsx`                                                                                                     |
+| RSS feed (show)            | `/podcast/[slug]/feed.xml`                              | `app/(core)/podcast/[slug]/feed.xml/route.ts` — iTunes RSS 2.0 + `<podcast:chapters>` per item that has markers                                                                                                           |
+| JSON chapters (episode)    | `/podcast/[slug]/chapters.json`                         | `app/(core)/podcast/[slug]/chapters.json/route.ts` → `features/podcasts/chapters-json.ts` — Podcasting 2.0 JSON Chapters 1.2.0; 404 when the episode has none                                                            |
 | Studio dashboard           | `/podcast/studio`                                       | `features/podcasts/studio/components/StudioDashboard.tsx`                                                                                                                                                                 |
 | Create                     | `/podcast/studio/create`                                | `CreateView.tsx` → `generator/components/GeneratorForm.tsx`                                                                                                                                                               |
 | Entryway prefill           | `/podcast/studio/create?topic=...&format=...&agent=...` | Used by `/demos/matrx-entry`; pre-fills the source topic, format, and selected agent profile note before run creation                                                                                                     |
@@ -105,6 +107,50 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+
+- 2026-08-25 — **Chapters stopped being write-only — the listener and the RSS
+  feed both read them now (agent-manifest campaign, RULING B).** The
+  `podcast.chapter_marker` agent had been persisting markers to
+  `pc_episodes.metadata.chapters` since 2026-08-11 with **nothing reading
+  them**: the public player had no chapters support, `MediaChaptersBlock`'s
+  `onSeek` had no caller anywhere, and `feed.xml` contained zero chapter
+  references. Closed on all three fronts. (1) **The player exposes ONE verb** —
+  `PodcastAudioPlayer` gained a `PodcastAudioPlayerHandle` (React 19
+  ref-as-prop) with `seek(seconds)`, which jumps AND starts playback (a chapter
+  click is a user gesture, and every podcast app plays from the marker).
+  (2) **All three public modes render the index** — `PodcastEpisodePage` holds
+  the handle and mounts `MediaChaptersBlock` under the transport in
+  metadata, audio-only, and video mode; no chapters renders nothing, and the
+  "Chapters & show notes — Coming soon" row now says just "Show notes" once
+  chapters exist. Video mode needed light-on-black text, so the ONE component
+  gained a `dark` VARIANT (mirroring `PodcastAudioPlayer`'s, not a second
+  list). (3) **The studio surface seeks too** — `StudioRunView` owns the
+  finished-episode player and passes `onSeek` into `EpisodeChaptersPanel`, so
+  the rows that were static on 2026-08-11 are now buttons. (4) **RSS ships
+  Podcasting 2.0 chapters** — new `app/(core)/podcast/[slug]/chapters.json`
+  Route Handler serves the JSON Chapters 1.2.0 document, and `feed.xml`
+  declares `xmlns:podcast` and emits `<podcast:chapters url= type=
+  "application/json+chapters"/>` per item that has them. Linked JSON, NOT
+  inline PSC: it is what modern apps read, it keeps the feed small with an
+  independent cache lifetime, and it is one more Route Handler rather than
+  XML-building a natively-JSON payload (rationale in
+  `features/podcasts/chapters-json.ts`). Rows with an unparseable `start_hint`
+  are DROPPED from the document and the element is only emitted when the
+  endpoint will actually serve rows, so the feed never advertises a 404.
+  (5) **`chapterStartSeconds` moved to the kind module** — the feed and the
+  chapters endpoint are server modules and cannot import a `"use client"`
+  component to read a timestamp; one kind, one parser, both sides. Verified
+  live against production data on the two episodes that have markers: the
+  metadata-mode page renders three seekable rows, clicking one moves
+  `audio.currentTime` and starts playback, the video-mode page renders six
+  legible rows over the glass panel, `chapters.json` returns 200 with the
+  right MIME, and both items in `matrx-mix-podcast/feed.xml` carry the
+  element. **Caveat honestly recorded:** both sample episodes' CDN audio
+  objects are ~10s stubs while their markers run to 03:40, so the clamp pins
+  every click to the end of the media — a mid-file landing could not be shown
+  on this data. The `MM:SS`/`HH:MM:SS` → seconds mapping is covered instead by
+  `MediaChaptersBlock.test.tsx` (click → 130 / 3723 / 0) and the document
+  shape by `podcast-parsers.test.ts`.
 
 - 2026-08-23 — **Wave-3 frontend lane (agent-manifest campaign): mandate keys
   everywhere, one reader per shape, canonical title cards.** (1)
