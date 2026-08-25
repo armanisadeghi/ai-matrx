@@ -31,7 +31,9 @@ import {
   tryGetEntityInfo,
 } from "@/features/scopes/registry/entityRegistry";
 import type { GeneratedArtifact } from "@/features/education/convert/lineage";
+import type { TargetKind } from "@/features/education/convert/types";
 import { readKit, type StudyKit } from "../kitService";
+import { MakeMoreFromKit } from "./MakeMoreFromKit";
 import {
   kitStudyAction,
   readKitStudyState,
@@ -98,9 +100,12 @@ function StudyActionButton({ study }: { study: KitStudyState }) {
 export function KitHub({
   sourceId,
   sourceType = "file",
+  addTarget,
 }: {
   sourceId: string;
   sourceType?: string;
+  /** `?add=<kind>` — the format the learner came here to add (the home's nudge). */
+  addTarget?: TargetKind;
 }) {
   const [kit, setKit] = useState<StudyKit | null>(null);
   const [study, setStudy] = useState<KitStudyState | null>(null);
@@ -109,11 +114,16 @@ export function KitHub({
   // is what makes a bar pop in and shove the page down after paint.
   const [studyLoading, setStudyLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+  // Bumped when a new artifact is made from this kit, so the page shows what the
+  // learner just created instead of the contents it had when they arrived.
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setStudy(null);
+    // Only the FIRST read blanks the page. A refresh after "make more" replaces
+    // a rendered kit with a skeleton otherwise — the learner watches their own
+    // kit disappear at the moment it grew.
+    setLoading((prev) => prev || refreshKey === 0);
     setStudyLoading(true);
     void readKit(sourceType, sourceId).then(async (result) => {
       if (!active) return;
@@ -136,7 +146,7 @@ export function KitHub({
     return () => {
       active = false;
     };
-  }, [sourceId, sourceType]);
+  }, [sourceId, sourceType, refreshKey]);
 
   if (loading) {
     return (
@@ -211,12 +221,17 @@ export function KitHub({
                 </Link>
               </Button>
             )}
-            <Button asChild size="sm" className="gap-1.5">
-              <Link href="/education/start">
-                <BrainCircuit className="h-4 w-4" />
-                Make more from it
-              </Link>
-            </Button>
+            {/* NOT the generic ingest. That asked the learner to upload the
+                same document again and built a SECOND, disconnected kit — the
+                fragmentation this page exists to end. This converts the kit's
+                OWN material, so what it makes lands in this kit. */}
+            <MakeMoreFromKit
+              sourceType={kit.sourceType}
+              sourceId={kit.sourceId}
+              kitTitle={kit.title}
+              addTarget={addTarget}
+              onConverted={() => setRefreshKey((k) => k + 1)}
+            />
           </div>
         </div>
 

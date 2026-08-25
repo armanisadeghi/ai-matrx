@@ -154,11 +154,27 @@ export interface ConvertContentDialogProps {
   origin: ConvertOrigin;
   /** The serialized text of the whole origin, ready to convert. */
   text: string;
+  /**
+   * The lineage ref to convert under, when the caller already holds a richer one
+   * than `origin` can express. A kit top-up passes the ref `reopenAnchor`
+   * recovered, which carries the durable `fileId` (and any
+   * `processedDocumentId`) the generators ground and cite against — deriving a
+   * bare `{ entityType, entityId }` ref from the origin instead would still land
+   * the same edge but strip the anchor a citation needs to open its passage.
+   */
+  sourceRef?: SourceRef;
   orgId?: string;
   /** Optional in-editor selection, if any — enables a "selected passage" toggle. */
   selectionText?: string;
   /** Targets to hide (e.g. a deck source hides "deck"). */
   excludeKinds?: TargetKind[];
+  /**
+   * The ONE target the caller was asked for — the education home's nudge chip
+   * says "this kit has no quiz" and links here, so the quiz row leads and is
+   * visibly the thing that was promised. It is highlighted, never auto-run:
+   * generation costs the learner's quota, so the last tap stays theirs.
+   */
+  focusKind?: TargetKind;
   /** Called after a successful conversion so the caller can refresh lineage chips. */
   onConverted?: () => void;
 }
@@ -168,9 +184,11 @@ export function ConvertContentDialog({
   onOpenChange,
   origin,
   text,
+  sourceRef,
   orgId,
   selectionText,
   excludeKinds,
+  focusKind,
   onConverted,
 }: ConvertContentDialogProps) {
   const router = useRouter();
@@ -192,7 +210,9 @@ export function ConvertContentDialog({
 
   const sourceText = useSelection && selectionText ? selectionText : text;
   const canConvert = sourceText.trim().length > 0;
-  const targets = TARGETS.filter((t) => !excludeKinds?.includes(t.kind));
+  const targets = TARGETS.filter((t) => !excludeKinds?.includes(t.kind)).sort(
+    (a, b) => Number(b.kind === focusKind) - Number(a.kind === focusKind),
+  );
 
   // Returns true only when the conversion completed (status → done). The row's
   // guard meters the entitlement on that success; a failed conversion returns
@@ -211,8 +231,9 @@ export function ConvertContentDialog({
       text: sourceText,
       title: origin.title || "Study material",
       // The origin entity token — the generator's recordSourceLineage links the
-      // artifact back to it (artifact --source--> origin).
-      ref: {
+      // artifact back to it (artifact --source--> origin). A caller-supplied ref
+      // wins: it is the same anchor with more of it kept.
+      ref: sourceRef ?? {
         kind: origin.kind,
         entityType: origin.entityType,
         entityId: origin.entityId,
@@ -275,6 +296,7 @@ export function ConvertContentDialog({
             meta={t}
             available={isTargetAvailable(t.kind)}
             state={rows[t.kind] ?? { status: "idle" }}
+            focused={t.kind === focusKind}
             liveRequestId={liveRequestId}
             onConvert={() => runConvert(t.kind)}
             onOpen={(href) => router.push(href)}
@@ -328,6 +350,7 @@ function TargetRow({
   meta,
   available,
   state,
+  focused,
   liveRequestId,
   onConvert,
   onOpen,
@@ -335,6 +358,8 @@ function TargetRow({
   meta: TargetMeta;
   available: boolean;
   state: RowState;
+  /** This is the target the caller came here to make — lead with it. */
+  focused?: boolean;
   /** The in-flight run's request id — streamed under THIS row while it works. */
   liveRequestId: string | null;
   /** Runs the conversion; resolves true on success so usage is metered. */
@@ -353,6 +378,7 @@ function TargetRow({
     <div
       className={cn(
         "rounded-lg border border-border bg-card px-3 py-2.5",
+        focused && "border-primary/50 ring-1 ring-primary/30",
         !available && "opacity-60",
       )}
     >

@@ -99,6 +99,15 @@ no re-upload and no new anchor, so the whole kit stays one family. `AddMoreCards
 (flashcards set detail) is the worked example: reopen → `segmentedGenerate` at thorough depth →
 drop what the deck already has → `fcService.addCards` onto the SAME set.
 
+**`reopenAnchor(sourceType, sourceId)` is the ONE anchor→text read** — use it, not `reopenSource`,
+whenever the anchor is a kit's (it may be an ENTITY, not a file). It dispatches `file` to
+`reopenSource` and serializes `note` / `fc_set` / `assessment` with the SAME function each entity's
+own convert surface uses (`serializeDeck` / `serializeAssessment` / the note's content), so a
+top-up grounds on byte-identical material. It never returns empty text: an anchor it cannot read
+throws a line the learner can act on. `kits/MakeMoreFromKit` is the worked example — reopen the
+kit's anchor → `ConvertContentDialog` → the generator's `source` edge lands the new artifact in
+that same kit.
+
 ## Live generators
 
 | Kind            | Agent / service                                                                             | Persists to                                                | Capability (P8)                    |
@@ -158,7 +167,9 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
   (bounded fan-out), `markForGrounding` (the ONE chunk-marker writer), `describeGaps`
 - `segmentedGenerate.ts` — **the ONE fan-out** every list-shaped generator uses (plan → per-section
   run → merge → de-duplicate → report gaps)
-- `reopenSource.ts` — recover a kit's original text from its lineage anchor (powers "add more")
+- `reopenSource.ts` — recover a FILE anchor's original text (powers "add more cards")
+- `reopenAnchor.ts` — the ONE anchor→text read: `reopenSource` for a file, the entity's own
+  serializer for `note` / `fc_set` / `assessment` (powers a kit's "make more from it")
 - `MadeFromSource.tsx` — the BACKWARD lineage strip: the material an artifact was made from, plus
   its kit siblings. Twin of `GeneratedFromChips`; do not grow a third lineage renderer
 - `runAgentExtraction.ts` — shared "launch JSON-extraction agent → get object" primitive
@@ -170,8 +181,12 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
   edges → the "generated from this" rows)
 - `GeneratedFromChips.tsx` — the reverse-lineage chip strip, reused on every convert-source surface
 - `ConvertContentDialog.tsx` — **the ONE convert-source dialog** (note / deck / assessment / passage
-  → any target); metered via the canonical entitlement guard. Sources hand it serialized text + an
-  origin token.
+  / a kit's own anchor → any target); metered via the canonical entitlement guard. Sources hand it
+  serialized text + an origin token. Two optional props: **`sourceRef`** overrides the ref derived
+  from `origin` — pass it whenever you hold a richer one (the durable `fileId` /
+  `processedDocumentId` a citation needs to open its passage); **`focusKind`** leads with and
+  highlights one target, for a caller that was asked for exactly that format. Neither auto-runs a
+  conversion: generation spends the learner's quota, so the last tap stays theirs.
 - `trustMerge.ts` — roll per-item envelopes up to one artifact envelope
 - `sourceTrust.ts` — `buildSourceTrust`: a grounded envelope from the source for agents that
   emit no citations (`mind_map`, `audio`)
@@ -203,6 +218,11 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
   something the system invented.
 
 ## Change log
+
+- **2026-08-25** — `reopenAnchor.ts` added (any lineage anchor → text, entity kinds included), and
+  `ConvertContentDialog` gained `sourceRef` + `focusKind`. Both exist so a kit can generate a
+  missing format from its OWN material instead of the generic ingest — see
+  `../kits/FEATURE.md` § MAKING MORE STAYS IN THE KIT.
 
 - **2026-08-22** — `deck.ts` coerces cards through the shared `features/flashcards/data/coerce-card.ts`
   reader (no local copy) and sends the full `generate_from_source` offer (`document_id` + `title` +

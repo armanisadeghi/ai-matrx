@@ -24,6 +24,7 @@ import { listGeneratedFrom, type GeneratedArtifact } from "@/features/education/
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
 import { studyMediaService } from "@/features/education/media/service";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
+import type { TargetKind } from "@/features/education/convert/types";
 import type { Json } from "@/types/database.types";
 
 /** Artifact entity tokens a kit can contain (the converter's four writers). */
@@ -299,4 +300,24 @@ export function kitHref(sourceType: string, sourceId: string): string {
   return sourceType === "file"
     ? `/education/kits/${sourceId}`
     : `/education/kits/${sourceId}?from=${encodeURIComponent(sourceType)}`;
+}
+
+/**
+ * "Add THIS format to THIS material" — the kit hub with its convert surface
+ * open on one target (`MakeMoreFromKit`). This is the route the education
+ * home's one nudge chip needed and could not have: linking a missing format at
+ * the generic `/education/start` ingest asked the learner to re-upload the same
+ * document and built a second, disconnected kit.
+ *
+ * It is deliberately the KIT's route with a parameter, not a page of its own:
+ * the learner lands on the thing the chip is about, sees what it already has,
+ * and the picker is the ONE canonical convert dialog.
+ */
+export function kitAddHref(
+  sourceType: string,
+  sourceId: string,
+  target: TargetKind,
+): string {
+  const base = kitHref(sourceType, sourceId);
+  return `${base}${base.includes("?") ? "&" : "?"}add=${target}`;
 }

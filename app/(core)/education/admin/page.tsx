@@ -79,7 +79,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       url: "/education/kits/[sourceId]",
       label: "Study Kit hub (P9)",
       description:
-        "ONE kit: the source material plus every artifact generated from it, study-first (mastery + due + primary study action via kits/kitStudy.ts). The kit id IS the ingest anchor id.",
+        "ONE kit: the source material plus every artifact generated from it, study-first (mastery + due + primary study action via kits/kitStudy.ts). The kit id IS the ingest anchor id. `?add=<kind>` (kitAddHref — the education home's nudge chips) opens 'Make more from it' on that format: the kit's OWN material re-read via convert/reopenAnchor.ts, converted through ConvertContentDialog, so the new artifact lands in THIS kit.",
       filePath: "app/(core)/education/kits/[sourceId]/page.tsx",
       status: "Live",
     },

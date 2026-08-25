@@ -96,6 +96,31 @@ A kit is reachable from every direction a learner can arrive from:
 | Any artifact page (all 8 kinds) | **Open the kit** on `convert/MadeFromSource` |
 | The education tools grid + hub | The `kits` entry in `data/tools.ts` |
 | A kit page | **The material** (the source file) and **Make more from it** |
+| The education home's one nudge | `?add=<kind>` — the chip for a format the kit lacks (`home/nudges.ts` → `kitAddHref`) |
+
+## MAKING MORE STAYS IN THE KIT
+
+🚨 **"Make more from it" converts the kit's OWN material — never the generic ingest.** It used to
+link `/education/start`, which asks the learner to upload the same document again and builds a
+SECOND, disconnected kit: the exact fragmentation this page exists to end. `MakeMoreFromKit`
+recovers the anchor's text (`convert/reopenAnchor.ts` — no re-upload, no new anchor) and hands it
+to THE canonical `ConvertContentDialog`, so the generator writes its `source` edge back to this
+same anchor and whatever is made lands in THIS kit.
+
+- **`kitAddHref(sourceType, sourceId, target)` is the "add a quiz to THIS material" route** —
+  the kit's own URL plus `?add=<kind>`, not a page of its own. The home's one nudge chip links it
+  (`home/nudges.ts`); an unrecognized `add` value is ignored, so a stale link opens the kit rather
+  than a broken picker.
+- **A deep link opens the picker; it never auto-runs.** Generation spends the learner's quota, and
+  a link that spent it on arrival would spend it again on every refresh. The requested target
+  leads the dialog and is ring-highlighted (`focusKind`) — the last tap stays theirs.
+- **`reopenAnchor` is the ONE anchor→text read** and owns no serialization: `file` goes through
+  `reopenSource`, and `note` / `fc_set` / `assessment` reuse the SAME serializer their own convert
+  surface uses, so a top-up grounds on byte-identical material. An anchor kind it cannot read
+  throws a line the learner can act on — never a silent no-op.
+- **The recovered `SourceRef` is passed through** (`ConvertContentDialog`'s `sourceRef`). Deriving
+  a bare `{entityType, entityId}` ref from the origin lands the same edge but strips the durable
+  `fileId`/`processedDocumentId` a citation needs to open its passage.
 
 ## Gotchas
 
@@ -110,6 +135,16 @@ A kit is reachable from every direction a learner can arrive from:
   name is the name of the MATERIAL, which is what the hub is about.
 
 ## Change log
+
+- **2026-08-25** — **Making more stays in the kit.** `MakeMoreFromKit` replaces the
+  `/education/start` link on the hub, `convert/reopenAnchor.ts` recovers any anchor's material
+  (file + the three entity kinds), and `kitAddHref` gives the education home's nudge chips the
+  per-format generate route their code comment was waiting for. `ConvertContentDialog` gained two
+  additive props (`sourceRef`, `focusKind`). Verified live on a 6-artifact kit: `?add=quiz` opened
+  the picker with Quiz leading, Memory aids generated from the kit's own re-read material
+  ("4 mnemonics · 2 analogies · memory palace", Grounded) and the hub refreshed to 7 things
+  without a reload. The entity-anchored branches (`note` / `fc_set` / `assessment`) are
+  type-checked but not yet exercised live — no entity-anchored kit exists in this account.
 
 - **2026-08-24** — Study-first hub (`kitStudy.ts`): mastery %, cards studied, due count and one
   primary action, read from the canonical spine. Verified live on a fresh 6-artifact kit

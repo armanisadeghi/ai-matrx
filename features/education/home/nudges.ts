@@ -21,7 +21,7 @@ import {
   TARGET_PRESENTATION,
   type TargetPresentation,
 } from "../convert/targetPresentation";
-import type { StudyKit } from "../kits/kitService";
+import { kitAddHref, type StudyKit } from "../kits/kitService";
 
 /**
  * Formats we offer to add to an existing kit, in the order a learner benefits
@@ -47,16 +47,14 @@ export interface NudgeOption {
   target: TargetKind;
   visual: TargetPresentation;
   /**
-   * The kit's own hub — where "Make more from it" lives.
+   * The real per-format generate for THIS material (`kitAddHref` — the kit hub
+   * with its convert surface open on this target). The chip states a true fact
+   * ("this kit has no quiz") and lands on the one action that fixes it,
+   * grounded in the kit's own source rather than a second upload.
    *
-   * 🚨 It is deliberately NOT a per-format generate link. The kit hub's
-   * "Make more from it" button currently sends the learner to the generic
-   * `/education/start` ingest, which drops the kit context entirely, so there
-   * is no route today that means "add a quiz to THIS material". Linking the
-   * chip straight at a fabricated `?add=quiz` would promise a flow that does
-   * not exist. The chip therefore states a true fact ("this kit has no quiz")
-   * and opens the kit; wire it to a real per-format generate as soon as the kit
-   * hub gains one, and the chip needs no other change.
+   * It opens the picker; it does not auto-run. Generation spends the learner's
+   * quota, so the last tap stays theirs — and a link that spent it on page load
+   * would spend it again on every refresh.
    */
   href: string;
 }
@@ -73,13 +71,12 @@ function presentTargets(kit: StudyKit): Set<string> {
 /** The formats this kit does NOT have yet, highest-value first. */
 export function missingFormatsFor(kit: StudyKit): NudgeOption[] {
   const present = presentTargets(kit);
-  const kitPath = `/education/kits/${kit.sourceId}`;
   return NUDGEABLE.filter((target) => !present.has(target))
     .slice(0, MAX_CHIPS)
     .map((target) => ({
       target,
       visual: TARGET_PRESENTATION[target],
-      href: kitPath,
+      href: kitAddHref(kit.sourceType, kit.sourceId, target),
     }));
 }
 
