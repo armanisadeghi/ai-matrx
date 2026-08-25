@@ -28,6 +28,7 @@ import {
 } from "@/features/marketing/seo/plan/plan-model";
 import type { MarketingPage, PlannedLinkEntry } from "@/features/marketing/types";
 import { supabase } from "@/utils/supabase/client";
+import { fetchUniversalFacets } from "@/features/marketing/seo/keyword/universal-facets";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
 /** A keyword the plan targets, resolved from its `seo.keyword` id. */
@@ -114,14 +115,17 @@ export async function loadSitePlanIndex(
     const keywordResponse = await supabase
       .schema("seo")
       .from("keyword")
-      .select("id, phrase, intent_class")
+      .select("id, phrase")
       .in("id", [...keywordIds]);
     if (keywordResponse.error) throw keywordResponse.error;
+    // Intent is a FACT, read from the fact store — never from `seo.keyword`'s
+    // frozen legacy mirror column (see keyword/universal-facets.ts).
+    const facets = await fetchUniversalFacets(supabase, [...keywordIds]);
     for (const row of keywordResponse.data ?? []) {
       keywords.set(row.id, {
         id: row.id,
         phrase: row.phrase,
-        intentClass: row.intent_class,
+        intentClass: facets.get(row.id)?.intent_class ?? null,
       });
     }
   }
