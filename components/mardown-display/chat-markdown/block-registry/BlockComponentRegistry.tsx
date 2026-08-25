@@ -51,6 +51,20 @@ import {
   EntityCardBlock as EntityCardBlockImpl,
   AiAnswerKindBlock as AiAnswerKindBlockImpl,
 } from "../../blocks/search-kinds/place-entity-blocks";
+// Rank / SERP-landscape kind family (Rank Kinds Run) — one canonical
+// component per kind; every nested search result delegates back to the
+// search family's components above.
+import SeoRankSerpLandscapeBlockImpl from "../../blocks/rank-kinds/SeoRankSerpLandscapeBlock";
+import SerpPlacementBlockImpl from "../../blocks/rank-kinds/SerpPlacementBlock";
+import {
+  ProviderRunReceiptBlock as ProviderRunReceiptBlockImpl,
+  SeoRankReadingBlock as SeoRankReadingBlockImpl,
+} from "../../blocks/rank-kinds/reading-blocks";
+import {
+  SeoRankPortfolioBlock as SeoRankPortfolioBlockImpl,
+  SeoRankTargetBlock as SeoRankTargetBlockImpl,
+  SeoRankTargetRemovalBlock as SeoRankTargetRemovalBlockImpl,
+} from "../../blocks/rank-kinds/target-blocks";
 import {
   RatingBlock as RatingBlockImpl,
   OpeningHoursBlock as OpeningHoursBlockImpl,
@@ -510,6 +524,56 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <AiAnswerKindBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  // Rank / SERP-landscape kind family (Rank Kinds Run).
+  SeoRankSerpLandscapeBlock: (
+    props: React.ComponentProps<typeof SeoRankSerpLandscapeBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <SeoRankSerpLandscapeBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  SerpPlacementBlock: (
+    props: React.ComponentProps<typeof SerpPlacementBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <SerpPlacementBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  SeoRankReadingBlock: (
+    props: React.ComponentProps<typeof SeoRankReadingBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <SeoRankReadingBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  ProviderRunReceiptBlock: (
+    props: React.ComponentProps<typeof ProviderRunReceiptBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <ProviderRunReceiptBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  SeoRankTargetBlock: (
+    props: React.ComponentProps<typeof SeoRankTargetBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <SeoRankTargetBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  SeoRankPortfolioBlock: (
+    props: React.ComponentProps<typeof SeoRankPortfolioBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <SeoRankPortfolioBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  SeoRankTargetRemovalBlock: (
+    props: React.ComponentProps<typeof SeoRankTargetRemovalBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <SeoRankTargetRemovalBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
   RatingBlock: (props: React.ComponentProps<typeof RatingBlockImpl>) => (

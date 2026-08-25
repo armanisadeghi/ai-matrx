@@ -1,11 +1,14 @@
 /**
  * Read helpers for the scraper kind family blocks.
  *
- * Nested scraper structures are generated interfaces, not independently
- * registered Shape slugs. This reader therefore validates only the common
- * object boundary and leaves fields as `unknown`; the small field readers
- * below narrow every value at its point of use. These files must never declare
- * a payload interface of their own — that is the twin the
+ * TYPES COME FROM THE REGISTRY, NOWHERE ELSE. Every slug this family renders —
+ * `scraped_page`, `page_link`, `page_metadata`, `link_buckets`,
+ * `page_cleaning_report` and the rest — IS an independently registered kind
+ * with generated types, so `readScraperKindValue<"page_link">` hands back the
+ * mid-stream view generated from `content_ir.kind_definition` and a field
+ * these renderers read that the registry does not declare is a COMPILE error
+ * rather than a silently-undefined box on the screen. These files must never
+ * declare a payload interface of their own — that is the twin the
  * `check:kind-type-twins` gate fails on.
  *
  * Every block receives `serverData` from one of two paths: the streaming
@@ -15,8 +18,14 @@
  * defensive and a half-arrived page is a NORMAL state, never an error.
  */
 
-export interface ScraperKindPayload {
-  value: Record<string, unknown>;
+import type {
+  GeneratedKindSlug,
+  PartialKind,
+  PartialKindPayload,
+} from "@/features/content-ir/kinds/kind-payload";
+
+export interface ScraperKindPayload<S extends GeneratedKindSlug> {
+  value: PartialKindPayload<S>;
   isComplete: boolean;
 }
 
@@ -24,7 +33,9 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function readScraperKindValue(serverData: unknown): ScraperKindPayload {
+export function readScraperKindValue<S extends GeneratedKindSlug>(
+  serverData: unknown,
+): ScraperKindPayload<S> {
   if (isRecord(serverData)) {
     if (isRecord(serverData.value)) {
       return {

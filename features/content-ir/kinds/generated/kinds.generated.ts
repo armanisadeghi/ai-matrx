@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "c81b8049433c";
+export const KIND_REGISTRY_FINGERPRINT = "f1a6355cdf10";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5846,7 +5846,7 @@ export interface AssertionResult {
 }
 
 /**
- * Kind `authority_newsjacking_article` (registry v2).
+ * Kind `authority_newsjacking_article` (registry v3).
  */
 export interface AuthorityNewsjackingArticle {
   slug: string;

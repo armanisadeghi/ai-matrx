@@ -28,7 +28,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CircleAlert, Loader2, Power, PowerOff } from "lucide-react";
+import { BrainCircuit, CircleAlert, Loader2, Power, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -39,6 +39,13 @@ import {
   setShapeActivation,
   type ShapeActivationVerdict,
 } from "@/features/content-ir/studio/shape-authoring-service";
+import type { Json } from "@/types/database.types";
+import {
+  SHAPES_SURFACE_NAME,
+  SHAPE_COMPONENT_ROLE,
+} from "@/features/content-ir/studio/constants";
+import { composeKindAgentIntent } from "@/features/content-ir/studio/kind-agent-intents";
+import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
 
 interface ShapeActivationControlProps {
   kind: string;
@@ -53,6 +60,10 @@ interface ShapeActivationControlProps {
    * duplicate RPC. Optional — the control works without it.
    */
   onVerdict?: (verdict: ShapeActivationVerdict | null) => void;
+  /** The kind's emitted JSON Schema — rides the artisan agent's own variable. */
+  emittedJsonSchema?: Json | null;
+  /** Display name, for a brief a human can read back. */
+  label?: string;
 }
 
 export default function ShapeActivationControl({
@@ -61,7 +72,14 @@ export default function ShapeActivationControl({
   isActive,
   onActivationChanged,
   onVerdict,
+  emittedJsonSchema = null,
+  label,
 }: ShapeActivationControlProps) {
+  // NO DEAD ENDS: a blocked render leg is a detected problem, so it ships with
+  // its one-click fix — the studio's Component Artisan role, launched in a
+  // window on this page with the live shape scope attached.
+  const { launch: launchArtisan, launching: artisanLaunching } =
+    useKindAgentLaunch(SHAPES_SURFACE_NAME, SHAPE_COMPONENT_ROLE);
   const [verdict, setVerdict] = useState<ShapeActivationVerdict | null>(null);
   const [loadingVerdict, setLoadingVerdict] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -201,6 +219,38 @@ export default function ShapeActivationControl({
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {!isActive &&
+      !loadingVerdict &&
+      verdict &&
+      verdict.renderLegApplicable &&
+      !verdict.renderOk ? (
+        <div className="mt-2 border-t border-border pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={artisanLaunching}
+            onClick={() =>
+              void launchArtisan(
+                composeKindAgentIntent({
+                  kind,
+                  label: label ?? kind,
+                  part: "component",
+                  emittedJsonSchema,
+                }),
+              )
+            }
+          >
+            {artisanLaunching ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+            ) : (
+              <BrainCircuit className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+            )}
+            Build the component with an agent
+          </Button>
+        </div>
       ) : null}
 
       {verdict && !verdict.renderLegApplicable ? (

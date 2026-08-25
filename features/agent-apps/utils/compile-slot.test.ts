@@ -163,3 +163,95 @@ describe("compileSlotComponent", () => {
     expect(markup).toContain('data-main="true"');
   });
 });
+
+// THE IMPORT-BINDING CONTRACT. Import declarations are stripped and the scope
+// supplies modules under their canonical names — which only ever worked for
+// un-renamed forms. A namespace import, an aliased named import, or a renamed
+// default produced an identifier nothing defined, and the component died on
+// its first execution ("MarkdownStreamMod is not defined" —
+// authority_newsjacking_article, 2026-08-25). The import PATH was allowlisted,
+// so neither the authoring lint nor the browser could see it coming.
+describe("author-local import names", () => {
+  it("binds a namespace import to a usable module object", () => {
+    const result = compileSlotComponent({
+      code: `
+        import * as MarkdownStreamMod from "@/components/MarkdownStream";
+        // The exact defensive shape authoring agents write. A namespace whose
+        // missing keys answered with a fallback would short-circuit HERE and
+        // render a placeholder icon instead of the real renderer.
+        const Renderer: any =
+          (MarkdownStreamMod as any).NotAnExport ||
+          (MarkdownStreamMod as any).default;
+        export default function Article() {
+          return <div data-bound={String(typeof Renderer === "function")} />;
+        }
+      `,
+      allowedImports: ["react", "@/components/MarkdownStream"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    expect(renderToStaticMarkup(createElement(Component, {}))).toContain(
+      'data-bound="true"',
+    );
+  });
+
+  it("binds an aliased named import", () => {
+    const result = compileSlotComponent({
+      code: `
+        import { Badge as Chip } from "@/components/ui/badge";
+        export default function Tags() {
+          return <Chip>alias</Chip>;
+        }
+      `,
+      allowedImports: ["react", "@/components/ui/badge"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    expect(renderToStaticMarkup(createElement(Component, {}))).toContain(
+      "alias",
+    );
+  });
+
+  it("binds a renamed default import", () => {
+    const result = compileSlotComponent({
+      code: `
+        import Md from "@/components/MarkdownStream";
+        export default function Body() {
+          return <div data-bound={String(typeof Md !== "undefined" && Boolean(Md))} />;
+        }
+      `,
+      allowedImports: ["react", "@/components/MarkdownStream"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    expect(renderToStaticMarkup(createElement(Component, {}))).toContain(
+      'data-bound="true"',
+    );
+  });
+
+  it("degrades an unknown namespace import to a safe proxy, never a crash", () => {
+    const result = compileSlotComponent({
+      code: `
+        import * as Nope from "@/components/does-not-exist";
+        const Thing: any = (Nope as any).SomeWidget;
+        export default function Shell() {
+          return <div><Thing /></div>;
+        }
+      `,
+      allowedImports: ["react"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    expect(() =>
+      renderToStaticMarkup(createElement(Component, {})),
+    ).not.toThrow();
+  });
+});

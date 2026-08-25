@@ -459,6 +459,15 @@ export function buildComponentScope(
   // Always include React core (it's required)
   const ReactModule = require("react");
   const { useState, useEffect, useMemo, useCallback, useRef } = ReactModule;
+  // Per-path module record. THE IMPORT-BINDING CONTRACT: the sandbox supplies
+  // imports through this scope, so a namespace import (`import * as X`), an
+  // aliased named import (`{ A as B }`), or a renamed default must resolve to
+  // the SAME module object the flattened scope came from. Without this record
+  // those forms compiled to identifiers nothing ever defined and the component
+  // died at first execution with "X is not defined" (2026-08-25 incident:
+  // authority_newsjacking_article / MarkdownStreamMod). Consumed by
+  // `bindImportedIdentifiers`; `__`-prefixed keys never become scope params.
+  scope.__modulesByPath = { react: ReactModule } as Record<string, any>;
   scope.React = ReactModule;
   scope.useState = useState;
   scope.useEffect = useEffect;
@@ -477,6 +486,7 @@ export function buildComponentScope(
 
     try {
       const loadedModule = config.loader();
+      (scope.__modulesByPath as Record<string, any>)[importPath] = loadedModule;
 
       if (config.scopeStrategy === "spread") {
         if (config.safeProxy) {
@@ -559,6 +569,89 @@ export function patchScopeForMissingIdentifiers(
     logPrefix: "[AgentApp]",
     declaredIdentifiers,
   });
+}
+
+/**
+ * One import specifier the sandbox source declared, as collected from the AST
+ * before the declaration was removed (see compile-slot's collect/strip plugin).
+ */
+export interface SandboxImportBinding {
+  /** The identifier the author's code actually references. */
+  local: string;
+  /** The module path the author imported from. */
+  source: string;
+  /**
+   * The exported name (`{ A as B }` → "A"), `"default"` for a default import,
+   * or `"*"` for a namespace import (`import * as NS from ...`).
+   */
+  imported: string;
+}
+
+/**
+ * THE IMPORT-BINDING CONTRACT (2026-08-25).
+ *
+ * The sandbox strips import declarations and supplies modules through the
+ * scope under their CANONICAL names. That silently only ever worked for the
+ * un-renamed forms: `import { Badge }`, `import MarkdownStream from ...`.
+ * Every other legal form — `import * as NS from ...`, `import { A as B }`,
+ * `import Md from "@/components/MarkdownStream"` — produced an identifier the
+ * scope never defined, so the component threw "NS is not defined" the instant
+ * the factory ran and the reader silently got the generic viewer. The import
+ * PATH was allowlisted, so no lint on either side could see it.
+ *
+ * This binds those locals to real values. Never throws and never leaves a
+ * dangling identifier: an unresolvable namespace becomes a safe module proxy
+ * (missing keys yield fallback icons) and an unresolvable PascalCase member
+ * becomes a fallback icon, so a wrong import degrades to a visible placeholder
+ * instead of killing the whole component.
+ */
+export function bindImportedIdentifiers(
+  bindings: readonly SandboxImportBinding[],
+  scope: Record<string, any>,
+  declaredIdentifiers?: Set<string>,
+): void {
+  const modules = (scope.__modulesByPath ?? {}) as Record<string, any>;
+
+  for (const binding of bindings) {
+    const { local, source, imported } = binding;
+    if (!local || declaredIdentifiers?.has(local)) continue;
+
+    const loaded = modules[source];
+
+    if (imported === "*") {
+      // A namespace object must answer `.default`, `.Anything`, and spreads.
+      // For a REAL module it must also answer `undefined` for a key the module
+      // does not export: authoring agents write defensive chains like
+      // `Mod.Thing || Mod.default`, and a PascalCase fallback proxy would make
+      // the FIRST branch truthy and silently render a placeholder icon in
+      // place of the real component. Only a module we could not load at all
+      // gets the safe proxy — there, a placeholder beats a TypeError.
+      scope[local] =
+        loaded && typeof loaded === "object"
+          ? { ...loaded, default: loaded.default ?? loaded }
+          : createSafeModuleProxy(source, {});
+      continue;
+    }
+
+    if (imported === "default") {
+      const config = ALLOWED_IMPORTS_CONFIG.find((c) => c.path === source);
+      const canonical = config?.exportMap?.default;
+      const value =
+        (canonical ? scope[canonical] : undefined) ??
+        (loaded ? (loaded.default ?? loaded) : undefined);
+      if (value !== undefined) scope[local] = value;
+      else if (!(local in scope)) scope[local] = createFallbackIcon(local);
+      continue;
+    }
+
+    // Named import. The canonical name is already in scope for the un-aliased
+    // case; an alias needs the same value under the author's name.
+    const value = loaded?.[imported] ?? scope[imported];
+    if (value !== undefined) scope[local] = value;
+    else if (!(local in scope) && /^[A-Z]/.test(local)) {
+      scope[local] = createFallbackIcon(local);
+    }
+  }
 }
 
 /**

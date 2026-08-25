@@ -239,6 +239,8 @@ export default function ShapeOwnerEditor({
           kind={kind}
           kindDefinitionId={kindDefinitionId}
           isActive={isActive}
+          label={label}
+          emittedJsonSchema={emittedJsonSchema}
           onActivationChanged={() => router.refresh()}
           onVerdict={onActivationVerdict}
         />
