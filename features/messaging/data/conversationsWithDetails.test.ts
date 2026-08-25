@@ -4,6 +4,13 @@ import {
   nextConversationsCursor,
   resetConversationsWithDetailsCache,
 } from "@/features/messaging/data/conversationsWithDetails";
+import { supabase } from "@/utils/supabase/client";
+
+jest.mock("@/utils/supabase/client", () => ({
+  supabase: {
+    auth: { getSession: jest.fn() },
+  },
+}));
 
 type Client = Parameters<typeof fetchConversationsWithDetails>[0];
 
@@ -83,6 +90,39 @@ describe("fetchConversationsWithDetails", () => {
     await expect(
       fetchConversationsWithDetails(client, "user-1"),
     ).resolves.toEqual([]);
+    expect(calls).toBe(2);
+  });
+
+  it("re-resolves a missing browser session and retries the authenticated RPC once", async () => {
+    const getSession = jest.mocked(supabase.auth.getSession);
+    getSession.mockResolvedValue({
+      data: { session: { access_token: "recovered-token" } },
+      error: null,
+    } as never);
+
+    let calls = 0;
+    const client = {
+      rpc: async () => {
+        calls += 1;
+        if (calls === 1) {
+          return {
+            data: null,
+            error: {
+              code: "42501",
+              message:
+                "permission denied for function get_dm_conversations_with_details",
+            },
+            status: 401,
+          };
+        }
+        return { data: [{ conversation_id: "c1" }], error: null, status: 200 };
+      },
+    } as unknown as Client;
+
+    await expect(
+      fetchConversationsWithDetails(client, "user-1"),
+    ).resolves.toEqual([{ conversation_id: "c1" }]);
+    expect(getSession).toHaveBeenCalledTimes(1);
     expect(calls).toBe(2);
   });
 });

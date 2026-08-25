@@ -194,7 +194,7 @@ import {
 
 The authenticated layout includes:
 
-- `<MessagingInitializer />` - Loads conversations only after Redux has both the user identity and Supabase access token; identity alone must never call authenticated-only DM RPCs during session hydration
+- `<MessagingInitializer />` - Loads only after Redux has identity + access token; the canonical conversation reader also re-resolves the Supabase session and retries once if the authenticated RPC still reaches PostgREST as `anon`
 - `<MessagingSideSheet />` - Side panel UI
 
 The header includes:
@@ -573,7 +573,7 @@ sequenceDiagram
 
 ## Change Log
 
-- **2026-08-25 — messaging waits for session authority, not identity alone.** `LazyMessagingInitializer` mounts only when Redux has both the user id and Supabase access token, closing the auth-hydration window where the authenticated-only conversation RPC ran as `anon` and returned `42501`.
+- **2026-08-25 — messaging recovers the real Supabase session boundary.** `LazyMessagingInitializer` waits for Redux identity + access token, and `conversationsWithDetails.ts` uses `runWithSessionRetry` for both first-page and paginated reads. If PostgREST still sees `anon`, the ONE reader re-resolves the browser session and retries exactly once; ordinary permission denials are not retried.
 - 2026-08-24 — **Every messaging pane got the canonical v3 right-click menu; `features/messaging/` previously had none anywhere.** A user could read a DM and could not copy it, export the thread, or hand it to an AI — and inside the floating Messages window the right-click was answered by whatever page happened to be underneath, silently handing the user THAT page's surface and agents (the overlay hazard). Now: `ConversationList` mounts ONE menu for the list and resolves the right-clicked row from `data-conversation-id`; `ChatThread` mounts ONE menu for the transcript and resolves the message from `data-message-id` (added to `MessageBubble`), falling back to the CONVERSATION's entity on empty space; `MessagesWindow` mounts its own on the "Select a conversation" empty state, which is window chrome neither pane covers. Entities are `dm_conversation` / `dm_message` — the `communication.*` tokens, never `conversation`/`message`, which are the AI chat entities in `chat.*`. Shared definitions live in NEW `lib/messaging-menu-actions.tsx`, so the `/messages` route and the window share one set of items. `contentSource` is `{type:"raw"}` on purpose: the `chat-message` source resolves against `chat.message`, so pointing a DM at it would aim Convert/Edit at the wrong table. `MessageInput` gained a `draftInsert` prop (text + nonce) so "Quote in a reply" appends into the composer without clobbering what the user already typed. Verified live in the floating window: list row, message, and empty state all open with real content and no INERT MENU / VALUE MAPPING GAP screams.
 - **2026-08-21 — every browser DM read goes through ONE deduped reader; the
   last `get_dm_user_info` fan-out is gone.** The 2026-08-20 fix converted the

@@ -32,6 +32,7 @@
  */
 
 import type { createClient } from "@/utils/supabase/client";
+import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 
 import type { DmConversationRpcRow } from "@/features/messaging/data/conversation-list";
 
@@ -97,9 +98,10 @@ export async function fetchConversationsWithDetails(
   if (entry.inFlight) return entry.inFlight;
 
   const request = (async () => {
-    const { data, error } = await supabase.rpc(
-      "get_dm_conversations_with_details",
-      { p_user_id: userId },
+    const { data, error } = await runWithSessionRetry(() =>
+      supabase.rpc("get_dm_conversations_with_details", {
+        p_user_id: userId,
+      }),
     );
     if (error) throw error;
     return (data ?? []) as DmConversationRpcRow[];
@@ -128,14 +130,13 @@ export async function fetchMoreConversationsWithDetails(
   cursor: ConversationsPageCursor,
   pageSize: number = DM_CONVERSATIONS_PAGE_SIZE,
 ): Promise<DmConversationRpcRow[]> {
-  const { data, error } = await supabase.rpc(
-    "get_dm_conversations_with_details",
-    {
+  const { data, error } = await runWithSessionRetry(() =>
+    supabase.rpc("get_dm_conversations_with_details", {
       p_user_id: userId,
       p_limit: pageSize,
       p_before_sort_at: cursor.beforeSortAt,
       p_before_conversation_id: cursor.beforeConversationId,
-    },
+    }),
   );
   if (error) throw error;
   return (data ?? []) as DmConversationRpcRow[];
