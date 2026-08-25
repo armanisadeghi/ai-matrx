@@ -102,14 +102,6 @@ export interface ContentIrKindBuilderOffer {
   user_data_sample: string;
 }
 
-/** Offered shape of provision `content_ir.kind_creator` (kind `content_ir.kind_creator.offer`). */
-export interface ContentIrKindCreatorOffer {
-  __kind?: "content_ir.kind_creator.offer";
-  user_data_sample: string;
-  kind_schema: string;
-  task_brief: string;
-}
-
 /** Offered shape of provision `content_plan.entity_attachment` (kind `content_plan.entity_attachment.offer`). */
 export interface ContentPlanEntityAttachmentOffer {
   __kind?: "content_plan.entity_attachment.offer";
@@ -181,6 +173,8 @@ export interface ContentPlanPageBuildOffer {
   approved_content?: unknown;
   family_links?: unknown;
   page_scaffold?: string;
+  design_guidance?: string;
+  section_library?: unknown;
   meta_limits: unknown;
 }
 
@@ -198,6 +192,12 @@ export interface ContentPlanPageFamilyOffer {
   primary_keyword?: unknown;
   keyword_strategy?: unknown;
   family: unknown;
+  plan_index_full?: string;
+  plan_neighbours: string;
+  plan_branch_context: string;
+  plan_groups?: string;
+  plan_coverage: string;
+  plan_neighbours_json?: unknown;
   guidance?: string;
 }
 
@@ -693,15 +693,13 @@ export interface GrowthLoopStageQualityOffer {
   __kind?: "growth_loop.stage_quality.offer";
   stage: string;
   artifact_kind: string;
-  artifact_json: unknown;
+  artifact: unknown;
   rubric: string;
-  loop_context: unknown;
-}
-
-/** Offered shape of provision `hindsight.crystallizer` (kind `hindsight.crystallizer.offer`). */
-export interface HindsightCrystallizerOffer {
-  __kind?: "hindsight.crystallizer.offer";
-  bundle: string;
+  loop_run_id: string;
+  site_id: string;
+  cycle: number;
+  attempt: number;
+  label?: string;
 }
 
 /** Offered shape of provision `hindsight.enrollment_review` (kind `hindsight.enrollment_review.offer`). */
@@ -737,18 +735,6 @@ export interface HindsightReplayComparisonOffer {
   context?: unknown;
 }
 
-/** Offered shape of provision `hindsight.replay_judge` (kind `hindsight.replay_judge.offer`). */
-export interface HindsightReplayJudgeOffer {
-  __kind?: "hindsight.replay_judge.offer";
-  payload_json: string;
-}
-
-/** Offered shape of provision `hindsight.reviewer` (kind `hindsight.reviewer.offer`). */
-export interface HindsightReviewerOffer {
-  __kind?: "hindsight.reviewer.offer";
-  bundle: string;
-}
-
 /** Offered shape of provision `human_decisions.absent_human_decision` (kind `human_decisions.absent_human_decision.offer`). */
 export interface HumanDecisionsAbsentHumanDecisionOffer {
   __kind?: "human_decisions.absent_human_decision.offer";
@@ -758,28 +744,6 @@ export interface HumanDecisionsAbsentHumanDecisionOffer {
   decision_context: unknown;
   answer_schema?: unknown;
   default_answer?: string;
-}
-
-/** Offered shape of provision `iteration.architect` (kind `iteration.architect.offer`). */
-export interface IterationArchitectOffer {
-  __kind?: "iteration.architect.offer";
-  original_user_request: string;
-  current_agent_config: string;
-  current_agent_response: string;
-  user_feedback: string;
-  accumulated_feedback?: string;
-  diagnosis: string;
-  root_cause: string;
-}
-
-/** Offered shape of provision `iteration.diagnostic` (kind `iteration.diagnostic.offer`). */
-export interface IterationDiagnosticOffer {
-  __kind?: "iteration.diagnostic.offer";
-  original_user_request: string;
-  current_agent_config: string;
-  current_agent_response: string;
-  user_feedback: string;
-  accumulated_feedback: string;
 }
 
 /** Offered shape of provision `iteration.rebuild_chain` (kind `iteration.rebuild_chain.offer`). */
@@ -792,24 +756,6 @@ export interface IterationRebuildChainOffer {
   accumulated_feedback: string[];
   diagnosis?: string;
   root_cause?: string;
-}
-
-/** Offered shape of provision `iteration.root_cause` (kind `iteration.root_cause.offer`). */
-export interface IterationRootCauseOffer {
-  __kind?: "iteration.root_cause.offer";
-  original_user_request: string;
-  current_agent_config: string;
-  current_agent_response: string;
-  user_feedback: string;
-  accumulated_feedback?: string;
-  diagnosis: string;
-}
-
-/** Offered shape of provision `iteration.thinking_display` (kind `iteration.thinking_display.offer`). */
-export interface IterationThinkingDisplayOffer {
-  __kind?: "iteration.thinking_display.offer";
-  user_feedback: string;
-  original_user_request: string;
 }
 
 /** Offered shape of provision `iteration.thinking_display_narration` (kind `iteration.thinking_display_narration.offer`). */
@@ -837,14 +783,6 @@ export interface KnowledgeDocumentVerificationOffer {
   verification_instructions: string;
   expected_claims?: unknown;
   page_context: unknown;
-}
-
-/** Offered shape of provision `knowledge.document_verifier` (kind `knowledge.document_verifier.offer`). */
-export interface KnowledgeDocumentVerifierOffer {
-  __kind?: "knowledge.document_verifier.offer";
-  verification_instructions: string;
-  expected_claims: string;
-  page_context: string;
 }
 
 /** Offered shape of provision `knowledge.section_derivation` (kind `knowledge.section_derivation.offer`). */
@@ -978,6 +916,16 @@ export interface MasterworkCorpusSynthesisOffer {
   corpus_digest: string;
 }
 
+/** Offered shape of provision `masterwork.intake_design` (kind `masterwork.intake_design.offer`). */
+export interface MasterworkIntakeDesignOffer {
+  __kind?: "masterwork.intake_design.offer";
+  deliverable: string;
+  rulebook_name: string;
+  rulebook_source_line?: string;
+  section_labels: string;
+  masterwork_kind: string;
+}
+
 /** Offered shape of provision `masterwork.rule_improve` (kind `masterwork.rule_improve.offer`). */
 export interface MasterworkRuleImproveOffer {
   __kind?: "masterwork.rule_improve.offer";
@@ -1052,12 +1000,6 @@ export interface NerEntityCanonicalizationOffer {
   entity_pairs: unknown;
 }
 
-/** Offered shape of provision `ner.entity_canonicalizer` (kind `ner.entity_canonicalizer.offer`). */
-export interface NerEntityCanonicalizerOffer {
-  __kind?: "ner.entity_canonicalizer.offer";
-  entity_pairs_json: string;
-}
-
 /** Offered shape of provision `ner.finisher_batch` (kind `ner.finisher_batch.offer`). */
 export interface NerFinisherBatchOffer {
   __kind?: "ner.finisher_batch.offer";
@@ -1071,13 +1013,6 @@ export interface NerItemProposalOffer {
   scope_type_context: unknown;
 }
 
-/** Offered shape of provision `ner.item_proposer` (kind `ner.item_proposer.offer`). */
-export interface NerItemProposerOffer {
-  __kind?: "ner.item_proposer.offer";
-  unmatched_findings_json: string;
-  scope_type_context_json: string;
-}
-
 /** Offered shape of provision `ner.magic_moment_detection` (kind `ner.magic_moment_detection.offer`). */
 export interface NerMagicMomentDetectionOffer {
   __kind?: "ner.magic_moment_detection.offer";
@@ -1087,29 +1022,12 @@ export interface NerMagicMomentDetectionOffer {
   relevant_entities?: unknown;
 }
 
-/** Offered shape of provision `ner.magic_moment_detector` (kind `ner.magic_moment_detector.offer`). */
-export interface NerMagicMomentDetectorOffer {
-  __kind?: "ner.magic_moment_detector.offer";
-  scope_slots_json: string;
-  document_classification: string;
-  document_sample: string;
-  relevant_entities_json: string;
-}
-
 /** Offered shape of provision `ner.scope_proposal` (kind `ner.scope_proposal.offer`). */
 export interface NerScopeProposalOffer {
   __kind?: "ner.scope_proposal.offer";
   entity_tree: unknown;
   document_classification?: string;
   existing_scope_types?: unknown;
-}
-
-/** Offered shape of provision `ner.scope_proposer` (kind `ner.scope_proposer.offer`). */
-export interface NerScopeProposerOffer {
-  __kind?: "ner.scope_proposer.offer";
-  entity_tree_json: string;
-  document_classification: string;
-  existing_scope_types_json: string;
 }
 
 /** Offered shape of provision `ner.scope_slot_filling` (kind `ner.scope_slot_filling.offer`). */
@@ -1132,20 +1050,6 @@ export interface NerSuggestionReviewOffer {
   document_content?: string;
 }
 
-/** Offered shape of provision `ner.suggestion_reviewer` (kind `ner.suggestion_reviewer.offer`). */
-export interface NerSuggestionReviewerOffer {
-  __kind?: "ner.suggestion_reviewer.offer";
-  suggestions_json: string;
-  scope_context_json: string;
-  document_content: string;
-}
-
-/** Offered shape of provision `ner.sweep_scope_discoverer` (kind `ner.sweep_scope_discoverer.offer`). */
-export interface NerSweepScopeDiscovererOffer {
-  __kind?: "ner.sweep_scope_discoverer.offer";
-  payload_json: string;
-}
-
 /** Offered shape of provision `ner.sweep_scope_discovery` (kind `ner.sweep_scope_discovery.offer`). */
 export interface NerSweepScopeDiscoveryOffer {
   __kind?: "ner.sweep_scope_discovery.offer";
@@ -1154,23 +1058,11 @@ export interface NerSweepScopeDiscoveryOffer {
   entities: unknown;
 }
 
-/** Offered shape of provision `ner.sweep_scope_reference_finder` (kind `ner.sweep_scope_reference_finder.offer`). */
-export interface NerSweepScopeReferenceFinderOffer {
-  __kind?: "ner.sweep_scope_reference_finder.offer";
-  payload_json: string;
-}
-
 /** Offered shape of provision `ner.sweep_scope_references` (kind `ner.sweep_scope_references.offer`). */
 export interface NerSweepScopeReferencesOffer {
   __kind?: "ner.sweep_scope_references.offer";
   scope: unknown;
   entities: unknown;
-}
-
-/** Offered shape of provision `ner.sweep_value_miner` (kind `ner.sweep_value_miner.offer`). */
-export interface NerSweepValueMinerOffer {
-  __kind?: "ner.sweep_value_miner.offer";
-  payload_json: string;
 }
 
 /** Offered shape of provision `ner.sweep_value_mining` (kind `ner.sweep_value_mining.offer`). */
@@ -1214,27 +1106,11 @@ export interface PodcastAudienceAdaptationOffer {
   adaptation_guidance?: string;
 }
 
-/** Offered shape of provision `podcast.audience_adapter` (kind `podcast.audience_adapter.offer`). */
-export interface PodcastAudienceAdapterOffer {
-  __kind?: "podcast.audience_adapter.offer";
-  prepared_content: string;
-  target_audience: string;
-  adaptation_guidance: string;
-}
-
 /** Offered shape of provision `podcast.audio_stage` (kind `podcast.audio_stage.offer`). */
 export interface PodcastAudioStageOffer {
   __kind?: "podcast.audio_stage.offer";
   content: string;
   audio_style?: string;
-}
-
-/** Offered shape of provision `podcast.chapter_marker` (kind `podcast.chapter_marker.offer`). */
-export interface PodcastChapterMarkerOffer {
-  __kind?: "podcast.chapter_marker.offer";
-  episode_script: string;
-  duration_hint: string;
-  granularity_hint?: string;
 }
 
 /** Offered shape of provision `podcast.chaptering` (kind `podcast.chaptering.offer`). */
@@ -1258,14 +1134,6 @@ export interface PodcastImageRenderOffer {
   image_description: string;
 }
 
-/** Offered shape of provision `podcast.live_rewrite` (kind `podcast.live_rewrite.offer`). */
-export interface PodcastLiveRewriteOffer {
-  __kind?: "podcast.live_rewrite.offer";
-  full_script: string;
-  playback_position: string;
-  speaker_names: string;
-}
-
 /** Offered shape of provision `podcast.live_session` (kind `podcast.live_session.offer`). */
 export interface PodcastLiveSessionOffer {
   __kind?: "podcast.live_session.offer";
@@ -1280,17 +1148,6 @@ export interface PodcastLiveSessionOffer {
 export interface PodcastMetadataStageOffer {
   __kind?: "podcast.metadata_stage.offer";
   podcast_content: string;
-}
-
-/** Offered shape of provision `podcast.multihost_script` (kind `podcast.multihost_script.offer`). */
-export interface PodcastMultihostScriptOffer {
-  __kind?: "podcast.multihost_script.offer";
-  prepared_content: string;
-  num_speakers?: string;
-  format?: string;
-  theme: string;
-  language?: string;
-  speaker_names: string;
 }
 
 /** Offered shape of provision `podcast.post_prep` (kind `podcast.post_prep.offer`). */
@@ -1315,25 +1172,6 @@ export interface PodcastPrepExtractionOffer {
 })[];
 }
 
-/** Offered shape of provision `podcast.relevance_gate` (kind `podcast.relevance_gate.offer`). */
-export interface PodcastRelevanceGateOffer {
-  __kind?: "podcast.relevance_gate.offer";
-  current_topic: string;
-  recent_user_speech: string;
-}
-
-/** Offered shape of provision `podcast.roundtable_script` (kind `podcast.roundtable_script.offer`). */
-export interface PodcastRoundtableScriptOffer {
-  __kind?: "podcast.roundtable_script.offer";
-  prepared_content: string;
-  num_speakers?: string;
-  format?: string;
-  theme: string;
-  language?: string;
-  speaker_personas: string;
-  speaker_names: string;
-}
-
 /** Offered shape of provision `podcast.script_stage` (kind `podcast.script_stage.offer`). */
 export interface PodcastScriptStageOffer {
   __kind?: "podcast.script_stage.offer";
@@ -1347,16 +1185,6 @@ export interface PodcastScriptStageOffer {
   speaker_personas?: string;
 }
 
-/** Offered shape of provision `podcast.solo_script` (kind `podcast.solo_script.offer`). */
-export interface PodcastSoloScriptOffer {
-  __kind?: "podcast.solo_script.offer";
-  prepared_content: string;
-  format?: string;
-  theme: string;
-  language?: string;
-  speaker_name: string;
-}
-
 /** Offered shape of provision `podcast.title_optimization` (kind `podcast.title_optimization.offer`). */
 export interface PodcastTitleOptimizationOffer {
   __kind?: "podcast.title_optimization.offer";
@@ -1366,27 +1194,10 @@ export interface PodcastTitleOptimizationOffer {
   keywords?: string;
 }
 
-/** Offered shape of provision `podcast.title_optimizer` (kind `podcast.title_optimizer.offer`). */
-export interface PodcastTitleOptimizerOffer {
-  __kind?: "podcast.title_optimizer.offer";
-  working_title: string;
-  content_summary: string;
-  show_metadata_json: string;
-  keywords: string;
-}
-
 /** Offered shape of provision `podcast.video_render` (kind `podcast.video_render.offer`). */
 export interface PodcastVideoRenderOffer {
   __kind?: "podcast.video_render.offer";
   video_description: string;
-}
-
-/** Offered shape of provision `podcast_client.blog_writer` (kind `podcast_client.blog_writer.offer`). */
-export interface PodcastClientBlogWriterOffer {
-  __kind?: "podcast_client.blog_writer.offer";
-  episode_transcript: string;
-  episode_metadata: string;
-  style_guidance: string;
 }
 
 /** Offered shape of provision `podcast_client.episode_content` (kind `podcast_client.episode_content.offer`). */
@@ -1402,14 +1213,6 @@ export interface PodcastClientEpisodeContentOffer {
   style_guidance?: string;
   episode_metadata?: string;
   episode_metadata_json?: string;
-}
-
-/** Offered shape of provision `podcast_client.show_notes` (kind `podcast_client.show_notes.offer`). */
-export interface PodcastClientShowNotesOffer {
-  __kind?: "podcast_client.show_notes.offer";
-  episode_transcript: string;
-  episode_metadata_json: string;
-  duration_hint: string;
 }
 
 /** Offered shape of provision `podcast_client.topic_idea_request` (kind `podcast_client.topic_idea_request.offer`). */
@@ -1619,6 +1422,13 @@ export interface SeoBacklinkContextAssessorOffer {
   backlinks_json: string;
 }
 
+/** Offered shape of provision `seo.business_model_verdict` (kind `seo.business_model_verdict.offer`). */
+export interface SeoBusinessModelVerdictOffer {
+  __kind?: "seo.business_model_verdict.offer";
+  site_domain: string;
+  site_pages: string;
+}
+
 /** Offered shape of provision `seo.competitor_classification` (kind `seo.competitor_classification.offer`). */
 export interface SeoCompetitorClassificationOffer {
   __kind?: "seo.competitor_classification.offer";
@@ -1688,6 +1498,25 @@ export interface SeoFindingFixOffer {
   fixer_version: string;
 }
 
+/** Offered shape of provision `seo.guidelines_drafter` (kind `seo.guidelines_drafter.offer`). */
+export interface SeoGuidelinesDrafterOffer {
+  __kind?: "seo.guidelines_drafter.offer";
+  site_domain: string;
+  site_pages: string;
+  business_model: unknown;
+  ideal_customer: unknown;
+  money_map: unknown;
+  current_guidelines: string;
+}
+
+/** Offered shape of provision `seo.ideal_customer_profile` (kind `seo.ideal_customer_profile.offer`). */
+export interface SeoIdealCustomerProfileOffer {
+  __kind?: "seo.ideal_customer_profile.offer";
+  site_domain: string;
+  site_pages: string;
+  business_model: unknown;
+}
+
 /** Offered shape of provision `seo.keyword_classification` (kind `seo.keyword_classification.offer`). */
 export interface SeoKeywordClassificationOffer {
   __kind?: "seo.keyword_classification.offer";
@@ -1716,6 +1545,36 @@ export interface SeoLandscapeBriefOffer {
   business_root_url: string;
   business_description: string;
   existing_guidance?: string;
+}
+
+/** Offered shape of provision `seo.money_map` (kind `seo.money_map.offer`). */
+export interface SeoMoneyMapOffer {
+  __kind?: "seo.money_map.offer";
+  site_domain: string;
+  site_pages: string;
+  business_model: unknown;
+  ideal_customer: unknown;
+}
+
+/** Offered shape of provision `seo.offering_extraction` (kind `seo.offering_extraction.offer`). */
+export interface SeoOfferingExtractionOffer {
+  __kind?: "seo.offering_extraction.offer";
+  site_domain: string;
+  site_pages: string;
+  business_model: unknown;
+  ideal_customer: unknown;
+  money_map: unknown;
+}
+
+/** Offered shape of provision `seo.offering_valuation` (kind `seo.offering_valuation.offer`). */
+export interface SeoOfferingValuationOffer {
+  __kind?: "seo.offering_valuation.offer";
+  site_domain: string;
+  site_pages: string;
+  business_model: unknown;
+  ideal_customer: unknown;
+  money_map: unknown;
+  offerings: unknown;
 }
 
 /** Offered shape of provision `seo.page_analysis` (kind `seo.page_analysis.offer`). */
@@ -1929,23 +1788,11 @@ export interface WarRoomThreadContextOffer {
   master_directive?: string;
 }
 
-/** Offered shape of provision `web.endpoint_family_judge` (kind `web.endpoint_family_judge.offer`). */
-export interface WebEndpointFamilyJudgeOffer {
-  __kind?: "web.endpoint_family_judge.offer";
-  payload_json: string;
-}
-
 /** Offered shape of provision `web.endpoint_family_judgment` (kind `web.endpoint_family_judgment.offer`). */
 export interface WebEndpointFamilyJudgmentOffer {
   __kind?: "web.endpoint_family_judgment.offer";
   site_domain: string;
   candidates: unknown;
-}
-
-/** Offered shape of provision `workflow.extract_namer` (kind `workflow.extract_namer.offer`). */
-export interface WorkflowExtractNamerOffer {
-  __kind?: "workflow.extract_namer.offer";
-  payload_json: string;
 }
 
 /** Offered shape of provision `workflow.extract_sweep` (kind `workflow.extract_sweep.offer`). */
@@ -1962,6 +1809,15 @@ export interface WorkflowNodeStewardOffer {
   node_label: string;
   spec_type: string;
   node_context: string;
+}
+
+/** Offered shape of provision `workflow.plan_kind_authoring` (kind `workflow.plan_kind_authoring.offer`). */
+export interface WorkflowPlanKindAuthoringOffer {
+  __kind?: "workflow.plan_kind_authoring.offer";
+  plan_name: string;
+  plan_intent: string;
+  plan_notes: string;
+  user_description: string;
 }
 
 /** Offered shape of provision `workflow.plan_node_type_recommender` (kind `workflow.plan_node_type_recommender.offer`). */
@@ -1988,22 +1844,6 @@ export interface WorkflowPlanRoomOffer {
   definition_id: string;
 }
 
-/** Offered shape of provision `workflow.plan_shape_designer` (kind `workflow.plan_shape_designer.offer`). */
-export interface WorkflowPlanShapeDesignerOffer {
-  __kind?: "workflow.plan_shape_designer.offer";
-  plan_name: string;
-  plan_notes: string;
-  direction?: string;
-  description: string;
-  graph_context: string;
-}
-
-/** Offered shape of provision `workflow.recovery_advisor` (kind `workflow.recovery_advisor.offer`). */
-export interface WorkflowRecoveryAdvisorOffer {
-  __kind?: "workflow.recovery_advisor.offer";
-  payload_json: string;
-}
-
 /** Offered shape of provision `workflow.run_failure` (kind `workflow.run_failure.offer`). */
 export interface WorkflowRunFailureOffer {
   __kind?: "workflow.run_failure.offer";
@@ -2027,7 +1867,6 @@ export interface ProvisionOffers {
   "content_ir.component_target": ContentIrComponentTargetOffer;
   "content_ir.kind_authoring": ContentIrKindAuthoringOffer;
   "content_ir.kind_builder": ContentIrKindBuilderOffer;
-  "content_ir.kind_creator": ContentIrKindCreatorOffer;
   "content_plan.entity_attachment": ContentPlanEntityAttachmentOffer;
   "content_plan.entity_roster": ContentPlanEntityRosterOffer;
   "content_plan.family_naming": ContentPlanFamilyNamingOffer;
@@ -2080,23 +1919,15 @@ export interface ProvisionOffers {
   "foundry.agent_planning": FoundryAgentPlanningOffer;
   "growth_loop.stage_dispatch": GrowthLoopStageDispatchOffer;
   "growth_loop.stage_quality": GrowthLoopStageQualityOffer;
-  "hindsight.crystallizer": HindsightCrystallizerOffer;
   "hindsight.enrollment_review": HindsightEnrollmentReviewOffer;
   "hindsight.orchestra_crystallization": HindsightOrchestraCrystallizationOffer;
   "hindsight.replay_comparison": HindsightReplayComparisonOffer;
-  "hindsight.replay_judge": HindsightReplayJudgeOffer;
-  "hindsight.reviewer": HindsightReviewerOffer;
   "human_decisions.absent_human_decision": HumanDecisionsAbsentHumanDecisionOffer;
-  "iteration.architect": IterationArchitectOffer;
-  "iteration.diagnostic": IterationDiagnosticOffer;
   "iteration.rebuild_chain": IterationRebuildChainOffer;
-  "iteration.root_cause": IterationRootCauseOffer;
-  "iteration.thinking_display": IterationThinkingDisplayOffer;
   "iteration.thinking_display_narration": IterationThinkingDisplayNarrationOffer;
   "kg.chunk_extraction": KgChunkExtractionOffer;
   "kg.entity_cluster": KgEntityClusterOffer;
   "knowledge.document_verification": KnowledgeDocumentVerificationOffer;
-  "knowledge.document_verifier": KnowledgeDocumentVerifierOffer;
   "knowledge.section_derivation": KnowledgeSectionDerivationOffer;
   "knowledge.section_qa": KnowledgeSectionQaOffer;
   "marketing.image_prompt": MarketingImagePromptOffer;
@@ -2113,6 +1944,7 @@ export interface ProvisionOffers {
   "masterwork.conduct": MasterworkConductOffer;
   "masterwork.corpus_clean": MasterworkCorpusCleanOffer;
   "masterwork.corpus_synthesis": MasterworkCorpusSynthesisOffer;
+  "masterwork.intake_design": MasterworkIntakeDesignOffer;
   "masterwork.rule_improve": MasterworkRuleImproveOffer;
   "masterwork.rulebook_audit": MasterworkRulebookAuditOffer;
   "masterwork.scout_interview": MasterworkScoutInterviewOffer;
@@ -2122,50 +1954,32 @@ export interface ProvisionOffers {
   "ner.deep_chunk_extraction": NerDeepChunkExtractionOffer;
   "ner.document_orientation": NerDocumentOrientationOffer;
   "ner.entity_canonicalization": NerEntityCanonicalizationOffer;
-  "ner.entity_canonicalizer": NerEntityCanonicalizerOffer;
   "ner.finisher_batch": NerFinisherBatchOffer;
   "ner.item_proposal": NerItemProposalOffer;
-  "ner.item_proposer": NerItemProposerOffer;
   "ner.magic_moment_detection": NerMagicMomentDetectionOffer;
-  "ner.magic_moment_detector": NerMagicMomentDetectorOffer;
   "ner.scope_proposal": NerScopeProposalOffer;
-  "ner.scope_proposer": NerScopeProposerOffer;
   "ner.scope_slot_filling": NerScopeSlotFillingOffer;
   "ner.suggestion_review": NerSuggestionReviewOffer;
-  "ner.suggestion_reviewer": NerSuggestionReviewerOffer;
-  "ner.sweep_scope_discoverer": NerSweepScopeDiscovererOffer;
   "ner.sweep_scope_discovery": NerSweepScopeDiscoveryOffer;
-  "ner.sweep_scope_reference_finder": NerSweepScopeReferenceFinderOffer;
   "ner.sweep_scope_references": NerSweepScopeReferencesOffer;
-  "ner.sweep_value_miner": NerSweepValueMinerOffer;
   "ner.sweep_value_mining": NerSweepValueMiningOffer;
   "observability.tool_trace_pattern_window": ObservabilityToolTracePatternWindowOffer;
   "observability.tool_trace_triage_window": ObservabilityToolTraceTriageWindowOffer;
   "orchestras.member_roster": OrchestrasMemberRosterOffer;
   "pdf.content_cleaning": PdfContentCleaningOffer;
   "podcast.audience_adaptation": PodcastAudienceAdaptationOffer;
-  "podcast.audience_adapter": PodcastAudienceAdapterOffer;
   "podcast.audio_stage": PodcastAudioStageOffer;
-  "podcast.chapter_marker": PodcastChapterMarkerOffer;
   "podcast.chaptering": PodcastChapteringOffer;
   "podcast.feature_image_prompt": PodcastFeatureImagePromptOffer;
   "podcast.image_render": PodcastImageRenderOffer;
-  "podcast.live_rewrite": PodcastLiveRewriteOffer;
   "podcast.live_session": PodcastLiveSessionOffer;
   "podcast.metadata_stage": PodcastMetadataStageOffer;
-  "podcast.multihost_script": PodcastMultihostScriptOffer;
   "podcast.post_prep": PodcastPostPrepOffer;
   "podcast.prep_extraction": PodcastPrepExtractionOffer;
-  "podcast.relevance_gate": PodcastRelevanceGateOffer;
-  "podcast.roundtable_script": PodcastRoundtableScriptOffer;
   "podcast.script_stage": PodcastScriptStageOffer;
-  "podcast.solo_script": PodcastSoloScriptOffer;
   "podcast.title_optimization": PodcastTitleOptimizationOffer;
-  "podcast.title_optimizer": PodcastTitleOptimizerOffer;
   "podcast.video_render": PodcastVideoRenderOffer;
-  "podcast_client.blog_writer": PodcastClientBlogWriterOffer;
   "podcast_client.episode_content": PodcastClientEpisodeContentOffer;
-  "podcast_client.show_notes": PodcastClientShowNotesOffer;
   "podcast_client.topic_idea_request": PodcastClientTopicIdeaRequestOffer;
   "podcast_client.web_source": PodcastClientWebSourceOffer;
   "podcast_client.youtube_source": PodcastClientYoutubeSourceOffer;
@@ -2191,14 +2005,20 @@ export interface ProvisionOffers {
   "seo.ai_visibility_analysis": SeoAiVisibilityAnalysisOffer;
   "seo.authority_routing": SeoAuthorityRoutingOffer;
   "seo.backlink_context_assessor": SeoBacklinkContextAssessorOffer;
+  "seo.business_model_verdict": SeoBusinessModelVerdictOffer;
   "seo.competitor_classification": SeoCompetitorClassificationOffer;
   "seo.competitor_opportunity_autopsy": SeoCompetitorOpportunityAutopsyOffer;
   "seo.competitor_page_autopsy": SeoCompetitorPageAutopsyOffer;
   "seo.coverage_analysis": SeoCoverageAnalysisOffer;
   "seo.finding_fix": SeoFindingFixOffer;
+  "seo.guidelines_drafter": SeoGuidelinesDrafterOffer;
+  "seo.ideal_customer_profile": SeoIdealCustomerProfileOffer;
   "seo.keyword_classification": SeoKeywordClassificationOffer;
   "seo.keyword_research": SeoKeywordResearchOffer;
   "seo.landscape_brief": SeoLandscapeBriefOffer;
+  "seo.money_map": SeoMoneyMapOffer;
+  "seo.offering_extraction": SeoOfferingExtractionOffer;
+  "seo.offering_valuation": SeoOfferingValuationOffer;
   "seo.page_analysis": SeoPageAnalysisOffer;
   "seo.page_keyword_mapping": SeoPageKeywordMappingOffer;
   "seo.press_source_request": SeoPressSourceRequestOffer;
@@ -2219,16 +2039,13 @@ export interface ProvisionOffers {
   "vision_interview.scribe_pass": VisionInterviewScribePassOffer;
   "war_room.room_context": WarRoomRoomContextOffer;
   "war_room.thread_context": WarRoomThreadContextOffer;
-  "web.endpoint_family_judge": WebEndpointFamilyJudgeOffer;
   "web.endpoint_family_judgment": WebEndpointFamilyJudgmentOffer;
-  "workflow.extract_namer": WorkflowExtractNamerOffer;
   "workflow.extract_sweep": WorkflowExtractSweepOffer;
   "workflow.node_steward": WorkflowNodeStewardOffer;
+  "workflow.plan_kind_authoring": WorkflowPlanKindAuthoringOffer;
   "workflow.plan_node_type_recommender": WorkflowPlanNodeTypeRecommenderOffer;
   "workflow.plan_notes_writer": WorkflowPlanNotesWriterOffer;
   "workflow.plan_room": WorkflowPlanRoomOffer;
-  "workflow.plan_shape_designer": WorkflowPlanShapeDesignerOffer;
-  "workflow.recovery_advisor": WorkflowRecoveryAdvisorOffer;
   "workflow.run_failure": WorkflowRunFailureOffer;
   "workflow.run_recovery": WorkflowRunRecoveryOffer;
 }
@@ -2245,7 +2062,6 @@ export const PROVISION_OFFER_KINDS = {
   "content_ir.component_target": "content_ir.component_target.offer",
   "content_ir.kind_authoring": "content_ir.kind_authoring.offer",
   "content_ir.kind_builder": "content_ir.kind_builder.offer",
-  "content_ir.kind_creator": "content_ir.kind_creator.offer",
   "content_plan.entity_attachment": "content_plan.entity_attachment.offer",
   "content_plan.entity_roster": "content_plan.entity_roster.offer",
   "content_plan.family_naming": "content_plan.family_naming.offer",
@@ -2298,23 +2114,15 @@ export const PROVISION_OFFER_KINDS = {
   "foundry.agent_planning": "foundry.agent_planning.offer",
   "growth_loop.stage_dispatch": "growth_loop.stage_dispatch.offer",
   "growth_loop.stage_quality": "growth_loop.stage_quality.offer",
-  "hindsight.crystallizer": "hindsight.crystallizer.offer",
   "hindsight.enrollment_review": "hindsight.enrollment_review.offer",
   "hindsight.orchestra_crystallization": "hindsight.orchestra_crystallization.offer",
   "hindsight.replay_comparison": "hindsight.replay_comparison.offer",
-  "hindsight.replay_judge": "hindsight.replay_judge.offer",
-  "hindsight.reviewer": "hindsight.reviewer.offer",
   "human_decisions.absent_human_decision": "human_decisions.absent_human_decision.offer",
-  "iteration.architect": "iteration.architect.offer",
-  "iteration.diagnostic": "iteration.diagnostic.offer",
   "iteration.rebuild_chain": "iteration.rebuild_chain.offer",
-  "iteration.root_cause": "iteration.root_cause.offer",
-  "iteration.thinking_display": "iteration.thinking_display.offer",
   "iteration.thinking_display_narration": "iteration.thinking_display_narration.offer",
   "kg.chunk_extraction": "kg.chunk_extraction.offer",
   "kg.entity_cluster": "kg.entity_cluster.offer",
   "knowledge.document_verification": "knowledge.document_verification.offer",
-  "knowledge.document_verifier": "knowledge.document_verifier.offer",
   "knowledge.section_derivation": "knowledge.section_derivation.offer",
   "knowledge.section_qa": "knowledge.section_qa.offer",
   "marketing.image_prompt": "marketing.image_prompt.offer",
@@ -2331,6 +2139,7 @@ export const PROVISION_OFFER_KINDS = {
   "masterwork.conduct": "masterwork.conduct.offer",
   "masterwork.corpus_clean": "masterwork.corpus_clean.offer",
   "masterwork.corpus_synthesis": "masterwork.corpus_synthesis.offer",
+  "masterwork.intake_design": "masterwork.intake_design.offer",
   "masterwork.rule_improve": "masterwork.rule_improve.offer",
   "masterwork.rulebook_audit": "masterwork.rulebook_audit.offer",
   "masterwork.scout_interview": "masterwork.scout_interview.offer",
@@ -2340,50 +2149,32 @@ export const PROVISION_OFFER_KINDS = {
   "ner.deep_chunk_extraction": "ner.deep_chunk_extraction.offer",
   "ner.document_orientation": "ner.document_orientation.offer",
   "ner.entity_canonicalization": "ner.entity_canonicalization.offer",
-  "ner.entity_canonicalizer": "ner.entity_canonicalizer.offer",
   "ner.finisher_batch": "ner.finisher_batch.offer",
   "ner.item_proposal": "ner.item_proposal.offer",
-  "ner.item_proposer": "ner.item_proposer.offer",
   "ner.magic_moment_detection": "ner.magic_moment_detection.offer",
-  "ner.magic_moment_detector": "ner.magic_moment_detector.offer",
   "ner.scope_proposal": "ner.scope_proposal.offer",
-  "ner.scope_proposer": "ner.scope_proposer.offer",
   "ner.scope_slot_filling": "ner.scope_slot_filling.offer",
   "ner.suggestion_review": "ner.suggestion_review.offer",
-  "ner.suggestion_reviewer": "ner.suggestion_reviewer.offer",
-  "ner.sweep_scope_discoverer": "ner.sweep_scope_discoverer.offer",
   "ner.sweep_scope_discovery": "ner.sweep_scope_discovery.offer",
-  "ner.sweep_scope_reference_finder": "ner.sweep_scope_reference_finder.offer",
   "ner.sweep_scope_references": "ner.sweep_scope_references.offer",
-  "ner.sweep_value_miner": "ner.sweep_value_miner.offer",
   "ner.sweep_value_mining": "ner.sweep_value_mining.offer",
   "observability.tool_trace_pattern_window": "observability.tool_trace_pattern_window.offer",
   "observability.tool_trace_triage_window": "observability.tool_trace_triage_window.offer",
   "orchestras.member_roster": "orchestras.member_roster.offer",
   "pdf.content_cleaning": "pdf.content_cleaning.offer",
   "podcast.audience_adaptation": "podcast.audience_adaptation.offer",
-  "podcast.audience_adapter": "podcast.audience_adapter.offer",
   "podcast.audio_stage": "podcast.audio_stage.offer",
-  "podcast.chapter_marker": "podcast.chapter_marker.offer",
   "podcast.chaptering": "podcast.chaptering.offer",
   "podcast.feature_image_prompt": "podcast.feature_image_prompt.offer",
   "podcast.image_render": "podcast.image_render.offer",
-  "podcast.live_rewrite": "podcast.live_rewrite.offer",
   "podcast.live_session": "podcast.live_session.offer",
   "podcast.metadata_stage": "podcast.metadata_stage.offer",
-  "podcast.multihost_script": "podcast.multihost_script.offer",
   "podcast.post_prep": "podcast.post_prep.offer",
   "podcast.prep_extraction": "podcast.prep_extraction.offer",
-  "podcast.relevance_gate": "podcast.relevance_gate.offer",
-  "podcast.roundtable_script": "podcast.roundtable_script.offer",
   "podcast.script_stage": "podcast.script_stage.offer",
-  "podcast.solo_script": "podcast.solo_script.offer",
   "podcast.title_optimization": "podcast.title_optimization.offer",
-  "podcast.title_optimizer": "podcast.title_optimizer.offer",
   "podcast.video_render": "podcast.video_render.offer",
-  "podcast_client.blog_writer": "podcast_client.blog_writer.offer",
   "podcast_client.episode_content": "podcast_client.episode_content.offer",
-  "podcast_client.show_notes": "podcast_client.show_notes.offer",
   "podcast_client.topic_idea_request": "podcast_client.topic_idea_request.offer",
   "podcast_client.web_source": "podcast_client.web_source.offer",
   "podcast_client.youtube_source": "podcast_client.youtube_source.offer",
@@ -2409,14 +2200,20 @@ export const PROVISION_OFFER_KINDS = {
   "seo.ai_visibility_analysis": "seo.ai_visibility_analysis.offer",
   "seo.authority_routing": "seo.authority_routing.offer",
   "seo.backlink_context_assessor": "seo.backlink_context_assessor.offer",
+  "seo.business_model_verdict": "seo.business_model_verdict.offer",
   "seo.competitor_classification": "seo.competitor_classification.offer",
   "seo.competitor_opportunity_autopsy": "seo.competitor_opportunity_autopsy.offer",
   "seo.competitor_page_autopsy": "seo.competitor_page_autopsy.offer",
   "seo.coverage_analysis": "seo.coverage_analysis.offer",
   "seo.finding_fix": "seo.finding_fix.offer",
+  "seo.guidelines_drafter": "seo.guidelines_drafter.offer",
+  "seo.ideal_customer_profile": "seo.ideal_customer_profile.offer",
   "seo.keyword_classification": "seo.keyword_classification.offer",
   "seo.keyword_research": "seo.keyword_research.offer",
   "seo.landscape_brief": "seo.landscape_brief.offer",
+  "seo.money_map": "seo.money_map.offer",
+  "seo.offering_extraction": "seo.offering_extraction.offer",
+  "seo.offering_valuation": "seo.offering_valuation.offer",
   "seo.page_analysis": "seo.page_analysis.offer",
   "seo.page_keyword_mapping": "seo.page_keyword_mapping.offer",
   "seo.press_source_request": "seo.press_source_request.offer",
@@ -2437,16 +2234,13 @@ export const PROVISION_OFFER_KINDS = {
   "vision_interview.scribe_pass": "vision_interview.scribe_pass.offer",
   "war_room.room_context": "war_room.room_context.offer",
   "war_room.thread_context": "war_room.thread_context.offer",
-  "web.endpoint_family_judge": "web.endpoint_family_judge.offer",
   "web.endpoint_family_judgment": "web.endpoint_family_judgment.offer",
-  "workflow.extract_namer": "workflow.extract_namer.offer",
   "workflow.extract_sweep": "workflow.extract_sweep.offer",
   "workflow.node_steward": "workflow.node_steward.offer",
+  "workflow.plan_kind_authoring": "workflow.plan_kind_authoring.offer",
   "workflow.plan_node_type_recommender": "workflow.plan_node_type_recommender.offer",
   "workflow.plan_notes_writer": "workflow.plan_notes_writer.offer",
   "workflow.plan_room": "workflow.plan_room.offer",
-  "workflow.plan_shape_designer": "workflow.plan_shape_designer.offer",
-  "workflow.recovery_advisor": "workflow.recovery_advisor.offer",
   "workflow.run_failure": "workflow.run_failure.offer",
   "workflow.run_recovery": "workflow.run_recovery.offer",
 } as const;

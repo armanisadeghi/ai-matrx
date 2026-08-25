@@ -24618,6 +24618,10 @@ export type Database = {
         Args: { p_rel: unknown; p_role?: string }
         Returns: boolean
       }
+      component_original_lane: {
+        Args: { p_schema: string; p_table: string; p_token: string }
+        Returns: string
+      }
       derive_organization_abbreviation: {
         Args: { p_is_personal?: boolean; p_name: string }
         Returns: string
@@ -24646,20 +24650,36 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
       }
-      entity_read_equivalence: {
-        Args: {
-          p_limit?: number
-          p_schema: string
-          p_table: string
-          p_token: string
-          p_user: string
-        }
-        Returns: {
-          compared: number
-          gained: number
-          lost: number
-        }[]
-      }
+      entity_read_equivalence:
+        | {
+            Args: {
+              p_limit?: number
+              p_schema: string
+              p_table: string
+              p_token: string
+              p_user: string
+            }
+            Returns: {
+              compared: number
+              gained: number
+              lost: number
+            }[]
+          }
+        | {
+            Args: {
+              p_baseline?: string
+              p_limit?: number
+              p_schema: string
+              p_table: string
+              p_token: string
+              p_user: string
+            }
+            Returns: {
+              compared: number
+              gained: number
+              lost: number
+            }[]
+          }
       entity_read_expr: {
         Args: {
           p_schema: string
@@ -53319,11 +53339,13 @@ export type Database = {
           p_min_impressions: number
         }
         Returns: {
+          autonomy_mode: string
           claimed: number
           human_protected: number
           keywords_with_places: number
           local_intent_stamped: number
           places_written: number
+          skipped: string
         }[]
       }
       fn_brand_identity_sync_meaning: {
@@ -55100,6 +55122,44 @@ export type Database = {
       multi_location_knob: {
         Args: { p_default: number; p_key: string }
         Returns: number
+      }
+      platform_default_rule_delete: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      platform_default_rule_save: {
+        Args: {
+          p_amount: number
+          p_dimension_slug: string
+          p_effect: string
+          p_exclusions: string[]
+          p_id: string
+          p_label: string
+          p_match_kind: string
+          p_notes?: string
+          p_phrases: string[]
+          p_sort?: number
+          p_value_slug: string
+        }
+        Returns: string
+      }
+      platform_default_rules: {
+        Args: never
+        Returns: {
+          amount: number
+          dimension_scope: string
+          dimension_slug: string
+          effect: string
+          exclusions: string[]
+          id: string
+          label: string
+          match_kind: string
+          notes: string
+          phrases: string[]
+          sort: number
+          updated_at: string
+          value_slug: string
+        }[]
       }
       release_page_measurement_quarantine: {
         Args: { p_page_id: string; p_reason?: string; p_strategy?: string }
