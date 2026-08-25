@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 452 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 454 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "040beec36899";
+export const KIND_REGISTRY_FINGERPRINT = "fef19163a7ca";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2959,38 +2959,6 @@ export interface RagChunk {
 }
 
 /**
- * Mirrors ``_Citation``'s fixed field set. ``metadata`` is the
- * deliberate open bucket (chunk metadata straight off the search hit).
- *  *
- *  * Shared by 2 kinds (rag_cross_doc_search_result, rag_search_result).
- */
-export interface RagCitation {
-  score?: number;
-  title?: string | null;
-  /**
-   * The registered kind this payload is an instance of, when it is one.
-   */
-  __kind?: string;
-  snippet?: string;
-  chunk_id?: string;
-  field_id?: string | null;
-  metadata?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    [key: string]: JsonValue | string | undefined;
-  };
-  last_page?: number | null;
-  source_id?: string;
-  first_page?: number | null;
-  short_code?: string | null;
-  source_kind?: string;
-  rerank_score?: number | null;
-  section_kind?: string | null;
-}
-
-/**
  * Mirrors ``_ClaimVerdict`` exactly — one claim's fact-check verdict.
  *  *
  *  * From kind `rag_claim_verification`.
@@ -4523,7 +4491,7 @@ export interface SlideSpec {
  * and a consumer that wants "take me to the exact spot" should not have to
  * know which kind of source it is holding to find out.
  *  *
- *  * From kind `rag_synthesize_result`.
+ *  * Shared by 3 kinds (rag_synthesize_result, retrieved_chunk, source_ref).
  */
 export interface SourceLocator {
   /**
@@ -4554,80 +4522,6 @@ export interface SourceLocator {
    * Finer classification of the section, when the corpus declares one. Measured empty on every capture to date and MAPPED anyway rather than dropped — a field that is empty today and populated next quarter must not need a schema change to start arriving.
    */
   section_subtype?: string | null;
-}
-
-/**
- * A pointer to something we can show the reader, with enough on it to show.
- *
- * The bar this shape must clear: a person looking at a claim can OPEN the
- * thing it came from, and see enough to judge whether to trust it. That is why
- * `url` and `title` are here beside the internal ids, and why `authority`,
- * `version` and the effective dates survive — for a regulation, "which version,
- * still in force?" is the whole question.
- *
- * Every field but `source_kind` is optional, because the four producers this
- * replaces know different amounts. That is provider asymmetry, and the
- * distillation laws say it becomes an optional field on ONE shape, never two
- * shapes or a dropped field.
- *  *
- *  * From kind `rag_synthesize_result`.
- */
-export interface SourceRef {
-  /**
-   * Where a reader can open it.
-   */
-  url?: string | null;
-  title?: string | null;
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "source_ref";
-  author?: string | null;
-  /**
-   * How we came to cite this — 'retrieval', 'model_citation', 'user_supplied'.
-   */
-  origin?: string | null;
-  /**
-   * The quoted passage this reference supports.
-   */
-  excerpt?: string | null;
-  favicon?: string | null;
-  /**
-   * Where in the source the citation points.
-   */
-  locator?: SourceLocator | null;
-  /**
-   * Edition or revision of the source.
-   */
-  version?: string | null;
-  /**
-   * How authoritative the source is, as the corpus declares it.
-   */
-  authority?: string | null;
-  publisher?: string | null;
-  site_name?: string | null;
-  /**
-   * Our internal id for the source, when it is ours.
-   */
-  source_id?: string | null;
-  /**
-   * Canonical short handle, e.g. 'NIST-SP-800-61r3'.
-   */
-  short_code?: string | null;
-  /**
-   * What the source is. Documented vocabulary: web_page, library_doc, file, note, message, transcript, dataset_row, opinion, docket, unknown.
-   */
-  source_kind: string;
-  /**
-   * When it stopped being in force. NULL means still current.
-   */
-  effective_to?: string | null;
-  jurisdiction?: string | null;
-  /**
-   * ISO-8601 date(time); may be approximate.
-   */
-  published_at?: string | null;
-  effective_from?: string | null;
 }
 
 /**
@@ -10503,9 +10397,9 @@ export interface RagCrossDocSearchResult {
    * The registered kind this payload is an instance of.
    */
   __kind: "rag_cross_doc_search_result";
-  case_hits?: RagCitation[];
+  case_hits?: RetrievedChunk[];
   case_query?: string;
-  library_hits?: RagCitation[];
+  library_hits?: RetrievedChunk[];
   library_query?: string;
   case_latency_ms?: number;
   library_latency_ms?: number;
@@ -10660,7 +10554,7 @@ export interface RagResolvedSource {
  *  * Kind `rag_search_result` (registry v4).
  */
 export interface RagSearchResult {
-  hits?: RagCitation[];
+  hits?: RetrievedChunk[];
   query?: string;
   /**
    * The registered kind this payload is an instance of.
@@ -11081,6 +10975,66 @@ export interface ResourceCollection {
   __kind: "resource_collection";
   categories: ResourceCategory[];
   description?: string;
+}
+
+/**
+ * One passage a retrieval returned, and why it was returned.
+ *
+ * The lane ranks are kept separately rather than collapsed into one number
+ * because they answer different questions — `vector_rank` says the embedding
+ * liked it, `lexical_rank` says the words matched, `entity_rank` says the graph
+ * connected it, and `rerank_score` says the reranker agreed. A single opaque
+ * score cannot explain a result to the person reading it.
+ *  *
+ *  * Kind `retrieved_chunk` (registry v2).
+ */
+export interface RetrievedChunk {
+  /**
+   * The final ranking score.
+   */
+  score?: number | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "retrieved_chunk";
+  /**
+   * What this passage came from — the durable pointer.
+   */
+  source?: SourceRef | null;
+  agent_id?: string | null;
+  chunk_id: string;
+  /**
+   * Entity names present in this passage.
+   */
+  entities?: string[];
+  priority?: number | null;
+  /**
+   * text | table | code | …
+   */
+  chunk_kind?: string | null;
+  /**
+   * Rank in the knowledge-graph lane.
+   */
+  entity_rank?: number | null;
+  /**
+   * Rank in the embedding lane.
+   */
+  vector_rank?: number | null;
+  /**
+   * The matched passage itself.
+   */
+  content_text: string;
+  /**
+   * Rank in the keyword lane.
+   */
+  lexical_rank?: number | null;
+  rerank_score?: number | null;
+  /**
+   * How this passage came to exist, e.g. 'initial_extract'.
+   */
+  derivation_kind?: string | null;
+  parent_chunk_id?: string | null;
+  extraction_run_id?: string | null;
 }
 
 /**
@@ -13136,6 +13090,80 @@ export interface SourceAuthorityRankings {
      */
     entity_match_confidence?: number | null;
   })[];
+}
+
+/**
+ * A pointer to something we can show the reader, with enough on it to show.
+ *
+ * The bar this shape must clear: a person looking at a claim can OPEN the
+ * thing it came from, and see enough to judge whether to trust it. That is why
+ * `url` and `title` are here beside the internal ids, and why `authority`,
+ * `version` and the effective dates survive — for a regulation, "which version,
+ * still in force?" is the whole question.
+ *
+ * Every field but `source_kind` is optional, because the four producers this
+ * replaces know different amounts. That is provider asymmetry, and the
+ * distillation laws say it becomes an optional field on ONE shape, never two
+ * shapes or a dropped field.
+ *  *
+ *  * Kind `source_ref` (registry v2).
+ */
+export interface SourceRef {
+  /**
+   * Where a reader can open it.
+   */
+  url?: string | null;
+  title?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "source_ref";
+  author?: string | null;
+  /**
+   * How we came to cite this — 'retrieval', 'model_citation', 'user_supplied'.
+   */
+  origin?: string | null;
+  /**
+   * The quoted passage this reference supports.
+   */
+  excerpt?: string | null;
+  favicon?: string | null;
+  /**
+   * Where in the source the citation points.
+   */
+  locator?: SourceLocator | null;
+  /**
+   * Edition or revision of the source.
+   */
+  version?: string | null;
+  /**
+   * How authoritative the source is, as the corpus declares it.
+   */
+  authority?: string | null;
+  publisher?: string | null;
+  site_name?: string | null;
+  /**
+   * Our internal id for the source, when it is ours.
+   */
+  source_id?: string | null;
+  /**
+   * Canonical short handle, e.g. 'NIST-SP-800-61r3'.
+   */
+  short_code?: string | null;
+  /**
+   * What the source is. Documented vocabulary: web_page, library_doc, file, note, message, transcript, dataset_row, opinion, docket, unknown.
+   */
+  source_kind: string;
+  /**
+   * When it stopped being in force. NULL means still current.
+   */
+  effective_to?: string | null;
+  jurisdiction?: string | null;
+  /**
+   * ISO-8601 date(time); may be approximate.
+   */
+  published_at?: string | null;
+  effective_from?: string | null;
 }
 
 /**
@@ -17922,6 +17950,7 @@ export type GeneratedKindSlug =
   | "research_setup_suggestion"
   | "research_tag_suggestions"
   | "resource_collection"
+  | "retrieved_chunk"
   | "reviewer_result_card"
   | "rule_governed_variant_set"
   | "run_result"
@@ -17995,6 +18024,7 @@ export type GeneratedKindSlug =
   | "slug_result"
   | "sorted_list_result"
   | "source_authority_rankings"
+  | "source_ref"
   | "split_result"
   | "sql_query_result"
   | "status_ping_debug"
@@ -18377,6 +18407,7 @@ export interface KindPayloadBySlug {
   "research_setup_suggestion": ResearchSetupSuggestion;
   "research_tag_suggestions": ResearchTagSuggestions;
   "resource_collection": ResourceCollection;
+  "retrieved_chunk": RetrievedChunk;
   "reviewer_result_card": ReviewerResultCard;
   "rule_governed_variant_set": RuleGovernedVariantSet;
   "run_result": RunResult;
@@ -18450,6 +18481,7 @@ export interface KindPayloadBySlug {
   "slug_result": SlugResult;
   "sorted_list_result": SortedListResult;
   "source_authority_rankings": SourceAuthorityRankings;
+  "source_ref": SourceRef;
   "split_result": SplitResult;
   "sql_query_result": SqlQueryResult;
   "status_ping_debug": StatusPingDebug;
@@ -18836,6 +18868,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "research_setup_suggestion",
   "research_tag_suggestions",
   "resource_collection",
+  "retrieved_chunk",
   "reviewer_result_card",
   "rule_governed_variant_set",
   "run_result",
@@ -18909,6 +18942,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "slug_result",
   "sorted_list_result",
   "source_authority_rankings",
+  "source_ref",
   "split_result",
   "sql_query_result",
   "status_ping_debug",
