@@ -57,9 +57,9 @@ One bounded retry returned `pg_cancel_backend=true` but
 3. Defer intervention; the class remains open and every large-site health read
    can continue timing out. This is safe for stored data but not recommended.
 
-**Exactly what Arman must do:** open the main Supabase project, restart its
-database (option 1), and reply `restarted` with the completion time. Do not
-change timeouts or run SQL.
+**Exactly what Arman must do:** approve the brief production database outage.
+The agent will perform the restart and recovery; Arman is not being assigned
+dashboard or SQL work.
 
 **What the agent will do afterward:** verify the stale backend is gone, run the
 already-committed `DROP INDEX CONCURRENTLY` / `CREATE INDEX CONCURRENTLY`
