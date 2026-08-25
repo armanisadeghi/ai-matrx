@@ -29,12 +29,22 @@ describe("resolveMarketingSidebarSiteContext", () => {
   it.each(["/marketing/search-console", "/marketing/capabilities"])(
     "keeps a selected website on %s in the website sidebar",
     (pathname) => {
-      expect(resolveMarketingSidebarSiteContext(pathname, "site-1")).toEqual({
+      const siteId = "38eff4c9-b021-451a-b995-7d9b3d17db5e";
+      expect(resolveMarketingSidebarSiteContext(pathname, siteId)).toEqual({
         brandId: null,
-        siteId: "site-1",
+        siteId,
       });
     },
   );
+
+  it("rejects malformed query-scoped site context before shared navigation reads it", () => {
+    expect(
+      resolveMarketingSidebarSiteContext(
+        "/marketing/search-console",
+        "38eff4c9-b021-451a-b995-7d9b3d17db5e/value/discovery",
+      ),
+    ).toBeNull();
+  });
 
   it.each([
     ["/marketing", null],

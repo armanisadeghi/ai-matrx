@@ -54,8 +54,10 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   `?site=` → per-site dashboard. **ALL view state is URL state**
   (`lib/url-state.ts`): `?site&tab&range&compare&q&qc&qn&pg&pgc&country&device&appearance`
   (+ `from`/`to` for custom ranges) — every drill-down is a shareable link.
-  **`?site` is UUID-validated at this boundary**; malformed/path-like values
-  fall back to the portfolio and never reach site-scoped RPCs.
+  **`?site` is UUID-validated at both consumers**: `parseSearchConsoleUrl`
+  guards the workspace and `resolveMarketingSidebarSiteContext` guards shared
+  navigation. Malformed/path-like values fall back to the portfolio and never
+  reach site-scoped reads.
   View STYLE only would go to `useListViewPrefs`; query state never persists.
   Ranges run **1d / 7d / 14d / 28d / 3m / 6m / 12m / 16m / custom**; the
   default is the NAMED `GSC_DEFAULT_RANGE` (`types.ts`) — parse fallback,
@@ -762,8 +764,9 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
-- 2026-08-25 — UUID-validated the Search Console `?site` URL boundary so a
-  malformed deep link cannot pass a path-like value into site-scoped GSC RPCs.
+- 2026-08-25 — UUID-validated both Search Console `?site` consumers so a
+  malformed deep link cannot pass a path-like value through the workspace or
+  shared site navigation into site-scoped reads.
 
 - 2026-08-25 — **Keyword-table density and editable-cell repair.** Search
   Console Queries widens Offering/Class to 270/150px and standardizes its

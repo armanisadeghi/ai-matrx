@@ -1,3 +1,5 @@
+import { isUuidFilter } from "@/features/marketing/data/analysis-query";
+
 /**
  * Resolve the website whose navigation must stay in Marketing's sidebar.
  *
@@ -56,7 +58,9 @@ export function resolveMarketingSidebarSiteContext(
 
   const querySiteId = nonEmpty(selectedSiteId);
   if (querySiteId && QUERY_SCOPED_SITE_ROUTES.has(pathname)) {
-    return { brandId: null, siteId: querySiteId };
+    return isUuidFilter(querySiteId)
+      ? { brandId: null, siteId: querySiteId }
+      : null;
   }
 
   return null;
