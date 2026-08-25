@@ -81,6 +81,11 @@ tables (AI Models, relationships, …) can cut over to one contract.
 - **Copy** uses `CopyButtons` + `buildAgentPayload` (row + this view). When both `selection` and
   `copy` are configured, the bulk bar automatically exposes Copy / JSON / Copy for AI for the
   loaded selected rows; consumers add only their domain-specific bulk actions.
+- **Desktop row actions are micro; touch targets stay full-size.** Table-owned
+  row Copy/Copy-for-AI and window triggers use the `xs` action preset at `lg`
+  (20px group height) and remain 44px below `lg`. Consumer icon-only
+  `rowActions` match `h-11 w-11 lg:h-5 lg:w-5`; never use the default icon
+  button size inside a row.
 - **Inline edits are deferred** — draft locally, persist only on floating Save pill.
 - **Never static-import `WindowPanel`** from a route — go through `DataRowWindow.dynamic.tsx`.
 - **No barrel `index.ts`.** Import from source files.
@@ -235,6 +240,10 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-25 — Standardized table-owned row Copy and window actions on the
+  micro desktop preset while retaining 44px touch targets; added a regression
+  assertion for the responsive action classes.
 
 - 2026-08-25 — Added `processLocalRows` for hierarchy-aware local datasets.
   The first consumer, Keyword Value Offerings, preserves lineage, collapse, and

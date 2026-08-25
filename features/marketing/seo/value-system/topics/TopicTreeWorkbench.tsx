@@ -21,7 +21,6 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CircleDollarSign,
@@ -43,7 +42,10 @@ import { InlineQueryError } from "@/features/marketing/components/shared/Marketi
 import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
-import { commitUrlParams } from "@/lib/url-state/useUrlState";
+import {
+  commitUrlParams,
+  useUrlSearchParams,
+} from "@/lib/url-state/useUrlState";
 import { getValueVocabulary } from "../data";
 import { buildBandMeta, reviewWindow } from "../lib";
 import {
@@ -111,7 +113,7 @@ function parseOfferingKpiTarget(
 
 export function TopicTreeWorkbench() {
   const { site, brandId } = useMarketingSite();
-  const searchParams = useSearchParams();
+  const searchParams = useUrlSearchParams();
   const siteId = site.id;
   /**
    * `?topic=<id>[&worth=1]` — the door every value receipt points at when the

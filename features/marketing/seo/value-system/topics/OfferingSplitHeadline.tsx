@@ -222,7 +222,7 @@ export function OfferingSplitHeadline({
           </p>
         </div>
 
-        <div className="grid flex-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
+        <div className="grid flex-1 grid-cols-2 gap-1.5 lg:grid-cols-3 xl:grid-cols-7">
           {buckets.map((bucket) => {
             const chrome = BUCKET_CHROME[bucket.key];
             const Icon = chrome.icon;

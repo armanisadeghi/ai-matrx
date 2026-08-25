@@ -533,7 +533,15 @@ Offering match, Lead quality, Keywords here, Keywords in branch, Clicks,
 Impressions, and one column per value band. Name, type, worth, offering match,
 and lead quality edit directly in the row through the table's deferred Save
 contract. The compact traffic summary above the table does not repeat the
-catalog or consume the working viewport.
+catalog or consume the working viewport. Every number in that summary is a
+button: revenue/authority and placed-demand metrics apply the canonical table's
+URL-backed column filters, while unplaced and confirmation counts scroll to
+their already-filtered keyword tables. Back restores the prior lens and scroll
+target. Placement coverage lives in this single KPI band; the run strip below
+is one terse operational line and never advertises a count with no drill-in.
+The tree viewport is approximately 1.5x the former working height. Desktop row
+copy/menu actions use the canonical micro preset; phone/tablet targets remain
+44px.
 
 The whole tree pane mounts ONE delegated universal context menu. Every row
 resolves its own `seo_topic` entity and exposes the same actions as the
@@ -588,6 +596,14 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   filters, sibling sort, inline edits, copy/export, and table rendering; every
   formerly stacked badge is a separate high-contrast column, and the summary
   above it is compact enough to keep rows in the initial viewport.
+
+- 2026-08-25 — Codex: **Offering KPIs became doors and the tree gained working
+  room.** The unified top band now includes Search Console click coverage,
+  demand-keyword coverage, placement backlog, and confirmation backlog; every
+  card applies a URL-backed Offering filter or opens the corresponding keyword
+  table, and Back restores it. The lower placement strip is concise, unsupported
+  quarantine counts are hidden, the tree viewport is taller, and canonical
+  desktop row actions use the micro preset without shrinking mobile targets.
 
 - 2026-08-25 — Codex: **Site Media has a direct crawl door without a second
   crawler.** Its responsive header links to the canonical New Crawl workspace
