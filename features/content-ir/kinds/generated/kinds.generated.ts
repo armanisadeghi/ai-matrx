@@ -11786,7 +11786,7 @@ export interface SchemaQcResult {
  */
 export interface ScrapedPage {
   /**
-   * Detected CMS, when recognised.
+   * Detected CMS, when recognized.
    */
   cms?: string | null;
   url: string;
@@ -11820,7 +11820,7 @@ export interface ScrapedPage {
    */
   cleaning?: PageCleaningReport | null;
   /**
-   * Detected WAF/CDN, when recognised.
+   * Detected WAF/CDN, when recognized.
    */
   firewall?: string | null;
   markdown?: string | null;
