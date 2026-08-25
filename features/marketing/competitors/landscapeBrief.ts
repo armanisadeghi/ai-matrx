@@ -183,22 +183,36 @@ export interface LocalCompetitorSearchResult {
   count: number;
 }
 
-/** Search Google's local pack for a keyword in a geographic area and propose
- *  every business with a website as a competitor. The primary discovery path
- *  for local businesses — the literal map-pack rivals, not keyword overlap.
+/**
+ * The ONE way this surface runs a durable SEO discovery command.
  *
- *  STREAMED: one provider search plus a classification pass per business runs
- *  well past any synchronous request budget (27s measured on a three-result
- *  pack), so the result arrives as the run's final stream event. `onStage`
- *  receives each stage so the caller can say what is happening. */
-export async function discoverLocalCompetitors(
-  siteId: string,
-  keyword: string,
-  location: string,
-  dispatch: AppDispatch,
-  onStage?: (stage: string) => void,
-): Promise<LocalCompetitorSearchResult> {
-  let finalResult: LocalCompetitorSearchResult | null = null;
+ * Both discovery paths are slow by nature — a provider call plus a
+ * classification pass per result — and both outlived `callApi`'s request
+ * budget while the server completed fine (27s measured; every classic
+ * discovery run ever recorded was left abandoned). So both stream: the client
+ * adopts the run's stream, reports each stage, and reads the result document
+ * off the run's final event.
+ */
+async function runSeoDiscoveryStream<T>({
+  siteId,
+  dispatch,
+  path,
+  body,
+  finalKind,
+  stages,
+  onStage,
+  fallbackError,
+}: {
+  siteId: string;
+  dispatch: AppDispatch;
+  path: "/seo/sites/{site_id}/competitors/discover" | "/seo/sites/{site_id}/competitors/discover-local";
+  body: Record<string, unknown>;
+  finalKind: string;
+  stages: Record<string, string>;
+  onStage?: (stage: string) => void;
+  fallbackError: string;
+}): Promise<T> {
+  let finalResult: T | null = null;
   let streamError: string | null = null;
   const abortController = new AbortController();
   const consumeStream = dispatch(
@@ -213,23 +227,23 @@ export async function discoverLocalCompetitors(
         const data: unknown = event.data;
         if (!isJsonObject(data)) return;
         const kind = typeof data.kind === "string" ? data.kind : "";
-        if (kind === "seo.local_search_started") onStage?.("Running the local search");
-        if (kind === "seo.local_search_completed") onStage?.("Reading who Google shows");
-        if (kind === "seo.local_competitors_persisted")
-          onStage?.("Proposing each business");
-        if (kind === "seo.local_competitors_completed") {
+        const stage = stages[kind];
+        if (stage) onStage?.(stage);
+        if (kind === finalKind) {
+          // run_streamed_command emits the persisted result document; a replayed
+          // (already-completed) run carries the same shape.
           const payload = isJsonObject(data.result) ? data.result : data;
-          finalResult = payload as unknown as LocalCompetitorSearchResult;
+          finalResult = payload as unknown as T;
         }
       },
     }),
   );
   const result = await dispatch(
     callApi({
-      path: "/seo/sites/{site_id}/competitors/discover-local",
+      path,
       method: "POST",
       pathParams: { site_id: siteId },
-      body: { keyword, location },
+      body,
       stream: true,
       consumeStream,
       signal: abortController.signal,
@@ -238,28 +252,57 @@ export async function discoverLocalCompetitors(
   if (streamError) throw new Error(streamError);
   if (result.error) {
     throw new Error(
-      describeBackendFailure(parseCallApiError(result.error)).headline ??
-        "Local competitor search failed",
+      describeBackendFailure(parseCallApiError(result.error)).headline ?? fallbackError,
     );
   }
-  if (!finalResult)
-    throw new Error("The local search finished without returning its results.");
+  if (!finalResult) throw new Error(`${fallbackError}: the run returned no result.`);
   return finalResult;
+}
+
+/** Search Google's local pack for a keyword in a geographic area and propose
+ *  every business with a website as a competitor. The primary discovery path
+ *  for local businesses — the literal map-pack rivals, not keyword overlap. */
+export async function discoverLocalCompetitors(
+  siteId: string,
+  keyword: string,
+  location: string,
+  dispatch: AppDispatch,
+  onStage?: (stage: string) => void,
+): Promise<LocalCompetitorSearchResult> {
+  return runSeoDiscoveryStream<LocalCompetitorSearchResult>({
+    siteId,
+    dispatch,
+    path: "/seo/sites/{site_id}/competitors/discover-local",
+    body: { keyword, location },
+    finalKind: "seo.local_competitors_completed",
+    stages: {
+      "seo.local_search_started": "Running the local search",
+      "seo.local_search_completed": "Reading who Google shows",
+      "seo.local_competitors_persisted": "Proposing each business",
+    },
+    onStage,
+    fallbackError: "Local competitor search failed",
+  });
 }
 
 /** Find the rivals and classify them — without buying a full page-crawl autopsy. */
 export async function discoverCompetitors(
   siteId: string,
   dispatch: AppDispatch,
+  onStage?: (stage: string) => void,
 ): Promise<number> {
-  const result = await dispatch(callApi({
+  return runSeoDiscoveryStream<{ count?: number }>({
+    siteId,
+    dispatch,
     path: "/seo/sites/{site_id}/competitors/discover",
-    method: "POST",
-    pathParams: { site_id: siteId },
     body: {},
-  }));
-  if (result.error)
-    throw new Error(result.error.message ?? "Competitor discovery failed");
-  const payload = result.data as { count?: number } | null;
-  return payload?.count ?? 0;
+    finalKind: "seo.competitors_discovered",
+    stages: {
+      "seo.competitor_discovery_started": "Reading your own search results",
+      "seo.competitor_discovery_completed": "Weighing the overlap",
+      "seo.competitors_persisted": "Proposing each rival",
+    },
+    onStage,
+    fallbackError: "Competitor discovery failed",
+  }).then((payload) => payload.count ?? 0);
 }

@@ -257,8 +257,13 @@ export default function CompetitorAutopsyWorkspace() {
   const findCompetitors = async () => {
     if (!resolvedSiteId) return;
     setDiscovering(true);
+    setLocalStage("Reading your own search results");
     try {
-      const count = await discoverCompetitors(resolvedSiteId, dispatch);
+      const count = await discoverCompetitors(
+        resolvedSiteId,
+        dispatch,
+        setLocalStage,
+      );
       await refresh();
       toast.success(
         count
@@ -271,6 +276,7 @@ export default function CompetitorAutopsyWorkspace() {
       );
     } finally {
       setDiscovering(false);
+      setLocalStage(null);
     }
   };
 
@@ -957,8 +963,9 @@ export default function CompetitorAutopsyWorkspace() {
                 Find my competitors
               </Button>
               <span className="text-xs text-muted-foreground">
-                Pulls real rivals out of your own search results and proposes what
-                each one is. Nothing counts until you say so.
+                {discovering && localStage
+                  ? `${localStage}…`
+                  : "Pulls real rivals out of your own search results and proposes what each one is. Nothing counts until you say so."}
               </span>
             </div>
             <div className="rounded-md border border-border bg-card p-3">
