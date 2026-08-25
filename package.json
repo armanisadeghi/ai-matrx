@@ -248,7 +248,7 @@
     "lab:run": "bash scripts/build-lab/run.sh"
   },
   "dependencies": {
-    "@ai-matrx/agents": "0.2.1",
+    "@ai-matrx/agents": "0.3.0",
     "@ai-matrx/content-ir": "0.2.1",
     "@ai-matrx/content-ir-react": "0.1.0",
     "@ai-matrx/design-system": "0.1.1",
