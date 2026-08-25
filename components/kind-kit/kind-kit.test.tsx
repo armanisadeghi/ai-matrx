@@ -332,6 +332,44 @@ describe("kind-kit", () => {
     ).toContain("authored");
   });
 
+  it("unwraps module-wrapped icon components and rejects invalid objects", () => {
+    function WrappedIcon({ className }: { className?: string }) {
+      return <svg data-testid="wrapped-icon" className={className} />;
+    }
+    const moduleWrappedIcon = { default: WrappedIcon };
+    const invalidIcon = { name: "not-a-component" };
+
+    expect(() => {
+      act(() => {
+        root.render(
+          <KindHeaderBar
+            title="Coverage audit"
+            stats={[
+              {
+                label: "wrapped",
+                value: 1,
+                icon: moduleWrappedIcon as unknown as React.ComponentType<{
+                  className?: string;
+                }>,
+              },
+              {
+                label: "invalid",
+                value: 2,
+                icon: invalidIcon as unknown as React.ComponentType<{
+                  className?: string;
+                }>,
+              },
+            ]}
+          />,
+        );
+      });
+    }).not.toThrow();
+    expect(
+      container.querySelector('[data-testid="wrapped-icon"]'),
+    ).not.toBeNull();
+    expect(container.textContent).toContain("invalid");
+  });
+
   it("TagList: chips wrap (never truncate), add/remove/edit/toggle wire through", () => {
     const onAdd = jest.fn();
     const onRemove = jest.fn();
