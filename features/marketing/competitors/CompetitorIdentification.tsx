@@ -135,7 +135,11 @@ export function derivedCompetitorLabel(
     | "search_overlap_band"
   > & { peer_scale?: string | null },
 ): string {
-  if (row.entity_role && ENTITY_ROLE_LABELS[row.entity_role] && row.entity_role !== "business")
+  if (
+    row.entity_role &&
+    ENTITY_ROLE_LABELS[row.entity_role] &&
+    row.entity_role !== "business"
+  )
     return ENTITY_ROLE_LABELS[row.entity_role];
 
   // `category_leader` outranks market overlap: "the national chain you build
@@ -385,35 +389,40 @@ export function CompetitorClassificationEditor({
     label: string,
     value: string | null,
     axisValues: readonly string[],
-    key: "business_overlap" | "market_overlap" | "entity_role" | "peer_scale" | "posture",
+    key:
+      | "business_overlap"
+      | "market_overlap"
+      | "entity_role"
+      | "peer_scale"
+      | "posture",
   ) => {
     const axisReason = classificationReasons?.[key];
     return (
       <div className="space-y-1.5">
-      <Label>{label}</Label>
-      <Select
-        value={value ?? ""}
-        onValueChange={(next) =>
-          setDraft((current) => ({ ...current, [key]: next }))
-        }
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="Choose" />
-        </SelectTrigger>
-        <SelectContent>
-          {axisValues.map((item) => (
-            <SelectItem value={item} key={item}>
-              {item.replaceAll("_", " ")}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {typeof axisReason === "string" ? (
-        <p className="text-xs leading-5 text-muted-foreground">
-          {axisReason}
-        </p>
-      ) : null}
-    </div>
+        <Label>{label}</Label>
+        <Select
+          value={value ?? undefined}
+          onValueChange={(next) =>
+            setDraft((current) => ({ ...current, [key]: next }))
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Choose" />
+          </SelectTrigger>
+          <SelectContent>
+            {axisValues.map((item) => (
+              <SelectItem value={item} key={item}>
+                {item.replaceAll("_", " ")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {typeof axisReason === "string" ? (
+          <p className="text-xs leading-5 text-muted-foreground">
+            {axisReason}
+          </p>
+        ) : null}
+      </div>
     );
   };
   return (
@@ -436,7 +445,12 @@ export function CompetitorClassificationEditor({
         )}
         {axis("Market overlap", draft.market_overlap, MARKET, "market_overlap")}
         {axis("Entity role", draft.entity_role, ROLE, "entity_role")}
-        {axis("Are they in your league?", draft.peer_scale, PEER_SCALE, "peer_scale")}
+        {axis(
+          "Are they in your league?",
+          draft.peer_scale,
+          PEER_SCALE,
+          "peer_scale",
+        )}
         {axis("What should we do?", draft.posture, POSTURE, "posture")}
       </div>
       <div className="space-y-1.5">
@@ -482,9 +496,7 @@ export function CompetitorClassificationEditor({
         </Label>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor={`why-${row.id}`}>
-          Why? (in your own words)
-        </Label>
+        <Label htmlFor={`why-${row.id}`}>Why? (in your own words)</Label>
         <Textarea
           id={`why-${row.id}`}
           value={why}

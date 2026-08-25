@@ -41,7 +41,8 @@ export function useFrontDoorSite(): FrontDoorSiteState {
   const sites = useSiteOptions();
   const options = sites.data ?? [];
   const requested = params.get("site");
-  const site = options.find((item) => item.id === requested) ?? options[0] ?? null;
+  const site =
+    options.find((item) => item.id === requested) ?? options[0] ?? null;
   return {
     options,
     site,

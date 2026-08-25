@@ -65,10 +65,23 @@ const SCAN_GLOBS = [
  * allowlist without a reason is how a law rots into a formality.
  */
 const ALLOW: Array<{ match: RegExp; reason: string }> = [
-  { match: /components\/ui\//, reason: "primitive component library — the caller supplies the items" },
-  { match: /RangeCompareControl|DateRange|periodPicker/i, reason: "time ranges are a closed set by nature" },
-  { match: /SiteSwitcher|BrandSwitcher|OrgSwitcher/i, reason: "picks an existing record created elsewhere; inline creation lives on that record's own surface" },
-  { match: /sortDir|SortDirection/i, reason: "ascending/descending is not extensible" },
+  {
+    match: /components\/ui\//,
+    reason: "primitive component library — the caller supplies the items",
+  },
+  {
+    match: /RangeCompareControl|DateRange|periodPicker/i,
+    reason: "time ranges are a closed set by nature",
+  },
+  {
+    match: /SiteSwitcher|BrandSwitcher|OrgSwitcher/i,
+    reason:
+      "picks an existing record created elsewhere; inline creation lives on that record's own surface",
+  },
+  {
+    match: /sortDir|SortDirection/i,
+    reason: "ascending/descending is not extensible",
+  },
 ];
 
 const ADD_AFFORDANCE = [
@@ -122,7 +135,8 @@ function scan(): Finding[] {
       if (!ITEM_TAGS.test(source)) continue;
       if (!DATA_DRIVEN.test(source)) continue; // literal switches are fine
       if (ADD_AFFORDANCE.some((re) => re.test(source))) continue;
-      const items = (source.match(new RegExp(ITEM_TAGS.source, "g")) ?? []).length;
+      const items = (source.match(new RegExp(ITEM_TAGS.source, "g")) ?? [])
+        .length;
       findings.push({ file: rel, items });
     }
   }
@@ -132,7 +146,9 @@ function scan(): Finding[] {
 const findings = scan();
 
 if (findings.length === 0) {
-  console.log("✓ check:picker-add — every data-driven picker in the scanned surfaces offers a way to add a new option (P23).");
+  console.log(
+    "✓ check:picker-add — every data-driven picker in the scanned surfaces offers a way to add a new option (P23).",
+  );
   process.exit(0);
 }
 
@@ -141,22 +157,40 @@ console.log("╔═════════════════════�
 console.log("║ P23 — PICKERS THAT DO NOT TAKE NEW INPUT                     ║");
 console.log("╚══════════════════════════════════════════════════════════════╝");
 console.log("");
-console.log('  "It\'s the lazy coding agent who builds a popover with a drop down,');
-console.log('   but is too lazy to include an add feature." — Arman, 2026-08-23');
+console.log(
+  "  \"It's the lazy coding agent who builds a popover with a drop down,",
+);
+console.log(
+  '   but is too lazy to include an add feature." — Arman, 2026-08-23',
+);
 console.log("");
-console.log(`  ${findings.length} file(s) render choices from data with no add affordance:`);
+console.log(
+  `  ${findings.length} file(s) render choices from data with no add affordance:`,
+);
 console.log("");
 for (const f of findings) {
   console.log(`  • ${f.file}  (${f.items} item${f.items === 1 ? "" : "s"})`);
 }
 console.log("");
-console.log("  FIX: add an inline '+ Add …' (a type-ahead offering `Create \"what you typed\"`");
-console.log("  is the preferred shape), write through the ONE existing path for that");
-console.log("  vocabulary, and select the new value immediately. If the vocabulary is");
-console.log("  genuinely platform-shared (P11), say so in the control and offer the");
+console.log(
+  "  FIX: add an inline '+ Add …' (a type-ahead offering `Create \"what you typed\"`",
+);
+console.log(
+  "  is the preferred shape), write through the ONE existing path for that",
+);
+console.log(
+  "  vocabulary, and select the new value immediately. If the vocabulary is",
+);
+console.log(
+  "  genuinely platform-shared (P11), say so in the control and offer the",
+);
 console.log("  local-override path — never a silent refusal.");
 console.log("");
-console.log(STRICT ? "  --strict: failing." : "  Advisory: this check never blocks a build. It screams so a person acts.");
+console.log(
+  STRICT
+    ? "  --strict: failing."
+    : "  Advisory: this check never blocks a build. It screams so a person acts.",
+);
 console.log("");
 
 process.exit(STRICT ? 1 : 0);
