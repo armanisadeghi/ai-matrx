@@ -1,0 +1,116 @@
+{
+  "$comment": "Language-neutral drift fixture for collection item ORDERING — the ONE pin holding the three implementations together: aidream/services/cms/collection_ordering.py (CANONICAL, Python — agent surface), my-matrx/lib/collections/ordering.js (visitor HTTP + SSR bindings), and matrx-frontend/features/cms/collections/ordering.ts (admin API). All three run every case identically. It pins MEANING, never SQL: each repo renders the resolved field its own way (ORM JsonText vs PostgREST `data->>field`), so `is_real_column` is what the fixture asserts — a field that is NOT a real column is a `data` jsonb path everywhere. parse_cases pin the `field[:asc|desc]` grammar; resolve_cases pin the precedence chain (requested -> settings.default_order -> created_at:desc), the allowlist (an unreadable sort field is an oracle), and the asymmetry that MATTERS: a bad CALLER spec errors, a bad SETTING warns and falls back, because a typo in a collection setting must never 4xx a visitor's page. allow_all_fields is the privileged-surface switch (agent + admin already read the whole row); public surfaces pass public_read_fields instead.",
+  "default_order": "created_at:desc",
+  "real_columns": ["created_at", "id"],
+
+  "parse_cases": [
+    { "name": "bare_field_defaults_ascending", "spec": "starts_at", "expect": { "field": "starts_at", "ascending": true } },
+    { "name": "explicit_asc", "spec": "starts_at:asc", "expect": { "field": "starts_at", "ascending": true } },
+    { "name": "explicit_desc", "spec": "created_at:desc", "expect": { "field": "created_at", "ascending": false } },
+    { "name": "direction_is_case_insensitive", "spec": "starts_at:DESC", "expect": { "field": "starts_at", "ascending": false } },
+    { "name": "surrounding_whitespace_trimmed", "spec": "  starts_at:asc  ", "expect": { "field": "starts_at", "ascending": true } },
+    { "name": "hyphen_and_underscore_are_legal_field_chars", "spec": "event-date_2:desc", "expect": { "field": "event-date_2", "ascending": false } },
+    { "name": "empty_string_is_not_a_spec", "spec": "", "expect": null },
+    { "name": "whitespace_only_is_not_a_spec", "spec": "   ", "expect": null },
+    { "name": "unknown_direction_rejected", "spec": "starts_at:sideways", "expect": null },
+    { "name": "three_parts_rejected", "spec": "starts_at:asc:extra", "expect": null },
+    { "name": "empty_field_rejected", "spec": ":asc", "expect": null },
+    { "name": "sql_injection_shaped_field_rejected", "spec": "starts_at); drop table x;--:asc", "expect": null },
+    { "name": "jsonb_arrow_in_field_rejected", "spec": "data->>x:asc", "expect": null },
+    { "name": "field_over_64_chars_rejected", "spec": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:asc", "expect": null },
+    { "name": "field_at_64_chars_allowed", "spec": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:asc", "expect": { "field": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "ascending": true } },
+    { "name": "non_string_rejected", "spec": 17, "expect": null },
+    { "name": "null_rejected", "spec": null, "expect": null }
+  ],
+
+  "resolve_cases": [
+    {
+      "name": "nothing_declared_is_the_historical_default",
+      "requested": null, "settings": null, "allowed_fields": null, "allow_all_fields": false,
+      "expect": { "order": { "field": "created_at", "ascending": false }, "error": null }
+    },
+    {
+      "name": "empty_settings_object_is_the_historical_default",
+      "requested": null, "settings": {}, "allowed_fields": ["starts_at"], "allow_all_fields": false,
+      "expect": { "order": { "field": "created_at", "ascending": false }, "error": null }
+    },
+    {
+      "name": "declared_default_order_wins_over_the_historical_default",
+      "requested": null, "settings": { "default_order": "starts_at:asc" }, "allowed_fields": ["starts_at"], "allow_all_fields": false,
+      "expect": { "order": { "field": "starts_at", "ascending": true }, "error": null }
+    },
+    {
+      "name": "request_beats_the_declared_default",
+      "requested": "title:desc", "settings": { "default_order": "starts_at:asc" }, "allowed_fields": ["starts_at", "title"], "allow_all_fields": false,
+      "expect": { "order": { "field": "title", "ascending": false }, "error": null }
+    },
+    {
+      "name": "empty_request_is_no_request_not_an_error",
+      "requested": "", "settings": { "default_order": "starts_at:asc" }, "allowed_fields": ["starts_at"], "allow_all_fields": false,
+      "expect": { "order": { "field": "starts_at", "ascending": true }, "error": null }
+    },
+    {
+      "name": "real_columns_need_no_allowlist",
+      "requested": "created_at:asc", "settings": null, "allowed_fields": null, "allow_all_fields": false,
+      "expect": { "order": { "field": "created_at", "ascending": true }, "error": null }
+    },
+    {
+      "name": "id_is_orderable_on_any_surface",
+      "requested": "id:desc", "settings": null, "allowed_fields": null, "allow_all_fields": false,
+      "expect": { "order": { "field": "id", "ascending": false }, "error": null }
+    },
+    {
+      "name": "unreadable_requested_field_is_an_oracle_and_errors",
+      "requested": "internal_notes:asc", "settings": null, "allowed_fields": ["title"], "allow_all_fields": false,
+      "expect": { "order": null, "error": "invalid_order" }
+    },
+    {
+      "name": "malformed_request_errors",
+      "requested": "starts_at:sideways", "settings": { "default_order": "starts_at:asc" }, "allowed_fields": ["starts_at"], "allow_all_fields": false,
+      "expect": { "order": null, "error": "invalid_order" }
+    },
+    {
+      "name": "unreadable_declared_default_warns_and_falls_back",
+      "requested": null, "settings": { "default_order": "internal_notes:asc" }, "allowed_fields": ["title"], "allow_all_fields": false,
+      "expect": { "order": { "field": "created_at", "ascending": false }, "error": null }
+    },
+    {
+      "name": "malformed_declared_default_warns_and_falls_back",
+      "requested": null, "settings": { "default_order": "starts_at:sideways" }, "allowed_fields": ["starts_at"], "allow_all_fields": false,
+      "expect": { "order": { "field": "created_at", "ascending": false }, "error": null }
+    },
+    {
+      "name": "non_string_declared_default_falls_back",
+      "requested": null, "settings": { "default_order": 5 }, "allowed_fields": ["starts_at"], "allow_all_fields": false,
+      "expect": { "order": { "field": "created_at", "ascending": false }, "error": null }
+    },
+    {
+      "name": "privileged_surface_honours_a_default_with_no_public_allowlist",
+      "requested": null, "settings": { "default_order": "starts_at:asc" }, "allowed_fields": null, "allow_all_fields": true,
+      "expect": { "order": { "field": "starts_at", "ascending": true }, "error": null }
+    },
+    {
+      "name": "privileged_surface_may_sort_by_a_non_public_field",
+      "requested": "internal_notes:desc", "settings": null, "allowed_fields": null, "allow_all_fields": true,
+      "expect": { "order": { "field": "internal_notes", "ascending": false }, "error": null }
+    },
+    {
+      "name": "privileged_surface_still_rejects_a_malformed_request",
+      "requested": "starts_at:sideways", "settings": null, "allowed_fields": null, "allow_all_fields": true,
+      "expect": { "order": null, "error": "invalid_order" }
+    },
+    {
+      "name": "public_surface_without_allowlist_falls_back_rather_than_leaking",
+      "requested": null, "settings": { "default_order": "starts_at:asc" }, "allowed_fields": null, "allow_all_fields": false,
+      "expect": { "order": { "field": "created_at", "ascending": false }, "error": null }
+    }
+  ],
+
+  "field_classification_cases": [
+    { "field": "created_at", "is_real_column": true },
+    { "field": "id", "is_real_column": true },
+    { "field": "starts_at", "is_real_column": false },
+    { "field": "title", "is_real_column": false },
+    { "field": "status", "is_real_column": false }
+  ]
+}

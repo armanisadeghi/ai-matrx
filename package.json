@@ -103,6 +103,7 @@
     "check:hardcoded-agents": "tsx scripts/check-hardcoded-agents.ts",
     "check:hardcoded-agents:write": "tsx scripts/check-hardcoded-agents.ts --write",
     "check:collection-validator": "tsx scripts/check-collection-validator.ts",
+    "check:collection-ordering": "tsx scripts/check-collection-ordering.ts",
     "check:archetype-expansion": "tsx scripts/check-archetype-expansion.ts",
     "check:archetype-expansion:strict": "tsx scripts/check-archetype-expansion.ts --strict",
     "check:shareable-registry": "tsx scripts/regen-shareable-registry-snapshot.ts --check",

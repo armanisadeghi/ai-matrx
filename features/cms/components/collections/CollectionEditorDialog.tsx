@@ -5,7 +5,16 @@
  * name/slug/description, the field-schema builder (add/remove/reorder, per-type
  * constraints), validation mode, the public read/write policy toggles (with the
  * richtext × public_write block mirrored from the server rule), upsert/search
- * flags, and the settings overrides (honeypot field, retention days).
+ * flags, and the settings overrides (honeypot field, retention days, default
+ * order).
+ *
+ * `settings.default_order` is what every surface sorts this collection's items
+ * by — the published page, the agent's `list`, and the admin grid all resolve
+ * through it (features/cms/collections/ordering.ts). Until 2026-08-25 nothing
+ * in this UI could set it, so the one setting that decides whether an events
+ * list reads chronologically was reachable only by an agent or a raw API call.
+ * It is a FIELD PICKER, not a text box, because the value is a wire format
+ * (`field[:asc|desc]`) and a typo silently falls back to newest-first.
  *
  * Pure form component — the parent owns fetching and the save round-trip.
  */
@@ -43,6 +52,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { parseOrderSpec } from "@/features/cms/collections/ordering";
 
 const FIELD_TYPES: { value: CollectionFieldType; label: string }[] = [
   { value: "text", label: "Text" },
@@ -97,6 +107,8 @@ interface FormState {
   searchable: boolean;
   honeypotField: string;
   retentionDays: string;
+  orderField: string;      // "" = not declared (newest first)
+  orderAscending: boolean;
 }
 
 function initialState(collection: SiteCollection | null): FormState {
@@ -122,7 +134,22 @@ function initialState(collection: SiteCollection | null): FormState {
       typeof collection?.settings?.retention_days === "number"
         ? String(collection.settings.retention_days)
         : "",
+    ...parseDefaultOrder(collection?.settings?.default_order),
   };
+}
+
+/**
+ * Read `settings.default_order` back into the two controls. An unparseable
+ * value reads as "not declared" — exactly what every resolver does with it, so
+ * the form never shows an order the site does not actually use.
+ */
+function parseDefaultOrder(
+  value: unknown,
+): { orderField: string; orderAscending: boolean } {
+  const parsed = parseOrderSpec(value);
+  return parsed
+    ? { orderField: parsed.field, orderAscending: parsed.ascending }
+    : { orderField: "", orderAscending: false };
 }
 
 function ToggleRow({
@@ -252,6 +279,9 @@ export function CollectionEditorDialog({
       if (form.retentionDays.trim())
         settings.retention_days = Number(form.retentionDays);
       else delete settings.retention_days;
+      if (form.orderField)
+        settings.default_order = `${form.orderField}:${form.orderAscending ? "asc" : "desc"}`;
+      else delete settings.default_order;
 
       const payload: CollectionUpsertParams = {
         name: form.name.trim(),
@@ -644,6 +674,57 @@ export function CollectionEditorDialog({
               <p className="text-xs text-muted-foreground mt-1">
                 Items older than this are cleaned up automatically. Leave empty
                 to keep everything.
+              </p>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-sm font-medium block mb-1.5">
+                Default order
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={form.orderField}
+                  onChange={(e) => set("orderField", e.target.value)}
+                  className="h-9 flex-1 min-w-0 rounded-md border border-input bg-background px-2 text-sm"
+                >
+                  <option value="">Newest first (default)</option>
+                  <option value="created_at">Date added</option>
+                  {form.fields
+                    .filter((f) => f.key.trim())
+                    .map((f) => (
+                      <option key={f.key} value={f.key}>
+                        {f.label?.trim() || f.key}
+                      </option>
+                    ))}
+                </select>
+                <select
+                  value={form.orderAscending ? "asc" : "desc"}
+                  onChange={(e) => set("orderAscending", e.target.value === "asc")}
+                  disabled={!form.orderField}
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm disabled:opacity-50"
+                >
+                  <option value="asc">Ascending</option>
+                  <option value="desc">Descending</option>
+                </select>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                How this collection&apos;s items are ordered <strong>everywhere</strong> —
+                the published page, this admin grid, exports, and anything an
+                agent reads. An events collection wants its date field,
+                ascending, so past events fall off the top.
+                {form.publicRead &&
+                  form.orderField &&
+                  form.orderField !== "created_at" &&
+                  !form.publicReadFields.includes(form.orderField) && (
+                    <>
+                      {" "}
+                      <span className="text-amber-600 dark:text-amber-500">
+                        This field is not in the public read allowlist, so the
+                        published page will ignore this order and fall back to
+                        newest first — sorting by a field a visitor cannot read
+                        would leak its ordering.
+                      </span>
+                    </>
+                  )}
               </p>
             </div>
           </div>

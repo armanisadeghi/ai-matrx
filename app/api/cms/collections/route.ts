@@ -33,6 +33,10 @@ import {
   itemByteSize,
   countKeys,
 } from "@/features/cms/collections/validateItem";
+import {
+  applyOrder,
+  resolveOrderSpec,
+} from "@/features/cms/collections/ordering";
 import type {
   CollectionFieldDef,
   CollectionFieldType,
@@ -1012,9 +1016,30 @@ export async function POST(request: NextRequest) {
 
         const { data: collection } = await db
           .from("site_collections")
-          .select("searchable")
+          .select("searchable, settings")
           .eq("id", collectionId)
           .single();
+
+        // ONE meaning for "first" across the agent surface, this grid, and the
+        // published page: a per-request `order` → the collection's declared
+        // `settings.default_order` → the historical `created_at:desc`. The
+        // admin surface is PRIVILEGED (`allowAllFields`) — it renders every
+        // field of every row, so it is not held to `public_read_fields`.
+        // Semantics pinned by collection-ordering-rules.json; see ordering.ts.
+        const { order: itemOrder, error: orderError } = resolveOrderSpec({
+          requested: params.order,
+          settings: collection?.settings,
+          allowAllFields: true,
+        });
+        if (orderError) {
+          return NextResponse.json(
+            {
+              error:
+                "`order` must be `field[:asc|desc]` — for example `starts_at:asc`.",
+            },
+            { status: 400 },
+          );
+        }
 
         // Non-searchable collections have no tsvector — PostgREST cannot
         // ilike a jsonb column, so the fallback scans a capped window in the
@@ -1025,11 +1050,12 @@ export async function POST(request: NextRequest) {
             .select(ITEM_COLUMNS)
             .eq("collection_id", collectionId);
           scanQuery = applyItemFilter(scanQuery, filter);
-          const { data: scanned, error: scanError } = await scanQuery
-            .order("created_at", { ascending: false })
-            // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
-            .order("id", { ascending: false })
-            .limit(SEARCH_SCAN_CAP);
+          // Unique tiebreak LAST (ties are common on bulk-seeded rows) — carried
+          // by applyOrder for every sort field.
+          const { data: scanned, error: scanError } = await applyOrder(
+            scanQuery,
+            itemOrder,
+          ).limit(SEARCH_SCAN_CAP);
           if (scanError) {
             console.error("[cms/collections] items_list scan error:", scanError);
             return NextResponse.json(
@@ -1080,11 +1106,12 @@ export async function POST(request: NextRequest) {
           });
         }
         const from = (page - 1) * perPage;
-        const { data, error, count } = await query
-          .order("created_at", { ascending: false })
-          // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
-          .order("id", { ascending: false })
-          .range(from, from + perPage - 1);
+        // Unique tiebreak LAST — unstable-pagination guard (ties are common on
+        // bulk-seeded rows); applyOrder carries it for every sort field.
+        const { data, error, count } = await applyOrder(query, itemOrder).range(
+          from,
+          from + perPage - 1,
+        );
         if (error) {
           console.error("[cms/collections] items_list error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
@@ -1475,6 +1502,29 @@ export async function POST(request: NextRequest) {
         }
         const filter = resolveItemFilter(params.filter);
 
+        // Same resolved order as the grid this export was launched from — a CSV
+        // that comes out in a different order than the screen the user was
+        // looking at is a support ticket, not a feature.
+        const { data: exportCollection } = await db
+          .from("site_collections")
+          .select("settings")
+          .eq("id", collectionId)
+          .single();
+        const { order: exportOrder, error: exportOrderError } = resolveOrderSpec({
+          requested: params.order,
+          settings: exportCollection?.settings,
+          allowAllFields: true,
+        });
+        if (exportOrderError) {
+          return NextResponse.json(
+            {
+              error:
+                "`order` must be `field[:asc|desc]` — for example `starts_at:asc`.",
+            },
+            { status: 400 },
+          );
+        }
+
         /**
          * Pull in chunks and stop on EITHER cap. The row cap alone never
          * bounded the payload (`data` is unbounded jsonb), so a real inbox blew
@@ -1492,11 +1542,12 @@ export async function POST(request: NextRequest) {
             .select(EXPORT_COLUMNS)
             .eq("collection_id", collectionId);
           query = applyItemFilter(query, filter);
-          const { data: chunk, error } = await query
-            .order("created_at", { ascending: false })
-            // Unique tiebreak LAST — unstable-pagination guard (ties are common on bulk-seeded rows).
-            .order("id", { ascending: false })
-            .range(offset, Math.min(offset + EXPORT_CHUNK, EXPORT_CAP) - 1);
+          // Unique tiebreak LAST — unstable-pagination guard (ties are common
+          // on bulk-seeded rows); applyOrder carries it for every sort field.
+          const { data: chunk, error } = await applyOrder(query, exportOrder).range(
+            offset,
+            Math.min(offset + EXPORT_CHUNK, EXPORT_CAP) - 1,
+          );
           if (error) {
             console.error("[cms/collections] items_export error:", error);
             return NextResponse.json({ error: error.message }, { status: 500 });
