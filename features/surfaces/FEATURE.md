@@ -1,6 +1,6 @@
 # Tool Registry · UI Surfaces (v2)
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/agent-tools/FEATURE.md` — read it before touching this feature in ANY repo.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/agent-tools/STATE.md` — read it before touching this feature in ANY repo.
 
 **Status**: shipped
 **Owner**: tool-registry
@@ -39,7 +39,7 @@ The v2 page solves all four.
   `tool.definition` / `tool.binding` / `tool.executor`. The DB is authoritative
   for Registered-tool contracts and defaults; Inline tools remain a permanent,
   first-class request-time path for tools authored at runtime. Durability decides
-  which path applies. Rules: `docs/official/tool_system_rules.md`.
+  which path applies. Rules: `common-docs/systems/agents/agent-tools/DECISIONS.md`.
 
 Both hang off the same `ui.ui_surface` spine and resolve server-side in aidream `tool_merge.py` from the request's `client.surface`. When a doc says "surface manifest", identify which system before acting.
 

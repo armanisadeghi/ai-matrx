@@ -4,7 +4,7 @@
  * Per-tool "dimensions" — bindings (which executors run it), bundles it
  * belongs to, surfaces that force-include it, and gating policy.
  *
- * Authoritative model: see `docs/official/tool_system_rules.md`.
+ * Authoritative model: see `common-docs/systems/agents/agent-tools/DECISIONS.md`.
  */
 
 import { createClient } from "@/utils/supabase/client";

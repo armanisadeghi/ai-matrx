@@ -12,7 +12,7 @@
  * check is the schema that runs.
  *
  * What it checks per tool — the shared "what match means" spec across all three
- * surfaces (aidream, matrx-extend, matrx-frontend; see TOOL_SOURCE_OF_TRUTH.md):
+ * surfaces (aidream, matrx-extend, matrx-frontend; see common-docs/systems/agents/agent-tools/STATE.md):
  * the argument set, and for every field its type, required-ness, enum members
  * (incl. one-sided), and DEFAULT. tier / admin_only / category are part of the
  * shared spec but are NOT checked HERE: unlike matrx-extend's catalog manifest,
@@ -201,7 +201,7 @@ function compareTool(name: string, schema: z.ZodTypeAny, db: DbToolRow): string[
     }
 
     // Default value — the last piece of the shared "what match means" spec
-    // (TOOL_SOURCE_OF_TRUTH.md GAP 3; mirrors matrx-extend's checker). A default
+    // (common-docs/systems/agents/agent-tools/HANDOFF.md; mirrors matrx-extend's checker). A default
     // on one side but not the other, or differing defaults, is real drift: the
     // model and the dispatcher disagree on what an omitted field becomes.
     const lDef = (l as { default?: unknown }).default;

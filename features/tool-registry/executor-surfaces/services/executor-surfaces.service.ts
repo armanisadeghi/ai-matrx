@@ -3,7 +3,7 @@
 /**
  * Executors + Bindings service.
  *
- * See `docs/official/tool_system_rules.md` for the authoritative model. The
+ * See `common-docs/systems/agents/agent-tools/DECISIONS.md` for the authoritative model. The
  * two relevant tables:
  *
  *   `tool.executor` (PK = name)     — addressable capability provider, equal
