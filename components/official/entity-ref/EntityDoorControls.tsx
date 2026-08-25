@@ -21,7 +21,8 @@
  * destroying what the user is doing. Pass `showOpen` when the surface is a plain
  * list the user can safely leave.
  *
- * Hover reveal: controls fade in on hover of EITHER the named `group/entity-ref`
+ * Standalone controls are visible by default. Hover reveal is opt-in through
+ * `revealOnHover`; when enabled, controls fade in on hover of EITHER the named `group/entity-ref`
  * (what `EntityRef` puts on its own wrapper) OR a plain Tailwind `group`, which
  * is what almost every row in this codebase already carries for its other
  * hover-revealed affordances.
@@ -35,7 +36,7 @@
  * caught it. A primitive whose correct use depends on remembering an invisible
  * convention will be misused; make the common case work instead.
  *
- * `alwaysShowActions` still pins them visible for surfaces with no hover at all
+ * `alwaysShowActions` remains as a compatibility override that pins them visible
  * (a window title bar, a touch-first list). **Reach for it in any popover or
  * transient panel too**: `opacity-0` does not disable hit-testing, so on touch
  * the hover form is the worst case — invisible controls that are still
@@ -96,6 +97,8 @@ export interface EntityDoorControlsProps {
   showOpen?: boolean;
   /** Controls stay visible instead of appearing on hover/focus. */
   alwaysShowActions?: boolean;
+  /** Opt into hover/focus reveal. Standalone controls are visible by default. */
+  revealOnHover?: boolean;
   /** Surface-specific extra doors (open in window, jump to versions, …). */
   extraActions?: React.ReactNode;
   className?: string;
@@ -110,6 +113,7 @@ export function EntityDoorControls({
   disableNewTab = false,
   showOpen = false,
   alwaysShowActions = false,
+  revealOnHover = false,
   extraActions,
   className,
 }: EntityDoorControlsProps) {
@@ -131,7 +135,8 @@ export function EntityDoorControls({
       <span
         className={cn(
           "inline-flex shrink-0 items-center gap-0.5",
-          !alwaysShowActions &&
+          revealOnHover &&
+            !alwaysShowActions &&
             "opacity-0 transition-opacity group-hover/entity-ref:opacity-100 group-hover:opacity-100 focus-within:opacity-100",
           className,
         )}
