@@ -133,10 +133,14 @@ is the durable completion signal the orchestrator watches; it is only true once 
    ADDS to an existing registered kind must be optional-with-default (the compatibility gate).
 7. **Build one translation adapter per provider** (`<provider>_adapter.py`:
    `to_kind(raw) -> (Collection, TranslationReport)`) with per-section MAPPED/DROPPED key
-   registers at the top of the file, a `KeyAudit` that makes UNKNOWN keys scream (log + ops
-   record, never raise), and shared unification code (`translate.py`: date parsing incl.
-   relative dates → approximate ISO, HTML → text+links, durations, rank-from-order, site-name
-   derivation). Reference implementation: `aidream/aidream/services/search_kinds/`. Tests over
+   registers at the top of the file, and `KeyAudit` from **`matrx_graph.content_ir.audit`** — the
+   ONE shared copy, which makes UNKNOWN keys scream (log + ops record, never raise) and captures
+   every present DROPPED value. Identify yourself to it (`KeyAudit(SOURCE, family="<family>",
+   adapter_hint="aidream/services/<family>_kinds/{provider}_adapter.py")`) so the scream still
+   names the file to edit. Generic unification code (date parsing incl. relative dates →
+   approximate ISO, HTML → text+links, durations, site-name derivation) is
+   **`matrx_graph.content_ir.translate`**; only translators that touch YOUR models go in a local
+   `translate.py`. Reference implementation: `aidream/aidream/services/search_kinds/`. Tests over
    the real fixtures; the core assertion is every fixture translates **fully accounted** (zero
    unknown keys). `uv run pytest aidream/services/<family>_kinds/tests` green.
 8. **Publish — dry-run first, then apply:**
@@ -453,8 +457,13 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
     what we are hiding from the user."* A DROPPED register that lists key names cannot answer
     "should this be dropped?" — only the data can. **Every adapter's DROPPED register must record
     the VALUE (bounded preview + honest full size) beside the reason, and every family's first
-    demo must have a tab that renders them.** Reference: `audit.DroppedValue` +
-    `matrx_scraper_adapter.py` in `aidream/services/scraper_kinds/`.
+    demo must have a tab that renders them.** The mechanism is NOT yours to write:
+    `matrx_graph.content_ir.audit` holds the ONE `KeyAudit`/`DroppedValue`, and
+    `audit.check(section, raw, MAPPED, DROPPED, path_prefix=…)` does both legs — unknown keys
+    scream, present drops are captured with value + bounded preview + honest size. Generic
+    string→structure helpers are `matrx_graph.content_ir.translate`. **Never copy either into a
+    family**: the search and scraper copies had already drifted when they were promoted
+    (2026-08-24). Consumer reference: `aidream/services/search_kinds/FEATURE.md`.
 19. **A drop is not the only way to lose data — and the thing our own pipeline strips can be the
     most valuable thing on the page.** Arman on the scraper's noise remover: *"in some cases we
     have good stuff that ends up in here… when we're trying to analyze an 'owned' site for SEO,
