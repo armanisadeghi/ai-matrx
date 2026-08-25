@@ -88,6 +88,10 @@ export const planKeys = {
   seoPlans: (siteId: string) => ["content-plan", "seo-plans", siteId] as const,
   sitePipeline: (siteId: string) =>
     ["content-plan", "site-pipeline", siteId] as const,
+  /** The agent-payload preview. `null` node = the whole-plan view — kept as a
+   * distinct segment so it is not an invalidation-prefix of a node's entry. */
+  planIndex: (siteId: string, nodeId: string | null) =>
+    ["content-plan", "plan-index", siteId, nodeId ?? "site"] as const,
 };
 
 /** Per-site plan aggregates for the /marketing/content-plan list page. */

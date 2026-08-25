@@ -38,6 +38,7 @@ import type {
 } from "../hooks/useContentPlanAi";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import type { CmsLink } from "../setup/readiness";
+import { AgentPayloadButton } from "./AgentPayloadSheet";
 import { ResearchTopicSelect } from "./ResearchTopicSelect";
 
 /** A small icon button whose disabled state IS information. */
@@ -84,6 +85,7 @@ function StatusActionButton({
 }
 
 export function PlanToolbar({
+  siteId,
   nodeCount,
   run,
   onStart,
@@ -106,6 +108,8 @@ export function PlanToolbar({
   assistSlot,
   pipelineSlot,
 }: {
+  /** The plan being viewed — the agent-payload preview is site-scoped. */
+  siteId: string | null;
   nodeCount: number;
   run: PlanAiRunState;
   onStart: (options: { maxNodes: number; guidance?: string }) => void;
@@ -278,6 +282,24 @@ export function PlanToolbar({
 
       {/* The one action cluster */}
       <div className="ml-auto flex items-center gap-1">
+        {/* Whole-plan payload preview: the index and the branch groups a page
+          agent is offered, with the coverage line that says what is missing.
+          Read-only — it triggers no run. */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <AgentPayloadButton
+                siteId={siteId}
+                nodeId={null}
+                label="What the AI sees"
+              />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-64 text-xs">
+            The exact plan index and branch groups handed to a page agent, plus
+            the coverage line naming what it is NOT shown.
+          </TooltipContent>
+        </Tooltip>
         {!running && onBulkDeepen && (emptyBriefCount ?? 0) > 0 ? (
           <Tooltip>
             <TooltipTrigger asChild>

@@ -801,6 +801,7 @@ export function ContentPlanWorkbench({
           new full-width strip here, extend the toolbar. */}
         {siteId && (view === "tree" || view === "table" || view === "map") ? (
           <PlanToolbar
+            siteId={siteId}
             nodeCount={nodeRows.length}
             run={generate.run}
             onStart={(options) =>

@@ -41,6 +41,7 @@ import {
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
+import { AgentPayloadButton } from "./AgentPayloadSheet";
 import { NODE_TYPE_LABELS } from "../constants";
 import {
   contentPlanKpiLine,
@@ -1210,6 +1211,22 @@ export function NodePanel({
 
             {activeTab === "p3_family" ? (
               <PanelSection title="Family comparison">
+                {/* THE PAYLOAD DOOR. This step's answer is only as good as
+                  the plan it was shown — and the measured failure was that it
+                  was shown one page and zero siblings while confidently
+                  citing links. Look before you trust the artifact below. */}
+                <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/40 px-2 py-1.5">
+                  <p className="text-[11px] leading-snug text-muted-foreground">
+                    Before trusting this answer, see the exact payload the
+                    agent is handed — and what it is not being shown.
+                  </p>
+                  <AgentPayloadButton
+                    siteId={siteId}
+                    nodeId={node.id}
+                    nodeRoute={node.route}
+                    className="shrink-0"
+                  />
+                </div>
                 <StepArtifactView
                   nodeId={node.id}
                   step="p3_family"
