@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 
@@ -66,7 +67,17 @@ export function TableRenderPathDiagnostic({
         {context.conversationId ? (
           <div>
             <dt className="inline font-semibold">conversationId: </dt>
-            <dd className="inline break-all">{context.conversationId}</dd>
+            <dd className="inline">
+              <EntityRef
+                token="conversation"
+                id={context.conversationId}
+                name={context.conversationId}
+                showIcon={false}
+                openInNewTab
+                wrap
+                className="inline-flex"
+              />
+            </dd>
           </div>
         ) : null}
         {context.messageId ? (

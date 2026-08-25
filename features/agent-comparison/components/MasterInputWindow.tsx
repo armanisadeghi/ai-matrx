@@ -100,11 +100,7 @@ export function MasterInputWindow({ id, onClose }: Props) {
     >
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {fields.map((field) => (
-          <MasterFieldRow
-            key={field.fieldId}
-            field={field}
-            columns={columns}
-          />
+          <MasterFieldRow key={field.fieldId} field={field} columns={columns} />
         ))}
       </div>
     </WindowPanel>
@@ -280,9 +276,9 @@ function ColumnMappingPicker({
   ) : (
     <span
       className="shrink-0 max-w-[120px] truncate text-muted-foreground/50"
-      title={agentName}
+      title="Unconfigured"
     >
-      {agentName}
+      Unconfigured
     </span>
   );
 

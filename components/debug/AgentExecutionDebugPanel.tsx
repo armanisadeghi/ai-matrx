@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   X,
   ChevronDown,
@@ -15,7 +15,10 @@ import {
   Activity,
   Layers,
   Zap,
+  AlertTriangle,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -123,7 +126,7 @@ function SectionBlock({
   currentSection: SectionId;
   onToggle: (id: SectionId) => void;
   title: string;
-  icon: any;
+  icon: LucideIcon;
   children: React.ReactNode;
 }) {
   const isExpanded = currentSection === id;
@@ -314,11 +317,7 @@ export const AgentExecutionDebugPanel: React.FC<
     selectPendingToolCallsForInstance(instanceId),
   );
 
-  const assembledSelector = useMemo(
-    () => selectAssembledRequest(instanceId),
-    [instanceId],
-  );
-  const assembledRequest = useAppSelector(assembledSelector);
+  const assembledRequest = useAppSelector(selectAssembledRequest(instanceId));
 
   const uiState = useAppSelector(selectInstanceUIState(instanceId));
   const displayMode = useAppSelector(selectDisplayMode(instanceId));
@@ -371,12 +370,18 @@ export const AgentExecutionDebugPanel: React.FC<
                 <span className="text-gray-600 dark:text-gray-400">
                   Agent ID:
                 </span>
-                <p
-                  className="font-mono font-medium truncate"
-                  title={instance.agentId}
-                >
-                  {instance.agentId ?? "—"}
-                </p>
+                {instance.agentId ? (
+                  <EntityRef
+                    token="agent"
+                    id={instance.agentId}
+                    name={instance.agentId}
+                    showIcon={false}
+                    openInNewTab
+                    className="font-mono font-medium"
+                  />
+                ) : (
+                  <p className="font-mono font-medium">—</p>
+                )}
               </div>
               <div>
                 <span className="text-gray-600 dark:text-gray-400">
@@ -498,9 +503,10 @@ export const AgentExecutionDebugPanel: React.FC<
                   {instanceReadyCheck.reasons.map((r, i) => (
                     <p
                       key={i}
-                      className="text-xs text-orange-700 dark:text-orange-400"
+                      className="flex items-start gap-1 text-xs text-orange-700 dark:text-orange-400"
                     >
-                      ⚠ {r}
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                      <span>{r}</span>
                     </p>
                   ))}
                 </div>
@@ -523,9 +529,19 @@ export const AgentExecutionDebugPanel: React.FC<
                 </div>
                 <div>
                   <span className="text-gray-500">agentId:</span>
-                  <p className="font-mono break-all">
-                    {instance.agentId ?? "—"}
-                  </p>
+                  {instance.agentId ? (
+                    <EntityRef
+                      token="agent"
+                      id={instance.agentId}
+                      name={instance.agentId}
+                      showIcon={false}
+                      openInNewTab
+                      wrap
+                      className="font-mono"
+                    />
+                  ) : (
+                    <p className="font-mono">—</p>
+                  )}
                 </div>
                 <div>
                   <span className="text-gray-500">agentType:</span>
@@ -541,9 +557,19 @@ export const AgentExecutionDebugPanel: React.FC<
                 </div>
                 <div>
                   <span className="text-gray-500">shortcutId:</span>
-                  <p className="font-mono text-[10px] break-all">
-                    {instance.shortcutId ?? "none"}
-                  </p>
+                  {instance.shortcutId ? (
+                    <EntityRef
+                      token="agent_shortcut"
+                      id={instance.shortcutId}
+                      name={instance.shortcutId}
+                      showIcon={false}
+                      openInNewTab
+                      wrap
+                      className="font-mono text-[10px]"
+                    />
+                  ) : (
+                    <p className="font-mono text-[10px]">none</p>
+                  )}
                 </div>
                 <div>
                   <span className="text-gray-500">sourceApp:</span>
@@ -924,7 +950,11 @@ export const AgentExecutionDebugPanel: React.FC<
                 )}
 
               <CodeBlock
-                content={JSON.stringify(currentSettings ?? {}, null, 2)}
+                content={
+                  currentSettings
+                    ? JSON.stringify(currentSettings, null, 2)
+                    : "null"
+                }
                 label="Current Merged Settings"
                 {...codeBlockProps}
               />
@@ -944,13 +974,14 @@ export const AgentExecutionDebugPanel: React.FC<
             id="assembled-request"
             currentSection={expandedSection}
             onToggle={handleToggle}
-            title="⚡ Assembled API Request"
+            title="Assembled API Request"
             icon={Zap}
           >
             <div className="space-y-3">
               <div className="bg-red-50 dark:bg-red-950/30 border-2 border-red-400 dark:border-red-600 rounded p-3">
-                <p className="text-xs text-red-900 dark:text-red-200 font-semibold">
-                  ⚡ EXACT ASSEMBLED REQUEST — WHAT GETS SENT TO THE API
+                <p className="flex items-center gap-1 text-xs text-red-900 dark:text-red-200 font-semibold">
+                  <Zap className="h-3.5 w-3.5 shrink-0" />
+                  EXACT ASSEMBLED REQUEST — WHAT GETS SENT TO THE API
                 </p>
                 <p className="text-xs text-red-800 dark:text-red-200 mt-1">
                   Built by <code>assembleRequest()</code> — same logic as{" "}
@@ -995,7 +1026,7 @@ export const AgentExecutionDebugPanel: React.FC<
                 </div>
               </div>
               <CodeBlock
-                content={JSON.stringify(uiState ?? {}, null, 2)}
+                content={uiState ? JSON.stringify(uiState, null, 2) : "null"}
                 label="Full UI State (JSON)"
                 {...codeBlockProps}
               />

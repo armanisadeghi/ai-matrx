@@ -29,6 +29,7 @@ import {
   type MutableTotals,
 } from "@/features/agents/components/run-controls/panels/shared";
 import { EyeOff } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import {
   selectActiveBattleColumns,
@@ -43,6 +44,7 @@ import { blindAnonLabel } from "../shared/blind";
 
 interface ColumnStats {
   columnId: string;
+  agentId: string | null;
   agentName: string;
   versionLabel: string;
   status: string;
@@ -116,7 +118,7 @@ interface ColumnStats {
 
 const NULL_STATS = (): Omit<
   ColumnStats,
-  "columnId" | "agentName" | "versionLabel" | "status"
+  "columnId" | "agentId" | "agentName" | "versionLabel" | "status"
 > => ({
   fbOverall: null,
   fbRank: null,
@@ -180,11 +182,9 @@ interface ColumnStatsDeps {
   agents: RootState["agentDefinition"]["agents"];
   activeRequests: RootState["activeRequests"];
   feedbackByConversation:
-    | RootState["agentComparison"]["feedbackByConversation"]
-    | undefined;
+    RootState["agentComparison"]["feedbackByConversation"] | undefined;
   contextByConversation:
-    | RootState["contextState"]["byConversationId"]
-    | undefined;
+    RootState["contextState"]["byConversationId"] | undefined;
 }
 
 function buildStatsForColumn(
@@ -198,6 +198,7 @@ function buildStatsForColumn(
       : (agent?.name ?? "Unconfigured");
   const base = {
     columnId: col.columnId,
+    agentId: col.agentId ?? null,
     agentName: displayName,
     versionLabel:
       col.agentVersion == null
@@ -844,6 +845,7 @@ export function RunsComparisonTable() {
   const stats = blindActive
     ? rawStats.map((s) => ({
         ...s,
+        agentId: null,
         agentName: blindAnonLabel(s.columnId, blindOrder),
         versionLabel: "—",
       }))
@@ -860,8 +862,8 @@ export function RunsComparisonTable() {
         <div className="flex items-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/5 px-3 py-2">
           <EyeOff className="w-3.5 h-3.5 text-violet-500 shrink-0" />
           <span className="text-[11px] text-muted-foreground">
-            Blind test active — model, tokens, cost, and speed are hidden.
-            Only your evaluations show. Reveal to compare every metric.
+            Blind test active — model, tokens, cost, and speed are hidden. Only
+            your evaluations show. Reveal to compare every metric.
           </span>
         </div>
       )}
@@ -908,9 +910,21 @@ function SectionTable({
                   className="text-right px-3 py-1.5 font-semibold text-foreground min-w-[140px]"
                   title={`${s.agentName} · ${s.versionLabel}`}
                 >
-                  <div className="truncate max-w-[180px] inline-block align-bottom">
-                    {s.agentName}
-                  </div>
+                  {s.agentId ? (
+                    <EntityRef
+                      token="agent"
+                      id={s.agentId}
+                      name={s.agentName}
+                      showIcon={false}
+                      openInNewTab
+                      className="max-w-[180px] justify-end"
+                      nameClassName="max-w-[180px]"
+                    />
+                  ) : (
+                    <div className="truncate max-w-[180px] inline-block align-bottom">
+                      {s.agentName}
+                    </div>
+                  )}
                   <div className="text-[10px] font-mono text-muted-foreground/70 font-normal">
                     {s.versionLabel}
                   </div>

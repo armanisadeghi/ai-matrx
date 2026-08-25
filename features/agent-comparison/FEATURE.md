@@ -50,7 +50,7 @@ and Runs floating windows.
 | Resizable horizontal split (N panels) | `ResizablePanelGroup` / `ResizablePanel` / `ResizableHandle` wrappers |
 | Horizontal reorder | `@dnd-kit/sortable` with `horizontalListSortingStrategy` |
 | Floating windows | `WindowPanel` from `features/window-panels` |
-| Agent identity doors in Master Input | `EntityRef` with state-preserving new-tab navigation |
+| Agent identity doors in Master Input and comparison metrics | `EntityRef` with state-preserving new-tab navigation |
 
 ---
 
@@ -175,6 +175,9 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-08-25 — Comparison metric headers and Master Input labels now preserve
+  blind-test anonymity while opening configured agents through canonical
+  `EntityRef` doors; unconfigured labels remain inert.
 - 2026-08-12 — Master Input mapping rows now open configured agents through
   the canonical `EntityRef` in a new tab while preserving unconfigured labels
   and all mapping controls.
