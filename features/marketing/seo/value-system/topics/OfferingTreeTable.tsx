@@ -284,7 +284,7 @@ export function OfferingTreeTable({
       editable: "select",
       editOptions: ROOT_TYPE_META.map(({ value, label }) => ({ value, label })),
       cell: (row) => (
-        <span className="text-xs text-foreground">
+        <span className="whitespace-nowrap text-xs text-foreground">
           {rootTypeMeta(row.type).label}
         </span>
       ),
@@ -301,7 +301,7 @@ export function OfferingTreeTable({
       cell: (row) => (
         <span
           className={cn(
-            "text-xs font-medium",
+            "whitespace-nowrap text-xs font-medium",
             row.branch === "offering" ? "text-success" : "text-info",
           )}
         >
@@ -351,7 +351,7 @@ export function OfferingTreeTable({
         label,
       })),
       cell: (row) => (
-        <span className="text-xs text-foreground">
+        <span className="whitespace-nowrap text-xs text-foreground">
           {optionLabel(row.offeringMatch, OFFERING_MATCH_OPTIONS)}
         </span>
       ),
@@ -371,7 +371,7 @@ export function OfferingTreeTable({
         label,
       })),
       cell: (row) => (
-        <span className="text-xs text-foreground">
+        <span className="whitespace-nowrap text-xs text-foreground">
           {optionLabel(row.leadQuality, LEAD_QUALITY_OPTIONS)}
         </span>
       ),
