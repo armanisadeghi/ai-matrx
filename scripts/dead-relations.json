@@ -276,18 +276,18 @@
     {
       "relation": "user_flashcard_reviews",
       "old": "public.user_flashcard_reviews",
-      "newSchema": "users",
-      "new": "users.user_flashcard_reviews",
+      "newSchema": "graveyard",
+      "new": "graveyard.user_flashcard_reviews",
       "since": "2026-06-27",
-      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_flashcard_reviews')."
+      "reason": "legacy flashcard reviews preserved in graveyard after canonical education port."
     },
     {
       "relation": "user_flashcard_sets",
       "old": "public.user_flashcard_sets",
-      "newSchema": "users",
-      "new": "users.user_flashcard_sets",
+      "newSchema": "graveyard",
+      "new": "graveyard.user_flashcard_sets",
       "since": "2026-06-27",
-      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_flashcard_sets')."
+      "reason": "legacy flashcard sets preserved in graveyard after canonical education port."
     },
     {
       "relation": "user_follows",
