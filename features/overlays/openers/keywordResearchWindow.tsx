@@ -19,6 +19,13 @@ const OVERLAY_ID = "keywordResearchWindow" as const;
 export interface OpenKeywordResearchWindowOptions {
   primaryKeyword?: string;
   autoRun?: boolean;
+  /**
+   * MSR-26: pass the site when the opening surface already knows it (a
+   * site-scoped page, a page-keyword chip) so the window skips its own site
+   * picker. Omitted openers ("anywhere") fall back to the window's own
+   * inline site select.
+   */
+  siteId?: string;
 }
 
 export function useOpenKeywordResearchWindow() {
@@ -31,6 +38,7 @@ export function useOpenKeywordResearchWindow() {
           data: {
             primaryKeyword: options.primaryKeyword ?? "",
             autoRun: options.autoRun ?? false,
+            siteId: options.siteId ?? null,
           },
         }),
       );

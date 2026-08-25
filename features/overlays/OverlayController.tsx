@@ -4569,6 +4569,7 @@ export default function OverlayController() {
                 : undefined
             }
             autoRun={data?.autoRun === true}
+            siteId={typeof data?.siteId === "string" ? data.siteId : null}
           />
         );
       })()}

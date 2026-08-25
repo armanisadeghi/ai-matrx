@@ -64,6 +64,7 @@ const KEYWORD_SURFACE = "matrx-user/keyword-intelligence";
 
 export function KeywordResearchTab({
   phrase,
+  siteId,
   organizationId,
   pageId,
   onResearchStart,
@@ -71,6 +72,9 @@ export function KeywordResearchTab({
   onRunStateChange,
 }: {
   phrase: string;
+  /** MSR-26: the site this keyword belongs to — required to run research
+   * from this tab; `null` renders the "no site" explainer instead. */
+  siteId?: string | null;
   organizationId?: string | null;
   pageId?: string | null;
   onResearchStart?: (phrase: string) => void;
@@ -81,9 +85,9 @@ export function KeywordResearchTab({
   // registered runs live in Redux under this key, so a tab switch, a
   // query-driven re-render, or any parent remount re-attaches to the same
   // streamed content (features/agents/docs/LIVE_RUN_RETENTION.md § Multi-run
-  // surfaces). Keyed per phrase + org so parallel windows never collide.
-  const runSetKey = `keyword-research:${normalizeKeywordPhrase(phrase)}:${organizationId ?? "personal"}`;
-  const research = useKeywordResearch(organizationId, {
+  // surfaces). Keyed per phrase + site so parallel windows never collide.
+  const runSetKey = `keyword-research:${normalizeKeywordPhrase(phrase)}:${siteId ?? "no-site"}`;
+  const research = useKeywordResearch(siteId, organizationId, {
     rejoinPhrase: phrase,
     runSetKey,
   });
@@ -96,7 +100,7 @@ export function KeywordResearchTab({
   );
   const selectedPhrases = new Set(Object.keys(selectedByKey));
   const disabledPhrases = new Set([normalizeKeywordPhrase(phrase)]);
-  const saved = useSavedKeywordResearch(phrase, organizationId);
+  const saved = useSavedKeywordResearch(phrase, siteId);
   const visibleArtifact = run.result?.artifact ?? saved.data?.artifact ?? null;
   const hasLiveOutput = runSet.entries.length > 0;
 
@@ -222,10 +226,10 @@ export function KeywordResearchTab({
     if (run.status === "done") {
       void queryClient.invalidateQueries({ queryKey: seoKeywordKeys.all });
       void queryClient.invalidateQueries({
-        queryKey: savedKeywordResearchQueryKey(saved.organizationId, phrase),
+        queryKey: savedKeywordResearchQueryKey(saved.siteId, phrase),
       });
     }
-  }, [run.status, queryClient, saved.organizationId, phrase]);
+  }, [run.status, queryClient, saved.siteId, phrase]);
 
   const startResearch = async () => {
     const replacingCurrent = Boolean(saved.data);
@@ -295,11 +299,13 @@ export function KeywordResearchTab({
         <Button
           size="sm"
           className={saved.data || running ? "h-8 shrink-0" : "h-10 px-5"}
-          disabled={running || saved.isLoading || !phrase.trim()}
+          disabled={running || saved.isLoading || !phrase.trim() || !siteId}
           title={
-            saved.data
-              ? "Saved results are shown below. Run again only when you need refreshed research."
-              : undefined
+            !siteId
+              ? "This keyword isn't associated with a site yet — research is bound to a site."
+              : saved.data
+                ? "Saved results are shown below. Run again only when you need refreshed research."
+                : undefined
           }
           onClick={() => void startResearch()}
         >

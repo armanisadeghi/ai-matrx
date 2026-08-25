@@ -193,7 +193,7 @@ export function KeywordIntelPanel({
   // Lifted from the Relationships tab so the surface scope always carries the
   // edges once loaded (the tab consumes the same query result as a prop).
   const edges = useKeywordEdges(keyword?.id);
-  const savedResearch = useSavedKeywordResearch(phrase, scope?.organizationId, {
+  const savedResearch = useSavedKeywordResearch(phrase, scope?.siteId ?? null, {
     debounceMs: 250,
   });
   const volumeRefresh = useKeywordVolumeRefresh(scope?.organizationId);
@@ -537,6 +537,7 @@ export function KeywordIntelPanel({
                 <KeywordResearchTab
                   key={normalizeKeywordPhrase(phrase)}
                   phrase={phrase}
+                  siteId={scope?.siteId ?? null}
                   organizationId={scope?.organizationId}
                   pageId={scope?.pageId}
                   onResearchStart={onResearchStart}

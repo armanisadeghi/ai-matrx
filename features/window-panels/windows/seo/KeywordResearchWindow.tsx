@@ -1,8 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Loader2, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Globe2, Loader2, Search } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { useKeywordResearch } from "@/features/marketing/seo/keyword-research/useKeywordResearch";
 import KeywordResearchLauncher from "@/features/marketing/seo/keyword-research/components/KeywordResearchLauncher";
 import {
@@ -36,6 +44,9 @@ export interface KeywordResearchWindowProps {
   onClose: () => void;
   initialKeyword?: string;
   autoRun?: boolean;
+  /** MSR-26: pre-selects the site (skips the window's own picker) when the
+   * opener already knows it. */
+  siteId?: string | null;
 }
 
 export default function KeywordResearchWindow({
@@ -43,6 +54,7 @@ export default function KeywordResearchWindow({
   onClose,
   initialKeyword,
   autoRun,
+  siteId,
 }: KeywordResearchWindowProps) {
   if (!isOpen) return null;
   return (
@@ -50,6 +62,7 @@ export default function KeywordResearchWindow({
       onClose={onClose}
       initialKeyword={initialKeyword}
       autoRun={autoRun}
+      siteId={siteId ?? null}
     />
   );
 }
@@ -94,9 +107,16 @@ function KeywordResearchWindowInner({
   onClose,
   initialKeyword,
   autoRun,
+  siteId: initialSiteId,
 }: Omit<KeywordResearchWindowProps, "isOpen">) {
+  // MSR-26: research is bound to a site. When the opener passed one, use it
+  // directly; otherwise this window offers its own compact picker rather
+  // than firing an org-wide run.
+  const siteOptions = useSiteOptions();
+  const [pickedSiteId, setPickedSiteId] = useState<string | null>(null);
+  const selectedSiteId = initialSiteId ?? pickedSiteId;
   const { clusterPhrases, keywords, loading, search, setSearch, run, runResearch } =
-    useKeywordResearch();
+    useKeywordResearch(selectedSiteId);
   const [explorerOpen, setExplorerOpen] = useState(true);
 
   // Debounced keyword mirror for persistence. State (not a ref) because the
@@ -153,10 +173,31 @@ function KeywordResearchWindowInner({
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
     >
       <div className="flex min-h-0 flex-1 flex-col">
+        {!initialSiteId ? (
+          <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+            <Globe2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <Select
+              value={selectedSiteId ?? undefined}
+              onValueChange={setPickedSiteId}
+            >
+              <SelectTrigger className="h-8 w-56 text-xs">
+                <SelectValue placeholder="Select a site to research" />
+              </SelectTrigger>
+              <SelectContent>
+                {(siteOptions.data ?? []).map((site) => (
+                  <SelectItem key={site.id} value={site.id}>
+                    {site.name ?? site.domain}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
         <div className="shrink-0 border-b border-border px-3 py-2.5">
           <KeywordResearchLauncher
             run={run}
             runResearch={runResearch}
+            siteId={selectedSiteId}
             initialKeyword={initialKeyword}
             autoRun={autoRun}
             feedMaxHeightClassName="max-h-[45dvh]"
