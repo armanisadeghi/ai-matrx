@@ -609,9 +609,14 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
               <tr>
                 <td
                   colSpan={columns.length + 1}
-                  className="px-3 py-6 text-center text-xs text-muted-foreground"
+                  className="p-0 text-xs text-muted-foreground"
                 >
-                  {/* ── 5. ZERO ROWS IS A MEANINGFUL STATE ───────────────── */}
+                  {/* ── 5. ZERO ROWS IS A MEANINGFUL STATE ─────────────────
+                      STICKY, not centered. A wide empty table (measured: a
+                      32-column one) centers its colSpan cell far off the right
+                      of the horizontal scroller, so the message that explains
+                      the empty state is invisible exactly when it matters. */}
+                  <div className="sticky left-0 max-w-[min(100%,44rem)] px-3 py-6 text-left">
                   {filter.trim() ? (
                     <>No rows match “{filter.trim()}”.</>
                   ) : columns.length > 0 ? (
@@ -625,6 +630,7 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
                   ) : (
                     <>No rows, and the source declared no columns either.</>
                   )}
+                  </div>
                 </td>
               </tr>
             ) : (

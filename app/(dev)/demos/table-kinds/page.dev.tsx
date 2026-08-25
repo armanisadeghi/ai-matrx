@@ -232,9 +232,10 @@ export default function TableKindsDemoPage() {
               showRoutingNote
             />
             <p className="text-xs text-muted-foreground">
-              {typedColumns} of {columns.length}{" "}
-              {columns.length === 1 ? "column" : "columns"} arrived with a declared
-              type. A column WITHOUT one renders differently on purpose — an
+              {`${typedColumns} of ${columns.length} ${
+                columns.length === 1 ? "column" : "columns"
+              } arrived with a declared type. `}
+              A column WITHOUT one renders differently on purpose — an
               undeclared type is not a synonym for &ldquo;string&rdquo;, and a
               cell in such a column is never sniffed or coerced. Guessing is how
               a ZIP code loses its leading zero.
