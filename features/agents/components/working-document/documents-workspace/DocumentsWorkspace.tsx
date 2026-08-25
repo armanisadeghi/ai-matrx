@@ -37,6 +37,7 @@ import {
 } from "@/features/surfaces/manifests/documents-workspace.manifest";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   isScratchScope,
   scratchScopeId,
@@ -107,6 +108,7 @@ export function DocumentsWorkspace({
 }: DocumentsWorkspaceProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+  const isMobile = useIsMobile();
 
   // The scratch base tab is the user's GLOBAL active scratchpad (sp:<id>
   // scope) — one scratchpad everywhere, decoupled from the conversation. If
@@ -222,7 +224,9 @@ export function DocumentsWorkspace({
       }
       if (sel.kind === "scratch" && sel.documentId === activeScratchId) {
         if (scratchScope) {
-          setActiveKey(tabKey({ conversationId: scratchScope, kind: "scratch" }));
+          setActiveKey(
+            tabKey({ conversationId: scratchScope, kind: "scratch" }),
+          );
         }
         return;
       }
@@ -424,162 +428,170 @@ export function DocumentsWorkspace({
       getScope={buildScope}
       isEditable={false}
     >
-    <div className={cn("flex h-full min-h-0", className)}>
-      {railOpen && (
-        <DocumentsListRail
-          currentConversationId={conversationId}
-          activeKey={activeKey}
-          openKeys={openKeys}
-          closableKeys={closableKeys}
-          onOpen={openDoc}
-          onDetach={closeTab}
-          onDocumentRenamed={handleDocumentRenamed}
-          onCollapse={() => setRailOpen(false)}
-        />
-      )}
+      <div className={cn("flex h-full min-h-0", className)}>
+        {railOpen && (
+          <DocumentsListRail
+            currentConversationId={conversationId}
+            activeKey={activeKey}
+            openKeys={openKeys}
+            closableKeys={closableKeys}
+            onOpen={(selection) => {
+              openDoc(selection);
+              if (isMobile) setRailOpen(false);
+            }}
+            onDetach={closeTab}
+            onDocumentRenamed={handleDocumentRenamed}
+            onCollapse={() => setRailOpen(false)}
+            className={isMobile ? "w-full border-r-0" : undefined}
+          />
+        )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Tab strip — the shell pane that mounts its own context menu. */}
-        <NonEditableContextMenu
-          sourceFeature="working-document"
-          surfaceName={DOCUMENTS_WORKSPACE_SURFACE_NAME}
-          contentSource={{ type: "raw" }}
-          // The manifest's values, and deliberately NOT `getApplicationScope`:
-          // that wins outright over the per-tab merge below
-          // (`value-resolution.ts`) and would erase the right-clicked tab.
-          contextData={buildScope()}
-          resolveContextOnOpen={(target): ResolvedContextMenuContext | null => {
-            const key =
-              target
-                ?.closest<HTMLElement>("[data-doc-tab-key]")
-                ?.getAttribute("data-doc-tab-key") ?? null;
-            setClickedTabKey(key);
-            const tab = tabs.find((t) => tabKey(t) === key) ?? null;
-            if (!tab) {
-              // Empty strip space: the pane itself, which is the list of open
-              // documents. No entity — the strip is not a record.
-              return {
-                content: [
-                  `Open documents (${tabs.length})`,
-                  ...tabs.map(
-                    (t) => `• ${t.label ?? kindLabel(t.kind)} (${t.kind})`,
-                  ),
-                ].join("\n"),
-                [CONTEXT_MENU_ENTITY_KEY]: null,
-              };
-            }
-            // Read the document's real text at click time, so Copy / Export /
-            // Download as Markdown save what the tab actually holds.
-            const title = tab.label ?? kindLabel(tab.kind);
-            const body = selectWorkingDocContent(
-              tab.conversationId,
-              tab.kind,
-            )(store.getState());
-            return {
-              content: body.trim() ? body : `# ${title}\n\n(empty)`,
-              // THE PER-ROW ENTITY RULE — Attach To / Share target the tab the
-              // user right-clicked, never the pane. A base tab whose document
-              // has not materialized yet has no id, so it resolves to null and
-              // the entity actions hide rather than target the wrong record.
-              [CONTEXT_MENU_ENTITY_KEY]: tab.documentId
-                ? {
-                    type: "working_document" as const,
-                    id: tab.documentId,
-                    title,
-                    resourceType: "working_document" as const,
-                  }
-                : null,
-            };
-          }}
-          extraSections={[tabSection]}
-        >
-        <div className="flex shrink-0 items-center gap-0.5 border-b border-border bg-card/40 px-1 py-1">
-          {!railOpen && (
-            <button
-              type="button"
-              onClick={() => setRailOpen(true)}
-              aria-label="Show document list"
-              title="Show document list"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        {(!isMobile || !railOpen) && (
+          <div className="flex min-w-0 flex-1 flex-col">
+            {/* Tab strip — the shell pane that mounts its own context menu. */}
+            <NonEditableContextMenu
+              sourceFeature="working-document"
+              surfaceName={DOCUMENTS_WORKSPACE_SURFACE_NAME}
+              contentSource={{ type: "raw" }}
+              // The manifest's values, and deliberately NOT `getApplicationScope`:
+              // that wins outright over the per-tab merge below
+              // (`value-resolution.ts`) and would erase the right-clicked tab.
+              contextData={buildScope()}
+              resolveContextOnOpen={(
+                target,
+              ): ResolvedContextMenuContext | null => {
+                const key =
+                  target
+                    ?.closest<HTMLElement>("[data-doc-tab-key]")
+                    ?.getAttribute("data-doc-tab-key") ?? null;
+                setClickedTabKey(key);
+                const tab = tabs.find((t) => tabKey(t) === key) ?? null;
+                if (!tab) {
+                  // Empty strip space: the pane itself, which is the list of open
+                  // documents. No entity — the strip is not a record.
+                  return {
+                    content: [
+                      `Open documents (${tabs.length})`,
+                      ...tabs.map(
+                        (t) => `• ${t.label ?? kindLabel(t.kind)} (${t.kind})`,
+                      ),
+                    ].join("\n"),
+                    [CONTEXT_MENU_ENTITY_KEY]: null,
+                  };
+                }
+                // Read the document's real text at click time, so Copy / Export /
+                // Download as Markdown save what the tab actually holds.
+                const title = tab.label ?? kindLabel(tab.kind);
+                const body = selectWorkingDocContent(
+                  tab.conversationId,
+                  tab.kind,
+                )(store.getState());
+                return {
+                  content: body.trim() ? body : `# ${title}\n\n(empty)`,
+                  // THE PER-ROW ENTITY RULE — Attach To / Share target the tab the
+                  // user right-clicked, never the pane. A base tab whose document
+                  // has not materialized yet has no id, so it resolves to null and
+                  // the entity actions hide rather than target the wrong record.
+                  [CONTEXT_MENU_ENTITY_KEY]: tab.documentId
+                    ? {
+                        type: "working_document" as const,
+                        id: tab.documentId,
+                        title,
+                        resourceType: "working_document" as const,
+                      }
+                    : null,
+                };
+              }}
+              extraSections={[tabSection]}
             >
-              <PanelLeftOpen className="h-4 w-4" />
-            </button>
-          )}
-          <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto scrollbar-none">
-            {tabs.map((t) => {
-              const key = tabKey(t);
-              const isActive = key === activeKey;
-              const isScratch = t.kind === "scratch";
-              return (
-                <div
-                  key={key}
-                  data-doc-tab-key={key}
-                  className={cn(
-                    "group flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
-                    isActive
-                      ? "bg-accent text-foreground"
-                      : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
-                  )}
-                >
+              <div className="flex shrink-0 items-center gap-0.5 border-b border-border bg-card/40 px-1 py-1">
+                {!railOpen && (
                   <button
                     type="button"
-                    onClick={() => setActiveKey(key)}
-                    className="flex items-center gap-1"
+                    onClick={() => setRailOpen(true)}
+                    aria-label="Show document list"
+                    title="Show document list"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   >
-                    {isScratch ? (
-                      <Lock className="h-3 w-3 shrink-0" />
-                    ) : (
-                      <FileText className="h-3 w-3 shrink-0" />
-                    )}
-                    <span className="max-w-[140px] truncate">
-                      {t.label ??
-                        (isScratch ? "Scratchpad" : "Working document")}
-                    </span>
+                    <PanelLeftOpen className="h-4 w-4" />
                   </button>
-                  {t.closable && (
-                    <button
-                      type="button"
-                      onClick={() => closeTab(key)}
-                      aria-label="Close tab"
-                      className="flex h-4 w-4 items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
+                )}
+                <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto scrollbar-none">
+                  {tabs.map((t) => {
+                    const key = tabKey(t);
+                    const isActive = key === activeKey;
+                    const isScratch = t.kind === "scratch";
+                    return (
+                      <div
+                        key={key}
+                        data-doc-tab-key={key}
+                        className={cn(
+                          "group flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
+                          isActive
+                            ? "bg-accent text-foreground"
+                            : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setActiveKey(key)}
+                          className="flex items-center gap-1"
+                        >
+                          {isScratch ? (
+                            <Lock className="h-3 w-3 shrink-0" />
+                          ) : (
+                            <FileText className="h-3 w-3 shrink-0" />
+                          )}
+                          <span className="max-w-[140px] truncate">
+                            {t.label ??
+                              (isScratch ? "Scratchpad" : "Working document")}
+                          </span>
+                        </button>
+                        {t.closable && (
+                          <button
+                            type="button"
+                            onClick={() => closeTab(key)}
+                            aria-label="Close tab"
+                            className="flex h-4 w-4 items-center justify-center rounded text-muted-foreground/60 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-        </NonEditableContextMenu>
+              </div>
+            </NonEditableContextMenu>
 
-        {/* Active document — the existing panel. The header keeps its action
+            {/* Active document — the existing panel. The header keeps its action
             toolbar but DROPS its title: the tab strip already names the doc, so
             showing it again would be a third nested "Working document" heading. */}
-        <div className="min-h-0 flex-1">
-          <WorkingDocumentPanel
-            key={tabKey(active)}
-            conversationId={active.conversationId}
-            kind={active.kind}
-            showHeader
-            showHeaderTitle={false}
-            showOpenInWindow={false}
-            showEnableToggle
-            surfaceContext={
-              active.conversationId === conversationId
-                ? surfaceContext
-                : undefined
-            }
-            gateConversationId={
-              active.kind === "scratch" && !isScratchScope(conversationId)
-                ? conversationId
-                : undefined
-            }
-            className="h-full"
-          />
-        </div>
+            <div className="min-h-0 flex-1">
+              <WorkingDocumentPanel
+                key={tabKey(active)}
+                conversationId={active.conversationId}
+                kind={active.kind}
+                showHeader
+                showHeaderTitle={false}
+                showOpenInWindow={false}
+                showEnableToggle
+                surfaceContext={
+                  active.conversationId === conversationId
+                    ? surfaceContext
+                    : undefined
+                }
+                gateConversationId={
+                  active.kind === "scratch" && !isScratchScope(conversationId)
+                    ? conversationId
+                    : undefined
+                }
+                className="h-full"
+              />
+            </div>
+          </div>
+        )}
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

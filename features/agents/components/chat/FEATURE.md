@@ -272,6 +272,7 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 
 ## Change log
 
+- `2026-08-25` — Mobile Working document canvas now gives either the document list or editor the full viewport width instead of squeezing both desktop columns into 375px. Desktop retains the two-column workspace.
 - `2026-08-25` — codex: **waiting-message cards keep their recovery actions reachable on narrow screens.** The message and status now share a shrinkable column while retry/deliver/edit/withdraw live in an explicit non-shrinking action group; all waiting-message actions (including help) expose 44px targets through tablet widths and compact only on desktop.
 
 - `2026-08-25` — codex: **missing-organization send validation no longer creates false production incidents.** The fail-closed guard still preserves the draft and blocks before networking, but `smartExecute` now uses an informational corrective toast instead of emitting both a captured console error and captured error toast.

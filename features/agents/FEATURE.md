@@ -399,6 +399,7 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-25` — `DocumentsWorkspace` no longer renders its 240px document rail beside the editor on mobile. The list becomes a full-width workspace state, selecting a document returns to the full-width editor, and the existing list/collapse controls remain the navigation—fixing the crushed Working document canvas across Chat, context drawers, panels, and windows.
 - `2026-08-25` — Smart Input context rails now support an `overflow-only` presentation: every
   attached context item stays available to execution while the composer renders only the
   right-aligned count menu. Purpose-built surfaces can also mirror required named inputs in that

@@ -12,21 +12,21 @@ the rules an agent editing THIS directory must obey.
 
 ## Shape of the thing
 
-| Layer | Where |
-|---|---|
-| Front door (always mounted, owns ⌘\ + availability signalling) | `core/CanvasSideSheet.tsx` |
-| Heavy shell — slide-in, width resize, optional vertical split, surface emitter | `core/CanvasSideSheetImpl.tsx` |
-| Per-pane header chrome + body | `core/CanvasPane.tsx` |
-| The type-keyed renderer switch (+ `titleToString`, `getDefaultTitle`) | `core/CanvasBody.tsx` |
-| Unified artifact renderers (chart, table, quiz, mermaid, …) | `artifact-types/renderers/*` |
-| Type registry — the single source of truth | `artifact-types/artifact-type-registry.ts` |
-| Materialization primitive + planner + unbind | `materialization/` |
-| Markdown export | `export/exportArtifactMarkdown.ts` |
-| State | `redux/canvasSlice.ts` |
-| Library persistence (`canvas_items`) | `services/canvasItemsService.ts`, `services/canvasArtifactService.ts`, `hooks/useCanvasItems.ts` |
-| Public/social surface | `social/`, `discovery/`, `leaderboard/`, `shared/resolveSharedCanvas.ts` |
-| Legacy in-page renderer (3 importers, queued for collapse) | `core/CanvasRenderer.tsx` |
-| Visual maps — a DIFFERENT registry node built on this stack | `maps/FEATURE.md` |
+| Layer                                                                          | Where                                                                                            |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Front door (always mounted, owns ⌘\ + availability signalling)                 | `core/CanvasSideSheet.tsx`                                                                       |
+| Heavy shell — slide-in, width resize, optional vertical split, surface emitter | `core/CanvasSideSheetImpl.tsx`                                                                   |
+| Per-pane header chrome + body                                                  | `core/CanvasPane.tsx`                                                                            |
+| The type-keyed renderer switch (+ `titleToString`, `getDefaultTitle`)          | `core/CanvasBody.tsx`                                                                            |
+| Unified artifact renderers (chart, table, quiz, mermaid, …)                    | `artifact-types/renderers/*`                                                                     |
+| Type registry — the single source of truth                                     | `artifact-types/artifact-type-registry.ts`                                                       |
+| Materialization primitive + planner + unbind                                   | `materialization/`                                                                               |
+| Markdown export                                                                | `export/exportArtifactMarkdown.ts`                                                               |
+| State                                                                          | `redux/canvasSlice.ts`                                                                           |
+| Library persistence (`canvas_items`)                                           | `services/canvasItemsService.ts`, `services/canvasArtifactService.ts`, `hooks/useCanvasItems.ts` |
+| Public/social surface                                                          | `social/`, `discovery/`, `leaderboard/`, `shared/resolveSharedCanvas.ts`                         |
+| Legacy in-page renderer (3 importers, queued for collapse)                     | `core/CanvasRenderer.tsx`                                                                        |
+| Visual maps — a DIFFERENT registry node built on this stack                    | `maps/FEATURE.md`                                                                                |
 
 ## Rules for this directory
 
@@ -69,3 +69,7 @@ the rules an agent editing THIS directory must obey.
 
 **Keep-docs-live:** a change to the wire format, the identity keys, the type registry, or the write
 path updates the node's `STATE.md` in the same session.
+
+## Change log
+
+- `2026-08-25` — The Working document canvas inherits the responsive `DocumentsWorkspace`: its document list is a full-width mobile state and selecting a document returns to the full-width editor, while desktop keeps the side-by-side rail.
