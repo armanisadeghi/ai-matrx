@@ -9,6 +9,7 @@
 import { useParams } from "next/navigation";
 import { AutonomyModesEditor } from "@/features/marketing/seo/value-system/settings/AutonomyModesEditor";
 import { CopyMeaningFromSite } from "@/features/marketing/seo/value-system/settings/CopyMeaningFromSite";
+import { CopyKeywordsFromSite } from "@/features/marketing/seo/keyword-research/components/CopyKeywordsFromSite";
 import { ValueSettingsEditor } from "@/features/marketing/seo/value-system/settings/ValueSettingsEditor";
 
 export default function SiteValueSettingsPage() {
@@ -21,6 +22,7 @@ export default function SiteValueSettingsPage() {
         <ValueSettingsEditor scope="site" id={siteId} />
         <AutonomyModesEditor scope="site" id={siteId} />
         <CopyMeaningFromSite siteId={siteId} />
+        <CopyKeywordsFromSite siteId={siteId} />
       </div>
     </div>
   );
