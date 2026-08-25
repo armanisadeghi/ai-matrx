@@ -118,7 +118,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
 
   /**
    * "Copy as Markdown" — the forward leg of artifact ⇄ markdown (see
-   * features/canvas/docs/TWO_WAY_BINDING.md). Structured (kind) payloads
+   * /Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/TWO-WAY-BINDING.md). Structured (kind) payloads
    * render through the kind registry's toMarkdown facet; string payloads
    * copy as-is (they ARE markdown / wire text). Works identically for
    * inline artifacts and materialized refs — both hand this component the
@@ -136,7 +136,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
   };
 
   /**
-   * "Detach as text" — the UNBIND leg (features/canvas/docs/TWO_WAY_BINDING.md
+   * "Detach as text" — the UNBIND leg (/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/TWO-WAY-BINDING.md
    * § b). Replaces this ref with the artifact's markdown export in the source
    * surface (chat message, or a note via UnbindSurfaceContext); the saved
    * artifact row is KEPT in the canvas library. Inertness-gated inside the

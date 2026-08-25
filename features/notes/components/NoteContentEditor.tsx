@@ -638,7 +638,7 @@ export function NoteContentEditor({
   };
 
   // ── Artifact materialization surface ─────────────────────────────
-  // Notes as a materialization surface (features/canvas/docs/TWO_WAY_BINDING.md):
+  // Notes as a materialization surface (/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/TWO-WAY-BINDING.md):
   // explicit convert-blocks action + the unbind ("Detach as text") provider for
   // artifact refs rendered in the preview. All writes go through
   // handleChangeFlush + saveNote — the same canonical path as content cleanup.

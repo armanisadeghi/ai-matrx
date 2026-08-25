@@ -1,116 +1,71 @@
-# FEATURE.md — `canvas`
+# FEATURE.md — `canvas` (local mechanics)
 
-**Status:** `live` (global side-sheet pane, single + split layouts, 30+ artifact types, library persistence, share-by-token)
-**Tier:** `1`
-**Last updated:** `2026-08-11` — surface section verified against live code and a live agent run this date.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/STATE.md` — read it before touching this feature in ANY repo.
 
-> **The one thing to understand: the Canvas is a HOST, not an editor.**
-> It renders ARTIFACTS through a type-keyed switch. It has no nodes, no node
-> selection, and no text elements of its own. Authored content lives inside
-> each artifact renderer — and, where it is agent-writable, on that
-> artifact's OWN surface.
+The product truth, architecture narrative, wire contract, data model, decisions and open work live
+in that node's doc kit (`STATE.md`, `ARTIFACT-WIRE-CONTRACT.md`, `TWO-WAY-BINDING.md`,
+`CANVAS-DATA-MODEL.md`, `DECISIONS.md`, `HANDOFF.md`, `VISION.md`). This file is the file map plus
+the rules an agent editing THIS directory must obey.
 
----
-
-## Purpose
-
-The Canvas is the unified live workspace: a right-side pane that slides in
-over whatever route the user is on and renders one artifact per pane — a
-mermaid diagram, a table, a code block, a quiz, an HTML view, a working
-document. It is opened from a chat message, from a code block, or from the
-chat header's Canvas button (⌘\).
-
-Deeper topic docs live in `docs/` (persistence, sharing, header chrome,
-troubleshooting) and `ARTIFACT-MODEL-GUIDELINES.md`. This file covers the
-shell, the state model, and the surface integration.
-
----
+> **The one thing to understand: the Canvas is a HOST, not an editor.** It renders ARTIFACTS
+> through a type-keyed switch. It has no nodes, no node selection, and no text elements of its own.
 
 ## Shape of the thing
 
 | Layer | Where |
 |---|---|
 | Front door (always mounted, owns ⌘\ + availability signalling) | `core/CanvasSideSheet.tsx` |
-| Heavy shell — slide-in, width resize, optional vertical split, **surface emitter** | `core/CanvasSideSheetImpl.tsx` |
+| Heavy shell — slide-in, width resize, optional vertical split, surface emitter | `core/CanvasSideSheetImpl.tsx` |
 | Per-pane header chrome + body | `core/CanvasPane.tsx` |
-| The type-keyed renderer switch | `core/CanvasBody.tsx` |
+| The type-keyed renderer switch (+ `titleToString`, `getDefaultTitle`) | `core/CanvasBody.tsx` |
 | Unified artifact renderers (chart, table, quiz, mermaid, …) | `artifact-types/renderers/*` |
+| Type registry — the single source of truth | `artifact-types/artifact-type-registry.ts` |
+| Materialization primitive + planner + unbind | `materialization/` |
+| Markdown export | `export/exportArtifactMarkdown.ts` |
 | State | `redux/canvasSlice.ts` |
-| Library persistence (`canvas_items`) | `services/canvasItemsService.ts`, `hooks/useCanvasItems.ts` |
+| Library persistence (`canvas_items`) | `services/canvasItemsService.ts`, `services/canvasArtifactService.ts`, `hooks/useCanvasItems.ts` |
+| Public/social surface | `social/`, `discovery/`, `leaderboard/`, `shared/resolveSharedCanvas.ts` |
+| Legacy in-page renderer (3 importers, queued for collapse) | `core/CanvasRenderer.tsx` |
+| Visual maps — a DIFFERENT registry node built on this stack | `maps/FEATURE.md` |
 
-**State model** (`canvasSlice`): a session holds `items[]`, each
-`{ id, content: { type, data, metadata }, timestamp, savedItemId, isSynced }`.
-`id` is an EPHEMERAL session id used to switch panes; `savedItemId` (or
-`metadata.canvasItemId`) is the durable `canvas_items` UUID and is absent
-until the item is saved. `currentItemId` drives the primary pane and
-`secondaryItemId`, when set, turns on the stacked split layout.
+## Rules for this directory
 
-**Materialized artifacts store a POINTER.** `openArtifactInCanvas` puts
-`data: { artifactId }` in the item — the artifact body lives in `canvas_items`,
-not in Redux. Legacy `openCanvas` items carry a full payload. Anything reading
-`content.data` must handle both.
+- **The owner of a canvas write is `auth.uid()`, never a value the client sends.** The write RPCs
+  still take `p_user_id`, but `canvas._require_actor()` validates it (`28000` with no session,
+  `42501` on mismatch). **Never hand-write a second actor resolver in this family, and never
+  reintroduce inserting `p_user_id` directly.**
+- **Renderers MUST handle partial state.** Artifacts stream; you will be handed half-written
+  content.
+- **One type → one renderer**, identical across Chat, Runner, Shortcut result and Agent App. No
+  per-surface forks. Adding a type = registry entry + `CanvasContentType` + discovery map +
+  `renderers/XArtifact.tsx` + the RENDERERS map (+ `SPECIAL_CODE_LANGUAGES` for fence types).
+- **Canvas is the DB; artifacts are the wire format.** Never persist wire-format `<artifact>` tags
+  as content — persist the structured payload.
+- **Version rows are never overwritten.** Each edit is a new row via `cx_canvas_save_user_version`.
+- **Materialize against REAL source ids only** (`isRealSourceId`); a partial persistence failure
+  **aborts the whole source rewrite**; adapter and discovery writes are **non-blocking**.
+- **The rewrite may NEVER change a message's tool_call blocks** — `cx_message_set_content` rejects
+  it (`tool_call_graph_change_forbidden`). A rejection means the commit path mis-partitioned
+  iterations; fix the partition, not the guard.
+- Chat rewrites go through **`cx_message_set_content`** (status-preserving, archives to
+  `content_history`), **never `cx_message_edit`** (marks the row `'edited'`).
+- **Read the node's `TWO-WAY-BINDING.md` before touching artifact EDIT or UNBIND on any surface.**
+  `ArtifactTypeDef.userEditable` is the ONE edit switch — flag a type only when its editor actually
+  exists and saves versions.
+- The slice is **not persisted** — a full page reload empties the canvas. Materialized items store
+  a POINTER (`data: { artifactId }`); legacy `openCanvas` items carry a full payload, so anything
+  reading `content.data` must handle both.
+- Use `updateCanvasContent` (not `openCanvas`) to change an item already on the canvas — `openCanvas`
+  creates a duplicate. `closeCanvas()` keeps items in memory; `clearCanvas()` destroys them.
+- Pass `titleToString(content.metadata?.title)` — never the raw `metadata.title` — to anything that
+  needs a plain string; `CanvasContent.metadata.title` is deliberately `string | ReactNode`.
+- **No `writeTargets` on the `matrx-user/canvas` surface, by design** — the pane owns no authored
+  text, and its artifacts' own surfaces are strictly closer to the content.
+- `search_vector` and `trending_score` on `shared_canvas_items` are trigger-maintained; never write
+  them from app code.
+- **Verifying the canvas surface:** `/canvas` is not a route, and on a MAPPED route the route
+  surface wins — verify on `/artifacts` (no route→surface mapping), reached by CLIENT-SIDE
+  navigation with the pane open, since a reload empties the slice.
 
-The slice is **not persisted** — a full page reload empties the canvas.
-
-**The owner of a canvas write is `auth.uid()`, never a value the client sends.**
-`cx_canvas_upsert` / `cx_canvas_upsert_source` / `cx_canvas_create_manual` /
-`cx_canvas_update_version` still take `p_user_id` (no client change was needed),
-but since 2026-08-15 it is **validated, not trusted** — `canvas._require_actor()`
-resolves the owner from the JWT, raises `28000 not authenticated` when there is
-no session, and `42501 cannot write a canvas item for another user` on a
-mismatch. `service_role` may still name the owner. **Never hand-write a second
-actor resolver in this family, and never reintroduce inserting `p_user_id`
-directly** — that is what let an authenticated caller write a row owned by
-someone else, and what turned an unauthenticated write into the nonsense
-`cannot create another user's personal organization` (the org-stamp trigger fell
-through to the caller-supplied user). Client half:
-`runWithSessionRetry` ([`lib/supabase/authRetry.ts`](../../lib/supabase/authRetry.ts))
-re-resolves the session and retries ONCE on that one cause, so a momentary
-session gap no longer drops a streamed artifact.
-
----
-
-## Surface integration — `matrx-user/canvas`
-
-**Manifest:** `features/surfaces/manifests/canvas.manifest.ts`
-**Emitter:** `SurfaceRuntimeProvider` in `core/CanvasSideSheetImpl.tsx`
-**Scope builder:** `lib/canvas-scope.ts`
-
-The provider mounts after the `!currentItem` guard, so it covers the single
-AND split layouts and every route the pane overlays. `getScope` reads the
-canvas slice **off the store at Run time** rather than closing over rendered
-state — the user is one ⌘\ away from switching items between mount and
-launch — and the single non-Redux input (`isMobile`, which decides whether
-the split is actually rendered) rides a ref advanced on every render.
-
-Values describe the PANE and the open item: identity (`current_canvas_id`,
-`current_canvas_type`, `current_canvas_title`, `current_canvas_is_saved`,
-`canvas_json`) and session (`open_items`, `item_count`, `is_split`,
-`secondary_canvas_id`, `render_mode`). Nothing reaches inside a renderer.
-
-**No `writeTargets`, by design.** The pane owns no authored text. Writing
-"into the canvas" generically would mean reaching through the host into
-whichever artifact renderer happens to be mounted — a parallel write path
-around surfaces that already ship their own targets (`mermaid-editor`,
-`html-page`, `working-document`/`scratchpad`). The full judgment is recorded
-in the `features/surfaces/FEATURE.md` Change Log entry for 2026-08-11.
-
-**Nesting:** this provider is an ANCESTOR of whatever it renders, and
-`getSurfaceRuntime` picks the DEEPEST registration — so when the open item is
-a working document, `WorkingDocumentEditor`'s own provider still wins and its
-shipped write targets stay reachable. A host surface cannot shadow the
-artifact surface inside it.
-
-**Verifying it:** `/canvas` is NOT a route (only `/canvas/discover` and
-`/canvas/shared/[token]` exist), and on a MAPPED route the route surface wins
-in `SurfaceAgentsPanelImpl` — on `/chat/[id]` that means `matrx-user/chat`
-wins and the canvas scope is dropped entirely, not merely relabelled. Verify
-on a route with no route→surface mapping (`/artifacts`), reached by
-CLIENT-SIDE navigation with the pane open, since a reload empties the slice.
-
----
-
-## Change Log
-
-- **2026-08-15 — Canvas write RPCs resolve the owner from `auth.uid()`; the "personal organization" error on artifact materialization is gone.** An agent-app run lost a react artifact to `42501 cannot create another user's personal organization` — a red herring: the write had reached PostgREST with no user JWT, so `_stamp_actor` left `created_by` NULL, `_stamp_org_default` fell through to the client-supplied `user_id`, and the D31 identity guard fired on an organization nobody was creating. Proven live, along with a second defect in the same call: **authenticated + mismatched `p_user_id` SUCCEEDED**, writing `user_id` = another user with the caller's `created_by`/org — mis-tenancy RLS could not catch, since `std_insert` only checks `created_by`. Both closed by `canvas._require_actor()` (migration `canvas_write_rpcs_resolve_actor_from_auth.sql`) plus `runWithSessionRetry` on the client. Verified live on all four branches (anon / authed-self / authed-other / service_role) and end-to-end through a real agent-app run.
-- **2026-08-11 — First `SurfaceRuntimeProvider` for `matrx-user/canvas`; manifest re-authored against the live pane; `selectCanvasRenderMode` fallback fixed.** The manifest previously declared diagram-node vocabulary (`selected_node_id`, `selected_nodes`, `current_text_block`) for an editor this codebase does not contain, and documented `render_mode` with an edit/preview enum it never had. Those values are gone; the real ones the pane owns are declared and now actually emitted, with `canvas_json` documented as only the `{ artifactId }` pointer for materialized artifacts. `selectCanvasRenderMode` fell back to `"panel"` — never a `CanvasRenderMode` — and now falls back to the slice's own `"auto"` and is typed. Deliberately NO write targets: the canvas is a host, and its artifacts' own surfaces are strictly closer to the content. Live-verified with a Badass Agent run on `/artifacts` with the pane open; `check:surface-drift` green.
+**Keep-docs-live:** a change to the wire format, the identity keys, the type registry, or the write
+path updates the node's `STATE.md` in the same session.

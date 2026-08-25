@@ -1,5 +1,5 @@
 /**
- * unbindArtifact — semantics tests (TWO_WAY_BINDING.md § b).
+ * unbindArtifact — semantics tests (/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/TWO-WAY-BINDING.md § b).
  *
  * The pure parts run directly (replacement building, inertness gating, ref
  * rewriting); the orchestrator runs with injected row-loading deps (no IO).

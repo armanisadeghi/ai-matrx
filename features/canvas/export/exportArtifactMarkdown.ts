@@ -1,6 +1,6 @@
 /**
  * exportArtifactMarkdown — the FORWARD leg of the artifact ⇄ markdown
- * two-way layer (see ../docs/TWO_WAY_BINDING.md).
+ * two-way layer (see /Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/TWO-WAY-BINDING.md).
  *
  * Any persisted `canvas_items` row → clean human-readable markdown: the
  * user's "give me my content back" escape hatch AND the "share this with

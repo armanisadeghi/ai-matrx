@@ -1,13 +1,13 @@
 /**
  * unbindArtifact — the UNBIND leg of artifact ⇄ editable surfaces
- * (see ../docs/TWO_WAY_BINDING.md § (b)).
+ * (see /Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/TWO-WAY-BINDING.md § (b)).
  *
  * "Give me my text back": replace the canonical R1 `<artifact id>` tag in a
  * source record's content with the artifact's clean markdown export
  * (`exportArtifactMarkdown`), persisted through the SAME owner-checked
  * `persistRewrite` the materializer used. The inverse of `materializeBlocks`.
  *
- * Semantics (per TWO_WAY_BINDING.md — do not change without updating it):
+ * Semantics (per /Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/TWO-WAY-BINDING.md — do not change without updating it):
  *  - **The artifact row is KEPT, orphaned — never soft-deleted.** Other
  *    surfaces may reference the same id, `canvas_item_state` and adapter-linked
  *    domain records hang off it, and it stays discoverable in the canvas

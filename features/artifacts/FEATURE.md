@@ -1,253 +1,39 @@
-# FEATURE.md — `artifacts` + `canvas`
-
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/FEATURE.md` — read it before touching this feature in ANY repo.
-
-**Status:** `active` — primary output surface for agent responses; rapidly evolving
-**Tier:** `1`
-**Last updated:** `2026-08-11`
-
-> Combined doc: **Artifacts** (wire format + block renderer) and **Canvas** (DB / library that persists + versions them). These two cannot be understood separately.
-
----
-
-## Purpose
-
-- **Artifacts**: self-contained structured outputs emitted by models using syntax like `<artifact type="..." id="..." />`, streamed via `content_block` NDJSON events, rendered by a type-keyed component registry. **Bidirectionally interactive** — the model produces structured output, the UI renders it as a real component, the user's interactions feed back into the next turn.
-- **Canvas**: persistent library for interactive renderable blocks (artifacts, dashboards, code editors, flashcards, diagrams). Canvas auto-persists artifacts with versioning and surfaces them for discovery, sharing, and re-use.
-
-One sentence: **artifacts are the wire format; canvas is the database.**
-
----
-
-## Entry points
-
-**Routes**
-- `app/(public)/canvas/` — public canvas surface (discovery, view)
-- Canvas panel embedded in authenticated routes alongside Chat / Runner
-
-**Feature code — `features/artifacts/`** (thin — the `cx_artifact` discovery layer only)
-- `types.ts` — `cx_artifact` row/record types + `ArtifactType` enum
-- `components/` — `CmsArtifactList` / `CmsArtifactDetail` (the `/artifacts` library surface)
-- `/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md` — the target design (R1–R8) + references
-
-> The type **registry, one-renderer-per-type, materialization, and persistence
-> adapters** live in `features/canvas/artifact-types/` + `features/canvas/materialization/` — **not here.** See the Materialization section.
-
-**Feature code — `features/canvas/`**
-- `core/` — the global right-side canvas surface
-  - `CanvasSideSheet` / `CanvasSideSheetInner` — slide-in panel mounted once at the layout root (`(a)` via `DeferredIslands`, `(public)` directly). Owns width-resize, the ⌘\ shortcut, and the optional vertical split.
-  - `CanvasPane` — single pane with its own modern header (glass tap buttons). Knows about its `paneRole` (`"single" | "top" | "bottom"`) and adapts close / split / swap / promote semantics accordingly.
-  - `CanvasBody` — type-keyed renderer switch. The one place to add a new block renderer.
-  - `CanvasReopenChip` — floating bottom-right pill that surfaces only when canvas items exist but the surface is closed.
-  - `CanvasRenderer` / `CanvasHeader` — legacy in-page renderer kept for `PromptRunnerModal`, `AdaptiveLayout`, `SharedCanvasView`, `ConversationShell`. Same body output, older header chrome.
-- `builder/` — canvas builder UI
-- `runner/` — live-rendered canvas
-- `home/` — canvas dashboard
-- `demo/`, `test/`, `common/`, `hooks/`, `utils/`, `styles/`, `constants/`
-
-**Global mount points**
-- `app/(a)/layout.tsx` → `<DeferredIslands />` (idle-loads `CanvasSideSheetInner` + `CanvasReopenChip`).
-- `app/(public)/layout.tsx` → mounts `<CanvasSideSheet />` + `<CanvasReopenChip />` directly.
-- Both render with `z-index: 10000` so the canvas sits above modals, drawers, and window panels.
-
----
-
-## Data model
-
-**Artifact on the wire** — emitted mid-stream by the model:
-
-```
-<artifact type="<type>" id="<uuid>"> ... content ... </artifact>
-```
-
-Streamed as `content_block` NDJSON events (see [`features/agents/docs/STREAMING_SYSTEM.md`](../agents/docs/STREAMING_SYSTEM.md)). Partial content arrives incrementally.
-
-**Canvas row** — persisted artifact:
-- `id` (uuid)
-- `type` — maps to renderer via `canvas-block-meta.ts`
-- `metadata` — type-specific (title, summary, schema version)
-- `content` — the structured payload
-- `version` — monotonic; each update increments
-- Scope columns per [`../scopes/FEATURE.md`](../scopes/FEATURE.md)
-- Social fields (share flag, reaction counts)
-
-**Type registry** — `canvas-block-meta.ts` maps `type` → React component + metadata. Adding a new artifact type means adding an entry here plus the custom component under `features/artifacts/custom-components/`.
-
----
-
-## Key flows
-
-### Flow 1 — Agent emits an artifact mid-stream
-
-1. Model writes `<artifact type="task_list" id="..."> ... </artifact>` to its output.
-2. Server emits `content_block` events with partial content as tokens arrive.
-3. Client's stream processor routes to the artifacts slice, keyed by `blockId`.
-4. UI renders the `task_list` component in real time — it must handle partial state.
-5. On `content_block.completion`, artifact is finalized. Canvas auto-persists a new row.
-
-### Flow 2 — Interactive state persistence (per viewer)
-
-1. User interacts with a rendered artifact (answers a quiz, studies a flashcard deck, checks a progress item).
-2. **Custom-table types** (flashcards → `user_flashcard_*`, quiz → `quiz_sessions`, tasks → `ctx_tasks`) persist through their feature's adapter; **generic types** persist to `canvas_item_state(canvas_id, user_id, state)` via `useArtifactState` + `GENERIC_ADAPTER`. Keyed per viewer.
-3. On reload the artifact rehydrates that state (loaded by `artifact_id`), so progress survives.
-4. The model surfaces this via context on later turns (study scores, etc.) — NOT bundled into `user_input`.
-
-> Adapter interface + registry: `features/canvas/artifact-types/persistence/`. See the **Materialization (LIVE)** section below for the full pipeline.
-
-### Flow 3 — Data-touching artifacts: tracked proposal → Convert (tasks, tables)
-
-Data-touching types are **never auto-bound** to a real record (vision R7) — agents emit them constantly, so auto-creating would flood the user's data. The materialized artifact is a *tracked proposal* with an explicit **Convert** that links it; thereafter the domain record is truth and `canvas_items.external_system` marks "linked."
-
-- **Tasks** (`TasksArtifact.tsx`): **"Convert to tasks"** creates real `ctx_tasks` via the canonical **`ctx_task_associations`** bridge (`entity_type='artifact'`, `entity_id=<canvas item id>`) — the same path `TaskPreviewWindow`/`TaskChipRow` use everywhere. After Convert the artifact is a live `TaskChipRow` mirror.
-- **Tables** (`TableArtifact.tsx`): an editable markdown table whose inline edits persist to the artifact (the agent sees current values via R8). **"Convert to table"** (no dialog, named from the title) creates a `udt_datasets` row via the shared `createDatasetFromTable` primitive + links it → the live realtime two-way `UserTableViewer` becomes truth. CSV blocks get **Save as table** (same primitive). One markdown-table parser: `parseMarkdownTable`.
-
-### Flow 4 — Canvas persistence + versioning
-
-1. Every artifact emitted by an agent creates a canvas row on completion.
-2. If the same `id` is emitted again (edit / regeneration), a new version row is written; pointer advances.
-3. Users can browse prior versions.
-
-### Flow 5 — Social canvas
-
-1. Publishing (`useCanvasShare`) inserts the `canvas.shared_canvas_items` snapshot, then mints the
-   link through the ONE canonical lane: `create_share_link('shared_canvas_item', id)` →
-   `platform.share_links`. There is NO bespoke canvas token — both `share_token` columns were
-   dropped 2026-08-12 (`migrations/canvas_share_convergence_onto_share_links.sql`; the 24
-   pre-existing tokens were migrated verbatim so old URLs still resolve).
-2. Discovery surface lists public snapshots and links them **by row id** (`/canvas/shared/{id}`,
-   the public-visibility lane — no secret needed). Leaderboard ranks by reactions / views.
-3. `/canvas/shared/[token]` accepts a canonical token OR a row UUID, resolved ONLY through
-   `features/canvas/shared/resolveSharedCanvas.ts` (`resolve_share_token` RPC with its
-   `public_columns` projection, or pub_read by id). Revoke/list/expiry ride the standard
-   ShareModal machinery; `/s/[token]` renders canvases via the `shared_canvas_item` /
-   `canvas_item` share lenses.
-
----
-
-## Materialization (render block → persistent artifact) — LIVE, ANY-SURFACE
-
-The conversion that makes an artifact durable + model-referenceable. Lives in `features/canvas/materialization/`. **The primitive is `materializeBlocks.ts`** — source-agnostic: identity is `(source_system, source_id, artifact_index)` (`uq_canvas_items_source_artifact`; `source_system` = `cx_message | note | transcript | ctx_task | …`). Chat is one wrapper over it.
-
-1. **Trigger (chat)** — at stream-end commit (`process-stream.ts`, per committed assistant turn) AND an owner-gated reconcile-on-load pass (`loadConversation` → `reconcileArtifacts.ts#reconcileMessagesArtifacts`) for historical / unfinished messages. **Non-chat surfaces** call `materializeBlocks` / `reconcileSourceBlocks` with their own `source` + `persistRewrite`.
-2. **Persist** — each materializable block → a `canvas_items` row: chat via `cx_canvas_upsert` (unchanged signature, delegates to `cx_canvas_upsert_source`), other sources via `cx_canvas_upsert_source` — both idempotent on the source natural key. Chat callers omit the optional conversation argument: the RPC resolves `chat.message.conversation_id`, and the returned canvas row's conversation is reused for adapter/discovery writes. This is load-bearing for Builder manual runs, whose stable local Redux key intentionally differs from the per-request server conversation. A DB trigger (`_sync_source_identity`) mirrors `source_message_id` ↔ `(source_system, source_id)` on chat rows so no write path can half-stamp identity.
-3. **Rewrite to the canonical R1 text form** — the raw block in the source body is replaced by **plain text**: `<artifact type="X" id="<uuid>" version="N" title="T">body</artifact>` (`artifactWire.ts#wrapArtifactText`), persisted via the caller's `persistRewrite` — chat: **`cx_message_set_content`** (SECURITY DEFINER, owner-checked, **status-preserving**, archives the raw original into `content_history`). NOT `cx_message_edit` (marks status `'edited'`). There is **no `artifact_ref` content block** — one stored form is simultaneously what the UI renders, the durable archive, and what the model reads natively (aidream passes text through, so model-visibility is free — see [vision R1/R4](/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md)).
-4. **R3 recognition + render by id** — `isMaterializedArtifactId(id)` (UUID test, `artifact-types/artifactId.ts`): a `<artifact>` with a real canvas UUID → render the live row by id (`useCanvasItem` → `ArtifactRefBlock` → `ArtifactBlock`), ignoring the inline body; a non-UUID/absent id (the model's `artifact_1`, or mid-stream) → render inline + stay a materialization candidate. Reconcile verifies UUID refs through `canvasArtifactService.isReadableById`; a dangling ref is rebuilt from its durable wire body and rewritten to the returned row id. While that owner-only repair runs, `ArtifactRefBlock` renders the durable wire body and suppresses the expected missing-row capture; a ref without fallback content still reports through `recordUnavailable`. **Idempotent** — readable refs stay untouched and the source natural key prevents duplicate rows.
-
-**Structured (kind-IR) persistence** — a JSON block whose resolved `__kind` matches an `ArtifactTypeDef.kinds` entry (`resolveArtifactDefByKind`; flashcards ← `flashcard_set`) persists `content.data` as the **zero-loss value OBJECT** (self-describing via `__kind`), `content.metadata.kind` stamped; the wire body is compact canonical JSON inside the same `<artifact>` tag. Rehydration: `ArtifactRefBlock` derives serverData from the stored object via `kindServerDataFromStoredValue` (content-ir `react/kind-route.ts`) — **zero re-parse**; legacy string payloads keep the string path forever. Adapters receive `structured` + `source` (`MaterializedArtifactInfo`) and dedupe on `metadata.source_system/source_id` (legacy `source_message_id` fallback read).
-
-Pure planner: `planMaterialization.ts` (structured detection lives here). Primitive: `materializeBlocks.ts`. Chat wrapper: `materializeMessageArtifacts.ts`. On-demand single artifact: `ensureArtifactPersisted.ts` (needs a real source id, not specifically a message). Type registry (single source of truth): `artifact-types/artifact-type-registry.ts`.
-
-**Markdown export (the forward leg of artifact ⇄ markdown):** any row → clean human-readable markdown via `features/canvas/export/exportArtifactMarkdown.ts` (pure, no IO; structured `content.data` → the kind registry's `toMarkdown` facet, string content passes through). "Copy as Markdown" lives in the shared `ArtifactBlock` header chrome.
-
-**Unbind ("Detach as text") — LIVE:** `features/canvas/materialization/unbindArtifact.ts` replaces a ref with the LATEST chain version's markdown export via the surface's `persistRewrite`; the row is **kept, orphaned** (never soft-deleted); inertness is checked mechanically (the replacement re-runs `planMaterialization` — anything that would re-materialize refuses, so fence-backed types like mermaid stay EDIT/EXPORT-only). Chrome: Unlink button in `ArtifactBlock` (`useUnbindArtifact`); non-chat surfaces provide `UnbindSurfaceContext` (notes is live — convert action + provider through the canonical note save path; string-surface adapters in `materialization/textSurface.ts`). EDIT is registry-driven: `ArtifactTypeDef.userEditable` (mermaid + code only — types with real editors) drives `resolve:"latest"` in `ArtifactRefBlock`. **Read [`features/canvas/docs/TWO_WAY_BINDING.md`](../canvas/docs/TWO_WAY_BINDING.md)** before touching artifact EDIT or UNBIND on any surface.
-
-**Invariants:**
-- **Idempotent + reversible.** The unique key prevents duplicate rows; `content_history` keeps the raw original. Reconcile-on-load retries anything the live commit didn't finish — nothing vanishes, nothing duplicates.
-- **Owner-only.** A viewer never mints `canvas_items` for someone else's conversation.
-- **Materialize against REAL source ids only** — any non-UUID id (client-temp/optimistic) is skipped (`isRealSourceId`).
-- A partial persistence failure **aborts the whole source rewrite** — never rewrite a block to a dangling ref; reconcile retries.
-- **Adapter + discovery writes are NON-BLOCKING** — they never abort the artifact or the rewrite; links backfill on a later pass.
-- **The rewrite may NEVER change a message's tool_call blocks.** The tool_use↔tool_result graph is server-owned; `cx_message_set_content` rejects any content whose tool_call id multiset differs from the row's (`tool_call_graph_change_forbidden`, aidream migration 0151). `cxMessageContentRewriter` handles the rejection: raw content stays (inline rendering keeps working), the message is never retried in-session. A rejection firing means the commit path assembled another iteration's tool_calls onto the row — fix the partition, not the guard.
-- `chat.artifact` (discovery index) carries the same `source_system/source_id/artifact_index` identity as `canvas_items`; `message_id`/`conversation_id` are nullable (non-chat rows), natural key `uq_cx_artifact_source_natural_key` on `(user_id, source_system, source_id, artifact_index, artifact_type, external_system)`, RLS owner-fallback for NULL-conversation rows (`iam.apply_rls` component variant).
-
-## The type registry pattern
-
-Adding a new artifact type:
-1. Define the schema (types file under `features/artifacts/shared/` or `custom-components/<type>/`).
-2. Build the renderer — **must handle partial state during streaming**.
-3. Register in `canvas-block-meta.ts` with type key, display metadata, feature flags.
-4. Emit from the model using `<artifact type="your_type" id="..." />`.
-
----
-
-## Split mode
-
-The canvas surface can show two items at once, stacked vertically with a draggable handle. Reducer state lives on `canvasSlice`:
-
-- `currentItemId` — top pane (or only pane in single mode).
-- `secondaryItemId` — bottom pane. `null` means single-pane.
-- `splitRatio` — top pane's share of vertical space, 0–100, persisted.
-
-Actions:
-- `splitCanvasWith(itemId?)` — enter split mode. Falls back to the most-recently-used non-current item when no id is given, so a generic "Split" button always does something sensible.
-- `unsplitCanvas()` — collapse to single pane, keeping the top item.
-- `swapCanvasPanes()` — flip top ↔ bottom.
-- `setCanvasSplitRatio(n)` — persists the handle position.
-
-Rules:
-- Split mode is desktop-only. On mobile the surface is fullscreen single-pane regardless of state.
-- Each pane owns its own view-mode (preview / source) and share dialog; sync state lives on the canvas item, so syncing in one pane reflects everywhere.
-- Closing the bottom pane = `unsplitCanvas`. Closing the top pane in split mode promotes the bottom to single. Closing in single mode = `closeCanvas` (state preserved, reopenable via the chip or ⌘\).
-
-## Global summon UX
-
-- **⌘\ / Ctrl+\\** — toggle canvas open/closed. Ignored while focus is in a text field. Bound inside `CanvasSideSheetInner` so every authenticated and public route gets it.
-- **`CanvasReopenChip`** — bottom-right floating pill rendered when `items.length > 0 && !isOpen`. Shows the most-recent item's title and a count badge when there are multiple. Click reopens the canvas with whichever item was most recently active.
-
-## Invariants & gotchas
-
-- **Renderers MUST handle partial state.** Artifacts stream; you'll be handed half-written content. Never assume completeness mid-stream.
-- **One type → one renderer.** The same artifact type must look identical across Chat, Runner, Shortcut result, Agent App surface. No per-surface forks.
-- **Canvas is the DB; artifacts are the wire format.** Don't conflate. Do not persist wire-format artifact tags directly — persist the structured payload.
-- **Bidirectional interaction feeds back on NEXT turn**, never mutates the model in place. State changes are additive to `user_input`.
-- **App-state sync is explicit.** Artifacts are not automatically backed by real app tables. Explicit conversions (task list → tasks) are one-way and user-initiated.
-- **Version rows are never overwritten.** Each update = new row. Previous versions remain browseable.
-- **Scope on canvas rows follows the project multi-scope convention.** See [`../scopes/FEATURE.md`](../scopes/FEATURE.md).
-- **Related but distinct:** Tool call visualization ([`../tool-call-visualization/FEATURE.md`](../tool-call-visualization/FEATURE.md)) is overlay UI around tool calls; artifacts are model-authored structured content. They share rendering infrastructure but aren't the same system.
-
----
-
-## Related features
-
-- **Depends on:** `features/agents/` (streaming source), `features/agents/docs/STREAMING_SYSTEM.md`, `features/sharing/`
-- **Depended on by:** `features/conversation/`, `features/agent-apps/`, `features/tasks/` (app-state sync example), the tool-call-visualization consolidation
-- **Cross-links:** [`ARTIFACT-MODEL-GUIDELINES.md`](./ARTIFACT-MODEL-GUIDELINES.md), [`TODO-artifact-frontend-integration.md`](./TODO-artifact-frontend-integration.md), [`TODO-canvas-artifact-integration.md`](./TODO-canvas-artifact-integration.md)
-
----
-
-## Change log
-
-- `2026-08-23` — codex: **Recoverable dangling artifact refs no longer enter `system_error`.** `ArtifactRefBlock` suppresses the expected zero-row capture only when a durable inline wire body exists; refs without fallback content keep the red `recordUnavailable` boundary.
-- `2026-08-22` — codex: **Reconcile repairs dangling artifact UUIDs instead of trusting UUID syntax as persistence proof.** `planMaterialization` exposes existing refs and can re-plan proven-missing ids; `materializeBlocks` verifies refs, rebuilds a missing row from the canonical wire body through the existing source-natural-key upsert, and rewrites the source to the returned UUID. Focused regression coverage pins the recovery while readable refs remain idempotent.
-- `2026-08-12` — claude: **chat legacy owner cut on `chat.artifact` — reads moved to `created_by`, `project_id` deleted, ONE legacy write deliberately held.** Every ownership READ in the repo now keys on the canonical `created_by` (`app/api/artifacts/route.ts` update/archive/delete/get/list/listForMessage + the create conflict-recovery lookup; `canvasArtifactService.upsertDiscoveryIndex`'s natural-key read) — `created_by` is stamped by the `_stamp_actor` trigger and is backfilled on 100% of live rows, so this is a straight repoint. `project_id` is GONE end-to-end (forbidden project FK): dropped from the insert rows, from the `list` filter, from `CxArtifactRow`/`CxArtifactRecord`/`CreateArtifactPayload`/`ArtifactFilters`, from the `byProjectId` Redux index + `selectArtifactsByProjectId` (zero consumers), from `HtmlPreviewBridge`, and from the Context card in `CmsArtifactDetail`; `upsertDiscoveryIndex` no longer does a `conversation → project` association lookup at all. **The single remaining `user_id` write on both upsert paths is intentional and pinned:** `user_id` is the lead column of `uq_cx_artifact_source_natural_key` (`NULLS NOT DISTINCT`), the index this `ON CONFLICT DO NOTHING` upsert infers — stopping the write before that index is rebuilt on `created_by` would make every existing row invisible to the conflict arbiter and reintroduce exactly the duplicate-artifact bug the 2026-07-03 entry below fixed. Both callsites carry a comment naming the unblocking DDL; the write and the `onConflict` string come out together in the change that lands the new index (owned by the chat-schema cut, Phase 3).
-- `2026-08-12` — claude: **Canvas share tokens converged onto `platform.share_links`** (the same disease as the killed files fork, access-architecture §7-G3). DB: `shared_canvas_item` registered link-shareable with a `public_columns` projection; 24 live tokens migrated verbatim; `share_token` dropped from BOTH canvas tables; broken `cx_canvas_publish` dropped. FE: `resolveSharedCanvas.ts` is the one resolver (token → `resolve_share_token`, UUID → pub_read), `useCanvasShare` mints via `create_share_link`, lane-B `canvasItemsService.share/unshare/getShared` (mints that 404'd) deleted — canvas-item share now `createShareLink('canvas_item')` → `/s/{token}`, discovery links by id, canvas lenses registered for `/s/[token]`. Old URLs verified resolving; revoke verified.
-- `2026-08-11` — codex: **Message content is generated-contract-only.** Removed the live `_matrxState` writer; quiz progress stays in `quiz_sessions`, generic artifact state stays in `canvas_item_state`, and a loud boundary recovers already-stored legacy interactive blocks before strict `MessagePart` parsing.
-- `2026-08-10` — claude: **Mermaid Workbench is agent-writable** — `matrx-user/mermaid-editor` now declares 2 `applyPolicy:"ask"` / `mode:"entity"` write targets (`diagram_source` replace-whole DSL, `diagram_title` via the source's YAML frontmatter), and `MermaidWorkbench` mounts the `SurfaceRuntimeProvider` it never had (reusing the existing `buildScope` as `getScope`) plus `getWriteHandlers`. Both handlers dispatch the SAME `APPLY_EXTERNAL_SOURCE` action the "Edit with AI" rail's Apply and the version-restore menu use, so an agent edit is one undo step and rides the existing `useMermaidArtifactSave` session-versioning — no parallel write path. Complementary to the rail, not a replacement: the rail is a modal one-shot the user opens and types into; these targets are for the multi-turn agent in the header Agents popover, which could already READ this surface but had no way to land anything. `mode:"entity"` because the workbench has no Save button — its autosave persists off the same source change a person's typing produces, so the draft prose "nothing is saved until you save" would be false here. New `setMermaidTitle` in `components/mermaid/diagram-type.ts` (write-twin of `extractMermaidTitle`; preserves every other frontmatter key, throws on titles YAML could not read back) and `DETECTABLE_DIAGRAM_TYPES` derived from the detector's own header table, so the vocabulary agents are told cannot drift from what the workbench accepts. `AgentEditRail` gained `onBusyChange` so a write is refused mid-rail-run instead of racing its proposal. **Entry-point note for anyone testing this:** the workbench only renders through `MermaidArtifact` in canvas mode, and on `/chat/[id]` the route surface `matrx-user/chat` outranks the mounted runtime in the Agents popover — open a mermaid-backed `/artifacts/[id]` instead (no route→surface mapping) to get the workbench's own surface. Live-verified with a real Badass Agent run; full evidence in `features/surfaces/FEATURE.md` (2026-08-10).
-- 2026-07-28 — D73 fixed: CmsArtifactList navigatingId resets on pathname change + 6s fallback; html_page editor open unified through handleNavigate.
-
-- `2026-07-27` — codex: **Artifact discovery derives project context from associations.** `canvasArtifactService.upsertDiscoveryIndex` now reads conversation organization/task directly and resolves optional project membership through the existing `associationsService`; it no longer selects the removed `chat.conversation.project_id` FK.
-- `2026-07-27` — claude: **Canvas surface split into front door + Impl (build-graph fix).** `CanvasSideSheetInner.tsx` → `CanvasSideSheetImpl.tsx` (heavy core; the generic `@/…Impl` eslint ban now guards it) behind new thin front door `features/canvas/core/CanvasSideSheet.tsx` — `dynamic({ssr:false})`, mounted only when `currentItemId != null`, and owning the always-on concerns (`setCanvasAvailable`, ⌘\ toggle) so they survive the Impl being unfetched. `app/(public)/layout.tsx` previously imported the Impl STATICALLY — ~1.2 MB / 140 modules of canvas+materialization+content-IR compiled into every anonymous page; measured always-mounted graph 697→578 modules (−1.0 MB). `DeferredIslands` now consumes the front door too (canvas chunk no longer fetched on idle — only on first canvas item). Browser-verified: public page loads zero canvas chunks; chat mermaid → Edit opens the canvas end-to-end.
-- `2026-07-27` — codex: **Artifact materialization requires a durably successful stream.** `processStream` no longer launches canvas writes after a terminal `agent_error`, even when the NDJSON transport itself completed. Persistence-barrier failures roll back earlier `record_reserved` assistant rows; gating on the final error prevents those non-durable UUIDs from reaching `cx_canvas_upsert` and violating `fk_canvas_items_source_message`.
-- `2026-07-18` — codex: **Chat artifacts derive conversation identity from their persisted message.** `canvasArtifactService.upsert` no longer forwards a client conversation id to `cx_canvas_upsert`; the RPC resolves `chat.message.conversation_id`. `materializeBlocks` then carries the returned canvas row's server conversation into adapters and `chat.artifact` discovery writes. This fixes Builder `/ai/manual`, where the local panel key differs from each request's durable conversation, and prevents the observed FK 409 plus partial-materialization retry cascade. Added focused service/orchestrator regression tests.
-- `2026-07-15` — claude: **UNBIND leg shipped + notes materialization surface (W3-D / content-IR D3).** New `unbindArtifact.ts` (row kept + latest-chain export + mechanical inertness gate via `planMaterialization` re-plan), `useUnbindArtifact` + `UnbindSurfaceContext` + "Detach as text" (Unlink, `confirm()`) in `ArtifactBlock` chrome; `flipMessageToDbRender.ts` extracted from attach (shared refetch + `_streamRequestId` cohort clear); `textSurface.ts` string-surface adapters; notes wired (context-menu "Convert blocks to artifacts" → `useNoteArtifactMaterialization` → `materializeBlocks({system:"note"})`, unbind provider — all through `updateNoteContent`+`saveNote`); `saveUserVersion` accepts structured `content.data` objects. Browser-verified notes + chat (materialize → detach → reload inert; DB rows kept, `content_history` archived). Tests: `materialization/__tests__/unbindArtifact.test.ts` (13).
-- `2026-07-14` (2) — claude: **`/artifacts` header conformance.** `app/(core)/artifacts/page.tsx` and `[id]/page.tsx` were on the pre-shell `PageSpecificHeader` pattern (in-body faux title bar, `h-[calc(100dvh-var(--header-height)*2)]`) — replaced with `RouteHeader` (list) and `EntityModeHeader` (detail, moved into `CmsArtifactDetail.tsx` alongside its fetch/delete logic per the `/schedules/[id]` pattern) + `h-full overflow-hidden` body wrappers per `core-route-headers`. Also fixed a pre-existing bug where `CmsArtifactList`/`CmsArtifactDetail` linked to the non-existent `/cms/${id}` instead of `/artifacts/${id}`.
-- `2026-07-14` — codex: **Conversation fork now preserves artifact discovery source identity.** `cx_fork_conversation` was updated in migration `20260714161847_fix_cx_fork_artifact_indices.sql` after the reported "Fork at this message" failure on a message with three `data_table` discovery rows. The RPC now copies `artifact_index` and explicitly remaps `source_system/source_id` to the forked message, keeping the `uq_cx_artifact_source_natural_key` invariant aligned with the July 7 artifact-index migration.
-- `2026-07-10` — claude: **Pin code/JSON blocks as editable conversation context (v1).** User action on CodeBlock/JsonBlock → `attachBlockAsEditableContext` materializes to `canvas_items` (type=`code`), rewrites the message to R1 `<artifact id>`, clears the live-stream render anchor so version history shows in-session, and publishes the canvas UUID as an `instanceContext` key with `mutable:true` / `persist:auto` / `source.kind=canvas_item`. Registry `userEditable` flag (code + mermaid) drives `ArtifactRefBlock` `resolve:"latest"`. aidream `@register_writeback("canvas_item")` → `cx_canvas_save_user_version`. Migration `canvas_save_user_version_preserve_links.sql` copies `external_system`/`external_id`/org/metadata/source identity onto new version rows (known defect from handoff item 3). Context rail opens pinned artifacts in canvas; process-stream refreshes on `context_delta`/`context_persisted`.
-- `2026-07-10` (2) — claude: **Attach-context hardening.** Mid-stream attach gated; fence probe before upsert; clear `_streamRequestId` for whole request cohort; identical fences all rewrite to one UUID; re-attach publishes chain-head content/`base_version` under root id; orphan row reuse on rewrite-fail retry; BUG-B empty-delta wipe guard; R8 `conversation_artifacts` deduped by version-chain root.
-- `2026-07-07` — claude: **Tool-graph corruption via materialization CLOSED (FOUND_DEFECTS bcc588b6 root fix).** The stream-end single-reservation fold could write LATER iterations' tool_calls onto the first assistant row and materialization persisted that union via `cx_message_set_content` → duplicated tool_use ids → provider 400 on replay. Three layers: `process-stream.ts` single-reservation branch now partitions by iteration (multi-iteration tool runs commit only the reservation's own iteration; later iterations go to client-temp records + loud under-announce scream); aidream migration 0151 APPLIED (RPC rejects any tool_call-set change, `tool_call_graph_change_forbidden`; 15 corrupted rows repaired from archived originals); `cxMessageContentRewriter` handles the rejection without retry-looping (raw content stays inline-rendered). Backend per-iteration reservation announcements (aidream `persistence.py`) make the multi-reservation path the norm.
-- `2026-07-07` — claude: **`chat.artifact` discovery natural key now includes `artifact_index`.** Live DB had `uq_cx_artifact_source_natural_key` on `(user_id, source_system, source_id, artifact_type, external_system)` while `canvas_items` dedupes on `(source_system, source_id, artifact_index)` — materializing 2+ blocks per message (especially types mapping to the same enum, e.g. table+chart→`data_table`) 23505'd in `upsertDiscoveryIndex`. Migration `chat_artifact_discovery_index_artifact_index.sql` (applied + ledger): add `artifact_index`, backfill from `canvas_item_id`, swap unique index; `upsertDiscoveryIndex` now upserts atomically (`ignoreDuplicates`) and passes `artifactIndex` from `materializeBlocks` / `ensureArtifactPersisted`.
-- `2026-07-04` — claude: **Artifact → markdown export (forward leg) + two-way binding design.** New `KindDefinition.toMarkdown` facet (implemented for flashcard_set + the 8 pattern kinds in `features/content-ir/kinds/*`; shared helpers + `genericKindMarkdown` fallback in `kinds/kind-markdown-utils.ts`; facets survive the warm flexible_data override). New pure primitive `features/canvas/export/exportArtifactMarkdown.ts` (structured `content.data` → kind facet; string passthrough; never dead-ends) + "Copy as Markdown" in the `ArtifactBlock` header chrome (inline + materialized refs). EDIT/UNBIND architecture documented in [`features/canvas/docs/TWO_WAY_BINDING.md`](../canvas/docs/TWO_WAY_BINDING.md) (unbind keeps the row orphaned; fence-backed types need an inertness guard — open items listed there).
-- `2026-07-04` — claude: **Any-surface materialization + structured (kind-IR) persistence (Track 2 A/B).** Identity generalized to `(source_system, source_id, artifact_index)`: new primitive `materializeBlocks.ts` (chat became a thin wrapper — `materializeMessageArtifacts` signature + its three call sites untouched), `reconcileSourceBlocks` extracted, `ensureArtifactPersisted` takes any real source id. DB (migration `artifacts_any_surface_source_identity.sql`, applied + ledger-recorded + live-verified): `canvas_items` + `chat.artifact` gain `source_system/source_id` + backfill + `_sync_source_identity` mirror triggers; `cx_canvas_upsert_source` RPC (`cx_canvas_upsert` delegates); `chat.artifact.message_id/conversation_id` now nullable (also fixes the latent ON DELETE SET NULL vs NOT NULL message-deletion blocker) with `CHECK (message_id OR source_id)`; natural key swapped to `uq_cx_artifact_source_natural_key` (the old NULLS-NOT-DISTINCT message key would collapse all non-chat rows); `iam.apply_rls` component variant gained an owner-fallback for nullable composition parents (re-applied to `chat.artifact`). Structured persistence: `ArtifactTypeDef.kinds` + `resolveArtifactDefByKind`; `planMaterialization` detects resolved-kind JSON (envelope or parsed `__kind`) → `content.data` = zero-loss value object, wire body = compact JSON; `ArtifactRefBlock` rehydrates via `kindServerDataFromStoredValue` (no re-parse); `FLASHCARDS_CANONICAL_ADAPTER` maps structured cards directly (tags → `fc_card.metadata.tags` — no tags column) and dedupes on source (legacy `source_message_id` fallback). Deleted dead legacy `flashcards-adapter.ts` (zero importers).
-- `2026-07-03` — claude: **`canvas_items` save no longer 409s on re-save; artifact create revives archived rows.** (1) `canvas.canvas_items` dedup was backed by a PARTIAL unique index (`... WHERE content_hash IS NOT NULL`), which supabase-js `.upsert` can't use as an `ON CONFLICT` arbiter (no way to pass the predicate) — so `canvasItemsService.save` was stuck on select-then-insert and 409'd (RED in the Error Inspector) on concurrent / identical-content re-saves. Migration `canvas_items_content_hash_full_unique.sql` replaces it with a FULL unique index `canvas_items_user_content_full_unique (user_id, content_hash)` (0 NULL / 0 dup of 197 rows, so equivalent); `save` now upserts atomically (`onConflict: "user_id,content_hash", ignoreDuplicates`), bumping `last_accessed_at` + returning `isDuplicate:true` on conflict. (2) Hardened the artifact create fix below (adversarial-review findings): the FULL natural-key index spans archived/soft-deleted rows, so the conflict-recovery branch now **revives** (`status='published'`, `deleted_at=null`) instead of returning a dead row on re-publish-after-archive, and normalizes `external_system` (`"" → null`) once so the write and the recovery read agree.
-- `2026-07-03` — claude: **`chat.artifact` create is now truly idempotent — it had NO unique constraint behind its "idempotent on the natural key" claim, and was silently duplicating (63 excess of 170 live rows).** The `POST create` handler (`app/api/artifacts/route.ts`) was a select-then-`insert()` with a `deleted_at IS NULL` lookup and no backing constraint, so concurrent / double-mount opens (repeat HTML-preview overlay opens) each inserted a fresh row — no 23505 fired because there was no constraint to violate (silent duplication, harder to notice than a red error). Fix (migration `artifact_natural_key_unique.sql`, applied + ledger-recorded + live-verified): (1) deduped to the newest row per `(user_id, message_id, artifact_type, external_system)` group (170→107 rows, no inbound FKs so nothing orphaned); (2) added a **FULL `NULLS NOT DISTINCT`** unique index `uq_cx_artifact_natural_key` — full (not partial on `deleted_at`) so `ON CONFLICT (cols)` can infer it (supabase-js upsert can't supply a partial-index predicate), `NULLS NOT DISTINCT` so a NULL `external_system` dedupes against another NULL. The route now `upsert(..., { onConflict, ignoreDuplicates: true })` → `ON CONFLICT DO NOTHING`, returning the created row, or (on conflict) applying the same selective latest-publish update by natural key. No duplicate row and no 409 possible. Part of the app-wide non-atomic get-or-create sweep kicked off by the `studio_documents` 23505 (see `features/transcript-studio/FEATURE.md` 2026-07-03).
-- `2026-06-24` — claude: **Working document + scratchpad are Canvas content types now.** The per-conversation working document and scratchpad render INSIDE the Canvas shell (not a bespoke window): new `working_document` / `scratchpad` `CanvasContentType`s (both `NON_PERSISTABLE` — they self-persist to `cx_working_documents`), rendered in `CanvasBody` via a lazy `WorkingDocumentPanel` (header off; `CanvasPane` owns the single clean header + the dropdown switcher). `data` is a `{conversationId, kind}` pointer; live content + the RichDocument toolbar + the highlight→agent surface menu come for free. `useWorkingDocument`'s "open" (Maximize) is now `openInCanvas` (deduped by `sourceMessageId="wd:<conv>:<kind>"`). New always-present `ChatCanvasButton` in the chat header (`ChatRunHeader`) toggles the Canvas / opens this conversation's working doc into it when empty. **Convergence still open:** the working doc also opens in `workingDocumentWindow` (floating, now orphaned) and `workingDocumentPanel` (the `ArtifactResultBar` SidePanelSurface → `DocumentsWorkspace`); these should collapse onto the Canvas — coordinate before retiring (concurrent work touched the latter).
-- `2026-06-19` (5) — claude: **Marathon Wave 3 — HTML two-way (idempotent link).** `HTML_ADAPTER.onMaterialize` (`artifact-types/persistence/html-adapter.ts`, registered `adapter:"html"`) publishes via `HTMLPageService.createPage(…,{sourceMessageId})` (server-idempotent — one `html_pages` row per message, updated in place) and returns `{externalSystem:"html_pages", externalId}` → the orchestrator stamps `canvas_items.external_system`. Closes the long-open hand-off (no canvas path set the `html_pages` link before — only the editor path wrote the `cx_artifact` discovery index). **Code two-way deferred** to a browser-verified pass (bare ```code fences don't materialize, so auto-capture needs a language-discriminating `planMaterialization` threshold gate + language/idempotency plumbing — foundation mapped; manual "Save and open in editor" already covers bare fences).
-- `2026-06-19` (4) — claude: **Marathon Wave 2 — tables two-way.** A `table` artifact is an editable markdown table that does **not** auto-bind; inline edits persist to the artifact (agent sees current values via R8). One-click **Convert to table** (no dialog, named from the title) creates a real `udt_datasets` row via the shared **`createDatasetFromTable`** primitive + links it (`external_system="udt_datasets"`) → the live realtime two-way `UserTableViewer` becomes truth. CSV blocks gain **Save as table** (same primitive). The markdown-table parser is extracted to shared **`parseMarkdownTable`** (renderer + artifact path parse identically). Mirrors `TasksArtifact`'s proposal→Convert→mirror.
-- `2026-06-19` (3) — claude: **Marathon Wave 1 — foundation.** Deleted the dead competing-persistence path (`useArtifactPersistence.ts` + `extractArtifacts.ts`, zero callers). R1 version round-trip: `content-splitter-v2` carries `version` from the wire form into block metadata (passthrough/render read the real chain version, not 1). `useArtifactState` is inert for non-UUID ids (no FK-failing `canvas_item_state` writes pre-materialize). New **`refetchSingleMessage`** thunk (re-pull one `cx_message`, patch one slice entry — no whole-conversation reload). `cx_artifact.canvas_item_id` partial UNIQUE (closes the discovery-index race).
-- `2026-06-19` (2) — claude: **Render-block coverage pass.** Audited every block type (stream accumulator + splitter + BlockRenderer + registry): every real-information type materializes. Enrolled **`svg` + `chart`** as first-class artifacts (durable visuals, like `mermaid`/`diagram`) — registry + `CanvasContentType` + discovery map (svg→diagram, chart→data_table) + `SvgArtifact`/`ChartArtifact`; legacy BlockRenderer cases removed; verified live (```svg/```chart fences → `<artifact id>` + render-by-id). Media (image/video/audio/**youtube**) is file-backed (not artifacts) by design; ephemeral/UI types (thinking, tool_call, status, editor_*, decision, broker, …) correctly excluded. Questionnaire state now uses the generic `canvas_item_state` path described in Flow 2.
-- `2026-06-19` — claude: **Vision build R1–R8 (Waves 0–4).** Rewrite converged from the foreign `artifact_ref` content block to the canonical **R1 text form** `<artifact type id version title>body</artifact>` (`artifactWire.ts`) — one stored form the UI renders by id (R3 recognition via `isMaterializedArtifactId`), the model reads natively (fixes model-blindness with zero server work), and archives durably; all `artifact_ref` plumbing deleted, 19 live messages migrated. **Tasks** are now tracked proposals (vision R7) — auto-create removed, explicit **Convert** via `ctx_task_associations`. **Interaction state** round-trips to `canvas_item_state` (recipe/presentation/comparison wired to `useArtifactState`, joining progress/decision-tree/troubleshooting). **Server (aidream):** `conversation_artifacts` injected as read-only context each turn (`artifact_context.py`, R8) — the model sees the latest copy + status + the user's interaction state. **HTML publish** made server-idempotent. Source of truth: [`/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md). Deploy-pending: aidream prod, mymatrx publish live-verify.
-- `2026-06-14` — claude: **Mermaid structural editing widened 5 → 9 types** + **viewport sizing overhaul**. Added round-trip-safe adapters for **journey, quadrant, state (flat stateDiagram-v2), and ER** (outline + code editing; visual tap-to-edit stays flowchart-only); each guarantees lossless round-trip or downgrades to code-only. New `MermaidViewport` does **axis-aware fit with a readability floor** (bounded frame; tall diagrams fill width + scroll down, wide mind maps fill height + scroll across; never auto-shrinks below 50%). Plus review fixes: Code-mode unmount draft-loss, CodeMirror dark theme, fidelity-gate serialize-error transparency, svg-id-map loud version-drift degrade, and an en/em-dash arrow sanitizer normalizer. 40 adapter + sanitizer tests green. See [`docs/handoffs/mermaid-render-block.md`](../../docs/handoffs/mermaid-render-block.md).
-- `2026-06-12` — claude: **Mermaid diagram artifact type** — new first-class `mermaid` block (from ` ```mermaid `/` ```mmd ` fences, server + client detection) materializes to `canvas_items` (`type: "mermaid"`, `content.metadata.diagramType/title`). Renders live during streaming (last-good-render + forgiving sanitizer in `components/mermaid/`), opens into `MermaidWorkbench` (canvas) with three views of one diagram — Diagram (tap-to-edit), Outline (structured rows), Code (CodeMirror) — gated by a per-adapter round-trip fidelity check (flowchart/mindmap/sequence/pie/timeline). User edits save as new versions via `cx_canvas_save_user_version` (session-versioning); chat refs resolve `"latest"` and live-refresh on `matrx:canvas-item-updated`. Agent editing via the `matrx-user/mermaid-editor` surface + "Edit with AI" rail (clone of cleanup's `useAiPostProcess`). Skill `mermaid-diagrams` + content block seeded ([`migrations/mermaid_render_block_platform.sql`](../../migrations/mermaid_render_block_platform.sql)). Other-platform renderers deferred — see [FOUND_DEFECTS.md](../../FOUND_DEFECTS.md) D5.
-- `2026-06-18` — claude: **Artifact unification (Waves A–F) — ONE system.** Single source-of-truth type registry (`features/canvas/artifact-types/artifact-type-registry.ts`) replaces the 4 duplicate type→canvasType maps. **ONE renderer per type** (`artifact-types/renderers/*Artifact.tsx`) shared by all surfaces — BlockRenderer, CanvasBody, ArtifactBlock, AND the public renderer delegate via Renderer-gated early-branches; all per-type legacy switch cases deleted. **Persistence**: `canvas_item_state` (per-viewer, generic) + custom adapters (flashcards→`user_flashcard_*`, quiz→`quiz_sessions`, tasks→`ctx_tasks`); materialize calls `adapter.onMaterialize` → creates+links the domain record (`canvas_items.external_system/_id`) — verified live (flashcards → real set). **Discovery**: materialize writes a `cx_artifact` index row (`canvas_item_id`) so artifacts appear in `/artifacts` and render by id. `tasks` is now a materializable type; flashcards canvas mode = study mode (persists reviews). Demolition adversarially verified (P0/P1 none). The old aspirational Flow 2 ("bundled into user_input") was never how it worked — see corrected Flow 2.
-- `2026-06-10` — claude: **materialization pipeline LIVE + verified** — render blocks auto-persist to `canvas_items` (commit-path + owner-gated reconcile-on-load) and the message is rewritten to a typed `cx_artifact_ref` rendered by id (no regeneration). New `cx_message_set_content` RPC (status-preserving, archives raw); fixed `cx_message_status_check` to allow `'edited'` (was silently breaking every `cx_message_edit`). Wave 0 hardening: stored-XSS on public canvas (`SandboxedHtml`), html-pages GET IDOR, crypto share tokens, corrupt-save guard (`isPersistableCanvasType`), stream-commit never-drop.
-- `2026-07-01` — **Canvas artifact debug toggle.** Admin-only Bug icon in the canvas pane header (beside preview/source) toggles `CanvasArtifactDebugPanel`; hidden by default instead of always-on under the header.
-- `2026-06-28` — **Flashcards artifact-first canvas (pilot).** New `ensureArtifactPersisted` + `openArtifactInCanvas` — canvas opens only after a real `canvas_items` UUID exists (on-demand upsert, not raw snapshot). Cloud sync button uses the same path. Admin-only `CanvasArtifactDebugPanel` + inline strips trace session id vs artifact UUID vs domain link. `useFlashcardStudy` binds via linked `user_flashcard_sets` id (no orphan inserts).
-- `2026-06-28` — canvas reopen moved from bottom-right `CanvasReopenChip` pill to `CanvasShellHeaderToggle` (Layers icon) in the shell header left of the avatar; put-away uses `PanelRightTapButton` in the same slot on the canvas pane header when open.
-- `2026-06-28` — canvas pane header: chevron-right put-away + user avatar/menu on the same row as title/preview/source (no extra shell strip); shell header avatar hidden while open via `data-canvas-open`.
-- `2026-06-28` — canvas side sheet is non-blocking on desktop: `modal={false}` + no dimming overlay so chat and the rest of the page stay interactive while the canvas is open. Mobile stays modal/fullscreen.
-- `2026-05-19` — composer: new modern canvas shell (`CanvasSideSheetInner` + `CanvasPane` + `CanvasBody`). Vertical split via `react-resizable-panels` with persisted ratio. Floating `CanvasReopenChip` and global ⌘\ shortcut. Glass tap buttons throughout the header, matching the new chat input + sidebar language. Legacy `CanvasRenderer` / `CanvasHeader` retained for in-page surfaces.
-- `2026-04-22` — claude: initial combined FEATURE.md for artifacts + canvas.
-
----
-
-> **Keep-docs-live:** new artifact types MUST land with a registry entry + a note here if they introduce new patterns. Streaming contract changes must cross-update `features/agents/docs/STREAMING_SYSTEM.md` and this doc.
+# FEATURE.md — `artifacts` (local mechanics)
+
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/STATE.md` — read it before touching this feature in ANY repo.
+
+Everything about *what* artifacts are, why they exist, how materialization works, the wire
+contract, the data model, the decisions, and the open work lives in that node's doc kit
+(`STATE.md`, `ARTIFACT-WIRE-CONTRACT.md`, `TWO-WAY-BINDING.md`, `CANVAS-DATA-MODEL.md`,
+`DECISIONS.md`, `HANDOFF.md`, `VISION.md`). This file holds only what an agent editing THIS
+directory must not get wrong.
+
+## What lives here
+
+`features/artifacts/` is thin — the `chat.artifact` discovery layer only:
+
+- `types.ts` — `cx_artifact` row/record types + the `ArtifactType` enum
+- `components/CmsArtifactList.tsx` / `CmsArtifactDetail.tsx` — the `/artifacts` library surface
+- `migrations/` — `001_cx_artifact.sql`, `002_html_pages_context_columns.sql`
+
+> The type **registry, one-renderer-per-type, materialization, and persistence adapters** live in
+> `features/canvas/artifact-types/` + `features/canvas/materialization/` — **not here.**
+
+## Rules for this directory
+
+- **`chat.artifact`'s remaining `user_id` write is deliberate and pinned.** `user_id` is the LEAD
+  column of `uq_cx_artifact_source_natural_key` (`NULLS NOT DISTINCT`), the index this
+  `ON CONFLICT DO NOTHING` upsert infers. Removing the write before that index is rebuilt on
+  `created_by` makes every existing row invisible to the conflict arbiter and reintroduces the
+  duplicate-artifact bug. The write and the `onConflict` string come out together, in the change
+  that lands the new index.
+- **Every ownership READ keys on `created_by`**, never `user_id`. `project_id` is gone end-to-end —
+  do not reintroduce it.
+- `chat.artifact` create/upsert must stay atomic (`upsert` with `ignoreDuplicates`), and the
+  conflict-recovery branch must **revive** archived rows (`status='published'`, `deleted_at=null`)
+  rather than returning a dead one — the natural-key index spans soft-deleted rows.
+- Normalize `external_system` (`"" → null`) once, so the write and the recovery read agree.
+- `app/api/artifacts/route.ts` is a middle tier queued for deletion — do not add to it.
+
+**Keep-docs-live:** a change to the discovery index's identity, ownership, or route surface updates
+the node's `STATE.md` in the same session.
