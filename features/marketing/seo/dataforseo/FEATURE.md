@@ -19,6 +19,8 @@ organization comes from `selectEffectiveOrganizationId`.
 - The operation selector and endpoint-scoped example tasks are loaded from
   `GET /providers/dataforseo/operations`, so the UI owns no second payload matrix. Selecting
   an operation, workflow, or exact endpoint loads that endpoint's canonical backend example.
+- A browser transport failure names the selected SEO target and the current page origin, then
+  turns Connect into Retry connection. Narrow-viewport form and run controls keep 44px targets.
 - The task editor starts from that canonical example and remains editable. The client wraps
   the one task object in the provider's task array and sends a `raw_provider` collection,
   allowing every approved operation to be inspected without inventing normalized facts.
@@ -51,6 +53,8 @@ organization comes from `selectEffectiveOrganizationId`.
 
 ## Change log
 
+- 2026-08-25 — Replaced the opaque connection failure with target/origin diagnostics and an
+  explicit retry state; restored 44px controls on mobile and tablet.
 - 2026-07-22 — Added the typed `POST /sites/{site_id}/backlinks/refresh` client contract. The Marketing Backlinks workspace uses the same canonical SEO service target and Supabase JWT as this lab; neither surface hard-codes a server.
 - 2026-07-22 — Deleted heuristic task generation and made the backend's 51 endpoint-scoped
   canonical examples the only initial-payload source for the operation/workflow/endpoint UI.

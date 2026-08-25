@@ -43,6 +43,12 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function connectionErrorText(error: unknown, serverUrl: string): string {
+  const detail = errorText(error);
+  if (!(error instanceof TypeError)) return detail;
+  return `${detail}\n\nThe browser could not connect to ${serverUrl}. The service may be unavailable, or its deployment may not allow ${window.location.origin}. Retry after the service configuration is corrected.`;
+}
+
 function endpointOptions(
   operation: DataForSeoOperation | undefined,
   workflow: "live" | "standard",
@@ -153,7 +159,7 @@ export function DataForSeoLab() {
         setTask(endpointExampleTask(first, firstWorkflow, firstEndpoint));
       }
     } catch (loadError) {
-      setError(errorText(loadError));
+      setError(connectionErrorText(loadError, serverUrl));
     } finally {
       setBusy(false);
     }
@@ -216,7 +222,9 @@ export function DataForSeoLab() {
       return;
     }
     if (!task || Array.isArray(task) || typeof task !== "object") {
-      setError("Task JSON must be one object. The API wraps it in the task array.");
+      setError(
+        "Task JSON must be one object. The API wraps it in the task array.",
+      );
       return;
     }
 
@@ -319,10 +327,10 @@ export function DataForSeoLab() {
             type="button"
             disabled={busy || !accessToken || !serverUrl}
             onClick={() => void loadOperations()}
-            className="mt-auto inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-sm hover:bg-muted disabled:opacity-50"
+            className="mt-auto inline-flex h-11 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-sm hover:bg-muted disabled:opacity-50 lg:h-9"
           >
             <Server className="h-4 w-4" />
-            Connect
+            {busy ? "Connecting…" : error ? "Retry connection" : "Connect"}
           </button>
         </section>
 
@@ -333,7 +341,10 @@ export function DataForSeoLab() {
           </div>
         ) : null}
         {error ? (
-          <pre className="whitespace-pre-wrap rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+          <pre
+            role="alert"
+            className="whitespace-pre-wrap rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+          >
             {error}
           </pre>
         ) : null}
@@ -344,7 +355,7 @@ export function DataForSeoLab() {
             <select
               value={operationName}
               onChange={(event) => selectOperation(event.target.value)}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+              className="mt-1 min-h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground lg:min-h-9"
             >
               {operations.map((item) => (
                 <option key={item.name} value={item.name}>
@@ -360,7 +371,7 @@ export function DataForSeoLab() {
               onChange={(event) =>
                 selectWorkflow(event.target.value as "live" | "standard")
               }
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+              className="mt-1 min-h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground lg:min-h-9"
             >
               {(operation?.workflows ?? []).map((item) => (
                 <option key={item} value={item}>
@@ -374,7 +385,7 @@ export function DataForSeoLab() {
             <input
               value={targetRef}
               onChange={(event) => setTargetRef(event.target.value)}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+              className="mt-1 min-h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground lg:min-h-9"
             />
           </label>
           <label className="text-xs text-muted-foreground xl:col-span-4">
@@ -382,7 +393,7 @@ export function DataForSeoLab() {
             <select
               value={endpoint}
               onChange={(event) => selectEndpoint(event.target.value)}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground"
+              className="mt-1 min-h-11 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground lg:min-h-9"
             >
               {endpoints.map((item) => (
                 <option key={item} value={item}>
@@ -403,8 +414,8 @@ export function DataForSeoLab() {
               <div className="font-semibold text-foreground">Standard</div>
               <p className="mt-1 text-muted-foreground">
                 Submit with task_post, persist the external task ID, then poll
-                task_get until completion. This request stays open while the
-                SEO server polls and can take minutes.
+                task_get until completion. This request stays open while the SEO
+                server polls and can take minutes.
               </p>
             </div>
             <div>
@@ -443,7 +454,7 @@ export function DataForSeoLab() {
               type="button"
               disabled={busy || !operation || !accessToken}
               onClick={() => void run()}
-              className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50 lg:h-9"
             >
               {busy ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -452,7 +463,7 @@ export function DataForSeoLab() {
               )}
               Run and persist
             </button>
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <label className="flex min-h-11 items-center gap-2 text-xs text-muted-foreground">
               <Checkbox
                 checked={freshRequest}
                 onCheckedChange={(checked) => setFreshRequest(checked === true)}
