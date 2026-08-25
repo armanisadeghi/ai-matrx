@@ -142,9 +142,10 @@ function scan(): string[] {
     if (/__tests__|\.test\.tsx?$|\.spec\.tsx?$|\.dev\.tsx?$/.test(rel)) continue;
 
     const livePath = path.join(ROOT, rel);
-    const parkedPath = rel.startsWith("app/(admin)/")
-      ? path.join(ROOT, rel.replace(/^app\/\(admin\)/, "app/_admin_build_excluded"))
-      : livePath;
+    const parkedPath = path.join(
+      ROOT,
+      rel.replace(/^app\/\(([^)]+)\)\//, "app/_$1_build_excluded/"),
+    );
     const sourcePath = existsSync(livePath) ? livePath : parkedPath;
     const source = readFileSync(sourcePath, "utf8");
     if (!source.includes("__kind") && !source.includes("KIND_KEY")) continue;
