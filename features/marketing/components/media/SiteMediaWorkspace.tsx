@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { FolderOpen, ImageIcon } from "lucide-react";
+import { FolderOpen, ImageIcon, Play, Radio } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media
  */
 
 export function SiteMediaWorkspace() {
-  const { site } = useMarketingSite();
+  const { site, sitePath, crawlActivity } = useMarketingSite();
   const params = useParams<{ brandId: string }>();
   const brandId = params.brandId;
   const { getBaseValues } = useMarketingSiteSurfaceBase();
@@ -115,15 +115,43 @@ export function SiteMediaWorkspace() {
                 What this website serves
               </span>
             </div>
-            {/* THE DOOR: the brand's owned library, research, stock sources and
-                image generation live one level up. Nobody should have to hunt
-                for where their assets went. */}
-            <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
-              <Link href={marketingRoutes.brandAssets(brandId)}>
-                <FolderOpen className="h-3.5 w-3.5" />
-                Brand asset library
-              </Link>
-            </Button>
+            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
+              <Button
+                asChild
+                size="sm"
+                variant={crawlActivity.activeCrawl ? "outline" : "default"}
+                className={
+                  crawlActivity.activeCrawl
+                    ? "h-11 flex-1 gap-1.5 border-primary/40 text-primary lg:h-8 lg:flex-none"
+                    : "h-11 flex-1 gap-1.5 lg:h-8 lg:flex-none"
+                }
+              >
+                <Link href={`${sitePath}/crawls/new`}>
+                  {crawlActivity.activeCrawl ? (
+                    <Radio className="h-3.5 w-3.5 animate-pulse" />
+                  ) : (
+                    <Play className="h-3.5 w-3.5" />
+                  )}
+                  {crawlActivity.activeCrawl
+                    ? "Open live crawl"
+                    : "Start crawl"}
+                </Link>
+              </Button>
+              {/* THE DOOR: the brand's owned library, research, stock sources and
+                  image generation live one level up. Nobody should have to hunt
+                  for where their assets went. */}
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="h-11 flex-1 gap-1.5 lg:h-8 lg:flex-none"
+              >
+                <Link href={marketingRoutes.brandAssets(brandId)}>
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Brand asset library
+                </Link>
+              </Button>
+            </div>
           </div>
 
           {view === "crawled" ? (
