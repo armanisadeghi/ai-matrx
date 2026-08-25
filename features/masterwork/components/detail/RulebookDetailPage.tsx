@@ -1631,7 +1631,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                         Masterworks
                       </h3>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       Working systems built from your approved rules.
                     </p>
                   </div>
@@ -1858,7 +1858,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                         </Button>
                       ) : null}
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       {group.rules.map((rule) => (
                         <RuleRow
                           key={rule.id}

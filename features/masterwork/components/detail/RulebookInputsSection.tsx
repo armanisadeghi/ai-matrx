@@ -81,7 +81,7 @@ export function RulebookInputsSection({
 
   return (
     <section
-      className="rounded-lg border border-border bg-card px-4 py-3"
+      className="rounded-lg border border-border bg-card p-4"
       data-surface-value="sources"
     >
       {/* ── section header: the one door + the record + every-way-in ── */}
@@ -118,7 +118,7 @@ export function RulebookInputsSection({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 text-muted-foreground"
+                  className="h-8 px-2 text-xs text-muted-foreground"
                   onClick={onOpenApproaches}
                 >
                   All the ways to add

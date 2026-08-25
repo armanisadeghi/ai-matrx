@@ -102,10 +102,10 @@ export function UnderstudyCard({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <div className="mb-2 flex flex-wrap items-center gap-2">
-        <span className="relative flex h-2 w-2 shrink-0">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+    <div className="rounded-lg border border-border bg-card p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+          <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-emerald-500 opacity-60" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
         </span>
         <h3 className="text-sm font-semibold text-foreground">
@@ -125,7 +125,7 @@ export function UnderstudyCard({
       {/* ONE line (Arman, 2026-08-21, on the previous two paragraphs: "it's
           got this long-ass paragraph thing… it doesn't actually say what's
           going on"). What it is, what it uses, one sentence. */}
-      <p className="mb-2 text-xs text-muted-foreground">
+      <p className="mb-4 mt-2 text-xs text-muted-foreground">
         {approvedCount === 0
           ? "A rough stand-in — improvising until you approve rules. Not the real thing you'll build."
           : `A rough stand-in using your ${approvedCount} approved ${approvedCount === 1 ? "rule" : "rules"}. Not the real thing you'll build.`}

@@ -23,6 +23,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CircleCheck, CircleDashed, CircleX, Play, Scale } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { callApi } from "@/lib/api/call-api";
@@ -73,8 +74,7 @@ const TERMINAL_STATUSES = [
  * sessionStorage (not local): a run is a "what am I watching right now",
  * scoped to this tab, and it must never resurrect weeks later.
  */
-const runKey = (masterworkId: string) =>
-  `matrx.masterwork.run.${masterworkId}`;
+const runKey = (masterworkId: string) => `matrx.masterwork.run.${masterworkId}`;
 
 function rememberRun(masterworkId: string, runId: string): void {
   try {
@@ -126,16 +126,21 @@ function stageLabel(nodeId: string): string {
   if (nodeId === "understudy") return "Doing the whole job (first cut)";
 
   const section = (prefix: string) => sectionName(nodeId.slice(prefix.length));
-  if (nodeId.startsWith("audit_")) return `Checking your ${section("audit_")} rules`;
+  if (nodeId.startsWith("audit_"))
+    return `Checking your ${section("audit_")} rules`;
   if (nodeId.startsWith("mk_")) return `Preparing the ${section("mk_")} checks`;
-  if (nodeId.startsWith("fan_")) return `Checking every draft — ${section("fan_")}`;
-  if (nodeId.startsWith("flat_")) return `Gathering the ${section("flat_")} findings`;
+  if (nodeId.startsWith("fan_"))
+    return `Checking every draft — ${section("fan_")}`;
+  if (nodeId.startsWith("flat_"))
+    return `Gathering the ${section("flat_")} findings`;
   // cite_ + gate_ are the citation gate: every finding must point at a real
   // rule of yours, or the run stops rather than hand you something untraceable.
   if (nodeId.startsWith("cite_") || nodeId.startsWith("gate_"))
     return `Making sure every ${section(nodeId.startsWith("cite_") ? "cite_" : "gate_")} finding points at a real rule`;
-  if (nodeId.startsWith("collect_")) return `Collecting the ${section("collect_")} findings`;
-  if (nodeId.startsWith("fmt_")) return `Writing up the ${section("fmt_")} findings`;
+  if (nodeId.startsWith("collect_"))
+    return `Collecting the ${section("collect_")} findings`;
+  if (nodeId.startsWith("fmt_"))
+    return `Writing up the ${section("fmt_")} findings`;
   return "Working";
 }
 
@@ -189,9 +194,10 @@ export function TryMasterworkBox({
   const [rejoined, setRejoined] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const runIdRef = useRef<string | null>(null);
-  const adoptedRef = useRef<{ requestId: string; conversationId: string } | null>(
-    null,
-  );
+  const adoptedRef = useRef<{
+    requestId: string;
+    conversationId: string;
+  } | null>(null);
   const isEdit = masterworkKind !== "generate";
 
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -286,7 +292,11 @@ export function TryMasterworkBox({
     // Breadcrumb for the missed-terminal-event investigation (see the
     // backstop below): if the backstop ever fires, this trail shows exactly
     // which event the stream died after.
-    console.debug("[TryMasterworkBox] run event", event.event, event.node_id ?? "");
+    console.debug(
+      "[TryMasterworkBox] run event",
+      event.event,
+      event.node_id ?? "",
+    );
     const nodeId = typeof event.node_id === "string" ? event.node_id : null;
     if (nodeId && event.event === "node_started") {
       setStages((prev) =>
@@ -295,11 +305,17 @@ export function TryMasterworkBox({
           : [...prev, { nodeId, status: "running" }],
       );
     }
-    if (nodeId && (event.event === "node_completed" || event.event === "node_failed")) {
+    if (
+      nodeId &&
+      (event.event === "node_completed" || event.event === "node_failed")
+    ) {
       setStages((prev) =>
         prev.map((s) =>
           s.nodeId === nodeId
-            ? { ...s, status: event.event === "node_completed" ? "done" : "failed" }
+            ? {
+                ...s,
+                status: event.event === "node_completed" ? "done" : "failed",
+              }
             : s,
         ),
       );
@@ -413,7 +429,9 @@ export function TryMasterworkBox({
       v === undefined || v === null || (typeof v === "string" && !v.trim());
     const missing = fields.find((f) => f.required && isBlank(values[f.key]));
     if (missing) {
-      toast.error(`${missing.label.split("(")[0].trim()} — fill this in first.`);
+      toast.error(
+        `${missing.label.split("(")[0].trim()} — fill this in first.`,
+      );
       return;
     }
     setPhase("starting");
@@ -525,9 +543,12 @@ export function TryMasterworkBox({
           ) : null}
         </div>
       ))}
-      <div className="flex items-center gap-2">
+      <div
+        className={cn("flex items-center gap-2", !onCompare && "justify-end")}
+      >
         <Button
           size="sm"
+          className="h-8"
           onClick={() => void start()}
           disabled={phase === "starting" || phase === "running"}
           aria-label={submitLabel ?? `Run ${whatItRuns}`}
@@ -619,7 +640,12 @@ export function TryMasterworkBox({
               <h4 className="mb-1 text-xs font-semibold text-foreground">
                 Corrected text
               </h4>
-              <RichDocument content={verdict.editorText} source={{ type: "raw" }} hideCopyButton contentClassName="text-sm" />
+              <RichDocument
+                content={verdict.editorText}
+                source={{ type: "raw" }}
+                hideCopyButton
+                contentClassName="text-sm"
+              />
             </div>
           ) : null}
           {/* The Understudy is ONE agent — no chief, no editor — so its
@@ -630,9 +656,11 @@ export function TryMasterworkBox({
             <h4 className="mb-1 text-xs font-semibold text-foreground">
               {verdict.chiefText ? "The ruling" : "The first cut"}
             </h4>
-            {verdict.chiefText ?? verdict.understudyText ? (
+            {(verdict.chiefText ?? verdict.understudyText) ? (
               <RichDocument
-                content={(verdict.chiefText ?? verdict.understudyText) as string}
+                content={
+                  (verdict.chiefText ?? verdict.understudyText) as string
+                }
                 source={{ type: "raw" }}
                 hideCopyButton
                 contentClassName="text-sm"

@@ -677,10 +677,10 @@ export function RulebookSourcesPanel({
               ) : null}
 
               {!run.result ? (
-                <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
                   <Button
                     size="sm"
-                    className="min-h-10 w-full shrink-0 sm:min-h-0 sm:w-auto"
+                    className="h-10 w-full shrink-0 sm:h-8 sm:w-auto"
                     onClick={() => void launchDump()}
                     disabled={run.running || totalSources === 0}
                   >
