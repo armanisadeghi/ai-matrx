@@ -41176,6 +41176,103 @@
         }
       }
     },
+    "/workflows/{definition_id}/history": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "List Workflow History",
+        "operationId": "list_workflow_history_workflows__definition_id__history_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DefinitionRecord"
+                  },
+                  "title": "Response List Workflow History Workflows  Definition Id  History Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{definition_id}/history/{revision}": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Workflow History Revision",
+        "operationId": "get_workflow_history_revision_workflows__definition_id__history__revision__get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Revision"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefinitionRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/workflows/{definition_id}/engram": {
       "get": {
         "tags": [
