@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 458 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 465 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "66e9c62b70c5";
+export const KIND_REGISTRY_FINGERPRINT = "5917ca0854a5";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5981,6 +5981,39 @@ export interface CardExpansion {
 }
 
 /**
+ * Vision-agent judgment selecting a web image candidate for a flashcard face.
+ *  *
+ *  * Kind `card_image_judgment` (registry v2).
+ */
+export interface CardImageJudgment {
+  __kind: "card_image_judgment";
+  /**
+   * Alt text for the chosen image; empty string when refusing.
+   */
+  alt_text: string;
+  /**
+   * One to three sentences explaining the judgment.
+   */
+  reasoning: string;
+  /**
+   * 1-based index of the chosen candidate; null means refusal (no acceptable candidate).
+   */
+  pick_index: number | null;
+  /**
+   * Confidence in the source's trustworthiness, 0-1.
+   */
+  trust_score: number;
+  /**
+   * Short source category label such as encyclopedia, university, government; empty string when refusing.
+   */
+  source_trust: string;
+  /**
+   * Up to two fallback candidate indexes; may be empty.
+   */
+  runner_up_indexes: number[];
+}
+
+/**
  * Kind `card_verification` (registry v4).
  */
 export interface CardVerification {
@@ -8392,6 +8425,21 @@ export interface KgGraphNeighborhood {
 }
 
 /**
+ * Kind `kit_title` (registry v2).
+ */
+export interface KitTitle {
+  /**
+   * Clean human Title Case name for the study kit, 2-7 words.
+   */
+  title: string;
+  __kind: "kit_title";
+  /**
+   * Short field or course phrase (e.g. 'Biology'). Empty string when unknown.
+   */
+  subject_hint: string;
+}
+
+/**
  * Kind `lesson_script_set` (registry v4).
  */
 export interface LessonScriptSet {
@@ -10282,6 +10330,33 @@ export interface PostalAddress {
    */
   display: string;
   postal_code?: string | null;
+}
+
+/**
+ * Kind `practice_prompt` (registry v2).
+ */
+export interface PracticePrompt {
+  __kind: "practice_prompt";
+  /**
+   * The question read aloud to the student.
+   */
+  prompt: string;
+  /**
+   * Grading focus for this specific prompt.
+   */
+  rubric: string;
+  /**
+   * How well this prompt is grounded in the source material.
+   */
+  confidence: "grounded" | "inferred" | "not_in_material";
+  /**
+   * Short label for what this prompt tests.
+   */
+  focus_area: string;
+  /**
+   * The grading reference answer.
+   */
+  reference_answer: string;
 }
 
 /**
@@ -13461,6 +13536,47 @@ export interface SplitResult {
 }
 
 /**
+ * Kind `spoken_practice_session` (registry v3).
+ */
+export interface SpokenPracticeSession {
+  /**
+   * The spoken opening line read aloud to the student.
+   */
+  intro: string;
+  __kind: "spoken_practice_session";
+  /**
+   * Ordered list of practice prompts.
+   */
+  prompts: ({
+    __kind: "practice_prompt";
+    /**
+     * The question read aloud to the student.
+     */
+    prompt: string;
+    /**
+     * Grading focus for this specific prompt.
+     */
+    rubric: string;
+    /**
+     * How well this prompt is grounded in the source material.
+     */
+    confidence: "grounded" | "inferred" | "not_in_material";
+    /**
+     * Short label for what this prompt tests.
+     */
+    focus_area: string;
+    /**
+     * The grading reference answer.
+     */
+    reference_answer: string;
+  })[];
+  /**
+   * Title of the spoken practice session.
+   */
+  session_title: string;
+}
+
+/**
  * Kind `sql_query_result` (registry v6).
  */
 export interface SqlQueryResult {
@@ -13543,6 +13659,47 @@ export interface StructuredInfo {
 }
 
 /**
+ * Kind `study_analytics_narrative` (registry v4).
+ */
+export interface StudyAnalyticsNarrative {
+  __kind: "study_analytics_narrative";
+  /**
+   * One-sentence summary of the study performance story.
+   */
+  headline: string;
+  /**
+   * Typed list of analytics_insight items.
+   */
+  insights: ({
+    title: string;
+    __kind: "analytics_insight";
+    detail: string;
+    severity: "good" | "watch" | "urgent";
+  })[];
+  /**
+   * Prioritized next actions. Plain sub-structure, not a separate kind.
+   */
+  recommendations: ({
+    /**
+     * Evidence-backed rationale.
+     */
+    why: string;
+    /**
+     * Topic or deck the action targets, or null.
+     */
+    topic: string | null;
+    /**
+     * Imperative next step.
+     */
+    action: string;
+    /**
+     * Destination activity type, or null when the action is not routable.
+     */
+    target_kind: "review" | "weak_area" | "learn" | "quiz" | "practice_test" | null;
+  })[];
+}
+
+/**
  * Kind `study_notes` (registry v6).
  */
 export interface StudyNotes {
@@ -13613,6 +13770,64 @@ export interface StudyPackSet {
      */
     __kind?: string;
   };
+}
+
+/**
+ * Kind `study_plan` (registry v3).
+ */
+export interface StudyPlan {
+  /**
+   * Ordered days of the plan.
+   */
+  days: ({
+    __kind: "study_plan_day";
+    blocks: ({
+    label: string;
+    topic?: string | null;
+    __kind: "study_plan_block";
+    method?: string | null;
+    rationale?: string | null;
+    target_kind: "review" | "learn" | "weak_area" | "quiz" | "practice_test" | "rest" | "custom";
+    estimated_items?: number | null;
+    estimated_minutes: number;
+  })[];
+    /**
+     * ISO calendar date (YYYY-MM-DD).
+     */
+    day_date: string;
+    rationale: string | null;
+    is_rest_day: boolean;
+  })[];
+  __kind: "study_plan";
+  /**
+   * Why the plan is shaped this way overall.
+   */
+  overall_rationale: string;
+}
+
+/**
+ * A grounded study summary produced from source material: title, markdown body, key takeaways, and an optional trust envelope.
+ *  *
+ *  * Kind `study_summary` (registry v3).
+ */
+export interface StudySummary {
+  /**
+   * Short descriptive title of the summary.
+   */
+  title: string;
+  /**
+   * Optional grounding envelope: confidence, source material, citations.
+   */
+  trust?: TrustEnvelope | null;
+  __kind: "study_summary";
+  /**
+   * 3-8 crisp takeaways, one sentence each.
+   */
+  key_points: string[];
+  /**
+   * The summary body as markdown (headings, bold, lists).
+   */
+  summary_markdown: string;
 }
 
 /**
@@ -18024,6 +18239,7 @@ export type GeneratedKindSlug =
   | "card_detail"
   | "card_enrichment"
   | "card_expansion"
+  | "card_image_judgment"
   | "card_verification"
   | "citation"
   | "claim_evidence"
@@ -18129,6 +18345,7 @@ export type GeneratedKindSlug =
   | "keyword_variant_set"
   | "kg_entity_mentions_page"
   | "kg_graph_neighborhood"
+  | "kit_title"
   | "lesson_script_set"
   | "link_buckets"
   | "live_help_answer"
@@ -18196,6 +18413,7 @@ export type GeneratedKindSlug =
   | "podcast_episode"
   | "podcast_video_compose_result"
   | "postal_address"
+  | "practice_prompt"
   | "presentation_deck"
   | "presentation_slide"
   | "press_source_request_ingest_result"
@@ -18312,13 +18530,17 @@ export type GeneratedKindSlug =
   | "source_authority_rankings"
   | "source_ref"
   | "split_result"
+  | "spoken_practice_session"
   | "sql_query_result"
   | "status_ping_debug"
   | "string_list"
   | "structured_document"
   | "structured_info"
+  | "study_analytics_narrative"
   | "study_notes"
   | "study_pack_set"
+  | "study_plan"
+  | "study_summary"
   | "study_tip"
   | "table_rows"
   | "task_list"
@@ -18485,6 +18707,7 @@ export interface KindPayloadBySlug {
   "card_detail": CardDetail;
   "card_enrichment": CardEnrichment;
   "card_expansion": CardExpansion;
+  "card_image_judgment": CardImageJudgment;
   "card_verification": CardVerification;
   "citation": Citation;
   "claim_evidence": ClaimEvidence;
@@ -18590,6 +18813,7 @@ export interface KindPayloadBySlug {
   "keyword_variant_set": KeywordVariantSet;
   "kg_entity_mentions_page": KgEntityMentionsPage;
   "kg_graph_neighborhood": KgGraphNeighborhood;
+  "kit_title": KitTitle;
   "lesson_script_set": LessonScriptSet;
   "link_buckets": LinkBuckets;
   "live_help_answer": LiveHelpAnswer;
@@ -18657,6 +18881,7 @@ export interface KindPayloadBySlug {
   "podcast_episode": PodcastEpisode;
   "podcast_video_compose_result": PodcastVideoComposeResult;
   "postal_address": PostalAddress;
+  "practice_prompt": PracticePrompt;
   "presentation_deck": PresentationDeck;
   "presentation_slide": PresentationSlide;
   "press_source_request_ingest_result": PressSourceRequestIngestResult;
@@ -18773,13 +18998,17 @@ export interface KindPayloadBySlug {
   "source_authority_rankings": SourceAuthorityRankings;
   "source_ref": SourceRef;
   "split_result": SplitResult;
+  "spoken_practice_session": SpokenPracticeSession;
   "sql_query_result": SqlQueryResult;
   "status_ping_debug": StatusPingDebug;
   "string_list": StringList;
   "structured_document": StructuredDocument;
   "structured_info": StructuredInfo;
+  "study_analytics_narrative": StudyAnalyticsNarrative;
   "study_notes": StudyNotes;
   "study_pack_set": StudyPackSet;
+  "study_plan": StudyPlan;
+  "study_summary": StudySummary;
   "study_tip": StudyTip;
   "table_rows": TableRows;
   "task_list": TaskList;
@@ -18950,6 +19179,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "card_detail",
   "card_enrichment",
   "card_expansion",
+  "card_image_judgment",
   "card_verification",
   "citation",
   "claim_evidence",
@@ -19055,6 +19285,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "keyword_variant_set",
   "kg_entity_mentions_page",
   "kg_graph_neighborhood",
+  "kit_title",
   "lesson_script_set",
   "link_buckets",
   "live_help_answer",
@@ -19122,6 +19353,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "podcast_episode",
   "podcast_video_compose_result",
   "postal_address",
+  "practice_prompt",
   "presentation_deck",
   "presentation_slide",
   "press_source_request_ingest_result",
@@ -19238,13 +19470,17 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "source_authority_rankings",
   "source_ref",
   "split_result",
+  "spoken_practice_session",
   "sql_query_result",
   "status_ping_debug",
   "string_list",
   "structured_document",
   "structured_info",
+  "study_analytics_narrative",
   "study_notes",
   "study_pack_set",
+  "study_plan",
+  "study_summary",
   "study_tip",
   "table_rows",
   "task_list",
