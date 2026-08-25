@@ -6,7 +6,6 @@ import { GraduationCap, Upload, Sparkles, Trophy, ArrowRight, Library, BookOpen 
 import Link from "next/link";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
-import { StudyTodayCard } from "../../study/dashboard/StudyTodayCard";
 import { EducationHubSurface } from "./EducationHubSurface";
 import { EduHero } from "../sections/EduHero";
 import { SectionRenderer } from "../sections/SectionRenderer";
@@ -130,10 +129,12 @@ export function EducationHub() {
         workspaceHref={EDU_WORKSPACE_HREF}
         workspaceLabel={EDU_WORKSPACE_LABEL}
       />
-      {/* P5 — the authenticated "what to study next" centerpiece. Self-fetches
-          and renders nothing for anon / brand-new users, so the marketing hub
-          below is untouched for newcomers. */}
-      <StudyTodayCard />
+      {/* No authed-only island here any more: `/education` now redirects a
+          signed-in learner to their Study Hub (/education/overview), so the
+          only visitor who reaches this component is a guest. The "what to study
+          next" centerpiece lives on the home, where it has the whole snapshot.
+          `AuthedWorkspaceCTA` above stays — it covers the learner who signs in
+          from this page mid-visit. */}
       <EduHero
         eyebrow="AI Matrx Education"
         eyebrowIcon={GraduationCap}

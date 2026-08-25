@@ -11,17 +11,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowRight,
-  ExternalLink,
-  Filter,
-  Gem,
-  ListChecks,
-  PanelTop,
-  Pencil,
-  Scale,
-  Tags,
-} from "lucide-react";
+import { ArrowRight, Gem, Scale, Tags } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
@@ -56,17 +46,18 @@ import {
   formatCount,
 } from "@/features/marketing/search-console/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import {
-  CONTEXT_MENU_ENTITY_KEY,
-  type ContextMenuExtraItem,
-  type ContextMenuExtraSection,
-} from "@/features/context-menu-v3/types";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import {
   keywordEntityRef,
   useKeywordAssignSurfaces,
   useKeywordMenuSection,
 } from "@/features/marketing/seo/keyword/keyword-actions";
+import {
+  classMenuSection,
+  levelMenuSection,
+  pageMenuSection,
+} from "./insight-row-menu";
 import { ClassChip } from "./ClassChip";
 import {
   getValueSummary,
@@ -202,11 +193,15 @@ function deltaSpan(cur: number, cmp: number) {
 export function QualityView({
   siteId,
   siteName,
+  brandId,
+  organizationId,
   periods,
   onDrill,
 }: {
   siteId: string;
   siteName: string | null;
+  brandId: string | null;
+  organizationId: string | null;
   periods: GscResolvedPeriods;
   onDrill: (dimension: "query" | "page", key: string) => void;
 }) {
@@ -261,6 +256,80 @@ export function QualityView({
   );
   const moverRows = movers.data?.rows ?? [];
   const moverTotal = movers.data?.total ?? moverRows.length;
+
+  /**
+   * 🚨 THE MISSING MENU on Traffic quality, closed 2026-08-24 (KI-025). This
+   * pane holds THREE tables naming three different things — a class, a level,
+   * and a moving query or page — and a right-click on any of them opened
+   * nothing.
+   *
+   * ONE menu for the pane, never one per row: `resolveContextOnOpen` reads
+   * `data-insight-table` + `data-row-id` off the click and stashes the row, and
+   * the section it offers is chosen by what that row IS. Keyword rows delegate
+   * to the platform's shared keyword actions; the other three shapes use the
+   * sections in `insight-row-menu`, so no table here owns a private copy.
+   */
+  const openDrilldown = useOpenGscDrilldownWindow();
+  const [contextRow, setContextRow] = useState<
+    | { kind: "class"; row: GscClassSummaryRow }
+    | { kind: "level"; row: LevelRow }
+    | { kind: "mover"; row: GscClassMoverRow }
+    | null
+  >(null);
+  const keywordSurfaces = useKeywordAssignSurfaces({ siteId });
+  const keywordSection = useKeywordMenuSection({
+    siteId,
+    siteName,
+    brandId,
+    organizationId,
+    surfaces: keywordSurfaces,
+    getRow: () =>
+      contextRow?.kind === "mover" && contextRow.row.keyword_id
+        ? {
+            phrase: contextRow.row.key,
+            keywordId: contextRow.row.keyword_id,
+            currentLevel: contextRow.row.value_band,
+          }
+        : null,
+  });
+
+  const contextSections = () => {
+    if (!contextRow) return [];
+    if (contextRow.kind === "class")
+      return [
+        classMenuSection({
+          siteId,
+          siteName,
+          trafficClass: contextRow.row.traffic_class,
+          openDrilldown,
+          onFilterMovers: () =>
+            setTrafficClass(contextRow.row.traffic_class as GscTrafficClass),
+        }),
+      ];
+    if (contextRow.kind === "level")
+      return [
+        levelMenuSection({
+          siteId,
+          siteName,
+          band: contextRow.row.value_band,
+          bandLabel: levelLabel(contextRow.row.value_band),
+          openDrilldown,
+          onFilterMovers: () => setValueLevel(contextRow.row.value_band),
+        }),
+      ];
+    const row = contextRow.row;
+    if (dimension === "page")
+      return [
+        pageMenuSection({
+          siteId,
+          siteName,
+          url: row.key,
+          pageId: row.page_id,
+          openDrilldown,
+        }),
+      ];
+    return row.keyword_id ? [keywordSection] : [];
+  };
 
   if (summary.isError) return <ErrorPanel error={summary.error} />;
 
