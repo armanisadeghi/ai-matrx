@@ -9,7 +9,7 @@
  * - Message sending with broadcast
  * - matrx-extend bridge channel (FRONTEND_RPC envelope; cross-machine
  *   signaling between this app and the Chrome extension; see
- *   docs/MATRX_EXTEND_CONNECTION.md)
+ *   /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md)
  *
  * Uses dm_ prefixed tables and auth.users.id UUIDs
  */

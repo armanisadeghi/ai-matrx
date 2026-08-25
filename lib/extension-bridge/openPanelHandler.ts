@@ -24,7 +24,7 @@
  *     forwards `openPanel` actions here.
  *
  * Wire format: see `lib/types/bridge-envelope.ts` (OpenPanelPayloadSchema)
- * and `docs/MATRX_EXTEND_CONNECTION.md`.
+ * and `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md`.
  */
 
 import type { Dispatch, UnknownAction } from "@reduxjs/toolkit";

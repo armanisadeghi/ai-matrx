@@ -14,7 +14,7 @@
 //   Supabase Broadcast on
 //     `matrx-extension-bridge:<userId>`  (cross-machine)
 //
-// All wiring documented in docs/MATRX_EXTEND_CONNECTION.md.
+// All wiring documented in /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useExtensionBridgeChannel } from "@/hooks/useExtensionBridgeChannel";
@@ -100,7 +100,7 @@ export default function ExtensionBridgeDemoPage() {
               Direct RPC, Supabase Broadcast, and the append-message API in one
               page. See{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                docs/MATRX_EXTEND_CONNECTION.md
+                /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md
               </code>
               .
             </p>

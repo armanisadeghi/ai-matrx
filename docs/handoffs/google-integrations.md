@@ -110,7 +110,7 @@ a connections directory page. Each carries a real design question stated there.
 - ~~Attach is web-only~~ **DONE 2026-08-24 — all three clients attach.** Extension: a Files
   chip in the composer toolbar, conversation-scoped tray, failure state distinct from empty
   (`matrx-extend` commits `e7c11ca` + `bc5a561`; contract in its
-  `docs/REQUEST_PAYLOAD_CONTRACT.md` §2.2). Desktop: a "Google files" plus-menu section,
+  `/Users/armanisadeghi/code/common-docs/systems/clients/extension/WIRE_CONTRACT.md` §2.2). Desktop: a "Google files" plus-menu section,
   cloud-target-only with an explicit `Cloud only` state, context plumbing added to the request
   builder (`matrx-local` commits `06167f7ea` + `de39914a9`; `docs/CLOUD_CHAT_SURFACE.md`).
   Both list registered resources only and door out to the web for Picker; both send the raw

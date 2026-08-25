@@ -17,7 +17,7 @@
  * channel pool, so multiple consumers in the same tab share one
  * underlying Supabase channel.
  *
- * Wire format: see `BridgeEnvelope` and `docs/MATRX_EXTEND_CONNECTION.md`.
+ * Wire format: see `BridgeEnvelope` and `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md`.
  *
  * Usage notes:
  *   - `ExtensionBridgeSubscriber` mounts this once from `app/Providers.tsx`;

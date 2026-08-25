@@ -1,5 +1,7 @@
 # Extension ↔ Frontend bridge
 
+> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md — read it before touching this feature in ANY repo.
+
 The bridge has two transports with one request/reply contract:
 
 - Same machine: the AI Matrx page sends a `FRONTEND_RPC` envelope through

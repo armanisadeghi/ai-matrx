@@ -10,7 +10,7 @@ matrx-extend. The runtime channel **has shipped** (Phase 2): the Supabase
 Broadcast subscriber, the `openPanel` handler, and the reference inbound
 API route all exist (see [§ File index](#file-index)). For the full
 architectural reference and master spec, see
-[`docs/MATRX_EXTEND_CONNECTION.md`](../../../docs/MATRX_EXTEND_CONNECTION.md).
+[`/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md`](/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md).
 
 > **Wire contract — do not drift.** The Supabase Broadcast `event` field
 > is `"FRONTEND_RPC"` (`BRIDGE_BROADCAST_EVENT` in
@@ -91,8 +91,8 @@ The bridge has shipped; this is the live shape.
    include `{ ok: false, error: { code, message } }`; never throw
    across the substrate.
 4. **Update both docs** — list the action in
-   `docs/MATRX_EXTEND_CONNECTION.md` § Inbound actions and in the
-   matrx-extend master at `docs/CROSS_REPO_INTEGRATION.md`. Stale docs
+   `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md` § Inbound actions and in the
+   matrx-extend master at `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md`. Stale docs
    cascade across the four repos.
 
 ---
@@ -101,7 +101,7 @@ The bridge has shipped; this is the live shape.
 
 | Path | Role |
 |---|---|
-| `docs/MATRX_EXTEND_CONNECTION.md` | Architecture + protocol reference for this side of the bridge. |
+| `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md` | Architecture + protocol reference for this side of the bridge. |
 | `lib/supabase/messaging.ts` | Broadcast / Presence / Postgres Changes substrate. Add the `matrx-extension-bridge:<userId>` channel here. |
 | `features/window-panels/registry/windowRegistry.ts` | Window registry — declare `urlSync.key` for any panel the extension will deep-link into. |
 | `features/window-panels/url-sync/initUrlHydration.ts` | `registerPanelHydrator(...)` for each `urlSync.key`. |
@@ -179,9 +179,9 @@ A registry entry has `urlSync.key` but no hydrator. Verify by:
 
 ## Where to look next
 
-- `docs/MATRX_EXTEND_CONNECTION.md` — full protocol, auth model, and
+- `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md` — full protocol, auth model, and
   pointer to the master.
 - `.matrx/AGENT_INSTRUCTIONS.md` — how cross-repo task hand-offs flow
   through this repo.
 - Master cross-repo doc (in matrx-extend):
-  `/Users/armanisadeghi/code/matrx-extend/.claude/worktrees/exciting-moser-4b984f/docs/CROSS_REPO_INTEGRATION.md`.
+  `/Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md`.

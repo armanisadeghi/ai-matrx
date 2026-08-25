@@ -1,5 +1,7 @@
 # Extension API
 
+> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md — read it before touching this feature in ANY repo.
+
 `POST /api/extension/append-message` is the authenticated HTTP entry point for
 an extension service worker to append a message to an existing `chat.conversation`.
 The wire schemas live in `lib/types/bridge-envelope.ts`; do not redefine them

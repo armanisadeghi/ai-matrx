@@ -19,7 +19,7 @@
 // open new RLS policies; the existing cx_message policies gate the
 // insert when called via the cookie path.
 //
-// Wire format documented in docs/MATRX_EXTEND_CONNECTION.md.
+// Wire format documented in /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";

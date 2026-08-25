@@ -139,6 +139,6 @@ Read [docs/official/browser-testing.md](./docs/official/browser-testing.md) firs
 - **Provenance stamping** (`code|ai|human` actor tiers — this repo sets nothing; NULL tier reads as human, never backfill): `../common-docs/systems/platform/provenance/FEATURE.md`.
 - **Purpose registry** (every agent/workflow/tool declares WHY via `purposeService.upsertForUnit` → the ONE RPC): `../common-docs/systems/platform/purpose-registry/FEATURE.md`.
 - **Matrx Envelope** (aidream canonical, mirrored here byte-identically): `../common-docs/systems/matrx-envelope/FEATURE.md` · **conversation-start contract** (`callApi` is the client half): `../common-docs/systems/agents/conversation-start-contract/FEATURE.md` · **tool registry**: `../common-docs/systems/agents/agent-tools/STATE.md`.
-- **matrx-extend** (Chrome extension bridge): `../common-docs/systems/clients/extension/FEATURE.md`; skill `connect-matrx-extend`.
+- **matrx-extend** (Chrome extension bridge): `../common-docs/systems/clients/extension/` — `STATE.md` (what exists) + `CHANNELS.md` (the bridge contract); skill `connect-matrx-extend`.
 
 Specialized workflows: `.claude/commands/` (run `/<name>`, e.g. `/nextjs-patterns` for official Next.js/React/TS patterns — server/client boundaries, App Router).

@@ -28,8 +28,8 @@
 //      `hooks/useExtensionBridgeChannel.ts`. The reference inbound route is
 //      `app/api/extension/append-message/route.ts`.
 // See:
-//   - docs/MATRX_EXTEND_CONNECTION.md (this repo)
-//   - matrx-extend's docs/CROSS_REPO_INTEGRATION.md
+//   - /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md (this repo)
+//   - matrx-extend's /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md
 export interface SurfaceCandidate {
   /** Canonical `<client>/<local>` name. */
   name: string;
@@ -613,7 +613,7 @@ export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
   // FRONTEND_RPC envelope: `chrome.runtime.sendMessage(extensionId, ...)`
   // (same machine, externally_connectable) and Supabase Broadcast on
   // `matrx-extension-bridge:<userId>` (cross machine). See
-  // docs/MATRX_EXTEND_CONNECTION.md and hooks/useExtensionBridgeChannel.ts.
+  // /Users/armanisadeghi/code/common-docs/systems/clients/extension/CHANNELS.md and hooks/useExtensionBridgeChannel.ts.
   {
     name: "chrome-extension/agent-bridge",
     client_name: "chrome-extension",
