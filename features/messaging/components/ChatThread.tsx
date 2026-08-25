@@ -306,17 +306,25 @@ export function ChatThread({
                     {/* Messages for this date */}
                     <div className="space-y-2">
                       {group.messages.map((message, index) => {
-                        const effectiveActor = message.metadata?.actor_kind;
+                        const effectiveActor =
+                          typeof message.metadata?.actor_kind === "string"
+                            ? message.metadata.actor_kind
+                            : null;
+                        const effectiveActorLabel =
+                          typeof message.metadata?.actor_label === "string"
+                            ? message.metadata.actor_label
+                            : null;
                         const isOwn =
-                          effectiveActor === "human" ||
-                          (!effectiveActor && message.sender_id === userId);
+                          message.sender_id === userId &&
+                          (effectiveActor === "human" || !effectiveActor);
                         const prevMessage = group.messages[index - 1];
-                        const showAvatar =
-                          !isOwn &&
-                          (!prevMessage ||
-                            prevMessage.sender_id !== message.sender_id ||
-                            prevMessage.metadata?.actor_kind !==
-                              effectiveActor);
+                        const startsActorGroup =
+                          !prevMessage ||
+                          prevMessage.sender_id !== message.sender_id ||
+                          prevMessage.metadata?.actor_kind !== effectiveActor ||
+                          prevMessage.metadata?.actor_label !==
+                            effectiveActorLabel;
+                        const showAvatar = !isOwn && startsActorGroup;
 
                         return (
                           <MessageBubble
@@ -325,9 +333,8 @@ export function ChatThread({
                             isOwn={isOwn}
                             showAvatar={showAvatar}
                             showSenderName={
-                              conversation?.type === "group" &&
-                              !isOwn &&
-                              showAvatar
+                              (Boolean(effectiveActor) && startsActorGroup) ||
+                              (conversation?.type === "group" && showAvatar)
                             }
                           />
                         );

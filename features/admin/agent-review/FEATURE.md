@@ -39,7 +39,9 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 
 ## UI contract
 
-- The list's first column is **Open**; the target-page door is also explicit.
+- The list's first column is **Open**. One click enters the routed review
+  workspace in the current tab and opens the target page in a separate tab;
+  the target-page column remains its own explicit door.
 - Target pages stay on one line: `manage.aimatrx.com` destinations render as
   app-relative routes, external destinations retain their hostname, long labels
   truncate inside the column, and hover exposes the fully qualified URL.
@@ -59,6 +61,7 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 
 ## Change log
 
+- 2026-08-25 — Made Open enter the review workspace and launch its target in a separate tab; corrected effective-actor presentation so Codex messages show their task ID without borrowing Arman's avatar, while human-authored feedback is explicitly labeled Arman.
 - 2026-08-25 — Normalized Target Page labels, constrained long destinations to one line, and exposed the full qualified URL on hover.
 - 2026-08-24 — Activated the approved 30-minute, one-item Codex reviewer after a live pilot; isolated browser testing to Codex's built-in Browser; added and validated a database evidence gate; requeued 16 legacy unverified rows; and made the human list default to verified `ready_for_human` work only.
 - 2026-08-20 — Rebuilt Agent Review as an agent-first workflow; migrated every active row from human-first `pending` to `submitted`; linked all 456 rows to durable DM conversations; added atomic thread creation, routed item workspaces, visible stage rails, semi-tabular URL-state list, effective agent actors in Messages, and preserved multi-round feedback.

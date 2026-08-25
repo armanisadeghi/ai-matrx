@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import type { MessageWithSender, MessageStatus } from "../types";
 import { MessageActionChips } from "./MessageActionChips";
 import { TextWithReferences } from "@/features/matrx-envelope/components/TextWithReferences";
+import { messageActorPresentation } from "@/features/messaging/lib/message-actor";
 
 interface MessageBubbleProps {
   message: MessageWithSender;
@@ -55,14 +56,12 @@ export function MessageBubble({
     action_data,
   } = message;
 
-  // Get sender display name
-  const senderName =
-    (typeof message.metadata?.actor_label === "string"
-      ? message.metadata.actor_label
-      : null) ||
+  const senderProfileName =
     sender?.display_name ||
     sender?.email?.split("@")[0] ||
     "Unknown";
+  const actor = messageActorPresentation(message.metadata, senderProfileName);
+  const senderName = actor.label;
 
   // Get initials
   const getInitials = (name: string): string => {
@@ -135,7 +134,11 @@ export function MessageBubble({
                   <TooltipTrigger asChild>
                     <Avatar className="h-6 w-6">
                       <AvatarImage
-                        src={sender?.avatar_url || undefined}
+                        src={
+                          actor.usesSenderProfile
+                            ? sender?.avatar_url || undefined
+                            : undefined
+                        }
                         alt={senderName}
                       />
                       <AvatarFallback className="bg-primary/10 text-primary text-[10px]">

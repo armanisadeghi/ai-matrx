@@ -108,10 +108,18 @@ export default function AgentReviewQueueTable() {
         filter: false,
         width: 92,
         cell: (row) => (
-          <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
-            <Link href={`/administration/users/agent-review/${row.id}`}>
-              Open <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5"
+            onClick={(event) => {
+              event.stopPropagation();
+              const target = reviewTargetPageDisplay(row.url);
+              window.open(target.href, "_blank", "noopener,noreferrer");
+              router.push(`/administration/users/agent-review/${row.id}`);
+            }}
+          >
+            Open <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         ),
       },
