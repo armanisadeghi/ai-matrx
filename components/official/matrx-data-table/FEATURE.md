@@ -86,6 +86,9 @@ tables (AI Models, relationships, …) can cut over to one contract.
   (20px group height) and remain 44px below `lg`. Consumer icon-only
   `rowActions` match `h-11 w-11 lg:h-5 lg:w-5`; never use the default icon
   button size inside a row.
+- **Desktop body rows are dense; mobile rows stay touch-spaced.** Body cells use
+  2px vertical padding at `lg` and 6px below `lg`. Consumer cells must not add
+  desktop vertical padding that defeats the shared row density.
 - **Inline edits are deferred** — draft locally, persist only on floating Save pill.
 - **Never static-import `WindowPanel`** from a route — go through `DataRowWindow.dynamic.tsx`.
 - **No barrel `index.ts`.** Import from source files.
@@ -240,6 +243,10 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-25 — Reduced canonical desktop body-cell vertical padding from 6px
+  to 2px while preserving mobile spacing; pinned the responsive class in the
+  controlled-table regression suite.
 
 - 2026-08-25 — Standardized table-owned row Copy and window actions on the
   micro desktop preset while retaining 44px touch targets; added a regression

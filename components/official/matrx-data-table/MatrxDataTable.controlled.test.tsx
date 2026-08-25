@@ -190,6 +190,19 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).toContain('aria-label="Open in window"');
   });
 
+  it("uses dense desktop body-cell padding without shrinking mobile rows", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        detail={{ enabled: false }}
+      />,
+    );
+
+    expect(markup).toContain("py-1.5 align-middle lg:py-0.5");
+  });
+
   it("freezes the first (identity) column below sm by default", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable

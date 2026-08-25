@@ -1288,7 +1288,7 @@ function MatrxDataTableCore<T>({
                     >
                       {selection ? (
                         <td
-                          className="px-2 py-1.5 align-middle"
+                          className="px-2 py-1.5 align-middle lg:py-0.5"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Checkbox
@@ -1322,7 +1322,7 @@ function MatrxDataTableCore<T>({
                           <td
                             key={columnId(col)}
                             className={cn(
-                              "py-1.5 align-middle",
+                              "py-1.5 align-middle lg:py-0.5",
                               col.compact ? "px-1" : "px-2",
                               // nowrap (NOT truncate — truncate clips the cell and
                               // defeats w-max, killing the horizontal scroll).
@@ -1369,7 +1369,7 @@ function MatrxDataTableCore<T>({
                         );
                       })}
                       {showActionsCol && (
-                        <td className="px-2 py-1.5 text-right align-middle">
+                        <td className="px-2 py-1.5 text-right align-middle lg:py-0.5">
                           <div
                             className="inline-flex items-center justify-end gap-0.5"
                             onClick={(e) => e.stopPropagation()}

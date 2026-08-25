@@ -509,7 +509,7 @@ export function OfferingTreeTable({
       }}
       pageSize={0}
       zebra
-      className="h-[72dvh] min-h-[480px] max-h-[960px] lg:h-[78dvh] lg:min-h-[540px]"
+      className="h-[50dvh] min-h-[336px] max-h-[672px] lg:h-[55dvh] lg:min-h-[378px]"
       tableClassName="rounded-t-none"
     />
   );

@@ -66,7 +66,7 @@ export function summarizeSplit(rows: OfferingSplitRow[]): Bucket[] {
   const base: Bucket[] = [
     {
       key: "offering",
-      label: "Can become money",
+      label: "Money-making",
       meaning:
         "These searches trace up to a service, product, problem, audience or brand you actually sell.",
       clicks: 0,
@@ -148,7 +148,7 @@ export function OfferingSplitHeadline({
     ? [
         {
           key: "placed-clicks" as const,
-          label: "Search clicks placed",
+          label: "Clicks placed",
           value: clicksPlaced,
           detail: `${formatCount(placement.demand_clicks_placed)} of ${formatCount(placement.demand_clicks)} clicks`,
           icon: MousePointerClick,
@@ -157,7 +157,7 @@ export function OfferingSplitHeadline({
         },
         {
           key: "placed-keywords" as const,
-          label: "Keywords with demand",
+          label: "Demand keywords",
           value: keywordsPlaced,
           detail: `${formatCount(placement.demand_keywords_placed)} of ${formatCount(placement.demand_keywords)} placed`,
           icon: BrainCircuit,
@@ -167,7 +167,7 @@ export function OfferingSplitHeadline({
           ? [
               {
                 key: "unplaced" as const,
-                label: "Needs placement",
+                label: "Unplaced",
                 value: formatCount(owed),
                 detail: "Open the unplaced keyword table",
                 icon: CircleHelp,
@@ -239,33 +239,29 @@ export function OfferingSplitHeadline({
                 onClick={() => onSelect(target)}
                 aria-pressed={activeTarget === target}
                 className={cn(
-                  "flex min-w-0 items-center gap-2 rounded-md border px-2 py-1.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-0.5 rounded-md border px-2 py-1.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   chrome.ring,
                   activeTarget === target && "ring-2 ring-ring",
                 )}
                 title={`${bucket.meaning} Click to show it.`}
               >
-                <Icon className={cn("h-4 w-4 shrink-0", chrome.tone)} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span
-                      className={cn(
-                        "truncate text-xs font-semibold",
-                        chrome.tone,
-                      )}
-                    >
-                      {bucket.label}
-                    </span>
-                    <span className="text-sm font-semibold tabular-nums text-foreground">
-                      {formatCount(bucket.clicks)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
-                    <span>{pct(bucket.clicks, totalClicks)} of clicks</span>
-                    <span className="tabular-nums">
-                      {formatCount(bucket.keywords)} keywords
-                    </span>
-                  </div>
+                <span
+                  className={cn("truncate text-xs font-semibold", chrome.tone)}
+                >
+                  {bucket.label}
+                </span>
+                <span className="text-sm font-semibold tabular-nums text-foreground">
+                  {formatCount(bucket.clicks)}
+                </span>
+                <div className="col-span-2 flex min-w-0 items-center gap-1 text-[10px] text-muted-foreground">
+                  <Icon className={cn("h-3 w-3 shrink-0", chrome.tone)} />
+                  <span className="truncate">
+                    {pct(bucket.clicks, totalClicks)} of clicks
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span className="truncate tabular-nums">
+                    {formatCount(bucket.keywords)} keywords
+                  </span>
                 </div>
               </button>
             );
@@ -279,21 +275,19 @@ export function OfferingSplitHeadline({
                 onClick={() => onSelect(card.key)}
                 aria-pressed={activeTarget === card.key}
                 className={cn(
-                  "flex min-w-0 items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-0.5 rounded-md border border-border bg-background px-2 py-1.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   activeTarget === card.key && "ring-2 ring-ring",
                 )}
                 title={card.title}
               >
-                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-[11px] font-medium text-foreground">
-                      {card.label}
-                    </span>
-                    <span className="text-sm font-semibold tabular-nums text-foreground">
-                      {card.value}
-                    </span>
-                  </div>
+                <span className="truncate text-[11px] font-medium text-foreground">
+                  {card.label}
+                </span>
+                <span className="text-sm font-semibold tabular-nums text-foreground">
+                  {card.value}
+                </span>
+                <div className="col-span-2 flex min-w-0 items-center gap-1">
+                  <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
                   <p className="truncate text-[10px] text-muted-foreground">
                     {card.detail}
                   </p>

@@ -605,6 +605,14 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   quarantine counts are hidden, the tree viewport is taller, and canonical
   desktop row actions use the micro preset without shrinking mobile targets.
 
+- 2026-08-25 — Codex: **The Offerings workbench keeps the hierarchy and its
+  next section visible together.** The tree viewport is 70% of its prior tall
+  setting, canonical desktop cell padding exposes more rows, and KPI cards put
+  the title and value on the full first line while moving the icon into the
+  compact detail line. The longest labels are shortened to “Money-making” and
+  “Demand keywords,” “Clicks placed,” and “Unplaced” so none truncates at the
+  seven-card desktop width.
+
 - 2026-08-25 — Codex: **Site Media has a direct crawl door without a second
   crawler.** Its responsive header links to the canonical New Crawl workspace
   as Start crawl, switches to Open live crawl when the shared site activity
