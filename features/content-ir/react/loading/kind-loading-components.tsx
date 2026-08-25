@@ -23,6 +23,7 @@ import {
   GitBranch,
   Image as ImageIcon,
   CircleHelp,
+  Dot,
   Kanban,
   Layers,
   LayoutGrid,
@@ -39,7 +40,7 @@ import {
   TimerReset,
   TrendingUp,
 } from "lucide-react";
-import type { KindLoadingProps } from "./kind-loading.types";
+import type { KindLoadingPhase, KindLoadingProps } from "./kind-loading.types";
 
 type IconComponent = React.ComponentType<{ className?: string }>;
 
@@ -162,10 +163,43 @@ function clampCount(count: number | undefined, fallback: number, max = 8): numbe
   return Math.max(1, Math.min(max, Math.round(count)));
 }
 
-/** One shimmer bar. */
-const Sk: React.FC<{ className?: string }> = ({ className }) => (
-  <div className={`animate-pulse rounded bg-muted ${className ?? ""}`} />
-);
+/**
+ * The phase every silhouette body reads, so the 23 loaders below need no
+ * per-loader branching: `Sk` and the handful of directly-animated elements
+ * ask the context instead. Defaults to `arriving` — an un-wrapped loader
+ * (older call site, a test rendering a body directly) behaves exactly as it
+ * did before phases existed.
+ */
+const PhaseContext = React.createContext<KindLoadingPhase>("arriving");
+
+/** True while this silhouette is a PLACEHOLDER: hold the shape, stay still. */
+function useReserved(): boolean {
+  return React.useContext(PhaseContext) === "reserved";
+}
+
+/**
+ * `animate-pulse`, unless this is a placeholder. For the handful of elements
+ * a body animates DIRECTLY (chart bars, the media/map glyphs, a progress
+ * fill) — plain JSX that cannot read the context itself, but whose owning
+ * component already has the props.
+ */
+function pulse(p: KindLoadingProps): string {
+  return p.phase === "reserved" ? "" : "animate-pulse";
+}
+
+/**
+ * One skeleton bar. Shimmers while content is arriving; goes STILL in the
+ * reserved phase — a placeholder that shimmers is indistinguishable from
+ * active loading, which is the whole distinction we are drawing.
+ */
+const Sk: React.FC<{ className?: string }> = ({ className }) => {
+  const reserved = useReserved();
+  return (
+    <div
+      className={`rounded ${reserved ? "bg-muted/60" : "animate-pulse bg-muted"} ${className ?? ""}`}
+    />
+  );
+};
 
 /**
  * Soft reveal for a live early key: keyed by its text, so the first arrival
@@ -194,6 +228,8 @@ const Shell: React.FC<
   }
 > = ({
   kind,
+  phase = "arriving",
+  chrome = "full",
   title,
   description,
   loadingMessage,
@@ -205,48 +241,101 @@ const Shell: React.FC<
 }) => {
   const Icon = (icon && ICON_HINTS[icon]) || defaultIcon;
   const t = TONES[tone];
+  const reserved = phase === "reserved";
+
+  // BARE — the host already drew the frame, the icon, and the title. Render
+  // the silhouette body and nothing else; repeating the host's chrome is the
+  // double-chrome defect, not a loading state.
+  if (chrome === "bare") {
+    return (
+      <PhaseContext.Provider value={phase}>
+        <div data-kind-loading={kind ?? "unknown"} data-kind-loading-phase={phase}>
+          {children}
+        </div>
+      </PhaseContext.Provider>
+    );
+  }
   const heading = title ?? loadingMessage;
   const sub = title ? (loadingMessage ?? description) : (description ?? loadingSubtext);
   return (
-    <div
-      className={`my-3 rounded-lg border border-border p-4 ${t.wash}`}
-      aria-busy="true"
-      data-kind-loading={kind ?? "unknown"}
-    >
-      <div className="mb-3 flex items-start gap-2.5">
-        <div
-          className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${t.chip}`}
-        >
-          <Icon className={`h-4 w-4 ${t.icon}`} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {heading ? (
-              <Reveal
-                text={heading}
-                className="truncate text-sm font-medium text-foreground"
-              />
-            ) : (
-              <Sk className="h-3.5 w-40" />
-            )}
-            <Loader2 className={`h-3 w-3 shrink-0 animate-spin ${t.spin}`} />
+    <PhaseContext.Provider value={phase}>
+      <div
+        className={`my-3 rounded-lg border p-4 ${
+          // A placeholder reads as a reserved SLOT, not as a live region: a
+          // dashed edge says "something belongs here" the way an empty frame
+          // does, and it becomes solid the moment content starts arriving.
+          reserved ? "border-dashed border-border/70 bg-card/40" : `border-border ${t.wash}`
+        }`}
+        // Only the arriving phase is genuinely busy; a reserved slot is a
+        // promise, and marking it busy makes a screen reader announce work
+        // that has not started.
+        aria-busy={reserved ? undefined : "true"}
+        role="status"
+        data-kind-loading={kind ?? "unknown"}
+        data-kind-loading-phase={phase}
+      >
+        <div className="mb-3 flex items-start gap-2.5">
+          <div
+            className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${t.chip} ${
+              // Alive, but calm — one slow breath rather than a pulse. This is
+              // the podcast placeholder's proven move: a single gently moving
+              // element, everything else still.
+              reserved ? "animate-[kind-slot-breathe_3.2s_ease-in-out_infinite]" : ""
+            }`}
+          >
+            <Icon className={`h-4 w-4 ${t.icon}`} />
           </div>
-          {sub ? (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
-              <Reveal text={sub} />
-            </p>
-          ) : null}
-          {loadingSubtext && sub !== loadingSubtext ? (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
-              <Reveal text={loadingSubtext} />
-            </p>
-          ) : null}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              {heading ? (
+                <Reveal
+                  text={heading}
+                  className={`truncate text-sm font-medium ${
+                    reserved ? "text-muted-foreground" : "text-foreground"
+                  }`}
+                />
+              ) : reserved ? (
+                <span className="truncate text-sm font-medium text-muted-foreground">
+                  {kind ? formatKindLabel(kind) : "Coming up"}
+                </span>
+              ) : (
+                <Sk className="h-3.5 w-40" />
+              )}
+              {reserved ? null : (
+                <Loader2 className={`h-3 w-3 shrink-0 animate-spin ${t.spin}`} />
+              )}
+            </div>
+            {reserved ? (
+              <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
+                Coming up
+              </p>
+            ) : (
+              <>
+                {sub ? (
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    <Reveal text={sub} />
+                  </p>
+                ) : null}
+                {loadingSubtext && sub !== loadingSubtext ? (
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
+                    <Reveal text={loadingSubtext} />
+                  </p>
+                ) : null}
+              </>
+            )}
+          </div>
         </div>
+        {children}
       </div>
-      {children}
-    </div>
+    </PhaseContext.Provider>
   );
 };
+
+/** `quiz_set` → "Quiz set" — a readable name for a slot with no title yet. */
+function formatKindLabel(kind: string): string {
+  const words = kind.replace(/_/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
 
 // ── The library ─────────────────────────────────────────────────────────────
 
@@ -320,7 +409,7 @@ export const ChartLoading: React.FC<KindLoadingProps> = (p) => (
       {[40, 70, 55, 90, 62, 78, 45].map((h, i) => (
         <div
           key={i}
-          className={`flex-1 animate-pulse rounded-t ${
+          className={`flex-1 rounded-t ${pulse(p)} ${
             i % 2 ? "bg-emerald-500/20" : "bg-emerald-500/30"
           }`}
           style={{ height: `${h}%` }}
@@ -363,7 +452,7 @@ export const FormLoading: React.FC<KindLoadingProps> = (p) => (
 export const MediaLoading: React.FC<KindLoadingProps> = (p) => (
   <Shell {...p} defaultIcon={ImageIcon} tone="pink">
     <div className="flex aspect-video w-full items-center justify-center rounded-md bg-gradient-to-br from-pink-500/10 via-muted/60 to-muted/60">
-      <ImageIcon className="h-6 w-6 animate-pulse text-pink-500/50" />
+      <ImageIcon className={`h-6 w-6 ${pulse(p)} text-pink-500/50`} />
     </div>
   </Shell>
 );
@@ -572,7 +661,7 @@ export const CodeLoading: React.FC<KindLoadingProps> = (p) => (
 export const MapLoading: React.FC<KindLoadingProps> = (p) => (
   <Shell {...p} defaultIcon={MapIcon} tone="emerald">
     <div className="relative flex aspect-[2/1] w-full items-center justify-center overflow-hidden rounded-md bg-gradient-to-br from-emerald-500/10 via-muted/50 to-muted/50">
-      <MapIcon className="h-6 w-6 animate-pulse text-emerald-500/50" />
+      <MapIcon className={`h-6 w-6 ${pulse(p)} text-emerald-500/50`} />
       <Sk className="absolute left-1/4 top-1/3 h-2.5 w-2.5 rounded-full bg-rose-500/50" />
       <Sk className="absolute right-1/3 top-1/2 h-2.5 w-2.5 rounded-full bg-rose-500/40" />
       <Sk className="absolute bottom-1/4 left-1/2 h-2.5 w-2.5 rounded-full bg-rose-500/30" />
@@ -591,7 +680,7 @@ export const ProgressLoading: React.FC<KindLoadingProps> = (p) => (
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full animate-pulse rounded-full bg-blue-500/40"
+              className={`h-full rounded-full bg-blue-500/40 ${pulse(p)}`}
               style={{ width: `${[62, 38, 80, 25, 55][i % 5]}%` }}
             />
           </div>
@@ -602,20 +691,33 @@ export const ProgressLoading: React.FC<KindLoadingProps> = (p) => (
 );
 
 export const MinimalLoading: React.FC<KindLoadingProps> = (p) => {
+  const reserved = p.phase === "reserved";
   const label = p.title ?? p.loadingMessage;
   return (
-    <div
-      className="my-2 inline-flex items-center gap-2 rounded-md border border-border bg-card/50 px-3 py-1.5"
-      aria-busy="true"
-      data-kind-loading={p.kind ?? "unknown"}
-    >
-      <Loader2 className="h-3 w-3 animate-spin text-violet-500" />
-      {label ? (
-        <span className="text-xs text-muted-foreground">{label}</span>
-      ) : (
-        <Sk className="h-2.5 w-28" />
-      )}
-    </div>
+    <PhaseContext.Provider value={p.phase ?? "arriving"}>
+      <div
+        className={`my-2 inline-flex items-center gap-2 rounded-md border px-3 py-1.5 ${
+          reserved ? "border-dashed border-border/70 bg-card/40" : "border-border bg-card/50"
+        }`}
+        aria-busy={reserved ? undefined : "true"}
+        role="status"
+        data-kind-loading={p.kind ?? "unknown"}
+        data-kind-loading-phase={p.phase ?? "arriving"}
+      >
+        {reserved ? (
+          <Dot className="h-3 w-3 animate-[kind-slot-breathe_3.2s_ease-in-out_infinite] text-violet-500/70" />
+        ) : (
+          <Loader2 className="h-3 w-3 animate-spin text-violet-500" />
+        )}
+        {label ? (
+          <span className="text-xs text-muted-foreground">{label}</span>
+        ) : reserved ? (
+          <span className="text-xs text-muted-foreground">Coming up</span>
+        ) : (
+          <Sk className="h-2.5 w-28" />
+        )}
+      </div>
+    </PhaseContext.Provider>
   );
 };
 

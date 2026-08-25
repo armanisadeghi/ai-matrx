@@ -250,6 +250,19 @@
     }
   }
 
+  /* Kind slot placeholder — ONE slow breath. A reserved slot must read as
+     alive but not as working; `animate-pulse` is far too fast and reads as
+     active loading, which is the distinction the placeholder phase draws. */
+  @keyframes kind-slot-breathe {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 0.95;
+    }
+  }
+
   @keyframes hover-bounce {
     0%,
     100% {

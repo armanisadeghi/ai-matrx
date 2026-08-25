@@ -18,10 +18,7 @@ import {
 import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
 import { useEnsureKindRenderable } from "@/features/content-ir/react/ensure-kind-renderable";
 import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
-import {
-  inferLoadingSlug,
-  inferLoadingSlugFromJsonSchema,
-} from "@/features/content-ir/react/loading/infer-loading-slug";
+import { resolveLoadingSlugForKind } from "@/features/content-ir/react/loading/resolve-loading-slug";
 import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
@@ -133,24 +130,12 @@ const PendingStructuredBlock: React.FC<{ envelope: CanonicalBlockIR }> = ({
   envelope,
 }) => {
   const kind = envelope.root.kind || undefined;
-  // Declared slug wins; otherwise DERIVE one from the kind's own schema
-  // (inferLoadingSlug) so an unauthored kind still gets a loader with the
-  // right silhouette instead of the shapeless generic skeleton — 354 of 357
-  // renderable ACTIVE kinds declared nothing on 2026-08-25. `generic`
-  // remains the last resort inside resolveKindLoadingComponent.
-  const definition = kind ? kindRegistry.getDefinition(kind) : undefined;
-  const slug = kind
-    ? // 1. DECLARED — read through the registry, not off the definition: a
-      //    Python-owned kind (`data` NULL) never produces a definition, so its
-      //    owner's choice lives only in the catalog side map.
-      (kindRegistry.getDeclaredLoadingComponent(kind) ??
-      // 2. DERIVED from the parser schema, when the kind has one.
-      inferLoadingSlug(definition?.schema) ??
-      // 3. DERIVED from the emitted JSON Schema — the ONLY shape description
-      //    the majority of kinds carry.
-      inferLoadingSlugFromJsonSchema(kindRegistry.getEmittedJsonSchema(kind)) ??
-      null)
-    : null;
+  // Declared → derived → generic, resolved by the ONE module that owns that
+  // order (`resolve-loading-slug.ts`). It also contains the trap: an INVALID
+  // declaration must fall through to derivation rather than short-circuiting
+  // to the shapeless generic skeleton, which is why this is never re-inlined
+  // as a `??` chain.
+  const slug = resolveLoadingSlugForKind(kind).slug;
   const early = earlyKeysFromValue(envelope.root.value, kind);
   // createElement over JSX: the loader is a STATIC module-level component
   // selected from the registry at render time (not created during render) —

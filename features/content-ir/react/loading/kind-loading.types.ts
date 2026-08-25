@@ -28,9 +28,36 @@
  * intentionally light — no heavy deps, semantic tokens, Lucide only.
  */
 
+/**
+ * THE TWO PHASES of a loading silhouette (Arman, 2026-08-25).
+ *
+ * - `reserved` — the PLACEHOLDER. The slot exists and holds the footprint its
+ *   content will need, but nothing has happened yet: no spinner, no shimmer,
+ *   one slow breath on the icon. "It looks like a loading one, but it's
+ *   fairly steady… without looking like it's actively, instantly loading."
+ *   Modelled on `PodcastCompositionPlaceholder`, which proved the look.
+ * - `arriving` — the LOADING state. Same silhouette, now visibly working:
+ *   spinner, shimmering bars, live early keys filling in as they stream.
+ *
+ * Same component, same footprint, so the placeholder→loading transition moves
+ * nothing on screen. Defaults to `arriving`, which is what every pre-2026-08-25
+ * call site meant.
+ */
+export type KindLoadingPhase = "reserved" | "arriving";
+
 export interface KindLoadingProps {
   /** The identified kind slug (shown as a subtle chip when no title yet). */
   kind?: string;
+  /** Placeholder (footprint only) vs actively loading. Default `arriving`. */
+  phase?: KindLoadingPhase;
+  /**
+   * `full` (default) draws the loader's own frame and header — the right
+   * thing when it stands alone in a chat stream. `bare` draws ONLY the
+   * skeleton body, for a host that already renders the frame, icon, and
+   * title: a component never repeats chrome its host provides. Mirrors
+   * `LiveRunDisplay variant="bare"`.
+   */
+  chrome?: "full" | "bare";
   title?: string;
   description?: string;
   loadingMessage?: string;

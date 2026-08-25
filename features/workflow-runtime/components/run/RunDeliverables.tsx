@@ -20,6 +20,7 @@ import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
 import { formatDurationMs } from "@/features/agents/components/observational-memory/components/format";
 
 import { selectNodeAggregate } from "../../redux/workflow-runs.selectors";
@@ -66,21 +67,40 @@ function DeliverableCard({
   const title = step.outputKind ? humanizeKind(step.outputKind) : step.label;
 
   if (!ready) {
+    // THE RESERVED SLOT. This used to be a fixed ~58px strip for every kind,
+    // so a deliverable settling into a flashcard set or a 12-slide deck threw
+    // the page down by hundreds of pixels. The slot now reserves the SHAPE the
+    // declared `output_kind` will need — still while nothing has started,
+    // working the moment it does — and the real component grows downward from
+    // the same footprint. `chrome="bare"`: this card already draws the frame,
+    // the icon, and the title.
     return (
-      <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-border/70 px-3 py-2.5">
-        <StepIconChip step={step} state={working ? "running" : "idle"} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-muted-foreground">
-            {title}
-          </p>
-          <p className="truncate text-[11px] text-muted-foreground/80">
-            {working ? "Being made right now" : "Coming up"}
-          </p>
+      <section className="overflow-hidden rounded-xl border border-dashed border-border/70 bg-card/40">
+        <div className="flex items-center gap-2.5 px-3 py-2.5">
+          <StepIconChip step={step} state={working ? "running" : "idle"} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-muted-foreground">
+              {title}
+            </p>
+            <p className="truncate text-[11px] text-muted-foreground/80">
+              {working ? "Being made right now" : "Coming up"}
+            </p>
+          </div>
+          {working ? (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+          ) : null}
         </div>
-        {working ? (
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+        {step.outputKind ? (
+          <div className="border-t border-border/60 p-3">
+            <KindSlot
+              slotKey={`${runId}:${step.nodeId}`}
+              kind={step.outputKind}
+              phase={working ? "arriving" : "reserved"}
+              chrome="bare"
+            />
+          </div>
         ) : null}
-      </div>
+      </section>
     );
   }
 

@@ -15,9 +15,17 @@
  *
  * PRECEDENCE — declaration always wins:
  *   metadata.loading_component  →  this derivation  →  `generic`
- * so setting a slug is still the way to override, and the shape doctor's
- * `no-loading-component` yellow still reports the real authoring gap (a
- * derived loader is a good floor, not a substitute for a considered choice).
+ * so setting a slug is still the way to override. The order is executed in
+ * ONE place, `resolve-loading-slug.ts` — never re-inline it as a `??` chain,
+ * because an INVALID declaration has to fall through to this derivation
+ * rather than short-circuit to `generic`.
+ *
+ * The shape doctor agrees with that precedence (2026-08-25): a kind with a
+ * DERIVED loader reads `ok` and raises no finding, because a shape-appropriate
+ * loader is a real loader however it was chosen. The `no-loading-component`
+ * yellow now fires only when derivation finds nothing distinctive either — the
+ * kinds that genuinely do stream behind the generic skeleton (428 yellows
+ * became 19).
  *
  * The rules read the schema, never the instance value: derivation must be
  * stable for a kind, identical on every render, and available before a
