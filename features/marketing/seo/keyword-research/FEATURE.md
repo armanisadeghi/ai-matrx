@@ -269,6 +269,31 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-25 — **MSR-14 + MSR-15 (Arman's marketing-surface-repair walkthrough).**
+  MSR-14: `SavedResearchLibrary` gained a real text search over `primary_keyword`
+  and a **Site** filter (grouped by brand). Investigated first: neither the
+  saved artifact (`content_ir.kind_instance`) nor `seo.keyword` carries a
+  site/brand column — a run is org-wide by construction, so there is no true
+  stored binding to filter on. The only REAL signal in the data is derivative:
+  `getSiteIdsByKeywordPhrase` (`data/queries.ts`) does two batched reads
+  (phrase → keyword_id, keyword_id → `seo.site_keyword_value.site_id`) to find
+  which sites already TRACK any phrase in a saved run, and the popover filters
+  and labels rows on that — never a fabricated filter, and it says so inline
+  ("Site is inferred from keywords this research already shares with the
+  site's tracked keywords…"). MSR-15: the explorer table gained a **Dossier**
+  column — five single-letter badges (Pipeline/Keywords/Classification/Site/
+  Visibility), green when that Keyword Intelligence tab has real data, dim
+  when it doesn't, tooltip naming exactly what was checked. One new batched
+  read per table render (`getKeywordDossierCompleteness`, never per-row):
+  saved-research primary-keyword match, `keyword_edge` either side,
+  `site_keyword_value` (a keyword is tracked before Site performance has
+  anything to show — the GSC-parity `v_site_keyword_performance` VIEW was
+  tried first and hit the RLS-driven `57014` statement timeout the
+  search-console FEATURE.md already documents for exactly this read shape),
+  and `rank_target`/`serp_snapshot` for visibility. Classification reads the
+  keyword row's own `intent_class`, already in hand — no extra query.
+  Verified live: both filters narrow a real 31-row saved-research library to
+  exact matches, and Dossier badges vary per row with correct tooltip text.
 - 2026-08-24 — Workbench keyword drawer deleted (side drawers are out — SEO VISION §2.7b). A
   keyword row now opens the ONE canonical door, the Keyword Intelligence WindowPanel
   (`useOpenKeywordWindow`); the drawer-only market/edge body (`KeywordDetail`/`EdgeList`) was

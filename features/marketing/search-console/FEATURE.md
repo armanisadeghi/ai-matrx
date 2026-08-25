@@ -757,6 +757,23 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-25 — **MSR-13 (Arman): the portfolio cards "look dead… floating text
+  in a card."** `SearchConsolePortfolio` cards now lead with Clicks (largest
+  number, its own row) and a real 28-day trend line underneath it — the
+  reused `KeywordTrendSparkline` (`keyword-research/components/
+  KeywordMetrics.tsx`), which gained an optional `tooltipLabel` prop so a
+  caller plotting something other than keyword volume (daily GSC clicks here)
+  can describe each bar honestly instead of the component's "YYYY-MM" default.
+  Data comes from `seo.gsc_perf_timeseries`, one RPC per card in parallel,
+  bounded to `MAX_SPARKLINE_CARDS` (24) and the cards that have data at all —
+  the portfolio is a fixed small set (an org's own sites), not a table that
+  needs a `_multi` RPC. Clicks/impressions deltas are now bordered, icon-led
+  pills (`TrendingUp`/`TrendingDown`, semantic `success`/`destructive` tokens)
+  instead of a lone colored percentage; freshness is a status dot + left
+  accent border (green/red) instead of a sentence you have to read first.
+  Verified live at 1280px and 375px (mobile) against the 8 real sites with
+  28-day data — sparklines render distinct per-site shapes, trend pills flip
+  color correctly, no console errors.
 - 2026-08-24 — Added the partial `(site_id, date)` GSC coverage index used by
   `gsc_ingestion_health`; large-site health reads no longer sort/aggregate the
   full multi-profile corpus through the wrong index.
