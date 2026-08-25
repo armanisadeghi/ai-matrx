@@ -572,7 +572,102 @@ export function QualityView({
   ];
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      menuVersion={1}
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const table = target
+          ?.closest("[data-insight-table]")
+          ?.getAttribute("data-insight-table");
+        const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+        if (table === "class" && id) {
+          const row = summaryRows.find((r) => r.traffic_class === id);
+          if (row) {
+            setContextRow({ kind: "class", row });
+            return {
+              // A class is a FILTER, not a record — nothing to attach to.
+              [CONTEXT_MENU_ENTITY_KEY]: null,
+              content: humanLines([
+                ["Traffic class", row.traffic_class],
+                ["Clicks", `${num(row.clicks)} vs ${num(row.cmp_clicks)}`],
+                [
+                  "Impressions",
+                  `${num(row.impressions)} vs ${num(row.cmp_impressions)}`,
+                ],
+                ["Queries", `${num(row.queries)} vs ${num(row.cmp_queries)}`],
+                ["Window", describeGscWindow(periods.current)],
+              ]),
+              traffic_class: row.traffic_class,
+            };
+          }
+        }
+        if (table === "level" && id) {
+          const row = levelRows.find((r) => r.value_band === id);
+          if (row) {
+            setContextRow({ kind: "level", row });
+            return {
+              [CONTEXT_MENU_ENTITY_KEY]: null,
+              content: humanLines([
+                ["Level", levelLabel(row.value_band)],
+                ["Clicks", `${num(row.clicks)} vs ${num(row.cmp_clicks)}`],
+                [
+                  "Impressions",
+                  `${num(row.impressions)} vs ${num(row.cmp_impressions)}`,
+                ],
+                ["Queries", `${num(row.queries)} vs ${num(row.cmp_queries)}`],
+                ["Window", describeGscWindow(periods.current)],
+              ]),
+              value_band: row.value_band,
+            };
+          }
+        }
+        if (table === "movers" && id) {
+          const row = moverRows.find((r) => r.key === id);
+          if (row) {
+            setContextRow({ kind: "mover", row });
+            return {
+              // ONE menu serves every row, so the ROW the user right-clicked —
+              // not the pane — owns Attach To.
+              [CONTEXT_MENU_ENTITY_KEY]:
+                dimension === "page"
+                  ? row.page_id
+                    ? { type: "web_page", id: row.page_id, title: row.key }
+                    : null
+                  : keywordEntityRef({
+                      phrase: row.key,
+                      keywordId: row.keyword_id,
+                    }),
+              content: humanLines([
+                [dimension === "query" ? "Query" : "Page", row.key],
+                ["Class", row.traffic_class],
+                ["Level", row.value_band ? levelLabel(row.value_band) : "—"],
+                ["Δ clicks", num(row.delta_clicks)],
+                ["Clicks", `${num(row.clicks)} vs ${num(row.cmp_clicks)}`],
+                [
+                  "Impressions",
+                  `${num(row.impressions)} vs ${num(row.cmp_impressions)}`,
+                ],
+              ]),
+              keyword: dimension === "query" ? row.key : "",
+              keyword_id: row.keyword_id ?? "",
+            };
+          }
+        }
+        setContextRow(null);
+        return null;
+      }}
+      extraSections={contextSections()}
+    >
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
+      {/* The keyword assignment surfaces render HERE, above the tables and
+          never inside a Dialog — the value picker they open is portalled, and a
+          Dialog reads that as an outside interaction and closes itself
+          mid-assignment. */}
+      {keywordSurfaces.isOpen ? (
+        <div className="shrink-0">{keywordSurfaces.node}</div>
+      ) : null}
       {/* The evaluated windows live in the tab-level GscPeriodStrip — ONE
           place, never a second period label here. */}
       <div className="flex shrink-0 justify-end">
@@ -598,7 +693,10 @@ export function QualityView({
           <span className="min-w-0">{headline.text}</span>
         </p>
       ) : null}
-      <div className="shrink-0 overflow-hidden rounded-md border border-border p-2">
+      <div
+        className="shrink-0 overflow-hidden rounded-md border border-border p-2"
+        data-insight-table="class"
+      >
         <MatrxDataTable
           urlState={{ id: "gsc-class-summary", selectedRow: false }}
           detail={{ enabled: false }}
@@ -650,7 +748,10 @@ export function QualityView({
           clipping wrapper around an auto-height table hides the last row
           instead of scrolling it (useClippedContentGuard catches exactly
           that). */}
-      <div className="shrink-0 rounded-md border border-border p-2">
+      <div
+        className="shrink-0 rounded-md border border-border p-2"
+        data-insight-table="level"
+      >
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <p className="text-[11px] font-medium text-foreground">By level</p>
           <Link
@@ -759,7 +860,7 @@ export function QualityView({
           </span>
         ) : null}
       </div>
-      <div className="min-h-[20rem] flex-1">
+      <div className="min-h-[20rem] flex-1" data-insight-table="movers">
         {movers.isError ? (
           <ErrorPanel error={movers.error} />
         ) : (
@@ -828,6 +929,7 @@ export function QualityView({
         )}
       </div>
     </div>
+    </NonEditableContextMenu>
   );
 }
 
@@ -835,12 +937,16 @@ export function QualityView({
 export function ShiftsView({
   siteId,
   siteName,
+  brandId,
+  organizationId,
   periods,
   minClicks,
   onDrill,
 }: {
   siteId: string;
   siteName: string | null;
+  brandId: string | null;
+  organizationId: string | null;
   periods: GscResolvedPeriods;
   minClicks: number;
   onDrill: (dimension: "query" | "page", key: string) => void;
@@ -848,6 +954,21 @@ export function ShiftsView({
   const query = useGscShifts(siteId, periods, minClicks);
   const rows = query.data?.rows ?? [];
   const total = query.data?.total ?? rows.length;
+  // ONE menu for the pane; every shifted query is a keyword, so the whole
+  // section comes from the platform's shared keyword actions (KI-025).
+  const [contextRow, setContextRow] = useState<GscShiftRow | null>(null);
+  const keywordSurfaces = useKeywordAssignSurfaces({ siteId });
+  const keywordSection = useKeywordMenuSection({
+    siteId,
+    siteName,
+    brandId,
+    organizationId,
+    surfaces: keywordSurfaces,
+    getRow: () =>
+      contextRow?.keyword_id
+        ? { phrase: contextRow.query, keywordId: contextRow.keyword_id }
+        : null,
+  });
 
   const columns: MatrxColumnDef<GscShiftRow>[] = [
     {
@@ -925,7 +1046,39 @@ export function ShiftsView({
   if (query.isError) return <ErrorPanel error={query.error} />;
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      menuVersion={1}
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+        const row = (id && rows.find((r) => r.query === id)) || null;
+        setContextRow(row);
+        if (!row) return null;
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
+            phrase: row.query,
+            keywordId: row.keyword_id,
+          }),
+          content: humanLines([
+            ["Query", row.query],
+            ["Class", row.traffic_class],
+            ["Δ clicks", num(row.delta_clicks)],
+            ["Clicks", `${num(row.clicks)} vs ${num(row.cmp_clicks)}`],
+            ["Top page now", row.cur_top_url],
+            ["Top page before", row.cmp_top_url],
+          ]),
+          keyword: row.query,
+          keyword_id: row.keyword_id ?? "",
+        };
+      }}
+      extraSections={contextRow?.keyword_id ? [keywordSection] : []}
+    >
     <div className="flex h-full min-h-0 flex-col gap-1">
+      {keywordSurfaces.isOpen ? (
+        <div className="shrink-0">{keywordSurfaces.node}</div>
+      ) : null}
       {/* The evaluated windows (and any auto-derived compare) live in the
           tab-level GscPeriodStrip — ONE place. */}
       {total > rows.length ? (
@@ -1035,6 +1188,7 @@ export function ShiftsView({
         className="min-h-0 flex-1"
       />
     </div>
+    </NonEditableContextMenu>
   );
 }
 
@@ -1055,6 +1209,9 @@ export function JuiceView({
   const query = useGscJuice(siteId, monthMinClicks, 3);
   const rows = query.data?.rows ?? [];
   const total = query.data?.total ?? rows.length;
+  // ONE menu for the pane; every juice row IS a page (KI-025).
+  const openDrilldown = useOpenGscDrilldownWindow();
+  const [contextRow, setContextRow] = useState<GscJuiceRow | null>(null);
 
   const columns: MatrxColumnDef<GscJuiceRow>[] = [
     // Every juice row IS a page — `gsc_perf_juice` returns its `page_id`.
@@ -1135,6 +1292,49 @@ export function JuiceView({
   if (query.isError) return <ErrorPanel error={query.error} />;
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="marketing"
+      menuVersion={1}
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "" }}
+      resolveContextOnOpen={(target) => {
+        const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+        const row = (id && rows.find((r) => r.key === id)) || null;
+        setContextRow(row);
+        if (!row) return null;
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]: row.page_id
+            ? { type: "web_page", id: row.page_id, title: row.key }
+            : null,
+          content: humanLines([
+            ["Page", row.key],
+            ["Months strong (of 6)", String(row.edu_months_active)],
+            [
+              "Educational clicks (90d / prior 90d)",
+              `${num(row.edu_clicks)} / ${num(row.edu_clicks_prior)}`,
+            ],
+            ["Money clicks (90d)", num(row.money_clicks)],
+            ["Money impressions (90d)", num(row.money_impressions)],
+            ["Other clicks (90d)", num(row.other_clicks)],
+          ]),
+          page: row.key,
+          page_id: row.page_id ?? "",
+        };
+      }}
+      extraSections={
+        contextRow
+          ? [
+              pageMenuSection({
+                siteId,
+                siteName,
+                url: contextRow.key,
+                pageId: contextRow.page_id,
+                openDrilldown,
+              }),
+            ]
+          : []
+      }
+    >
     <div className="flex h-full min-h-0 flex-col gap-1">
       {total > rows.length ? (
         <p className="shrink-0 text-xs text-muted-foreground">
@@ -1198,5 +1398,6 @@ export function JuiceView({
         className="min-h-0 flex-1"
       />
     </div>
+    </NonEditableContextMenu>
   );
 }

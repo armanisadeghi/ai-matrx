@@ -53,6 +53,15 @@ import {
 import { GscPeriodStrip } from "@/features/marketing/search-console/components/PeriodStrip";
 import type { RangeCompareValue } from "@/features/marketing/search-console/components/RangeCompareControl";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+} from "@/features/marketing/seo/keyword/keyword-actions";
+import { pageMenuSection } from "@/features/marketing/search-console/components/insights/insight-row-menu";
 import { LocationPanel } from "@/features/marketing/seo/value-system/locations/LocationPanel";
 import type {
   GscCannibalizationRow,
@@ -253,6 +262,8 @@ export function InsightsTab({
           <QualityView
             siteId={siteId}
             siteName={siteName}
+            brandId={brandId}
+            organizationId={organizationId}
             periods={classPeriods}
             onDrill={onDrill}
           />
@@ -260,6 +271,8 @@ export function InsightsTab({
           <ShiftsView
             siteId={siteId}
             siteName={siteName}
+            brandId={brandId}
+            organizationId={organizationId}
             periods={classPeriods}
             minClicks={minClicks}
             onDrill={onDrill}
@@ -276,6 +289,8 @@ export function InsightsTab({
           <CtrGapTable
             siteId={siteId}
             siteName={siteName}
+            brandId={brandId}
+            organizationId={organizationId}
             periods={periods}
             dimension={dimension}
             minImpressions={minImpressions}
@@ -337,9 +352,95 @@ export function InsightsTab({
   );
 }
 
+/**
+ * 🚨 THE MISSING MENU on the algorithm tables, closed 2026-08-24 (KI-025).
+ * CTR gaps, Cannibalization and Rising/Declining all draw the same shape — a
+ * bounded top-N of queries or pages — so they share ONE wiring here rather than
+ * growing three copies. A query row delegates to the platform's shared keyword
+ * actions; a page row gets the shared page section. One menu per pane, and the
+ * row the user right-clicked owns Attach To.
+ */
+function useInsightRowMenu<
+  T extends { key: string; page_id: string | null; keyword_id?: string | null },
+>(opts: {
+  siteId: string;
+  siteName: string | null;
+  brandId: string | null;
+  organizationId: string | null;
+  dimension: InsightDimension;
+  rows: T[];
+  /** The row said in full sentences — what Copy for AI and Export act on. */
+  describeRow: (row: T) => string;
+}) {
+  const { siteId, siteName, brandId, organizationId, dimension, rows } = opts;
+  const openDrilldown = useOpenGscDrilldownWindow();
+  const [contextRow, setContextRow] = useState<T | null>(null);
+  const surfaces = useKeywordAssignSurfaces({ siteId });
+  const keywordSection = useKeywordMenuSection({
+    siteId,
+    siteName,
+    brandId,
+    organizationId,
+    surfaces,
+    getRow: () =>
+      contextRow && dimension === "query" && contextRow.keyword_id
+        ? { phrase: contextRow.key, keywordId: contextRow.keyword_id }
+        : null,
+  });
+  const extraSections = !contextRow
+    ? []
+    : dimension === "page"
+      ? [
+          pageMenuSection({
+            siteId,
+            siteName,
+            url: contextRow.key,
+            pageId: contextRow.page_id,
+            openDrilldown,
+          }),
+        ]
+      : contextRow.keyword_id
+        ? [keywordSection]
+        : [];
+  return {
+    surfaces,
+    menuProps: {
+      sourceFeature: "marketing" as const,
+      menuVersion: 1,
+      contentSource: { type: "raw" } as const,
+      contextData: { content: "" },
+      resolveContextOnOpen: (target: HTMLElement | null) => {
+        const id = target
+          ?.closest("[data-row-id]")
+          ?.getAttribute("data-row-id");
+        const row = (id && rows.find((r) => r.key === id)) || null;
+        setContextRow(row);
+        if (!row) return null;
+        return {
+          [CONTEXT_MENU_ENTITY_KEY]:
+            dimension === "page"
+              ? row.page_id
+                ? { type: "web_page" as const, id: row.page_id, title: row.key }
+                : null
+              : keywordEntityRef({
+                  phrase: row.key,
+                  keywordId: row.keyword_id ?? null,
+                }),
+          content: opts.describeRow(row),
+          keyword: dimension === "query" ? row.key : "",
+          keyword_id: row.keyword_id ?? "",
+        };
+      },
+      extraSections,
+    },
+  };
+}
+
 function CtrGapTable({
   siteId,
   siteName,
+  brandId,
+  organizationId,
   periods,
   dimension,
   minImpressions,
@@ -347,6 +448,8 @@ function CtrGapTable({
 }: {
   siteId: string;
   siteName: string | null;
+  brandId: string | null;
+  organizationId: string | null;
   periods: GscResolvedPeriods;
   dimension: InsightDimension;
   minImpressions: number;
@@ -357,6 +460,24 @@ function CtrGapTable({
   const total = query.data?.total ?? rows.length;
   const columnLabel = dimension === "query" ? "Query" : "Page";
   const rowWatch = useRowWatch(dimension);
+  const menu = useInsightRowMenu({
+    siteId,
+    siteName,
+    brandId,
+    organizationId,
+    dimension,
+    rows,
+    describeRow: (row) =>
+      humanLines([
+        [columnLabel, row.key],
+        ["Missed clicks", num(row.missed_clicks)],
+        ["CTR", formatCtr(row.ctr)],
+        ["Expected CTR", formatCtr(row.expected_ctr)],
+        ["Position", formatPosition(row.avg_position)],
+        ["Impressions", num(row.impressions)],
+        ["Clicks", num(row.clicks)],
+      ]),
+  });
 
   const columns: MatrxColumnDef<GscCtrGapRow>[] = [
     {
@@ -452,7 +573,11 @@ function CtrGapTable({
   if (query.isError) return <ErrorPanel error={query.error} />;
 
   return (
+    <NonEditableContextMenu {...menu.menuProps}>
     <div className="flex h-full min-h-0 flex-col gap-1">
+      {menu.surfaces.isOpen ? (
+        <div className="shrink-0">{menu.surfaces.node}</div>
+      ) : null}
       {total > rows.length ? (
         <p className="shrink-0 text-xs text-muted-foreground">
           Showing the top {rows.length} of {formatCount(total)} matches —
@@ -515,18 +640,23 @@ function CtrGapTable({
         className="min-h-0 flex-1"
       />
     </div>
+    </NonEditableContextMenu>
   );
 }
 
 function CannibalizationTable({
   siteId,
   siteName,
+  brandId,
+  organizationId,
   periods,
   minImpressions,
   onDrill,
 }: {
   siteId: string;
   siteName: string | null;
+  brandId: string | null;
+  organizationId: string | null;
   periods: GscResolvedPeriods;
   minImpressions: number;
   onDrill: (dimension: InsightDimension, key: string) => void;
@@ -544,6 +674,23 @@ function CannibalizationTable({
     [query.data],
   );
   type Row = (typeof rows)[number];
+  const menu = useInsightRowMenu({
+    siteId,
+    siteName,
+    brandId,
+    organizationId,
+    dimension: "query",
+    rows,
+    describeRow: (row) =>
+      humanLines([
+        ["Query", row.query],
+        ["Competing pages", String(row.competing_pages)],
+        ["Top page share", pct(row.top_share, 0)],
+        ["Impressions", num(row.impressions)],
+        ["Clicks", num(row.clicks)],
+        ["Position", formatPosition(row.avg_position)],
+      ]),
+  });
 
   const columns: MatrxColumnDef<Row>[] = [
     {
@@ -621,7 +768,11 @@ function CannibalizationTable({
   if (query.isError) return <ErrorPanel error={query.error} />;
 
   return (
+    <NonEditableContextMenu {...menu.menuProps}>
     <div className="flex h-full min-h-0 flex-col gap-1">
+      {menu.surfaces.isOpen ? (
+        <div className="shrink-0">{menu.surfaces.node}</div>
+      ) : null}
       {total > rows.length ? (
         <p className="shrink-0 text-xs text-muted-foreground">
           Showing the top {rows.length} of {formatCount(total)} matches —
@@ -727,12 +878,15 @@ function CannibalizationTable({
         className="min-h-0 flex-1"
       />
     </div>
+    </NonEditableContextMenu>
   );
 }
 
 function TrendTable({
   siteId,
   siteName,
+  brandId,
+  organizationId,
   periods,
   dimension,
   direction,
@@ -741,6 +895,8 @@ function TrendTable({
 }: {
   siteId: string;
   siteName: string | null;
+  brandId: string | null;
+  organizationId: string | null;
   periods: GscResolvedPeriods;
   dimension: InsightDimension;
   direction: "decay" | "growth";
@@ -752,6 +908,33 @@ function TrendTable({
   const total = query.data?.total ?? rows.length;
   const columnLabel = dimension === "query" ? "Query" : "Page";
   const rowWatch = useRowWatch(dimension);
+  const menu = useInsightRowMenu({
+    siteId,
+    siteName,
+    brandId,
+    organizationId,
+    dimension,
+    rows,
+    describeRow: (row) =>
+      humanLines([
+        [columnLabel, row.key],
+        ["\u0394 clicks", num(row.change_clicks)],
+        [
+          "\u0394 %",
+          row.change_pct === null ? null : `${row.change_pct.toFixed(0)}%`,
+        ],
+        ["First half", num(row.first_half_clicks)],
+        ["Second half", num(row.second_half_clicks)],
+        [
+          "Weekly slope",
+          row.slope_per_week === null
+            ? null
+            : `${row.slope_per_week.toFixed(1)}/wk`,
+        ],
+        ["Clicks", num(row.clicks)],
+        ["Position", formatPosition(row.avg_position)],
+      ]),
+  });
 
   const columns: MatrxColumnDef<GscTrendRow>[] = [
     {
@@ -888,7 +1071,11 @@ function TrendTable({
   if (query.isError) return <ErrorPanel error={query.error} />;
 
   return (
+    <NonEditableContextMenu {...menu.menuProps}>
     <div className="flex h-full min-h-0 flex-col gap-1">
+      {menu.surfaces.isOpen ? (
+        <div className="shrink-0">{menu.surfaces.node}</div>
+      ) : null}
       {total > rows.length ? (
         <p className="shrink-0 text-xs text-muted-foreground">
           Showing the top {rows.length} of {formatCount(total)} matches —
@@ -967,5 +1154,6 @@ function TrendTable({
         className="min-h-0 flex-1"
       />
     </div>
+    </NonEditableContextMenu>
   );
 }

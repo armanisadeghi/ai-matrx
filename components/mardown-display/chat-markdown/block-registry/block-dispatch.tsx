@@ -379,6 +379,14 @@ export function isBlockLoading(block: {
  *    from ONE component (a standalone card, and the shared `CitationChip`
  *    inline). `retrieved_chunk` adapts to `RagHitView` and renders the
  *    canonical `RagHitCard` rather than drawing a fourth hit card.
+ *  - `data_table` — the tabular PRIMITIVE (Table Kinds Run), produced ONLY by
+ *    `applyIrKindRoute`'s compiled-bridge flips (`__kind` JSON arrival only —
+ *    no tag/fence surface). A SQL result, a user data-table lookup, a parsed
+ *    CSV and a table lifted out of a PDF are ONE rows-and-columns shape that
+ *    was wearing five names; everything returning rows nests this rather than
+ *    minting its own. Its component makes the two facts those five producers
+ *    hid impossible to miss: an UNDECLARED column type (never a synonym for
+ *    "string") and a SILENT truncation.
  */
 export type FeSynthesizedBlockType =
   | "media_block"
@@ -448,6 +456,7 @@ export type FeSynthesizedBlockType =
   | "seo_rank_portfolio"
   | "seo_rank_target_removal"
   | "provider_run_receipt"
+  | "data_table"
   | "source_ref"
   | "retrieved_chunk"
   | "rag_search_result"
@@ -594,6 +603,7 @@ export type ShapeBlockType =
   | "seo_rank_portfolio"
   | "seo_rank_target_removal"
   | "provider_run_receipt"
+  | "data_table"
   | "source_ref"
   | "retrieved_chunk"
   | "rag_search_result"
@@ -2077,6 +2087,10 @@ const SHAPE_BLOCK_DISPATCH = {
     BlockComponents.SeoRankTargetRemovalBlock,
   ),
   provider_run_receipt: searchKindEntry(BlockComponents.ProviderRunReceiptBlock),
+
+  // Kind-routed tabular primitive (Table Kinds Run): same uniform
+  // `{ value, isComplete }` bridge, so the SAME three-branch entry serves it.
+  data_table: searchKindEntry(BlockComponents.DataTableBlock),
 
   // Kind-routed RAG retrieval + citation family (RAG Kinds Run): identical
   // uniform `{ value, isComplete }` bridge, so the SAME three-branch entry

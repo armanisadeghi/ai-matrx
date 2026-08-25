@@ -79,6 +79,7 @@ import {
 // search family's components above.
 import SeoRankSerpLandscapeBlockImpl from "../../blocks/rank-kinds/SeoRankSerpLandscapeBlock";
 import SerpPlacementBlockImpl from "../../blocks/rank-kinds/SerpPlacementBlock";
+import DataTableBlockImpl from "../../blocks/table-kinds/DataTableBlock";
 import {
   ProviderRunReceiptBlock as ProviderRunReceiptBlockImpl,
   SeoRankReadingBlock as SeoRankReadingBlockImpl,
@@ -650,6 +651,13 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <AiAnswerKindBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  // Tabular kind family (Table Kinds Run): `data_table`, the system-wide
+  // rows-and-columns primitive every other producer of rows nests.
+  DataTableBlock: (props: React.ComponentProps<typeof DataTableBlockImpl>) => (
+    <LazyBlockWrapper>
+      <DataTableBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
   // Rank / SERP-landscape kind family (Rank Kinds Run).
