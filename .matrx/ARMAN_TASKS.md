@@ -102,9 +102,6 @@ result (network policy blocks the app). I fixed each instance by hand rather
 than gamble the default. Say "visible by default" or "leave it" and an agent
 executes.
 
-### 1. Approve/reject the 3 defect→task promotions (seconds)
-Open `FOUND_DEFECTS.md` → `## Pending Arman review` (prepared 2026-07-12): D34.2 capability fields, D45 mobile flashcard rendering, D31(d) `check:definer-grants` CI guard. Say yes/no per item in chat; the next agent moves approved ones to AGENT_TASKS.
-
 ### 2. Decide: server-side hardening for `is_visible_to_user` (seconds — a decision)
 TASK-001 (agent handoff integration) hides plumbing message rows with an FE read filter only. Deliberately not enforced via RLS/view on the backend because that would also hide the rows from admin/debug surfaces. Decide: FE-filter-only (status quo) vs. RLS/view hardening on `chat.message`. Context: `aidream/docs/cx_chat/FE_HANDOFF_AGENT_PATTERNS.md`.
 
@@ -171,4 +168,5 @@ _(none)_
 - Supabase MCP OAuth confirmed by a live project-list call; stale authorization ask removed (2026-08-25).
 - Manual aidream deployment ask removed; the dedicated deploy agent owns the approved cadence (2026-08-25).
 - Content IR candidates, `table`, inactive-root posture, and `media_block` crosswalk coverage reconciled; only enforcement timing and post-soak cleanup remain owner-timed (2026-08-25).
+- Stale three-defect promotion ask removed: pending review is empty, D45-mobile is fixed, and the definer-grant guard shipped (2026-08-25).
 - Gemini TTS B4 regression resolved and live-verified; see `FOUND_DEFECTS.md` D40.
