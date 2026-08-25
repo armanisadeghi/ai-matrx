@@ -27,12 +27,15 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowRight,
   BrainCircuit,
   Check,
   CircleAlert,
   Loader2,
+  RotateCcw,
   Shapes,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,10 +44,13 @@ import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 import {
+  SHAPES_ALL_HREF,
   SHAPES_SURFACE_NAME,
   SHAPE_BUILDER_ROLE,
 } from "@/features/content-ir/studio/constants";
@@ -174,10 +180,14 @@ function ShapeBuilderRun({
   agentId,
   answers,
   applicationScope,
+  onComplete,
 }: {
   agentId: string;
   answers: NewShapeAnswers;
   applicationScope: Record<string, unknown>;
+  /** Fired on the running/streaming → complete edge, so the page can stop
+   *  claiming it is still building something that already landed. */
+  onComplete: () => void;
 }) {
   const { launchAgent } = useAgentLauncher();
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -222,6 +232,18 @@ function ShapeBuilderRun({
       setError(err instanceof Error ? err.message : String(err));
     });
   }, [agentId, answers, applicationScope, launchAgent]);
+
+  const status = useAppSelector(
+    conversationId ? selectInstanceStatus(conversationId) : () => undefined,
+  );
+  const prevStatusRef = useRef<typeof status>(undefined);
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    prevStatusRef.current = status;
+    if (status === "complete" && (prev === "running" || prev === "streaming")) {
+      onComplete();
+    }
+  }, [status, onComplete]);
 
   if (error) {
     return (
@@ -271,6 +293,7 @@ function NewShapeForm({ agentId }: { agentId: string }) {
     NEW_SHAPE_EMPTY_ANSWERS,
   );
   const [submitted, setSubmitted] = useState<NewShapeAnswers | null>(null);
+  const [done, setDone] = useState(false);
   const ready = newShapeAnswersReady(answers);
 
   function patch(next: Partial<NewShapeAnswers>) {
@@ -475,15 +498,46 @@ function NewShapeForm({ agentId }: { agentId: string }) {
         </FieldBlock>
 
         <div className="sticky bottom-0 z-10 rounded-lg border border-border bg-background/95 p-2.5 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <Button
-            className="h-11 w-full gap-2 text-sm"
-            disabled={!ready || submitted !== null}
-            onClick={() => setSubmitted(answers)}
-          >
-            <BrainCircuit className="h-4 w-4" aria-hidden />
-            {submitted ? "Building your Shape…" : "Build my Shape"}
-          </Button>
-          {!ready ? (
+          {done ? (
+            // NO DEAD ENDS: the Shape now exists, so the page hands the user
+            // the door to it instead of sitting on a spent button. The slug is
+            // the agent's to choose and the client never learns it, so the
+            // honest destination is the library it just appeared at the top of.
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button asChild className="h-11 flex-1 gap-2 text-sm">
+                <Link href={SHAPES_ALL_HREF}>
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                  See it in your Shapes
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-11 gap-2 text-sm"
+                onClick={() => {
+                  setSubmitted(null);
+                  setDone(false);
+                  setAnswers(NEW_SHAPE_EMPTY_ANSWERS);
+                }}
+              >
+                <RotateCcw className="h-4 w-4" aria-hidden />
+                Build another
+              </Button>
+            </div>
+          ) : (
+            <Button
+              className="h-11 w-full gap-2 text-sm"
+              disabled={!ready || submitted !== null}
+              onClick={() => setSubmitted(answers)}
+            >
+              {submitted ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <BrainCircuit className="h-4 w-4" aria-hidden />
+              )}
+              {submitted ? "Building your Shape…" : "Build my Shape"}
+            </Button>
+          )}
+          {!ready && !submitted ? (
             <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
               Give it a name and tell us what one of these holds.
             </p>
@@ -510,6 +564,7 @@ function NewShapeForm({ agentId }: { agentId: string }) {
                 agentId={agentId}
                 answers={submitted}
                 applicationScope={scope() as Record<string, unknown>}
+                onComplete={() => setDone(true)}
               />
             ) : (
               <ResultPaneEmpty ready={ready} />
