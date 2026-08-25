@@ -8,6 +8,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
+import { associationsService } from "@/features/scopes/service/associationsService";
 
 import type {
   KeywordEdgeRow,
@@ -17,6 +18,26 @@ import type {
 import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import { parseKeywordResearchArtifact } from "./artifact";
+
+/**
+ * The `content_ir_kind_instance` source ids attached (via
+ * `platform.associations`) to this site — MSR-26: a saved keyword-research
+ * artifact belongs to the SITE it was researched for, never the
+ * organization. Returns `[]` for a site with no bound research, never throws
+ * on an empty result (an association read that finds nothing is not an
+ * error).
+ */
+async function savedResearchInstanceIdsForSite(
+  siteId: string,
+): Promise<string[]> {
+  const result = await associationsService.listForTargets("web_site", [
+    siteId,
+  ]);
+  if (!result.ok) throw new Error(result.error.message);
+  return result.data.edges
+    .filter((edge) => edge.sourceType === "content_ir_kind_instance")
+    .map((edge) => edge.sourceId);
+}
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -103,22 +124,29 @@ async function keywordResearchDefinitionId(
 }
 
 /**
- * Every saved research artifact for an organization, newest first — the list
- * behind the workbench's saved-research library (each row is a shareable
- * artifact with its own report permalink). Sibling of
- * `getLatestSavedKeywordResearch`, which answers the per-phrase question.
+ * Every saved research artifact bound to a SITE (MSR-26 — research belongs
+ * to the site, never the organization), newest first — the list behind the
+ * workbench's saved-research library (each row is a shareable artifact with
+ * its own report permalink). Sibling of `getLatestSavedKeywordResearch`,
+ * which answers the per-phrase question. The binding lives in
+ * `platform.associations` (`content_ir_kind_instance` -> `web_site`),
+ * written by the research pipeline the moment the artifact is saved.
  */
 export async function listSavedKeywordResearch(
-  organizationId: string,
+  siteId: string,
   options?: { limit?: number; signal?: AbortSignal },
 ): Promise<SavedKeywordResearch[]> {
-  const db = await contentIrDb();
+  const [db, instanceIds] = await Promise.all([
+    contentIrDb(),
+    savedResearchInstanceIdsForSite(siteId),
+  ]);
+  if (instanceIds.length === 0) return [];
   const definitionId = await keywordResearchDefinitionId(db);
   if (!definitionId) return [];
   const response = await db
     .from("kind_instance")
     .select("id, created_at, title, data")
-    .eq("organization_id", organizationId)
+    .in("id", instanceIds)
     .eq("kind_definition_id", definitionId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
