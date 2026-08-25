@@ -3,9 +3,9 @@
  * dispatched as its OUTPUT component.
  *
  * `content_ir.kind_component_role_check` accepts `loading` since 2026-08-25.
- * The Matrix resolver adapter coerces unrecognized roles to "output" so one
- * bad row cannot blank a kind — which, for a loading row, would pin the
- * skeleton in place of the finished shape forever. This pins the exclusion.
+ * The shared 0.2.0 resolver gives loading its own typed key. This pins both
+ * routing and isolation: the loading face resolves, but can never shadow the
+ * finished output face.
  */
 
 import { ComponentRegistry } from "../registry/component-registry";
@@ -29,11 +29,14 @@ function row(role: string, componentKey: string) {
 }
 
 describe("loading-role isolation", () => {
-  it("a loading row never becomes the kind's output component", () => {
+  it("routes a loading row only through the loading role", () => {
     const registry = new ComponentRegistry(() => []);
     registry.ingestDbRows([row("loading", "my_loading_face")] as never);
     expect(registry.resolve(KIND, "web", "output")).toBeNull();
     expect(registry.resolve(KIND, "web", "input")).toBeNull();
+    expect(registry.resolve(KIND, "web", "loading")?.componentKey).toBe(
+      "my_loading_face",
+    );
   });
 
   it("output rows still resolve, alongside a loading row for the same kind", () => {
@@ -45,11 +48,17 @@ describe("loading-role isolation", () => {
     expect(registry.resolve(KIND, "web", "output")?.componentKey).toBe(
       "my_real_component",
     );
+    expect(registry.resolve(KIND, "web", "loading")?.componentKey).toBe(
+      "my_loading_face",
+    );
   });
 
   it("replaceDbRows applies the same exclusion", () => {
     const registry = new ComponentRegistry(() => []);
     registry.replaceDbRows([row("loading", "my_loading_face")] as never);
     expect(registry.resolve(KIND, "web", "output")).toBeNull();
+    expect(registry.resolve(KIND, "web", "loading")?.componentKey).toBe(
+      "my_loading_face",
+    );
   });
 });

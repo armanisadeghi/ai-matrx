@@ -50,10 +50,10 @@ import {
 export type { ComponentResolution, ComponentRole };
 
 /**
- * Roles the OUTPUT/INPUT resolver dispatches on. `loading` rows are real and
- * valid (content_ir.kind_component_role_check allows them since 2026-08-25)
- * but they are the kind's LOADING face, resolved by the loading layer — never
- * by this resolver. They are dropped here rather than coerced, because
+ * Roles the shared resolver dispatches on. `loading` rows are the kind's
+ * LOADING face and live under their own resolver key — never the output key.
+ * The 0.2.0 shared package widened ComponentRole for this exact contract.
+ * Unknown future roles are still dropped rather than coerced, because
  * registering a kind's LOADING component as its OUTPUT component would show
  * the reader the skeleton where the finished shape belongs, permanently.
  *
@@ -79,6 +79,7 @@ export type { ComponentResolution, ComponentRole };
 const RESOLVER_ROLES: ReadonlySet<string> = new Set<ComponentRole>([
   "output",
   "input",
+  "loading",
 ]);
 
 function isRoutableRole(role: string): role is ComponentRole {

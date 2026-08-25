@@ -380,9 +380,11 @@ describe("unroutable roles — a role this build cannot dispatch is DROPPED, nev
 
       const resolved = registry.resolve("adv_loading_kind", "web", "output");
       expect(resolved?.componentKey).toBe("adv_real_output");
-      // And the loading row is not silently reachable under its own role
-      // either — this build has no dispatch for it.
+      // Loading is independently routable and cannot collide with output.
       expect(registry.resolve("adv_loading_kind", "web", "input")).toBeNull();
+      expect(
+        registry.resolve("adv_loading_kind", "web", "loading")?.componentKey,
+      ).toBe("adv_loading_skeleton");
     } finally {
       consoleError.mockRestore();
     }
@@ -395,7 +397,7 @@ describe("unroutable roles — a role this build cannot dispatch is DROPPED, nev
         dbRow({
           kind: "adv_named_kind",
           componentKey: "adv_named_skeleton",
-          role: "loading",
+          role: "future_role",
         }),
       ]);
 
@@ -406,7 +408,7 @@ describe("unroutable roles — a role this build cannot dispatch is DROPPED, nev
         dbRow({
           kind: "adv_named_kind",
           componentKey: "adv_named_skeleton",
-          role: "loading",
+          role: "future_role",
         }),
       ]);
 
@@ -415,7 +417,7 @@ describe("unroutable roles — a role this build cannot dispatch is DROPPED, nev
       // Triage must be able to find the offending row from the message alone.
       expect(message).toContain("adv_named_kind");
       expect(message).toContain("adv_named_skeleton");
-      expect(message).toContain("loading");
+      expect(message).toContain("future_role");
     } finally {
       consoleError.mockRestore();
     }
