@@ -108,9 +108,7 @@ export function UnderstudyCard({
           <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-emerald-500 opacity-60" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
         </span>
-        <h3 className="text-sm font-semibold text-foreground">
-          Your understudy is ready — try it
-        </h3>
+        <h3 className="text-sm font-semibold text-foreground">Understudy</h3>
         <AgentCredit
           mandate="masterwork.understudy"
           agent="Masterwork Understudy (generic)"
@@ -126,9 +124,7 @@ export function UnderstudyCard({
           got this long-ass paragraph thing… it doesn't actually say what's
           going on"). What it is, what it uses, one sentence. */}
       <p className="mb-4 mt-2 text-xs text-muted-foreground">
-        {approvedCount === 0
-          ? "A rough stand-in — improvising until you approve rules. Not the real thing you'll build."
-          : `A rough stand-in using your ${approvedCount} approved ${approvedCount === 1 ? "rule" : "rules"}. Not the real thing you'll build.`}
+        Quick test of a temporary stand-in we&apos;re building in real time
       </p>
       <TryMasterworkBox
         masterworkId={understudy.id}
