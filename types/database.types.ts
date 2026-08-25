@@ -34323,6 +34323,45 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_run_ai_calls: {
+        Args: { p_execution_id: string; p_execution_kind: string }
+        Returns: {
+          api_duration_ms: number
+          conversation_id: string
+          cost: number
+          created_at: string
+          error: Json
+          id: string
+          input_tokens: number
+          iteration: number
+          model: string
+          output_text: string
+          output_tokens: number
+          prompt_text: string
+          status: string
+          total_duration_ms: number
+          total_tokens: number
+        }[]
+      }
+      admin_list_run_history: {
+        Args: { p_limit?: number }
+        Returns: {
+          ai_call_count: number
+          detail: string
+          duration_ms: number
+          error_text: string
+          execution_id: string
+          execution_kind: string
+          finished_at: string
+          label: string
+          source: string
+          started_at: string
+          status: string
+          summary: string
+          total_cost: number
+          total_tokens: number
+        }[]
+      }
       admin_list_share_policies: {
         Args: never
         Returns: {

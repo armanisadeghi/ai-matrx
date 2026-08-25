@@ -66,6 +66,7 @@ import {
 } from "./data";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { ScheduleCascadePanel } from "./ScheduleCascadePanel";
+import { RunHistoryPanel } from "./RunHistoryPanel";
 import { extractErrorMessage } from "@/utils/errors";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import type { ConsoleSiteRow, RunConsoleScope, RunOutcome } from "./types";
@@ -607,6 +608,9 @@ export function RunConsole({
               <TabsTrigger value="unplaced" className="h-6 text-xs">
                 Not placed
               </TabsTrigger>
+              <TabsTrigger value="history" className="h-6 text-xs">
+                Run history
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent
@@ -763,6 +767,13 @@ export function RunConsole({
                   Click a brand on the left to read what is still owed.
                 </p>
               )}
+            </TabsContent>
+
+            <TabsContent
+              value="history"
+              className="m-0 flex min-h-0 flex-1 flex-col"
+            >
+              <RunHistoryPanel />
             </TabsContent>
 
           </Tabs>
