@@ -7,7 +7,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import {
   Organization,
   OrganizationWithRole,
@@ -50,42 +54,43 @@ import {
  */
 export function useUserOrganizations() {
   const authReady = useAppSelector(selectAuthReady);
-  const [organizations, setOrganizations] = useState<OrganizationWithRole[]>(
-    [],
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchOrganizations = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await getUserOrganizations();
-      setOrganizations(data);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to fetch organizations";
-      console.error("Error fetching organizations:", err);
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const userId = useAppSelector(selectUserId);
+  const accessToken = useAppSelector(selectAccessToken);
+  const canFetch = authReady && Boolean(userId) && Boolean(accessToken);
+  const [nonce, setNonce] = useState(0);
+  const key = canFetch ? `${userId}:${nonce}` : null;
+  const [resolved, setResolved] = useState<{
+    key: string;
+    organizations: OrganizationWithRole[];
+    error: string | null;
+  } | null>(null);
 
   useEffect(() => {
-    if (!authReady) {
-      setLoading(true);
-      return;
-    }
-    fetchOrganizations();
-  }, [fetchOrganizations, authReady]);
+    if (!key) return;
+    let active = true;
+    void (async () => {
+      try {
+        const organizations = await getUserOrganizations();
+        if (active) setResolved({ key, organizations, error: null });
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Failed to fetch organizations";
+        if (active) setResolved({ key, organizations: [], error: message });
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [key]);
+
+  const current = resolved?.key === key ? resolved : null;
+  const refresh = useCallback(() => setNonce((value) => value + 1), []);
 
   return {
-    organizations,
-    loading,
-    error,
-    refresh: fetchOrganizations,
+    organizations: current?.organizations ?? [],
+    loading: key === null || current === null,
+    error: current?.error ?? null,
+    refresh,
   };
 }
 

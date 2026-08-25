@@ -27,6 +27,7 @@ import { supabase } from "@/utils/supabase/client";
 export interface AuthRetryableResult<T> {
   data: T;
   error: { code?: string | null; message?: string | null } | null;
+  status?: number;
 }
 
 /**
@@ -37,12 +38,14 @@ export interface AuthRetryableResult<T> {
  */
 export function isMissingSessionError(
   error: { code?: string | null; message?: string | null } | null | undefined,
+  status?: number,
 ): boolean {
   if (!error) return false;
   if (error.code === "28000") return true;
   const message = error.message?.toLowerCase();
   if (message?.startsWith("not authenticated")) return true;
   return (
+    status === 401 &&
     error.code === "42501" &&
     message?.startsWith("permission denied for function ") === true
   );
@@ -67,7 +70,7 @@ export async function runWithSessionRetry<T>(
   AuthRetryableResult<T> & { retried: boolean; sessionRecovered: boolean }
 > {
   const first = await run();
-  if (!isMissingSessionError(first.error)) {
+  if (!isMissingSessionError(first.error, first.status)) {
     return { ...first, retried: false, sessionRecovered: false };
   }
 
@@ -77,14 +80,14 @@ export async function runWithSessionRetry<T>(
   const recovered = Boolean(data.session?.access_token) && !sessionError;
   if (!recovered) {
     console.error(
-      "[authRetry] a write reached the database with no authenticated session and the session could NOT be recovered — the user is signed out or their session expired. The write was not retried.",
+      "[authRetry] an operation reached the database with no authenticated session and the session could NOT be recovered — the user is signed out or their session expired. The operation was not retried.",
       sessionError ?? first.error,
     );
     return { ...first, retried: false, sessionRecovered: false };
   }
 
   console.error(
-    "[authRetry] a write reached the database with no authenticated session; the session re-resolved and the write is being retried once. This is a recovery firing, which means a real session-availability bug got past the proactive layer.",
+    "[authRetry] an operation reached the database with no authenticated session; the session re-resolved and the operation is being retried once. This is a recovery firing, which means a real session-availability bug got past the proactive layer.",
   );
   const second = await run();
   return { ...second, retried: true, sessionRecovered: true };

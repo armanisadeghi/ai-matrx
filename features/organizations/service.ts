@@ -168,9 +168,7 @@ export async function updateOrganization(
     }
 
     if (updates.abbreviation !== undefined) {
-      const validation = validateOrganizationAbbreviation(
-        updates.abbreviation,
-      );
+      const validation = validateOrganizationAbbreviation(updates.abbreviation);
       if (!validation.valid) {
         return { success: false, error: validation.error };
       }
@@ -324,85 +322,61 @@ export async function getOrganizationBySlugOrId(
  * @returns Array of organizations with user's role
  */
 export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
-  try {
-    requireUserId();
+  requireUserId();
 
-    // Canonical membership read — the current user's org memberships from
-    // iam.memberships via the mbr_* RPCs (org membership row: container_type
-    // 'organization', container_id = organization_id). No cross-schema embed of
-    // `organizations` — we resolve those in a second public-table read.
-    const membersResult = await membershipsService.forUser("organization");
-    if (isScopesRpcErr(membersResult)) {
-      // The Supabase capture boundary already owns the structured error. Do
-      // not mirror the typed result into console.error: source participates in
-      // dedupe, so that would persist the same failed request twice.
-      return [];
-    }
-
-    const memberships = membersResult.data.memberships;
-    if (memberships.length === 0) return [];
-
-    const roleByOrgId = new Map<string, OrgRole>();
-    for (const m of memberships) {
-      roleByOrgId.set(m.containerId, toOrgRole(m.role));
-    }
-    const orgIds = [...roleByOrgId.keys()];
-
-    // Resolve the org rows (public table — direct read, RLS-scoped).
-    const { data: orgRows, error: orgsError } = await supabase
-      .schema("iam")
-      .from("organizations")
-      .select("*")
-      .in("id", orgIds);
-    if (orgsError) {
-      console.error("Error fetching organizations:", orgsError.message);
-      throw pgErrorToError(orgsError);
-    }
-
-    // Batch member counts — one round-trip instead of N.
-    const countsResult = await membershipsService.counts(
-      "organization",
-      orgIds,
-    );
-    const countByOrgId = new Map<string, number>();
-    if (!isScopesRpcErr(countsResult)) {
-      for (const c of countsResult.data.counts) {
-        countByOrgId.set(c.containerId, c.memberCount);
-      }
-    }
-
-    const orgs: OrganizationWithRole[] = (orgRows ?? []).map((row) => {
-      const org = transformOrganizationFromDb(row);
-      return {
-        ...org,
-        role: roleByOrgId.get(org.id) ?? "member",
-        memberCount: countByOrgId.get(org.id) ?? 0,
-      };
-    });
-
-    // Sort: personal first, then by name
-    return orgs.sort((a, b) => {
-      if (a.isPersonal && !b.isPersonal) return -1;
-      if (!a.isPersonal && b.isPersonal) return 1;
-      return a.name.localeCompare(b.name);
-    });
-  } catch (error: unknown) {
-    // Silently handle if organizations table doesn't exist yet
-    const err = pgErrorToError(error);
-    const code =
-      error && typeof error === "object" && "code" in error
-        ? (error as { code?: unknown }).code
-        : undefined;
-    if (
-      code === "42P01" ||
-      err.message.includes("relation") ||
-      err.message.includes("does not exist")
-    ) {
-      return [];
-    }
-    console.error("Error in getUserOrganizations:", err);
-    return [];
+  // Canonical membership read — the current user's org memberships from
+  // iam.memberships via the mbr_* RPCs (org membership row: container_type
+  // 'organization', container_id = organization_id). No cross-schema embed of
+  // `organizations` — we resolve those in a second public-table read.
+  const membersResult = await membershipsService.forUser("organization");
+  if (isScopesRpcErr(membersResult)) {
+    // The Supabase capture boundary already owns the structured error. Throw
+    // only to preserve failure semantics for the UI; do not mirror it to the
+    // console and create a duplicate captured incident.
+    throw new Error(membersResult.error.message);
   }
+
+  const memberships = membersResult.data.memberships;
+  if (memberships.length === 0) return [];
+
+  const roleByOrgId = new Map<string, OrgRole>();
+  for (const m of memberships) {
+    roleByOrgId.set(m.containerId, toOrgRole(m.role));
+  }
+  const orgIds = [...roleByOrgId.keys()];
+
+  // Resolve the org rows (public table — direct read, RLS-scoped).
+  const { data: orgRows, error: orgsError } = await supabase
+    .schema("iam")
+    .from("organizations")
+    .select("*")
+    .in("id", orgIds);
+  if (orgsError) throw pgErrorToError(orgsError);
+
+  // Batch member counts — one round-trip instead of N.
+  const countsResult = await membershipsService.counts("organization", orgIds);
+  if (isScopesRpcErr(countsResult)) {
+    throw new Error(countsResult.error.message);
+  }
+  const countByOrgId = new Map<string, number>();
+  for (const c of countsResult.data.counts) {
+    countByOrgId.set(c.containerId, c.memberCount);
+  }
+  const orgs: OrganizationWithRole[] = (orgRows ?? []).map((row) => {
+    const org = transformOrganizationFromDb(row);
+    return {
+      ...org,
+      role: roleByOrgId.get(org.id) ?? "member",
+      memberCount: countByOrgId.get(org.id) ?? 0,
+    };
+  });
+
+  // Sort: personal first, then by name
+  return orgs.sort((a, b) => {
+    if (a.isPersonal && !b.isPersonal) return -1;
+    if (!a.isPersonal && b.isPersonal) return 1;
+    return a.name.localeCompare(b.name);
+  });
 }
 
 /**

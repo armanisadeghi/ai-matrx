@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-08-24`
+**Last updated:** `2026-08-25`
 
 > Combined doc for `features/organizations/` and `features/invitations/`. Orgs are the multi-tenant primitive; invitations are the flow that admits users to orgs (and, in mirrored form, to projects). Architecture mirrors `features/projects/`.
 
@@ -37,7 +37,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 
 **Hooks** (`features/organizations/hooks.ts`)
 
-- `useUserOrganizations()` — current user's orgs with role + member counts; sorted personal-first
+- `useUserOrganizations()` — current user's orgs with role + member counts; waits for `authReady`, user id, and browser access token before I/O; fetch failures remain failures and render the launcher retry state instead of masquerading as an empty list
 - `useActiveOrganizationPicker()` — canonical hook for global active-org switchers (user menu, header reminder); reads `appContextSlice`, lists orgs (including their compact abbreviation) from the scope tree, writes via `chooseActiveOrganization`
 - `useOrganization(orgId)` — single org by id
 - `useOrganizationOperations()` — `create`, `update`, `remove`
@@ -104,7 +104,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 **Database tables** (Supabase)
 
 - `iam.organizations` — `id, name, abbreviation, slug (unique), description, logo_url, website, created_by, is_personal, settings, created_at, updated_at`. `abbreviation` is 2–3 uppercase ASCII letters, intentionally non-unique; personal orgs are always `ME`. RLS: members can SELECT; owners/admins can UPDATE; only owners DELETE.
-- `iam.memberships` — canonical membership for orgs + projects (`container_type` / `container_id`). Sole chokepoint: `membershipsService` → `mbr_*` RPCs. **No direct client grant.**
+- `iam.memberships` — canonical membership for orgs + projects (`container_type` / `container_id`). Sole chokepoint: `membershipsService` → authenticated-only `mbr_*` RPCs. **No direct client grant and no anonymous RPC execution.** Every idempotent membership read uses the shared one-shot session recovery; a missing browser JWT produces an attributable `401`, never a successful empty membership set.
 - `iam.invitations` — canonical invitations for orgs + projects + **scopes** (`target_type` / `target_id`; scope targets added 2026-08-18 for education class invites — `migrations/edu_class_invites_and_join_codes.sql` extended `iam._container_authz` with a scope branch, `inv_create` accepts `'scope'` **member-role-only**, `inv_get_by_token` resolves the scope name; consumer: `features/education/classes`, accept page `/invitations/class/accept/[token]`, email route `/api/education/class-invite`). Sole chokepoint: `invitationsService` → `inv_*` RPCs. **No direct client grant** — every read/write goes through `inv_list` / `inv_create` / `inv_accept` / `inv_revoke` / `inv_resend` / `inv_for_me` / `inv_get_by_token`; server email routes use manager-guarded `inv_get_managed`.
 - `workspace.projects` — project rows, scoped by `organization_id`
 - `admin.invitation_requests` — signup-access requests, admin-approved, triggers `features/invitations/emailService.ts` (separate from org/project member invites)
@@ -250,6 +250,7 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-08-25` — **Organization reads no longer disappear when one browser temporarily loses its Supabase session.** Removed stale anonymous execute grants from the four `SECURITY DEFINER` membership-read RPCs while preserving authenticated/service-role access; routed all membership reads through the shared one-shot session recovery; required the browser user id + access token before `useUserOrganizations` starts I/O; stopped converting typed membership/count/read failures into `[]`; and made the primary `/organizations` launcher render its retry state. The shared classifier now distinguishes the recoverable anonymous `401` from an authenticated `403` grant defect. Live ACL and ordinary-user membership/RLS parity verified; focused regression suite covers recovery, non-retry, and failure presentation.
 - `2026-08-24` — Replaced compact member/contact search inputs in shared membership, invitation, organization-email, org-admin roster, and reassignment surfaces with the canonical `UserSearchField`. Their advanced windows are bounded to the roster/candidate list already visible to the caller; invitation email entry remains available for people without accounts.
 - `2026-08-23` — **The org nudge moved into header flow; the floating card is
   deleted.** `HeaderOrgReminder.tsx` was a `fixed` z-50 card pinned just under

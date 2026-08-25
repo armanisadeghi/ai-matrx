@@ -25,7 +25,6 @@ import {
   ArrowRight,
   Search,
   Calendar,
-  Sparkles,
   ExternalLink,
   FolderTree,
   Network,
@@ -109,7 +108,7 @@ const ROLE_META: Record<OrgRole, RoleMeta> = {
 
 const PERSONAL_META: RoleMeta = {
   label: "Personal",
-  icon: Sparkles,
+  icon: UserIcon,
   bar: "bg-gradient-to-r from-violet-500 to-sky-500",
   text: "text-violet-600 dark:text-violet-400",
   bg: "bg-violet-500/10",
@@ -329,7 +328,7 @@ function StatChip({
 }
 
 export default function OrganizationsPage() {
-  const { organizations, loading, refresh } = useUserOrganizations();
+  const { organizations, loading, error, refresh } = useUserOrganizations();
   const suggestions = useScopeSuggestions();
   const [createOpen, setCreateOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -472,6 +471,18 @@ export default function OrganizationsPage() {
                 </p>
               </div>
             </div>
+          ) : error ? (
+            <Card className="p-8 text-center border-destructive/40">
+              <div className="max-w-sm mx-auto">
+                <h3 className="font-semibold mb-1">
+                  We couldn&apos;t load your organizations
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">{error}</p>
+                <Button size="sm" variant="outline" onClick={refresh}>
+                  Try again
+                </Button>
+              </div>
+            </Card>
           ) : organizations.length === 0 ? (
             <Card className="p-12 text-center">
               <div className="max-w-xs mx-auto">

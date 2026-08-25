@@ -19,6 +19,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import {
   err,
   mapPgErrorPair,
@@ -85,8 +86,10 @@ interface MbrListRow {
   metadata: Json;
 }
 
-interface MbrListWithUsersRow
-  extends Omit<MbrListRow, "container_type" | "updated_at" | "metadata"> {
+interface MbrListWithUsersRow extends Omit<
+  MbrListRow,
+  "container_type" | "updated_at" | "metadata"
+> {
   user_email: string | null;
   user_display_name: string | null;
   user_avatar_url: string | null;
@@ -174,10 +177,12 @@ export const membershipsService = {
   ): Promise<ScopesRpcResult<{ members: Membership[] }>> {
     try {
       requireUserId();
-      const { data, error } = await supabase.rpc("mbr_list", {
-        p_container_type: containerType,
-        p_container_id: containerId,
-      });
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase.rpc("mbr_list", {
+          p_container_type: containerType,
+          p_container_id: containerId,
+        }),
+      );
       if (error) return err(...mapPgErrorPair(error));
       const rows = (Array.isArray(data) ? data : []) as MbrListRow[];
       return ok({ members: rows.map(toMembership) });
@@ -200,10 +205,12 @@ export const membershipsService = {
   ): Promise<ScopesRpcResult<{ members: MembershipWithUser[] }>> {
     try {
       requireUserId();
-      const { data, error } = await supabase.rpc("mbr_list_with_users", {
-        p_container_type: containerType,
-        p_container_id: containerId,
-      });
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase.rpc("mbr_list_with_users", {
+          p_container_type: containerType,
+          p_container_id: containerId,
+        }),
+      );
       if (error) return err(...mapPgErrorPair(error));
       const rows = (Array.isArray(data) ? data : []) as MbrListWithUsersRow[];
       return ok({
@@ -228,9 +235,11 @@ export const membershipsService = {
   ): Promise<ScopesRpcResult<{ memberships: UserMembership[] }>> {
     try {
       requireUserId();
-      const { data, error } = await supabase.rpc("mbr_for_user", {
-        p_container_type: containerType,
-      });
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase.rpc("mbr_for_user", {
+          p_container_type: containerType,
+        }),
+      );
       if (error) return err(...mapPgErrorPair(error));
       const rows = (Array.isArray(data) ? data : []) as MbrForUserRow[];
       return ok({ memberships: rows.map(toUserMembership) });
@@ -255,10 +264,12 @@ export const membershipsService = {
   ): Promise<ScopesRpcResult<{ members: Membership[] }>> {
     try {
       requireUserId();
-      const { data, error } = await supabase.rpc("mbr_list_for_user", {
-        p_user_id: userId,
-        ...(containerType ? { p_container_type: containerType } : {}),
-      });
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase.rpc("mbr_list_for_user", {
+          p_user_id: userId,
+          ...(containerType ? { p_container_type: containerType } : {}),
+        }),
+      );
       if (error) return err(...mapPgErrorPair(error));
       const rows = (Array.isArray(data) ? data : []) as MbrListRow[];
       return ok({ members: rows.map(toMembership) });
@@ -284,10 +295,12 @@ export const membershipsService = {
       requireUserId();
       const ids = Array.from(new Set(containerIds));
       if (ids.length === 0) return ok({ counts: [] });
-      const { data, error } = await supabase.rpc("mbr_count", {
-        p_container_type: containerType,
-        p_container_ids: ids,
-      });
+      const { data, error } = await runWithSessionRetry(() =>
+        supabase.rpc("mbr_count", {
+          p_container_type: containerType,
+          p_container_ids: ids,
+        }),
+      );
       if (error) return err(...mapPgErrorPair(error));
       const rows = (Array.isArray(data) ? data : []) as MbrCountRow[];
       return ok({
