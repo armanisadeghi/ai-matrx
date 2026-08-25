@@ -229,6 +229,20 @@ async function runSeoDiscoveryStream<T>({
         const kind = typeof data.kind === "string" ? data.kind : "";
         const stage = stages[kind];
         if (stage) onStage?.(stage);
+        // The two terminal kinds that carry no result. Without these the run
+        // ends with no final event and the caller reports the useless "returned
+        // no result" instead of what actually happened.
+        if (kind === "seo.command_failed") {
+          const error = isJsonObject(data.error) ? data.error : null;
+          streamError =
+            (typeof error?.message === "string" && error.message) || fallbackError;
+          return;
+        }
+        if (kind === "seo.run_in_progress") {
+          streamError =
+            "This search is already running — give it a moment, then refresh to see the results.";
+          return;
+        }
         if (kind === finalKind) {
           // run_streamed_command emits the persisted result document; a replayed
           // (already-completed) run carries the same shape.
