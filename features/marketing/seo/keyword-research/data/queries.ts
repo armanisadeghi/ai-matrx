@@ -234,24 +234,28 @@ export async function getSiteIdsByKeywordPhrase(
 }
 
 /**
- * Latest durable relationship-research artifact for this org + keyword.
- * Reads the canonical internal `content_ir.kind_instance`, not a paid compute
- * endpoint or creator-private command ledger, so every authorized org member
- * sees the same already-saved result.
+ * Latest durable relationship-research artifact for this SITE + keyword
+ * (MSR-26). Reads the canonical internal `content_ir.kind_instance`, not a
+ * paid compute endpoint or creator-private command ledger, so every
+ * authorized site editor sees the same already-saved result.
  */
 export async function getLatestSavedKeywordResearch(
-  organizationId: string,
+  siteId: string,
   phrase: string,
   signal?: AbortSignal,
 ): Promise<SavedKeywordResearch | null> {
-  const db = await contentIrDb();
+  const [db, instanceIds] = await Promise.all([
+    contentIrDb(),
+    savedResearchInstanceIdsForSite(siteId),
+  ]);
+  if (instanceIds.length === 0) return null;
   const definitionId = await keywordResearchDefinitionId(db);
   if (!definitionId) return null;
 
   const exact = await db
     .from("kind_instance")
     .select("id, created_at, title, data")
-    .eq("organization_id", organizationId)
+    .in("id", instanceIds)
     .eq("kind_definition_id", definitionId)
     .eq("data->>primary_keyword", phrase.trim())
     .is("deleted_at", null)
@@ -275,7 +279,7 @@ export async function getLatestSavedKeywordResearch(
   const response = await db
     .from("kind_instance")
     .select("id, created_at, title, data")
-    .eq("organization_id", organizationId)
+    .in("id", instanceIds)
     .eq("kind_definition_id", definitionId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -398,7 +402,8 @@ function chunk<T>(items: T[], size: number): T[][] {
  * (never one per row) across the visible keyword set, answering "does this
  * tab have real data" per keyword:
  *   - Pipeline: `content_ir.kind_instance` (kind `keyword_relationship_research`)
- *     whose `data->>primary_keyword` matches the phrase.
+ *     bound to this SITE (MSR-26 — `platform.associations`, not
+ *     `organization_id`) whose `data->>primary_keyword` matches the phrase.
  *   - Keywords (relationships): `seo.keyword_edge`, either side.
  *   - Site performance: `seo.site_keyword_value`, any site (a keyword is
  *     tracked there before it has anything to show on the Site tab; the
@@ -413,7 +418,7 @@ function chunk<T>(items: T[], size: number): T[][] {
  */
 export async function getKeywordDossierCompleteness(
   rows: { id: string; phrase: string }[],
-  organizationId: string | null,
+  siteId: string | null,
   signal?: AbortSignal,
 ): Promise<Map<string, KeywordDossierCompleteness>> {
   const result = new Map<string, KeywordDossierCompleteness>();
@@ -485,21 +490,26 @@ export async function getKeywordDossierCompleteness(
   ]);
 
   const pipelinePhrases = new Set<string>();
-  if (organizationId) {
-    const contentDb = await contentIrDb();
-    const definitionId = await keywordResearchDefinitionId(contentDb);
+  if (siteId) {
+    const [contentDb, instanceIds] = await Promise.all([
+      contentIrDb(),
+      savedResearchInstanceIdsForSite(siteId),
+    ]);
+    const definitionId = instanceIds.length
+      ? await keywordResearchDefinitionId(contentDb)
+      : null;
     if (definitionId) {
       const wanted = new Set(
         rows.map((row) => row.phrase.trim()).filter(Boolean),
       );
-      // One bounded read of the org's saved primary keywords — filtering by
+      // One bounded read of the site's saved primary keywords — filtering by
       // membership client-side avoids PostgREST's `->>` operator on `.in()`,
       // which the generated Supabase types cannot express without exploding
       // into an unresolvable generic instantiation.
       const response = await contentDb
         .from("kind_instance")
         .select("data")
-        .eq("organization_id", organizationId)
+        .in("id", instanceIds)
         .eq("kind_definition_id", definitionId)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
