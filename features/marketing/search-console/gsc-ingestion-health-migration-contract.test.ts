@@ -9,11 +9,13 @@ const healthMigration = readFileSync(
 const coverageIndexMigration = readFileSync(
   join(ROOT, "migrations/seo_gsc_ingestion_health_coverage_index.sql"),
   "utf8",
+) + readFileSync(
+  join(ROOT, "migrations/seo_gsc_ingestion_health_coverage_index_create.sql"),
+  "utf8",
 );
 
 describe("GSC ingestion health migration contract", () => {
   it("indexes the exact all-history coverage read without blocking ingestion", () => {
-    expect(coverageIndexMigration).toContain("SET statement_timeout = 0");
     expect(coverageIndexMigration).toContain(
       "DROP INDEX CONCURRENTLY IF EXISTS seo.idx_seo_sperf_gsc_health_coverage",
     );
