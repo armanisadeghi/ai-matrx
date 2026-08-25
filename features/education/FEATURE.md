@@ -16,11 +16,19 @@
 
 ## Purpose
 
-The AI study platform surface. `/education` is the desktop-first, mobile-responsive marketing and discovery landing; `/education/overview` is the compact signed-in navigation hub; `/education/library` is the canonical scoped list of the learner's persisted study artifacts.
+The AI study platform surface. `/education` is the desktop-first, mobile-responsive marketing and discovery landing **for guests only** — a signed-in learner is redirected server-side to `/education/overview`, THE Education home (`features/education/home/`), exactly as `/agents` bounces to `/agents/all`. `/education/library` is the canonical scoped list of the learner's persisted study artifacts.
 
 ## Why `(core)`, not `(public)` — load-bearing
 
 The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** auth-gate: `(core)/layout.tsx` builds a guest user and `utils/supabase/middleware.ts` lists only `/administration`, `/api/admin`, `/dashboard`, `/scraper` as `requiresAuth`. So **every `/education/*` page is publicly crawlable** AND inherits the app shell + the `AuthedWorkspaceCTA` sign-up banner + authed continuity. Trade-off: the `(core)` layout reads `headers()`, forcing **dynamic rendering** (no static/ISR). That is fine for SEO (crawlers get full server HTML). For high-traffic content, opt into caching with **`'use cache'` + `cacheTag()`** — never relocate to `(public)` (you'd lose the shell + CTA).
+
+## The home (`/education/overview`) — THE COMPOSITION RULE
+
+🚨 **The home is ONE ordered list of blocks, never a per-maturity layout.** Each entry in `BLOCKS` (`home/EducationHome.tsx`) declares `signal(snapshot)` and returns `null` to render nothing, so what a day-0 learner sees versus a day-300 learner is an *emergent* property of what they own — there is no `if (isNewUser)` anywhere in the tree, and adding a block is a registry entry, not a new page variant. Two rules keep it feeling designed rather than accumulated: (1) **whatever they have is the hero** — one kit and no history means the page *is* that kit; a plan with work due means Study Today leads; nothing at all means the ingest is the whole page; (2) **exactly ONE nudge, and it is about their own material** (`home/nudges.ts`) — a kit with no quiz gets a chip on that kit. A grid of features the learner is not using reads as pressure, not invitation, and is banned here.
+
+**One snapshot feeds every block** (`home/snapshot.ts` → `loadEducationSnapshot()`): library page + facets, kits, plan, cross-mode mastery, goals, streak, gathered in one parallel pass. Per-block fetching is what the ranking cannot survive — the order would be computed before the data it ranks on arrived, and the page would reflow as each block discovered whether it had anything to say. Every lane is individually error-swallowed: one dead read costs its block, never the page.
+
+🚨 **Before adding anything keyed on `item_mastery.item_type`, verify the value exists** (`select distinct item_type from education.item_mastery;`). The real values are `fc_card`, `assessment_item`, `spoken_prompt`, `handwritten_work`, and the pre-rename `flashcard`. Both `modeReviewHref` and `ITEM_TYPE_LABELS` shipped switching on `quiz_question` / `practice_test_item`, which the spine has **never** written — so every due quiz item surfaced with no link at all (THE DOOR LAW) while both live branches were dead code. `canonicalItemType` (`study/dashboard/nextActions.ts`) folds `flashcard` onto `fc_card`; fold aliases at the GROUPING key, never only at the label, or the words merge while the counts stay split.
 
 ## Two layers, one rule each
 
@@ -31,7 +39,7 @@ The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** 
 
 ## Entry points
 
-- **Routes** (`app/(core)/education/`): `/` (marketing landing) · `overview` (signed-in navigation) · `library` (scoped artifact list) · `library/community` (public deck discovery) · `subjects` · `levels` · `exam-prep` · `study-aids` · `features` (each `index` + `[slug]` detail) · `learn` + `learn/[...slug]` (content engine) · `subjects/quick-math` (relocated stock lessons) · live `<tool>` routes · `admin`.
+- **Routes** (`app/(core)/education/`): `/` (marketing landing, guests only — authed redirect to the home) · `overview` (**THE home**: the learner's workspace) · `library` (scoped artifact list) · `library/community` (public deck discovery) · `subjects` · `levels` · `exam-prep` · `study-aids` · `features` (each `index` + `[slug]` detail) · `learn` + `learn/[...slug]` (content engine) · `subjects/quick-math` (relocated stock lessons) · live `<tool>` routes · `admin`.
 - **Renderers** (`features/education/components/`): `landing/EducationHub`, `AxisIndex`, `AxisDetail`, `LearnArticle`, `EduComingSoon`/`EduToolComingSoon`, `sections/*` (`EduHero`, `SectionRenderer`, `StatusPill`).
 - **Data** (`features/education/data/`): `subjects` · `levels` · `exam-prep` · `study-aids` · `features` · `tools`, indexed by `registry.ts`. `constants.ts` holds the axis config; `route-helpers.ts` builds per-route metadata (+ `axisStaticParams` for ISR). **`/learn` content is NOT a registry — it's DB-backed** (`education.learn_doc`, read/authored via `features/education/publishing/` — its [FEATURE.md](./publishing/FEATURE.md)).
 - **Admin map:** `/education/admin` ([page](<../../app/(core)/education/admin/page.tsx>)).
