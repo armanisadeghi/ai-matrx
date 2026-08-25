@@ -143,6 +143,10 @@ injection of triggers/runs).
    drives the matrx-ai bridge in `aidream/services/scheduling/
 agent_runner_adapter.py` and writes results back with `claim_token`
    gating.
+8. **Run organization provenance** — every executor copies the persisted
+   `sch_task.organization_id` into its `sch_run` insert. A missing or malformed
+   task organization refuses before the write; executors never resolve a
+   personal, active, current, or default organization at claim time.
 
 ## Invariants
 
@@ -175,6 +179,10 @@ agent_runner_adapter.py` and writes results back with `claim_token`
      immediately, changes no results and is reversible; and the duplicates
      lookup fails SILENTLY (an advisory layer must never turn a working
      schedule list into an error page).
+10. **A directly claimed run inherits nothing in Postgres.** Direct claimers
+    receive the full persisted task identity and explicitly insert its
+    `organization_id`. Manual-run RPC and trigger remediation remains tracked
+    separately in the emergency work order.
 
 ## Related features
 
@@ -190,7 +198,7 @@ agent_runner_adapter.py` and writes results back with `claim_token`
 | Layer   | Count                                           | Location                                  |
 | ------- | ----------------------------------------------- | ----------------------------------------- |
 | Python  | 25 (cron + edge cases + DST + malformed inputs) | `aidream/packages/matrx-scheduler/tests/` |
-| FE Jest | triggerHumanize + validation                    | `features/scheduling/utils/__tests__/`    |
+| FE Jest | triggerHumanize + validation + run org provenance | `features/scheduling/utils/__tests__/`, `lib/scheduler-client/claim.test.ts` |
 
 Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 `uv run pytest packages/matrx-scheduler/tests`.
@@ -205,6 +213,12 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
   errors yet.
 
 ## Change log
+
+- **2026-08-24** — Direct run claimers in matrx-frontend, matrx-extend, and
+  `matrx-scheduler` now copy the persisted task's exact organization into every
+  `sch_run` insert. The frontend personal-organization resolver was deleted;
+  malformed task identity refuses before the query. Focused TypeScript tests
+  and all 141 Python scheduler tests cover exact stamping and pre-I/O refusal.
 
 - **2026-08-24** — Claude: `/schedules/new` now consumes the `agentId`/`prompt` query params AI Work's composer has always sent (`features/ai-work/compose/components/AiWorkComposer.tsx`'s `scheduleHref`) — previously dropped on the floor, a documented-but-false prefill claim. The page reads them with `useSearchParams` and passes `initialAgentId`/`initialPrompt` into `ScheduleForm`, which seed `FormState.agentId`/`prompt` in `makeDefault` for create mode only (edit mode always uses the saved task). Also fixed `AgentListDropdown`'s label on this form: it previously hardcoded `"Select the agent"` regardless of state, so a prefilled (or already-chosen) agent was invisible; it now passes `activeAgentId={form.agentId}` and only overrides the label when nothing is selected, so the dropdown's own pinned-agent name shows once one is set. Honest fallback: an unrecognized `agentId` leaves the picker empty and the form behaves exactly as it does with no params.
 - **2026-08-20** — Linked the production reliability work order for approved cadence governance,
@@ -369,4 +383,3 @@ each row a door to `/schedules/<id>`. The scanner status and these alarms settle
 independently — a green scanner says nothing about whether a schedule ran — and
 if the alarm read itself fails the page says so ("treat this as unknown, not
 healthy") rather than implying all-clear.
-
