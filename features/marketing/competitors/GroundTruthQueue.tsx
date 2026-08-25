@@ -25,15 +25,28 @@
  *   - **The why box is free text and it is the point.** Three saved axes teach
  *     a threshold; one sentence of a real expert's reasoning teaches the system
  *     how that expert thinks.
+ *
+ * The list itself is the canonical `MatrxDataTable` (every column sorts and
+ * filters). "Right" stays a one-click row action, with the free-text "why"
+ * moved into a popover so the row stays a table row. "Wrong" opens the
+ * canonical WindowPanel onto the full `CompetitorClassificationEditor` — never
+ * a side drawer.
  */
 
 import { useMemo, useState } from "react";
-import { Check, ExternalLink, Loader2, X } from "lucide-react";
+import { ArrowUpRight, Check, Loader2, X } from "lucide-react";
 
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 
@@ -97,7 +110,10 @@ function headlineReason(row: CompetitorRow): string {
   );
 }
 
-function RulingRow({
+/** The one-click "Right" action, with the free-text "why" tucked into a
+ *  popover so it stays available without needing an always-visible textarea
+ *  in every row. */
+function AgreeAction({
   row,
   onSaved,
 }: {
@@ -106,9 +122,7 @@ function RulingRow({
 }) {
   const [why, setWhy] = useState("");
   const [busy, setBusy] = useState(false);
-  const [correcting, setCorrecting] = useState(false);
-  const confidence = confidenceOf(row);
-  const reason = headlineReason(row);
+  const [open, setOpen] = useState(false);
 
   const agree = async () => {
     setBusy(true);
@@ -133,7 +147,10 @@ function RulingRow({
           labelOf: derivedCompetitorLabel,
         }),
       );
+      setOpen(false);
+      setWhy("");
       await onSaved();
+      toast.success("Ruling saved");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Could not save your ruling",
@@ -143,100 +160,52 @@ function RulingRow({
     }
   };
 
-  if (correcting) {
-    return (
-      <div className="rounded-lg border border-primary/30 p-3">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <span className="text-sm font-medium">{row.display_domain}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setCorrecting(false)}
-          >
-            Cancel
-          </Button>
-        </div>
-        <CompetitorClassificationEditor
-          row={row}
-          onSaved={onSaved}
-          source={SOURCE}
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-lg border p-3">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <a
-              href={`https://${row.display_domain}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
-            >
-              {row.display_name || row.display_domain}
-              <ExternalLink className="size-3" />
-            </a>
-            <Badge>{derivedCompetitorLabel(row)}</Badge>
-            {confidence ? (
-              <span className="text-xs text-muted-foreground">
-                {confidence}% sure
-              </span>
-            ) : null}
-            {row.use_for_link_gap ? (
-              <Badge variant="secondary">Would chase their links</Badge>
-            ) : null}
-          </div>
-          <p className="text-xs text-muted-foreground">{row.display_domain}</p>
-          {reason ? (
-            <p className="max-w-3xl text-sm leading-6">{reason}</p>
-          ) : null}
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            size="sm"
-            className="gap-1.5"
-            disabled={busy}
-            onClick={() => void agree()}
-          >
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          size="sm"
+          className="gap-1.5"
+          disabled={busy}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {busy ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Check className="size-3.5" />
+          )}
+          Right
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-80 space-y-2"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <Label
+          htmlFor={`gt-why-${row.id}`}
+          className="text-xs font-normal text-muted-foreground"
+        >
+          Optional, and the most valuable thing here: why?
+        </Label>
+        <Textarea
+          id={`gt-why-${row.id}`}
+          rows={2}
+          value={why}
+          onChange={(event) => setWhy(event.target.value)}
+          placeholder="Say it however you would say it out loud."
+        />
+        <div className="flex justify-end">
+          <Button size="sm" disabled={busy} onClick={() => void agree()} className="gap-1.5">
             {busy ? (
               <Loader2 className="size-3.5 animate-spin" />
             ) : (
               <Check className="size-3.5" />
             )}
-            Right
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5"
-            disabled={busy}
-            onClick={() => setCorrecting(true)}
-          >
-            <X className="size-3.5" />
-            Wrong
+            Confirm right
           </Button>
         </div>
-      </div>
-      <div className="mt-2">
-        <Label
-          htmlFor={`gt-why-${row.id}`}
-          className="text-xs font-normal text-muted-foreground"
-        >
-          Optional, and the most valuable thing on this page: why?
-        </Label>
-        <Textarea
-          id={`gt-why-${row.id}`}
-          rows={1}
-          value={why}
-          onChange={(event) => setWhy(event.target.value)}
-          className="mt-1 min-h-9"
-          placeholder="Say it however you would say it out loud."
-        />
-      </div>
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -256,6 +225,86 @@ export function GroundTruthQueue({
   );
   const ruled = competitors.length - pending.length;
 
+  const columns = useMemo<MatrxColumnDef<CompetitorRow>[]>(
+    () => [
+      {
+        accessorKey: "display_domain",
+        header: "Competitor",
+        filter: "text",
+        cell: (row) => (
+          <a
+            href={`https://${row.display_domain}`}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(event) => event.stopPropagation()}
+            className="inline-flex max-w-64 items-center gap-1 truncate font-medium text-primary hover:underline"
+          >
+            <span className="truncate">
+              {row.display_name || row.display_domain}
+            </span>
+            <ArrowUpRight className="size-3 shrink-0" />
+          </a>
+        ),
+      },
+      {
+        accessorKey: "entity_role",
+        header: "Proposed classification",
+        filter: "select",
+        width: 190,
+        cell: (row) => (
+          <Badge
+            className="max-w-full truncate whitespace-nowrap"
+            title={derivedCompetitorLabel(row)}
+          >
+            {derivedCompetitorLabel(row)}
+          </Badge>
+        ),
+      },
+      {
+        id: "confidence",
+        header: "Confidence",
+        filter: "number",
+        align: "right",
+        accessorFn: (row) => confidenceOf(row),
+        cell: (row) => {
+          const confidence = confidenceOf(row);
+          return confidence ? (
+            <span className="tabular-nums">{confidence}%</span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          );
+        },
+      },
+      {
+        id: "reason",
+        header: "Why the machine thinks this",
+        filter: "text",
+        width: 420,
+        accessorFn: (row) => headlineReason(row),
+        cell: (row) => {
+          const reason = headlineReason(row);
+          return reason ? (
+            <span className="line-clamp-2 leading-5">{reason}</span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          );
+        },
+      },
+      {
+        accessorKey: "use_for_link_gap",
+        header: "Link-gap seed",
+        filter: "boolean",
+        cell: (row) =>
+          row.use_for_link_gap ? (
+            <Badge variant="secondary">Would chase their links</Badge>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+    ],
+    [],
+  );
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -266,17 +315,46 @@ export function GroundTruthQueue({
           {pending.length} to go — every answer sharpens every run after it.
         </p>
       </CardHeader>
-      <CardContent className="space-y-2">
-        {pending.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nothing waiting. Find competitors, or add one you already know, and
-            they will queue up here.
-          </p>
-        ) : (
-          pending.map((row) => (
-            <RulingRow key={row.id} row={row} onSaved={onSaved} />
-          ))
-        )}
+      <CardContent>
+        <MatrxDataTable
+          urlState={{ id: "competitor-ground-truth" }}
+          data={pending}
+          columns={columns}
+          getRowId={(row) => row.id}
+          // MSR-19/20: "Wrong" opens the canonical WindowPanel onto the full
+          // axis editor — never a side drawer. `onOpen` is required or the
+          // opener falls through to `onRowOpen` instead of opening the window
+          // (the same bug already fixed on the search-console insight tables,
+          // features/marketing/search-console/components/insights/InsightsTab.tsx).
+          detail={{ enabled: false }}
+          window={{
+            title: (row) => row.display_name || row.display_domain,
+            renderView: (row) => (
+              <CompetitorClassificationEditor row={row} onSaved={onSaved} source={SOURCE} />
+            ),
+            enabled: true,
+            onOpen: () => {},
+          }}
+          rowActions={(row, controls) => (
+            <div className="flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
+              <AgreeAction row={row} onSaved={onSaved} />
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => controls.openWindow()}
+              >
+                <X className="size-3.5" />
+                Wrong
+              </Button>
+            </div>
+          )}
+          emptyState={{
+            title: "Nothing waiting",
+            description:
+              "Find competitors, or add one you already know, and they will queue up here.",
+          }}
+        />
       </CardContent>
     </Card>
   );
