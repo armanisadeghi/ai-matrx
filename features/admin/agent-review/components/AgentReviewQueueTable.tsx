@@ -112,6 +112,8 @@ export default function AgentReviewQueueTable() {
             size="sm"
             variant="outline"
             className="h-8 gap-1.5"
+            title="Open the review and launch its target page"
+            aria-label={`Open review and launch target page: ${row.title}`}
             onClick={(event) => {
               event.stopPropagation();
               const target = reviewTargetPageDisplay(row.url);
