@@ -38,7 +38,6 @@ import {
   Images,
   Loader2,
   Ellipsis,
-  Sparkles,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MergeCardsDialog } from "./MergeCardsDialog";
@@ -285,7 +284,7 @@ function CardPeek({
               title={`${layerCount} detail layer${layerCount === 1 ? "" : "s"} — read them under "More on this card" while studying`}
               className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-[10px] font-medium text-primary"
             >
-              <Lightbulb className="h-2.5 w-2.5" />
+              <Layers className="h-2.5 w-2.5" />
               {layerCount}
             </span>
           )}
@@ -316,7 +315,7 @@ function CardPeek({
                 onEnhance();
               }}
             >
-              <Sparkles className="h-3 w-3" />
+              <Lightbulb className="h-3 w-3" />
             </button>
           )}
         </div>
@@ -899,7 +898,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                     {bulkRun.phase === "running" ? (
                       <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                     ) : (
-                      <Sparkles className="mr-1.5 h-4 w-4" />
+                      <Lightbulb className="mr-1.5 h-4 w-4" />
                     )}
                     Enrich all cards
                   </Button>
@@ -1339,7 +1338,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                             bulkRun.phase === "running"
                           }
                         >
-                          <Sparkles className="mr-2 h-4 w-4" /> Enrich all cards
+                          <Lightbulb className="mr-2 h-4 w-4" /> Enrich all cards
                         </Button>
                       )}
                       {canEdit && (

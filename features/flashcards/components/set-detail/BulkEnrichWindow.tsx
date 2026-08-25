@@ -20,7 +20,7 @@
  * and its callbacks live in the page.
  */
 
-import { AlertTriangle, Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -71,7 +71,7 @@ export function BulkEnrichWindow({
           {live ? (
             <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
           ) : (
-            <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
           )}
           <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
             {live

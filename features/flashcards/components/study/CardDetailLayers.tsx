@@ -30,7 +30,7 @@
 // and study surfaces earn their space.
 
 import { useState } from "react";
-import { ChevronDown, Layers, Loader2, Sparkles } from "lucide-react";
+import { ChevronDown, Layers, Lightbulb, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
@@ -168,7 +168,7 @@ export function CardDetailLayers({
             {busy || enrichGuard.isChecking ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Sparkles className="h-3.5 w-3.5" />
+              <Lightbulb className="h-3.5 w-3.5" />
             )}
             {count === 0 ? "Explain more" : "Add more"}
           </Button>
