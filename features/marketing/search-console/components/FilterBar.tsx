@@ -24,6 +24,7 @@
  */
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, X } from "lucide-react";
 import {
@@ -603,12 +604,20 @@ export function FilterBar({
                   picker — it asks for the score it starts at, then joins your
                   scale for good.{" "}
                   {siteId ? (
-                    <a
+                    // P25 — NEVER LOSE THE VIEW. This sits inside the filter
+                    // popover, one stray click away from the control someone is
+                    // using; as a bare <a> it did a full document navigation and
+                    // threw away the filtered, sorted table they had built (found
+                    // by the 2026-08-25 surface test). It opens in its own tab so
+                    // the door stays open and the view survives.
+                    <Link
                       className="underline underline-offset-2 hover:text-foreground"
                       href={`${marketingRoutes.site(null, siteId, "/value")}?edit=levels`}
+                      target="_blank"
+                      rel="noreferrer"
                     >
                       Rename or reorder your levels
-                    </a>
+                    </Link>
                   ) : null}
                 </p>
               </div>
