@@ -18,7 +18,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type { CellEditsMap, MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +40,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createMarketingCompetitorsScope } from "@/features/surfaces/manifests/marketing-competitors.manifest";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { toast } from "@/lib/toast";
+import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 import { supabase } from "@/utils/supabase/client";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
@@ -64,6 +65,7 @@ import {
 import { useCompetitorAutopsy } from "./useCompetitorAutopsy";
 import {
   CompetitorClassificationEditor,
+  ENTITY_ROLE_EDIT_OPTIONS,
   ManualCompetitorAdd,
   derivedCompetitorLabel,
 } from "./CompetitorIdentification";
@@ -105,6 +107,32 @@ function scoreTone(score: number | null): string {
   return "text-muted-foreground";
 }
 
+const trafficFormatter = new Intl.NumberFormat(undefined, {
+  maximumFractionDigits: 0,
+});
+
+/** "48,203" instead of the raw provider float — MSR-22. */
+function formatTraffic(value: number | null): string {
+  if (value === null || Number.isNaN(value)) return "—";
+  return trafficFormatter.format(value);
+}
+
+/** "12.4" instead of six decimal places off the provider — MSR-22. */
+function formatPosition(value: number | null): string {
+  if (value === null || Number.isNaN(value)) return "—";
+  return value.toFixed(1);
+}
+
+/** Relative-time cell with the exact timestamp on hover — MSR-23. */
+function dateCell(value: string | null) {
+  if (!value) return <span className="text-muted-foreground">—</span>;
+  return (
+    <span title={formatAbsoluteDate(value)} className="whitespace-nowrap">
+      {formatRelativeTime(value)}
+    </span>
+  );
+}
+
 function externalLink(url: string | null, label: string) {
   if (!url) return <span className="text-muted-foreground">—</span>;
   return (
@@ -123,7 +151,7 @@ function externalLink(url: string | null, label: string) {
 
 function OpportunityDetail({ row }: { row: CompetitorOpportunityRow }) {
   return (
-    <div className="space-y-5 p-1 text-sm">
+    <div className="space-y-5 p-4 text-sm">
       <section>
         <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Verdict
@@ -350,6 +378,40 @@ export default function CompetitorAutopsyWorkspace() {
     }
   };
 
+  /** Inline dropdown edit for the Classification column (MSR-18). Writes
+   *  through the same `saveCompetitorClassification` path as the full editor
+   *  and the ground-truth ruling, with `confirm=false` — a dropdown pick is
+   *  never itself a human ruling; only an explicit Confirm/Right action
+   *  stamps `classification_status='confirmed'`. */
+  const saveClassificationEdits = async (
+    edits: CellEditsMap,
+    rows: CompetitorRow[],
+  ) => {
+    const rowsById = new Map(rows.map((row) => [row.id, row]));
+    for (const [rowId, fields] of Object.entries(edits)) {
+      if (!Object.hasOwn(fields, "entity_role")) continue;
+      const row = rowsById.get(rowId);
+      if (!row) throw new Error("That competitor is no longer in this workspace.");
+      const nextRole = fields.entity_role;
+      if (typeof nextRole !== "string" || !nextRole)
+        throw new Error("Choose a classification and try again.");
+      await saveCompetitorClassification(
+        rowId,
+        {
+          business_overlap: row.business_overlap,
+          market_overlap: row.market_overlap,
+          entity_role: nextRole as CompetitorRow["entity_role"],
+          peer_scale: row.peer_scale,
+          posture: row.posture,
+          use_for_link_gap: row.use_for_link_gap,
+          custom_labels: row.custom_labels,
+        },
+        false,
+      );
+    }
+    await refresh();
+  };
+
   const mutateOpportunity = async (id: string, status: OpportunityStatus) => {
     try {
       await applyOpportunityStatus(id, status);
@@ -476,11 +538,27 @@ export default function CompetitorAutopsyWorkspace() {
       },
       { accessorKey: "tracking_status", header: "Tracking", filter: "select" },
       {
-        id: "classification",
+        // Bound to the raw `entity_role` enum (not the derived label string)
+        // so the inline `editable: "select"` dropdown's committed value lines
+        // up with `editOptions` — MSR-18. The cell still shows the full
+        // human label via `derivedCompetitorLabel`, which also folds in
+        // business/market overlap for the non-role-driven cases.
+        accessorKey: "entity_role",
         header: "Classification",
-        filter: "text",
-        accessorFn: (row) => derivedCompetitorLabel(row),
-        cell: (row) => <Badge variant={row.classification_status === "confirmed" ? "default" : "secondary"}>{derivedCompetitorLabel(row)}</Badge>,
+        filter: "select",
+        filterOptions: ENTITY_ROLE_EDIT_OPTIONS,
+        editable: "select",
+        editOptions: ENTITY_ROLE_EDIT_OPTIONS,
+        width: 190,
+        cell: (row) => (
+          <Badge
+            variant={row.classification_status === "confirmed" ? "default" : "secondary"}
+            className="max-w-full truncate whitespace-nowrap"
+            title={derivedCompetitorLabel(row)}
+          >
+            {derivedCompetitorLabel(row)}
+          </Badge>
+        ),
       },
       { accessorKey: "classification_status", header: "Decision", filter: "select" },
       { accessorKey: "threat_level", header: "Threat", filter: "select" },
@@ -514,18 +592,25 @@ export default function CompetitorAutopsyWorkspace() {
         header: "Est. traffic",
         filter: "number",
         align: "right",
+        cell: (row) => (
+          <span className="tabular-nums">{formatTraffic(row.estimated_traffic)}</span>
+        ),
       },
       {
         accessorKey: "average_position",
         header: "Avg. position",
         filter: "number",
         align: "right",
+        cell: (row) => (
+          <span className="tabular-nums">{formatPosition(row.average_position)}</span>
+        ),
       },
       { accessorKey: "discovery_source", header: "Source", filter: "select" },
       {
         accessorKey: "last_observed_at",
         header: "Last observed",
         filter: "text",
+        cell: (row) => dateCell(row.last_observed_at),
       },
     ],
     [],
@@ -607,8 +692,18 @@ export default function CompetitorAutopsyWorkspace() {
   const runColumns = useMemo<MatrxColumnDef<CompetitorRunRow>[]>(
     () => [
       { accessorKey: "status", header: "Status", filter: "select" },
-      { accessorKey: "created_at", header: "Started", filter: "text" },
-      { accessorKey: "completed_at", header: "Completed", filter: "text" },
+      {
+        accessorKey: "created_at",
+        header: "Started",
+        filter: "text",
+        cell: (row) => dateCell(row.created_at),
+      },
+      {
+        accessorKey: "completed_at",
+        header: "Completed",
+        filter: "text",
+        cell: (row) => dateCell(row.completed_at),
+      },
       {
         accessorKey: "attempt_count",
         header: "Attempts",
@@ -651,30 +746,35 @@ export default function CompetitorAutopsyWorkspace() {
       }
       getWriteHandlers={getSurfaceWriteHandlers}
     >
-      <main className="mx-auto flex w-full max-w-[1800px] flex-col gap-5 p-4 md:p-6">
+      {/* MSR-24: no width cap — this is a data-dense workspace, not a
+          document, and it should use the whole page like every other core
+          route. */}
+      <main className="flex w-full flex-col gap-5 p-4 md:p-6">
         <AssistStrip surfaceName="matrx-user/marketing-competitors" />
 
         <section className="overflow-hidden rounded-2xl border bg-gradient-to-br from-background via-background to-primary/[0.06] shadow-sm">
-          <div className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_440px] lg:p-7">
-            {/* Centered, not top-anchored: the run form on the right is taller
-              than the heading + tiles, which left a large dead void under this
-              column. */}
-            <div className="flex flex-col justify-center gap-5">
-              <div className="flex items-start gap-3">
-                <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
-                  <Swords className="size-5" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold tracking-tight">
-                    Competitor opportunity autopsy
-                  </h2>
-                  <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-                    Find the competitors that actually overlap, inspect the
-                    pages creating their advantage, and turn the evidence into a
-                    prioritized plan for the assets you already own.
-                  </p>
-                </div>
-              </div>
+          <div className="flex items-start gap-3 p-5 pb-0 lg:p-7 lg:pb-0">
+            <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
+              <Swords className="size-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">
+                Competitor opportunity autopsy
+              </h2>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+                Find the competitors that actually overlap, inspect the pages
+                creating their advantage, and turn the evidence into a
+                prioritized plan for the assets you already own.
+              </p>
+            </div>
+          </div>
+
+          {/* MSR-17: the KPI tiles and "Add a competitor you already know"
+              stack together in ONE column so they stop fighting the run form
+              for horizontal space; "Run a fresh autopsy" gets its own column
+              beside them instead of towering over a mostly-empty left side. */}
+          <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:p-7 lg:pt-5">
+            <div className="flex flex-col gap-4">
               <div className="grid gap-3 sm:grid-cols-3">
                 <Card>
                   <CardContent className="flex items-center gap-3 p-4">
@@ -718,6 +818,8 @@ export default function CompetitorAutopsyWorkspace() {
                   </CardContent>
                 </Card>
               </div>
+
+              <ManualCompetitorAdd site={selectedSite} onAdded={refresh} />
             </div>
 
             <Card className="border-primary/15 bg-background/90">
@@ -857,8 +959,6 @@ export default function CompetitorAutopsyWorkspace() {
             {run.error}
           </div>
         ) : null}
-
-        <ManualCompetitorAdd site={selectedSite} onAdded={refresh} />
 
         {/* ONE door to the ruling queue, not a wall of twelve. This used to
             render a button per proposal that scrolled to a table row; the Review
@@ -1096,14 +1196,19 @@ export default function CompetitorAutopsyWorkspace() {
               getRowId={(row) => row.id}
               isLoading={workspace.isLoading}
               isFetching={workspace.isFetching}
-              detail={{
-                title: (row) => row.title,
-                render: (row) => <OpportunityDetail row={row} />,
-              }}
+              // MSR-19/20: row click opens the canonical WindowPanel, never
+              // the side drawer. `detail: { enabled: false }` removes the
+              // drawer entirely; `onOpen` is required or the opener falls
+              // through to `onRowOpen` instead of opening the window (the
+              // same bug already fixed on the search-console insight tables,
+              // features/marketing/search-console/components/insights/InsightsTab.tsx).
+              detail={{ enabled: false }}
               window={{
                 title: (row) => row.title,
                 renderView: (row) => <OpportunityDetail row={row} />,
                 enabled: true,
+                openOnRowClick: true,
+                onOpen: () => {},
               }}
               rowActions={(row) => (
                 <div className="flex items-center gap-1">
@@ -1167,8 +1272,20 @@ export default function CompetitorAutopsyWorkspace() {
               getRowId={(row) => row.id}
               isLoading={workspace.isLoading}
               isFetching={workspace.isFetching}
-              detail={{ title: (row) => row.display_name || row.display_domain, render: (row) => <div id={`competitor-review-${row.id}`}><CompetitorClassificationEditor row={row} onSaved={refresh} /></div> }}
-              window={{ title: (row) => row.display_name || row.display_domain, renderView: (row) => <CompetitorClassificationEditor row={row} onSaved={refresh} />, enabled: true }}
+              // MSR-19/20: canonical WindowPanel on row click, no side drawer.
+              detail={{ enabled: false }}
+              window={{
+                title: (row) => row.display_name || row.display_domain,
+                renderView: (row) => (
+                  <div id={`competitor-review-${row.id}`}>
+                    <CompetitorClassificationEditor row={row} onSaved={refresh} />
+                  </div>
+                ),
+                enabled: true,
+                openOnRowClick: true,
+                onOpen: () => {},
+              }}
+              edit={{ enabled: true, onSave: saveClassificationEdits }}
               rowActions={(row) =>
                 // "tracked" is the server's vocabulary (see autopsy-controls);
                 // this row action sent "tracking" until 2026-08-12, which the
@@ -1270,8 +1387,13 @@ export default function CompetitorAutopsyWorkspace() {
               getRowId={(row) => row.id}
               isLoading={workspace.isLoading}
               isFetching={workspace.isFetching}
-              detail={{ title: (row) => `Autopsy ${row.id}` }}
-              window={{ title: (row) => `Autopsy ${row.id}`, enabled: true }}
+              detail={{ enabled: false }}
+              window={{
+                title: (row) => `Autopsy ${row.id}`,
+                enabled: true,
+                openOnRowClick: true,
+                onOpen: () => {},
+              }}
               emptyState={{
                 title: "No autopsy history",
                 description:

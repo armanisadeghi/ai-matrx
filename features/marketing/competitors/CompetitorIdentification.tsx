@@ -97,6 +97,34 @@ export const COMPETITOR_AXIS_QUESTIONS: Record<string, string> = {
   posture: "What should you do about them?",
 };
 
+// Roles that ARE the answer: what the thing is matters more than any overlap
+// it happens to have. FEATURE.md §4. Exported so the inline classification
+// dropdown (the canonical `MatrxDataTable` editable-select column) can show
+// the same human-readable labels the badge shows, instead of the raw enum.
+export const ENTITY_ROLE_LABELS: Record<string, string> = {
+  business: "Business",
+  manufacturer: "Manufacturer / brand",
+  retail_channel: "Retail channel",
+  marketplace: "Marketplace / lead broker",
+  adversary: "Opposing interest",
+  publisher: "Publisher",
+  professional_body: "Industry body",
+  community: "Community site",
+  complementary_vendor: "Complementary vendor",
+  reference: "Reference site",
+  supplier: "Supplier",
+  partner: "Partner",
+  own_brand: "Your own brand",
+  irrelevant: "Ranks by accident",
+  spam: "Spam / link farm",
+};
+
+/** `editOptions` for the canonical inline classification dropdown. */
+export const ENTITY_ROLE_EDIT_OPTIONS = ROLE.map((value) => ({
+  value,
+  label: ENTITY_ROLE_LABELS[value] ?? value.replaceAll("_", " "),
+}));
+
 export function derivedCompetitorLabel(
   row: Pick<
     CompetitorRow,
@@ -106,26 +134,8 @@ export function derivedCompetitorLabel(
     | "search_overlap_band"
   > & { peer_scale?: string | null },
 ): string {
-  // Roles that ARE the answer: what the thing is matters more than any overlap
-  // it happens to have. FEATURE.md §4.
-  const roleLabels: Record<string, string> = {
-    manufacturer: "Manufacturer / brand",
-    retail_channel: "Retail channel",
-    marketplace: "Marketplace / lead broker",
-    adversary: "Opposing interest",
-    publisher: "Publisher",
-    professional_body: "Industry body",
-    community: "Community site",
-    complementary_vendor: "Complementary vendor",
-    reference: "Reference site",
-    supplier: "Supplier",
-    partner: "Partner",
-    own_brand: "Your own brand",
-    irrelevant: "Ranks by accident",
-    spam: "Spam / link farm",
-  };
-  if (row.entity_role && roleLabels[row.entity_role])
-    return roleLabels[row.entity_role];
+  if (row.entity_role && ENTITY_ROLE_LABELS[row.entity_role] && row.entity_role !== "business")
+    return ENTITY_ROLE_LABELS[row.entity_role];
 
   // `category_leader` outranks market overlap: "the national chain you build
   // toward" is more useful than "technically in or out of my market".
@@ -401,7 +411,7 @@ export function CompetitorClassificationEditor({
     </div>
   );
   return (
-    <div className="space-y-5 p-1 text-sm">
+    <div className="space-y-5 p-4 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <Badge>{derivedCompetitorLabel(draft)}</Badge>
         <Badge variant="outline">{row.classification_status}</Badge>
