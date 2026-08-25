@@ -33,6 +33,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { withRetry } from "@/lib/net/retry";
 import { ConnectTimeoutError } from "@/lib/net/errors";
@@ -1124,9 +1125,11 @@ export const fetchAgentAccessLevel = createAsyncThunk<
   string,
   ThunkApi
 >("agentDefinition/fetchAccessLevel", async (agentId, { dispatch }) => {
-  const { data, error } = await supabase.rpc("agx_get_access_level", {
-    p_agent_id: agentId,
-  });
+  const { data, error } = await runWithSessionRetry(() =>
+    supabase.rpc("agx_get_access_level", {
+      p_agent_id: agentId,
+    }),
+  );
 
   if (error) throw pgErrorToError(error);
 
