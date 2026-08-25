@@ -20,6 +20,7 @@ import {
   type DoctorKindComponent,
   type DoctorKindDefinition,
   type ShapeDoctorInput,
+  type ShapeDoctorReport,
 } from "../registry/shape-doctor";
 
 const T0 = "2026-07-01T00:00:00Z";
@@ -529,6 +530,133 @@ describe("shape doctor — n/a classification", () => {
         (f) => f.code === "no-loading-component" && f.kind === "undeclared_renderable",
       ),
     ).toBe(true);
+  });
+
+  // The undeclared branch has THREE honest states once the runtime derives a
+  // loader from the kind's own schema (react/loading/infer-loading-slug.ts):
+  // derived => ok and silent, not derivable => the yellow (now a true claim),
+  // and no map at all => exactly the pre-inference behaviour.
+  describe("loading column — undeclared kinds and the derived loader", () => {
+    const renderable = (id: string): DoctorKindComponent => ({
+      id: `c-${id}`,
+      kindDefinitionId: id,
+      platform: "web",
+      role: "output",
+      componentKey: "generic_structured",
+      source: "db",
+      isActive: true,
+    });
+    const example = (id: string) => ({
+      id: `e-${id}`,
+      kindDefinitionId: id,
+      isCanonical: true,
+      data: goodSample,
+      updatedAt: T0,
+    });
+    /** Two undeclared renderable kinds; only `derivable` gets a derived slug. */
+    function run(inferred: ReadonlyMap<string, string> | undefined) {
+      return runShapeDoctor(
+        baseInput({
+          kinds: [
+            makeKind({ id: "kD", kind: "derivable", isActive: true }),
+            makeKind({ id: "kE", kind: "shapeless", isActive: true }),
+          ],
+          examples: [example("kD"), example("kE")],
+          components: [renderable("kD"), renderable("kE")],
+          loadingLibrarySlugs: new Set(["quiz", "list", "generic"]),
+          ...(inferred === undefined ? null : { inferredLoadingSlugs: inferred }),
+        }),
+      );
+    }
+    const DERIVED = new Map([["derivable", "list"]]);
+    const row = (report: ShapeDoctorReport, kind: string) =>
+      report.rows.find((r) => r.kind === kind)!;
+
+    it("an undeclared kind with a DERIVED loader is ok and raises no finding", () => {
+      const report = run(DERIVED);
+      expect(row(report, "derivable").assets.loading.status).toBe("ok");
+      expect(row(report, "derivable").assets.loading.detail).toBe(
+        "derived: list (no declaration)",
+      );
+      expect(
+        report.findings.some(
+          (f) => f.code === "no-loading-component" && f.kind === "derivable",
+        ),
+      ).toBe(false);
+    });
+
+    it("an undeclared kind whose shape DERIVES NOTHING keeps the yellow, truthfully", () => {
+      const report = run(DERIVED);
+      expect(row(report, "shapeless").assets.loading.status).toBe("missing");
+      expect(row(report, "shapeless").assets.loading.detail).toContain("derives none");
+      const finding = report.findings.find(
+        (f) => f.code === "no-loading-component" && f.kind === "shapeless",
+      )!;
+      expect(finding.severity).toBe("yellow");
+      expect(finding.message).toContain("not distinctive enough to derive one");
+    });
+
+    it("a caller supplying NO inferred map keeps the exact pre-inference behaviour", () => {
+      const report = run(undefined);
+      for (const kind of ["derivable", "shapeless"]) {
+        expect(row(report, kind).assets.loading.status).toBe("missing");
+        expect(row(report, kind).assets.loading.detail).toBe(
+          "no loading_component declared — streams behind the generic skeleton",
+        );
+        const finding = report.findings.find(
+          (f) => f.code === "no-loading-component" && f.kind === kind,
+        )!;
+        expect(finding.severity).toBe("yellow");
+        // No claim about derivation — nobody ran one.
+        expect(finding.message).not.toContain("derive");
+      }
+    });
+
+    it("a DECLARED slug still wins over a derived one (declaration is precedence 1)", () => {
+      const report = runShapeDoctor(
+        baseInput({
+          kinds: [
+            makeKind({
+              id: "kD",
+              kind: "derivable",
+              isActive: true,
+              metadata: { loading_component: "quiz" },
+            }),
+          ],
+          examples: [example("kD")],
+          components: [renderable("kD")],
+          loadingLibrarySlugs: new Set(["quiz", "list", "generic"]),
+          inferredLoadingSlugs: DERIVED,
+        }),
+      );
+      expect(row(report, "derivable").assets.loading.status).toBe("ok");
+      expect(row(report, "derivable").assets.loading.detail).toContain("quiz (db metadata)");
+    });
+
+    it("a derived loader NEVER silences the unknown-declared-slug RED", () => {
+      const report = runShapeDoctor(
+        baseInput({
+          kinds: [
+            makeKind({
+              id: "kD",
+              kind: "derivable",
+              isActive: true,
+              metadata: { loading_component: "report" },
+            }),
+          ],
+          examples: [example("kD")],
+          components: [renderable("kD")],
+          loadingLibrarySlugs: new Set(["quiz", "list", "generic"]),
+          inferredLoadingSlugs: DERIVED,
+        }),
+      );
+      expect(row(report, "derivable").assets.loading.status).toBe("warn");
+      expect(
+        report.findings.some(
+          (f) => f.code === "unknown-loading-component" && f.kind === "derivable",
+        ),
+      ).toBe(true);
+    });
   });
 
   it("keeps `no-example` LOUD for a nested-only child (its schema is unproven)", () => {

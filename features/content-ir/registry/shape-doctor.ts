@@ -312,6 +312,25 @@ export interface ShapeDoctorInput {
    * `metadata.loading_component` does.
    */
   compiledLoadingSlugs?: ReadonlyMap<string, string>;
+  /**
+   * DERIVED per-kind loading slugs (kind slug → the slug the RUNTIME would
+   * infer from that kind's own schema, react/loading/infer-loading-slug.ts).
+   * The doctor stays PURE exactly like `compiledLoadingSlugs` /
+   * `loadingLibrarySlugs`: it never reads a schema to derive anything — the
+   * caller runs the real inference module and hands the answer in, so the CLI
+   * and the admin board can never derive two different answers.
+   *
+   * An undeclared kind that DERIVES a slug is not a gap: at runtime it streams
+   * behind a shape-appropriate loader (precedence: declaration → derivation →
+   * `generic`), so its cell is `ok` and it raises no finding. Only a kind whose
+   * shape derives NOTHING truly falls to the shapeless generic skeleton — that
+   * is what `no-loading-component` now means.
+   *
+   * Omit only in a caller that cannot run the inference; every undeclared
+   * renderable kind then reports the pre-inference yellow (over-reporting, not
+   * under-reporting).
+   */
+  inferredLoadingSlugs?: ReadonlyMap<string, string>;
 }
 
 // ─── Report shape ───────────────────────────────────────────────────────────
@@ -360,7 +379,7 @@ export type FindingCode =
   | "surface-token-undetectable" // an ACTIVE kind_surface token no host literal can fire
   | "unknown-loading-component" // declared loading_component slug is not in the loading library
   // yellow
-  | "no-loading-component" // renderable kind with no declared loading component (generic fallback)
+  | "no-loading-component" // renderable kind: no declared loader AND its shape derives none (generic fallback)
   | "no-example"
   | "no-canonical-example" // example exists but none is canonical / only interim sample_data
   | "no-skill"
@@ -879,9 +898,13 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
     // The loading state is a SEPARATE component, selected by slug from the
     // hardcoded loading library (react/loading/kind-loading-slugs.ts): while
     // a kind's region streams, the pending/announced stages render that
-    // loader, and a missing/unknown slug silently degrades to the generic
-    // skeleton. An UNKNOWN slug is a RED — the registry advertises a loader
-    // that does not exist and nothing at runtime ever says so.
+    // loader. An UNKNOWN slug is a RED — the registry advertises a loader that
+    // does not exist and nothing at runtime ever says so.
+    //
+    // NO declaration is no longer automatically a gap: the runtime DERIVES a
+    // slug from the kind's own schema before it gives up (precedence
+    // declaration → derivation → `generic`), and the caller hands that
+    // derivation in as `inferredLoadingSlugs`. See that field's doc.
     const declaredLoadingDb = kindLoadingComponent(kind.metadata);
     const declaredLoadingCompiled = input.compiledLoadingSlugs?.get(kind.kind) ?? null;
     const declaredLoading = declaredLoadingDb ?? declaredLoadingCompiled;
@@ -910,16 +933,34 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
     } else if (exemption) {
       loading = naCell(exemption, "loading");
     } else if (webComponents.length > 0 || codePaths.length > 0) {
-      loading = {
-        status: "missing",
-        detail: "no loading_component declared — streams behind the generic skeleton",
-      };
-      yellows.push({
-        severity: "yellow",
-        code: "no-loading-component",
-        kind: kind.kind,
-        message: `kind "${kind.kind}" renders but declares no loading_component — while it streams the user sees the generic skeleton; set metadata.loading_component to a loading-library slug`,
-      });
+      // Undeclared. The runtime does NOT drop straight to the generic
+      // skeleton any more — it DERIVES a slug from the kind's own schema
+      // (react/loading/infer-loading-slug.ts). A derived loader is a real,
+      // shape-appropriate loader, so it is `ok` with nothing to report; the
+      // yellow is reserved for the kinds whose shape derives nothing and
+      // therefore really do stream behind the shapeless skeleton.
+      const inferredLoading = input.inferredLoadingSlugs?.get(kind.kind) ?? null;
+      if (inferredLoading !== null) {
+        loading = { status: "ok", detail: `derived: ${inferredLoading} (no declaration)` };
+      } else {
+        // A caller that supplied no map could not run the inference — say the
+        // pre-inference thing rather than assert a derivation nobody attempted.
+        const derivationRan = input.inferredLoadingSlugs !== undefined;
+        loading = {
+          status: "missing",
+          detail: derivationRan
+            ? "no loading_component, and its shape derives none — streams behind the generic skeleton"
+            : "no loading_component declared — streams behind the generic skeleton",
+        };
+        yellows.push({
+          severity: "yellow",
+          code: "no-loading-component",
+          kind: kind.kind,
+          message: derivationRan
+            ? `kind "${kind.kind}" renders but declares no loading_component, and its schema is not distinctive enough to derive one — while it streams the user really does see the shapeless generic skeleton; set metadata.loading_component to a loading-library slug`
+            : `kind "${kind.kind}" renders but declares no loading_component — while it streams the user sees the generic skeleton; set metadata.loading_component to a loading-library slug`,
+        });
+      }
     } else {
       // No renderer at all — the component cell already screams; a second
       // finding here would be noise, but the gap stays visible in the cell.

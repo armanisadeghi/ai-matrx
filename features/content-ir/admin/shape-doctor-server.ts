@@ -50,6 +50,14 @@ import type {
   KindStatusBoardModel,
 } from "@/features/content-ir/admin/kind-detail-types";
 import { KIND_LOADING_SLUGS } from "@/features/content-ir/react/loading/kind-loading-slugs";
+/**
+ * The DERIVED loading slug — the same module BlockRenderer selects loaders
+ * with, so the board reports the loader the user actually sees, never a
+ * reimplementation. Pure TypeScript with type-only dependencies (no react, no
+ * module-eval side effects), so it is safe on this server-only path and has no
+ * "unavailable in this runtime" degrade path: it is bundled, not fs-read.
+ */
+import { inferLoadingSlugFromJsonSchema } from "@/features/content-ir/react/loading/infer-loading-slug";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
 import {
   artifactKindSlugsFromText,
@@ -437,6 +445,25 @@ async function fetchDbGather(): Promise<DbGather> {
   };
 }
 
+/**
+ * The slug the RUNTIME would DERIVE for each kind that declares none.
+ *
+ * Source is `emitted_json_schema`. The runtime tries the parser `KindSchema`
+ * first, but that is reconstructed from `kind_definition.data` (NULL for the
+ * python-owned majority) and check-shapes.ts does not gather it at all — and
+ * both doors of the inference normalize to the same field census. Reading the
+ * one column BOTH callers hold keeps the CLI and this board deriving the same
+ * answer; a second source would manufacture Loading-column snapshot drift.
+ */
+function inferredLoadingSlugs(kinds: DbGather["kinds"]): Map<string, string> {
+  const derived = new Map<string, string>();
+  for (const k of kinds) {
+    const slug = inferLoadingSlugFromJsonSchema(k.emittedJsonSchema);
+    if (slug !== null) derived.set(k.kind, slug);
+  }
+  return derived;
+}
+
 // ─── Live doctor run ────────────────────────────────────────────────────────
 
 export interface LiveDoctorRun {
@@ -480,6 +507,11 @@ export async function runLiveShapeDoctor(): Promise<LiveDoctorRun> {
     crosswalkNames: new Set(committedCrosswalk.rows.map((r) => r.name)),
     loadingLibrarySlugs: new Set<string>(KIND_LOADING_SLUGS),
     compiledLoadingSlugs: code.compiledLoadingSlugs,
+    // Derived loaders for the kinds that declare none. Read from
+    // `emitted_json_schema` — the one shape description every row carries, and
+    // the ONLY one check-shapes.ts can read too, so the CLI and this board
+    // never derive two different answers and fabricate Loading-column drift.
+    inferredLoadingSlugs: inferredLoadingSlugs(db.kinds),
   });
 
   return {

@@ -53,6 +53,7 @@ import {
   GENERIC_STRUCTURED_COMPONENT_KEY,
 } from "@ai-matrx/content-ir-react";
 import { KIND_LOADING_SLUGS } from "../../features/content-ir/react/loading/kind-loading-slugs";
+import { inferLoadingSlugFromJsonSchema } from "../../features/content-ir/react/loading/infer-loading-slug";
 import {
   artifactKindSlugsFromText,
   compiledKindSlugsFromText,
@@ -150,6 +151,33 @@ function compiledLoadingSlugs(): Map<string, string> {
     texts.push(readFileSync(resolve(kindsDir, name), "utf8"));
   }
   return compiledLoadingSlugsFromTexts(texts);
+}
+
+/**
+ * The slug the RUNTIME would DERIVE for each kind that declares none — the
+ * doctor's `inferredLoadingSlugs`. The derivation itself is the shipped module
+ * (react/loading/infer-loading-slug.ts), never a reimplementation: the doctor
+ * must report the loader the user actually sees.
+ *
+ * Source is `emitted_json_schema`, the shape description EVERY kind_definition
+ * row carries. The runtime tries the parser `KindSchema` first, but that is
+ * reconstructed from `kind_definition.data` — which the doctor does not gather
+ * and which is NULL for the python-owned majority — and both doors normalize
+ * to the same field census, so the emitted schema is the one source both this
+ * CLI and the admin board can read identically (a second source would make the
+ * two disagree and manufacture snapshot drift).
+ *
+ * A static import: pure TypeScript with type-only dependencies, so there is no
+ * "module unavailable" path to degrade from — a missing module is a build/run
+ * failure, which is as loud as it gets.
+ */
+function inferredLoadingSlugs(kinds: DoctorKindDefinition[]): Map<string, string> {
+  const derived = new Map<string, string>();
+  for (const k of kinds) {
+    const slug = inferLoadingSlugFromJsonSchema(k.emittedJsonSchema);
+    if (slug !== null) derived.set(k.kind, slug);
+  }
+  return derived;
 }
 
 function artifactRegistryKindSlugs(): string[] {
@@ -786,6 +814,7 @@ async function main(): Promise<number> {
     hostSurfaceTokens,
     loadingLibrarySlugs: new Set<string>(KIND_LOADING_SLUGS),
     compiledLoadingSlugs: compiledLoadingSlugs(),
+    inferredLoadingSlugs: inferredLoadingSlugs(db.kinds),
   });
 
   // Coverage inputs are load-bearing for the strict gate — a missing/corrupt
