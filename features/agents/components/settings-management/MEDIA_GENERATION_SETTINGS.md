@@ -1,5 +1,16 @@
 # Media Generation Settings — FE Reference
 
+> 🚨 **CORRECTION (2026-08-25, `/consolidate` of the `ai-models` node) — two claims below are
+> verified WRONG and were not rewritten here because this doc belongs to the agents node:**
+> (1) `ai_model.controls` **no longer exists** — that column was dropped on 2026-07-10 (`ai_034`).
+> The declared controls now come from the resolved `ai.model_config` view
+> (`ai.setting` ← `ai.api.rules` ← `ai.offering.override`). (2) "Python silently drops it" is no
+> longer the contract: per THE EQUIVALENCE LAW (Arman, 2026-08-17) the server CONVERTS to the
+> nearest equivalent and only drops when the capability genuinely does not exist — loudly, as a
+> client warning. See
+> /Users/armanisadeghi/code/common-docs/systems/agents/ai-models/STATE.md and
+> /Users/armanisadeghi/code/common-docs/systems/platform/configuration-equivalence/FEATURE.md.
+
 > Companion to `AgentSettingsCore.tsx`, `validation/rules.ts`, `validation/constraints.ts`.
 >
 > Audience: FE devs adding image- and video-generation controls to the agent settings UI.
