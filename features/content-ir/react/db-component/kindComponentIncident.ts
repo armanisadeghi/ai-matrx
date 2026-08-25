@@ -38,7 +38,16 @@ export type KindComponentIncidentType =
   /** The compiled component threw during render (error boundary caught it). */
   | "render_throw"
   /** `props_transform` failed to compile or threw. */
-  | "transform_error";
+  | "transform_error"
+  /**
+   * The kind is REGISTERED but nothing render-trusted claims it, so the reader
+   * got the generic key/value viewer instead of a purpose-built component.
+   * Not a crash — a missing component, which is the most common reason a Shape
+   * looks bad in front of a user. The aidream generic-floor alarm files the
+   * same error_type from the server; the browser is the other half, because
+   * most renders happen here and the server never sees them.
+   */
+  | "generic_floor_render";
 
 export interface KindComponentIncidentInput {
   kind: string;
