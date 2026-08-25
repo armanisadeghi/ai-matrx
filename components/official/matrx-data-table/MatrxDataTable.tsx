@@ -226,12 +226,13 @@ function MatrxDataTableCore<T>({
   zebra = true,
   className,
   tableClassName,
+  mobileCards,
   mobile = "scroll",
   onRowOpen,
 }: MatrxDataTableProps<T>) {
   // Two sticky leading cells would overlap, and a frozen checkbox identifies
   // nothing — selection and the mobile frozen identity column are exclusive.
-  const mobileScroll = mobile !== "plain" && !selection;
+  const mobileScroll = !mobileCards && mobile !== "plain" && !selection;
   const controlledQuery =
     query?.mode === "controlled" || query?.mode === "controlled-local"
       ? query
@@ -947,12 +948,60 @@ function MatrxDataTableCore<T>({
 
       {/* Table */}
       <div className="relative min-h-0 flex-1">
+        {mobileCards ? (
+          <div
+            aria-busy={isLoading || isFetching}
+            className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto rounded-md border border-border bg-card p-2 sm:hidden"
+          >
+            {isFetching && !isLoading ? (
+              <div
+                role="status"
+                className="h-0.5 shrink-0 overflow-hidden rounded-full bg-primary/15"
+              >
+                <div className="h-full w-full animate-pulse bg-primary" />
+                <span className="sr-only">Refreshing table data</span>
+              </div>
+            ) : null}
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, index) => (
+                <Skeleton
+                  key={`mobile-card-sk-${index}`}
+                  className="h-52 w-full shrink-0 rounded-lg"
+                />
+              ))
+            ) : paginated.length === 0 ? (
+              <div className="flex min-h-48 flex-1 items-center justify-center px-4 py-12 text-center">
+                <div className="flex max-w-sm flex-col items-center gap-2">
+                  {emptyState?.icon}
+                  <p className="text-sm font-medium text-foreground">
+                    {emptyState?.title ?? "No rows"}
+                  </p>
+                  {emptyState?.description ? (
+                    <p className="text-xs text-muted-foreground">
+                      {emptyState.description}
+                    </p>
+                  ) : null}
+                  {emptyState?.action}
+                </div>
+              </div>
+            ) : (
+              paginated.map((row, index) => {
+                const id = getRowId(row);
+                const displayRow = applyRowEdits(row, edits[id]);
+                return (
+                  <Fragment key={id}>{mobileCards(displayRow, index)}</Fragment>
+                );
+              })
+            )}
+          </div>
+        ) : null}
         <div
           ref={scrollRef}
           onScroll={updateScrollHint}
           aria-busy={isLoading || isFetching}
           className={cn(
             "relative h-full w-full overflow-auto rounded-md border border-border bg-card",
+            mobileCards && "max-sm:hidden",
             tableClassName,
           )}
         >

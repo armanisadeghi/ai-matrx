@@ -561,6 +561,120 @@ export function SitesPortfolio() {
     },
   ];
 
+  const renderMobileSiteCard = (row: SiteListRow) => {
+    const siteHref = marketingRoutes.site(row.brand_id, row.id);
+    return (
+      <article className="shrink-0 rounded-lg border border-border/80 bg-background p-3 shadow-sm">
+        <header className="flex items-start gap-2">
+          <Link
+            href={siteHref}
+            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <SiteIdentityMark site={row} size={34} />
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold text-foreground">
+                {row.name}
+              </span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {row.domain}
+              </span>
+            </span>
+          </Link>
+          <ItemMenu config={() => buildRowMenu(row)} align="end">
+            <button
+              type="button"
+              aria-label={`Actions for ${row.name}`}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-muted data-[state=open]:text-foreground"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </ItemMenu>
+        </header>
+
+        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border/60 py-3">
+          <div>
+            <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Pages
+            </dt>
+            <dd className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
+              {formatMetric(row.page_count)}
+            </dd>
+            <dd className="text-[10px] tabular-nums text-muted-foreground">
+              {formatMetric(row.pages_in_gsc)} in Google
+              {row.resource_count > 0
+                ? ` · +${formatMetric(row.resource_count)} resources`
+                : ""}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Clicks · 28d
+            </dt>
+            <dd className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-foreground">
+              {formatMetric(row.gsc_clicks_28d)}
+              <TrendDelta
+                percent={trendPercent(
+                  row.gsc_clicks_28d,
+                  row.gsc_clicks_prev_28d,
+                  row.gsc_prev_days,
+                )}
+              />
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Impressions · 28d
+            </dt>
+            <dd className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-foreground">
+              {formatMetric(row.gsc_impressions_28d)}
+              <TrendDelta
+                percent={trendPercent(
+                  row.gsc_impressions_28d,
+                  row.gsc_impressions_prev_28d,
+                  row.gsc_prev_days,
+                )}
+              />
+            </dd>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Position
+              </dt>
+              <dd className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
+                {formatPosition(row.gsc_position_28d)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Health
+              </dt>
+              <dd
+                className={cn(
+                  "mt-0.5 text-sm font-semibold tabular-nums",
+                  row.health_score === null
+                    ? "text-muted-foreground"
+                    : row.health_score >= 90
+                      ? "text-success"
+                      : row.health_score >= 70
+                        ? "text-warning"
+                        : "text-destructive",
+                )}
+              >
+                {row.health_score === null ? "—" : row.health_score.toFixed(1)}
+              </dd>
+            </div>
+          </div>
+        </dl>
+
+        <footer className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <StatusBadge value={row.status} />
+          <SiteConnectionChips site={row} />
+        </footer>
+      </article>
+    );
+  };
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing"
@@ -631,6 +745,7 @@ export function SitesPortfolio() {
               data={sites.data?.rows ?? []}
               columns={columns}
               getRowId={(row) => row.id}
+              mobileCards={renderMobileSiteCard}
               isLoading={sites.isLoading}
               isFetching={sites.isFetching}
               query={{

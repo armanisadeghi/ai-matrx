@@ -160,4 +160,26 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     );
     expect(markup).not.toContain("max-sm:sticky");
   });
+
+  it("supports an explicit phone card presentation without replacing the desktop table", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        detail={{ enabled: false }}
+        mobileCards={(row) => (
+          <article aria-label={`${row.name} mobile summary`}>
+            Mobile {row.name}
+          </article>
+        )}
+      />,
+    );
+
+    expect(markup).toContain('aria-label="Alpha mobile summary"');
+    expect(markup).toContain("Mobile Alpha");
+    expect(markup).toContain("max-sm:hidden");
+    expect(markup).toContain("<table");
+    expect(markup).not.toContain("max-sm:sticky");
+  });
 });

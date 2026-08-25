@@ -614,6 +614,17 @@ export interface MatrxDataTableProps<T> {
   className?: string;
   tableClassName?: string;
   /**
+   * Optional phone-only row presentation rendered below `sm` in place of the
+   * horizontal table. The caller supplies the record summary because only the
+   * product surface knows which values and actions are essential on a phone;
+   * MatrxDataTable still owns query state, loading/empty states, and pagination.
+   *
+   * Desktop and tablet keep the canonical table. Prefer the default horizontal
+   * table unless the product explicitly requires every essential value/action
+   * to be discoverable without horizontal scrolling.
+   */
+  mobileCards?: (row: T, index: number) => ReactNode;
+  /**
    * Mobile (< sm) presentation. Default `"scroll"` — a deliberate horizontal
    * scroll surface: the table sizes to its content, the first (identity)
    * column freezes, and a right-edge fade + chevron affordance shows while
