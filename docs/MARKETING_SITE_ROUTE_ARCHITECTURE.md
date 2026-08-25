@@ -30,7 +30,7 @@ remains.
 **Companion:** `docs/MARKETING_SITE_PLATFORM_PLAN.md`
 
 **Database crosswalk:** `docs/WEB_SCHEMA_ARCHITECTURE_REVIEW.md`  
-**Canonical schema contract:** `docs/WEB_SCHEMA_CANONICAL_REFERENCE.md`
+**Implemented schema contract:** `docs/WEB_SCHEMA_IMPLEMENTED_CONTRACT.md`
 
 **Approved decisions:** `docs/MARKETING_SITE_DECISION_REGISTER.md`
 

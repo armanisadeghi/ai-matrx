@@ -92,13 +92,24 @@ export const TRACKING_MODES: TrackingModeOption[] = [
   },
 ];
 
-/** User-facing label for how a portfolio row is tracked — never expose raw provider names. */
-export function trackingModeLabelForItem(
-  item: Pick<
-    RankPortfolioItem,
-    "provider" | "engine" | "search_type" | "location_name"
-  >,
-): string {
+/**
+ * User-facing label for how a portfolio row is tracked — never expose raw
+ * provider names.
+ *
+ * The parameter is a STRUCTURAL bag of optional strings rather than a
+ * `Pick<RankPortfolioItem, …>`: the same rule has to serve the REST-route
+ * workspace (complete wire rows) and the `seo_rank_target` kind component
+ * (values that are PARTIAL mid-stream). Widening the signature is what let the
+ * kind family consume this rule instead of forking a second copy of it
+ * (Rank Kinds Run, Stage B — the Inventory Law). The body only ever compares
+ * string values, so nothing about the behaviour changes.
+ */
+export function trackingModeLabelForItem(item: {
+  provider?: string | null;
+  engine?: string | null;
+  search_type?: string | null;
+  location_name?: string | null;
+}): string {
   if (item.provider === "brave") return "Brave";
   if (item.search_type === "local_pack") return "Google — Map pack";
   if (item.search_type === "ai_answer") {

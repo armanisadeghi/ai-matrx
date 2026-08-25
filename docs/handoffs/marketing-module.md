@@ -72,7 +72,7 @@ Routes: `app/(core)/marketing/` — `layout.tsx` (guest/authed branch), `page.ts
 
 Feature layout: `features/marketing/` — `lib/routes.ts` (never hand-build a `/marketing` URL), `lib/route-metadata.ts`, `components/MarketingHub.tsx`, `components/MarketingComingSoon.tsx`, the websites vertical under `components/`, plus `content-plan/`, `seo/`, `google/ bing/ crawler/ pagespeed/ analytics/ data/`. Public analyzers stay at `app/(public)/seo/*` reading from `features/marketing/seo/`.
 
-Related reading: `features/marketing/FEATURE.md` (rules + pillar table), `lib/coming-soon/FEATURE.md`, skills `module-landing-pages` + `surface-authoring`, `features/shell/components/header/variants/USAGE.md`, `docs/WEB_SCHEMA_CANONICAL_REFERENCE.md`.
+Related reading: `features/marketing/FEATURE.md` (rules + pillar table), `lib/coming-soon/FEATURE.md`, skills `module-landing-pages` + `surface-authoring`, `features/shell/components/header/variants/USAGE.md`, `docs/WEB_SCHEMA_IMPLEMENTED_CONTRACT.md`.
 
 Testing: `/login` admin@admin.com / Password1234#. Dev server ONLY via `pnpm preview:start` (port 3001); check `pnpm dev:status` first.
 

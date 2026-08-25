@@ -1,16 +1,17 @@
 /**
  * Composers for the kind-creator agent hand-off. The studio never owns a chat: it
- * hands a composed brief to the canonical direct-agent route (see
- * NewShapeClient / KindAgentButton / KindBuilderClient / KindComponentFixBadge)
- * via the `agentRunWindow` opener's two seed channels — `initialDraftText`
- * (pre-fills the composer; the user reviews/edits and presses Send) and
- * `initialVariableValues` (fills the agent's DECLARED variables once, on the
- * fresh conversation).
+ * hands a composed brief to the agent BOUND TO THE
+ * SURFACE the user is standing on, via `useKindAgentLaunch` (see
+ * NewShapeClient / ShapeDetailHeader / KindAgentButton / KindBuilderClient /
+ * KindComponentFixBadge). Two seed channels — `draftText` (pre-fills the
+ * composer; the user reviews/edits and presses Send) and `variables` (fills
+ * the agent's DECLARED variables once, on the fresh conversation) — and the
+ * page's live surface scope rides along underneath them.
  *
- * THE USER-INPUT LAW: `initialDraftText` carries ONLY what a human genuinely
+ * THE USER-INPUT LAW: `draftText` carries ONLY what a human genuinely
  * typed (or a short, non-structured kick phrase for one-click affordances —
  * never a schema, a live instance dump, or a composed instruction paragraph).
- * Structured content never rides `initialDraftText`, and per THE GRANULARITY
+ * Structured content never rides `draftText`, and per THE GRANULARITY
  * RULE it does not all pile into one variable either — each piece the agent
  * reasons about separately gets its own named variable, because a character
  * cap on a prompt (see `FIX_INSTANCE_CONTENT_MAX` below) is the tell that
@@ -42,7 +43,7 @@
 
 import type { Json } from "@/types/database.types";
 
-/** What a composer hands the agentRunWindow opener. */
+/** What a composer hands `useKindAgentLaunch`. */
 export interface KindAgentSeed {
   /** Short, human-editable text for the composer. Never structured content. */
   draftText: string;
@@ -85,7 +86,9 @@ const PART_INTENT: Record<
     `Add one or more canonical/alternate examples for the existing Shape (kind) \`${slug}\` — "${label}". ` +
     `Each example must validate against the kind's schema.`,
   edit: (label, slug) =>
-    `Edit the existing Shape (kind) \`${slug}\` — "${label}".`,
+    `Edit the existing Shape (kind) \`${slug}\` — "${label}" — for its owner, who is looking at it in the Shape Studio right now. ` +
+    `Ask what they want changed if they have not said, then work on the real Shape with your kind tools: its schema and fields, its samples, its component, its teaching block, and its activation state. ` +
+    `Never change the \`${slug}\` slug itself — it is identity, and every stored payload and instance references it.`,
 };
 
 /** The kind's JSON schema as its own variable value — header baked in so an
@@ -189,5 +192,41 @@ export function composeKindComponentFixIntent(
   return {
     draftText: "What I want changed: ",
     variables: { task_brief: brief, user_data_sample: content },
+  };
+}
+
+export interface NewShapeIntentInput {
+  /** Slug of the Shape the user was looking at, when there was one. */
+  likeKind?: string;
+  /** Its display label, for a brief a human can read back. */
+  likeLabel?: string;
+}
+
+/**
+ * Seed for the CREATE entry (`/shapes/new`, the list's + button, and a
+ * non-owner's "Build with agent" on a shape they cannot edit).
+ *
+ * There is no form in front of this any more: the composer IS the input, so
+ * `draftText` is deliberately EMPTY — the user types what they want to build
+ * and presses Send. Only the standing instruction rides `task_brief`. When
+ * the user launched from a shape they were looking at, that shape is named as
+ * a reference point (the live schema and samples already reach the agent
+ * through the surface scope, so it is never re-inlined here).
+ */
+export function composeNewShapeIntent(
+  input: NewShapeIntentInput = {},
+): KindAgentSeed {
+  const like =
+    input.likeKind && input.likeLabel
+      ? ` The user opened this from the existing Shape \`${input.likeKind}\` — "${input.likeLabel}" — so treat that one as a reference point if what they describe resembles it; the studio surface already gives you its schema and samples.`
+      : "";
+  return {
+    draftText: "",
+    variables: {
+      task_brief:
+        "Create a NEW Shape (kind) for the user. They will describe the data they have and how they want to see it rendered; design the schema around that, then build the Shape and its assets end to end." +
+        like,
+      kind_schema: "",
+    },
   };
 }

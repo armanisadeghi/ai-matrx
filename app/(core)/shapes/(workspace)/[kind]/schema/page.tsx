@@ -22,6 +22,7 @@ export default async function ShapeSchemaPage({ params }: PageProps) {
         kind={detail.kind}
         label={detail.label}
         isOwnedByViewer={detail.isOwnedByViewer}
+        emittedJsonSchema={detail.emittedJsonSchema}
       />
       <div className="px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
         <div className="mt-3">

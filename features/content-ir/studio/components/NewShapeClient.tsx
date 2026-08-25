@@ -1,210 +1,140 @@
 "use client";
 
 /**
- * New Shape — create-with-agent entry. The studio does NOT own a chat: it
- * opens the creator agent in a floating run window on this page (the shared
- * `agentRunWindow` overlay), the human's own typed intent pre-loaded as the
- * composer draft (reviewed and sent by the user) and any pasted sample data
- * seeded onto the agent's declared `user_data_sample` variable — never folded
- * into the draft text (THE USER-INPUT LAW). The creator agent does the actual
- * creation server-side and the run streams in-place — no navigation away from
- * the studio. When the shape lands, the canonical /shapes/all inventory picks it up.
+ * New Shape — the create entry.
  *
- * The creator agent is the `content_ir.kind_creator` MANDATE (the user's own
- * binding wins). Resolution failure is LOUD: no fallback agent, ever.
+ * There is NO form here any more. The page used to collect an intent and a
+ * sample into two textareas and then hand the composed result to an agent
+ * window — the user typed their idea, then typed it again into the composer.
+ * The window's own composer and variable panel already are that input, so the
+ * middle step was pure double entry.
+ *
+ * What happens now: the page publishes the `matrx-user/shapes` surface scope,
+ * opens the studio's `shape_builder` role in a floating window ON THIS PAGE,
+ * and gets out of the way. The user describes their data in the composer and
+ * presses Send; the agent creates the Shape and its assets, and the run
+ * streams in-place — no navigation.
+ *
+ * The agent is the surface ROLE (mandate-backed `content_ir.kind_creator`,
+ * overridable per user in the header Agents menu), never a UUID in code.
+ * Resolution failure is LOUD: no fallback agent, ever.
  */
 
-import { useCallback, useState } from "react";
-import { CircleAlert, PencilRuler } from "lucide-react";
+import { useCallback, useEffect, useRef } from "react";
+import { BrainCircuit, CircleAlert, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ProTextarea } from "@/components/official/ProTextarea";
-import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
-import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants";
-import { useMandate } from "@/features/agents/mandates/useMandate";
+import {
+  SHAPES_SURFACE_NAME,
+  SHAPE_BUILDER_ROLE,
+} from "@/features/content-ir/studio/constants";
+import { composeNewShapeIntent } from "@/features/content-ir/studio/kind-agent-intents";
+import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
+import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 
-export default function NewShapeClient() {
-  const openRun = useOpenAgentRunWindow();
-  const { mandate, loading: mandateLoading, error: mandateError } = useMandate(
-    KIND_CREATOR_MANDATE_KEY,
+function NewShapeLauncher() {
+  const { roles, status } = useSurfaceAgentRoles(SHAPES_SURFACE_NAME);
+  const { launch, ready, launching } = useKindAgentLaunch(
+    SHAPES_SURFACE_NAME,
+    SHAPE_BUILDER_ROLE,
   );
-  const agentId = mandate?.agentId ?? null;
-  const [intent, setIntent] = useState("");
-  const [sample, setSample] = useState("");
+  const openedRef = useRef(false);
 
-  // Surface scope (matrx-user/shapes) — the create-a-shape draft. Built at
-  // TRIGGER time; no kind exists yet, so no kind_* values are emitted here.
-  const getSurfaceScope = useCallback(
-    () =>
-      createShapesScope({
-        studio_tab: "new",
-        new_shape_intent: intent || undefined,
-        new_shape_sample: sample || undefined,
-        shape_creator_agent_id: agentId || undefined,
-      }),
-    [intent, sample, agentId],
-  );
+  // Landing on /shapes/new IS the request to build a shape — open the builder
+  // once, as soon as the role resolves. The user can reopen it from the card
+  // below if they close the window.
+  useEffect(() => {
+    if (!ready || openedRef.current) return;
+    openedRef.current = true;
+    void launch(composeNewShapeIntent());
+  }, [launch, ready]);
 
-  // Write half of the shapes surface, /shapes/new leg (manifest
-  // `writeTargets`): the agent stages the two authored inputs into the SAME
-  // setState the user's own typing calls, and the user still presses "Start
-  // with the agent". Both handlers validate and THROW on a bad shape — the
-  // writeback seam turns a throw into a safe error envelope the agent reads.
-  // Fresh closures per call (getWriteHandlers contract).
-  const getSurfaceWriteHandlers = () => ({
-    new_shape_intent: (value: unknown) => {
-      if (typeof value !== "string" || !value.trim())
-        throw new Error("new_shape_intent expects a non-empty string.");
-      if (value.length > 4000)
-        throw new Error(
-          `new_shape_intent expects at most 4000 characters (got ${value.length}).`,
-        );
-      setIntent(value);
-    },
-    new_shape_sample: (value: unknown) => {
-      // Sample data is free text (JSON, CSV, prose) — but the tool layer
-      // parses a JSON-looking argument before it ever reaches us, so an agent
-      // sending a raw `{...}` sample cannot get it here AS a string; it
-      // arrives already parsed. Accept that and write out the pretty JSON
-      // text the textarea is documented to hold. That is this field's own
-      // format, not a coercion of a wrong value — the alternative taught
-      // agents to double-encode, which is exactly the bug guarded below.
-      let text: string;
-      if (typeof value === "string") {
-        text = value;
-      } else if (typeof value === "object" && value !== null) {
-        text = JSON.stringify(value, null, 2);
-      } else {
-        throw new Error(
-          'new_shape_sample expects sample data: a JSON object/array, or a string of JSON, CSV, or plain text. Pass "" to clear it.',
-        );
-      }
+  if (status === "loading" || status === "idle") {
+    return (
+      <div className="mx-auto flex max-w-xl items-center justify-center gap-2 px-4 py-10 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        Opening the Shape builder…
+      </div>
+    );
+  }
 
-      const trimmed = text.trim();
-      if (trimmed.length > 1 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
-        let inner: unknown;
-        try {
-          inner = JSON.parse(trimmed);
-        } catch {
-          inner = undefined;
-        }
-        if (typeof inner === "string" && /^[[{]/.test(inner.trim()))
-          throw new Error(
-            "new_shape_sample received JSON that was encoded twice — the value is a quoted string whose contents are themselves JSON, which would show the user escaped \\n and stray quote marks. Send the sample as a JSON object/array directly.",
-          );
-      }
-
-      if (text.length > 20000)
-        throw new Error(
-          `new_shape_sample expects at most 20000 characters (got ${text.length}).`,
-        );
-      setSample(text);
-    },
-  });
-
-  if (mandateLoading) return null;
-
-  if (!agentId) {
+  if (!ready) {
     return (
       <div className="mx-auto max-w-xl rounded-md border border-amber-500/30 bg-amber-500/5 px-4 py-6 text-center">
         <CircleAlert className="mx-auto h-6 w-6 text-amber-600 dark:text-amber-400" />
         <p className="mt-2 text-sm font-medium text-foreground">
-          The Shape creator agent is unavailable.
+          The Shape builder agent is unavailable.
         </p>
         <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
-          The <code className="font-mono">{KIND_CREATOR_MANDATE_KEY}</code> agent
-          mandate could not resolve{mandateError ? ` — ${mandateError}` : ""}. Check
-          your override on the Mandates page, or the mandate's pin in the
-          admin console.
+          Nothing is filling the{" "}
+          <span className="font-medium">
+            {roles[SHAPE_BUILDER_ROLE]?.role.label ?? "Shape Builder"}
+          </span>{" "}
+          role on this page. Pick an agent for it in the header Agents menu, or
+          check its mandate in the admin console.
         </p>
       </div>
     );
   }
 
-  const canStart = intent.trim().length > 0;
+  return (
+    <div className="mx-auto max-w-2xl">
+      <div className="rounded-md border border-border bg-card p-4 text-center">
+        <BrainCircuit className="mx-auto h-5 w-5 text-primary" aria-hidden />
+        <h2 className="mt-2 text-sm font-semibold text-foreground">
+          The Shape builder is open
+        </h2>
+        <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+          Describe your data and how you want to see it in the builder window —
+          paste a real example if you have one. It designs the shape, builds a
+          component for it, and you test it right here in the studio.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4 gap-1.5"
+          disabled={launching}
+          onClick={() => void launch(composeNewShapeIntent())}
+        >
+          {launching ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <BrainCircuit className="h-4 w-4" aria-hidden />
+          )}
+          Reopen the builder
+        </Button>
+      </div>
+      <p className="mt-4 text-center text-[11px] text-muted-foreground">
+        When the agent finishes, come back to Shapes and hit Refresh — your new
+        shape appears in the list, ready to preview and test.
+      </p>
+    </div>
+  );
+}
 
-  const start = () => {
-    if (!canStart) return;
-    // The intent IS what the human typed — it stays the composer's draft
-    // text. The pasted sample is structured data, so it rides the
-    // kind-creator agent's declared `user_data_sample` variable instead of
-    // being folded into the human channel. THE USER-INPUT LAW:
-    // common-docs/systems/agent-variable-binding/FEATURE.md.
-    openRun({
-      initialAgentId: agentId,
-      initialDraftText: intent.trim(),
-      initialVariableValues: sample.trim()
-        ? { user_data_sample: sample.trim() }
-        : null,
-    });
-  };
+export default function NewShapeClient() {
+  const { roles } = useSurfaceAgentRoles(SHAPES_SURFACE_NAME);
+  const builderAgentId = roles[SHAPE_BUILDER_ROLE]?.effectiveAgentId ?? null;
+
+  // Surface scope (matrx-user/shapes) — the create entry. Built at TRIGGER
+  // time; no kind exists yet, so no kind_* values are emitted here.
+  const getSurfaceScope = useCallback(
+    () =>
+      createShapesScope({
+        studio_tab: "new",
+        shape_creator_agent_id: builderAgentId || undefined,
+      }),
+    [builderAgentId],
+  );
 
   return (
     <SurfaceRuntimeProvider
-      surfaceName="matrx-user/shapes"
+      surfaceName={SHAPES_SURFACE_NAME}
       getScope={getSurfaceScope}
-      isEditable
-      getWriteHandlers={getSurfaceWriteHandlers}
+      isEditable={false}
     >
-      <div className="mx-auto max-w-2xl space-y-4">
-        <div className="rounded-md border border-border bg-card p-4">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <PencilRuler className="h-4 w-4 text-primary" />
-            Design a shape with the agent
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Describe your data and what you want to see. The agent creates the
-            shape, builds a custom component for it, and you test it right here
-            in the studio.
-          </p>
-
-          <label className="mt-4 block text-xs font-medium text-foreground">
-            What do you want to build?
-            <ProTextarea
-              value={intent}
-              onChange={(e) => setIntent(e.target.value)}
-              placeholder="e.g. A recipe card with ingredients, steps, cook time, and a difficulty rating"
-              className="text-base sm:text-sm"
-              wrapperClassName="mt-1 w-full"
-              autoGrow
-              minHeight={96}
-              maxHeight={240}
-              enableTextStats={false}
-            />
-          </label>
-
-          <label className="mt-3 block text-xs font-medium text-foreground">
-            Sample data{" "}
-            <span className="font-normal text-muted-foreground">
-              (optional — paste JSON, CSV, or plain text)
-            </span>
-            <ProTextarea
-              value={sample}
-              onChange={(e) => setSample(e.target.value)}
-              placeholder="Paste an example of your real data so the agent designs around it"
-              className="font-mono text-base sm:text-sm"
-              wrapperClassName="mt-1 w-full"
-              autoGrow
-              minHeight={96}
-              maxHeight={240}
-              enableTextStats={false}
-            />
-          </label>
-
-          <div className="mt-4 flex items-center justify-end">
-            <Button onClick={start} disabled={!canStart} className="gap-1.5">
-              <PencilRuler className="h-4 w-4" />
-              Start with the agent
-            </Button>
-          </div>
-        </div>
-
-        <p className="text-center text-[11px] text-muted-foreground">
-          When the agent finishes, come back to Shapes and hit Refresh — your
-          new shape appears in the list, ready to preview and test.
-        </p>
-      </div>
+      <NewShapeLauncher />
     </SurfaceRuntimeProvider>
   );
 }

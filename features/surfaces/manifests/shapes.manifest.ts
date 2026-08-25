@@ -19,7 +19,8 @@
  *   /shapes/instances/[id]     → a pure permalink RESOLVER that redirects to
  *                                `/shapes/[kind]/instances?i=[id]`; it renders
  *                                no UI and therefore emits nothing
- *   /shapes/new                → the create-a-shape handoff into the chat agent
+ *   /shapes/new                → opens the `shape_builder` role in a window on
+ *                                the page (no form, no navigation)
  *
  * DELIBERATELY NOT DECLARED: `content_ir.kind_surface` rows (the XML-tag /
  * fence-language detection registry). No /shapes route loads them, and the
@@ -41,7 +42,7 @@
  *                                 Test the tab below it nests DEEPER and wins.
  *   - ShapeInstancesTab.tsx     → kind identity + instances + focused instance
  *   - ShapeTestTab.tsx          → kind identity + the live draft + save state
- *   - NewShapeClient.tsx        → the draft intent/sample, studio_tab "new"
+ *   - NewShapeClient.tsx        → studio_tab "new" + the resolved builder agent
  *
  * Nothing is `alwaysAvailable`: the list, detail, and create routes emit
  * disjoint sets, so a guarantee would be a lie on at least one of them.
@@ -105,13 +106,6 @@ const groups: SurfaceValueGroup[] = [
     sortOrder: 700,
     description:
       "The /shapes/all inventory: Mine, My Orgs, Shared, and Public Shapes.",
-  },
-  {
-    key: "shape_draft",
-    label: "New-shape draft",
-    sortOrder: 800,
-    description:
-      "The /shapes/new composer that hands an intent + sample to the shape-creator agent.",
   },
 ];
 
@@ -501,40 +495,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 730,
   },
 
-  // ------------------------------------------------------------------- draft
-  {
-    name: "new_shape_intent",
-    label: "New-shape intent",
-    description:
-      "What the user typed describing the shape they want to create on /shapes/new. Empty when they have not typed anything.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 400,
-    group: "shape_draft",
-    sortOrder: 800,
-  },
-  {
-    name: "new_shape_sample",
-    label: "New-shape sample",
-    description:
-      "The example payload the user pasted on /shapes/new to seed the shape's structure. Bindable only. Empty when none was pasted.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 2000,
-    autoContext: false,
-    group: "shape_draft",
-    sortOrder: 810,
-  },
+  // ------------------------------------------------------------ studio agent
   {
     name: "shape_creator_agent_id",
-    label: "Shape creator agent",
+    label: "Shape builder agent",
     description:
-      "UUID of the configured agent the /shapes/new draft is handed to. Empty when the creator agent is not configured (the page shows a loud not-configured card).",
+      "UUID of the agent currently filling the studio's `shape_builder` role — the one the Build/Edit-with-agent actions launch. Empty when the role has no agent bound (the UI says so loudly instead of launching).",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
-    group: "shape_draft",
-    sortOrder: 820,
+    group: "studio_state",
+    sortOrder: 660,
   },
 ];
 
@@ -547,7 +518,11 @@ const surfaceSpecific: SurfaceValue[] = [
  * registered a handler, so the same manifest list produces a different offer
  * per route. Who registers what:
  *
- *   NewShapeClient        → new_shape_intent, new_shape_sample
+ *   NewShapeClient        → NOTHING. /shapes/new no longer collects a brief in
+ *                           a form and hands it off; it opens the studio's
+ *                           `shape_builder` role in a window on the page, where
+ *                           the composer and the agent's own variable panel ARE
+ *                           the input. Nothing to stage.
  *   ShapeOwnerEditor      → shape_details_{label,title_key,loading_component}
  *     (registered by NAME from inside ShapePreviewTab's provider, because the
  *      owner editor is the deep child that owns that draft state — and it
@@ -584,32 +559,6 @@ const surfaceSpecific: SurfaceValue[] = [
  *     version and re-validate every sample; not an agent's call.
  */
 const writeTargets: SurfaceWriteTarget[] = [
-  // ------------------------------------------------- /shapes/new composer
-  {
-    name: "new_shape_intent",
-    label: "New-shape intent",
-    description:
-      "Stages the 'What do you want to build?' prose on /shapes/new — the description of the shape to create. Plain string, 1-4000 characters; REPLACES the whole field, so read the new_shape_intent value first if you mean to extend what the user already typed. Nothing is created by this write: the text lands in the textarea and the user still presses 'Start with the agent', which hands the composed brief to the shape-creator agent. Write it as a description of the DATA and what it should look like rendered (fields, types, and how the user wants to see it) — not as an instruction to a person.",
-    valueType: "string",
-    updatesValue: "new_shape_intent",
-    mode: "draft",
-    applyPolicy: "ask",
-    group: "shape_draft",
-    sortOrder: 800,
-  },
-  {
-    name: "new_shape_sample",
-    label: "New-shape sample",
-    description:
-      "Stages the optional 'Sample data' example on /shapes/new that the creator agent designs the shape's structure around. For a JSON sample pass the OBJECT OR ARRAY ITSELF — it is written into the box as pretty-printed JSON; never hand-encode it into a quoted string, which lands as escaped \\n and stray quotes. For CSV or plain text pass a plain string. Either way REPLACES the whole field, max 20000 characters rendered, and no markdown fences. Nothing is created by this write: the user still presses 'Start with the agent'.",
-    valueType: "string",
-    updatesValue: "new_shape_sample",
-    mode: "draft",
-    applyPolicy: "ask",
-    group: "shape_draft",
-    sortOrder: 810,
-  },
-
   // ---------------------------------- /shapes/[kind] owner editor → Details
   {
     name: "shape_details_label",
@@ -677,7 +626,7 @@ WHICH VALUES EXIST DEPENDS ON THE ROUTE — nothing here is guaranteed, so check
   - /shapes/[kind] and /shapes/[kind]/schema (studio_tab "preview" / "schema") — the full kind identity, kind_field_data and kind_emitted_json_schema, the samples (kind_examples, counts, canonical flag) and, for the owner, the activation verdict.
   - /shapes/[kind]/instances (studio_tab "instances") — kind identity plus kind_instances, kind_instance_count, and the focused instance. The schema and activation values are NOT emitted here.
   - /shapes/[kind]/test (studio_tab "test") — kind identity plus test_draft_instance and test_save_state. The schema, samples, and activation values are NOT emitted here.
-  - /shapes/new (studio_tab "new") — only new_shape_intent, new_shape_sample, shape_creator_agent_id.
+  - /shapes/new (studio_tab "new") — only shape_creator_agent_id. It is the create entry: the shape_builder role opens in a window there and the user describes the shape they want in the composer.
   - /shapes/instances/[id] is a permalink resolver that redirects; it renders nothing and emits nothing.
 Three things to get right. First, the emitted JSON Schema is the AUTHORITY on validity — validate any payload you propose against it rather than inferring structure from a sample. Second, \`is_active\` is a VERDICT from a dual gate, not a flag you may recommend flipping casually: both the structural leg (the canonical sample validates) and the render leg (that sample lights up a real component) must pass, and activation_reasons tells you exactly what is blocking. Third, instances store the root \`__kind\` marker as part of the payload and pin the kind version they were saved at — a pinned version older than kind_version means the instance may not satisfy the current schema.
 Detection rows (which XML tag or fence language maps to this kind) are deliberately not part of this surface — no studio route loads them, so never claim a kind is or is not detected from what you see here.
@@ -687,6 +636,56 @@ Detection rows (which XML tag or fence language maps to this kind) are deliberat
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  /**
+   * The agents that WORK here. Every studio "do this with AI" affordance
+   * launches one of these positions — never a UUID frozen in a component, and
+   * never a bare chat hand-off: the role's agent opens in a window on the page
+   * with this surface's live scope attached, so it can see the kind, its
+   * schema, its samples and its activation verdict.
+   *
+   * The two platform positions are MANDATE-backed (`agent.mandate` decides the
+   * holder, the admin console rebinds it). `custom_slot` is the user's own
+   * shelf for a specialist they bring themselves — that is where an
+   * additional, narrower shape agent goes, never a second hardcoded button.
+   */
+  agentRoles: [
+    {
+      name: "shape_builder",
+      label: "Shape Builder",
+      description:
+        "Creates a new Shape from a description or sample data, and edits an existing one — its schema, samples, component, teaching block, and activation state.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: "content_ir.kind_creator",
+      allowCustom: false,
+      autoRun: "never",
+      sortOrder: 100,
+    },
+    {
+      name: "component_artisan",
+      label: "Component Artisan",
+      description:
+        "Builds and improves the React component that draws this Shape's instances, so they render purpose-built instead of through the generic viewer.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: "content_ir.component_artisan",
+      allowCustom: false,
+      autoRun: "never",
+      sortOrder: 200,
+    },
+    {
+      name: "custom_slot",
+      label: "Your own Shape agent",
+      description:
+        "Any agent you want on hand in the Shape Studio — a specialist of your own for a particular kind of shape work. Launches with the same live studio context as the platform roles.",
+      kind: "multi",
+      maxAgents: 3,
+      defaultAgentId: null,
+      allowCustom: true,
+      autoRun: "user-choice",
+      sortOrder: 900,
+    },
+  ],
   writeTargets,
 };
 
@@ -737,8 +736,6 @@ export function createShapesScope(values: {
   platform_shapes?: Array<Record<string, unknown>>;
   shape_search_query?: string;
   // draft
-  new_shape_intent?: string;
-  new_shape_sample?: string;
   shape_creator_agent_id?: string;
   // baselines
   selection?: string;

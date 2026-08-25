@@ -70,6 +70,14 @@ interface ShapeOwnerEditorProps {
   onActivationVerdict?: (verdict: ShapeActivationVerdict | null) => void;
 }
 
+/**
+ * DOM id of the owner-editor section. Exported because the header's "Edit
+ * Shape" action scrolls to it imperatively — a `#shape-editor` href is a
+ * no-op once that hash is already in the URL, which is exactly how that
+ * button silently died.
+ */
+export const SHAPE_EDITOR_ANCHOR_ID = "shape-editor";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -205,7 +213,7 @@ export default function ShapeOwnerEditor({
 
   return (
     <section
-      id="shape-editor"
+      id={SHAPE_EDITOR_ANCHOR_ID}
       className="mx-auto mb-5 max-w-4xl scroll-mt-[calc(var(--shell-header-h)+0.75rem)] rounded-lg border border-primary/25 bg-card shadow-sm"
     >
       <div className="flex items-start gap-3 border-b border-border px-4 py-3">

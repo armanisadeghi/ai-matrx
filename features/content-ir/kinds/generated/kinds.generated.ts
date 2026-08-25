@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 429 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 433 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "54c0707fa453";
+export const KIND_REGISTRY_FINGERPRINT = "c81b8049433c";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -29,7 +29,7 @@ export const KIND_REGISTRY_FINGERPRINT = "54c0707fa453";
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
- * * From kind `ai_answer`.
+ * * Shared by 2 kinds (ai_answer, serp_placement).
  */
 export interface AiAnswerBlock {
   text?: string | null;
@@ -42,7 +42,7 @@ export interface AiAnswerBlock {
 }
 
 /**
- * * From kind `ai_answer`.
+ * * Shared by 2 kinds (ai_answer, serp_placement).
  */
 export interface AiAnswerReference {
   url: string;
@@ -1153,7 +1153,7 @@ export interface DailySpendPoint {
 }
 
 /**
- * * Shared by 2 kinds (local_place, opening_hours).
+ * * Shared by 3 kinds (local_place, opening_hours, serp_placement).
  */
 export interface DayHours {
   /**
@@ -1512,7 +1512,7 @@ export interface EvidenceSignals {
 /**
  * One label/value fact (entity cards). HTML converted to text + links.
  *  *
- *  * From kind `entity_card`.
+ *  * Shared by 2 kinds (entity_card, serp_placement).
  */
 export interface Fact {
   text: string;
@@ -3148,7 +3148,7 @@ export interface PodcastSpeaker {
 }
 
 /**
- * * From kind `entity_card`.
+ * * Shared by 2 kinds (entity_card, serp_placement).
  */
 export interface ProfileLink {
   url: string;
@@ -4396,44 +4396,6 @@ export interface SeoProviderScheduleStatus {
 }
 
 /**
- * Mirrors ``aidream.services.seo.rank_tracking.RankTargetHistoryPoint``
- * exactly.
- *  *
- *  * From kind `seo_rank_history`.
- */
-export interface SeoRankHistoryPoint {
-  /**
-   * The registered kind this payload is an instance of, when it is one.
-   */
-  __kind?: string;
-  matched_url: string | null;
-  observed_at: string;
-  result_type: string;
-  organic_rank: number | null;
-  absolute_rank: number | null;
-  matched_domain: string | null;
-}
-
-/**
- * One competitive SERP result row. Mirrors ``SerpLandscapeResult``.
- *  *
- *  * From kind `seo_rank_serp_landscape`.
- */
-export interface SeoRankSerpResult {
-  url?: string | null;
-  title?: string | null;
-  /**
-   * The registered kind this payload is an instance of, when it is one.
-   */
-  __kind?: string;
-  domain?: string | null;
-  snippet?: string | null;
-  result_type: string;
-  organic_rank?: number | null;
-  absolute_rank: number;
-}
-
-/**
  * The full adjudicated brief. Mirrors ``ReputationBrief`` — including its
  * own ``kind`` literal field (``"digital_pr_reputation_brief_v1"``, wired
  * ``alias="__kind"`` on the source model but dumped under the plain field
@@ -4928,7 +4890,7 @@ export interface SheetSpec {
 }
 
 /**
- * * From kind `web_result`.
+ * * Shared by 2 kinds (serp_placement, web_result).
  */
 export interface SiteLink {
   url: string;
@@ -8626,7 +8588,7 @@ export interface LiveHelpAnswer {
 }
 
 /**
- * Kind `local_place` (registry v11).
+ * Kind `local_place` (registry v13).
  */
 export interface LocalPlace {
   name: string;
@@ -8663,6 +8625,14 @@ export interface LocalPlace {
    * ADDITIVE 2026-08-24 (rank run). Position on the WHOLE result page across every block, where `position` is the rank within the local pack.
    */
   absolute_position?: number | null;
+  /**
+   * ADDITIVE 2026-08-24. LOWER BOUND of how long the business has operated. Google reports '10+ years in business', which is a floor, not a count — so this is a minimum and never a precise age.
+   */
+  years_in_business_min?: number | null;
+  /**
+   * The source's verbatim phrasing. Kept because the parse is deliberately lossy: '10+' cannot round-trip through an integer (distillation law — keep the original alongside only when the parse loses something).
+   */
+  years_in_business_text?: string | null;
 }
 
 /**
@@ -9044,6 +9014,37 @@ export interface NewsSearchResults {
   })[];
   elapsed_ms?: number;
   total_results?: number;
+}
+
+/**
+ * Kind `newsjacking_expert_article` (registry v2).
+ */
+export interface NewsjackingExpertArticle {
+  faqs?: ({
+    __kind: "article_faq_item";
+    answer?: string;
+    question?: string;
+  })[];
+  __kind: "newsjacking_expert_article";
+  headline: string;
+  meta_title?: string;
+  article_body: string;
+  expert_quotes?: ({
+    __kind: "newsjacking_article_expert_quote";
+    speaker?: string;
+    quote_text?: string;
+    placement_section?: string;
+  })[];
+  target_keywords?: string[];
+  meta_description?: string;
+  research_sources?: ({
+    url?: string;
+    title?: string;
+    __kind: "article_research_source";
+    publisher?: string;
+    key_finding?: string;
+  })[];
+  news_hook_summary?: string;
 }
 
 /**
@@ -10189,6 +10190,82 @@ export interface ProgressTracker {
   total_items?: number;
   completed_items?: number;
   overall_progress?: number;
+}
+
+/**
+ * What one paid call to an external provider cost and produced.
+ *
+ * Replaces the family's only raw bag — `RankCheckOutput.receipt` was
+ * `dict[str, JsonValue]`, which meant the cost of a real dollar spend was
+ * untyped and unrenderable. Every `matrx-seo` collection emits this shape
+ * (rank, backlinks, Search Console, PageSpeed, prospecting), so this is a
+ * system-wide primitive and later runs nest it instead of re-minting it.
+ *
+ * 🚨 `cost_usd = None` means UNMEASURED, never free. A run that reported
+ * `0.00` has evidence and is genuinely free; a run with no cost evidence at
+ * all must not be folded into a total as zero. That coalesce previously let
+ * 112 live SerpAPI runs spend nothing against every ceiling
+ * (`matrx_seo.contracts.SpendSummary`).
+ *  *
+ *  * Kind `provider_run_receipt` (registry v2).
+ */
+export interface ProviderRunReceipt {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "provider_run_receipt";
+  /**
+   * The collection run this receipt belongs to.
+   */
+  run_id: string;
+  /**
+   * Reported spend, as the provider reported it. NULL is unmeasured, never zero.
+   */
+  cost_usd?: number | null;
+  /**
+   * Provider that served the call, e.g. 'brave' | 'serpapi' | 'dataforseo'.
+   */
+  provider: string;
+  /**
+   * Served from a stored payload rather than a fresh paid call.
+   */
+  from_cache?: boolean;
+  /**
+   * Prompt tokens, for LLM providers.
+   */
+  input_tokens?: number | null;
+  /**
+   * Completion tokens, for LLM providers.
+   */
+  output_tokens?: number | null;
+  /**
+   * Wall-clock time the provider took.
+   */
+  latency_seconds?: number | null;
+  /**
+   * Reasoning tokens, for LLM providers that report them.
+   */
+  reasoning_tokens?: number | null;
+  /**
+   * How old the served payload was, when it came from cache.
+   */
+  cache_age_seconds?: number | null;
+  /**
+   * New observations this run persisted.
+   */
+  created_observations?: number;
+  /**
+   * An already-completed run satisfied this request.
+   */
+  reused_completed_run?: boolean;
+  /**
+   * Observations that already existed and were reused.
+   */
+  existing_observations?: number;
+  /**
+   * How long this result is considered fresh.
+   */
+  freshness_ttl_seconds?: number | null;
 }
 
 /**
@@ -12171,20 +12248,101 @@ export interface SeoRankHistory {
    * The registered kind this payload is an instance of.
    */
   __kind: "seo_rank_history";
-  points?: SeoRankHistoryPoint[];
+  points?: SeoRankReading[];
 }
 
 /**
- * Output of ``seo.rank.portfolio.list`` — a site's tracked keywords/prompts.
+ * Everything one site tracks. ADDITIVE SUPERSEDE — `targets` is unchanged.
  *  *
- *  * Kind `seo_rank_portfolio` (registry v3).
+ *  * Kind `seo_rank_portfolio` (registry v4).
  */
 export interface SeoRankPortfolio {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_rank_portfolio";
+  __kind?: "seo_rank_portfolio";
+  /**
+   * The site this portfolio belongs to.
+   */
+  site_id?: string | null;
   targets?: SeoRankTarget[];
+  /**
+   * Targets currently being checked.
+   */
+  active_count?: number | null;
+  /**
+   * Targets that moved down since last check.
+   */
+  declined_count?: number | null;
+  /**
+   * Targets that moved up since last check.
+   */
+  improved_count?: number | null;
+}
+
+/**
+ * One observation of where a tracked target stood on one date.
+ *
+ * Supersedes the old `RankTargetHistoryPoint` shape ADDITIVELY: every field
+ * the old point required (`observed_at`, `organic_rank`, `absolute_rank`,
+ * `matched_url`, `matched_domain`, `result_type`) keeps its name, type and
+ * requiredness. Everything new is optional-with-default.
+ *
+ * `found` exists because "not ranked" was previously an invisible NULL: a
+ * reading with `organic_rank = None` reads identically to a reading that was
+ * never taken, and the difference is the entire product.
+ *  *
+ *  * Kind `seo_rank_reading` (registry v2).
+ */
+export interface SeoRankReading {
+  /**
+   * Whether the target was found at all. Derived — never leave it to a NULL rank.
+   */
+  found?: boolean;
+  /**
+   * Title as the searcher saw it.
+   */
+  title?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "seo_rank_reading";
+  /**
+   * Snippet as the searcher saw it.
+   */
+  snippet?: string | null;
+  /**
+   * Positions gained since the previous reading; positive is an improvement.
+   */
+  movement?: number | null;
+  /**
+   * WHY this counted as a match (exact URL, domain, subdomains, alias) — auditability.
+   */
+  match_rule?: string | null;
+  /**
+   * The URL that matched the target.
+   */
+  matched_url?: string | null;
+  /**
+   * When the observation was taken.
+   */
+  observed_at: string;
+  /**
+   * Which block the match sat in. Vocabulary: organic, local_pack, ai_citation, ai_overview, entity_card, faq, discussion, news, video, unknown.
+   */
+  result_type: string;
+  /**
+   * Rank within the organic list. NULL when not present in it.
+   */
+  organic_rank?: number | null;
+  /**
+   * Position on the whole results page, across every block.
+   */
+  absolute_rank?: number | null;
+  /**
+   * The domain that matched.
+   */
+  matched_domain?: string | null;
 }
 
 /**
@@ -12197,17 +12355,27 @@ export interface SeoRankSerpLandscape {
    * The registered kind this payload is an instance of.
    */
   __kind: "seo_rank_serp_landscape";
-  results?: SeoRankSerpResult[];
+  results?: SerpPlacement[];
   observed_at?: string | null;
   snapshot_id?: string | null;
 }
 
 /**
- * One tracked keyword/prompt row — output of ``seo.rank.target.add`` and
- * ``seo.rank.target.update``, and nested inside the portfolio list and the
- * check result. Mirrors ``RankPortfolioItem`` field-for-field.
+ * One tracked keyword or AI prompt: its identity, its settings, and a
+ * summary of where it currently stands.
+ *
+ * ADDITIVE SUPERSEDE — every legacy field keeps its name, type and
+ * requiredness; everything new is optional-with-default, so this passes the
+ * BACKWARD gate and needs no cutover.
+ *
+ * The flat `latest_*` / `previous_position` / `best_position` / `movement`
+ * summary is deliberately NOT replaced by a nested `SeoRankReading`. This kind
+ * is a PORTFOLIO ROW — identity plus standing — and nesting a full reading
+ * here while `seo_rank_history` also carries readings would store the same
+ * fact twice (the "one copy of everything" law). The history kind owns
+ * readings; this one owns standing.
  *  *
- *  * Kind `seo_rank_target` (registry v3).
+ *  * Kind `seo_rank_target` (registry v4).
  */
 export interface SeoRankTarget {
   tags?: string[];
@@ -12216,20 +12384,50 @@ export interface SeoRankTarget {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_rank_target";
+  __kind?: "seo_rank_target";
+  /**
+   * 'desktop' | 'mobile'.
+   */
   device: string;
+  /**
+   * Which engine is tracked: 'brave' | 'google' | 'chat_gpt' | 'claude' | 'gemini' | 'perplexity'.
+   */
   engine: string;
+  /**
+   * Country the check is run for, e.g. 'US'.
+   */
+  country?: string | null;
+  /**
+   * The tracked phrase, or the prompt for an AI engine.
+   */
   keyword: string;
   site_id: string;
   language: string;
   movement?: number | null;
+  /**
+   * Who collects it: 'brave' | 'serpapi' | 'dataforseo'.
+   */
   provider: string;
   is_active: boolean;
   target_id: string;
   created_at: string;
   keyword_id: string;
+  /**
+   * For AI engines, the specific model tracked.
+   */
+  model_name?: string | null;
+  /**
+   * 'organic' | 'local_pack' | 'ai_answer'.
+   */
   search_type: string;
+  /**
+   * How often this target is checked, in days.
+   */
   cadence_days: number;
+  /**
+   * How many readings exist for this target.
+   */
+  checks_count?: number | null;
   best_position?: number | null;
   location_name?: string | null;
   target_domain?: string | null;
@@ -12237,20 +12435,33 @@ export interface SeoRankTarget {
   last_checked_at?: string | null;
   latest_position?: number | null;
   previous_position?: number | null;
+  /**
+   * Whether a subdomain match counts as this target.
+   */
+  include_subdomains?: boolean | null;
   latest_absolute_position?: number | null;
 }
 
 /**
- * Output of ``seo.rank.target.remove``. Mirrors ``RankTargetRemovedOutput``.
+ * A target was soft-removed from a portfolio.
+ *
+ * Promoted `simple-is-correct`: a boolean receipt is the honest shape for a
+ * boolean outcome, and the over-engineering guard says richness in the DATA
+ * earns the full treatment — there is none here. `target_id` is added only so
+ * the receipt can say WHICH target, which it previously could not.
  *  *
- *  * Kind `seo_rank_target_removal` (registry v3).
+ *  * Kind `seo_rank_target_removal` (registry v4).
  */
 export interface SeoRankTargetRemoval {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_rank_target_removal";
+  __kind?: "seo_rank_target_removal";
   removed: boolean;
+  /**
+   * The target that was removed.
+   */
+  target_id?: string | null;
 }
 
 /**
@@ -12521,6 +12732,43 @@ export interface SerpAnalysis {
    */
   your_site_rank: number | null;
   difficulty_signal: "low" | "moderate" | "high" | "very high";
+}
+
+/**
+ * One position on a results page, with the result that occupied it.
+ *
+ * The page is the product here, so the payload is a discriminated union over
+ * the SHIPPED result kinds rather than a re-modelled copy of each. A consumer
+ * dispatches on the nested `__kind` and renders the canonical component the
+ * search pilot already built.
+ *  *
+ *  * Kind `serp_placement` (registry v2).
+ */
+export interface SerpPlacement {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "serp_placement";
+  /**
+   * The result itself, as one of the shipped search kinds.
+   */
+  result?: WebResult | LocalPlace | AiAnswer | EntityCard | FaqItem | DiscussionResult | NewsResult | VideoResult | null;
+  /**
+   * Which block this position was. Vocabulary: organic, local_pack, ai_citation, ai_overview, entity_card, faq, discussion, news, video, unknown.
+   */
+  result_type: string;
+  /**
+   * Rank within the organic list, when this placement is organic.
+   */
+  organic_rank?: number | null;
+  /**
+   * Position on the whole page, 1-based, across every block.
+   */
+  absolute_rank: number;
+  /**
+   * Whether this placement is the site being tracked — the 'you are here' flag.
+   */
+  is_tracked_target?: boolean;
 }
 
 /**
@@ -17357,6 +17605,7 @@ export type GeneratedKindSlug =
   | "meta_tag_options"
   | "news_result"
   | "news_search_results"
+  | "newsjacking_expert_article"
   | "node_error"
   | "node_outcome"
   | "notable_timestamp"
@@ -17400,6 +17649,7 @@ export type GeneratedKindSlug =
   | "press_story_angle_ruling_result"
   | "product_research_report"
   | "progress_tracker"
+  | "provider_run_receipt"
   | "questionnaire"
   | "quiz_item"
   | "quiz_set"
@@ -17478,6 +17728,7 @@ export type GeneratedKindSlug =
   | "seo_rank_check_result"
   | "seo_rank_history"
   | "seo_rank_portfolio"
+  | "seo_rank_reading"
   | "seo_rank_serp_landscape"
   | "seo_rank_target"
   | "seo_rank_target_removal"
@@ -17492,6 +17743,7 @@ export type GeneratedKindSlug =
   | "seo_structured_data_validation_result"
   | "seo_web_analytics_read_result"
   | "serp_analysis"
+  | "serp_placement"
   | "shifted_datetime"
   | "site_intake_analysis"
   | "site_intake_apply_result"
@@ -17789,6 +18041,7 @@ export interface KindPayloadBySlug {
   "meta_tag_options": MetaTagOptions;
   "news_result": NewsResult;
   "news_search_results": NewsSearchResults;
+  "newsjacking_expert_article": NewsjackingExpertArticle;
   "node_error": NodeError;
   "node_outcome": NodeOutcome;
   "notable_timestamp": NotableTimestamp;
@@ -17832,6 +18085,7 @@ export interface KindPayloadBySlug {
   "press_story_angle_ruling_result": PressStoryAngleRulingResult;
   "product_research_report": ProductResearchReport;
   "progress_tracker": ProgressTracker;
+  "provider_run_receipt": ProviderRunReceipt;
   "questionnaire": Questionnaire;
   "quiz_item": QuizItem;
   "quiz_set": QuizSet;
@@ -17910,6 +18164,7 @@ export interface KindPayloadBySlug {
   "seo_rank_check_result": SeoRankCheckResult;
   "seo_rank_history": SeoRankHistory;
   "seo_rank_portfolio": SeoRankPortfolio;
+  "seo_rank_reading": SeoRankReading;
   "seo_rank_serp_landscape": SeoRankSerpLandscape;
   "seo_rank_target": SeoRankTarget;
   "seo_rank_target_removal": SeoRankTargetRemoval;
@@ -17924,6 +18179,7 @@ export interface KindPayloadBySlug {
   "seo_structured_data_validation_result": SeoStructuredDataValidationResult;
   "seo_web_analytics_read_result": SeoWebAnalyticsReadResult;
   "serp_analysis": SerpAnalysis;
+  "serp_placement": SerpPlacement;
   "shifted_datetime": ShiftedDatetime;
   "site_intake_analysis": SiteIntakeAnalysis;
   "site_intake_apply_result": SiteIntakeApplyResult;
@@ -18225,6 +18481,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "meta_tag_options",
   "news_result",
   "news_search_results",
+  "newsjacking_expert_article",
   "node_error",
   "node_outcome",
   "notable_timestamp",
@@ -18268,6 +18525,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "press_story_angle_ruling_result",
   "product_research_report",
   "progress_tracker",
+  "provider_run_receipt",
   "questionnaire",
   "quiz_item",
   "quiz_set",
@@ -18346,6 +18604,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "seo_rank_check_result",
   "seo_rank_history",
   "seo_rank_portfolio",
+  "seo_rank_reading",
   "seo_rank_serp_landscape",
   "seo_rank_target",
   "seo_rank_target_removal",
@@ -18360,6 +18619,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "seo_structured_data_validation_result",
   "seo_web_analytics_read_result",
   "serp_analysis",
+  "serp_placement",
   "shifted_datetime",
   "site_intake_analysis",
   "site_intake_apply_result",

@@ -13,8 +13,8 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       href: "/docs/MARKETING_SITE_ROUTE_ARCHITECTURE.md",
     },
     {
-      label: "Canonical web schema",
-      href: "/docs/WEB_SCHEMA_CANONICAL_REFERENCE.md",
+      label: "Implemented web schema",
+      href: "/docs/WEB_SCHEMA_IMPLEMENTED_CONTRACT.md",
     },
   ],
   routeScanPath: "app/(core)/marketing",

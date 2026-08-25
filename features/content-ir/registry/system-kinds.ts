@@ -92,6 +92,7 @@ import { STUDY_NOTES_KIND_DEFINITIONS } from "../kinds/study-notes";
 import { LESSON_SCRIPTS_KIND_DEFINITIONS } from "../kinds/lesson-scripts";
 import { STUDY_PACK_KIND_DEFINITIONS } from "../kinds/study-pack";
 import { SEARCH_RESULTS_KIND_DEFINITIONS } from "../kinds/search-results";
+import { RANK_KINDS_KIND_DEFINITIONS } from "../kinds/rank-kinds";
 import { TRUST_ENVELOPE_KIND_DEFINITIONS } from "../kinds/trust-envelope";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
@@ -155,6 +156,12 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // provider-agnostic web-search collection + item kinds + primitives.
   // Python-owned models: aidream/aidream/services/search_kinds/models.py.
   ...SEARCH_RESULTS_KIND_DEFINITIONS,
+  // Rank / SERP-landscape family (Rank Kinds Run, 2026-08-24): the tracked
+  // target, the position reading, the paid-call receipt, and the placement
+  // whose payload is a union over the SHIPPED search kinds above — a
+  // convergence family that mints no second copy of a search result.
+  // Python-owned models: aidream/aidream/services/rank_kinds/models.py.
+  ...RANK_KINDS_KIND_DEFINITIONS,
   // Compiled MIRROR of the already-registered python-owned `trust_envelope` +
   // `citation` kinds (their DB rows carry a NULL `data[]`, so nothing else can
   // resolve them). Registered here so every kind that carries grounding

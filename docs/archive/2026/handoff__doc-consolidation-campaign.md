@@ -32,7 +32,7 @@ All HISTORY-class: ai-matrx `docs/type-drift/` (34), `docs/SWEEP_*` + `docs/IMPA
 | 3 | Agent system truth | `docs/agents_service/00_truth.md` ("Official Truth") vs `services/agent_service/FEATURE.md` | FEATURE.md; 00-04 marked historical |
 | 4 | Scope/context sprawl | `features/scopes/FEATURE.md` (in-progress canonical) vs `scope-system/*` vs `agent-context/` vs `docs/ctx/*` vs aidream `docs/ctx_context/*` + `docs/knowledge/scope-*` | common-docs/systems/scopes-context (model) + features/scopes (FE impl); rest pointered/archived |
 | 5 | CMS truth | `docs/cms_agent_authoring/README.md` ("MASTER") vs `matrx_cms/FEATURE.md` vs FE `features/cms/FEATURE.md` vs common-docs/systems/website-platform/cms | common-docs/systems/website-platform/cms arbitrates |
-| 6 | Web schema | FE `docs/WEB_SCHEMA_CANONICAL_REFERENCE.md` + `_REVIEW.md` vs common-docs/systems/platform/db-rules reference model | db-rules; FE docs archive |
+| 6 | Web schema | FE `docs/WEB_SCHEMA_IMPLEMENTED_CONTRACT.md` + `_REVIEW.md` vs common-docs/systems/platform/db-rules reference model | db-rules; FE docs archive |
 | 7 | Chat standards | FE root `agent-chat-standards.md` ("Single Source of Truth") vs `features/agents/components/chat/FEATURE.md` | chat FEATURE.md |
 | 8 | Secrets (4 claimants) | matrx-orm `secrets_battery` vs services `organization_secrets`/`user_secrets`/`secret_refs` FEATURE.mds | needs Arman — unclear |
 | 9 | Cloud files | `docs/cld_files/*` (14) vs matrx-files package + common-docs/systems/matrx-files-service | package + common-docs; cld_files archive |

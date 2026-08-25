@@ -23,6 +23,20 @@ export const SHAPES_FEATURE_LABEL = "Shapes";
 export const KIND_CREATOR_MANDATE_KEY = "content_ir.kind_creator";
 
 /**
+ * The studio's own surface, and the agent ROLES declared on it
+ * (`features/surfaces/manifests/shapes.manifest.ts` → `agentRoles`, mirrored
+ * to `ui.ui_surface_agent_role`). Every "do this with AI" affordance in the
+ * studio launches a role by name so the agent is the one MAPPED to this
+ * surface — visible in the header Agents menu, overridable per user/org —
+ * never a UUID or a mandate resolved inside a component.
+ */
+export const SHAPES_SURFACE_NAME = "matrx-user/shapes";
+/** Creates a new Shape and edits an existing one. Mandate: kind_creator. */
+export const SHAPE_BUILDER_ROLE = "shape_builder";
+/** Builds/improves the component that draws a Shape. Mandate: component_artisan. */
+export const SHAPE_COMPONENT_ROLE = "component_artisan";
+
+/**
  * Slugs shadowed by the STATIC route segments under `app/(core)/shapes/` —
  * a kind named one of these would be unreachable (`/shapes/instances` etc.
  * resolves to the static segment, never `[kind]`). Creation paths refuse

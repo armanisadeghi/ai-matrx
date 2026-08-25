@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -10,7 +9,12 @@ import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityListController } from "@/lib/entity-list/config";
 import { produceMissingComponentAssists } from "@/features/content-ir/studio/shape-assists-producer";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
-import { SHAPES_NEW_HREF } from "@/features/content-ir/studio/constants";
+import {
+  SHAPES_SURFACE_NAME,
+  SHAPE_BUILDER_ROLE,
+} from "@/features/content-ir/studio/constants";
+import { composeNewShapeIntent } from "@/features/content-ir/studio/kind-agent-intents";
+import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
 import { shapeListConfig } from "./listConfig";
 import type { ShapeBrowseRow } from "./types";
 
@@ -30,15 +34,37 @@ function ShapeAssistProducer({
   return null;
 }
 
-export function ShapeBrowsePage() {
-  const newShapeButton = (
-    <Button asChild size="sm" className="h-11 lg:h-7">
-      <Link href={SHAPES_NEW_HREF} aria-label="New shape">
-        <Plus className="h-4 w-4" />
-        <span className="max-sm:sr-only">New shape</span>
-      </Link>
+/**
+ * New shape — opens the studio's `shape_builder` role in a window ON THIS
+ * PAGE, with the list's live surface scope attached. It deliberately does not
+ * navigate to a form first: the builder's own composer is the input, and
+ * asking for the same description twice was the whole complaint.
+ */
+function NewShapeButton() {
+  const { launch, launching } = useKindAgentLaunch(
+    SHAPES_SURFACE_NAME,
+    SHAPE_BUILDER_ROLE,
+  );
+  return (
+    <Button
+      size="sm"
+      className="h-11 lg:h-7"
+      aria-label="New shape"
+      disabled={launching}
+      onClick={() => void launch(composeNewShapeIntent())}
+    >
+      {launching ? (
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+      ) : (
+        <Plus className="h-4 w-4" aria-hidden />
+      )}
+      <span className="max-sm:sr-only">New shape</span>
     </Button>
   );
+}
+
+export function ShapeBrowsePage() {
+  const newShapeButton = <NewShapeButton />;
 
   return (
     <EntityListPage
@@ -47,7 +73,7 @@ export function ShapeBrowsePage() {
       headerActions={newShapeButton}
       emptyAction={newShapeButton}
       surface={{
-        surfaceName: "matrx-user/shapes",
+        surfaceName: SHAPES_SURFACE_NAME,
         getScope: (list) =>
           createShapesScope({
             studio_tab: "list",

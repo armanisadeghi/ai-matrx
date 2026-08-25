@@ -12,7 +12,7 @@ complete list of what remains — each item is independent; pick any.
 2. **`aidream/docs/packages/PACKAGE_DOCTRINE.md`** — Arman working-session doctrine
    (2026-07-21); skipped as owner territory. Fold into matrx-package-template's INDEPENDENCE
    rules, promote to common-docs `/policies/`, or leave?
-3. **ai-matrx `docs/WEB_SCHEMA_CANONICAL_REFERENCE.md` + `_REVIEW.md`** — cluster 6 proposed
+3. **ai-matrx `docs/WEB_SCHEMA_IMPLEMENTED_CONTRACT.md` + `_REVIEW.md`** — cluster 6 proposed
    archiving them, but they're LIVE (edited 2026-07-19/20, load-bearing for the marketing admin
    page) and carry the 17-table `web` contract db-rules doesn't. Recommendation: rename/move
    under `features/marketing/` as the FE web-schema contract (dropping the CANONICAL title) and
