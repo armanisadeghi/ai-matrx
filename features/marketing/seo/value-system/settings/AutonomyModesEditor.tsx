@@ -120,7 +120,10 @@ export function AutonomyModesEditor({
                     )}
                   </div>
                   {capability.description ? (
-                    <p className="mt-0.5 max-w-md text-xs text-foreground/80">
+                    <p
+                      className="mt-0.5 line-clamp-1 max-w-md text-xs text-foreground/80"
+                      title={capability.description}
+                    >
                       {capability.description}
                     </p>
                   ) : null}

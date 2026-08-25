@@ -494,7 +494,16 @@ export function FacetCoverage({ siteId }: { siteId: string }) {
           {pass.stage}
         </p>
       ) : null}
-      {result && !running ? (
+      {result?.skipped && !running ? (
+        // KI-044 — the pass was ALLOWED to do nothing. Saying which, here, is
+        // the difference between a governed system and a broken button.
+        <p className="border-t border-border px-3 py-2 text-[11px] text-warning">
+          {result.skipped === "autonomy_off"
+            ? "Reading what a keyword is is turned off, so nothing ran. Change it under How much the AI may do on its own."
+            : "Reading what a keyword is is set to wait for a person, and this pass covers every site's shared keywords — so there is nobody it can ask. Nothing ran."}
+        </p>
+      ) : null}
+      {result && !result.skipped && !running ? (
         <p className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
           {result.ceiling_reached ? (
             <>

@@ -123,6 +123,17 @@ export interface FacetBackfillResult {
   pending_clicks: number;
   error: string | null;
   top_phrases: string[];
+  /**
+   * KI-044 — NULL when the pass ran. `autonomy_off` /
+   * `autonomy_review_required` when the ladder said it may not write, so the
+   * strip never reports "nothing to classify" over a step that was not allowed
+   * to run. The classifier writes UNIVERSAL facts (the shared keyword
+   * dictionary), so it resolves the PLATFORM rung.
+   */
+  skipped?: string | null;
+  autonomy_mode?: string;
+  autonomy_decision?: string;
+  autonomy_refusal?: string | null;
 }
 
 /** The endpoint one press advances by exactly one bounded, demand-ordered pass. */

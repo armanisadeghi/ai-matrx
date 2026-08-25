@@ -537,6 +537,9 @@ function TopicPlacementConsole({
               topicsCreated: result.topics_created ?? [],
               topPhrases: result.top_phrases ?? [],
               error: result.error,
+              autonomyRefusal: result.autonomy_refusal ?? null,
+              autonomyDecision: result.autonomy_decision ?? null,
+              timeoutApplied: result.timeout_applied ?? 0,
             },
             ...current,
           ],
@@ -834,7 +837,15 @@ function TopicPlacementConsole({
                         >
                           {outcome.siteName}
                         </button>
-                        {outcome.claimed === 0 && !outcome.error ? (
+                        {outcome.autonomyRefusal &&
+                        outcome.autonomyDecision !== "apply" ? (
+                          // KI-044 — the assigner was allowed to do nothing, or
+                          // allowed only to propose. Say which, or a zero reads
+                          // as a broken engine.
+                          <span className="text-[11px] text-warning">
+                            {outcome.autonomyRefusal}
+                          </span>
+                        ) : outcome.claimed === 0 && !outcome.error ? (
                           // A zero-claim pass is a real answer, not a failure —
                           // say what it means or the run reads as a dead click
                           // (the "blank window on Blanca" incident, 2026-08-24).
@@ -863,6 +874,11 @@ function TopicPlacementConsole({
                         {outcome.quarantined > 0 ? (
                           <span className="rounded border border-destructive/40 px-1 py-px text-[10px] tabular-nums text-destructive">
                             {formatCount(outcome.quarantined)} quarantined
+                          </span>
+                        ) : null}
+                        {outcome.timeoutApplied > 0 ? (
+                          <span className="rounded border border-border px-1 py-px text-[10px] tabular-nums text-muted-foreground">
+                            {formatCount(outcome.timeoutApplied)} applied after the wait
                           </span>
                         ) : null}
                         {outcome.ceilingReached ? (

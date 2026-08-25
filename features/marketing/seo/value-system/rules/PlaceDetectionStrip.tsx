@@ -71,7 +71,13 @@ export function PlaceDetectionStrip({ siteId }: { siteId: string }) {
     mutationFn: () => runPlaceDetectionPass(batchKeywords, minImpressions),
     onSuccess: (result) => {
       setLastPass(
-        result.claimed === 0
+        // KI-044 — a pass held back by autonomy read zero keywords, and
+        // "nothing left above the demand floor" would be a lie about why.
+        result.skipped
+          ? result.skipped === "autonomy_off"
+            ? "Place detection is turned off, so nothing ran. Change it under How much the AI may do on its own."
+            : "Place detection is set to wait for a person, and this pass covers every site's shared keywords — so there is nobody it can ask. Nothing ran."
+          : result.claimed === 0
           ? "Nothing left above the demand floor."
           : `Read ${formatCount(result.claimed)} keywords · ${formatCount(
               result.keywords_with_places,

@@ -178,6 +178,14 @@ export interface PlaceDetectionPass {
   places_written: number;
   local_intent_stamped: number;
   human_protected: number;
+  /**
+   * KI-044 — NULL when the pass ran. `autonomy_off` / `autonomy_review_required`
+   * when the autonomy ladder said it may not write, so a strip never reports
+   * "nothing left to read" over a step that was simply not allowed to run.
+   */
+  skipped: string | null;
+  /** The mode that decided it, for the sentence a person reads. */
+  autonomy_mode: string | null;
 }
 
 export interface GeoAreaFormState {

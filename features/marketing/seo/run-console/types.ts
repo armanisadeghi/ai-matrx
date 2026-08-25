@@ -68,6 +68,15 @@ export interface RunOutcome {
   topicsCreated: string[];
   topPhrases: string[];
   error: string | null;
+  /**
+   * KI-044 — the sentence to show when the assigner declined to place
+   * anything, and the mode that decided it. A run that placed 0 because the
+   * step is off must never read as "nothing to place".
+   */
+  autonomyRefusal: string | null;
+  autonomyDecision: string | null;
+  /** Mode 3's catch-up: proposals nobody answered inside the window. */
+  timeoutApplied: number;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

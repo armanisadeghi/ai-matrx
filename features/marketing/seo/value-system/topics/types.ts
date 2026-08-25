@@ -74,6 +74,18 @@ export interface TopicPlacementPassResult {
   confidence_floor: number;
   error: string | null;
   top_phrases: string[];
+  /**
+   * KI-044 — which autonomy mode the pass obeyed. A decision other than
+   * `apply` means nothing was PLACED: either the assigner is off (`skipped`),
+   * or every placement is waiting for a person as a proposal (the SAME
+   * proposal queue low-confidence placements already use — the mode raises the
+   * confidence floor above the maximum rather than opening a second path).
+   */
+  autonomy_mode?: string;
+  autonomy_decision?: string;
+  autonomy_refusal?: string | null;
+  timeout_applied?: number;
+  skipped?: string | null;
 }
 
 export interface KeywordTopicResult {
