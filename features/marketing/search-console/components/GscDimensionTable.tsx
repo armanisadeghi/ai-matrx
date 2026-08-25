@@ -13,7 +13,7 @@
  * wrapper), which resolves rows through the table's `data-row-id` stamps.
  */
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -26,11 +26,16 @@ import {
   SearchX,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { Button } from "@/components/ui/button";
 import { trackPage } from "@/features/marketing/search-console/data-launch";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { CellEditsMap } from "@/components/official/matrx-data-table/types";
+import type {
+  CellEditsMap,
+  ColumnFilterValue,
+} from "@/components/official/matrx-data-table/types";
 import {
   setGscKeywordClass,
   type GscClassRuling,
@@ -53,6 +58,7 @@ import {
 } from "@/features/marketing/search-console/lib/columns";
 import { useGscBreakdown } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
+import { getValueVocabulary } from "@/features/marketing/seo/value-system/data";
 import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
 import { gscScopeAttributes } from "@/features/marketing/search-console/lib/copy-payloads";
@@ -62,6 +68,12 @@ import {
 } from "@/features/marketing/search-console/lib/drills";
 import { useOpenGscWhyScoreWindow } from "@/features/overlays/openers/gscWhyScoreWindow";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+  type KeywordMenuRow,
+} from "@/features/marketing/seo/keyword/keyword-actions";
 import type {
   GscBreakdownRow,
   GscCompareMode,
@@ -88,7 +100,29 @@ const SORTABLE: ReadonlySet<string> = new Set([
   "ctr",
   "position",
   "delta_clicks",
+  // MSR-03/04 — server-side sort added to `gsc_perf_breakdown`
+  // (`seo_gsc_breakdown_value_sort_filter.sql`), query dimension only.
+  "traffic_class",
+  "value_score",
+  "value_band",
 ]);
+
+/** MSR-03/04 — this table's column-header filters, translated into the RPC's
+ * `GscFilters` bag. Kept ONE place so the mapping can never drift from what
+ * the server actually understands. */
+function numberFilterRange(
+  cf: ColumnFilterValue | undefined,
+): { min?: number; max?: number } | null {
+  if (!cf || cf.kind !== "number") return null;
+  if (cf.min === undefined && cf.max === undefined) return null;
+  return { min: cf.min, max: cf.max };
+}
+
+function selectFilterValues(cf: ColumnFilterValue | undefined): string[] {
+  if (!cf || cf.kind !== "select") return [];
+  if (cf.values && cf.values.length > 0) return cf.values;
+  return cf.value ? [cf.value] : [];
+}
 
 export function GscDimensionTable({
   siteId,
@@ -145,8 +179,66 @@ export function GscDimensionTable({
   const sortId = query.sort?.id && SORTABLE.has(query.sort.id)
     ? (query.sort.id as GscSortKey)
     : "clicks";
-  const debouncedSearch = useDebounce(query.search, 300);
-  const breakdown = useGscBreakdown(siteId, periods, filters, {
+  // MSR-03/04 — the Key column's own header filter drives the SAME search
+  // the toolbar box does (one truth, two entry points); when it's set it
+  // wins, so a column-level filter always does something real.
+  const keyColumnFilterText =
+    query.columnFilters.key?.kind === "text"
+      ? query.columnFilters.key.value
+      : "";
+  const debouncedSearch = useDebounce(
+    keyColumnFilterText || query.search,
+    300,
+  );
+
+  // MSR-03/04 — every other column-header filter, translated into the RPC's
+  // filter bag and merged over the surface's own filters (FilterBar chips /
+  // URL state). Class/Score/Level only exist on the query dimension.
+  const columnDerivedFilters = useMemo<Partial<GscFilters>>(() => {
+    const cf = query.columnFilters;
+    const out: Partial<GscFilters> = {};
+    const clicks = numberFilterRange(cf.clicks);
+    if (clicks) {
+      if (clicks.min !== undefined) out.clicks_min = String(clicks.min);
+      if (clicks.max !== undefined) out.clicks_max = String(clicks.max);
+    }
+    const impressions = numberFilterRange(cf.impressions);
+    if (impressions) {
+      if (impressions.min !== undefined)
+        out.impressions_min = String(impressions.min);
+      if (impressions.max !== undefined)
+        out.impressions_max = String(impressions.max);
+    }
+    const ctr = numberFilterRange(cf.ctr);
+    if (ctr) {
+      if (ctr.min !== undefined) out.ctr_min = String(ctr.min);
+      if (ctr.max !== undefined) out.ctr_max = String(ctr.max);
+    }
+    const position = numberFilterRange(cf.position);
+    if (position) {
+      if (position.min !== undefined) out.position_min = String(position.min);
+      if (position.max !== undefined) out.position_max = String(position.max);
+    }
+    if (dimension === "query") {
+      const classValues = selectFilterValues(cf.traffic_class);
+      if (classValues.length > 0)
+        out.traffic_classes = classValues.join("|");
+      const bandValues = selectFilterValues(cf.value_band);
+      if (bandValues.length > 0) out.levels = bandValues.join("|");
+      const score = numberFilterRange(cf.value_score);
+      if (score) {
+        if (score.min !== undefined) out.value_score_min = String(score.min);
+        if (score.max !== undefined) out.value_score_max = String(score.max);
+      }
+    }
+    return out;
+  }, [query.columnFilters, dimension]);
+  const effectiveFilters = useMemo<GscFilters>(
+    () => ({ ...filters, ...columnDerivedFilters }),
+    [filters, columnDerivedFilters],
+  );
+
+  const breakdown = useGscBreakdown(siteId, periods, effectiveFilters, {
     dimension,
     search: debouncedSearch,
     sort: sortId,

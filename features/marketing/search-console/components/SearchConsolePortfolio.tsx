@@ -63,6 +63,12 @@ import type { MonthlySearchPoint } from "@/features/marketing/seo/keyword-resear
 /** Cards that can plausibly show a live trend line without firing an unbounded burst of RPCs. */
 const MAX_SPARKLINE_CARDS = 24;
 
+interface SiteClicksTrend {
+  points: MonthlySearchPoint[];
+  /** Real ISO dates, index-aligned with `points` — the tooltip's source of truth. */
+  days: string[];
+}
+
 function trendPercent(cur: number | null, prev: number | null): number | null {
   if (cur === null || prev === null || prev === 0) return null;
   return ((cur - prev) / prev) * 100;
@@ -141,16 +147,21 @@ export function SearchConsolePortfolio({
             new Date(),
             site.gsc_latest_date,
           );
-          const rows = await getGscTimeseries(site.id, periods, {}, signal);
-          const points: MonthlySearchPoint[] = rows
+          const timeseries = await getGscTimeseries(site.id, periods, {}, signal);
+          const daily = timeseries
             .filter((row) => row.period === "current")
-            .sort((a, b) => a.day.localeCompare(b.day))
-            .map((row, index) => ({
+            .sort((a, b) => a.day.localeCompare(b.day));
+          const trend: SiteClicksTrend = {
+            points: daily.map((row, index) => ({
+              // `KeywordTrendSparkline` only needs a stable key + a value to
+              // plot here — the real date rides `days` for the tooltip.
               year: Number(row.day.slice(0, 4)),
               month: index + 1,
               search_volume: row.clicks,
-            }));
-          return [site.id, points] as const;
+            })),
+            days: daily.map((row) => row.day),
+          };
+          return [site.id, trend] as const;
         }),
       );
       return new Map(entries);
@@ -158,13 +169,6 @@ export function SearchConsolePortfolio({
     enabled: sparklineSiteIds.length > 0,
     staleTime: 5 * 60 * 1000,
   });
-  const sparklineDays = withData
-    .slice(0, MAX_SPARKLINE_CARDS)
-    .reduce<Map<string, string[]>>((map, site) => {
-      map.set(site.id, []);
-      return map;
-    }, new Map());
-  void sparklineDays; // placeholder removed below once real days are threaded through
 
   if (sites.isLoading) return <LoadingSurface label="Loading sites…" />;
   if (sites.isError) {
@@ -178,6 +182,10 @@ export function SearchConsolePortfolio({
       site.gsc_prev_days >= 21
         ? trendPercent(site.gsc_clicks_28d, site.gsc_clicks_prev_28d)
         : null;
+    const impressionsTrend =
+      site.gsc_prev_days >= 21
+        ? trendPercent(site.gsc_impressions_28d, site.gsc_impressions_prev_28d)
+        : null;
     const behind = daysBehind(site.gsc_latest_date);
     const stale = behind !== null && behind >= GSC_STALE_AFTER_DAYS;
     const hasBinding = siteHasGscBinding(site);
@@ -189,10 +197,16 @@ export function SearchConsolePortfolio({
       "integrations",
     );
     const siteLabel = site.name ?? site.domain ?? site.id;
+    const trend = sparklines.data?.get(site.id);
     return (
       <div
         key={site.id}
-        className="group flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40"
+        className={cn(
+          "group flex flex-col gap-2.5 rounded-lg border bg-card p-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
+          stale
+            ? "border-l-2 border-l-destructive border-y-border border-r-border"
+            : "border-l-2 border-l-success/70 border-y-border border-r-border hover:border-primary/40",
+        )}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -242,53 +256,73 @@ export function SearchConsolePortfolio({
         <Link
           href={dashboardHref}
           aria-label={`Open Search Console dashboard for ${siteLabel}`}
-          className="rounded-sm outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring"
+          className="-mx-1 rounded-md px-1 outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <p className="text-[11px] text-muted-foreground">Clicks 28d</p>
-              <p className="text-base font-semibold tabular-nums text-foreground">
+          {/* Clicks leads — largest number, its own row, the trend line
+              directly under it so the shape of the last 28 days reads at a
+              glance instead of a lone percentage. */}
+          <div className="flex items-end justify-between gap-2 pt-0.5">
+            <div className="min-w-0">
+              <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <MousePointerClick className="h-3 w-3" />
+                Clicks · 28d
+              </p>
+              <p className="text-xl font-semibold leading-tight tabular-nums text-foreground">
                 {formatCount(site.gsc_clicks_28d)}
               </p>
-              {clicksTrend !== null ? (
-                <p
-                  className={
-                    clicksTrend >= 0
-                      ? "text-[11px] tabular-nums text-success"
-                      : "text-[11px] tabular-nums text-destructive"
-                  }
-                >
-                  {clicksTrend >= 0 ? "+" : ""}
-                  {clicksTrend.toFixed(0)}%
-                </p>
-              ) : null}
             </div>
+            <TrendPill percent={clicksTrend} />
+          </div>
+          {trend && trend.points.length >= 2 ? (
+            <KeywordTrendSparkline
+              points={trend.points}
+              className="mt-1 h-6"
+              tooltipLabel={(point, index) =>
+                `${formatGscDate(trend.days[index] ?? "")}: ${point.search_volume.toLocaleString()} clicks`
+              }
+            />
+          ) : null}
+          <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border pt-2">
             <div>
               <p className="text-[11px] text-muted-foreground">Impressions</p>
-              <p className="text-base font-semibold tabular-nums text-foreground">
-                {formatCount(site.gsc_impressions_28d)}
-              </p>
+              <div className="flex items-baseline gap-1.5">
+                <p className="text-sm font-semibold tabular-nums text-foreground">
+                  {formatCount(site.gsc_impressions_28d)}
+                </p>
+                <TrendPill percent={impressionsTrend} compact />
+              </div>
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground">Position</p>
-              <p className="text-base font-semibold tabular-nums text-foreground">
+              <p className="text-[11px] text-muted-foreground">Avg. position</p>
+              <p className="text-sm font-semibold tabular-nums text-foreground">
                 {formatPosition(site.gsc_position_28d)}
               </p>
             </div>
           </div>
         </Link>
-        <div className="flex min-h-6 items-center justify-between gap-2">
+        <div className="flex min-h-6 items-center justify-between gap-2 border-t border-border pt-2">
           <p
-            className={
+            className={cn(
+              "flex items-center gap-1 text-[11px]",
               stale
-                ? "text-[11px] font-medium text-destructive"
-                : "text-[11px] text-muted-foreground"
-            }
+                ? "font-medium text-destructive"
+                : "text-muted-foreground",
+            )}
           >
+            <span
+              className={cn(
+                "h-1.5 w-1.5 shrink-0 rounded-full",
+                site.gsc_latest_date === null
+                  ? "bg-muted-foreground/40"
+                  : stale
+                    ? "bg-destructive"
+                    : "bg-success",
+              )}
+            />
             {site.gsc_latest_date
               ? stale
-                ? `Stale — data only through ${formatGscDate(site.gsc_latest_date)} (${behind} days behind)`
-                : `Up to date — data through ${formatGscDate(site.gsc_latest_date)}`
+                ? `Stale — through ${formatGscDate(site.gsc_latest_date)} (${behind}d behind)`
+                : `Up to date — through ${formatGscDate(site.gsc_latest_date)}`
               : "No Search Console data yet"}
           </p>
           {needsAction ? (
