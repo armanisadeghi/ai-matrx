@@ -276,6 +276,34 @@ Design tests to make failure visible, never to confirm success:
 - **The adversarial-scale case** — ten near-duplicate pages targeting one keyword. It can only
   be caught if the provision actually delivers the other nine.
 
+### THE PLANTED CONFLICT — design the test from the failure modes
+
+The strongest test is not a bigger assertion suite. It is a **scenario built backwards from
+the ways the agent will be confidently wrong**, arranged so the right answer is reachable ONLY
+if every part of the pipeline works, and the wrong answer is unmistakable to a human looking at
+it.
+
+How to build one:
+
+1. **List the top ways this agent could be wrong while sounding right.** Not "it might fail" —
+   the specific confident errors: it will cite a neighbour that does not exist; it will miss the
+   duplicate because it never saw it; it will keep a keyword a human locked; it will call two
+   pages distinct because their words differ while their intent is identical.
+2. **For each, plant the decisive evidence where a broken pipeline cannot see it** — the far
+   side of the collection, a different branch, a page whose slug shares no tokens with the
+   target. If the selection, condensation, or delivery is broken, that evidence never arrives
+   and the agent MUST get it wrong.
+3. **Make the failure legible.** A human glancing at the output should be able to say "it missed
+   the obvious one" without running anything.
+4. **Confirm the test can fail.** Run it against the broken version first. A planted conflict
+   that the OLD pipeline also passes proves nothing and must be redesigned.
+
+This is deliberately a **human-judged setting, not an assertion suite**. The point is not that a
+program says PASS; it is that two people can look at the answer and see instantly whether the
+system actually knew, or merely sounded like it did. These are cheap to build once you have
+listed the failure modes honestly — which is why step 1 is the work and everything else is
+arrangement.
+
 🚨 **Never design a test you know you will pass.** A test built from data you hand-picked to
 suit the agent proves nothing and manufactures false confidence. **Real data is what wins** —
 and when two designs are both plausible, build both and let real data pick, rather than
