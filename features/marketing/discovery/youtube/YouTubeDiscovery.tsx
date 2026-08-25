@@ -420,7 +420,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
                 onValueChange={(value) =>
                   update("order", value as FormState["order"])
                 }
-                options={[
+                fixedFilters={[
                   ["relevance", "Most relevant"],
                   ["viewCount", "Most viewed"],
                   ["rating", "Highest rated"],
@@ -432,7 +432,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
                 label="Results"
                 value={String(form.max_results)}
                 onValueChange={(value) => update("max_results", Number(value))}
-                options={[
+                fixedFilters={[
                   ["10", "10 videos"],
                   ["25", "25 videos"],
                   ["50", "50 videos"],
@@ -456,7 +456,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
                     max_duration_minutes: undefined,
                   }));
                 }}
-                options={[
+                fixedFilters={[
                   ["any", "Any length"],
                   ["short", "Under 4 minutes"],
                   ["under10", "Under 10 minutes"],
@@ -471,7 +471,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
                 onValueChange={(value) =>
                   update("video_caption", value as FormState["video_caption"])
                 }
-                options={[
+                fixedFilters={[
                   ["any", "Any"],
                   ["closedCaption", "Has captions"],
                   ["none", "No captions"],
@@ -486,7 +486,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
                     value === "any" ? undefined : Number(value),
                   )
                 }
-                options={[
+                fixedFilters={[
                   ["1", "1 video"],
                   ["2", "2 videos"],
                   ["3", "3 videos"],
@@ -629,12 +629,12 @@ function FilterSelect({
   label,
   value,
   onValueChange,
-  options,
+  fixedFilters,
 }: {
   label: string;
   value: string;
   onValueChange: (value: string) => void;
-  options: [string, string][];
+  fixedFilters: [string, string][];
 }) {
   return (
     <div className="min-w-0 rounded-2xl border border-border bg-muted/30 px-3 py-2 dark:border-white/10 dark:bg-white/[0.03]">
@@ -646,7 +646,7 @@ function FilterSelect({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {options.map(([optionValue, optionLabel]) => (
+          {fixedFilters.map(([optionValue, optionLabel]) => (
             <SelectItem key={optionValue} value={optionValue}>
               {optionLabel}
             </SelectItem>
@@ -725,7 +725,7 @@ function AdvancedFilters({
               value === "any" ? undefined : (value as FormState["event_type"]),
             )
           }
-          options={[
+          fixedFilters={[
             ["any", "Any"],
             ["live", "Live now"],
             ["upcoming", "Upcoming"],
@@ -738,7 +738,7 @@ function AdvancedFilters({
           onValueChange={(value) =>
             update("video_definition", value as FormState["video_definition"])
           }
-          options={[
+          fixedFilters={[
             ["any", "Any"],
             ["high", "High definition"],
             ["standard", "Standard definition"],
@@ -750,7 +750,7 @@ function AdvancedFilters({
           onValueChange={(value) =>
             update("video_dimension", value as FormState["video_dimension"])
           }
-          options={[
+          fixedFilters={[
             ["any", "Any"],
             ["2d", "2D"],
             ["3d", "3D"],
@@ -762,7 +762,7 @@ function AdvancedFilters({
           onValueChange={(value) =>
             update("video_license", value as FormState["video_license"])
           }
-          options={[
+          fixedFilters={[
             ["any", "Any"],
             ["creativeCommon", "Creative Commons"],
             ["youtube", "Standard YouTube"],
@@ -774,7 +774,7 @@ function AdvancedFilters({
           onValueChange={(value) =>
             update("video_type", value as FormState["video_type"])
           }
-          options={[
+          fixedFilters={[
             ["any", "Any"],
             ["episode", "Episode"],
             ["movie", "Movie"],

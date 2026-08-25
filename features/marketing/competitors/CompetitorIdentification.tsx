@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ExternalLink, Loader2, Plus, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
+import { isJsonObject } from "@/types/json";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { TagInput } from "@/features/notes/components/TagInput";
 import { SettingDoor } from "@/features/settings/doors/SettingDoor";
@@ -305,17 +306,19 @@ export function CompetitorClassificationEditor({
   const [why, setWhy] = useState("");
   const [organizationLabels, setOrganizationLabels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const reasons = useMemo(() => {
-    const classification = (
-      row.latest_autopsy as {
-        classification?: {
-          reasons?: Record<string, string>;
-          uncertainty?: string;
-        };
-      } | null
-    )?.classification;
-    return classification ?? null;
-  }, [row.latest_autopsy]);
+  const classification =
+    isJsonObject(row.latest_autopsy) &&
+    isJsonObject(row.latest_autopsy.classification)
+      ? row.latest_autopsy.classification
+      : null;
+  const classificationReasons =
+    classification && isJsonObject(classification.reasons)
+      ? classification.reasons
+      : null;
+  const uncertainty =
+    classification && typeof classification.uncertainty === "string"
+      ? classification.uncertainty
+      : null;
   useEffect(() => {
     let alive = true;
     void getOrgModuleCustomValues(
@@ -381,10 +384,12 @@ export function CompetitorClassificationEditor({
   const axis = (
     label: string,
     value: string | null,
-    values: readonly string[],
+    axisValues: readonly string[],
     key: "business_overlap" | "market_overlap" | "entity_role" | "peer_scale" | "posture",
-  ) => (
-    <div className="space-y-1.5">
+  ) => {
+    const axisReason = classificationReasons?.[key];
+    return (
+      <div className="space-y-1.5">
       <Label>{label}</Label>
       <Select
         value={value ?? ""}
@@ -396,20 +401,21 @@ export function CompetitorClassificationEditor({
           <SelectValue placeholder="Choose" />
         </SelectTrigger>
         <SelectContent>
-          {values.map((item) => (
+          {axisValues.map((item) => (
             <SelectItem value={item} key={item}>
               {item.replaceAll("_", " ")}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      {reasons?.reasons?.[key] ? (
+      {typeof axisReason === "string" ? (
         <p className="text-xs leading-5 text-muted-foreground">
-          {reasons.reasons[key]}
+          {axisReason}
         </p>
       ) : null}
     </div>
-  );
+    );
+  };
   return (
     <div className="space-y-5 p-4 text-sm">
       <div className="flex flex-wrap items-center gap-2">
@@ -487,9 +493,9 @@ export function CompetitorClassificationEditor({
           placeholder="What made this obvious to you? Anything you say here teaches every future run."
         />
       </div>
-      {reasons?.uncertainty ? (
+      {uncertainty ? (
         <div className="rounded-lg bg-muted/50 p-3">
-          <strong>What to verify:</strong> {reasons.uncertainty}
+          <strong>What to verify:</strong> {uncertainty}
         </div>
       ) : null}
       <div className="flex justify-end gap-2">

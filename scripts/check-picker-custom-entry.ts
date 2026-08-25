@@ -76,7 +76,7 @@ const ADD_AFFORDANCE = [
   /["'`]\s*(Add|Create|New)\s+[a-z]/i,
   /Create\s+["'“]/i,
   /quick_add|quickAdd|gsc_quick_add_value/,
-  /onCreate|allowCreate|creatable|onAddNew|handleCreate/i,
+  /onCreate|allowCreate|allowOther|creatable|onAddNew|handleCreate/i,
   /facet_value_upsert|facet_dimension_upsert|save_value_vocabulary/,
   // P11 path: the file explains a shared vocabulary and offers the local override
   /your own dimension|platform-governed|shared dimension/i,
