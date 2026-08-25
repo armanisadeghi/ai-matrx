@@ -118,6 +118,12 @@ export function useCompetitorAutopsy(siteId: string | null) {
       maxCompetitors: number;
       pagesPerCompetitor: number;
       forceRefresh: boolean;
+      /** LOCAL MODE — supply BOTH and the run seeds its competitors from the
+       *  Google local pack for this search in this place instead of national
+       *  keyword overlap. Either one alone is ignored by the server, so the
+       *  caller sends both or neither. */
+      localKeyword?: string;
+      localLocation?: string;
     }) => {
       if (!resolvedSiteId) return;
       // Abort the previous run's stream BEFORE reaping its row — otherwise the
@@ -163,6 +169,21 @@ export function useCompetitorAutopsy(siteId: string | null) {
                 ...current,
                 stage: stageLabel(kind, current.stage),
               }));
+            // The terminal failure carries the ONLY explanation the user will
+            // ever get — and for a local run it is the useful one: an
+            // ambiguous place name comes back naming the candidates to pick
+            // from ("Springfield" → which Springfield). Reading it as nothing
+            // but a stage sentence ("The autopsy stopped") threw that away.
+            if (kind === "seo.command_failed") {
+              const failure = isJsonObject(data.error) ? data.error : null;
+              const message =
+                typeof failure?.message === "string" && failure.message
+                  ? failure.message
+                  : "The competitor autopsy stopped before it completed.";
+              streamError = message;
+              setRun((current) => ({ ...current, status: "error", error: message }));
+              return;
+            }
             if (kind === "seo.competitor_autopsy_completed") {
               setRun((current) => ({ ...current, status: "done", stage: "Autopsy complete" }));
             }
@@ -181,6 +202,8 @@ export function useCompetitorAutopsy(siteId: string | null) {
             max_competitors: input.maxCompetitors,
             pages_per_competitor: input.pagesPerCompetitor,
             force_refresh: input.forceRefresh,
+            local_keyword: input.localKeyword?.trim() || null,
+            local_location: input.localLocation?.trim() || null,
           },
           stream: true,
           consumeStream,

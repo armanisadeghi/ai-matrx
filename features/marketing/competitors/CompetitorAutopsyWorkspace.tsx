@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   CheckCircle2,
   CircleDot,
+  Globe,
   Loader2,
   MapPin,
   Radar,
@@ -54,6 +55,10 @@ import type {
 import { saveCompetitorClassification, updateCompetitorTracking, updateOpportunityStatus } from "./data";
 import {
   AUTOPSY_RUN_BOUND_CHOICES,
+  LOCAL_SEARCH_AREA_LABEL,
+  LOCAL_SEARCH_AREA_PLACEHOLDER,
+  LOCAL_SEARCH_KEYWORD_LABEL,
+  LOCAL_SEARCH_KEYWORD_PLACEHOLDER,
   parseAutopsyRunPlan,
   parseCompetitorDomainsField,
   parseCompetitorTrackingWrite,
@@ -235,6 +240,18 @@ export default function CompetitorAutopsyWorkspace() {
   const [localStage, setLocalStage] = useState<string | null>(null);
   const [localResult, setLocalResult] = useState<LocalCompetitorSearchResult | null>(null);
   const [activeTab, setActiveTab] = useState("competitors");
+  /** MSR-25 — WHICH COMPETITOR UNIVERSE this run should look in. National is
+   *  keyword overlap against our own domain; local is the map pack for a real
+   *  search in a real place. They return different companies, so the user
+   *  chooses rather than the system guessing. Deliberately separate state from
+   *  the Review tab's standalone pack search (which spends nothing but a pack
+   *  read) — same two questions, but this one commissions a whole autopsy. */
+  const [autopsyScope, setAutopsyScope] = useState<"national" | "local">("national");
+  const [autopsyLocalKeyword, setAutopsyLocalKeyword] = useState("");
+  const [autopsyLocalArea, setAutopsyLocalArea] = useState("");
+  const localScopeIncomplete =
+    autopsyScope === "local" &&
+    (!autopsyLocalKeyword.trim() || !autopsyLocalArea.trim());
 
   useEffect(() => {
     if (!resolvedSiteId || !proposed.length) return;
@@ -845,21 +862,83 @@ export default function CompetitorAutopsyWorkspace() {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* MSR-25 — the choice Arman asked for. Two genuinely
+                  different competitor universes, so it is a decision the user
+                  makes, never one the system infers from the site. */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="competitor-domains">
-                    Competitors to include{" "}
-                    <span className="font-normal text-muted-foreground">
-                      (optional)
-                    </span>
-                  </Label>
-                  <Textarea
-                    id="competitor-domains"
-                    value={domains}
-                    onChange={(event) => setDomains(event.target.value)}
-                    placeholder="One domain per line. Leave blank for automatic discovery."
-                    className="min-h-20 resize-none"
-                  />
+                  <Label>Where to look for competitors</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={autopsyScope === "national" ? "default" : "outline"}
+                      className="gap-2"
+                      onClick={() => setAutopsyScope("national")}
+                    >
+                      <Globe className="size-3.5" />
+                      National
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={autopsyScope === "local" ? "default" : "outline"}
+                      className="gap-2"
+                      onClick={() => setAutopsyScope("local")}
+                    >
+                      <MapPin className="size-3.5" />
+                      Local
+                    </Button>
+                  </div>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    {autopsyScope === "local"
+                      ? "If you serve an area rather than the whole country, the businesses you actually compete with are the ones Google puts on the map for a local search — not the national sites that happen to rank for your keywords."
+                      : "Looks nationwide, at whoever ranks for the same keywords you do. If you sell to one city or region, choose Local instead."}
+                  </p>
                 </div>
+                {autopsyScope === "local" ? (
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="autopsy-local-keyword">
+                        {LOCAL_SEARCH_KEYWORD_LABEL}
+                      </Label>
+                      <Input
+                        id="autopsy-local-keyword"
+                        value={autopsyLocalKeyword}
+                        placeholder={LOCAL_SEARCH_KEYWORD_PLACEHOLDER}
+                        onChange={(event) =>
+                          setAutopsyLocalKeyword(event.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="autopsy-local-area">
+                        {LOCAL_SEARCH_AREA_LABEL}
+                      </Label>
+                      <Input
+                        id="autopsy-local-area"
+                        value={autopsyLocalArea}
+                        placeholder={LOCAL_SEARCH_AREA_PLACEHOLDER}
+                        onChange={(event) => setAutopsyLocalArea(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="competitor-domains">
+                      Competitors to include{" "}
+                      <span className="font-normal text-muted-foreground">
+                        (optional)
+                      </span>
+                    </Label>
+                    <Textarea
+                      id="competitor-domains"
+                      value={domains}
+                      onChange={(event) => setDomains(event.target.value)}
+                      placeholder="One domain per line. Leave blank for automatic discovery."
+                      className="min-h-20 resize-none"
+                    />
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   {/* Both selects render from the SAME constant the manifest's
                     contract prose is interpolated from and the write handler
@@ -917,13 +996,29 @@ export default function CompetitorAutopsyWorkspace() {
                 </div>
                 <Button
                   className="w-full gap-2"
-                  disabled={!resolvedSiteId || run.status === "running"}
+                  disabled={
+                    !resolvedSiteId ||
+                    run.status === "running" ||
+                    localScopeIncomplete
+                  }
                   onClick={() =>
                     void start({
-                      competitorDomains: parseCompetitorDomainsField(domains),
+                      // A local run seeds its competitors from the map pack, so
+                      // the typed domain list has nothing to seed — the field
+                      // is hidden above and nothing is sent.
+                      competitorDomains:
+                        autopsyScope === "local"
+                          ? []
+                          : parseCompetitorDomainsField(domains),
                       maxCompetitors,
                       pagesPerCompetitor,
                       forceRefresh,
+                      ...(autopsyScope === "local"
+                        ? {
+                            localKeyword: autopsyLocalKeyword,
+                            localLocation: autopsyLocalArea,
+                          }
+                        : {}),
                     })
                   }
                 >
@@ -934,7 +1029,9 @@ export default function CompetitorAutopsyWorkspace() {
                   )}
                   {run.status === "running"
                     ? "Building the autopsy"
-                    : "Run competitor autopsy"}
+                    : autopsyScope === "local"
+                      ? "Run local competitor autopsy"
+                      : "Run competitor autopsy"}
                 </Button>
               </CardContent>
             </Card>
@@ -1072,23 +1169,23 @@ export default function CompetitorAutopsyWorkspace() {
               <div className="flex flex-wrap items-end gap-2">
                 <div className="flex min-w-44 flex-1 flex-col gap-1">
                   <Label htmlFor="local-search-keyword" className="text-xs">
-                    What would a customer search for?
+                    {LOCAL_SEARCH_KEYWORD_LABEL}
                   </Label>
                   <Input
                     id="local-search-keyword"
                     value={localKeyword}
-                    placeholder="e.g. electronics recycling"
+                    placeholder={LOCAL_SEARCH_KEYWORD_PLACEHOLDER}
                     onChange={(event) => setLocalKeyword(event.target.value)}
                   />
                 </div>
                 <div className="flex min-w-44 flex-1 flex-col gap-1">
                   <Label htmlFor="local-search-area" className="text-xs">
-                    Where?
+                    {LOCAL_SEARCH_AREA_LABEL}
                   </Label>
                   <Input
                     id="local-search-area"
                     value={localArea}
-                    placeholder="e.g. Tustin, CA"
+                    placeholder={LOCAL_SEARCH_AREA_PLACEHOLDER}
                     onChange={(event) => setLocalArea(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") void findLocalCompetitors();

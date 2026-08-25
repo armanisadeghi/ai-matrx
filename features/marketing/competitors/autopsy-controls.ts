@@ -165,6 +165,31 @@ function isAutopsyRunBound(value: unknown): value is AutopsyRunBound {
 export const AUTOPSY_MAX_DOMAIN_ENTRIES = 25;
 
 // ---------------------------------------------------------------------------
+// Local search vocabulary — the two questions a local business answers
+// ---------------------------------------------------------------------------
+
+/**
+ * The exact words the UI asks for a local search with, in ONE place.
+ *
+ * There are now TWO surfaces that ask a local business the same two questions:
+ * the standalone "Find local competitors" search on the Review tab
+ * (`discoverLocalCompetitors`, a cheap pack read), and the LOCAL mode of the
+ * "Run a fresh autopsy" card (MSR-25), which seeds the whole autopsy from that
+ * same pack. They are the same question about the same thing, so they must
+ * never phrase it two ways — a user who reads "What would a customer search
+ * for?" in one card and "Local keyword" in the other has to work out whether
+ * they mean the same field. They do.
+ *
+ * Free text on purpose: the provider's location catalogue resolves the place,
+ * and an ambiguous name comes back as a real message naming the candidates —
+ * which the caller must SHOW, never swallow.
+ */
+export const LOCAL_SEARCH_KEYWORD_LABEL = "What would a customer search for?";
+export const LOCAL_SEARCH_KEYWORD_PLACEHOLDER = "e.g. electronics recycling";
+export const LOCAL_SEARCH_AREA_LABEL = "Where?";
+export const LOCAL_SEARCH_AREA_PLACEHOLDER = "e.g. Tustin, CA";
+
+// ---------------------------------------------------------------------------
 // Domain normalization
 // ---------------------------------------------------------------------------
 

@@ -79,6 +79,28 @@ classification without buying a page-crawl autopsy. Everything lands `proposed`.
 
 ## Change log
 
+- 2026-08-25 — **The autopsy asks WHICH competitor universe — national or local (MSR-25).** Arman,
+  walking the page: *"when it says run a fresh autopsy, we're missing one of the most important
+  things… offer the national search, and then offer a local search so that they can search their
+  local area."* The "Run a fresh autopsy" card now opens with a two-button choice (National ·
+  Local) plus the one line that explains the stake: if you serve an area rather than the whole
+  country, the businesses you actually compete with are the ones Google puts on the map for a local
+  search, not the national sites that happen to rank for your keywords. Choosing **Local** reveals
+  the same two questions the Review tab's standalone pack search asks, and hides the
+  "Competitors to include" textarea — a local run seeds from the map pack, so a typed domain list
+  has nothing to seed and is not sent. `useCompetitorAutopsy.start()` gained optional
+  `localKeyword`/`localLocation` and passes them as `local_keyword`/`local_location` to the existing
+  `POST /seo/sites/{id}/competitor-autopsy` (server half shipped 2026-08-24 in
+  `services/seo/competitor_autopsy.py`); either one alone is meaningless to the server, so the run
+  button stays disabled until both are filled and the pair is sent together or not at all.
+  **The two surfaces cannot drift:** the labels and placeholders are now four constants in
+  `autopsy-controls.ts` (`LOCAL_SEARCH_KEYWORD_LABEL`/`_PLACEHOLDER`, `LOCAL_SEARCH_AREA_LABEL`/
+  `_PLACEHOLDER`) that both the Review tab and the autopsy card render from. Also fixed a real
+  swallow in the same hook: `seo.command_failed` was mapped to nothing but the stage sentence "The
+  autopsy stopped", throwing away the `error.message` the failure carries — which for a local run is
+  the *useful* one, since an ambiguous place name comes back from the provider's location catalogue
+  naming the candidates to choose between. It now becomes the run's visible error.
+
 - 2026-08-24 — **Layout/table repair pass — MSR-16 through MSR-24** (Arman: "by far the worst… the
   page is a disaster"). `CompetitorAutopsyWorkspace.tsx`: dropped the `max-w-[1800px]` cap on the
   page `<main>` (MSR-24); the hero section now groups the three KPI tiles and
