@@ -37,6 +37,8 @@ import type {
   CmsSiteVisibility,
 } from "../types";
 import type { ItemValidationProblem } from "../collections/validateItem";
+import type { ColumnFilterMap } from "@/features/data-tables/column-filters";
+import type { ColumnFacets } from "@/features/data-tables/types";
 
 export class SiteNotEmptyError extends Error {
   pageCount: number;
@@ -722,8 +724,6 @@ export interface CollectionItemsPage {
   total: number;
   page: number;
   perPage: number;
-  /** True when the non-searchable ilike fallback hit its scan cap. */
-  searchTruncated: boolean;
 }
 
 export const CmsCollectionService = {
@@ -805,6 +805,12 @@ export const CmsCollectionService = {
 
   // ── Items ────────────────────────────────────────────────────────────
 
+  /**
+   * One paged read. `order`, `columnFilters` and `q` are all resolved in the
+   * DATABASE (`cms_collection_items_page`), so a filtered page is the first N
+   * MATCHING rows and `total` is the real total — not the page the browser
+   * happens to hold, narrowed after the fact.
+   */
   async listItems(
     collectionId: string,
     params: {
@@ -812,12 +818,34 @@ export const CmsCollectionService = {
       q?: string;
       page?: number;
       perPage?: number;
+      /** `field[:asc|desc]`; omit for the collection's `settings.default_order`. */
+      order?: string;
+      /** The canonical `ColumnFilterMap` (features/data-tables/column-filters.ts). */
+      columnFilters?: ColumnFilterMap;
     } = {},
   ): Promise<CollectionItemsPage> {
     return callApi<CollectionItemsPage>("collections", "items_list", {
       collectionId,
       ...params,
     });
+  },
+
+  /**
+   * What is actually IN one column, counted over every row the tab + search
+   * select. Same payload the `udt_column_facets` RPC returns, so the shared
+   * ColumnHeaderMenu consumes it with no second code path.
+   */
+  async itemColumnFacets(
+    collectionId: string,
+    fieldName: string,
+    params: { filter?: CollectionItemFilter; q?: string; limit?: number } = {},
+  ): Promise<ColumnFacets | null> {
+    const res = await callApi<{ facets: ColumnFacets | null }>(
+      "collections",
+      "items_facets",
+      { collectionId, fieldName, ...params },
+    );
+    return res.facets ?? null;
   },
 
   /**

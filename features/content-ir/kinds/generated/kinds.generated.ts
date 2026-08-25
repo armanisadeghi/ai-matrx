@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "bc2d786f3edc";
+export const KIND_REGISTRY_FINGERPRINT = "54c0707fa453";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5580,7 +5580,7 @@ export interface AggregateResult {
 }
 
 /**
- * Kind `ai_answer` (registry v10).
+ * Kind `ai_answer` (registry v11).
  */
 export interface AiAnswer {
   /**
@@ -7010,7 +7010,7 @@ export interface DirectoryListing {
 }
 
 /**
- * Kind `discussion_result` (registry v9).
+ * Kind `discussion_result` (registry v10).
  */
 export interface DiscussionResult {
   url: string;
@@ -7092,7 +7092,7 @@ export interface DomainFoldReport {
 }
 
 /**
- * Kind `entity_card` (registry v10).
+ * Kind `entity_card` (registry v11).
  */
 export interface EntityCard {
   name: string;
@@ -7163,7 +7163,7 @@ export interface EvidenceSource {
  * `source`/`position` are OPTIONAL here because authored FAQs have neither —
  * the search adapters always fill both.
  *  *
- *  * Kind `faq_item` (registry v8).
+ *  * Kind `faq_item` (registry v9).
  */
 export interface FaqItem {
   /**
@@ -7643,7 +7643,7 @@ export interface GeneratedVideoSet {
 }
 
 /**
- * Kind `geo_coordinates` (registry v9).
+ * Kind `geo_coordinates` (registry v10).
  */
 export interface GeoCoordinates {
   /**
@@ -8626,7 +8626,7 @@ export interface LiveHelpAnswer {
 }
 
 /**
- * Kind `local_place` (registry v10).
+ * Kind `local_place` (registry v11).
  */
 export interface LocalPlace {
   name: string;
@@ -8999,7 +8999,7 @@ export interface MetaTagOptions {
 }
 
 /**
- * Kind `news_result` (registry v9).
+ * Kind `news_result` (registry v10).
  */
 export interface NewsResult {
   url: string;
@@ -9231,7 +9231,7 @@ export interface OfficeSpreadsheet {
 }
 
 /**
- * Kind `opening_hours` (registry v10).
+ * Kind `opening_hours` (registry v11).
  */
 export interface OpeningHours {
   /**
@@ -9997,7 +9997,7 @@ export interface PodcastVideoComposeResult {
 }
 
 /**
- * Kind `postal_address` (registry v9).
+ * Kind `postal_address` (registry v10).
  */
 export interface PostalAddress {
   city?: string | null;
@@ -10543,7 +10543,7 @@ export interface RandomStringResult {
 }
 
 /**
- * Kind `rating` (registry v9).
+ * Kind `rating` (registry v10).
  */
 export interface Rating {
   /**
@@ -13613,7 +13613,7 @@ export interface VideoPromptOptions {
 }
 
 /**
- * Kind `video_result` (registry v9).
+ * Kind `video_result` (registry v10).
  */
 export interface VideoResult {
   url: string;
@@ -16127,7 +16127,7 @@ export interface WebRedirectLoopV1 {
 }
 
 /**
- * Kind `web_result` (registry v11).
+ * Kind `web_result` (registry v12).
  */
 export interface WebResult {
   url: string;

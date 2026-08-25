@@ -27745,6 +27745,75 @@ export type Database = {
           },
         ]
       }
+      _policy_overlap_backup: {
+        Row: {
+          check_expr: string | null
+          dropped_at: string
+          polcmd: unknown
+          polname: string
+          polpermissive: boolean
+          polroles: string[]
+          qual_expr: string | null
+          restore_sql: string
+          sch: string
+          tbl: string
+        }
+        Insert: {
+          check_expr?: string | null
+          dropped_at?: string
+          polcmd: unknown
+          polname: string
+          polpermissive: boolean
+          polroles: string[]
+          qual_expr?: string | null
+          restore_sql: string
+          sch: string
+          tbl: string
+        }
+        Update: {
+          check_expr?: string | null
+          dropped_at?: string
+          polcmd?: unknown
+          polname?: string
+          polpermissive?: boolean
+          polroles?: string[]
+          qual_expr?: string | null
+          restore_sql?: string
+          sch?: string
+          tbl?: string
+        }
+        Relationships: []
+      }
+      _policy_overlap_probe: {
+        Row: {
+          err: string | null
+          identity: string
+          phase: string
+          probed_at: string
+          sch: string
+          tbl: string
+          visible: number | null
+        }
+        Insert: {
+          err?: string | null
+          identity: string
+          phase: string
+          probed_at?: string
+          sch: string
+          tbl: string
+          visible?: number | null
+        }
+        Update: {
+          err?: string | null
+          identity?: string
+          phase?: string
+          probed_at?: string
+          sch?: string
+          tbl?: string
+          visible?: number | null
+        }
+        Relationships: []
+      }
       activity_log: {
         Row: {
           action: string
@@ -31637,6 +31706,16 @@ export type Database = {
       _lifecycle_partition_guard: {
         Args: { p_partition: string }
         Returns: string
+      }
+      _policy_overlap_run_probe: {
+        Args: {
+          p_label: string
+          p_limit?: number
+          p_offset?: number
+          p_phase: string
+          p_user: string
+        }
+        Returns: number
       }
       actor_system: { Args: never; Returns: string }
       actor_tier: { Args: never; Returns: string }

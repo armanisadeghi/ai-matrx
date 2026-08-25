@@ -30,6 +30,11 @@ import { trackPage } from "@/features/marketing/search-console/data-launch";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { CellEditsMap } from "@/components/official/matrx-data-table/types";
+import {
+  setGscKeywordClass,
+  type GscClassRuling,
+} from "@/features/marketing/search-console/data-classification";
 import { useDebounce } from "@/hooks/usehooks/useDebounce";
 import type {
   MatrxColumnDef,
@@ -167,6 +172,48 @@ export function GscDimensionTable({
     row.keyword_id ? keywordValues.data?.get(row.keyword_id) : undefined;
 
   const queryClient = useQueryClient();
+
+  /**
+   * Save the inline Class edits — one RPC per ruling, batched by class so
+   * twenty rows set to Money cost one call. The provenance is `manual` and
+   * `confirmed`, because a human just typed it into the cell.
+   */
+  const saveClassEdits = async (
+    edits: CellEditsMap,
+    currentRows: GscBreakdownRow[],
+  ) => {
+    const rowsById = new Map(currentRows.map((row) => [row.key, row]));
+    const byRuling = new Map<GscClassRuling, string[]>();
+    for (const [rowId, fields] of Object.entries(edits)) {
+      if (!Object.hasOwn(fields, "traffic_class")) continue;
+      const row = rowsById.get(rowId);
+      if (!row?.keyword_id) {
+        throw new Error(
+          "This search query is not mapped to the keyword library yet, so its class cannot be set here.",
+        );
+      }
+      const next = fields.traffic_class;
+      if (
+        next !== "money" &&
+        next !== "educational" &&
+        next !== "brand" &&
+        next !== "clear"
+      ) {
+        throw new Error("Choose a supported class and try again.");
+      }
+      byRuling.set(next, [...(byRuling.get(next) ?? []), row.keyword_id]);
+    }
+    for (const [ruling, keywordIds] of byRuling) {
+      await setGscKeywordClass(siteId, keywordIds, ruling, null, {
+        origin: "manual",
+        confirmed: true,
+      });
+    }
+    await queryClient.invalidateQueries({
+      queryKey: ["marketing", "gsc", "keyword-value-for", siteId],
+    });
+  };
+
   // Watch column wiring (query/page only; hook order stays stable).
   const watchKind = dimension === "page" ? "page" : "query";
   const rowWatch = useRowWatch(watchKind);
@@ -291,10 +338,14 @@ export function GscDimensionTable({
         : null,
     ),
     ...(dimension === "query"
-      ? buildGscValueColumns<GscBreakdownRow>(valueFor, {
-          siteId,
-          keywordOf: (row) => row.key,
-        })
+      ? buildGscValueColumns<GscBreakdownRow>(
+          valueFor,
+          {
+            siteId,
+            keywordOf: (row) => row.key,
+          },
+          { keywordIdOf: (row) => row.keyword_id ?? null },
+        )
       : []),
     ...buildGscMetricColumns<GscBreakdownRow>(hasCompare, "clicks-only"),
   ];
@@ -374,6 +425,9 @@ export function GscDimensionTable({
           }}
           detail={{ enabled: false }}
           window={{ enabled: false }}
+          {...(dimension === "query"
+            ? { edit: { enabled: true, onSave: saveClassEdits } }
+            : {})}
           onRowOpen={onDrill}
           pageSize={pageSize}
           emptyState={{

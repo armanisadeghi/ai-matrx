@@ -328,6 +328,18 @@ export function buildGscValueColumns<T>(
     brandId?: string | null;
     keywordOf: (row: T) => string | null;
   },
+  /**
+   * Make Class editable IN THE CELL (Arman, 2026-08-24: "anything that's
+   * editable, I should be able to directly edit from the list… a dropdown and
+   * pick the option"). The consumer supplies how to find a row's keyword id —
+   * a row without one cannot be ruled — and wires the table's
+   * `edit={{ enabled, onSave }}` to `setGscKeywordClass`.
+   *
+   * `mismatch` is deliberately NOT offered here: the server requires a written
+   * reason for it, and a dropdown cannot collect one. It stays in the ruling
+   * surfaces that ask for the reason.
+   */
+  editing?: { keywordIdOf: (row: T) => string | null },
 ): MatrxColumnDef<T>[] {
   return [
     {
@@ -337,6 +349,18 @@ export function buildGscValueColumns<T>(
       filter: false,
       width: 110,
       accessorFn: (row) => valueFor(row)?.traffic_class ?? "",
+      ...(editing
+        ? {
+            editable: "select" as const,
+            editOptions: [
+              { value: "money", label: "Money" },
+              { value: "educational", label: "Educational" },
+              { value: "brand", label: "Brand" },
+              { value: "clear", label: "Unclassified" },
+            ],
+            editableIf: (row: T) => Boolean(editing.keywordIdOf(row)),
+          }
+        : {}),
       cell: (row) => {
         const v = valueFor(row);
         if (!v) {

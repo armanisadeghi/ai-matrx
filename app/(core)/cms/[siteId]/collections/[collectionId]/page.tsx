@@ -3,9 +3,27 @@
 /**
  * Collection items viewer (W2-C) — paged, schema-driven inbox for one
  * collection: field_schema keys become columns (JSON preview for undeclared
- * keys), unread rows badge on seen_at, All/Unread/Spam/Archived filters,
- * search, row + bulk triage (seen / spam / archive / delete), client-side CSV
- * export from items_export. Opening a row marks it seen.
+ * keys), unread rows badge on seen_at, All/Unread/Spam/Archived tabs, search,
+ * row + bulk triage (seen / spam / archive / delete), client-side CSV export
+ * from items_export. Opening a row marks it seen.
+ *
+ * IT USES THE PLATFORM'S ONE GRID VOCABULARY, not a private one (2026-08-25).
+ * This was a hand-rolled `<table>` with no sorting and no filtering while every
+ * other grid on the platform already shared a model. It now reuses:
+ *
+ *   - `ColumnHeaderMenu` — per-column sort + the filter that offers the
+ *     column's ACTUAL VALUES with counts, the same control the user data
+ *     tables have. Its facets come from `items_facets`.
+ *   - `useTableViewUrlState` — search / sort / column filters / page live in
+ *     the URL, so a narrowed view is a link you can send someone.
+ *   - `FormattedFieldValue` + the field-format registry — a URL cell renders
+ *     as a link, a datetime as a date, a boolean as a chip, instead of every
+ *     column being raw truncated text.
+ *
+ * EVERY ONE OF THOSE IS RESOLVED IN THE DATABASE (`cms_collection_items_page`).
+ * Filtering the 50 rows on screen and then paginating THAT would be a grid that
+ * lies about its own data; parity between the SQL and browser implementations
+ * of the filter model is pinned by `column-filter-parity.fixture.json`.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -20,6 +38,14 @@ import type {
   SiteCollectionItem,
 } from "@/features/cms/types";
 import { CollectionItemEditorDialog } from "@/features/cms/components/collections/CollectionItemEditorDialog";
+import ColumnHeaderMenu from "@/components/user-generated-table-data/ColumnHeaderMenu";
+import { useTableViewUrlState } from "@/features/data-tables/hooks/useTableViewUrlState";
+import { activeFiltersOnly } from "@/features/data-tables/table-view-url";
+import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
+import { defaultFormatForBase } from "@/lib/field-formats/registry";
+import { readFieldFormatConfig } from "@/lib/field-formats/format";
+import type { ColumnFilter } from "@/features/data-tables/column-filters";
+import type { ColumnFacets } from "@/features/data-tables/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -148,10 +174,31 @@ export default function CollectionItemsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [filter, setFilter] = useState<CollectionItemFilter>("all");
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const perPage = 50;
+
+  // Search, sort, column filters and the page all live in the URL — a narrowed
+  // view is a link. `resetKey` clears them when the collection changes, so a
+  // filter naming a column this collection lacks can never silently hide
+  // every row.
+  const view = useTableViewUrlState({
+    defaultPageSize: 50,
+    resetKey: collectionId,
+  });
+  const {
+    searchTerm: search,
+    sortField,
+    sortDirection,
+    columnFilters,
+    setColumnFilters,
+    currentPage: page,
+    setCurrentPage: setPage,
+  } = view;
+  const [searchInput, setSearchInput] = useState(search);
+  const perPage = view.limit;
+
+  /** `field[:asc|desc]` for the API, or undefined to use the collection's own. */
+  const orderParam = sortField
+    ? `${sortField}:${sortDirection === "asc" ? "asc" : "desc"}`
+    : undefined;
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openItem, setOpenItem] = useState<SiteCollectionItem | null>(null);
@@ -172,6 +219,53 @@ export default function CollectionItemsPage() {
     return map;
   }, [collection]);
 
+  /**
+   * A collection's declared field type IS the column's storage type and its
+   * display format — the two things the shared grid vocabulary asks for. A
+   * `datetime` column therefore gets a range filter and renders as a date, and
+   * a `url` renders as a link, with no per-grid special-casing.
+   *
+   * `select` and `richtext` map to the storage type they really are (string):
+   * a select is a short string with few distinct values, which the shared
+   * `defaultFilterMode` already turns into a value checklist on its own.
+   */
+  const columnDataTypes = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of collection?.field_schema ?? []) {
+      map.set(
+        f.key,
+        f.type === "number"
+          ? "number"
+          : f.type === "boolean"
+            ? "boolean"
+            : f.type === "datetime"
+              ? "datetime"
+              : f.type === "json"
+                ? "json"
+                : "text",
+      );
+    }
+    return map;
+  }, [collection]);
+
+  const columnFormats = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof readFieldFormatConfig>>();
+    for (const f of collection?.field_schema ?? []) {
+      const id =
+        f.type === "email"
+          ? "email"
+          : f.type === "url"
+            ? "url"
+            : f.type === "richtext"
+              ? "markdown"
+              : defaultFormatForBase(columnDataTypes.get(f.key) ?? "text");
+      map.set(f.key, { id } as NonNullable<
+        ReturnType<typeof readFieldFormatConfig>
+      >);
+    }
+    return map;
+  }, [collection, columnDataTypes]);
+
   useEffect(() => {
     CmsCollectionService.getCollection(collectionId)
       .then((c) => setCollection(c))
@@ -183,11 +277,13 @@ export default function CollectionItemsPage() {
       .finally(() => setIsLoading(false));
   }, [collectionId]);
 
-  /**
-   * The truncation notice belongs to the SEARCH, not to the refresh — it used
-   * to re-fire on every pagination click. Keyed so a new query notifies again.
-   */
-  const truncationNoticeKey = useRef<string | null>(null);
+  const activeFilters = useMemo(
+    () => activeFiltersOnly(columnFilters),
+    [columnFilters],
+  );
+  // The map is serialized for the dependency list: a fresh object identity on
+  // every render would re-fetch the page forever.
+  const activeFiltersKey = JSON.stringify(activeFilters);
 
   const refreshItems = useCallback(async () => {
     setItemsLoading(true);
@@ -197,27 +293,19 @@ export default function CollectionItemsPage() {
         q: search || undefined,
         page,
         perPage,
+        order: orderParam,
+        columnFilters: activeFilters,
       });
       setItems(res.items);
       setTotal(res.total);
-      const noticeKey = `${collectionId}|${filter}|${search}`;
-      if (res.searchTruncated) {
-        if (truncationNoticeKey.current !== noticeKey) {
-          truncationNoticeKey.current = noticeKey;
-          toast.info(
-            "Search scanned only the most recent items — matches and the count are partial. Enable Searchable on this collection for full-text search.",
-          );
-        }
-      } else if (truncationNoticeKey.current === noticeKey) {
-        truncationNoticeKey.current = null;
-      }
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load items");
     } finally {
       setItemsLoading(false);
     }
-  }, [collectionId, filter, search, page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionId, filter, search, page, perPage, orderParam, activeFiltersKey]);
 
   useEffect(() => {
     void refreshItems();
@@ -225,7 +313,59 @@ export default function CollectionItemsPage() {
 
   useEffect(() => {
     setSelected(new Set());
-  }, [filter, search, page]);
+  }, [filter, search, page, orderParam, activeFiltersKey]);
+
+  // A narrowing change must land the user on page 1 — page 7 of a result set
+  // that now has one page shows an empty grid over a non-empty collection.
+  const narrowingKey = `${filter}|${search}|${activeFiltersKey}`;
+  const lastNarrowing = useRef(narrowingKey);
+  useEffect(() => {
+    if (lastNarrowing.current === narrowingKey) return;
+    lastNarrowing.current = narrowingKey;
+    if (page !== 1) setPage(1);
+  }, [narrowingKey, page, setPage]);
+
+  const applySort = useCallback(
+    (field: string, direction: "asc" | "desc") => {
+      view.setSortField(field);
+      view.setSortDirection(direction);
+    },
+    [view],
+  );
+
+  const clearSort = useCallback(() => {
+    // Clearing returns the grid to the collection's own declared order
+    // (`settings.default_order`), not to an arbitrary default — the same order
+    // the published page and the agent's `list` use.
+    view.setSortField(null);
+  }, [view]);
+
+  const applyColumnFilter = useCallback(
+    (field: string, next: ColumnFilter | undefined) => {
+      const updated = { ...columnFilters };
+      if (next) updated[field] = next;
+      else delete updated[field];
+      setColumnFilters(updated);
+    },
+    [columnFilters, setColumnFilters],
+  );
+
+  /**
+   * The value list for a column, counted in the database over every row the
+   * tab and search select. The browser only ever holds one page here, so the
+   * local-facets path the shared menu prefers can never apply — and a checklist
+   * built from one page is exactly the confident wrong answer the facet RPC
+   * exists to prevent.
+   */
+  const fetchColumnFacets = useCallback(
+    async (args: { fieldName: string; searchTerm?: string; limit: number }): Promise<ColumnFacets | null> =>
+      CmsCollectionService.itemColumnFacets(collectionId, args.fieldName, {
+        filter,
+        q: args.searchTerm,
+        limit: args.limit,
+      }),
+    [collectionId, filter],
+  );
 
   const markSeenLocally = (ids: string[], seen: boolean) =>
     setItems((prev) =>
@@ -375,7 +515,7 @@ export default function CollectionItemsPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     setPage(1);
-                    setSearch(searchInput.trim());
+                    view.setSearchTerm(searchInput.trim());
                   }
                 }}
                 placeholder="Search items…"
@@ -578,11 +718,56 @@ export default function CollectionItemsPage() {
                   </TableHead>
                   {columnKeys.map((key) => (
                     <TableHead key={key} className="text-xs">
-                      {columnLabels.get(key) ?? key}
+                      <div className="flex items-center gap-1">
+                        <span className="truncate">
+                          {columnLabels.get(key) ?? key}
+                        </span>
+                        <ColumnHeaderMenu
+                          fieldName={key}
+                          displayName={columnLabels.get(key) ?? key}
+                          dataType={columnDataTypes.get(key) ?? "text"}
+                          isSorted={sortField === key}
+                          sortDirection={sortDirection === "asc" ? "asc" : "desc"}
+                          filter={columnFilters[key]}
+                          searchTerm={search || undefined}
+                          // The browser holds ONE PAGE, so it must never build
+                          // a value checklist from what it can see — the menu
+                          // asks the server, which counts every row.
+                          localRows={items}
+                          totalCount={total}
+                          fetchFacets={fetchColumnFacets}
+                          onSortAsc={() => applySort(key, "asc")}
+                          onSortDesc={() => applySort(key, "desc")}
+                          onClearSort={clearSort}
+                          onFilterChange={(next) => applyColumnFilter(key, next)}
+                        />
+                      </div>
                     </TableHead>
                   ))}
                   <TableHead className="text-xs">Data</TableHead>
-                  <TableHead className="text-xs">Received</TableHead>
+                  <TableHead className="text-xs">
+                    <div className="flex items-center gap-1">
+                      <span>Received</span>
+                      <ColumnHeaderMenu
+                        fieldName="created_at"
+                        displayName="Received"
+                        dataType="timestamp"
+                        isSorted={sortField === "created_at"}
+                        sortDirection={sortDirection === "asc" ? "asc" : "desc"}
+                        filter={columnFilters["created_at"]}
+                        searchTerm={search || undefined}
+                        localRows={items}
+                        totalCount={total}
+                        fetchFacets={fetchColumnFacets}
+                        onSortAsc={() => applySort("created_at", "asc")}
+                        onSortDesc={() => applySort("created_at", "desc")}
+                        onClearSort={clearSort}
+                        onFilterChange={(next) =>
+                          applyColumnFilter("created_at", next)
+                        }
+                      />
+                    </div>
+                  </TableHead>
                   <TableHead className="text-xs w-20">Status</TableHead>
                   <TableHead className="text-xs w-10">
                     <span className="sr-only">Edit</span>
@@ -638,9 +823,16 @@ export default function CollectionItemsPage() {
                           key={key}
                           className={`text-xs max-w-48 truncate ${unread ? "font-semibold" : ""}`}
                         >
-                          {cellText(readField(item.data, key)) || (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          {/* The declared field TYPE decides how a cell reads:
+                              a url is a link, a datetime a date, a boolean a
+                              chip. `plain` keeps a dense grid dense — the row
+                              itself is the click target. */}
+                          <FormattedFieldValue
+                            value={readField(item.data, key)}
+                            format={columnFormats.get(key) ?? null}
+                            dataType={columnDataTypes.get(key) ?? "text"}
+                            plain
+                          />
                         </TableCell>
                       ))}
                       <TableCell className="text-xs max-w-56 truncate font-mono text-muted-foreground">
@@ -712,7 +904,7 @@ export default function CollectionItemsPage() {
               size="sm"
               className="h-7 w-7 p-0"
               disabled={page <= 1 || itemsLoading}
-              onClick={() => setPage((p) => p - 1)}
+              onClick={() => setPage(page - 1)}
               aria-label="Previous page"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -722,7 +914,7 @@ export default function CollectionItemsPage() {
               size="sm"
               className="h-7 w-7 p-0"
               disabled={page >= totalPages || itemsLoading}
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => setPage(page + 1)}
               aria-label="Next page"
             >
               <ChevronRight className="h-3.5 w-3.5" />

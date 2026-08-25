@@ -69,10 +69,6 @@ const EXPORT_CAP = 10_000;
 const EXPORT_BYTE_BUDGET = 3_500_000;
 /** Rows per round-trip while accumulating an export — keeps peak memory flat. */
 const EXPORT_CHUNK = 500;
-/** Cap for the in-route scan fallback on non-searchable collections. */
-const SEARCH_SCAN_CAP = 2_000;
-/** Memory budget for that same scan — 2,000 fat rows would otherwise OOM. */
-const SEARCH_SCAN_BYTE_BUDGET = 8_000_000;
 /** Ceiling handed to `backfill_collection_search_vectors`. */
 const SEARCH_BACKFILL_CAP = 50_000;
 const DEFAULT_PER_PAGE = 50;
@@ -392,6 +388,60 @@ async function verifyItemsOwnership(
     ok: true,
     items: items as { id: string; collection_id: string; client_id: string }[],
   };
+}
+
+/**
+ * Validate an incoming `ColumnFilterMap` before it reaches the database.
+ *
+ * The client sends the canonical filter shape
+ * (`features/data-tables/column-filters.ts`) and the SQL twin reads it as jsonb,
+ * so this is the boundary that decides what a filter may BE. It is a
+ * whitelist, not a sanitiser: an unrecognised mode, a non-string value, or a
+ * field name outside `[A-Za-z0-9_-]{1,64}` is DROPPED rather than repaired,
+ * because a filter the server silently rewrote would narrow a list in a way the
+ * user never asked for.
+ *
+ * Field names never reach SQL as text — `cms_item_matches_filter` takes the key
+ * as a parameter and looks it up with `->>`, so there is no interpolation to
+ * escape. The length/charset rule exists to keep filters legible, not as the
+ * injection defence.
+ */
+const FILTER_FIELD_RE = /^[A-Za-z0-9_-]{1,64}$/;
+const MAX_FILTER_COLUMNS = 12;
+const MAX_FILTER_VALUES = 200;
+
+function sanitizeColumnFilters(raw: unknown): Record<string, unknown> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: Record<string, unknown> = {};
+  for (const [field, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (Object.keys(out).length >= MAX_FILTER_COLUMNS) break;
+    if (!FILTER_FIELD_RE.test(field)) continue;
+    if (!value || typeof value !== "object") continue;
+    const f = value as Record<string, unknown>;
+    if (f.mode === "text") {
+      if (typeof f.text !== "string") continue;
+      out[field] = { mode: "text", text: f.text.slice(0, 500) };
+    } else if (f.mode === "values") {
+      if (!Array.isArray(f.values)) continue;
+      out[field] = {
+        mode: "values",
+        values: f.values
+          .filter((v): v is string => typeof v === "string")
+          .slice(0, MAX_FILTER_VALUES)
+          .map((v) => v.slice(0, 500)),
+        includeBlank: f.includeBlank === true,
+        negate: f.negate === true,
+      };
+    } else if (f.mode === "range") {
+      if (typeof f.min !== "string" || typeof f.max !== "string") continue;
+      out[field] = {
+        mode: "range",
+        min: f.min.slice(0, 100),
+        max: f.max.slice(0, 100),
+      };
+    }
+  }
+  return out;
 }
 
 export async function POST(request: NextRequest) {
@@ -989,7 +1039,22 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, dataApiKey: data.data_api_key });
       }
 
-      // ── Items: paged list with filters + search ─────────────────────
+      // ── Items: paged list — ONE database read ───────────────────────
+      //
+      // Tab filter, search, the canonical column filters, the order and the
+      // page are all decided by `cms_collection_items_page`. Two things this
+      // fixed, both of which were the grid lying about its own data:
+      //
+      //  * FILTERING SAW ONE PAGE. Every other grid on the platform shares
+      //    `features/data-tables/column-filters.ts`; reusing it in the browser
+      //    here would have filtered the 50 rows on screen and then paginated
+      //    THAT. The model now runs in SQL over every row — parity with the
+      //    browser twin is pinned by column-filter-parity.fixture.json.
+      //  * SEARCH SCANNED A WINDOW. The old non-searchable fallback pulled
+      //    a capped window of recent rows, matched inside them, and returned a
+      //    count true only of that window (flagged with `searchTruncated`).
+      //    Search is exact now and `total` is the real total, so the flag is
+      //    permanently false and the whole scan branch is gone.
       case "items_list": {
         const collectionId = asString(params.collectionId);
         const q = params.q;
@@ -1016,7 +1081,7 @@ export async function POST(request: NextRequest) {
 
         const { data: collection } = await db
           .from("site_collections")
-          .select("searchable, settings")
+          .select("settings")
           .eq("id", collectionId)
           .single();
 
@@ -1041,88 +1106,70 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Non-searchable collections have no tsvector — PostgREST cannot
-        // ilike a jsonb column, so the fallback scans a capped window in the
-        // route. Bounded (SEARCH_SCAN_CAP) and reported via `searchTruncated`.
-        if (search && !collection?.searchable) {
-          let scanQuery = db
-            .from("site_collection_items")
-            .select(ITEM_COLUMNS)
-            .eq("collection_id", collectionId);
-          scanQuery = applyItemFilter(scanQuery, filter);
-          // Unique tiebreak LAST (ties are common on bulk-seeded rows) — carried
-          // by applyOrder for every sort field.
-          const { data: scanned, error: scanError } = await applyOrder(
-            scanQuery,
-            itemOrder,
-          ).limit(SEARCH_SCAN_CAP);
-          if (scanError) {
-            console.error("[cms/collections] items_list scan error:", scanError);
-            return NextResponse.json(
-              { error: scanError.message },
-              { status: 500 },
-            );
-          }
-          const needle = search.toLowerCase();
-          const rows = scanned ?? [];
-          const matched: typeof rows = [];
-          let scanBytes = 0;
-          let budgetHit = false;
-          for (const row of rows) {
-            const serialized = JSON.stringify(row.data ?? {});
-            scanBytes += serialized.length;
-            if (scanBytes > SEARCH_SCAN_BYTE_BUDGET) {
-              budgetHit = true;
-              console.warn(
-                "[cms/collections] items_list scan hit the byte budget for collection",
-                collectionId,
-                "— results are partial; enable Searchable for full-text search.",
-              );
-              break;
-            }
-            if (serialized.toLowerCase().includes(needle)) matched.push(row);
-          }
-          const start = (page - 1) * perPage;
-          return NextResponse.json({
-            items: matched.slice(start, start + perPage),
-            // Matches WITHIN the scanned window only — not the collection-wide
-            // count. `searchTruncated` says whether that distinction matters.
-            total: matched.length,
-            page,
-            perPage,
-            searchTruncated: rows.length >= SEARCH_SCAN_CAP || budgetHit,
-          });
-        }
+        const columnFilters = sanitizeColumnFilters(params.columnFilters);
 
-        let query = db
-          .from("site_collection_items")
-          .select(ITEM_COLUMNS, { count: "exact" })
-          .eq("collection_id", collectionId);
-        query = applyItemFilter(query, filter);
-        if (search) {
-          query = query.textSearch("search_vector", search, {
-            type: "websearch",
-            config: "english",
-          });
-        }
-        const from = (page - 1) * perPage;
-        // Unique tiebreak LAST — unstable-pagination guard (ties are common on
-        // bulk-seeded rows); applyOrder carries it for every sort field.
-        const { data, error, count } = await applyOrder(query, itemOrder).range(
-          from,
-          from + perPage - 1,
-        );
+        const { data, error } = await db.rpc("cms_collection_items_page", {
+          p_collection_id: collectionId,
+          p_tab: filter,
+          p_search: search || null,
+          p_filters: columnFilters,
+          p_order_field: itemOrder?.field ?? "created_at",
+          p_order_asc: itemOrder?.ascending ?? false,
+          p_limit: perPage,
+          p_offset: (page - 1) * perPage,
+        });
         if (error) {
           console.error("[cms/collections] items_list error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
+        const rows = (data ?? []) as (Record<string, unknown> & {
+          total?: number;
+        })[];
         return NextResponse.json({
-          items: data ?? [],
-          total: count ?? 0,
+          // `total` rides on every row (one query, no second count) and is
+          // stripped here so the client shape is unchanged.
+          items: rows.map(({ total: _total, ...row }) => row),
+          total: rows.length > 0 ? Number(rows[0].total ?? 0) : 0,
           page,
           perPage,
-          searchTruncated: false,
         });
+      }
+
+      // ── Items: what is actually IN one column ───────────────────────
+      //
+      // THE COLUMN KNOWS ITSELF, for collections. Same payload shape the
+      // `udt_column_facets` RPC returns, so the shared ColumnHeaderMenu needs
+      // no second code path — and the counts are over every row the tab and
+      // search select, never over the page the browser holds.
+      case "items_facets": {
+        const collectionId = asString(params.collectionId);
+        const fieldName = asString(params.fieldName);
+        if (!collectionId || !fieldName) {
+          return NextResponse.json(
+            { error: "collectionId and fieldName are required" },
+            { status: 400 },
+          );
+        }
+        if (!(await verifyCollectionOwnership(db, collectionId, caller))) {
+          return NextResponse.json(
+            { error: "Collection not found or access denied" },
+            { status: 403 },
+          );
+        }
+        const searchTerm =
+          typeof params.q === "string" ? params.q.trim() : "";
+        const { data, error } = await db.rpc("cms_collection_column_facets", {
+          p_collection_id: collectionId,
+          p_field: fieldName,
+          p_tab: resolveItemFilter(params.filter),
+          p_search: searchTerm || null,
+          p_limit: Math.min(1000, Math.max(1, Number(params.limit) || 200)),
+        });
+        if (error) {
+          console.error("[cms/collections] items_facets error:", error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+        return NextResponse.json({ facets: data });
       }
 
       // ── Items: single row ────────────────────────────────────────────
