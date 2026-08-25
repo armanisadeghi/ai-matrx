@@ -2,6 +2,7 @@ import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import {
   isMandateTestResult,
+  mandateTestResultValidationErrors,
   fetchMandateCodeTruthReport,
   fetchMandateVariableVerdicts,
   parseMandateTestHistory,
@@ -57,21 +58,55 @@ describe("mandate owner bench service", () => {
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
 
-    const parsed = parseMandateTestHistory({
-      keep_me: true,
-      test_bench_results: [
-        result("older", "2026-08-09T10:00:00Z"),
-        { id: "malformed" },
-        result("newer", "2026-08-09T11:00:00Z", "provider failed"),
-      ],
-    });
+    const parsed = parseMandateTestHistory(
+      {
+        keep_me: true,
+        test_bench_results: [
+          result("older", "2026-08-09T10:00:00Z"),
+          { id: "malformed" },
+          result("newer", "2026-08-09T11:00:00Z", "provider failed"),
+        ],
+      },
+      { mandateKey: "seo.classify", exemplarId: "exemplar-1" },
+    );
 
     expect(parsed.map((entry) => entry.id)).toEqual(["newer", "older"]);
     expect(parsed[0]?.error).toBe("provider failed");
     expect(consoleError).toHaveBeenCalledWith(
-      "[mandates] ignored 1 malformed persisted bench result(s)",
+      expect.stringContaining(
+        "rejected 1 persisted bench result(s) for mandate seo.classify, exemplar exemplar-1; first invalid entry #2 id=malformed: created_at must be a string",
+      ),
+      expect.objectContaining({
+        operation: "parse_mandate_test_history",
+        mandateKey: "seo.classify",
+        exemplarId: "exemplar-1",
+        invalidEntries: [
+          expect.objectContaining({
+            index: 1,
+            resultId: "malformed",
+            receivedKeys: ["id"],
+            errors: expect.arrayContaining([
+              "created_at must be a string",
+              "mandate_key must be a string",
+            ]),
+          }),
+        ],
+      }),
     );
     consoleError.mockRestore();
+  });
+
+  it("identifies a retired slot_key without accepting it as a current result", () => {
+    const legacy = {
+      ...result("legacy", "2026-08-09T11:00:00Z"),
+      slot_key: "seo.classify",
+    };
+    delete (legacy as { mandate_key?: string }).mandate_key;
+
+    expect(isMandateTestResult(legacy)).toBe(false);
+    expect(mandateTestResultValidationErrors(legacy)).toEqual([
+      "mandate_key must be a string",
+    ]);
   });
 
   it("treats a failed agent run as a valid persisted result", () => {

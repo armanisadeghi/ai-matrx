@@ -735,33 +735,60 @@ export async function runMandateAdHocTest(
   return response.data;
 }
 
-function isStructuralVerdict(value: unknown): boolean {
-  if (!isJsonObject(value)) return false;
-  return (
-    typeof value.checked === "boolean" &&
-    Array.isArray(value.errors) &&
-    value.errors.every((entry) => typeof entry === "string")
-  );
+function structuralVerdictValidationErrors(value: unknown): string[] {
+  if (!isJsonObject(value)) return ["structural must be an object"];
+  const errors: string[] = [];
+  if (typeof value.checked !== "boolean") {
+    errors.push("structural.checked must be a boolean");
+  }
+  if (
+    !Array.isArray(value.errors) ||
+    !value.errors.every((entry) => typeof entry === "string")
+  ) {
+    errors.push("structural.errors must be an array of strings");
+  }
+  return errors;
+}
+
+/** Explain an open-JSONB contract failure at the field that broke it. */
+export function mandateTestResultValidationErrors(value: unknown): string[] {
+  if (!isJsonObject(value)) return ["result must be an object"];
+  const errors: string[] = [];
+  if (typeof value.id !== "string") errors.push("id must be a string");
+  if (typeof value.created_at !== "string") {
+    errors.push("created_at must be a string");
+  }
+  if (typeof value.mandate_key !== "string") {
+    errors.push("mandate_key must be a string");
+  }
+  if (!(typeof value.exemplar_id === "string" || value.exemplar_id == null)) {
+    errors.push("exemplar_id must be a string or null");
+  }
+  if (typeof value.candidate_id !== "string") {
+    errors.push("candidate_id must be a string");
+  }
+  if (typeof value.candidate_label !== "string") {
+    errors.push("candidate_label must be a string");
+  }
+  if (typeof value.provenance !== "string") {
+    errors.push("provenance must be a string");
+  }
+  if (typeof value.is_version !== "boolean") {
+    errors.push("is_version must be a boolean");
+  }
+  if (typeof value.output !== "string") errors.push("output must be a string");
+  if (typeof value.duration_ms !== "number") {
+    errors.push("duration_ms must be a number");
+  }
+  errors.push(...structuralVerdictValidationErrors(value.structural));
+  return errors;
 }
 
 /** Runtime boundary for generated test results stored inside open JSONB.
  * `exemplar_id` is null on an AD-HOC run (a "Try it now" run that has no
  * stored test case yet) and a string on every persisted one. */
 export function isMandateTestResult(value: unknown): value is MandateTestResponse {
-  if (!isJsonObject(value)) return false;
-  return (
-    typeof value.id === "string" &&
-    typeof value.created_at === "string" &&
-    typeof value.mandate_key === "string" &&
-    (typeof value.exemplar_id === "string" || value.exemplar_id == null) &&
-    typeof value.candidate_id === "string" &&
-    typeof value.candidate_label === "string" &&
-    typeof value.provenance === "string" &&
-    typeof value.is_version === "boolean" &&
-    typeof value.output === "string" &&
-    typeof value.duration_ms === "number" &&
-    isStructuralVerdict(value.structural)
-  );
+  return mandateTestResultValidationErrors(value).length === 0;
 }
 
 function isMandateTestBatchResponse(
@@ -786,26 +813,75 @@ function isMandateTestBatchResponse(
   );
 }
 
-/** Persisted histories are newest first. Malformed legacy entries are ignored
- * loudly instead of crashing the entire owner bench. */
-export function parseMandateTestHistory(metadata: unknown): MandateTestResponse[] {
+export interface MandateTestHistoryContext {
+  mandateKey?: string;
+  exemplarId?: string;
+}
+
+interface InvalidMandateTestHistoryEntry {
+  index: number;
+  resultId: string | null;
+  receivedKeys: string[];
+  errors: string[];
+}
+
+function mandateTestHistoryLocation(context: MandateTestHistoryContext): string {
+  const parts = [
+    context.mandateKey ? `mandate ${context.mandateKey}` : null,
+    context.exemplarId ? `exemplar ${context.exemplarId}` : null,
+  ].filter((part): part is string => part !== null);
+  return parts.length > 0 ? parts.join(", ") : "an unidentified exemplar";
+}
+
+/** Persisted histories are newest first. Invalid entries stay stored for
+ * forensic recovery but are excluded from rendering with field-level evidence. */
+export function parseMandateTestHistory(
+  metadata: unknown,
+  context: MandateTestHistoryContext = {},
+): MandateTestResponse[] {
+  const location = mandateTestHistoryLocation(context);
   if (!isJsonObject(metadata)) {
-    console.error("[mandates] exemplar metadata is not an object");
+    console.error(
+      `[mandates] could not parse persisted bench history for ${location}: exemplar metadata must be an object`,
+      { operation: "parse_mandate_test_history", ...context },
+    );
     return [];
   }
   const raw = metadata.test_bench_results;
   if (raw === undefined) return [];
   if (!Array.isArray(raw)) {
-    console.error("[mandates] metadata.test_bench_results is not an array");
+    console.error(
+      `[mandates] could not parse persisted bench history for ${location}: metadata.test_bench_results must be an array`,
+      { operation: "parse_mandate_test_history", ...context },
+    );
     return [];
   }
   const parsed: MandateTestResponse[] = [];
-  for (const entry of raw) {
-    if (isMandateTestResult(entry)) parsed.push(entry);
+  const invalidEntries: InvalidMandateTestHistoryEntry[] = [];
+  for (const [index, entry] of raw.entries()) {
+    const errors = mandateTestResultValidationErrors(entry);
+    if (errors.length === 0 && isMandateTestResult(entry)) {
+      parsed.push(entry);
+      continue;
+    }
+    invalidEntries.push({
+      index,
+      resultId:
+        isJsonObject(entry) && typeof entry.id === "string" ? entry.id : null,
+      receivedKeys: isJsonObject(entry) ? Object.keys(entry).sort() : [],
+      errors,
+    });
   }
-  if (parsed.length !== raw.length) {
+  if (invalidEntries.length > 0) {
+    const first = invalidEntries[0];
+    const firstIdentity = first.resultId ? ` id=${first.resultId}` : "";
     console.error(
-      `[mandates] ignored ${raw.length - parsed.length} malformed persisted bench result(s)`,
+      `[mandates] rejected ${invalidEntries.length} persisted bench result(s) for ${location}; first invalid entry #${first.index + 1}${firstIdentity}: ${first.errors.join("; ")}`,
+      {
+        operation: "parse_mandate_test_history",
+        ...context,
+        invalidEntries,
+      },
     );
   }
   return parsed.sort((a, b) =>

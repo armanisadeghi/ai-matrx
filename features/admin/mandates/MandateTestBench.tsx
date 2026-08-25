@@ -1082,7 +1082,10 @@ export function MandateTestBench({
           const currentGroup = batch?.exemplars.find(
             (group) => group.exemplar_id === exemplar.id,
           );
-          const history = parseMandateTestHistory(exemplar.metadata);
+          const history = parseMandateTestHistory(exemplar.metadata, {
+            mandateKey: mandate.mandate_key,
+            exemplarId: exemplar.id,
+          });
           return (
             <section
               key={exemplar.id}
