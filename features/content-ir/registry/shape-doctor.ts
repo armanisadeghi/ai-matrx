@@ -300,7 +300,9 @@ export interface ShapeDoctorInput {
    * react/loading/kind-loading-slugs.ts). When provided, a declared
    * `loading_component` naming a slug outside this set is a RED
    * `unknown-loading-component` — the registry claims a loader that does not
-   * exist, and at runtime it silently falls back to the generic skeleton.
+   * exist. Since 2026-08-25 the runtime IGNORES it and derives a silhouette
+   * from the kind's own schema instead, so the declaration is dead weight
+   * pointing at nothing — still a defect, just no longer a downgrade.
    * Omit only in a caller that cannot load the list (it loses the check).
    */
   loadingLibrarySlugs?: ReadonlySet<string>;
@@ -921,13 +923,13 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
       } else {
         loading = {
           status: "warn",
-          detail: `UNKNOWN slug "${declaredLoading}" (${loadingSource}) — not in the loading library; renders the generic skeleton`,
+          detail: `UNKNOWN slug "${declaredLoading}" (${loadingSource}) — not in the loading library; ignored at runtime in favour of the derived silhouette`,
         };
         reds.push({
           severity: "red",
           code: "unknown-loading-component",
           kind: kind.kind,
-          message: `kind "${kind.kind}" declares loading_component "${declaredLoading}" (${loadingSource}), which is not in the loading library (kind-loading-slugs.ts) — at runtime it silently falls back to the generic skeleton; pick a real slug or add the loader to the library`,
+          message: `kind "${kind.kind}" declares loading_component "${declaredLoading}" (${loadingSource}), which is not in the loading library (kind-loading-slugs.ts) — the runtime ignores it and derives a silhouette instead, so the declaration does nothing; pick a real slug or add the loader to the library`,
         });
       }
     } else if (exemption) {
