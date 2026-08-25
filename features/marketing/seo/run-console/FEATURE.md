@@ -142,18 +142,52 @@ quarantined counts are on every brand row.
 
 **3 · Author a schedule.** The Schedule tab edits THIS tier's row only, and
 shows the resolution table for every brand in scope so the operator can see
-which tier is winning. It saves storage and nothing else.
+which tier is winning. **A saved, switched-on row RUNS** — see the dispatcher
+below. The resolution table is read from `seo.engine_schedule_resolve`, the
+same function the dispatcher obeys.
+
+**4 · The dispatcher.** One approved scheduler task,
+`seo_engine_schedule_dispatcher` (every 15 minutes; aidream
+`services/seo/engine_schedule_dispatch.py`, task
+`a7c1e2d3-0000-4e5f-9a00-000000000438`), calls
+`seo.engine_schedules_claim(now())` and runs what comes back — in sequence, one
+site at a time, each through the SAME `run_placement_command` /
+`SeoCommandRun` path the Run now button uses, so an automatic run appears in
+Run history with its AI calls exactly like a manual one. Everything that
+decides WHO runs lives in the database
+(`migrations/seo_engine_schedule_dispatcher.sql`): the cascade, the due test,
+the greatest-need ordering (`seo.fn_topic_placement_sites_owing` — the read the
+console and the engine already share), the `sites_per_run` cap, the in-flight
+skip, and the `last_dispatched_at` claim under `FOR UPDATE SKIP LOCKED`.
 
 ---
 
 ## Invariants & gotchas
 
-- 🚨 **Nothing runs automatically yet — schedules take effect when the
-  dispatcher ships.** That exact sentence is `NO_DISPATCHER_NOTICE` in
-  `ScheduleCascadePanel.tsx` and is rendered on the panel and in the save toast.
-  v1 is manual-only by Arman's ruling. **Do not create a scheduler task for
-  this** — no unapproved schedules, and the 04:50 nightly proposal for topic
-  placement was WITHDRAWN (KI-014).
+- 🚨 **A saved, enabled row SPENDS MONEY on its own cadence.** `DISPATCHER_NOTICE`
+  in `ScheduleCascadePanel.tsx` says so on the panel and in the save toast; never
+  soften it back toward "nothing runs". A row saved here IS the approval record
+  for that engine on that brand (Arman, 2026-08-25) — that is the whole authority
+  the dispatcher runs on.
+- 🚨 **THE CASCADE HAS ONE IMPLEMENTATION, AND IT IS IN THE DATABASE.**
+  `seo.engine_schedule_resolve` — read by `resolveSchedulesForSites` here and by
+  `seo.engine_schedules_due` for the dispatcher. The old local `.find()` chain
+  (`resolveScheduleForSite`) is DELETED. Never restore one: a console that
+  disagrees with the dispatcher about who gets charged is the exact failure this
+  feature exists to prevent.
+- 🚨 **ONE dispatcher, one path.** Do not create a second scheduler task for an
+  SEO engine — add the engine to `ENGINE_RUNNERS` in aidream's
+  `engine_schedule_dispatch.py` plus its owed-work branch in
+  `seo.engine_schedules_due`. `seo_topic_placement_backfill`
+  (`…433`) drives the SAME engine; both being enabled means paying twice for the
+  same corpus.
+- 🚨 **`store=True` on the dispatcher's `system_app_context` IS the audit.**
+  `system_app_context` defaults to `store=False`, and a non-storing context
+  writes no `chat.request` row at all — the run would show 0 AI calls in Run
+  history forever. Measured live 2026-08-25.
+- A dispatch that is claimed and then FAILS does not retry until the next
+  window. For unattended spend "misses one window" is the correct failure
+  direction; "runs twice" is not.
 - The console authors only its OWN tier. Seeing every tier is deliberate;
   writing another one is not what the permission difference means.
 - Each brand row issues its own `topic_placement_status` RPC. That is portfolio
@@ -165,6 +199,14 @@ which tier is winning. It saves storage and nothing else.
 ---
 
 ## Change log
+
+- `2026-08-25` — 🚨 **THE DISPATCHER. Saved schedules now run themselves, and the cascade has ONE implementation.** Arman approved exactly one scheduled task for this — `seo_engine_schedule_dispatcher`, every 15 minutes — and ruled that a row saved in this console IS the approval record for that engine on that brand.
+  **In the database** (`migrations/seo_engine_schedule_dispatcher.sql`): `seo.engine_schedule.last_dispatched_at`; `seo.engine_schedule_resolve` (invoker-rights, the ONE cascade — site > organization > system, nearest wins, enabled state carried not filtered so a brand's OFF still governs); `seo.engine_schedules_due` (definer, service-role only — enabled winner + window open + not fired this window + site owes work + no in-flight run, ordered by most owed clicks via `seo.fn_topic_placement_sites_owing`, capped by the winning row's `sites_per_run`); `seo.engine_schedules_claim` (stamps `last_dispatched_at` under `FOR UPDATE SKIP LOCKED` in the same statement it selects, so two overlapping ticks cannot double-spend).
+  **In aidream**: `services/seo/engine_schedule_dispatch.py` — claims, then runs each site in sequence through `run_placement_command` (the Run now path), with an `ENGINE_RUNNERS` dict so the next engine is one line, not a new task. Per-site failures are caught, named and reported; the rest of the tick continues. `run_placement_command` now returns its `PlacementPassResult` so the headless caller can report real counts without forking the command path.
+  **Here**: `resolveScheduleForSite` DELETED; `resolveSchedulesForSites` reads the DB function. `NO_DISPATCHER_NOTICE` → `DISPATCHER_NOTICE`, and the panel no longer claims nothing runs.
+  **Proven live** against production (`brsgrqvjdzwihsvnfqkf`), every temporary row rolled back afterwards: system row due now returned its 3 owing brands ordered by clicks (856 / 8 / 2); adding an organization row moved both of that org's brands onto it and its `sites_per_run=1` trimmed the lower-need one; adding a brand row moved that brand onto it (caps 50 → 7 → 11 observed per tier); switching the brand row OFF removed that brand entirely instead of falling back to the org row. Claim called twice in a row: 3 rows, then 0. One real dispatch (`max_keywords_per_run=3`, Data Destruction) claimed 3 / placed 1, and `admin_list_run_history` shows the run with **1 AI call, 56,069 tokens, $0.031433**, `admin_list_run_ai_calls` returning that call's model, tokens, duration and prompt.
+  **Found doing it:** `system_app_context` defaults to `store=False`, so the first dispatch wrote NO `chat.request` row at all and would have shown 0 AI calls forever. Fixed with `store=True` + `conversation_type/origin_class="scheduled"`, mirroring the scheduler's own agent runner.
+  **Open:** `admin_list_run_ai_calls` returned an EMPTY `output_text` for this structured-output call (prompt, tokens and cost are all there) — the "see what it generated" half of Arman's requirement is not satisfied for this call shape; same code path as a manual run, so this is pre-existing, not new.
 
 - `2026-08-25` — **Organization and site tiers mounted; v1 is now all three
   tiers, live.** Arman: *"the question is if we already have this set up so
