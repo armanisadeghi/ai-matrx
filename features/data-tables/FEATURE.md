@@ -670,6 +670,10 @@ without anyone noticing.
 
 ## Change log
 
+- `2026-08-25` — **URL-backed table filters no longer crash with React #185.** The shared
+  `useMirroredUrlState` now reads the live query string when applying URL changes, so its
+  state-to-URL effect cannot be undone by the stale query snapshot from the same render. A
+  forcing hook test covers the `/data/[id]` sorted-and-filtered transition.
 - `2026-08-24` — **Edit Row mobile actions no longer collide.** The row-actions trigger is a
   tap-sized, labeled control, and the canonical `DialogHeader` now reserves the shared close
   target's hit area for every dialog that becomes a mobile bottom sheet.
