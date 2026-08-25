@@ -46,6 +46,8 @@ import type {
 } from "@/features/marketing/search-console/types";
 import {
   GSC_RANGE_FILTERS,
+  STAMP_BLANK_LABEL,
+  STAMP_BLANK_VALUE,
   countryLabel,
   deviceLabel,
   encodeLevelFilter,
@@ -237,9 +239,13 @@ export function FilterBar({
   const dimensionLabel = (slug: string) =>
     dimensions.find((d) => d.slug === slug)?.label ?? slug;
   const valueLabel = (dimension: string, value: string) =>
-    dimensions
-      .find((d) => d.slug === dimension)
-      ?.values.find((v) => v.key === value)?.label ?? value;
+    // KI-022 — the "not answered" sentinel is a real filter, so it gets a real
+    // word. Falling through to the raw key would print `__none` on a chip.
+    value === STAMP_BLANK_VALUE
+      ? STAMP_BLANK_LABEL
+      : (dimensions
+          .find((d) => d.slug === dimension)
+          ?.values.find((v) => v.key === value)?.label ?? value);
   const levelLabel = (level: string) =>
     (vocabulary.data ?? []).find((b) => b.value === level)?.label ??
     (level === "unvalued" ? "Unvalued" : level === "negative" ? "Negative" : level);
@@ -517,14 +523,25 @@ export function FilterBar({
                   placeholder="Value"
                   noun="value"
                   ariaLabel="Value"
-                  options={draftValueRows.map((v) => ({
-                    value: v.key,
-                    label: v.label,
-                    hint:
-                      v.keyword_count > 0
-                        ? v.keyword_count.toLocaleString()
-                        : undefined,
-                  }))}
+                  options={[
+                    // KI-022 — the blanks are pickable here, not only through
+                    // the coverage meter's door, so the filter bar can express
+                    // the question a person asks out loud: "which ones has
+                    // nobody answered?"
+                    {
+                      value: STAMP_BLANK_VALUE,
+                      label: STAMP_BLANK_LABEL,
+                      hint: "no answer yet",
+                    },
+                    ...draftValueRows.map((v) => ({
+                      value: v.key,
+                      label: v.label,
+                      hint:
+                        v.keyword_count > 0
+                          ? v.keyword_count.toLocaleString()
+                          : undefined,
+                    })),
+                  ]}
                   lockedNote={
                     draftDimensionRow && draftDimensionRow.scope !== "site"
                       ? `“${draftDimensionRow.label}” is a shared dimension every business uses, so its choices are platform-governed.`

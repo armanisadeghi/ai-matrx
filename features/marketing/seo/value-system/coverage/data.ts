@@ -139,3 +139,65 @@ export const FACET_BACKFILL_STAGES: Record<string, string> = {
   "seo.backfill_settled": "Saving what this pass classified…",
   "seo.backfill_completed": "Pass complete",
 };
+
+// ── KI-022, the other half: coverage PER DIMENSION ──────────────────────────
+
+/**
+ * THE HONEST GAUGE, ONE ROW PER QUESTION.
+ *
+ * The universal meter above answers "has the shared 13-facet plane reached my
+ * keywords". It cannot answer the question a person actually acts on: *which
+ * of my questions has an answer, and which is a filter over nothing?* A
+ * dimension that describes 3% of the corpus will happily narrow a list to
+ * three rows and look like a finding about the business when it is a finding
+ * about the backfill queue.
+ *
+ * ONE SERVER READ (`seo.gsc_dimension_coverage`), never re-derived here. The
+ * caller sorts and phrases; every count on the screen is the database's. The
+ * RPC asserts site access like every other `gsc_*` read (THE SCOPE RULE), so
+ * this is a normal site-owner surface, not an admin one.
+ */
+export const DIMENSION_COVERAGE_KNOB_FEATURE = "seo.dimension_coverage";
+
+const assertDimensionCoverage = makeAssertData(
+  "read the per-dimension coverage",
+);
+
+const dimensionCoverageSchema = z.object({
+  dimension: z.string(),
+  dimension_label: z.string(),
+  scope: z.string(),
+  nature: z.string(),
+  /** Both denominators are the WINDOW's, identical on every row. */
+  total_clicks: z.number(),
+  total_keywords: z.number(),
+  /** Answered — abstains excluded, because "not clear" is not an answer. */
+  decided_clicks: z.number(),
+  decided_keywords: z.number(),
+  /** Looked at at all. `stamped - decided` is the "could not tell" slice. */
+  stamped_clicks: z.number(),
+  stamped_keywords: z.number(),
+});
+
+export type DimensionCoverageRow = z.infer<typeof dimensionCoverageSchema>;
+
+export async function getDimensionCoverage(
+  siteId: string,
+  start: string,
+  end: string,
+  signal?: AbortSignal,
+): Promise<DimensionCoverageRow[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_dimension_coverage", {
+      p_site_id: siteId,
+      p_start: start,
+      p_end: end,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const data = assertDimensionCoverage(
+    response.data,
+    response.error,
+    "read how much of your traffic each dimension describes",
+  );
+  return z.array(dimensionCoverageSchema).parse(data ?? []);
+}

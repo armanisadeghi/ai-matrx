@@ -18,10 +18,19 @@
  *                      onto that value; any truthy value works, the matcher's
  *                      own id just rides along for a future "ring that row")
  *   /value/rules      ?bands=value_band            (MeaningRulesWorkbench)
- *   /value            ?kw=<keyword>  |  ?combo=<id>  (ValueWorkbench)
+ *   /value            ?kw=<keyword>               (ValueWorkbench)
+ *   /value/dimensions ?combo=<id>                 (the combinations panel —
+ *                      C7 combinations are authored where their values live)
+ *   /keywords         ?st=<dimension>:<value>|…&cols=…  (the keyword list,
+ *                      filtered; `__none` selects the keywords a dimension has
+ *                      no answer for — KI-022)
  */
 
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import {
+  STAMP_BLANK_VALUE,
+  encodeStampFilter,
+} from "@/features/marketing/search-console/types";
 import type { ValueReason } from "./types";
 
 export interface ReasonEditorLink {
@@ -96,6 +105,38 @@ export function dimensionValueHref(
 }
 
 /**
+ * THE KEYWORD LIST, opened on a set of stamps (all-of). `cols` brings those
+ * dimensions' own columns with it, so the reader arrives somewhere they can
+ * ACT rather than somewhere they must first configure.
+ */
+export function stampMatchHref(
+  ctx: ReasonLinkContext,
+  pairs: ReadonlyArray<{ dimension: string; value: string }>,
+): string {
+  const base = marketingRoutes.site(ctx.brandId, ctx.siteId, "/keywords");
+  const search = new URLSearchParams({
+    st: encodeStampFilter(pairs),
+    cols: [...new Set(pairs.map((pair) => pair.dimension))].join(","),
+  });
+  return `${base}?${search.toString()}`;
+}
+
+/**
+ * KI-022 — THE COVERAGE METER'S DOOR. A dimension that describes 3% of a
+ * site's clicks is a filter over nothing, and the only useful next move is to
+ * see the keywords it has no answer for. `st=<dimension>:__none` is that list
+ * (server predicate: `seo.gsc_stamp_keyword_set`).
+ */
+export function dimensionBlanksHref(
+  ctx: ReasonLinkContext,
+  dimension: string,
+): string {
+  return stampMatchHref(ctx, [
+    { dimension, value: STAMP_BLANK_VALUE },
+  ]);
+}
+
+/**
  * Where this step is changed. `null` only when a step genuinely has no editor
  * — never as a shrug; every kind below resolves to a real screen.
  */
@@ -143,8 +184,10 @@ export function reasonEditorLink(
           : `Change what “${reason.value_label}” is worth`,
       };
     case "combo":
+      // KI-004 — combinations are authored on the Dimensions screen, beside
+      // the values they are made of. One home, one editor.
       return {
-        href: valuePath(ctx, "/value", {
+        href: valuePath(ctx, "/value/dimensions", {
           [VALUE_QUERY_KEYS.combo]: reason.combo_id,
         }),
         label: "Edit this combination",

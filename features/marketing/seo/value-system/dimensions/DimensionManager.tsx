@@ -39,8 +39,11 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { FacetCoverage } from "@/features/marketing/seo/value-system/coverage/FacetCoverage";
+import { DimensionCoverage } from "@/features/marketing/seo/value-system/coverage/DimensionCoverage";
+import { ValueCombosPanel } from "@/features/marketing/seo/value-system/rules/ValueCombosPanel";
 import { GuidelinesGapPrompt } from "@/features/marketing/seo/value-system/guidelines/GuidelinesGapPrompt";
 import { WhatIsADimension } from "./WhatIsADimension";
+import { WorthPointsPanel } from "./WorthPointsPanel";
 import {
   DimensionSearchField,
   DimensionSearchResults,
@@ -200,12 +203,34 @@ export function DimensionManager() {
               everyone else). */}
           <FacetCoverage siteId={siteId} />
 
+          {/* KI-022, the other half. The universal meter above says whether the
+              SHARED plane reached these keywords; this says, question by
+              question, which of them actually describes the traffic and which
+              is a filter over nothing — worst first, every row a door into the
+              keywords it has no answer for. Not admin-gated: it reads this
+              site's own traffic and this site's own vocabulary. */}
+          <DimensionCoverage siteId={siteId} brandId={brandId} />
+
           {/* KI-031 — the dimensions are the QUESTIONS; the guidelines are what
               this business means by the answers. A site that has written none
               has every keyword on this screen judged by a model that knows
               nothing about it, and until now no screen said so. Renders
               nothing once the document exists and is current. */}
           <GuidelinesGapPrompt siteId={siteId} brandId={brandId} />
+
+          {/* KI-001 — the dimensions are the questions and the values are the
+              answers; this is the only screen that says what those answers are
+              WORTH, and the only door out of a rulebook that is all multipliers.
+              P18: what a keyword IS pays points, only a relative qualifier
+              scales. Collapsed until asked for; renders nothing on a site that
+              has expressed no worth at all. */}
+          <WorthPointsPanel siteId={siteId} />
+
+          {/* KI-004 — COMBINATIONS LIVE WHERE THEIR VALUES DO. The editor has
+              been real since C7 and had zero use, because its only door was a
+              read-only explainer panel two screens away. It is one component,
+              mounted here and in that explainer — never a second list. */}
+          <ValueCombosPanel siteId={siteId} brandId={brandId} />
 
           <WhatIsADimension
             key={

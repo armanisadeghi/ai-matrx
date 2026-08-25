@@ -58,9 +58,8 @@ import {
 } from "../guidelines/GuidelinesGapPrompt";
 import { BandVocabularyEditor } from "../vocabulary/BandVocabularyEditor";
 import { ValueRuleEditor } from "../rules/ValueRuleEditor";
-import { ValueComboEditor } from "../rules/ValueComboEditor";
+import { ValueCombosPanel } from "../rules/ValueCombosPanel";
 import { GeoAreaEditor } from "../rules/GeoAreaEditor";
-import { listValueCombos, valueCombosQueryKey } from "../rules/data";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import type {
   SiteGeoArea,
@@ -185,7 +184,6 @@ export function MeaningPanel({
   window,
   bandMetas,
   bandsAreTemplate,
-  focusComboId = null,
   onClose,
 }: {
   siteId: string;
@@ -196,12 +194,6 @@ export function MeaningPanel({
   window: { start: string; end: string };
   bandMetas: BandMeta[];
   bandsAreTemplate: boolean;
-  /**
-   * A value receipt's "edit this combination" sent the reader here — open that
-   * combination as soon as the list arrives, or the link lands them in a panel
-   * with nothing obviously selected.
-   */
-  focusComboId?: string | null;
   onClose: () => void;
 }) {
   const [editing, setEditing] = useState<VocabKind | null>(null);
@@ -212,10 +204,6 @@ export function MeaningPanel({
   const [editingArea, setEditingArea] = useState<SiteGeoArea | null | undefined>(
     undefined,
   );
-  const [editingCombo, setEditingCombo] = useState<ValueCombo | null | undefined>(
-    undefined,
-  );
-  const focusedComboRef = useRef<string | null>(null);
   const { site } = useMarketingSite();
   // The prose doctrine every AI run for this site reads (D35). Read-only here:
   // the document is AUTHORED at `value:guidelines`, and two editors for one
@@ -245,19 +233,6 @@ export function MeaningPanel({
     queryFn: () => listGeoAreas(siteId),
     staleTime: 5 * 60_000,
   });
-  const combos = useQuery({
-    queryKey: valueCombosQueryKey(siteId),
-    queryFn: ({ signal }) => listValueCombos(siteId, signal),
-    staleTime: 5 * 60_000,
-  });
-  useEffect(() => {
-    if (!focusComboId || focusedComboRef.current === focusComboId) return;
-    const combo = (combos.data ?? []).find((row) => row.id === focusComboId);
-    if (!combo) return;
-    focusedComboRef.current = focusComboId;
-    setEditingCombo(combo);
-  }, [focusComboId, combos.data]);
-
   const topicValues = useQuery({
     queryKey: ["marketing", "value", "topic-values", siteId],
     queryFn: () => listSiteTopicValues(siteId),
@@ -519,95 +494,11 @@ export function MeaningPanel({
           </ul>
         </section>
 
-        {/* Combinations (C7) — worth on a SET of values, authored right here */}
-        <section className="space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <SectionHeader
-              icon={Layers2}
-              title="Combinations"
-              count={combos.data?.length ?? null}
-              hint="Two strikes. A combination fires only when a keyword carries all of the values you name at once — “consumer AND out of market” — and says outright what that pairing is worth. It is not a point system."
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setEditingCombo(null)}
-              className="h-6 shrink-0 gap-1 px-1.5 text-[10px]"
-              title="Combine two to four values — you will see exactly which of your keywords it moves before you save."
-            >
-              <Plus className="h-3 w-3" />
-              New
-            </Button>
-          </div>
-          {combos.isLoading ? <SectionSkeleton /> : null}
-          {combos.isError ? (
-            <InlineQueryError
-              what="combinations"
-              error={combos.error}
-              onRetry={() => void combos.refetch()}
-            />
-          ) : null}
-          {combos.data && combos.data.length === 0 ? (
-            <EmptyLine>
-              No combinations yet. Worth set on one value at a time can only ever
-              add up; a combination is how you say “a consumer search from a city
-              I do not serve is dead in the water, whatever else it has going
-              for it.”
-            </EmptyLine>
-          ) : null}
-          <ul className="space-y-1">
-            {(combos.data ?? []).map((combo) => (
-              <li key={combo.id}>
-                <button
-                  type="button"
-                  onClick={() => setEditingCombo(combo)}
-                  className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-left transition-colors hover:bg-accent"
-                  title="Edit this combination — the live preview shows what changes before you save."
-                >
-                  <p className="flex items-center justify-between gap-2 text-[11px]">
-                    <span className="min-w-0 truncate font-medium text-foreground">
-                      {combo.label ??
-                        combo.combo_values.map((v) => v.value_label).join(" + ")}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-1.5">
-                      {combo.enabled ? null : (
-                        <span className="rounded border border-border bg-muted/40 px-1 py-px text-[10px] text-muted-foreground">
-                          off
-                        </span>
-                      )}
-                      <span
-                        className={cn(
-                          "shrink-0 tabular-nums font-semibold",
-                          combo.effect === "never"
-                            ? "text-destructive"
-                            : combo.effect === "add"
-                              ? "text-success"
-                              : (combo.amount ?? 1) < 1
-                                ? "text-warning"
-                                : "text-success",
-                        )}
-                      >
-                        {combo.effect === "never"
-                          ? "never"
-                          : combo.effect === "add"
-                            ? `+${combo.amount}`
-                            : `×${combo.amount}`}
-                      </span>
-                    </span>
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Fires when a keyword is{" "}
-                    {combo.combo_values
-                      .map((v) => `${v.dimension_label.toLowerCase()} “${v.value_label.toLowerCase()}”`)
-                      .join(" and ")}
-                    {combo.notes ? ` — ${combo.notes}` : ""}
-                  </p>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        {/* Combinations (C7 / KI-004) — the SAME component the Dimensions
+          screen mounts, rendered bare here because this panel already carries
+          the chrome. A read-only copy of this list would drift the day either
+          one gained an affordance, so there is not one. */}
+        <ValueCombosPanel siteId={siteId} brandId={brandId} variant="bare" />
 
         {/* Geo bands + areas */}
         <section className="space-y-2">
@@ -812,16 +703,6 @@ export function MeaningPanel({
           bandMetas={bandMetas}
           rule={editingRule}
           onClose={() => setEditingRule(undefined)}
-        />
-      ) : null}
-      {editingCombo !== undefined ? (
-        <ValueComboEditor
-          siteId={siteId}
-          window={window}
-          windowLabel="the last 28 days"
-          bandMetas={bandMetas}
-          combo={editingCombo}
-          onClose={() => setEditingCombo(undefined)}
         />
       ) : null}
       {editingArea !== undefined ? (

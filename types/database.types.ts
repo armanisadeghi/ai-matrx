@@ -48910,6 +48910,7 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           enabled: boolean
+          exclusions: string[] | null
           fact_value_id: string | null
           id: string
           kind: string
@@ -48934,6 +48935,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           enabled?: boolean
+          exclusions?: string[] | null
           fact_value_id?: string | null
           id?: string
           kind: string
@@ -48958,6 +48960,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           enabled?: boolean
+          exclusions?: string[] | null
           fact_value_id?: string | null
           id?: string
           kind?: string
@@ -53290,6 +53293,25 @@ export type Database = {
         Args: { p_keyword_ids: string[]; p_reason?: string }
         Returns: number
       }
+      fn_autonomy_apply_timed_out: {
+        Args: { p_capability: string; p_site_id: string }
+        Returns: Json
+      }
+      fn_autonomy_gate: {
+        Args: { p_capability: string; p_site_id: string }
+        Returns: Json
+      }
+      fn_autonomy_propose_stamp: {
+        Args: {
+          p_capability: string
+          p_keyword_ids: string[]
+          p_reasoning?: string
+          p_site_id: string
+          p_title: string
+          p_value_id: string
+        }
+        Returns: Json
+      }
       fn_backfill_keyword_places: {
         Args: {
           p_detector_version?: string
@@ -53395,7 +53417,7 @@ export type Database = {
         Returns: Json
       }
       fn_evaluate_matchers_internal: {
-        Args: { p_keyword_ids?: string[]; p_site_id: string }
+        Args: { p_keyword_ids?: string[]; p_mode?: string; p_site_id: string }
         Returns: Json
       }
       fn_geo_area_sync_meaning: { Args: { p_area_id: string }; Returns: Json }
@@ -53438,6 +53460,17 @@ export type Database = {
       fn_restore_keywords: {
         Args: { p_keyword_ids: string[] }
         Returns: number
+      }
+      fn_situational_sites_owing: {
+        Args: { p_limit?: number }
+        Returns: {
+          matchers: number
+          oldest_evaluated_at: string
+          organization_id: string
+          site_id: string
+          stale_matchers: number
+          stamps: number
+        }[]
       }
       fn_topic_placement_counts: {
         Args: { p_min_impressions: number; p_site_id: string }
@@ -54648,6 +54681,28 @@ export type Database = {
           severity: string
         }[]
       }
+      gsc_site_worth_list: {
+        Args: { p_end: string; p_site_id: string; p_start: string }
+        Returns: {
+          amount: number
+          clicks: number
+          dimension_label: string
+          dimension_nature: string
+          dimension_scope: string
+          dimension_slug: string
+          effect: string
+          impressions: number
+          notes: string
+          origin: string
+          pack_id: string
+          relative_qualifier: boolean
+          stamped_keywords: number
+          updated_at: string
+          value_id: string
+          value_key: string
+          value_label: string
+        }[]
+      }
       gsc_stamp_keyword_set: {
         Args: { p_site_id: string; p_stamps: Json }
         Returns: {
@@ -54902,6 +54957,27 @@ export type Database = {
           sort: number
           value: string
         }[]
+      }
+      gsc_value_worth_preview: {
+        Args: {
+          p_amount?: number
+          p_effect: string
+          p_end: string
+          p_sample?: number
+          p_site_id: string
+          p_start: string
+          p_value_id: string
+        }
+        Returns: Json
+      }
+      gsc_worth_convert_basis: {
+        Args: {
+          p_end: string
+          p_site_id: string
+          p_start: string
+          p_value_id: string
+        }
+        Returns: Json
       }
       keyword_classification_status: {
         Args: { p_min_impressions?: number; p_site_id?: string }
@@ -55170,6 +55246,19 @@ export type Database = {
           site_id: string
           updated_at: string
           value_id: string
+        }[]
+      }
+      situational_refresh_status: {
+        Args: { p_site_id: string }
+        Returns: {
+          autonomy: Json
+          matchers: number
+          newest_evaluated_at: string
+          oldest_evaluated_at: string
+          site_id: string
+          stale_after_hours: number
+          stale_matchers: number
+          stamps: number
         }[]
       }
       stamp_keyword_places: {

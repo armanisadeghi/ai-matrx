@@ -207,6 +207,25 @@ export interface GscStampFilter {
   value: string;
 }
 
+/**
+ * KI-022 — "NOT ANSWERED", said in the stamp grammar.
+ *
+ * A coverage meter that reports 3% and offers no way to work the other 97% is
+ * a scoreboard, not a tool. `st=<dimension>:__none` selects the keywords that
+ * carry no DECIDED answer in that dimension — abstains excluded, exactly like
+ * `seo.gsc_dimension_coverage.decided_*`, so the meter's blank count and the
+ * list behind its door are one number.
+ *
+ * The predicate lives in ONE place server-side (`seo.gsc_stamp_keyword_set`),
+ * so the table, the totals, the chart and "select all matching" learn it
+ * together and can never disagree. It cannot collide with a real value: value
+ * keys are slugs and none has ever started `__`.
+ */
+export const STAMP_BLANK_VALUE = "__none";
+
+/** What a reader is shown wherever the sentinel would otherwise leak. */
+export const STAMP_BLANK_LABEL = "Not answered";
+
 /** `dimension:value|dimension:value` → pairs (blank / malformed parts dropped). */
 export function parseStampFilter(encoded: string | undefined): GscStampFilter[] {
   if (!encoded) return [];

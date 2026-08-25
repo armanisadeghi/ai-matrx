@@ -169,6 +169,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ReasonChainDetail } from "./ReasonChain";
 import { MeaningPanel } from "./MeaningPanel";
 import { MeaningHealth } from "./MeaningHealth";
+import { DimensionCoverage } from "@/features/marketing/seo/value-system/coverage/DimensionCoverage";
 import { ReadyDefaultsBanner } from "../packs/ReadyDefaultsBanner";
 import { RulingDialog, type RulingDraft } from "./RulingDialog";
 import { AddLevelDialog } from "../pickers/AddLevelDialog";
@@ -348,8 +349,7 @@ export function ValueWorkbench() {
    * The doors other screens open onto this one (reason-links.ts):
    *   ?kw=<text>    a receipt's "change or clear your ruling"
    *   ?band=<slug>  a level row in the Traffic quality decomposition
-   *   ?combo=<id>   a receipt's "edit this combination"
-   * Applied once, then the reader owns the view — re-applying on every render
+     * Applied once, then the reader owns the view — re-applying on every render
    * would fight every filter they change afterwards.
    */
   const searchParams = useSearchParams();
@@ -408,7 +408,6 @@ export function ValueWorkbench() {
   };
   const focusKeyword = searchParams.get("kw");
   const focusBand = searchParams.get("band");
-  const focusComboId = searchParams.get("combo");
   const appliedFocusRef = useRef(false);
 
   /**
@@ -600,9 +599,8 @@ export function ValueWorkbench() {
 
   useEffect(() => {
     if (appliedFocusRef.current) return;
-    if (!focusKeyword && !focusBand && !focusComboId) return;
+    if (!focusKeyword && !focusBand) return;
     appliedFocusRef.current = true;
-    if (focusComboId) setMeaningOpen(true);
     if (focusKeyword || focusBand) {
       table.onStateChange({
         ...table.state,
@@ -624,7 +622,7 @@ export function ValueWorkbench() {
     // Deliberately keyed on the URL params alone: the ref guard makes this a
     // once-only seed, and adding the table controller would re-run it every
     // time the reader changes a filter — undoing their own edit.
-  }, [focusKeyword, focusBand, focusComboId]);
+  }, [focusKeyword, focusBand]);
 
   const bandFilter = singleSelectValue(state.columnFilters.value_band);
   const sourceFilter = singleSelectValue(state.columnFilters.value_source);
@@ -1147,6 +1145,14 @@ export function ValueWorkbench() {
           siteId={siteId}
         />
 
+        {/* KI-022 — the honesty gauge, in its compact form. It renders NOTHING
+          while every question describes enough of the traffic to filter on;
+          the moment one does not, it says so here, beside the numbers a person
+          is about to draw a conclusion from, with a door into the keywords
+          that question has no answer for. Same server read as the Dimensions
+          screen's full panel — never a second, differently-computed summary. */}
+        <DimensionCoverage siteId={siteId} brandId={brandId} variant="compact" />
+
         <ReadyDefaultsBanner />
 
         {/* WHAT THE AGENTS PROPOSED and you have not answered yet — rendered in
@@ -1547,7 +1553,6 @@ export function ValueWorkbench() {
             window={window}
             bandMetas={metas}
             bandsAreTemplate={bandsAreTemplate}
-            focusComboId={focusComboId}
             onClose={() => setMeaningOpen(false)}
           />
         ) : null}
