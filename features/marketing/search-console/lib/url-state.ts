@@ -11,6 +11,7 @@
  */
 
 import type { ReadonlyURLSearchParams } from "next/navigation";
+import { isUuidFilter } from "@/features/marketing/data/analysis-query";
 import type {
   GscCompareMode,
   GscDimension,
@@ -115,6 +116,7 @@ export function applyGscFilters(
 export function parseSearchConsoleUrl(
   params: ReadonlyURLSearchParams | URLSearchParams,
 ): SearchConsoleUrlState {
+  const siteParam = params.get("site");
   const tabParam = params.get("tab");
   const tab: GscTab = GSC_TABS.some((t) => t.key === tabParam)
     ? (tabParam as GscTab)
@@ -146,7 +148,9 @@ export function parseSearchConsoleUrl(
       ? (insightParam as GscInsightKind)
       : null;
   return {
-    siteId: params.get("site"),
+    // Site-scoped RPCs accept UUIDs. Reject malformed deep-link values at
+    // the URL boundary instead of sending them to every enabled GSC read.
+    siteId: isUuidFilter(siteParam) ? siteParam : null,
     tab,
     range,
     customFrom: hasCustom ? customFrom : null,
@@ -256,7 +260,9 @@ export function resolvePeriods(
  * compare metrics but the dashboard is set to "no compare". No-op when a
  * compare is already active.
  */
-export function withPrevCompare(periods: GscResolvedPeriods): GscResolvedPeriods {
+export function withPrevCompare(
+  periods: GscResolvedPeriods,
+): GscResolvedPeriods {
   if (periods.compare) return periods;
   const days = rangeDayCount(periods.current);
   return {
@@ -409,7 +415,9 @@ export function sanitizeFilterGroups(filters: GscFilters): GscFilters {
   // the Countries tab" silently drop the country filter.
   const distinctive = (keys: readonly (keyof GscFilters)[]) =>
     present(keys.filter((k) => !PROFILE_NEUTRAL_FILTER_KEYS.includes(k)));
-  const keep: readonly (keyof GscFilters)[] = distinctive(QUERY_PAGE_FILTER_KEYS)
+  const keep: readonly (keyof GscFilters)[] = distinctive(
+    QUERY_PAGE_FILTER_KEYS,
+  )
     ? QUERY_PAGE_FILTER_KEYS
     : distinctive(COUNTRY_DEVICE_FILTER_KEYS)
       ? COUNTRY_DEVICE_FILTER_KEYS
@@ -436,7 +444,10 @@ export function pruneFiltersForDimension(
   return pruneToAllowed(allowedFilterKeysForDimension(dimension), filters);
 }
 
-export function pruneFiltersForTab(tab: GscTab, filters: GscFilters): GscFilters {
+export function pruneFiltersForTab(
+  tab: GscTab,
+  filters: GscFilters,
+): GscFilters {
   return pruneToAllowed(allowedFilterKeysForTab(tab), filters);
 }
 

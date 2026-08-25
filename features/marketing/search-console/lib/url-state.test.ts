@@ -78,6 +78,26 @@ describe("?rule round-trip", () => {
   });
 });
 
+describe("?site parsing", () => {
+  it("preserves a valid site UUID", () => {
+    expect(
+      parseSearchConsoleUrl(
+        new URLSearchParams("site=38eff4c9-b021-451a-b995-7d9b3d17db5e"),
+      ).siteId,
+    ).toBe("38eff4c9-b021-451a-b995-7d9b3d17db5e");
+  });
+
+  it("rejects a path-like site value before site-scoped RPCs run", () => {
+    expect(
+      parseSearchConsoleUrl(
+        new URLSearchParams(
+          "site=38eff4c9-b021-451a-b995-7d9b3d17db5e%2Fvalue%2Fdiscovery",
+        ),
+      ).siteId,
+    ).toBeNull();
+  });
+});
+
 describe("range presets", () => {
   it("offers sub-28-day windows (daily/weekly analysis)", () => {
     const keys = GSC_RANGE_PRESETS.map((r) => r.key);
@@ -112,9 +132,7 @@ describe("range presets", () => {
   it("an unknown range falls back to the NAMED default, not a list position", () => {
     // Guards the `GSC_RANGE_PRESETS[1]` trap: adding a preset at the front
     // silently retargeted the fallback.
-    const expected = GSC_RANGE_PRESETS.find(
-      (r) => r.key === GSC_DEFAULT_RANGE,
-    );
+    const expected = GSC_RANGE_PRESETS.find((r) => r.key === GSC_DEFAULT_RANGE);
     expect(expected).toBeDefined();
     const { current } = resolvePeriods(
       {

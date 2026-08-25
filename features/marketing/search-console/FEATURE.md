@@ -54,6 +54,8 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   `?site=` → per-site dashboard. **ALL view state is URL state**
   (`lib/url-state.ts`): `?site&tab&range&compare&q&qc&qn&pg&pgc&country&device&appearance`
   (+ `from`/`to` for custom ranges) — every drill-down is a shareable link.
+  **`?site` is UUID-validated at this boundary**; malformed/path-like values
+  fall back to the portfolio and never reach site-scoped RPCs.
   View STYLE only would go to `useListViewPrefs`; query state never persists.
   Ranges run **1d / 7d / 14d / 28d / 3m / 6m / 12m / 16m / custom**; the
   default is the NAMED `GSC_DEFAULT_RANGE` (`types.ts`) — parse fallback,
@@ -154,8 +156,8 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   the previous period (`withPrevCompare`) and says so. `?rule=<id>` is
   URL state (digs tab only).
   **C5 (2026-08-23) — A DIG RULE CAN SAVE ITS MATCHES AS A STAMP.** A rule is
-  also a *condition matcher* on a SITUATIONAL dimension's value: `components/dig/
-  DigStampPanel.tsx` ("Saves matches as") attaches it via
+  also a _condition matcher_ on a SITUATIONAL dimension's value: `components/dig/
+DigStampPanel.tsx` ("Saves matches as") attaches it via
   `seo.gsc_dig_rule_stamp_upsert`, and `seo.fn_evaluate_condition_matchers`
   re-derives the stamps by running the rule through the IDENTICAL `gsc_perf_dig`
   path — its own base filters, class pin, level pin, sort and row limit — over
@@ -165,10 +167,10 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   (P20). **P21: the stamp is the SEGMENT, never a status a person closes** — if
   a flow needs "done", that is a task referencing the stamp.
   🚨 **Two things that must stay true, both found by breaking them:**
-  (1) *the row limit is not the segment* — a segment holds EVERY keyword that
+  (1) _the row limit is not the segment_ — a segment holds EVERY keyword that
   matches (`gsc_perf_dig` takes `p_limit = 0` for this one caller); a rule's
   `row_limit` is how many rows its TABLE shows and must never be allowed to
-  read as the segment's size again; (2) *compare parity* — a compare window is passed ONLY
+  read as the segment's size again; (2) _compare parity_ — a compare window is passed ONLY
   when the rule needs one (any `cmp_*`/`delta_*` condition or sort metric,
   mirroring `withPrevCompare`), because `gsc_perf_dig` FULL OUTER JOINs the
   periods and a stray compare silently widens what the rule MEANS (measured:
@@ -300,8 +302,9 @@ server-side in `seo.keyword_value_map` (override > computed-with-reasons >
 unvalued) — never re-derive a band client-side. Cross-repo system-of-record:
 /Users/armanisadeghi/code/common-docs/systems/marketing/seo/seo-keywords/value-system.md — read it
 before touching value tiers in ANY repo. FE home: `features/marketing/seo/value-system/`
-+ the bake-off workbench at `/marketing/brands/[brandId]/sites/[siteId]/value` (default
-forwards to the ruling winner among `/a…/d`).
+
+- the bake-off workbench at `/marketing/brands/[brandId]/sites/[siteId]/value` (default
+  forwards to the ruling winner among `/a…/d`).
 
 🚨 **The resolver resolves ONLY what is about to be read.** `seo.keyword_value_map`
 takes the keyword ids its caller is about to render (NULL means whole-site); a reader
@@ -328,6 +331,7 @@ has the plan. If you write a `gsc_perf_*` read that joins a map per keyword, joi
 
 **The vocabularies are editable, and that is the point** (Arman, 2026-08-21: "the rules
 can't live in the agent's head"). Two planes, two paths:
+
 - **THE SETTINGS LADDER (KI-046, 2026-08-25)** — the score baseline and the
   level thresholds cascade **platform → organization → brand → site**; the
   nearest scope with an answer wins and a scope that says nothing is never
@@ -456,9 +460,9 @@ Server half: `aidream/services/seo/keyword_classification_backfill.py`.
 
 ## KW business guidelines — the doctrine the AI classifies under (2026-08-21)
 
-D35, ratified by Arman 2026-08-21: *"the agent wouldn't know CRT is a horrible
+D35, ratified by Arman 2026-08-21: _"the agent wouldn't know CRT is a horrible
 keyword unless there's some document that guides it and we keep these things up
-to date."* ONE per-site prose document, versioned, read by every AI
+to date."_ ONE per-site prose document, versioned, read by every AI
 classification and valuation run for that site.
 
 - **Storage:** `web.site.settings.kw_guidelines`
@@ -542,6 +546,7 @@ unrelated alias save on the same brand untouched.
 
 **Two writers still exist side by side** (unchanged by KI-043, both read
 live today — KI-036, 2026-08-25):
+
 - **Legacy custom aliases** — `web.brand.profile->'brand_aliases'`, written
   by `gsc_set_brand_aliases` and consumed by `gsc_brand_aliases` (derive) →
   `gsc_brand_hits` (corpus scan) → `gsc_keyword_class_map` /
@@ -757,6 +762,9 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-25 — UUID-validated the Search Console `?site` URL boundary so a
+  malformed deep link cannot pass a path-like value into site-scoped GSC RPCs.
+
 - 2026-08-25 — **Keyword-table density and editable-cell repair.** Search
   Console Queries widens Offering/Class to 270/150px and standardizes its
   compact right-side headers to `CLICK · IMPR · CTR · POS · SCORE · LEVEL`.
@@ -836,7 +844,7 @@ its dismiss-layer race — the input "flashed and disappeared").
   single-cell edit. Edit affordance (MSR-08): `EditableTableCell` (official
   component, `components/official/matrx-data-table/`) now renders a permanent
   `ChevronDown` beside a `"select"`-type cell's value — every `editable:
-  "select"` column app-wide, not forked per-surface. Context menu (MSR-01):
+"select"` column app-wide, not forked per-surface. Context menu (MSR-01):
   `resolveContextOnOpen` returns `CONTEXT_MENU_ENTITY_KEY` (a `seo_keyword`/
   `web_page` entity per row) and the shared `useKeywordAssignSurfaces` /
   `useKeywordMenuSection` (`features/marketing/seo/keyword/keyword-actions.tsx`)
@@ -850,7 +858,7 @@ its dismiss-layer race — the input "flashed and disappeared").
   in a card."** `SearchConsolePortfolio` cards now lead with Clicks (largest
   number, its own row) and a real 28-day trend line underneath it — the
   reused `KeywordTrendSparkline` (`keyword-research/components/
-  KeywordMetrics.tsx`), which gained an optional `tooltipLabel` prop so a
+KeywordMetrics.tsx`), which gained an optional `tooltipLabel` prop so a
   caller plotting something other than keyword volume (daily GSC clicks here)
   can describe each bar honestly instead of the component's "YYYY-MM" default.
   Data comes from `seo.gsc_perf_timeseries`, one RPC per card in parallel,
@@ -919,7 +927,7 @@ its dismiss-layer race — the input "flashed and disappeared").
   `seo.gsc_perf_class_movers` on the page dimension with a class pin took
   10,008 ms past the 8 s statement timeout, so the assists producer logged
   `[gsc-assists] class movers read failed` on every Insights load. `EXPLAIN
-  (ANALYZE, BUFFERS)` on the FULL body (its parts each measured under 400 ms
+(ANALYZE, BUFFERS)` on the FULL body (its parts each measured under 400 ms
   and hid it): a nested loop removing **81,094,419** rows, because the function
   joined two map CTEs in sequence and the pin collapsed the first join's
   estimate to 25 rows. Fixed by `FULL JOIN`ing the class and value maps into
@@ -971,28 +979,28 @@ its dismiss-layer race — the input "flashed and disappeared").
 - 2026-08-23 — **Google's day is Pacific, and the freshness check was reading
   UTC's** (health v5,
   [`migrations/seo_gsc_ingestion_health_v5.sql`](../../../migrations/seo_gsc_ingestion_health_v5.sql)
-  + [`lib/gsc-day.ts`](./lib/gsc-day.ts)). `v_expected` and the portfolio's
-  `daysBehind()` both derived "the day GSC data should have reached" from the
-  UTC calendar. Search Console has no UTC option — it buckets days in
-  `America/Los_Angeles` — so for the 7-8 hours after UTC midnight both named a
-  day that had not started in California, and every site read one day staler
-  than it was. At a 2-day threshold that one day moves the whole scale: a site
-  one day behind, well inside Google's documented 2-3 day finalization lag,
-  badged `critical` for a third of every day and then healed at 00:00 Pacific.
-  Fixed on both sides with the SAME convention the ingestion side adopted first
-  (aidream `gsc_today()`, commit 871385cf8) rather than a second one; the
-  frontend's single home for it is `gscToday()`. Verified live: at
-  2026-08-23 03:00Z the old expression yields 2026-08-21, the new one
-  2026-08-20, and PST/PDT both come from the tz database, not a constant.
-  **The 2-day tolerance itself is untouched and still open** — Google documents
-  2-3 days, so a legitimately 3-days-behind site can still be flagged; that is
-  a product call for Arman, not part of this timezone fix.
+  - [`lib/gsc-day.ts`](./lib/gsc-day.ts)). `v_expected` and the portfolio's
+    `daysBehind()` both derived "the day GSC data should have reached" from the
+    UTC calendar. Search Console has no UTC option — it buckets days in
+    `America/Los_Angeles` — so for the 7-8 hours after UTC midnight both named a
+    day that had not started in California, and every site read one day staler
+    than it was. At a 2-day threshold that one day moves the whole scale: a site
+    one day behind, well inside Google's documented 2-3 day finalization lag,
+    badged `critical` for a third of every day and then healed at 00:00 Pacific.
+    Fixed on both sides with the SAME convention the ingestion side adopted first
+    (aidream `gsc_today()`, commit 871385cf8) rather than a second one; the
+    frontend's single home for it is `gscToday()`. Verified live: at
+    2026-08-23 03:00Z the old expression yields 2026-08-21, the new one
+    2026-08-20, and PST/PDT both come from the tz database, not a constant.
+    **The 2-day tolerance itself is untouched and still open** — Google documents
+    2-3 days, so a legitimately 3-days-behind site can still be flagged; that is
+    a product call for Arman, not part of this timezone fix.
 
 - 2026-08-23 — **A PAUSED schedule is not a FAILING schedule** (health v4,
   [`migrations/seo_gsc_ingestion_health_v4.sql`](../../../migrations/seo_gsc_ingestion_health_v4.sql)).
-  The banner read *"The nightly Search Console job is failing (last run
+  The banner read _"The nightly Search Console job is failing (last run
   2026-08-20 09:15: no error recorded). No collection has been attempted for
-  this site — data is 3 days behind."* Every clause misled. The dispatcher
+  this site — data is 3 days behind."_ Every clause misled. The dispatcher
   (`scheduler.sch_task` `a7c1e2d3-…300`) had been set `enabled=false` on
   2026-08-20 by a governance pass, so it was switched OFF, not failing — and a
   reader would go debug a Google integration when the repair is an approval and
@@ -1006,7 +1014,7 @@ its dismiss-layer race — the input "flashed and disappeared").
   that is off IS the coming outage. The raw governance reason is machine-shaped
   and travels in `dispatcher_paused_reason` for the copy payload; the sentence a
   human reads says what is true and what happens next. `IngestionHealthBanner`
-  titles it *"Nightly Search Console sync is switched off"* — the title must
+  titles it _"Nightly Search Console sync is switched off"_ — the title must
   name the CAUSE or the reader chases the wrong fix.
   Also: "no collection has been attempted" was **false** (the pass collected this
   site at 09:15:47 before dying on the next one), so v4 reports this site's own
