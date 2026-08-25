@@ -7319,6 +7319,18 @@
         },
         "title": "Agent Ids",
         "type": "array"
+      },
+      "submit_label": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Submit Label"
       }
     },
     "required": [

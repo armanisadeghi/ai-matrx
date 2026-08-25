@@ -26774,6 +26774,7 @@ export type Database = {
           is_active: boolean
           label: string
           last_live_run_at: string | null
+          last_live_verdict: string | null
           last_run_at: string | null
           last_verdict: string | null
           latest_recording_run_id: string | null
@@ -26800,6 +26801,7 @@ export type Database = {
           is_active?: boolean
           label: string
           last_live_run_at?: string | null
+          last_live_verdict?: string | null
           last_run_at?: string | null
           last_verdict?: string | null
           latest_recording_run_id?: string | null
@@ -26826,6 +26828,7 @@ export type Database = {
           is_active?: boolean
           label?: string
           last_live_run_at?: string | null
+          last_live_verdict?: string | null
           last_run_at?: string | null
           last_verdict?: string | null
           latest_recording_run_id?: string | null

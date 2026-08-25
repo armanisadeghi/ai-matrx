@@ -861,6 +861,7 @@ export interface MasterworkBuildCompleteData {
   rulebook_slug: string;
   rulebook_version: number;
   agent_ids?: string[];
+  submit_label?: string | null;
 }
 
 export interface MasterworkBuildProgressData {

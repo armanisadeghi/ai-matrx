@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 457 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 458 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "ebadf91ab284";
+export const KIND_REGISTRY_FINGERPRINT = "f57fd61be7e6";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2791,6 +2791,30 @@ export interface PodcastSpeaker {
    * Resolved gender label used for cast and voice matching.
    */
   gender?: string;
+}
+
+/**
+ * What happened to ONE (request, site) pairing during an ingest run.
+ *
+ * A plain ``extra="forbid"`` sub-model, not an independent kind: this row
+ * never travels outside its parent ingest report — it is that run's own
+ * per-pairing ledger line, with no second producer and no second consumer.
+ * A kind registration for it would be ceremony without a consumer (the
+ * docproc precedent). Mirrors
+ * ``aidream.services.seo.source_request_ingest.SourceRequestIngestOutcome``
+ * field-for-field; nothing is dropped.
+ *  *
+ *  * From kind `press_source_request_ingest_result`.
+ */
+export interface PressSourceRequestOutcome {
+  status?: string | null;
+  outcome: "created" | "duplicate" | "rescored" | "screened_out" | "evaluate_failed" | "evaluation_deferred";
+  site_id: string;
+  request_id?: string | null;
+  match_score?: number | null;
+  query_title: string;
+  screen_score?: number;
+  matched_terms?: string[];
 }
 
 /**
@@ -10296,6 +10320,34 @@ export interface PresentationSlide {
   subtitle?: string;
   image_url?: string;
   description?: string;
+}
+
+/**
+ * Output of ``seo.press.source_requests.ingest`` — mirrors ``SourceRequestIngestResult``.
+ *
+ * Every pairing's fate is in ``outcomes``, INCLUDING the ones that got no row:
+ * the counters are the summary, the outcomes are the truth, and the node
+ * reports both rather than making a caller infer the difference.
+ *  *
+ *  * Kind `press_source_request_ingest_result` (registry v2).
+ */
+export interface PressSourceRequestIngestResult {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "press_source_request_ingest_result";
+  parsed: number;
+  created?: number;
+  drafted?: number;
+  outcomes?: PressSourceRequestOutcome[];
+  rescored?: number;
+  evaluated?: number;
+  duplicates?: number;
+  result_kind?: "press.source_requests.ingest";
+  screened_out?: number;
+  sites_considered: number;
+  truncated_requests?: number;
+  evaluations_deferred?: number;
 }
 
 /**
@@ -18123,6 +18175,7 @@ export type GeneratedKindSlug =
   | "postal_address"
   | "presentation_deck"
   | "presentation_slide"
+  | "press_source_request_ingest_result"
   | "press_story_angle_generation_result"
   | "press_story_angle_ruling_result"
   | "product_research_report"
@@ -18583,6 +18636,7 @@ export interface KindPayloadBySlug {
   "postal_address": PostalAddress;
   "presentation_deck": PresentationDeck;
   "presentation_slide": PresentationSlide;
+  "press_source_request_ingest_result": PressSourceRequestIngestResult;
   "press_story_angle_generation_result": PressStoryAngleGenerationResult;
   "press_story_angle_ruling_result": PressStoryAngleRulingResult;
   "product_research_report": ProductResearchReport;
@@ -19047,6 +19101,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "postal_address",
   "presentation_deck",
   "presentation_slide",
+  "press_source_request_ingest_result",
   "press_story_angle_generation_result",
   "press_story_angle_ruling_result",
   "product_research_report",
