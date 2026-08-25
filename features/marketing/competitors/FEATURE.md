@@ -85,6 +85,9 @@ classification without buying a page-crawl autopsy. Everything lands `proposed`.
   customer would run; the whole pack renders inline (own listing + no-website businesses included)
   and every business with a website lands as a proposal in the ruling queue
   (`discovery_source='serp'`). An ambiguous place name surfaces the catalogue's suggestions.
+  **It STREAMS** — the run measured 27s live and `callApi`'s 15s timeout turned a successful
+  server run into a user-facing error, so the client adopts the stream (`adoptForeignStream`),
+  reads the result off `seo.local_competitors_completed`, and renders each stage while it runs.
 
 - 2026-08-15 — Replaced the unprovable “Only you” privacy claim above the
   landscape-review questions with factual review copy; access is never inferred
