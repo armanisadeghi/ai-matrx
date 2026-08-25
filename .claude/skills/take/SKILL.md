@@ -2,7 +2,7 @@
 name: take
 type: Skill
 title: "take — staff yourself on a name and drive it to done"
-description: "Arman passes ONE name (/take <name>) — a Feature, Program, or Tail from the unassigned-handoffs register, or any registry node — and the agent does the rest: claims the row, gathers the node's whole truth, then builds under his standing doctrine (bias to action, vision is the definition of done, build on what exists, integrate both directions, catch up then expand, never lose work, groom don't grow). Converted 2026-08-21 from his Feature Task Assignment prompt; his rules are quoted, not paraphrased."
+description: "Arman passes ONE name (/take <name>) — a Domain, Feature, Sub-feature, Program, or Tail from the unassigned-handoffs register, or any registry node — and the agent does the rest: claims the row, gathers the node's whole truth, then builds under his standing doctrine (bias to action, vision is the definition of done, build on what exists, integrate both directions, catch up then expand, never lose work, groom don't grow). Converted 2026-08-21 from his Feature Task Assignment prompt; his rules are quoted, not paraphrased."
 tags: [staffing, execution, handoffs, registry, doctrine]
 timestamp: 2026-08-21T00:00:00Z
 ---
@@ -18,7 +18,7 @@ timestamp: 2026-08-21T00:00:00Z
 **Invocation: `/take <name>`.** That name is all Arman gives you. Resolve it yourself:
 
 1. **The register first** — [`operations/unassigned-handoffs.md`](/operations/unassigned-handoffs.md)
-   (Features, Programs, Tails; match the row name loosely, the Node slug exactly).
+   (Domains, Features, Sub-features, Programs, Tails; match the row name loosely, the Node slug exactly).
 2. No row? **The Feature Registry** — `platform.taxonomy_node` (DB, project
    `brsgrqvjdzwihsvnfqkf`) / [`meta/registry.yaml`](/meta/registry.yaml): the node's
    `docs_path` is its doc kit.
@@ -153,6 +153,8 @@ remembers nothing of this conversation and reads none of the documentation — e
 
 # Changelog
 
+- 2026-08-25 — Register lookup now names all five staffed categories explicitly: Domain,
+  Feature, Sub-feature, Program, and Tail.
 - 2026-08-24 — Item-register trigger added: a take that finds multiple sessions/agents on
   one subject routes through the `item-register` skill (confirm-first session recruiting).
 - 2026-08-24 — THE VISION SWEEP added (Arman's ruling after the Steward failure): the node

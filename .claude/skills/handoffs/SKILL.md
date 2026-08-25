@@ -21,14 +21,16 @@ The first lines after the title, before remaining work, before Done, before anyt
 
 ```markdown
 **What this is:** one sentence. The job in human words.
-**Scope:** Feature | Program | Tail
-**Feature:** the owning feature name (always — a Program and a Tail name their owner)
+**Scope:** Domain | Feature | Sub-feature | Program | Tail
+**Feature:** the owning Feature name (a Domain names itself; a Program and a Tail name their owning Feature)
 **Vision:** link to Arman's words, or `VISION MISSING`
 ```
 
 - **What this is** is the key. A reader who does not already know the feature must understand it from that sentence. A checklist with no identity is a defect (Voice Communication Layer, 2026-08-19).
 - **VISION MISSING** is loud and legal. Do not paraphrase Arman into a vision. Do not invent one from an interview summary. An inferred paragraph is not a vision. If he has not written it, say so at the top and in the orphan-list Notes. The work may still be listed; it may not pretend to have his words.
-- Frontmatter `vision:` holds the links. Empty `vision: []` means VISION MISSING. Frontmatter `scope:` is `feature` | `program` | `tail`. Frontmatter `feature:` is the owning feature name.
+- Frontmatter `vision:` holds the links. Empty `vision: []` means VISION MISSING. Frontmatter
+  `scope:` is `domain` | `feature` | `subfeature` | `program` | `tail`. Frontmatter `feature:`
+  is the owning Feature name; for a Domain row it carries the Domain name.
 
 ## Where they live (re-ruled by Arman, 2026-08-20)
 
@@ -51,8 +53,8 @@ The first lines after the title, before remaining work, before Done, before anyt
 status: active            # active | blocked (blocked = waiting ONLY on Arman's answers)
 updated: 2026-07-07
 repos: [matrx-frontend]   # every repo the remaining work touches
-scope: feature            # feature | program | tail
-feature: Workflows        # owning feature name, even on a Program or Tail
+scope: feature            # domain | feature | subfeature | program | tail
+feature: Workflow Runtime # owning Feature; a Domain row carries the Domain name
 vision: [docs/.../VISION-x.md]   # Arman's own docs — empty [] means VISION MISSING
 ---
 ```
@@ -65,32 +67,41 @@ Sections, in this order (omit empty ones):
 4. **Done.** One bullet per completed area, ≤1 line, pointing at the code: `- RAG pipeline built — see services/rag/`. Nothing else.
 5. **Decisions needed.** Escalation format below.
 
-## The tail law — almost-done work does not occupy a Feature row
+## The tail law — almost-done work does not occupy a complete-node row
 
-When a feature is shipped except a leftover that **one focused session** can finish (plus any blocking ruling):
+When a registry node or Program is shipped except a leftover that **one focused session** can
+finish (plus any blocking ruling):
 
 1. **Collapse the handoff.** Delete the novel. Keep only the identity block, the leftover items, and any Decision. Done work already lives in `FEATURE.md` — point at it, do not restate it. (Configuration Equivalence, 2026-08-19: 58 lines of shipped history sitting on the staffing list.)
 2. **Set `scope: tail`.** The owning `feature:` stays.
-3. **Move the orphan-list row** from Features (or Programs) to **Tails**. A Tail is a knock-off: Arman can see it is almost done and staff it as a short job. It is not "staff the entire feature."
+3. **Move the orphan-list row** from Domains, Features, Sub-features, or Programs to **Tails**.
+   A Tail is a knock-off: Arman can see it is almost done and staff it as a short job. It is not
+   "staff the entire node."
 4. If the leftover is a single task on a feature that already has a master handoff, attach it there instead and delete this file — same rule as any other task.
 
-A Feature row that is 90% Done is a defect in the register. Grooming that does not collapse a tail has failed.
+A complete-node row that is 90% Done is a defect in the register. Grooming that does not collapse
+a tail has failed.
 
 **Banned everywhere:** chronology, session narratives, subagent/effort counts, "we then…", self-praise, restating `FEATURE.md` content (point to it instead).
 
 ## The orphan list — `/Users/armanisadeghi/code/common-docs/operations/unassigned-handoffs.md`
 
-Three tables, one meaning: **every row is a handoff with no owner.** It is how Arman decides what to
+Five tables, one meaning: **every row is a handoff with no owner.** It is how Arman decides what to
 staff next, so it stays short and true. The tables are about **developer scope**, not directories:
 
-- **Feature** — the developer owns the entire feature.
-- **Program** — the developer owns a limited scope (one part of a feature, or work that spans
-  several). Not a `projects/` folder.
-- **Tail** — the feature (or program) is shipped except a leftover one focused session can finish.
+- **Domain** — the developer owns the entire registry Domain.
+- **Feature** — the developer owns the entire registry Feature.
+- **Sub-feature** — the developer owns one complete registry Sub-feature.
+- **Program** — the developer owns a limited scope (one part of a registry node, or work that
+  spans several nodes). Not a `projects/` folder.
+- **Tail** — the owning node (or Program) is shipped except a leftover one focused session can finish.
   Knock-off work. Visible so it gets done; not a Feature row.
 
-A **task** (one remaining item on a feature that already has a master handoff) does not get a row.
-Attach it on that feature's handoff. Do not name a slice of a feature as if it were the feature.
+Domain → Feature → Sub-feature is the permanent registry hierarchy. Program and Tail are
+work shapes, not extra taxonomy levels.
+
+A **task** (one remaining item on a registry node that already has a master handoff) does not get
+a row. Attach it on that node's handoff. Do not name a slice as if it were the complete node.
 
 If `vision:` is empty, Notes must include `VISION MISSING`.
 
@@ -104,7 +115,8 @@ workspace root and offers to create a file that already exists. Every other repo
   (step 1 below). Assigned ≠ orphaned.
 - **Writing a new handoff, or grooming one that still has remaining work and nobody continuing
   it → ADD its row in the same commit.** A new handoff IS an orphan the moment it exists. File
-  it as a Feature, a Program, or a Tail by scope; a task attaches to the owning feature instead.
+  a complete-node handoff under its exact Domain, Feature, or Sub-feature level; otherwise file
+  it as a Program or Tail by scope. A task attaches to the owning node instead.
 - **No statuses, no essays, no history in that file** — a row's existence is the status. Notes
   is repo + date + one sentence. Anything that needs explaining belongs inside the handoff.
   Rows leave only two ways: someone took the work, or the handoff itself was deleted as finished.
@@ -141,3 +153,8 @@ Arman juggles 15 projects; a question must be answerable cold:
 ## Rot control
 
 `/handoff-cleanup` (its own skill) periodically sweeps both repos' handoff dirs, verifies claims against reality, deletes done docs, and escalates unclear drift. It is the backstop — per-turn grooming is still your job.
+
+## Changelog
+
+- 2026-08-25 — The orphan register now lists complete-node ownership at all registry levels
+  (Domain, Feature, Sub-feature), plus Program and Tail work shapes.

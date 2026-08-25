@@ -53,8 +53,8 @@ The sweep is its ONLY automated maintainer. It may:
 
 - **Remove a row whose handoff file no longer exists** (including ones you deleted this sweep).
 - **Fix a broken link/path** in an existing row.
-- **Move a row** Features ↔ Programs ↔ Tails when you changed that handoff's `scope:` this sweep
-  (the tail law). Moving is not deleting.
+- **Move a row** among Domains, Features, Sub-features, Programs, and Tails when its complete-node
+  level or work shape changed this sweep (including the tail law). Moving is not deleting.
 
 **Never add a row, and never remove one because the work looks stale or someone might be on it** —
 ownership is not knowable from the files, and a wrongly-removed row silently loses the work.
@@ -64,3 +64,8 @@ sentence (and `VISION MISSING` when that is true). Extra status columns stay ban
 ## Mirror check
 
 Finish by running `python3 /Users/armanisadeghi/code/common-docs/meta/scripts/sync_skills.py --check` — it verifies the synced copies (`handoffs`, `handoff-cleanup`) in every consuming repo (matrx-frontend, aidream) are byte-identical to the canonical bodies here; re-run without `--check` and commit each repo if drifted.
+
+## Changelog
+
+- 2026-08-25 — Orphan-list reconciliation now recognizes Domain, Feature, Sub-feature,
+  Program, and Tail tables.
