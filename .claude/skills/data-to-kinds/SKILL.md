@@ -579,6 +579,88 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
     named and attributed. Never "fix" a peer's in-flight file to make a gate
     green, and never report a red tree as your own.**
 
+### Friction from running rows 2, 3 and 4 back to back (2026-08-24)
+
+26. **THE MATURITY TIER HAD TWO WRITE PATHS AND ONE GUARD — FIXED.** `@kind` structurally cannot
+    declare `verified` (the SDK refuses it), so any declaration syncing onto a verified row erases
+    the verification pass. `_sync_maturity` was guarded; **`_apply_evolve` was not**, and an
+    additive `--evolve` of the search family demoted all TWELVE verified rows to `distilled` in one
+    command. Both paths now call one `_forward_only_maturity()`; the tier moves forward only and
+    declining is loud. Pinned by `tests/test_publish_kind_catalog_maturity.py`, which asserts on
+    the SOURCE of the write so a future copy of the rule fails the test. **Standing rule for every
+    run: after any `--evolve --apply`, re-check `metadata->>'maturity'` on the rows you touched.**
+27. **A KIND'S PLAIN SUB-MODELS MUST ACCEPT `__kind` — use `KindSubModel`.** Live registry rows
+    declare an optional `__kind` on every nested `$def` (the schema-law campaign put it there), so
+    a plain `BaseModel` with `extra="forbid"` is STRICTER than the contract it implements, and the
+    compatibility gate correctly reads the missing property as "a field disappeared". Measured:
+    six search kinds were refused for that and nothing else. `matrx_graph.content_ir.model`
+    now exports `KindSubModel` — accepts the marker, emits none, excluded from every dump. Use it
+    for every non-kind sub-structure; never a bare `BaseModel`.
+28. **"ADDITIVE" IS A MEASUREMENT, NOT AN INTENTION — and the gate is the only thing that knows.**
+    Across these three runs FOUR supersedes were written and documented as additive and were not:
+    `seo_rank_history`, `rag_search_result`, `sql_query_result`, `table_rows`. The causes are worth
+    memorising because they are invisible by inspection:
+    * **Promoting a nested anonymous object to a real KIND is a narrowing.** The new schema declares
+      `__kind: {const: …}` where the live one has a free string. Welcome, still a narrowing.
+    * **A legacy field must keep its EXACT live type, default and requiredness.** Typing
+      `query: str` where the row says `{"type":"string","default":""}` makes it required; typing
+      `model: str | None` where the row says `{"type":"string"}` changes the type. Read the live
+      `emitted_json_schema` and match it field by field before writing the model.
+    * **A row-object item schema can carry properties your `dict[str, JsonValue]` does not
+      reproduce** (`sql_query_result.rows` declares an optional `__kind` inside each row).
+    **Rule: run the dry-run publish BEFORE writing the docstring that claims additivity, and when
+    the gate disagrees, correct the CLAIM.**
+29. **Stage B's activation step did nothing for Stage-A-inactive kinds — FIXED.** A kind created
+    inactive in Stage A plans as `match` in Stage B, and activation was wired only into the CREATE
+    and EVOLVE paths, so "re-run the publish, the dual gate now passes" silently activated nothing.
+    `_sync_activation` now re-evaluates matching-but-inactive rows. Always VERIFY activation by SQL
+    rather than trusting the command's exit.
+30. **REUSING ANOTHER FAMILY'S ADAPTER IS THE HIGHEST-LEVERAGE MOVE IN THE SKILL, and it is not
+    written down anywhere.** The rank family's whole SERP translation is `brave_to_kind` /
+    `google_to_kind` from the search family plus a thin rank overlay — no second translation of one
+    payload, no second place to fix a provider change. It recovered `entity_card`, `faq_item`,
+    `news_result` and `local_place` placements the live pipeline discards, with ZERO new
+    translation code. **Rule: before writing an adapter, check whether another family already
+    translates this payload; if it does, call it and add only what your family adds. Merge the two
+    translation reports so the caller never learns that two adapters ran.**
+31. **A REUSED ADAPTER WILL SCREAM ON KEYS YOUR FIXTURES DO NOT HAVE — that is the system working,
+    and it will happen against LIVE data after your fixtures are committed.** Row 2 hit three:
+    `menu_highlights` and `years_in_business` on the committed captures, and `things_to_know` only
+    when the endpoint ran against a live snapshot. **Rule: run the demo endpoint against several
+    LIVE rows before declaring Stage A done, and capture a fresh fixture for every new key you
+    resolve.** Two of those three turned out to be real data we were discarding.
+32. **A TYPE THAT LOOKS OBVIOUS CAN SILENTLY DROP 100% OF THE VALUE.** `years_in_business` was
+    modelled `int` and measured `None` on every row — Google reports `"10+ years in business"`, a
+    floor, not a count. **Rule: after mapping a field, ASSERT ON THE MAPPED VALUE against a real
+    capture, not on the field's presence.** The same discipline caught a `truncated` flag that was
+    inferred from "we got exactly `limit` rows" and is wrong whenever a table holds exactly that
+    many; the fix is to over-fetch by one and MEASURE.
+33. **WHEN A DERIVATION IS OUR CONVENTION AND NOT THE SOURCE'S OBSERVATION, THE KIND MUST SAY SO.**
+    Brave reports whole-page block order; SerpAPI does not, and its pixel ordering is a separate
+    paid endpoint. `seo_rank_serp_landscape.rank_basis` carries `engine_reported` vs
+    `platform_convention` so a reader can tell an observation from a convention. Generalise: any
+    field a family derives because it must order/rank/classify anyway gets a sibling field naming
+    the basis. Never silently present a convention as a measurement.
+34. **DO NOT LOSE A SECTION THE SOURCE DID NOT NAME.** Iterating only an engine-reported block
+    order silently deleted every section the engine happened not to list. The engine's order LEADS;
+    anything left over follows in platform order. Losing data is never the lesser evil, and a
+    partial ordering is the normal case, not the exceptional one.
+35. **THE SECOND PROJECTION SHOULD BE THE CURRENT BEHAVIOUR, NOT THE RAW PAYLOAD.** The skill says
+    projection 2 is `include_raw`. In practice the demo panel that MOVED the argument in all three
+    runs was "what the live path produces from this identical input, beside ours": 11 persisted
+    rows vs 20 kind placements; 0/6 citations with a URL vs 6/6; a table with no column list vs 28
+    typed columns. **Rule: every demo gets a projection-2 tab showing the CURRENT output beside the
+    kind, computed from the same input — and it should go quiet when Stage D lands.**
+36. **A DEMO ROUTE MUST NOT BE ABLE TO SPEND MONEY OR WRITE.** Two of these three demos read stored
+    payloads and real rows rather than firing paid provider calls or offering a write path. A demo
+    that can spend is a demo that will. Say so in the service docstring so the next author does not
+    "improve" it by adding a live-call mode.
+37. **THE FIXTURE CAN CARRY THE MEASUREMENT ITS TEST NEEDS.** The tabular captures embed
+    `column_types_available_to_the_node` — the ORM field metadata measured off the live registry at
+    the moment the node built its result. That is what let a test prove a typed column descriptor
+    is honest rather than aspirational, with no DB access. **Rule: when the interesting claim is
+    about information the producer HAD, capture that information beside the payload.**
+
 ## Chip prompts (standalone — paste as the chip body, fill the ⟨⟩)
 
 **Stage A:** "You are STAGE A of the data-to-kinds run for ⟨family⟩. Read ONLY
@@ -602,6 +684,9 @@ render approval, mark DONE, fire V + D."
 |---|---|---|
 | Search results (Brave + SerpAPI Google) — the pilot | `common-docs/operations/search-kinds-pilot.md` | A+B approved; C done 2026-08-23; V + D pending (cutover gated) |
 | Scraper / crawl results (`scraper.*`) — replication run 1 | `common-docs/operations/scraper-kinds-run.md` | Stage A fired 2026-08-23 |
+| SEO rank tracking + SERP landscape — queue row 2 | `common-docs/operations/rank-kinds-run.md` | A + B DONE 2026-08-24; V + D pending |
+| RAG retrieval + citations — queue row 3 | `common-docs/operations/rag-kinds-run.md` | A DONE 2026-08-24; B in flight; mints `source_ref` |
+| Tabular results — queue row 4 | `common-docs/operations/table-kinds-run.md` | A DONE 2026-08-24; B in flight; mints `data_table` |
 
 **Campaign doctrine (platform law, applies beyond kinds):** `common-docs/policies/conversion-campaigns.md` — the four consumer surfaces, demo-is-not-a-conversion, a campaign ends in a committed guard, consumer lists are computed not hand-written.
 
