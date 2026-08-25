@@ -36,6 +36,7 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   describeMatcher,
+  isRelativeQualifier,
   shortWorth,
   worthIsDemotion,
 } from "@/features/marketing/seo/value-system/lib";
@@ -330,6 +331,19 @@ function MeaningEditor({
           {d.worth_effect === "scale"
             ? "A factor is between 0.05 and 5."
             : "Points need a number — positive to promote, negative to demote."}
+        </p>
+      ) : null}
+      {/* KI-001 — the last place a hand-authored pack can still ship a
+          multiplier on an identity. The proposer now declares which it is and
+          the converter obeys, so this editor is the remaining door: the
+          question is asked, and the author answers it. */}
+      {d.worth_effect === "scale" && !isRelativeQualifier(d.value, d.label) ? (
+        <p className="text-[11px] leading-4 text-warning">
+          A factor only scales what a keyword already earned, so it does nothing
+          at all to a keyword nothing else has valued — and a brand-new site has
+          nothing else. If “{d.label || "this answer"}” describes what a keyword{" "}
+          <em>is</em> rather than being a relative qualifier like free, cheap or
+          DIY, make it <strong>± points</strong> instead.
         </p>
       ) : null}
       <div className="flex justify-end gap-2">
