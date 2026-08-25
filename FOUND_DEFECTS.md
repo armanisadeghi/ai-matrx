@@ -15,6 +15,38 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D257 — `extend.wbx_demo` is world-writable over the public API (2026-08-25)
+
+Policy `wbx_demo_svc` is `FOR ALL TO PUBLIC USING (true) WITH CHECK (true)`.
+`PUBLIC` is every role including `anon`, so any unauthenticated caller holding the
+publishable key can read, insert, update and delete rows. The table is currently
+EMPTY (0 rows), so nothing has leaked — this is an open door, not a spill.
+
+The `_svc` suffix and every sibling policy in the codebase (`svc_all`) suggest the
+intent was `TO service_role`; the role restriction appears to have been omitted.
+The three `wbx_demo_owner_*` policies already cover authenticated owners, so
+scoping `wbx_demo_svc` to `service_role` is very likely the correct one-line fix.
+NOT done here because `wbx_demo` belongs to the matrx-extend surface and I could
+not verify from this repo whether the Chrome extension writes to it as `anon`.
+Whoever owns matrx-extend should confirm, then scope it.
+
+### D258 — `seo.classifier_revision_ledger` has RLS enabled and ZERO policies (2026-08-25)
+
+The only application table in that state outside `auth.*`/`storage.*`. It holds 1
+row and is therefore readable/writable by `service_role` and superuser only — every
+other role, including platform admins, is fully denied. Probably intentional for a
+service-role-only ledger, but every other table in the platform carries at least
+`platform_admin_all`, so this is either a deliberate exception worth a comment or an
+omission worth fixing. Needs a one-line confirmation from whoever owns SEO.
+
+Both found during the 2026-08-25 anon-exposure audit that followed the
+policy-overlap investigation (common-docs/systems/platform/access/POLICY_OVERLAP.md).
+That audit's serious finding (`users.guest_executions` readable by anon) is FIXED —
+see migrations/guest_executions_close_anon_pii_read.sql. Also observed, not filed:
+`extend.wbx_recipe` (12 rows) is anon-readable, exposing which sites/routes we
+automate — no credentials, mild competitive disclosure only.
+
+
 ### D256 — `rag.library_docs`: restrictive admin-only gate hides rows marked PUBLIC from everyone (2026-08-25)
 
 The table carries three RESTRICTIVE policies — `platform_admin_select_only`,
