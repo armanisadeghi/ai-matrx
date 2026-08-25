@@ -231,20 +231,24 @@ describe("the placeholder phase", () => {
 describe("KindSlot", () => {
   beforeAll(() => registerKind("slot_footprint_kind", "list"));
 
-  it("holds its footprint floor in EVERY phase, settled included", () => {
+  it("keeps ONE root element across every phase — the container never remounts", () => {
+    // The container surviving the swap is what preserves scroll position and
+    // lets the transition animate rather than restart. Every phase must emit
+    // the same identified root; only its children change.
     for (const phase of ["reserved", "arriving", "settled", "failed"] as const) {
       const markup = renderToStaticMarkup(
         <KindSlot
           slotKey="s2"
           kind="slot_footprint_kind"
           phase={phase}
-          minHeightPx={320}
           error={<span>failed</span>}
         >
           <span>tiny</span>
         </KindSlot>,
       );
-      expect(markup).toContain("min-height:320px");
+      expect(markup).toContain('data-kind-slot="s2"');
+      expect(markup).toContain(`data-kind-slot-phase="${phase}"`);
+      expect(markup.indexOf("<div")).toBe(0);
     }
   });
 

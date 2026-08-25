@@ -28,15 +28,15 @@
  * shape-appropriate placeholder for free via the declared-or-derived slug
  * (`resolveLoadingSlugForKind`) — including the 857 that declare nothing.
  *
- * ─── The floor, not the ceiling ─────────────────────────────────────────────
- * `minHeightPx` is honoured in EVERY phase, settled included. Holding it only
- * while pending would let a short result shrink the slot and pull the page up
- * — the same defect as growing it, in the other direction. Content longer than
- * the floor grows DOWNWARD, which is the one direction that disturbs nothing
- * the reader is already looking at. This mirrors `ReadoutTile`'s floor in
- * `features/workflow-runtime/components/RunSurfaceView.tsx` ("the zero
- * page-shift law") — same law, now keyed to the KIND rather than to an
- * authored grid height.
+ * ─── Who owns the footprint ─────────────────────────────────────────────────
+ * The slot owns the SHAPE; the HOST owns the floor. A surface that knows how
+ * much room a region deserves already applies it to its own box — see
+ * `ReadoutTile`'s authored `minHeight` in `RunSurfaceView.tsx` ("the zero
+ * page-shift law") — and a second floor inside the slot would fight it, or
+ * silently lose to an `overflow-y-auto` ancestor. So there is deliberately no
+ * `minHeight` prop here: the silhouette's own height does the reserving, and
+ * content longer than it grows DOWNWARD, the one direction that disturbs
+ * nothing the reader is already looking at.
  *
  * ─── Identity ───────────────────────────────────────────────────────────────
  * `slotKey` is the slot's OWN identity and must be stable from first paint —
@@ -70,11 +70,6 @@ export interface KindSlotProps {
    * the partial value a data-fed smart loader performs. Ignored when settled.
    */
   early?: KindLoadingProps;
-  /**
-   * Footprint floor in px, held in every phase. Omit to let the silhouette's
-   * own natural height do the reserving (which is right for most kinds).
-   */
-  minHeightPx?: number;
   /** The settled content — the real kind component. */
   children?: React.ReactNode;
   /** Rendered in the `failed` phase. */
@@ -93,7 +88,6 @@ export function KindSlot({
   kind,
   phase,
   early,
-  minHeightPx,
   children,
   error,
   chrome,
@@ -128,7 +122,6 @@ export function KindSlot({
       data-kind-slot={slotKey}
       data-kind-slot-phase={phase}
       data-kind-slot-kind={kind ?? undefined}
-      style={minHeightPx ? { minHeight: `${minHeightPx}px` } : undefined}
       className={className}
     >
       {phase === "settled" ? (
