@@ -10,11 +10,12 @@
  * `RouteModeNav` collapsed them to bare icons; and the moment you opened a site
  * the pillar nav disappeared entirely. A sidebar shows three levels at once.
  *
- * Two states, one component, both driven by the SAME declarations every other
+ * Three states, one component, all driven by the SAME declarations every other
  * marketing map reads — so this menu cannot drift from the hub, the landing, or
  * the global flyout:
- *   • outside website context → `MARKETING_PILLARS` (lib/marketing-nav.ts)
- *   • inside website context  → `listMarketingSiteModeGroups`
+ *   • general Marketing → `MARKETING_PILLARS` (lib/marketing-nav.ts)
+ *   • unselected Websites → the website-workspace subset of those pillars
+ *   • selected website → `listMarketingSiteModeGroups`
  *     (lib/route-sections.ts)
  *
  * Website context is resolved once in `lib/sidebar-site-context.ts`; it follows
@@ -28,7 +29,7 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronLeft, Globe, TrendingUp } from "lucide-react";
+import { ChevronLeft, Globe, Plus, TrendingUp } from "lucide-react";
 
 import IconResolver from "@/components/official/icons/IconResolver";
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
@@ -39,7 +40,10 @@ import {
 } from "@/features/shell/constants/route-menu-style";
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { resolveMarketingSidebarSiteContext } from "@/features/marketing/lib/sidebar-site-context";
+import {
+  isMarketingWebsiteWorkspace,
+  resolveMarketingSidebarSiteContext,
+} from "@/features/marketing/lib/sidebar-site-context";
 import { listMarketingSiteModeGroups } from "@/features/marketing/lib/route-sections";
 import { MARKETING_SITE_SECTION_ICONS } from "@/features/marketing/lib/site-section-icons";
 import { useSite } from "@/features/marketing/data/hooks";
@@ -48,6 +52,14 @@ import { cn } from "@/lib/utils";
 interface MarketingSidebarMenuProps {
   expanded: boolean;
 }
+
+const WEBSITE_WORKSPACE_HREFS = new Set([
+  marketingRoutes.sites(),
+  marketingRoutes.contentPlan(),
+  marketingRoutes.searchConsole(),
+  marketingRoutes.capabilities(),
+  marketingRoutes.ranks(),
+]);
 
 /**
  * A group heading. Collapsed, the label would be unreadable at rail width, so
@@ -69,7 +81,7 @@ function GroupHeading({
   );
 }
 
-/** The site's grouped sections, plus the doors back out to brand and portfolio. */
+/** The site's grouped sections, plus the stable door back to all websites. */
 function SiteSections({
   brandId,
   siteId,
@@ -88,10 +100,6 @@ function SiteSections({
   const site = useSite(siteId);
   const resolvedBrandId = brandId ?? site.data?.brand_id ?? null;
   const base = marketingRoutes.site(resolvedBrandId, siteId);
-  const backHref = resolvedBrandId
-    ? marketingRoutes.brand(resolvedBrandId)
-    : marketingRoutes.sites();
-  const backLabel = resolvedBrandId ? "Back to brand" : "All websites";
   const groups = listMarketingSiteModeGroups(base);
   // One resolver for the whole flat list so a nested route (a page workspace, a
   // crawl detail) still lights up its parent section rather than nothing.
@@ -138,9 +146,9 @@ function SiteSections({
   return (
     <>
       <Link
-        href={backHref}
-        title={backLabel}
-        aria-label={backLabel}
+        href={marketingRoutes.sites()}
+        title="All websites"
+        aria-label="All websites"
         className={ROUTE_MENU_NAV_ITEM_CLASS}
       >
         <span className="shell-nav-icon">
@@ -149,7 +157,7 @@ function SiteSections({
             strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
           />
         </span>
-        <span className="shell-nav-label truncate">{backLabel}</span>
+        <span className="shell-nav-label truncate">All websites</span>
       </Link>
 
       <Link
@@ -200,6 +208,90 @@ function SiteSections({
           })}
         </div>
       ))}
+    </>
+  );
+}
+
+/** The Websites family before one managed site has been selected. */
+function WebsiteWorkspaces({
+  pathname,
+  expanded,
+}: {
+  pathname: string;
+  expanded: boolean;
+}) {
+  const entries = MARKETING_PILLARS.flatMap((pillar) => pillar.entries).filter(
+    (entry) => WEBSITE_WORKSPACE_HREFS.has(entry.href),
+  );
+
+  return (
+    <>
+      <Link
+        href={marketingRoutes.home()}
+        title="Back to Marketing"
+        aria-label="Back to Marketing"
+        className={ROUTE_MENU_NAV_ITEM_CLASS}
+      >
+        <span className="shell-nav-icon">
+          <ChevronLeft
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
+        </span>
+        <span className="shell-nav-label truncate">Back to Marketing</span>
+      </Link>
+
+      <GroupHeading label="Websites" expanded={expanded} />
+      {entries.map((entry) => {
+        const isActive = pathname === entry.href;
+        return (
+          <Link
+            key={entry.href}
+            href={entry.href}
+            title={entry.description}
+            aria-label={entry.label}
+            aria-current={isActive ? "page" : undefined}
+            className={cn(
+              ROUTE_MENU_NAV_ITEM_CLASS,
+              isActive && "shell-active-pill",
+            )}
+          >
+            <span className="shell-nav-icon">
+              <IconResolver
+                iconName={entry.iconName}
+                size={ROUTE_MENU_ICON_SIZE}
+                style={{
+                  width: ROUTE_MENU_ICON_SIZE,
+                  height: ROUTE_MENU_ICON_SIZE,
+                  strokeWidth: ROUTE_MENU_ICON_STROKE_WIDTH,
+                }}
+              />
+            </span>
+            <span className="shell-nav-label truncate">{entry.label}</span>
+          </Link>
+        );
+      })}
+
+      <Link
+        href={marketingRoutes.newSite()}
+        title="Add website"
+        aria-label="Add website"
+        aria-current={
+          pathname === marketingRoutes.newSite() ? "page" : undefined
+        }
+        className={cn(
+          ROUTE_MENU_NAV_ITEM_CLASS,
+          pathname === marketingRoutes.newSite() && "shell-active-pill",
+        )}
+      >
+        <span className="shell-nav-icon">
+          <Plus
+            size={ROUTE_MENU_ICON_SIZE}
+            strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
+          />
+        </span>
+        <span className="shell-nav-label truncate">Add website</span>
+      </Link>
     </>
   );
 }
@@ -293,6 +385,7 @@ export default function MarketingSidebarMenu({
     pathname,
     searchParams.get("site"),
   );
+  const websiteWorkspace = isMarketingWebsiteWorkspace(pathname);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto scrollbar-thin-auto">
@@ -304,6 +397,8 @@ export default function MarketingSidebarMenu({
           expanded={expanded}
           key={`${site.brandId ?? "unresolved"}:${site.siteId}`}
         />
+      ) : websiteWorkspace ? (
+        <WebsiteWorkspaces pathname={pathname} expanded={expanded} />
       ) : (
         <MarketingPillars pathname={pathname} expanded={expanded} />
       )}

@@ -1,4 +1,7 @@
-import { resolveMarketingSidebarSiteContext } from "./sidebar-site-context";
+import {
+  isMarketingWebsiteWorkspace,
+  resolveMarketingSidebarSiteContext,
+} from "./sidebar-site-context";
 
 describe("resolveMarketingSidebarSiteContext", () => {
   it("keeps canonical website routes in the website sidebar", () => {
@@ -47,4 +50,26 @@ describe("resolveMarketingSidebarSiteContext", () => {
       expect(resolveMarketingSidebarSiteContext(pathname, siteId)).toBeNull();
     },
   );
+});
+
+describe("isMarketingWebsiteWorkspace", () => {
+  it.each([
+    "/marketing/sites",
+    "/marketing/sites/new",
+    "/marketing/content-plan",
+    "/marketing/search-console",
+    "/marketing/capabilities",
+    "/marketing/ranks",
+  ])("puts %s on the Websites side of the cutoff", (pathname) => {
+    expect(isMarketingWebsiteWorkspace(pathname)).toBe(true);
+  });
+
+  it.each([
+    "/marketing",
+    "/marketing/brands",
+    "/marketing/reports",
+    "/marketing/outreach",
+  ])("keeps %s in the general Marketing menu", (pathname) => {
+    expect(isMarketingWebsiteWorkspace(pathname)).toBe(false);
+  });
 });

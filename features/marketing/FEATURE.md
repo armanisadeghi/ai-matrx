@@ -567,9 +567,12 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   resolving. `lib/sidebar-site-context.ts` is now the single route-boundary
   declaration for those established shapes; `MarketingSidebarMenu` recovers an
   unknown brand through the existing site query and renders the same grouped
-  website sections throughout. Portfolio pages and standalone shared records
-  deliberately remain in the general Marketing menu because they identify no
-  single website. A focused route matrix pins both sides of the cutoff.
+  website sections throughout. The unselected Websites portfolio, Add Website,
+  Content Plan, Search Console, SEO Capabilities, and Ranks now form the clear
+  Websites side of the Marketing cutoff, with one derived workspace menu before
+  a site is selected. Standalone shared records deliberately remain in the
+  general Marketing menu because they identify no single website. A focused
+  route matrix pins both sides of the cutoff.
 - 2026-08-24 — Codex: **The GA4 stream now proves tenant identity end to end.**
   The site organization is validated before frontend dispatch, required by the
   backend OpenAPI operation, matched against the authorized site, and preserved

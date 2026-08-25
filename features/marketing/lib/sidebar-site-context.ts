@@ -22,6 +22,14 @@ const QUERY_SCOPED_SITE_ROUTES = new Set([
   "/marketing/search-console",
 ]);
 
+const WEBSITE_WORKSPACE_ROUTES = new Set([
+  "/marketing/capabilities",
+  "/marketing/content-plan",
+  "/marketing/ranks",
+  "/marketing/search-console",
+  "/marketing/sites",
+]);
+
 function nonEmpty(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
@@ -52,4 +60,10 @@ export function resolveMarketingSidebarSiteContext(
   }
 
   return null;
+}
+
+/** The clear Marketing → Websites cutoff when no single site is selected. */
+export function isMarketingWebsiteWorkspace(pathname: string): boolean {
+  if (pathname === "/marketing/sites/new") return true;
+  return WEBSITE_WORKSPACE_ROUTES.has(pathname);
 }
