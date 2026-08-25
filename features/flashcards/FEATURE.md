@@ -157,6 +157,38 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-08-25 — 🚨 **Card enrichment is finally VISIBLE, and enrichable in one click.**
+  `education.enrich_card` had been writing `fc_detail` text layers
+  (helper/example/detailed/hint/mnemonic/simplified) that **no surface rendered**: StudyDeck
+  read `details` only for the `spoken_front` audio id, set detail turned helper/example into a
+  boolean badge, and the streamed text vanished with the dialog. Three parts, one module each:
+  **ONE reader** — [`data/cardDetailLayers.ts`](./data/cardDetailLayers.ts)
+  (`selectCardDetailLayers` / `cardHasDetailLayers`): the only definition of "this card is
+  enriched", used by the study strip, the set-detail badge, and the bulk planner, so they can
+  never disagree. It excludes audio/image rows and memory-aid rows (`metadata.source ===
+  "memory_hint"` — `MemoryAidButton` renders those). **ONE renderer** —
+  [`components/study/CardDetailLayers.tsx`](./components/study/CardDetailLayers.tsx): a
+  collapsed-by-default "More on this card (N)" strip under the card in BOTH study forms
+  (desktop card body + the mobile tools panel), each layer labelled in learner words, plus an
+  in-place "Explain more" that runs the card's own enrichment and appends the new layers
+  immediately. Bespoke, not the `card_enrichment` kind component: that kind renders an agent
+  PROPOSAL through the DB-routed dynamic renderer (right for the dialog preview, wrong for an
+  always-mounted strip); this renders STORED rows. **ONE lane** —
+  [`data/enrichCardLane.ts`](./data/enrichCardLane.ts) (`enrichAndSaveCard`): generate →
+  persist via `fcService.addDetail` → clear the D151 pending proposal, shared by the on-card
+  button and the batch. **The batch:** set detail's "Enhance" (a modal LIST of every card you
+  scrolled and picked from — nonsense at 80 cards) is replaced by **Enrich all cards**, running
+  [`bulkEnrichRun.ts`](./components/set-detail/bulkEnrichRun.ts) (pure reducer + hook, shaped
+  like `illustrateSetRun`) into [`BulkEnrichWindow`](./components/set-detail/BulkEnrichWindow.tsx):
+  a live "N of M cards enriched", cancellable (cancel stops the CURSOR; in-flight cards land and
+  are counted), per-card fault isolated, and a summary that names every bucket ("68 enriched, 2
+  failed, 10 already had layers"). Cards that already carry layers are skipped, never re-billed.
+  Guarded ONCE for the batch on `education.card_enrichment`, committed per successful card;
+  COPPA before billing. Per-card enrich/deepen still exists but is now initiated **from a
+  specific card tile** (the tile's lamp icon), and the study surface's dialog is `modes=["deepen"]`
+  only — one door per room. Pinned by `data/__tests__/card-detail-layers.test.ts` and
+  `components/set-detail/__tests__/bulk-enrich-run.test.ts`.
+
 - 2026-08-24 — **Mobile study's fallback grade row is now the canonical 1–5 confidence tap**
   (STATE item 22). `FlashcardMobileView`'s two internal fallback grade rows — used whenever a
   study caller doesn't inject its own `bottomBar` (matching cards' manual override in
