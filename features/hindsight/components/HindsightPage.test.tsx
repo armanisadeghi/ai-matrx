@@ -30,6 +30,7 @@ jest.mock("@tanstack/react-query", () => ({
     queryKey[1] === "enrollments"
       ? { data: mockEnrollments, isLoading: false, isError: false }
       : { data: null, isLoading: false, isError: false },
+  useQueryClient: () => ({ getQueryData: () => undefined }),
 }));
 
 jest.mock("./EnrollmentDetailPanel", () => ({

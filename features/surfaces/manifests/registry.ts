@@ -211,6 +211,7 @@ import { adminKnowledgeManifest } from "./admin-knowledge.manifest";
 import { adminKindRegistryManifest } from "./admin-kind-registry.manifest";
 import { adminSkillsManifest } from "./admin-skills.manifest";
 import { adminGrowthLoopManifest } from "./admin-growth-loop.manifest";
+import { adminHindsightManifest } from "./admin-hindsight.manifest";
 import { adminReportingManifest } from "./admin-reporting.manifest";
 import { adminUtilitiesManifest } from "./admin-utilities.manifest";
 import { adminDocumentationManifest } from "./admin-documentation.manifest";
@@ -423,6 +424,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminKindRegistryManifest,
   adminSkillsManifest,
   adminGrowthLoopManifest,
+  adminHindsightManifest,
   adminReportingManifest,
   adminUtilitiesManifest,
   adminDocumentationManifest,

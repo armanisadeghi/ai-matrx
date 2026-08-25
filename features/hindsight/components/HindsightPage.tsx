@@ -23,6 +23,7 @@ import { ChangeHistoryPanel } from "./ChangeHistoryPanel";
 import { EnrollDialog } from "./EnrollDialog";
 import { EnrollmentDetailPanel } from "./EnrollmentDetailPanel";
 import { FindingEffectivenessPanel } from "./FindingEffectivenessPanel";
+import { HindsightSurfaceEmitter } from "./HindsightSurfaceEmitter";
 import { selectEnrollmentId, type EnrollmentSelection } from "./select-enrollment";
 import { fmtCost, KIND_COLOR, KIND_ICON } from "./tokens";
 
@@ -69,6 +70,11 @@ export function HindsightPage() {
   // returns to normal document scroll, because two nested scrollers stacked on
   // a phone is the worse failure.
   return (
+    <HindsightSurfaceEmitter
+      enrollments={active}
+      costs={costs.data}
+      selectedEnrollmentId={selected ?? null}
+    >
     <div className="flex flex-col gap-4 p-4 lg:h-[calc(100dvh-2.5rem)] lg:overflow-hidden">
       {/*
         No page title and no description here on purpose: the route's own
@@ -197,5 +203,6 @@ export function HindsightPage() {
         initialToolName={deepLinkedTool}
       />
     </div>
+    </HindsightSurfaceEmitter>
   );
 }
