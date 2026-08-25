@@ -291,8 +291,8 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
   `KeywordTableControls.openAssign` gained an optional `lockedDimensionSlug`,
   and `useKeywordAssignSurfaces` gained a `delegate`, so the shared menu drives
   THIS table's existing panels rather than mounting a second set.
-- **2026-08-24** — Collapsed the second placement wrapper. The topic tree
-  (`…/value/topics`) had its own `setKeywordPrimaryTopic` over the same RPC
+- **2026-08-24** — Collapsed the second placement wrapper. The offering tree
+  (now `…/value/offerings`) had its own `setKeywordPrimaryTopic` over the same RPC
   without `p_notes`; every ruling made there arrived with no reason attached.
   Deleted it, pointed the tree at `setKeywordService`, and gave
   `TopicPickerDialog` a **"Why does this belong here?"** field (optional — an

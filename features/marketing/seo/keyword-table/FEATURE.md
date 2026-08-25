@@ -82,10 +82,10 @@ otherwise is the quiet lie this whole system exists to stop.
 | Surface | Opens on | Base filter | Prefix |
 |---|---|---|---|
 | Keyword Workbench (`/keywords?view=workbench`) | keyword, offering, class, clicks, impressions, score, level | — | *(none — it owns its route, and every saved view already stored uses this dialect)* |
-| Not placed on the tree (`/value/topics`) | keyword, offering, class, clicks, impressions, level | `topic: "none"` | `u_` |
-| Proposals (`/value/topics`) | keyword, offering, clicks, impressions, level + How sure | `placement: "proposed"` | `pq_` |
+| Not placed on the tree (`/value/offerings`) | keyword, offering, class, clicks, impressions, level | `topic: "none"` | `u_` |
+| Proposals (`/value/offerings`) | keyword, offering, clicks, impressions, level + How sure | `placement: "proposed"` | `pq_` |
 
-Two tables share `/value/topics`, so each owns a URL namespace and Back undoes
+Two tables share `/value/offerings`, so each owns a URL namespace and Back undoes
 exactly one step on the one you touched.
 
 ## Adding a surface
@@ -113,6 +113,10 @@ Guard: `pnpm check:one-table-law`.
   top band "Core revenue"). The Level filter's options are read, never listed.
 
 ## Change Log
+
+- 2026-08-25 — The keyword queues now live at the customer-facing
+  `/value/offerings` route. The retired `/value/topics` URL redirects with its
+  table query state intact.
 
 - 2026-08-25 — Phone rows now use the canonical table's `mobileCards` seam to
   expose the complete classification evidence and touch-sized assignment/copy

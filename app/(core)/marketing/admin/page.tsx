@@ -494,6 +494,15 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/value/topics",
+      label: "Retired topic-tree URL",
+      description:
+        "Query-preserving compatibility redirect to the canonical Keyword Value offering tree.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/topics/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/admin",
       label: "Feature admin map",
       description:
