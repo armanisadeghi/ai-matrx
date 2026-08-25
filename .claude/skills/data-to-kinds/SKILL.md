@@ -661,6 +661,55 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
     is honest rather than aspirational, with no DB access. **Rule: when the interesting claim is
     about information the producer HAD, capture that information beside the payload.**
 
+### Friction from replication run 3 — RAG retrieval + citation family (2026-08-24, ledger `operations/rag-kinds-run.md`)
+
+38. **A CUTOVER-GATED COLLECTION STILL NEEDS ITS COMPONENT, AND THE SKILL IMPLIES OTHERWISE.**
+    Stage B.2 says "a collection whose registry row is cutover-gated has NO `.gen.ts` until
+    cutover", and it is easy to read that as "build nothing for it". Doing so is a defect: the
+    collection stays on `generic_structured` while its nested item kinds have real components, so
+    the family renders as a JSON dump wrapped around beautiful children — and the demo, whose whole
+    job is to show the family, shows the fallback. **Rule: a cutover-gated collection gets its
+    `kind_component` row, its compiled mirror and its component, built against the PYDANTIC MODEL
+    (the demo endpoint already emits that shape). What it does NOT get is a `.gen.ts`. State the
+    three consequences in the component's header: no per-slug `.gen.ts`, `kinds.generated.ts` types
+    it at the OLD shape, and the new half is read through ONE documented cast.** Both the rank and
+    the RAG runs arrived at this independently; it is the norm, not an exception.
+39. **THE PUBLISHER REFUSING A CUTOVER-GATED SLUG IS A PASS, AND NOTHING SAYS SO.** Stage B.6 says
+    to re-run the publish and verify activation. For a family with a gated supersede the run exits
+    with `🚨 INCOMPATIBLE DRIFT` next to the lines that DID activate, which reads like a failure
+    mid-stage. **Rule: quote the whole publisher output in the ledger and label the refusals as the
+    gate working. A gated slug you did not intend to move MUST be refused; if it were accepted, the
+    gate would be the thing that was broken.**
+40. **THE DEMO ENDPOINT MAY NOT EXERCISE THE FAMILY'S HEADLINE, AND STAGE B IS ALLOWED TO FIX
+    THAT.** Stage A ships one endpoint; a convergence family's most valuable kind is often reached
+    by a DIFFERENT call (here `rag_synthesize_result.citations` — the entire point of the run —
+    while the endpoint only searched). The skill offers Stage B no move but "record what the demo
+    could not exercise". **Rule: when the endpoint cannot exercise the family's headline kind,
+    Stage B EXTENDS the Stage A endpoint with an opt-in flag that produces it from the SAME real
+    call (never a second engine, never a fixture, never a client-side assembly), and records the
+    change in the ledger's Stage B record.** Default it OFF whenever it spends money.
+41. **A LOCALLY-RUNNING aidream IS STALE AND WILL 404 THE ENDPOINT YOU ARE VERIFYING.** Stage B
+    calls an endpoint Stage A added minutes ago; `python run.py` does not hot-reload new routers,
+    and a server another session started hours earlier will return 404 with no hint that the cause
+    is staleness. It cost a full debug cycle. **Rule: before blaming the FE, confirm the route
+    exists — `curl -s localhost:8000/openapi.json | grep <family>-kinds` — and restart the local
+    server if it does not. Budget ~2.5 minutes for boot.** Production is not the fallback: Stage A's
+    endpoint is usually not deployed yet either.
+42. **THE SHARED BROWSER PANE IS AS CONTENDED AS THE PREVIEW SERVER (gap #24's sibling).** A peer
+    session opened its own demo in the same pane mid-verification; screenshots silently retargeted
+    to THEIR tab, and the pane then stopped compositing entirely. **Rule: pass `tabId` explicitly on
+    every browser call once more than one tab exists, take the screenshot you need the moment the
+    result lands, and re-open the pane with `preview_start` rather than fighting a hidden one.
+    `javascript_tool` keeps working when screenshots do not — but a Radix tab will not switch from a
+    synthetic `.click()`, so it is a reader, not a substitute for the real pointer.**
+43. **ONE-WAY DELEGATION NEEDS A CONTEXT CHANNEL, AND #22 DOES NOT MENTION IT.** A nesting seam
+    that only forwards `{serverData, className}` cannot tell a nested primitive which POSTURE to
+    render (a `source_ref` is a card standalone and a chip inside a chunk), and the temptation is a
+    second component. **Rule: the seam forwards a small, optional, advisory context object
+    (variant, index/number, parent ids, the query) to the compiled component and NOTHING to the
+    db-override path — a DB-authored renderer owns its presentation entirely. A posture is a
+    `variant` prop on the ONE component, exactly as `RagHitCard` does compact/expanded.**
+
 ## Chip prompts (standalone — paste as the chip body, fill the ⟨⟩)
 
 **Stage A:** "You are STAGE A of the data-to-kinds run for ⟨family⟩. Read ONLY
