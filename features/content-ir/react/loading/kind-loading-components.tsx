@@ -249,7 +249,17 @@ const Shell: React.FC<
   if (chrome === "bare") {
     return (
       <PhaseContext.Provider value={phase}>
-        <div data-kind-loading={kind ?? "unknown"} data-kind-loading-phase={phase}>
+        <div
+          data-kind-loading={kind ?? "unknown"}
+          data-kind-loading-phase={phase}
+          // The breathing element lives in the header this variant skips, so
+          // a bare placeholder would sit perfectly dead on the page. The body
+          // itself takes the slow breath instead — "sort of animated, but
+          // fairly steady", which is the look, not a decoration.
+          className={
+            reserved ? "animate-[kind-slot-breathe_3.2s_ease-in-out_infinite]" : undefined
+          }
+        >
           {children}
         </div>
       </PhaseContext.Provider>

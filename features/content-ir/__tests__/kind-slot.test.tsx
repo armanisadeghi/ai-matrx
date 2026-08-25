@@ -143,6 +143,24 @@ describe("the placeholder phase", () => {
     expect(shapes(withTitle("reserved"))).toBe(shapes(withTitle("arriving")));
   });
 
+  it("a BARE reserved slot still breathes — the host's header hides the usual one", () => {
+    const bare = renderToStaticMarkup(
+      <KindSlot
+        slotKey="s-bare"
+        kind="slot_phase_kind"
+        phase="reserved"
+        chrome="bare"
+      />,
+    );
+    // No second header (the host draws it) …
+    expect(bare).not.toContain("Coming up");
+    // … but the body is alive rather than dead on the page.
+    expect(bare).toContain("kind-slot-breathe");
+    // Still, not working.
+    expect(bare).not.toContain("animate-pulse");
+    expect(bare).not.toContain("animate-spin");
+  });
+
   it("with no title yet, reserved names the kind where arriving shimmers", () => {
     // The one deliberate structural difference, and it costs no height: both
     // sit in a header sized by the 28px icon chip, not by this element.
