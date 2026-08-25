@@ -757,6 +757,16 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-25 — **Keyword-table density and editable-cell repair.** Search
+  Console Queries widens Offering/Class to 270/150px and standardizes its
+  compact right-side headers to `CLICK · IMPR · CTR · POS · SCORE · LEVEL`.
+  Keyword Value now orders Keyword → Class → site dimensions → provenance →
+  compact metrics → Score/Level, and removes the prose-heavy Why column; the
+  full receipt remains available through the row/detail actions. Geo, Price,
+  and every other dimension now render the canonical creatable picker directly
+  in both assigned and empty cells, commit on selection, and retain Clear and
+  Assign-with-a-reason actions in the picker footer.
+
 - 2026-08-25 — Search Console's main and Insights tab rails now reuse the
   horizontal `ScrollFade` primitive: narrow viewports get a visible dynamic
   overflow cue, single-line labels, and 44px touch targets instead of the

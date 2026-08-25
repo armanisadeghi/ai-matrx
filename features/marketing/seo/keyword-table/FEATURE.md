@@ -107,6 +107,13 @@ Guard: `pnpm check:one-table-law`.
 
 ## Change Log
 
+- 2026-08-25 — **Dimension cells are dropdowns in every state.** The shared
+  `StampCell` now renders `DimensionValuePicker` directly for assigned and
+  empty Geo/Price/custom-dimension cells instead of hiding assignment behind a
+  hover-only plus. Selection commits through the existing stamp write; the
+  picker keeps custom-entry, Clear, and Assign-with-a-reason actions. Shared
+  metric headers use `CLICK · IMPR · CTR · POS · SCORE · LEVEL`.
+
 - 2026-08-25 — Claude: **the Offering column became a shared builder
   (MSR-06).** Search Console → Queries now carries the same column (Arman: "the
   other critical thing to put here would be the one where you map it to an
