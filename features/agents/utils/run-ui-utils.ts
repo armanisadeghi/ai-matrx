@@ -23,6 +23,44 @@ export type ResultDisplayMode =
   | "chat-collapsible"
   | "chat-assistant";
 
+/**
+ * Display modes that render NO user interface whatsoever — no overlay, no
+ * component, no composer, no button.
+ *
+ * This exists because `autoRun` is a USER-INTERFACE control: it decides
+ * whether the interface stops and lets the person act before the request goes
+ * out. Where there is no interface there is nothing to stop, nobody to offer
+ * the choice to, and — critically — nothing that could ever fire the run
+ * later. So on these modes `autoRun` is not obeyed, it is IGNORED: honoring a
+ * `false` would not defer the send, it would delete the run and leave a
+ * seeded conversation that can never execute.
+ *
+ * `direct` is deliberately NOT in this list. It means "no overlay — the
+ * CALLER renders the interface", and callers overwhelmingly do: `/chat`
+ * (`features/cx-chat/hooks/useInstanceBootstrap.ts`) creates an empty
+ * conversation with `direct` + `autoRun: false` precisely so the user can type
+ * in the chat composer first. Treating `direct` as headless would fire a blank
+ * run the moment anyone opened a chat.
+ *
+ * ADDING A DISPLAY MODE: decide which side it belongs on. If it paints
+ * nothing a human can see or press, it belongs here.
+ */
+export const HEADLESS_DISPLAY_MODES = ["background"] as const;
+
+export type HeadlessDisplayMode = (typeof HEADLESS_DISPLAY_MODES)[number];
+
+/** Modes that CAN carry an interface — everything that is not headless. */
+export type InterfaceDisplayMode = Exclude<
+  ResultDisplayMode,
+  HeadlessDisplayMode
+>;
+
+export function isHeadlessDisplayMode(
+  mode: ResultDisplayMode,
+): mode is HeadlessDisplayMode {
+  return (HEADLESS_DISPLAY_MODES as readonly string[]).includes(mode);
+}
+
 export interface DisplayModeMeta {
   label: string;
   description: string;

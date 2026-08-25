@@ -469,6 +469,13 @@ async function launchAndWait(
           ...(opts.variables ? { variables: opts.variables } : {}),
           ...(opts.userInput !== undefined ? { userInput: opts.userInput } : {}),
         },
+        // `callerExecutes` is the deliberate half of `autoRun: !twoStep`. A
+        // headless launch normally IGNORES autoRun (no interface = nothing to
+        // pause and nothing that would ever send it), so without this the
+        // two-step path would fire before its message parts were seeded —
+        // parts are not expressible through `runtime`, which is the whole
+        // reason this path defers. See `ManagedAgentOptions.callerExecutes`.
+        ...(twoStep ? { callerExecutes: true } : {}),
         config: {
           autoRun: !twoStep,
           displayMode: opts.displayMode ?? "background",

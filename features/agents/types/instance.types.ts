@@ -1112,6 +1112,31 @@ export interface ManagedAgentOptions {
   ready?: boolean;
 
   /**
+   * "I will dispatch `executeInstance` myself." The ONLY legitimate reason to
+   * pair a HEADLESS display mode (one that paints no interface —
+   * `HEADLESS_DISPLAY_MODES`) with `autoRun: false`.
+   *
+   * WHY THIS EXISTS. `autoRun` is a user-interface control: it decides whether
+   * the interface pauses and lets the person act before the request goes out.
+   * A headless mode has no interface, so there is nothing to pause — which
+   * means `autoRun: false` there does not defer the send to a human, it just
+   * never sends. The launch therefore IGNORES autoRun on headless modes and
+   * runs anyway (loudly), because the overwhelmingly common cause is a call
+   * site that simply forgot the flag.
+   *
+   * But a caller can legitimately need the deferral: when it must seed
+   * something the launch itself cannot carry — multi-part message content, for
+   * example (`runtime.userInput` and `runtime.variables` ARE seeded before
+   * execution, so anything expressible there needs no deferral at all). Those
+   * callers set this, and it reads as the deliberate claim it is instead of
+   * looking identical to the bug.
+   *
+   * Setting this and then NOT executing produces a conversation that never
+   * runs and that nothing can ever start. That is on you.
+   */
+  callerExecutes?: boolean;
+
+  /**
    * When true, the server writes nothing to the DB and Redux becomes the sole
    * source of truth for the transcript.
    *   Turn 1:  POST /ai/agents/{id} with the client's id, `is_new:true`,

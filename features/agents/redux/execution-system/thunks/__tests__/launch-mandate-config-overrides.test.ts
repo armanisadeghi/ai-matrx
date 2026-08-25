@@ -167,8 +167,13 @@ async function launch(
         surfaceKey: "test-surface",
         sourceFeature: "marketing",
         runtime: { variables: { site: "example.com" } },
-        // Background + no autoRun: instance is created and seeded, nothing
-        // executes — the wire assertion runs assembleRequest directly below.
+        // Background + `callerExecutes`: the instance is created and seeded and
+        // nothing runs, because THIS TEST is the caller that drives the
+        // request — it calls assembleRequest directly below. Without the
+        // declaration a headless launch executes on its own (autoRun is a UI
+        // control and `background` has no UI), which is the whole point of
+        // the flag: the deferral has to be claimed, never assumed.
+        callerExecutes: true,
         config: { displayMode: "background" },
         ...extra,
       } as Parameters<typeof launchAgentExecution>[0]),

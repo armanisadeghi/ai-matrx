@@ -24,6 +24,7 @@ import type {
   ManagedAgentOptions,
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
+import { isHeadlessDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import {
   resolveMandate,
@@ -171,6 +172,7 @@ export const launchAgentExecution = createAsyncThunk<
     apiEndpointMode = "agent",
     jsonExtraction,
     isEphemeral,
+    callerExecutes,
     runtime,
     config,
     onConversationCreated,
@@ -934,15 +936,31 @@ export const launchAgentExecution = createAsyncThunk<
   // hard default false) so shortcut-level `autoRun: true` actually fires.
   // =========================================================================
 
-  const isHeadlessMode = resolvedDisplayMode === "background";
+  const isHeadlessMode = isHeadlessDisplayMode(resolvedDisplayMode);
 
-  if (isHeadlessMode && !effectiveAutoRun) {
+  // Deferring the send is only meaningful when SOMETHING will send it later.
+  // On a mode that paints an interface, that something is the user. On a
+  // headless mode there is no user to wait for, so the only thing that can is
+  // the caller — and it has to say so.
+  const somethingWillSendIt = !isHeadlessMode || callerExecutes === true;
+
+  // Only scream when someone actually ASSERTED false. Omitting a
+  // user-interface flag on a mode that has no user interface is not a mistake,
+  // it is the sane thing to write — the hard default is what makes it read as
+  // false here, and the run proceeds either way.
+  // `seededUiState.autoRun` is always a concrete boolean (instance-ui-state
+  // seeds the hard default), so it cannot tell "someone chose false" from
+  // "nobody said anything" — only the caller's own literal can. That is the
+  // one worth scolding anyway: the scream names a CALL SITE to go fix.
+  const autoRunWasAssertedFalse = autoRun === false;
+
+  if (isHeadlessMode && autoRunWasAssertedFalse && !callerExecutes) {
     console.error(
-      `[launchAgentExecution] autoRun=false was passed with displayMode="background" (conversationId=${conversationId}). autoRun is a UI control — it decides whether the interface pauses for the user — and "background" has no interface, so there is nothing to pause and nothing that could ever start this run. Running it anyway. Fix the call site: drop autoRun, or pass true.`,
+      `[launchAgentExecution] IGNORING autoRun=false: it was passed with displayMode="${resolvedDisplayMode}" (conversationId=${conversationId}), which renders no interface. autoRun decides whether the UI pauses for the user; with no UI there is nobody to pause for and nothing that would ever start this run, so honoring it would silently throw the run away. Running it. Fix the call site: drop autoRun, or pass autoRun: true. If you genuinely intend to dispatch executeInstance yourself after seeding something the launch cannot carry, declare it with callerExecutes: true.`,
     );
   }
 
-  if (!isHeadlessMode && !effectiveAutoRun) {
+  if (somethingWillSendIt && !effectiveAutoRun) {
     return { conversationId };
   }
 

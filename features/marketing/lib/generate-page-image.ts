@@ -236,6 +236,12 @@ export async function runHeadlessAgent<T>(
         sourceFeature: "marketing",
         isEphemeral: false,
         ...(args.variables ? { runtime: { variables: args.variables } } : {}),
+        // The user text is seeded AFTER the launch and this dispatches
+        // `executeInstance` itself below, so the deferral is deliberate —
+        // declared, because on the `background` leg a headless launch would
+        // otherwise ignore `autoRun: false` and fire before the text landed.
+        // See `ManagedAgentOptions.callerExecutes`.
+        callerExecutes: true,
         config: {
           autoRun: false,
           displayMode: args.live ? "direct" : "background",
