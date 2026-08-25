@@ -613,6 +613,9 @@ and each site keeps its own access assert. Denied sites are skipped, not
 raised, so one inaccessible site cannot blank a portfolio. It deliberately
 returns NO distinct query count — summing per-site DISTINCTs double-counts a
 phrase ranking on two sites, and a subtly wrong number is worse than none.
+The per-site function passes only the selected window's distinct keyword IDs
+to `gsc_keyword_class_map`; an unscoped class-map call scans the whole keyword
+corpus once per portfolio site and can exceed the Data API statement timeout.
 
 **Both strips clamp to the freshest QUERY-profile day** — single-site via
 `gsc_perf_freshness`, portfolio via `gsc_perf_freshness_multi` — so a brand and
