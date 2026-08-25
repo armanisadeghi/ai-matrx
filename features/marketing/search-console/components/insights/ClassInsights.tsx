@@ -893,6 +893,9 @@ export function ShiftsView({
           enabled: true,
           title: (row) => row.query,
           renderEdit: false,
+          // Without this the opener falls back to `onRowOpen` and drills to the
+          // Pages tab, unmounting the window it was asked to open.
+          onOpen: () => {},
           renderView: (row) => (
             <div className="space-y-2 p-3">
               <p className="text-xs text-muted-foreground">

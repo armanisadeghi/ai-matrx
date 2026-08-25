@@ -682,6 +682,11 @@ function CannibalizationTable({
           enabled: true,
           title: (row) => row.query,
           renderEdit: false,
+          // The window opener falls back to `onRowOpen` when this is absent —
+          // which would drill to the Pages tab and unmount the window that was
+          // just asked for. A no-op keeps the two doors independent: the row
+          // drills, the panel icon opens the window.
+          onOpen: () => {},
           renderView: (row) => (
             <div className="space-y-2 p-3">
               <p className="text-xs text-muted-foreground">
