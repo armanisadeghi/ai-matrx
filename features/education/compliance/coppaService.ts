@@ -24,6 +24,29 @@ export const coppaService = {
   /** The authoritative AI/data gate for the current user. */
   async getGate(): Promise<StudyResult<CoppaGate>> {
     try {
+      // The RPC is authenticated-only. Redux can retain the booted user for a
+      // moment after the Supabase cookie disappears (sign-out/expiry/cross-tab
+      // rotation), so prove the request still has a subject before invoking it.
+      // No session is the database verdict's `no_subject` case: COPPA has no
+      // account to classify, and calling the RPC as `anon` would only create a
+      // noisy 42501 while reaching the same allow result.
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+      if (sessionError) return fail("coppa.getGate.session", sessionError);
+      if (!sessionData.session?.user) {
+        return {
+          data: {
+            ageBand: null,
+            requiresConsent: false,
+            hasActiveGuardian: false,
+            hasVerifiedGuardian: false,
+            isAnonymous: false,
+            aiAllowed: true,
+            reason: "allowed",
+          },
+          error: null,
+        };
+      }
       const { data, error } = await supabase.rpc("edu_coppa_gate");
       if (error) return fail("coppa.getGate", error);
       return { data: mapCoppaGate(data as unknown as CoppaGateRow), error: null };

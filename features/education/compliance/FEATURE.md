@@ -77,6 +77,9 @@ state, never a silent failure.
 ## Entry points
 
 - `coppaService.ts` — typed wrappers over the two RPCs (`StudyResult<T>`).
+  `getGate()` proves a live Supabase session before calling the authenticated-only
+  verdict RPC; a missing session returns the function's `no_subject` allow verdict
+  locally, so stale boot identity cannot emit an anonymous permission error.
 - `useAiComplianceGate.tsx` — **THE reusable gate primitive.** `ensureAllowed()`
   (server-truth pre-action check; opens the right dialog + returns false on a
   block) + `<gate.Gate />` + reactive `gate`/`blocked`. **Two blocks, two
@@ -256,6 +259,10 @@ education AI, and `/education/family` can set it.
   nothing permanently purges yet.
 
 ## Change log
+
+- `2026-08-25` — `coppaService.getGate()` now checks the live Supabase session before
+  invoking `edu_coppa_gate()`. A signed-out/expired tab with briefly stale Redux identity
+  takes the canonical `no_subject` allow result without calling an authenticated-only RPC.
 
 - `2026-08-20` — **The age question moved to a post-sign-in popup, platform-wide, and
   left signup entirely (Arman's ruling).** *"It's not sign up. It's after the first time
