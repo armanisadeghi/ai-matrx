@@ -15,6 +15,45 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D260 — Any org member can author a `seo.engine_schedule` row that spends ANOTHER org's money (2026-08-25)
+
+`seo.engine_schedule` carries an OWNER column (`organization_id`) and TARGET columns
+(`scope_organization_id`, `site_id`). Canonical RLS `std_insert` only checks the OWNER,
+so a plain non-admin member of org A can insert a row owned by A whose TARGET is org B.
+The dispatcher (`seo.engine_schedules_claim`, service_role, no RLS) then starts paid
+`seo.topic_placement` passes on org B's sites, billed to org B.
+
+Proven live 2026-08-25 inside a rolled-back transaction, as
+`c5e92166-e148-4e73-926e-83af0c453665` (role `member` of `f9cb3e35-…`, `is_platform_admin()`
+= false):
+
+```sql
+insert into seo.engine_schedule
+  (engine_slug, scope_tier, scope_organization_id, cadence,
+   max_keywords_per_run, sites_per_run, enabled, organization_id, created_by)
+values ('seo.topic_placement','organization','5dc930e9-bd65-44a1-8369-af773f6e1a5b',
+        'hourly', 2000, 999, true, 'f9cb3e35-2a65-4f2a-8525-088d6551071c', auth.uid());
+-- then, as the dispatcher:
+select * from seo.engine_schedules_due(now());
+--> site d0aff5b6-… , organization_id 5dc930e9-… , max_keywords_per_run 2000
+```
+
+Same shape for `scope_tier='site'` with another org's `site_id`, and for `scope_tier='system'`
+(governs EVERY org's sites) — the only thing stopping the system variant today is the partial
+unique index `engine_schedule_system_uniq`, i.e. luck, not authorization. Blast radius is
+bounded per site per day by the `seo.topic_placement` `daily_keyword_ceiling` knob, not by
+anything in this table.
+
+Fix is a decision for Arman because it means adding an authorization check where none exists
+(CLAUDE.md forbids adding a security layer on agent authority). The two candidates: (a) make
+`iam.apply_rls` aware that a target column needs its own access test, or (b) close the direct
+table write and route console saves through a `SECURITY DEFINER` RPC that verifies
+`iam.has_org_access(scope_organization_id)` and the site's org before writing. Do NOT leave it
+at "the UI only offers your own org" — the write is client-direct to Supabase.
+
+Owner: SEO run console (KI-049). Files: `migrations/seo_engine_schedule_dispatcher.sql`,
+`features/marketing/seo/run-console/data.ts` (`saveEngineSchedule`).
+
 ### D259 — Mobile shell navigation renders duplicate `/education` React keys (2026-08-25)
 
 Opening the mobile navigation drawer on `/agents/8bdef30f-8110-4a5b-9edb-79d0ef1ba0fc/build`
