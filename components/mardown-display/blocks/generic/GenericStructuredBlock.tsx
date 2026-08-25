@@ -18,10 +18,12 @@
 import React, { useEffect } from "react";
 import { Braces } from "lucide-react";
 import { GenericStructuredView } from "@ai-matrx/content-ir-react";
+import { reconstructRegionValue } from "@ai-matrx/content-ir";
 import { ContentIrHostBoundary } from "@/features/content-ir/host/ContentIrHostBoundary";
 import { readIrRouteMarker } from "@/features/content-ir/react/kind-route";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { reportKindComponentIncident } from "@/features/content-ir/react/db-component/kindComponentIncident";
+import { StructuredValueTabs } from "./StructuredValueTabs";
 
 export interface GenericStructuredBlockProps {
   /** The raw region source — the zero-loss floor when no envelope survived. */
@@ -70,9 +72,15 @@ const GenericStructuredBlock: React.FC<GenericStructuredBlockProps> = (
   props,
 ) => {
   useGenericFloorAlarm(props.metadata);
+  // The JSON tab's ground truth: the envelope's zero-loss value when one
+  // survived, else the raw region source.
+  const envelope = readEnvelope(props.metadata);
+  const value = envelope ? reconstructRegionValue(envelope) : undefined;
   return (
     <ContentIrHostBoundary>
-      <GenericStructuredView {...props} streamingIndicator={StillArriving} />
+      <StructuredValueTabs value={value} raw={props.content}>
+        <GenericStructuredView {...props} streamingIndicator={StillArriving} />
+      </StructuredValueTabs>
     </ContentIrHostBoundary>
   );
 };

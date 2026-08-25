@@ -106,17 +106,36 @@ const ARTIFACT_LOADING_COMPONENTS: Partial<
  * Returns the envelope when pending so the caller can select + feed the
  * loading component; null otherwise.
  */
+/**
+ * How much of a KINDLESS region may stream before we stop waiting for a
+ * `__kind` that clearly is not coming. The discriminator is taught as the
+ * FIRST key, so on any well-formed kind payload it resolves within the first
+ * chunk or two; a region that has already streamed this many characters
+ * without one is genuinely kindless JSON, and the reader deserves to WATCH it
+ * arrive rather than stare at a skeleton until the end (Arman, live Study
+ * Pack run, 2026-08-25: a kindless node "made me sit there and watch a
+ * spinner for a very long time" and then dumped JSON at once).
+ */
+const KINDLESS_PATIENCE_CHARS = 300;
+
 function pendingStructuredEnvelope(block: {
   type: string;
+  content?: string | null;
   metadata?: Record<string, unknown>;
 }): CanonicalBlockIR | null {
   if (block.type !== "code") return null;
   const envelope = readEnvelope(block.metadata);
   if (!envelope || envelope.root.status !== "streaming") return null;
-  if (!envelope.root.kind || envelope.root.kindState === "pending_schema") {
-    return envelope;
+  if (envelope.root.kind) {
+    // Identified — hold the silhouette only while the schema cold-fetches.
+    return envelope.root.kindState === "pending_schema" ? envelope : null;
   }
-  return null;
+  // No kind yet: give the discriminator a beat to arrive, then concede this
+  // region is plain JSON and let the code block below stream it LIVE. The
+  // loader must be a promise of a component, never a lid over content.
+  return (block.content ?? "").length < KINDLESS_PATIENCE_CHARS
+    ? envelope
+    : null;
 }
 
 /**

@@ -37,6 +37,7 @@ import {
 import { SettledOutputBody } from "./SettledOutputBody";
 
 import { useWorkflowRunControls } from "../hooks/useWorkflowRunControls";
+import { StructuredValueTabs } from "@/components/mardown-display/blocks/generic/StructuredValueTabs";
 import { explainRunFailure } from "../run-failure-explanation";
 import {
   selectRunError,
@@ -319,17 +320,24 @@ export function InvocationBody({
   //
   // Null wrapper = a pre-wrapper run or a producer that failed open, and the
   // branches below carry the surface exactly as they always did.
+  // Every settled body renders inside Preview ⇄ JSON tabs (Arman,
+  // 2026-08-25): when the preview is any kind of fallback rendering, the raw
+  // payload is the ground truth, and the reader — every reader, not admins —
+  // must be able to see exactly what arrived. The drift note rides in the
+  // tabs' header row so status and controls share one line.
   if (settledOutput && invocation.wrapper) {
     return (
-      <>
-        <KindShapeDriftNote invocation={invocation} />
+      <StructuredValueTabs
+        value={invocation.output ?? invocation.wrapper}
+        header={<KindShapeDriftNote invocation={invocation} />}
+      >
         <KindInstanceRender
           kind={NODE_OUTCOME_KIND}
           value={invocation.wrapper}
           showRoutingNote={false}
           variant="bare"
         />
-      </>
+      </StructuredValueTabs>
     );
   }
   if (
@@ -344,8 +352,10 @@ export function InvocationBody({
     // registered, active kind with no component. So the fallback shows what
     // the agent produced instead of what it cost us.
     return (
-      <>
-        <KindShapeDriftNote invocation={invocation} />
+      <StructuredValueTabs
+        value={invocation.output}
+        header={<KindShapeDriftNote invocation={invocation} />}
+      >
         <KindInstanceRender
           kind={invocation.outputKind}
           value={invocation.output}
@@ -355,7 +365,7 @@ export function InvocationBody({
           variant="bare"
           unroutableFallback={<SettledOutputBody output={invocation.output} />}
         />
-      </>
+      </StructuredValueTabs>
     );
   }
   if (invocation.textTail) {
@@ -366,7 +376,11 @@ export function InvocationBody({
     );
   }
   if (invocation.phase === "settled" && invocation.output) {
-    return <SettledOutputBody output={invocation.output} />;
+    return (
+      <StructuredValueTabs value={invocation.output}>
+        <SettledOutputBody output={invocation.output} />
+      </StructuredValueTabs>
+    );
   }
   if (invocation.error) {
     return <StepErrorBody runId={runId} invocation={invocation} />;
