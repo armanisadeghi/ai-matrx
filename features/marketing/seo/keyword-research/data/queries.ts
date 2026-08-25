@@ -461,26 +461,22 @@ export async function getKeywordDossierCompleteness(
         new Set(rows.map((row) => row.phrase.trim()).filter(Boolean)),
       );
       await Promise.all(
-        chunk(normalizedPhrases, CHUNK).map((phraseChunk) =>
-          contentDb
+        chunk(normalizedPhrases, CHUNK).map(async (phraseChunk) => {
+          const response = await contentDb
             .from("kind_instance")
-            .select("data->>primary_keyword")
+            .select("data")
             .eq("organization_id", organizationId)
             .eq("kind_definition_id", definitionId)
             .is("deleted_at", null)
-            .in("data->>primary_keyword", phraseChunk)
-            .abortSignal(abortSignal)
-            .then((response) => {
-              if (response.error) throw response.error;
-              for (const row of (response.data ?? []) as Record<
-                string,
-                string | null
-              >[]) {
-                const value = row.primary_keyword;
-                if (value) pipelinePhrases.add(value);
-              }
-            }),
-        ),
+            .abortSignal(abortSignal);
+          if (response.error) throw response.error;
+          const wanted = new Set(phraseChunk);
+          for (const row of response.data ?? []) {
+            const artifact = parseKeywordResearchArtifact(row.data);
+            const primary = artifact?.primary_keyword?.trim();
+            if (primary && wanted.has(primary)) pipelinePhrases.add(primary);
+          }
+        }),
       );
     }
   }
