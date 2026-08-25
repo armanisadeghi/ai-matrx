@@ -45895,6 +45895,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      sch_tasks_enabled_by_id:
+        | {
+            Args: { p_task_ids: Json }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: scheduler.sch_tasks_enabled_by_id(p_task_ids => _uuid), scheduler.sch_tasks_enabled_by_id(p_task_ids => jsonb). Try renaming the parameters or the function itself in the database so function overloading can be resolved"[]
+          }
+        | {
+            Args: { p_task_ids: string[] }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: scheduler.sch_tasks_enabled_by_id(p_task_ids => _uuid), scheduler.sch_tasks_enabled_by_id(p_task_ids => jsonb). Try renaming the parameters or the function itself in the database so function overloading can be resolved"[]
+          }
       system_schedule_alarms: {
         Args: { p_overdue_grace_minutes?: number }
         Returns: {
