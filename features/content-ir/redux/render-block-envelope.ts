@@ -26,7 +26,7 @@ export { readEnvelope };
  * the frontend binding of `core/envelope-read.ts#sanitizeInboundEnvelopeMetadata`:
  * valid → same reference back + seeded into the region-envelope memo;
  * malformed → stripped copy + loud captureError. Semantics documented on the
- * pure function; contract: docs/PYTHON_ENVELOPE_CONTRACT.md.
+ * pure function; contract: /Users/armanisadeghi/code/common-docs/systems/content-ir-system/PYTHON_ENVELOPE_CONTRACT.md.
  */
 export function sanitizeInboundEnvelopeMetadata(
   metadata: Record<string, unknown> | null | undefined,

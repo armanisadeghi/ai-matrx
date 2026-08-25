@@ -6,7 +6,7 @@
  * stay byte-identical, and the Python implementation
  * (`packages/matrx-ai/matrx_ai/processing/blocks/fingerprint.py`) asserts the
  * same vectors. This is the hard gate for aidream emitting `metadata.__ir`
- * envelopes (see docs/PYTHON_ENVELOPE_CONTRACT.md): a fingerprint mismatch
+ * envelopes (see /Users/armanisadeghi/code/common-docs/systems/content-ir-system/PYTHON_ENVELOPE_CONTRACT.md): a fingerprint mismatch
  * silently degrades every server envelope to an FE re-parse.
  *
  * If this test fails after a fingerprint change, the algorithm changed —

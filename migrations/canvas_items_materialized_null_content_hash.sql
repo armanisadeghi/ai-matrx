@@ -14,7 +14,7 @@
 -- legitimately carry identical content, so subjecting them to content-hash
 -- uniqueness is wrong.
 --
--- Decision (per content-ir UNIFICATION_STATUS "Known risks"): scope the
+-- Decision (per the content-ir unification risks register, since deleted): scope the
 -- hash-unique to user saves. We do this WITHOUT making the index partial (that
 -- would break the supabase-js arbiter — see
 -- canvas_items_content_hash_full_unique.sql): every RPC-materialized / model

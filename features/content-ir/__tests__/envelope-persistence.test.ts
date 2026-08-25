@@ -13,7 +13,7 @@
  *     `metadata.__ir` on a server render_block passes the ingest guard by
  *     reference and rides the same part cache at assemble time; a malformed
  *     one is stripped loudly (captureError) and never poisons the pipeline.
- *     Contract: features/content-ir/docs/PYTHON_ENVELOPE_CONTRACT.md.
+ *     Contract: /Users/armanisadeghi/code/common-docs/systems/content-ir-system/PYTHON_ENVELOPE_CONTRACT.md.
  */
 
 import type {
