@@ -235,6 +235,8 @@ export function BrandsPortfolio() {
       filter: false,
       sortable: false,
       align: "right",
+      className: "max-lg:hidden",
+      headerClassName: "max-lg:hidden",
       cell: (row) => (
         <CountPill icon={Share2} count={row.social_count} label="social profiles" />
       ),
@@ -246,6 +248,8 @@ export function BrandsPortfolio() {
       filter: false,
       sortable: false,
       align: "right",
+      className: "max-lg:hidden",
+      headerClassName: "max-lg:hidden",
       cell: (row) => (
         <CountPill icon={Images} count={row.asset_count} label="brand assets" />
       ),
@@ -257,6 +261,8 @@ export function BrandsPortfolio() {
       filter: false,
       sortable: false,
       align: "right",
+      className: "max-lg:hidden",
+      headerClassName: "max-lg:hidden",
       cell: (row) => (
         <CountPill icon={MapPin} count={row.fact_count} label="business facts" />
       ),
@@ -267,6 +273,8 @@ export function BrandsPortfolio() {
       header: "Review",
       filter: false,
       sortable: false,
+      className: "max-lg:hidden",
+      headerClassName: "max-lg:hidden",
       cell: (row) =>
         row.pending_discovered ? (
           <Badge variant="warning" className="gap-1 text-[10px]">
@@ -294,6 +302,8 @@ export function BrandsPortfolio() {
       accessorKey: "updated_at",
       header: "Updated",
       filter: false,
+      className: "max-lg:hidden",
+      headerClassName: "max-lg:hidden",
       cell: (row) => (
         <span className="whitespace-nowrap text-xs">
           {formatCompactDate(row.updated_at)}
