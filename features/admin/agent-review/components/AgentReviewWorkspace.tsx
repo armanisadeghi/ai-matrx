@@ -227,6 +227,7 @@ export default function AgentReviewWorkspace({
               userId={user?.id ?? undefined}
               displayName="Arman"
               className="h-full"
+              messageBubbleClassName="max-w-[80%] md:max-w-[80%]"
             />
           ) : (
             <div className="p-6 text-sm text-destructive">
@@ -237,10 +238,6 @@ export default function AgentReviewWorkspace({
 
         <aside className="overflow-y-auto p-4">
           <h2 className="font-semibold">Your review</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Messages stay in this thread across every repair and re-review
-            round.
-          </p>
           <ProTextarea
             value={feedback}
             onChange={(event) => setFeedback(event.target.value)}
@@ -287,9 +284,9 @@ export default function AgentReviewWorkspace({
             ) : null}
           </div>
 
-          <div className="mt-6 border-t pt-4 text-sm">
-            <div className="text-muted-foreground">Original target</div>
-            <div className="mt-1 break-all">{row.url}</div>
+          <div className="mt-6 border-t pt-4">
+            <h2 className="font-semibold">Original target</h2>
+            <div className="mt-1 break-all text-sm">{row.url}</div>
           </div>
         </aside>
       </div>

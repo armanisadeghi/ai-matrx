@@ -28,6 +28,7 @@ interface ChatThreadProps {
   userId?: string;
   displayName?: string;
   className?: string;
+  messageBubbleClassName?: string;
   /**
    * Reports how many messages are currently LOADED in this thread. The thread
    * paginates (50 at a time, older ones on demand), so this is the size of the
@@ -43,6 +44,7 @@ export function ChatThread({
   userId: propUserId,
   displayName: propDisplayName,
   className,
+  messageBubbleClassName,
   onLoadedMessageCountChange,
 }: ChatThreadProps) {
   const conversation = useAppSelector(selectCurrentConversation);
@@ -336,6 +338,7 @@ export function ChatThread({
                               (Boolean(effectiveActor) && startsActorGroup) ||
                               (conversation?.type === "group" && showAvatar)
                             }
+                            bubbleClassName={messageBubbleClassName}
                           />
                         );
                       })}

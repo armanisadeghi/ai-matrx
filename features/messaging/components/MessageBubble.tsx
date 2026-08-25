@@ -21,6 +21,7 @@ interface MessageBubbleProps {
   isOwn: boolean;
   showAvatar?: boolean;
   showSenderName?: boolean;
+  bubbleClassName?: string;
 }
 
 function StatusIcon({ status }: { status: MessageStatus }) {
@@ -45,6 +46,7 @@ export function MessageBubble({
   isOwn,
   showAvatar = true,
   showSenderName = false,
+  bubbleClassName,
 }: MessageBubbleProps) {
   const {
     content,
@@ -162,6 +164,7 @@ export function MessageBubble({
             isOwn
               ? "bg-primary text-primary-foreground rounded-br-md"
               : "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-bl-md",
+            bubbleClassName,
           )}
         >
           {/* Prose + any ```matrx reference fences → the SAME live chips the

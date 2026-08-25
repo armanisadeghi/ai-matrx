@@ -48,6 +48,8 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 - The detail header keeps Back and Open page fixed around a single-line fading
   title. Its only metadata line is the compact repository → domain → feature
   hierarchy; status is not repeated above the stage rail.
+- The embedded review conversation allows either side's message bubble to use
+  up to 80% of the transcript width so long review instructions remain readable.
 - Data is labeled by columns. Status, classification, and repository never appear as unexplained chips whose absence hides missing data.
 - Opening an item changes the route. The detail page owns the stage rail, target-page door, full conversation, and human actions.
 - The same conversation appears in `/messages/[conversationId]`; Agent Review embeds the canonical messaging thread rather than cloning chat state.
@@ -64,6 +66,7 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 
 ## Change log
 
+- 2026-08-25 — Widened detail-page messages to 80% of the transcript, removed redundant review-thread helper copy, and promoted Original target to the same heading treatment as Your review.
 - 2026-08-25 — Compressed the detail header into fixed Back/Open doors, a fading single-line title, and one repository-to-feature hierarchy; removed the duplicate status and label/value grid.
 - 2026-08-25 — Made Open enter the review workspace and launch its target in a separate tab; corrected effective-actor presentation so Codex messages show their task ID without borrowing Arman's avatar, while human-authored feedback is explicitly labeled Arman.
 - 2026-08-25 — Normalized Target Page labels, constrained long destinations to one line, and exposed the full qualified URL on hover.
