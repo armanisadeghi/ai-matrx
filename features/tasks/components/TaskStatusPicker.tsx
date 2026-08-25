@@ -73,7 +73,11 @@ export function TaskStatusPicker({
   }
 
   return (
-    <StatusPillPicker value={status} onChange={onChange} className={className} />
+    <StatusPillPicker
+      value={status}
+      onChange={onChange}
+      className={className}
+    />
   );
 }
 
@@ -119,7 +123,7 @@ function StatusPillPicker({
               }}
               title={optMeta.description}
               className={cn(
-                "flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-left hover:bg-accent",
+                "flex min-h-11 sm:min-h-0 w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-left hover:bg-accent",
                 value === s && "bg-accent",
               )}
             >

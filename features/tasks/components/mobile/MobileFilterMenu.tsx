@@ -25,7 +25,10 @@ import {
   setShowAllProjects,
   setActiveProject,
 } from "@/features/tasks/redux/taskUiSlice";
-import type { TaskSortField, TaskSortDirection } from "@/features/tasks/types/sort";
+import type {
+  TaskSortField,
+  TaskSortDirection,
+} from "@/features/tasks/types/sort";
 import { selectSmartViewCounts } from "@/features/tasks/redux/selectors";
 import { SMART_VIEWS } from "@/features/tasks/constants/smartViews";
 import { Button } from "@/components/ui/ButtonMine";
@@ -151,7 +154,7 @@ export default function MobileFilterMenu() {
           {/* Sort Section */}
           <DropdownMenuLabel>Sort By</DropdownMenuLabel>
           <DropdownMenuSub>
-          <DropdownMenuSubTrigger className="min-h-11">
+            <DropdownMenuSubTrigger className="min-h-11">
               <ArrowUpDown size={18} className="mr-2" />
               {getSortLabel(sortBy, sortOrder)}
             </DropdownMenuSubTrigger>

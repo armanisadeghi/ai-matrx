@@ -456,7 +456,11 @@ export default function MobileTaskDetails({
               onValueChange={(val) => {
                 if (val === "none") {
                   setPriority(null);
-                } else if (val === "low" || val === "medium" || val === "high") {
+                } else if (
+                  val === "low" ||
+                  val === "medium" ||
+                  val === "high"
+                ) {
                   setPriority(val);
                 }
                 setIsDirty(true);

@@ -73,7 +73,7 @@ export function TaskSnoozeButton({
               dispatch(snoozeTaskThunk({ taskId, until: p.until }));
               setOpen(false);
             }}
-            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-left hover:bg-accent"
+            className="flex min-h-11 sm:min-h-0 w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-left hover:bg-accent"
           >
             <AlarmClock className="h-3 w-3 text-muted-foreground" />
             <span className="flex-1">{p.label}</span>
@@ -92,7 +92,7 @@ export function TaskSnoozeButton({
               dispatch(snoozeTaskThunk({ taskId, until: null }));
               setOpen(false);
             }}
-            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-left hover:bg-accent text-foreground"
+            className="flex min-h-11 sm:min-h-0 w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-left hover:bg-accent text-foreground"
           >
             <AlarmClockOff className="h-3 w-3 text-muted-foreground" />
             Unsnooze
