@@ -503,7 +503,7 @@ export const studyService = {
   > {
     try {
       const priorRes = await this.getMastery({
-        itemType: "flashcard",
+        itemType: "fc_card",
         itemId: input.itemId,
       });
       if (priorRes.error) return fail("recordGameAnswer", priorRes.error);

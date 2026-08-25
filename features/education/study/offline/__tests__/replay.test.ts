@@ -81,7 +81,7 @@ function attempt(n: number, result: "correct" | "incorrect") {
   return {
     attemptId: `aaaaaaaa-0000-4000-8000-00000000000${n}`,
     userId: USER,
-    itemType: "flashcard",
+    itemType: "fc_card",
     itemId: "card-1",
     sessionId: "session-1",
     method: "flashcards",
@@ -115,7 +115,7 @@ describe("offline study replay (IC-8)", () => {
     const first = await flushStudyOutbox(USER);
     expect(first).toMatchObject({ flushed: 3, remaining: 0, halted: false });
 
-    const masteryAfterOne = { ...spine.mastery.get("flashcard:card-1")! };
+    const masteryAfterOne = { ...spine.mastery.get("fc_card:card-1")! };
     expect(masteryAfterOne).toEqual({ attempt_count: 3, correct_count: 2 });
     expect(spine.attempts.size).toBe(3);
     expect(await countPendingAttempts(USER)).toBe(0);
@@ -131,7 +131,7 @@ describe("offline study replay (IC-8)", () => {
 
     // The spine is IDENTICAL to a single replay — the whole point.
     expect(spine.attempts.size).toBe(3);
-    expect(spine.mastery.get("flashcard:card-1")).toEqual(masteryAfterOne);
+    expect(spine.mastery.get("fc_card:card-1")).toEqual(masteryAfterOne);
   });
 
   it("passes the captured time as the review instant, not the flush time", async () => {

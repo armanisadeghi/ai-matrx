@@ -13,24 +13,6 @@ import type { ItemMasteryRow } from "../types";
 /** An item is "weak" if flagged struggling or its live mastery is below this. */
 const WEAK_PCT = 0.4;
 
-/**
- * Spine item types that are the SAME thing to a learner, folded onto one key.
- *
- * `education.item_mastery` holds both `fc_card` and the pre-rename `flashcard`
- * spelling, and grouping on the raw value rendered two separate "Flashcards"
- * lanes on the study surfaces — "Flashcards: 27 due" directly above
- * "Flashcards: 3 due", which reads as a bug and makes the counts untrustworthy.
- * Fold aliases here, not at the label, so the COUNTS merge too.
- */
-const ITEM_TYPE_ALIASES: Record<string, string> = {
-  flashcard: "fc_card",
-};
-
-/** The canonical spine key for an item type. */
-export function canonicalItemType(itemType: string): string {
-  return ITEM_TYPE_ALIASES[itemType] ?? itemType;
-}
-
 export interface ModeSignal {
   itemType: string;
   label: string;
@@ -52,7 +34,7 @@ export function dueWeakByMode(
   const byType = new Map<string, ModeSignal>();
   const nowMs = now.getTime();
   for (const m of mastery) {
-    const itemType = canonicalItemType(m.item_type);
+    const itemType = m.item_type;
     let sig = byType.get(itemType);
     if (!sig) {
       sig = {
@@ -85,15 +67,12 @@ export function dueWeakByMode(
  * so every quiz and practice-test item the learner had due surfaced in "Study
  * today" with NO link (THE DOOR LAW), while the two branches that did exist
  * were dead code. Assessment items of both kinds are stored as
- * `assessment_item`; `flashcard` is the pre-`fc_card` spelling and still has
- * rows, so it maps to the same review surface rather than falling through.
- * Before adding a case, confirm the value exists:
+ * `assessment_item`. Before adding a case, confirm the value exists:
  *   select distinct item_type from education.item_mastery;
  */
 export function modeReviewHref(itemType: string): string | null {
   switch (itemType) {
     case "fc_card":
-    case "flashcard":
       return "/education/flashcards/review";
     case "assessment_item":
       return "/education/quizzes";
@@ -110,7 +89,6 @@ export function modeReviewHref(itemType: string): string | null {
 export function modeWeakHref(itemType: string): string | null {
   switch (itemType) {
     case "fc_card":
-    case "flashcard":
       return "/education/flashcards/weak-areas";
     default:
       return modeReviewHref(itemType);

@@ -27,9 +27,6 @@ const MS_PER_WEEK = 7 * MS_PER_DAY;
  */
 const ITEM_TYPE_LABELS: Record<string, string> = {
   fc_card: "Flashcards",
-  // Pre-`fc_card` spelling; still has rows, and a learner must never see two
-  // separate "Flashcards" and "Flashcard" lines for the same thing.
-  flashcard: "Flashcards",
   assessment_item: "Quiz & test questions",
   spoken_prompt: "Spoken practice",
   handwritten_work: "Graded work",
