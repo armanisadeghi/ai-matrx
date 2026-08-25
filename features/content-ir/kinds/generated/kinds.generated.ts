@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "f0a60411e44f";
+export const KIND_REGISTRY_FINGERPRINT = "ebadf91ab284";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5038,7 +5038,7 @@ export interface AgentAssignmentBatchResult {
  * live ``agent.definition`` row (with its v1 snapshot); rendered, it is the
  * agent a person is watching being built.
  *  *
- *  * Kind `agent_definition` (registry v2).
+ *  * Kind `agent_definition` (registry v3).
  */
 export interface AgentDefinition {
   name: string;
