@@ -38,7 +38,15 @@ do $$
 declare v_rows int; v_claimed int; v_fks int; v_reg int;
 begin
   if to_regclass('iam.canonical_sweep') is null then
-    raise exception 'precondition: iam.canonical_sweep already gone';
+    if to_regclass('graveyard.iam_canonical_sweep') is null then
+      raise exception 'precondition: iam.canonical_sweep is gone but the archived table is missing';
+    end if;
+    if (select count(*) from graveyard.iam_canonical_sweep) <> 63 then
+      raise exception 'precondition: archived table exists but expected 63 rows, got %',
+        (select count(*) from graveyard.iam_canonical_sweep);
+    end if;
+    raise notice 'preconditions already satisfied: canonical_sweep is archived with 63 rows';
+    return;
   end if;
   select count(*), count(*) filter (where claimed_by is not null)
     into v_rows, v_claimed from iam.canonical_sweep;
@@ -60,8 +68,15 @@ end $$;
 
 -- 2) retire the table (rename into graveyard, rows intact)
 create schema if not exists graveyard;
-alter table iam.canonical_sweep set schema graveyard;
-alter table graveyard.canonical_sweep rename to iam_canonical_sweep;
+do $$
+begin
+  if to_regclass('iam.canonical_sweep') is not null then
+    execute 'alter table iam.canonical_sweep set schema graveyard';
+    execute 'alter table graveyard.canonical_sweep rename to iam_canonical_sweep';
+  else
+    raise notice 'retirement already complete; preserving graveyard.iam_canonical_sweep';
+  end if;
+end $$;
 
 -- 3) drop the three functions — they exist only to drive the retired board
 drop function if exists iam.sweep_claim(text, text, text);
