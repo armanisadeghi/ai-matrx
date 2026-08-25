@@ -246,6 +246,14 @@ where deleted_at is null group by 1;`.
 
 ## Stage D — Cutover (convert what emits and consumes the family)
 
+> 🚨 **BEFORE YOU CUT OVER, RUN THE PROOF: the `safe-cutover` skill.** Arman's bar (2026-08-23):
+> a cutover ships only when tests guarantee it "cannot cause errors from any of the many paths
+> that it can be triggered from." That skill owns the general discipline — enumerate every
+> trigger path with evidence, close every gap, derive tests from live definitions, stage on a
+> branch, report a plain safe-or-not verdict. The steps below are the KIND-SPECIFIC additions to
+> it, not a replacement for it.
+
+
 1. **Repoint the emitters**: the graph actions / tools / services that produced the raw
    passthrough now call the ONE engine → adapter → kind (`output_kind=<slug>`), with
    `include_raw=` for projection 2 and the AI view made at the tool boundary (projection 3).

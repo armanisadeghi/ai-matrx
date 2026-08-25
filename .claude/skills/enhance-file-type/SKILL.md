@@ -1,6 +1,6 @@
 ---
 name: enhance-file-type
-description: Add a new file type to the matrx-admin file system, or enhance any of the ~55 capability slots on an existing one (preview, edit, thumbnail, grid card, info, analysis, share, versions, control rail, action bar, conversion, diff, etc.). Use when adding support for a file extension, building a new previewer, expanding the `PreviewKind` union, modifying `FILE_TYPES`, touching `FilePreview.tsx` / `FileTabsBody.tsx` / `CloudFileInlineEditor.tsx` / `preview-actions.ts` / `EDITABLE_KINDS` / `LANGUAGE_BY_EXT`, building or editing a rail panel under `features/files/components/surfaces/single-file/`, wiring `FileViewerControlsContext`, or working an item off the wishlist in `features/files/components/surfaces/FILE_TYPE_INVENTORY.md`.
+description: Add a new file type to the matrx-admin file system, or enhance any of the ~55 capability slots on an existing one (preview, edit, thumbnail, grid card, info, analysis, share, versions, control rail, action bar, conversion, diff, etc.). Use when adding support for a file extension, building a new previewer, expanding the `PreviewKind` union, modifying `FILE_TYPES`, touching `FilePreview.tsx` / `FileTabsBody.tsx` / `CloudFileInlineEditor.tsx` / `preview-actions.ts` / `EDITABLE_KINDS` / `LANGUAGE_BY_EXT`, building or editing a rail panel under `features/files/components/surfaces/single-file/`, wiring `FileViewerControlsContext`, or working an item off the wishlist in `/Users/armanisadeghi/code/common-docs/systems/media/file-service/FILE_SURFACES.md`.
 ---
 
 # Enhance a file type
@@ -15,7 +15,7 @@ The matrx-admin file system has one registry (`FILE_TYPES`), one preview dispatc
 - Wiring the Edit tab for a new kind (extending `EDITABLE_KINDS` and Monaco's `LANGUAGE_BY_EXT`)
 - Building a rail panel in `surfaces/single-file/` for a new editing/preview mode
 - Adding a new control to `FileViewerControlsContext`
-- Working any item off `FILE_TYPE_INVENTORY.md`'s per-type wishlist
+- Working any item off `FILE_SURFACES.md (common-docs)`'s per-type wishlist
 - Upgrading a thumbnail strategy, Info-tab field, Analysis detector, or action-bar button for a specific kind
 
 ## Mental model — 9 capability groups
@@ -32,7 +32,7 @@ The matrx-admin file system has one registry (`FILE_TYPES`), one preview dispatc
 | 8. Creation | "New <type>" entry, templates, virtual-source provisioning | Future work |
 | 9. Bundle/Ops | dynamic-import declaration, bundle weight, codec caveats | `FilePreview.tsx`, this doc |
 
-Full slot list (numbered 1–55) lives in `features/files/components/surfaces/FILE_TYPE_INVENTORY.md` → **Part 1 — Capability framework**. Read that section before scoping any non-trivial change.
+Full slot list (numbered 1–55) lives in `/Users/armanisadeghi/code/common-docs/systems/media/file-service/FILE_SURFACES.md` → **Part 1 — Capability framework**. Read that section before scoping any non-trivial change.
 
 ## Workflow
 
@@ -45,7 +45,7 @@ Copy this checklist and tick items as you go:
 - [ ] Step 4 — Implement (≤4 files for most changes)
 - [ ] Step 5 — Verify in both PreviewPane and SingleFileShell
 - [ ] Step 6 — Run lints + tsc
-- [ ] Step 7 — Update FILE_TYPE_INVENTORY.md (matrix + wishlist + priorities)
+- [ ] Step 7 — Update FILE_SURFACES.md (common-docs) (matrix + wishlist + priorities)
 - [ ] Step 8 — Update features/files/FEATURE.md change log
 ```
 
@@ -65,7 +65,7 @@ If unsure which slot a request maps to, scan Part 1 of the inventory.
 
 ### Step 2 — Read the inventory entry
 
-Open `features/files/components/surfaces/FILE_TYPE_INVENTORY.md` and read:
+Open `/Users/armanisadeghi/code/common-docs/systems/media/file-service/FILE_SURFACES.md` and read:
 
 1. **Part 2's wishlist** for the type you're touching (Image / PDF / HTML / Markdown / Video / Code — these have full per-type wishlists today). If your type doesn't have a Part 2 entry yet, find it in Part 3's matrix.
 2. **Part 1** to confirm which slot # you're filling.
@@ -144,7 +144,7 @@ NODE_OPTIONS="--max-old-space-size=8192" pnpm tsc --noEmit
 
 ### Step 7 — Update the inventory
 
-Open `features/files/components/surfaces/FILE_TYPE_INVENTORY.md` and update:
+Open `/Users/armanisadeghi/code/common-docs/systems/media/file-service/FILE_SURFACES.md` and update:
 
 1. **Part 3 (matrix)** — change the ✅/🟡/🔴/🐛 marker in the relevant row + update the Notes column
 2. **Part 2 (wishlist)** — if you completed a wishlist item, either strike it through (`~~item~~ ✅ **Shipped.** …`) or remove it. Add any newly-discovered follow-up items.
@@ -164,7 +164,7 @@ Append a one-line entry to `features/files/FEATURE.md`'s Change Log with the dat
 4. **Size-cap mismatch.** Streaming previewers (image, video, audio, pdf, html) should override `previewSizeCapOverride` via `getFilePreviewProfile` — they don't blob-fetch the whole file. Non-streaming previewers respect the default cap.
 5. **Sandbox policy on HTML-like content.** The HTML iframe sandbox is `allow-scripts allow-popups allow-forms` and **does not include `allow-same-origin`**. Anything that needs cookies/localStorage cannot run there — and shouldn't.
 6. **Skipping the Part 2 update.** The wishlist is the operating doc. If you ship a wishlist item without checking it off, the next agent will think the work is still open.
-7. **Adding a new top-level `.md` for the new feature.** Don't. One doc per concern — extend `FILE_TYPE_INVENTORY.md` and the file's `FEATURE.md`.
+7. **Adding a new top-level `.md` for the new feature.** Don't. One doc per concern — extend `FILE_SURFACES.md (common-docs)` and the file's `FEATURE.md`.
 
 ## Decision matrix — which surface holds the control?
 
@@ -189,16 +189,16 @@ Previewers are dynamically imported (`next/dynamic`). Heavy deps (PDF.js, SheetJ
 - [ ] Previewer renders in `SingleFileShell` (with rail) with controls wired
 - [ ] If editable: `EDITABLE_KINDS` and `LANGUAGE_BY_EXT` both updated
 - [ ] Lints pass, `tsc --noEmit` passes
-- [ ] `FILE_TYPE_INVENTORY.md` Part 3 markers updated for affected rows
-- [ ] `FILE_TYPE_INVENTORY.md` Part 2 wishlist entries struck through / amended
-- [ ] `FILE_TYPE_INVENTORY.md` Priority recommendations updated if a numbered item shipped
+- [ ] `FILE_SURFACES.md (common-docs)` Part 3 markers updated for affected rows
+- [ ] `FILE_SURFACES.md (common-docs)` Part 2 wishlist entries struck through / amended
+- [ ] `FILE_SURFACES.md (common-docs)` Priority recommendations updated if a numbered item shipped
 - [ ] `features/files/FEATURE.md` Change Log appended
 - [ ] No new top-level `.md` files created
 - [ ] No DEBUG rings / DebugLayerLabel re-introduced
 
 ## Additional resources
 
-- **Inventory + framework + wishlists:** `features/files/components/surfaces/FILE_TYPE_INVENTORY.md`
+- **Inventory + framework + wishlists:** `/Users/armanisadeghi/code/common-docs/systems/media/file-service/FILE_SURFACES.md`
 - **Files feature doc:** `features/files/FEATURE.md`
 - **File handler skill:** `features/files/handler/FEATURE.md` (for upload / asset URL questions — different concern)
 - **Print system skill:** `.claude/skills/block-print-system/SKILL.md` (for slot #43 — print)
