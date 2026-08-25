@@ -670,11 +670,16 @@ function RowActions({ visible, onShare, onCopyLink, fileId }: RowActionsProps) {
     <div
       data-row-actions=""
       className={cn(
-        "ml-auto flex items-center gap-1 pr-1 transition-opacity",
+        "flex items-center gap-1 pr-1 transition-opacity lg:ml-auto",
         // pointer-events-none while hidden (D72): the toolbar stays mounted
         // so hover transitions never shift hit areas mid-click, and its
         // invisible buttons can never swallow a click meant for the row.
-        visible ? "opacity-100" : "pointer-events-none opacity-0",
+        // Tablet has no dependable hover, so its 44px More action remains
+        // visible beside the item identity while secondary actions stay
+        // desktop-only.
+        visible
+          ? "opacity-100"
+          : "opacity-100 lg:pointer-events-none lg:opacity-0",
       )}
     >
       <button
@@ -683,13 +688,14 @@ function RowActions({ visible, onShare, onCopyLink, fileId }: RowActionsProps) {
           e.stopPropagation();
           onShare();
         }}
-        className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-sm"
+        className="hidden items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary/90 lg:inline-flex"
       >
         <Share2 className="h-3 w-3" aria-hidden="true" />
         Share
       </button>
       <IconButton
         label="Copy link"
+        className="hidden lg:flex"
         onClick={(e) => {
           e.stopPropagation();
           onCopyLink();
@@ -697,12 +703,18 @@ function RowActions({ visible, onShare, onCopyLink, fileId }: RowActionsProps) {
       >
         <Copy className="h-3.5 w-3.5" />
       </IconButton>
-      <IconButton label="Star" title="Coming soon" disabled>
+      <IconButton
+        label="Star"
+        title="Coming soon"
+        className="hidden lg:flex"
+        disabled
+      >
         <Star className="h-3.5 w-3.5" />
       </IconButton>
       <FileContextMenu fileId={fileId}>
         <IconButton
           label="More"
+          className="h-11 w-11 lg:h-7 lg:w-7"
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
         >
@@ -729,11 +741,16 @@ function FolderRowActions({
     <div
       data-row-actions=""
       className={cn(
-        "ml-auto flex items-center gap-1 pr-1 transition-opacity",
+        "flex items-center gap-1 pr-1 transition-opacity lg:ml-auto",
         // pointer-events-none while hidden (D72): the toolbar stays mounted
         // so hover transitions never shift hit areas mid-click, and its
         // invisible buttons can never swallow a click meant for the row.
-        visible ? "opacity-100" : "pointer-events-none opacity-0",
+        // Tablet has no dependable hover, so its 44px More action remains
+        // visible beside the item identity while secondary actions stay
+        // desktop-only.
+        visible
+          ? "opacity-100"
+          : "opacity-100 lg:pointer-events-none lg:opacity-0",
       )}
     >
       <button
@@ -742,13 +759,14 @@ function FolderRowActions({
           e.stopPropagation();
           onShare();
         }}
-        className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-sm"
+        className="hidden items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary/90 lg:inline-flex"
       >
         <Share2 className="h-3 w-3" aria-hidden="true" />
         Share
       </button>
       <IconButton
         label="Copy link"
+        className="hidden lg:flex"
         onClick={(e) => {
           e.stopPropagation();
           void folderActions.copyShareUrl();
@@ -756,12 +774,18 @@ function FolderRowActions({
       >
         <Copy className="h-3.5 w-3.5" />
       </IconButton>
-      <IconButton label="Star" title="Coming soon" disabled>
+      <IconButton
+        label="Star"
+        title="Coming soon"
+        className="hidden lg:flex"
+        disabled
+      >
         <Star className="h-3.5 w-3.5" />
       </IconButton>
       <FolderContextMenu folderId={folderId}>
         <IconButton
           label="More"
+          className="h-11 w-11 lg:h-7 lg:w-7"
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
         >

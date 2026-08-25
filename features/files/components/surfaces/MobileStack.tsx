@@ -16,7 +16,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import {
   ArrowUpFromLine,
   ChevronLeft,
@@ -49,6 +49,10 @@ import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
 import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
+import {
+  FileRowContextMenu,
+  FolderRowContextMenu,
+} from "@/features/files/components/core/RowContextMenu/RowContextMenu";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -267,54 +271,98 @@ function FolderFrameBody({
               const rec = foldersById[row.id];
               if (!rec) return null;
               return (
-                <li key={row.id}>
-                  <button
-                    type="button"
-                    onClick={() => onPush({ kind: "folder", folderId: row.id })}
-                    className="flex h-12 w-full items-center gap-3 px-4 text-left active:bg-accent/60"
-                  >
-                    <FileIcon isFolder size={22} />
-                    <span className="flex-1 truncate text-sm">{row.name}</span>
-                    <ChevronLeft
-                      className="h-4 w-4 rotate-180 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  </button>
-                </li>
+                <FolderRowContextMenu
+                  key={row.id}
+                  folderId={row.id}
+                  onOpen={() => onPush({ kind: "folder", folderId: row.id })}
+                >
+                  <li className="flex h-12 items-center active:bg-accent/60">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onPush({ kind: "folder", folderId: row.id })
+                      }
+                      className="flex h-full min-w-0 flex-1 items-center gap-3 pl-4 text-left"
+                    >
+                      <FileIcon isFolder size={22} />
+                      <span className="flex-1 truncate text-sm">
+                        {row.name}
+                      </span>
+                      <ChevronLeft
+                        className="h-4 w-4 rotate-180 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                    </button>
+                    <MobileRowMenuButton name={row.name} />
+                  </li>
+                </FolderRowContextMenu>
               );
             }
             const rec = filesById[row.id];
             if (!rec) return null;
             return (
-              <li key={row.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    dispatch(setActiveFileId(row.id));
-                    onPush({ kind: "file", fileId: row.id });
-                  }}
-                  className="flex h-14 w-full items-center gap-3 px-4 text-left active:bg-accent/60"
-                >
-                  <FileIcon fileName={rec.fileName} size={22} />
-                  <div className="flex-1 min-w-0">
-                    <div className="truncate text-sm">{rec.fileName}</div>
-                    <FileMeta
-                      file={{
-                        fileSize: rec.fileSize,
-                        updatedAt: rec.updatedAt,
-                        visibility: rec.visibility,
-                      }}
-                      hide={{ visibility: true }}
-                      className="mt-0.5"
-                    />
-                  </div>
-                </button>
-              </li>
+              <FileRowContextMenu key={row.id} fileId={row.id}>
+                <li className="flex h-14 items-center active:bg-accent/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dispatch(setActiveFileId(row.id));
+                      onPush({ kind: "file", fileId: row.id });
+                    }}
+                    className="flex h-full min-w-0 flex-1 items-center gap-3 pl-4 text-left"
+                  >
+                    <FileIcon fileName={rec.fileName} size={22} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm">{rec.fileName}</div>
+                      <FileMeta
+                        file={{
+                          fileSize: rec.fileSize,
+                          updatedAt: rec.updatedAt,
+                          visibility: rec.visibility,
+                        }}
+                        hide={{ visibility: true }}
+                        className="mt-0.5"
+                      />
+                    </div>
+                  </button>
+                  <MobileRowMenuButton name={row.name} />
+                </li>
+              </FileRowContextMenu>
             );
           })}
         </ul>
       )}
     </>
+  );
+}
+
+/**
+ * ContextMenuV3 owns the canonical file/folder actions and already maps a
+ * touch long-press to its mobile Drawer. This visible 44px trigger sends the
+ * same context-menu gesture so actions are discoverable without duplicating
+ * the menu's type/state filtering in MobileStack.
+ */
+function MobileRowMenuButton({ name }: { name: string }) {
+  return (
+    <button
+      type="button"
+      aria-label={`Actions for ${name}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        event.currentTarget.dispatchEvent(
+          new MouseEvent("contextmenu", {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            clientX: event.clientX,
+            clientY: event.clientY,
+          }),
+        );
+      }}
+      className="mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground active:bg-accent"
+    >
+      <MoreVertical className="h-5 w-5" aria-hidden="true" />
+    </button>
   );
 }
 
@@ -590,10 +638,7 @@ interface FloatingUploadActionProps {
 }
 
 function FloatingUploadAction({ parentFolderId }: FloatingUploadActionProps) {
-  const inputId = useMemo(
-    () => `mobile-upload-${Math.random().toString(36).slice(2, 8)}`,
-    [],
-  );
+  const inputId = useId();
   return (
     <div className="pointer-events-none absolute bottom-0 right-0 flex flex-col items-end gap-2 p-4 pb-safe">
       <FileUploadDropzone
