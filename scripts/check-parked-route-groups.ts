@@ -21,9 +21,10 @@
  * Advisory by default (screams, exit 0) — `--strict` exits non-zero for the
  * release gates, `--fix` renames any park back to its tracked path.
  *
- * SINCE 2026-08-25 next.config.js also enforces THE TWO PARK LAWS (a dev
- * server never parks; whoever parks unparks on exit), so case 1 should now be
- * unreachable. This guard stays as the independent check that says so.
+ * SINCE 2026-08-25 next.config.js enforces THE PARK LAW — parking happens
+ * ONLY on Vercel, so nothing local ever renames a tracked route group and
+ * case 1 is unreachable on a developer machine. This guard stays as the
+ * independent check that says so.
  *
  * Recovery for case 1: `pnpm check:parked-routes:fix`. Recovery for case 2 (a
  * group already committed away): restore from the commit before the deletion,

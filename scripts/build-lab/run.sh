@@ -13,6 +13,10 @@
 #               to a scratch branch first, or --keep a worktree and edit it, then
 #               rerun with the same label (worktree is reused if present).
 #   --profile   MATRX_PROFILE for the build (default: slim — what production runs)
+#               NOTE (2026-08-25): route-group PARKING is now Vercel-only (see
+#               THE PARK LAW in next.config.js), so a local build compiles the
+#               FULL app whatever profile you pass. The lab still measures a
+#               real build; it just no longer reproduces production's slice.
 #   --keep      don't remove the worktree afterward (for iterating by hand)
 #
 # Protocol notes (learned 2026-07-28):

@@ -65,8 +65,8 @@ function sidemenuStubAliases() {
 // gitignored. app/(dev) is NEVER parked — prod code imports helper files
 // under it ("fake demos" debt); its route leaves are excluded via
 // pageExtensions instead (route leaves are *.dev.tsx).
-// Parking renames real folders, so it is fenced by THE TWO PARK LAWS below:
-// a dev server never parks, and whoever parks unparks on exit.
+// Parking renames real folders, so it is fenced by THE PARK LAW below: it
+// happens ONLY on Vercel. Nothing local ever renames a tracked route group.
 //
 // Cross-group imports break parked builds: route-group code may only import
 // from features/ components/ lib/ etc., never another group's app/(x) path.
@@ -119,88 +119,42 @@ const MATRX_PROFILE = VALID_PROFILES.has(rawProfile)
   : FORCE_MATRX_PROFILE || "full";
 const INCLUDE_DEV = PROFILES[MATRX_PROFILE].includeDev;
 
-// ─── THE TWO PARK LAWS ──────────────────────────────────────────────────────
-// Parking RENAMES git-tracked folders. On this shared checkout (Arman plus
-// dozens of concurrent agents) a parked tree reads as mass deletion, and a
-// broad `git add -A` from any session commits it. That already cost the entire
-// app/(admin) surface once (2026-08-25, commit d17df60895) and nearly cost
-// app/(core) the same day. Two laws make it structurally impossible:
+// ─── THE PARK LAW: PARKING IS A VERCEL-ONLY OPERATION ───────────────────────
+// Parking RENAMES git-tracked folders (app/(x) → app/_x_build_excluded). Its
+// ONLY purpose is slicing this one repo into the three Vercel projects, and
+// the only place that slicing happens is a Vercel build, on an ephemeral
+// clone nobody shares.
 //
-//   LAW 1 — A DEV SERVER NEVER PARKS. Parking is a BUILD slicing mechanism.
-//     A dev server holds the tree for hours, so it is the only process that
-//     can leave it broken long enough for another session to commit it.
-//     MATRX_PROFILE still applies in dev — proxy.ts gates routes on the
-//     baked NEXT_PUBLIC_MATRX_PROFILE, so `MATRX_PROFILE=admin pnpm dev`
-//     still behaves like manage.aimatrx.com. It just moves ZERO files.
+// On localhost it has no purpose and one catastrophic failure mode: this is a
+// shared checkout (Arman plus dozens of concurrent agents), so a parked tree
+// reads as mass deletion and a broad `git add -A` from ANY session commits it.
+// That already cost the entire app/(admin) surface once (2026-08-25, commit
+// d17df60895) and nearly cost app/(core) the same day, from an admin-profile
+// preview server.
 //
-//   LAW 2 — WHOEVER PARKS, UNPARKS. A build that parks restores on exit —
-//     normal exit, crash, or Ctrl-C. Only the process that performed the
-//     rename restores it (workers that find a group already parked never
-//     registered a restore), so concurrent build workers cannot unpark
-//     mid-build.
+// So: park ONLY when running on Vercel. Locally NOTHING is ever renamed —
+// dev server, `pnpm build`, build-lab, all of it. MATRX_PROFILE still applies
+// locally in every other respect: proxy.ts gates routes on the baked
+// NEXT_PUBLIC_MATRX_PROFILE, so `MATRX_PROFILE=admin` still behaves like
+// manage.aimatrx.com. It just moves zero files. Vercel behavior is unchanged.
 //
-// Net effect: a parked directory cannot outlive the process that made it, and
-// no long-lived process can make one. Recovery, if one ever appears anyway:
-// `pnpm check:parked-route-groups --fix`.
+// Consequence to know: a local production build compiles the FULL app even
+// under a parking profile, so scripts/build-lab/run.sh no longer reproduces a
+// production slice locally. Accepted — an OOM measurement is not worth a
+// mechanism that can delete a route group off main.
 // ────────────────────────────────────────────────────────────────────────────
-// `next dev` sets NODE_ENV=development before loading this file and its
-// workers inherit it; the argv check is a second, independent signal so a
-// missed detection cannot silently fall through to parking.
-const IS_DEV_SERVER =
-  process.env.NODE_ENV === "development" || process.argv.includes("dev");
+const ON_VERCEL = Boolean(process.env.VERCEL);
 const REQUESTED_PARK = PROFILES[MATRX_PROFILE].park;
-if (IS_DEV_SERVER && REQUESTED_PARK.length) {
+if (!ON_VERCEL && REQUESTED_PARK.length) {
   console.warn(
     `[matrx] MATRX_PROFILE=${MATRX_PROFILE} would park ` +
       `${REQUESTED_PARK.map((g) => `app/(${g})`).join(", ")} — NOT parking: ` +
-      `a dev server never renames tracked route groups (see THE TWO PARK ` +
-      `LAWS above). Route gating still applies via NEXT_PUBLIC_MATRX_PROFILE.`,
+      `parking is a Vercel-only operation (see THE PARK LAW above). Nothing ` +
+      `local ever renames a tracked route group. Route gating still applies ` +
+      `via NEXT_PUBLIC_MATRX_PROFILE.`,
   );
 }
-const PARK_SET = new Set(IS_DEV_SERVER ? [] : REQUESTED_PARK);
-
-/** Groups THIS process renamed away — the only ones it may restore (LAW 2). */
-const parkedByThisProcess = [];
-let restoreRegistered = false;
-
-/** Rename every group this process parked back to its tracked path. */
-function unparkOwnedGroups() {
-  while (parkedByThisProcess.length) {
-    const { liveName, parkedName } = parkedByThisProcess.pop();
-    const live = path.join(__dirname, "app", liveName);
-    const parked = path.join(__dirname, "app", parkedName);
-    try {
-      if (fs.existsSync(parked) && !fs.existsSync(live)) {
-        fs.renameSync(parked, live);
-        console.log(`[matrx] unparked app/${liveName} on exit`);
-      }
-    } catch (err) {
-      // Screams — a failed restore is the state that costs a route group.
-      console.error(
-        `[matrx] ⚠ FAILED to unpark app/${liveName} from app/${parkedName}: ` +
-          `${err && err.message}. Run \`pnpm check:parked-route-groups --fix\`.`,
-      );
-    }
-  }
-}
-
-/** Arm the exit/signal restore once, the first time this process parks. */
-function registerUnparkOnExit() {
-  if (restoreRegistered) return;
-  restoreRegistered = true;
-  // `exit` covers normal completion, process.exit(), and uncaught exceptions.
-  // The signals do not fire `exit` on their own, so they restore then re-exit
-  // with the conventional 128+signo status.
-  process.on("exit", unparkOwnedGroups);
-  process.on("SIGINT", () => {
-    unparkOwnedGroups();
-    process.exit(130);
-  });
-  process.on("SIGTERM", () => {
-    unparkOwnedGroups();
-    process.exit(143);
-  });
-}
+const PARK_SET = new Set(ON_VERCEL ? REQUESTED_PARK : []);
 
 /**
  * Park a route group as a Next private `_` folder (not routed/compiled), or
@@ -229,9 +183,6 @@ function syncRouteGroupPark(exclude, liveName, parkedName) {
   if (exclude) {
     if (fs.existsSync(live)) {
       fs.renameSync(live, parked);
-      // LAW 2: only the process that renamed it is allowed to restore it.
-      parkedByThisProcess.push({ liveName, parkedName });
-      registerUnparkOnExit();
       console.log(`[matrx] parked app/${liveName} → app/${parkedName}`);
     } else if (fs.existsSync(parked)) {
       console.log(
