@@ -75,7 +75,9 @@ const cache = new Map<string, { at: number; value: ResolvedMandate }>();
 /** Subscribers re-resolve when a mandate's cached resolution is invalidated
  * (binding saved/removed) — how a mounted picker/consumer refreshes without
  * prop-drilling a reload. `mandateKey === undefined` means "all mandates". */
-const invalidationListeners = new Set<(mandateKey: string | undefined) => void>();
+const invalidationListeners = new Set<
+  (mandateKey: string | undefined) => void
+>();
 
 export function onMandateCacheInvalidated(
   listener: (mandateKey: string | undefined) => void,
@@ -95,7 +97,9 @@ export function invalidateMandateCache(mandateKey?: string): void {
   for (const listener of invalidationListeners) listener(mandateKey);
 }
 
-export async function resolveMandate(mandateKey: string): Promise<ResolvedMandate> {
+export async function resolveMandate(
+  mandateKey: string,
+): Promise<ResolvedMandate> {
   const cached = cache.get(mandateKey);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
 
@@ -140,7 +144,9 @@ export async function resolveMandate(mandateKey: string): Promise<ResolvedMandat
     const { data: binding, error: bindingError } = await supabase
       .schema("agent")
       .from("mandate_binding")
-      .select("agent_id, agent_version_id, use_latest, config_overrides, is_enabled")
+      .select(
+        "agent_id, agent_version_id, use_latest, config_overrides, is_enabled",
+      )
       .eq("mandate_id", mandate.id)
       .eq("principal_type", "user")
       .eq("subject_user_id", userId)
@@ -218,7 +224,8 @@ export async function fetchMandatePins(
   const missing: string[] = [];
   for (const key of mandateKeys) {
     const cached = pinCache.get(key);
-    if (cached && Date.now() - cached.at < CACHE_TTL_MS) out[key] = cached.value;
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS)
+      out[key] = cached.value;
     else missing.push(key);
   }
   if (missing.length === 0) return out;
@@ -227,7 +234,9 @@ export async function fetchMandatePins(
   const { data, error } = await supabase
     .schema("agent")
     .from("mandate")
-    .select("mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled")
+    .select(
+      "mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled",
+    )
     .in("mandate_key", missing)
     .is("deleted_at", null);
   if (error) throw error;
@@ -267,6 +276,40 @@ export async function fetchMandatePins(
 }
 
 // ── The document-variable precondition (disease D4) ─────────────────────────
+
+/** Fetch the platform-default Holder identities for a small set of mandates. */
+export async function fetchMandateAssignments(
+  mandateKeys: readonly string[],
+): Promise<Record<string, MandateAssignment>> {
+  const pins = await fetchMandatePins(mandateKeys);
+  const agentIds = [...new Set(Object.values(pins).map((pin) => pin.agentId))];
+  if (agentIds.length === 0) return {};
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("agent")
+    .from("definition")
+    .select("id, name, agent_type")
+    .in("id", agentIds);
+  if (error) throw error;
+
+  const identities = new Map(
+    (data ?? []).map((agent) => [
+      agent.id,
+      { name: agent.name, agentType: agent.agent_type },
+    ]),
+  );
+  const assignments: Record<string, MandateAssignment> = {};
+  for (const [mandateKey, pin] of Object.entries(pins)) {
+    const identity = identities.get(pin.agentId);
+    assignments[mandateKey] = {
+      ...pin,
+      agentName: identity?.name ?? null,
+      agentType: identity?.agentType ?? null,
+    };
+  }
+  return assignments;
+}
 
 /**
  * REFUSE when a Mandate's required variables were not supplied.

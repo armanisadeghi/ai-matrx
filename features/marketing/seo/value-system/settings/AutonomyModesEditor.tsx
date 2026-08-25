@@ -13,11 +13,21 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RotateCcw, ShieldCheck, TriangleAlert } from "lucide-react";
+import Link from "next/link";
+import {
+  ExternalLink,
+  Loader2,
+  RotateCcw,
+  ShieldCheck,
+  TriangleAlert,
+} from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/lib/toast";
+import { fetchMandateAssignments } from "@/features/agents/mandates/service";
+import { agentHref } from "@/features/admin/mandates/mandate-health";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import {
   getAutonomyModes,
@@ -27,12 +37,49 @@ import {
 } from "./data";
 
 const MODES: Array<{ value: AutonomyMode; label: string; hint: string }> = [
-  { value: "auto_platform", label: "Auto (platform rules)", hint: "Runs by itself, using the platform's rules." },
-  { value: "auto_org", label: "Auto (your rules)", hint: "Runs by itself, using your organization's rules." },
-  { value: "review_timeout", label: "Review, then auto", hint: "Waits for a person; runs on its own if nobody answers in time." },
-  { value: "review_required", label: "Review required", hint: "Never runs until a person approves it." },
-  { value: "off", label: "Off", hint: "Does not run at all, and says so where its work would have appeared." },
+  {
+    value: "auto_platform",
+    label: "Auto (platform rules)",
+    hint: "Runs by itself, using the platform's rules.",
+  },
+  {
+    value: "auto_org",
+    label: "Auto (your rules)",
+    hint: "Runs by itself, using your organization's rules.",
+  },
+  {
+    value: "review_timeout",
+    label: "Review, then auto",
+    hint: "Waits for a person; runs on its own if nobody answers in time.",
+  },
+  {
+    value: "review_required",
+    label: "Review required",
+    hint: "Never runs until a person approves it.",
+  },
+  {
+    value: "off",
+    label: "Off",
+    hint: "Does not run at all, and says so where its work would have appeared.",
+  },
 ];
+
+/**
+ * Stable code-to-mandate connections. The Holder behind each key stays in the
+ * database and is resolved below; agent ids and names never live here.
+ */
+const CAPABILITY_MANDATES: Readonly<Record<string, readonly string[]>> = {
+  keyword_classifier: ["seo.keyword_classifier"],
+  topic_assigner: ["seo.topic_assigner"],
+};
+
+const MANDATE_KEYS = ["seo.keyword_classifier", "seo.topic_assigner"] as const;
+
+const UNASSIGNED_EXPLANATION: Readonly<Record<string, string>> = {
+  place_detection: "Deterministic · no mandate or agent",
+  matcher_engine: "Deterministic · no mandate or agent",
+  meaning_suggestions: "Shared proposal path · no dedicated mandate or agent",
+};
 
 export function AutonomyModesEditor({
   scope,
@@ -46,6 +93,11 @@ export function AutonomyModesEditor({
   const query = useQuery({
     queryKey,
     queryFn: ({ signal }) => getAutonomyModes(scope, id, signal),
+  });
+  const assignments = useQuery({
+    queryKey: ["agent", "mandate-assignments", ...MANDATE_KEYS],
+    queryFn: () => fetchMandateAssignments(MANDATE_KEYS),
+    staleTime: 5 * 60 * 1000,
   });
 
   const save = useMutation({
@@ -81,15 +133,19 @@ export function AutonomyModesEditor({
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold text-foreground">AI autonomy</h3>
         <span className="text-xs text-muted-foreground">
-          {scope === "platform" ? "Defaults for every site" : `Unset rows follow ${parentWord}`}
+          {scope === "platform"
+            ? "Defaults for every site"
+            : `Unset rows follow ${parentWord}`}
         </span>
       </div>
 
       <ul className="mt-2 divide-y divide-border">
         {data.capabilities.map((capability) => {
           const isOwn = capability.own_mode !== null;
-          const effective = capability.effective?.mode ?? capability.default_mode;
+          const effective =
+            capability.effective?.mode ?? capability.default_mode;
           const currentMode = capability.own_mode ?? effective;
+          const mandateKeys = CAPABILITY_MANDATES[capability.slug] ?? [];
 
           return (
             <li key={capability.slug} className="py-3 first:pt-0 last:pb-0">
@@ -112,7 +168,10 @@ export function AutonomyModesEditor({
                     ) : (
                       <span
                         className="flex items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium text-warning"
-                        title={capability.enforcement_note ?? "Not wired to running code yet."}
+                        title={
+                          capability.enforcement_note ??
+                          "Not wired to running code yet."
+                        }
                       >
                         <TriangleAlert className="h-3 w-3" aria-hidden />
                         Not enforced
@@ -127,6 +186,72 @@ export function AutonomyModesEditor({
                       {capability.description}
                     </p>
                   ) : null}
+                  <div className="mt-1 flex min-h-5 flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                    {mandateKeys.length > 0 ? (
+                      mandateKeys.map((mandateKey) => {
+                        const assignment = assignments.data?.[mandateKey];
+                        return (
+                          <span
+                            key={mandateKey}
+                            className="inline-flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1"
+                          >
+                            <span className="text-muted-foreground">
+                              Mandate
+                            </span>
+                            <Link
+                              href={`/administration/agents/mandates?mandate=${encodeURIComponent(mandateKey)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Open ${mandateKey} in Mandates`}
+                              className="inline-flex items-center gap-1 font-mono text-foreground underline-offset-2 hover:text-primary hover:underline"
+                            >
+                              {mandateKey}
+                              <ExternalLink
+                                className="h-2.5 w-2.5"
+                                aria-hidden
+                              />
+                            </Link>
+                            <span className="text-muted-foreground">
+                              · Agent
+                            </span>
+                            {assignments.isPending ? (
+                              <Skeleton className="h-3 w-24" />
+                            ) : assignment?.agentName &&
+                              assignment.agentType ? (
+                              <EntityRef
+                                token="agent"
+                                id={assignment.agentId}
+                                name={assignment.agentName}
+                                href={agentHref(
+                                  assignment.agentId,
+                                  assignment.agentType,
+                                )}
+                                openInNewTab
+                                showIcon={false}
+                                labelClassName="font-medium"
+                              />
+                            ) : (
+                              <span
+                                className="font-medium text-warning"
+                                title={
+                                  assignments.error instanceof Error
+                                    ? assignments.error.message
+                                    : "Open the mandate to inspect or repair its Holder."
+                                }
+                              >
+                                Assignment unavailable
+                              </span>
+                            )}
+                          </span>
+                        );
+                      })
+                    ) : (
+                      <span className="text-muted-foreground">
+                        {UNASSIGNED_EXPLANATION[capability.slug] ??
+                          "No mandate or agent assigned"}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -152,7 +277,11 @@ export function AutonomyModesEditor({
                     }}
                   >
                     {MODES.map((mode) => (
-                      <option key={mode.value} value={mode.value} title={mode.hint}>
+                      <option
+                        key={mode.value}
+                        value={mode.value}
+                        title={mode.hint}
+                      >
                         {mode.label}
                       </option>
                     ))}
@@ -208,7 +337,10 @@ export function AutonomyModesEditor({
                     </Button>
                   ) : null}
                   {save.isPending ? (
-                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" aria-hidden />
+                    <Loader2
+                      className="h-3 w-3 animate-spin text-muted-foreground"
+                      aria-hidden
+                    />
                   ) : null}
                 </div>
               </div>

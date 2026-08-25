@@ -123546,7 +123546,7 @@
               }
             ],
             "title": "Url",
-            "description": "Any URL we issued (share link, /files/{id}/url, /files/{id}/download, raw S3 URL) or a truly external https://. The server recognises ours and resolves to bytes; external URLs are passed through to providers that fetch them, or downloaded as a last resort."
+            "description": "Any URL we issued (share link, /files/{id}/url, /files/{id}/download, raw S3 URL) or a truly external https://. The server recognizes ours and resolves to bytes; external URLs are passed through to providers that fetch them, or downloaded as a last resort."
           },
           "file_uri": {
             "anyOf": [
