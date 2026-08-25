@@ -698,6 +698,13 @@ data. Its `severity` (`info` / `warning` / `critical`) decides the banner's
 tone in ONE place: a never-synced site is not an alarm. Staleness also shows
 on the portfolio landing, because that is the first screen anyone sees.
 
+**Health reads stay index-ordered.** The RPC's all-history coverage aggregate
+uses the partial `(site_id, date)` index in
+[`migrations/seo_gsc_ingestion_health_coverage_index.sql`](../../../migrations/seo_gsc_ingestion_health_coverage_index.sql).
+The general `(site_id, dimension_profile, date)` GSC index cannot stream dates
+across profiles and times out on large sites. Keep the aggregate predicate and
+the partial-index predicate identical.
+
 **GOOGLE'S DAY IS PACIFIC.** Search Console buckets days in
 `America/Los_Angeles` (with DST) and offers no UTC option, so every "how fresh
 should this be?" question is asked in that calendar — never UTC's, never the
@@ -749,6 +756,10 @@ deliberately not a Popover (opening one from a closing Radix Select loses
 its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
+
+- 2026-08-24 — Added the partial `(site_id, date)` GSC coverage index used by
+  `gsc_ingestion_health`; large-site health reads no longer sort/aggregate the
+  full multi-profile corpus through the wrong index.
 
 - 2026-08-24 — **Class is editable IN THE CELL** on the query dimension table (Arman's ruling:
   "anything that's editable, I should be able to directly edit from the list… a dropdown and pick
