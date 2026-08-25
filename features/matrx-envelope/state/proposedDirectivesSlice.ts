@@ -5,7 +5,7 @@
  * When a directive's resolved policy is `ask`, the brain streams a
  * `directive_apply.proposed` event instead of applying. This slice holds those
  * proposals (keyed by conversation) so a card can render an Approve/Decline
- * choice; on Approve the card POSTs the round-tripped envelope to
+ * choice; on Approve the card POSTs the round-tripped shell to
  * `/directives/confirm` (`confirmDirective`) and removes the proposal.
  *
  * This is NOT `pendingAsks`: that inbox resolves a suspended tool call via a
@@ -16,19 +16,20 @@
 
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import type { MatrxEnvelope } from "@/features/matrx-envelope/envelope";
 import type { RootState } from "@/lib/redux/store";
 
 export interface ProposedDirective {
   proposalId: string;
   conversationId: string;
-  type: string;
-  verb: string | null;
-  noun: string | null;
+  /** The SLUG — one field, one identity (`directive_v1_create_task`). */
+  directive: string;
+  /** Display hints DERIVED from the slug; never a second source of identity. */
+  directiveClass: string;
+  noun: string;
   summary: string | null;
   itemCount: number;
-  /** The round-tripped envelope the client POSTs back verbatim to confirm. */
-  envelope: MatrxEnvelope;
+  /** The round-tripped two-key shell the client POSTs back verbatim. */
+  shell: Record<string, unknown>;
 }
 
 interface ProposedDirectivesState {

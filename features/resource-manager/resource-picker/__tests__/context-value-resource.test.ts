@@ -19,7 +19,7 @@ describe("contextValueResourceFromNode", () => {
 
     expect(resource?.data.label).toBe("Doe v. CSV · QME Report");
     const parsed = parseReferenceFence(resource?.data.referenceFence ?? "");
-    expect(parsed?.envelope.type).toBe("context_value");
+    expect(parsed?.directive.noun).toBe("context_value");
     expect(parsed?.items[0]).toMatchObject({
       scope_id: "scope-1",
       context_item_id: "item-1",

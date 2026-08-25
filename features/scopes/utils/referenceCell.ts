@@ -124,7 +124,7 @@ export function parseReferenceCellValue(
   if (!valueText) return null;
   const parsed = parseReferenceFence(valueText);
   if (!parsed) return null;
-  return { type: String(parsed.envelope.type), items: parsed.items };
+  return { type: parsed.directive.noun, items: parsed.items };
 }
 
 /** Serialize `{ type, items }` back into the canonical fence string. */

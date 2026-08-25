@@ -39,12 +39,10 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 interface MatrxEnvelopeBlockProps {
   /** The raw fence body (JSON string) or an already-parsed shell. */
-  content: string | Record<string, unknown>;
+  content: unknown;
 }
 
-function parseContent(
-  content: string | Record<string, unknown>,
-): unknown {
+function parseContent(content: unknown): unknown {
   if (typeof content !== "string") return content;
   try {
     return JSON.parse(content) as unknown;

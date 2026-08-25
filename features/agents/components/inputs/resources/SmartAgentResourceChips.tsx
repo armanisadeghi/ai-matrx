@@ -48,7 +48,7 @@ function isContextValueResource(resource: ManagedResource): boolean {
     return false;
   }
   return (
-    parseReferenceFence(resource.source)?.envelope.type === "context_value"
+    parseReferenceFence(resource.source)?.directive.noun === "context_value"
   );
 }
 

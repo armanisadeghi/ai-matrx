@@ -65,7 +65,7 @@ const ValueStoreStoredBlock: React.FC<ValueStoreStoredBlockProps> = ({
       {fence && (
         <div className="mt-1.5">
           {parsedFence ? (
-            <MatrxEnvelopeBlock content={parsedFence.envelope} />
+            <MatrxEnvelopeBlock content={parsedFence.directive.shell} />
           ) : (
             <MatrxEnvelopeBlock content={fence} />
           )}

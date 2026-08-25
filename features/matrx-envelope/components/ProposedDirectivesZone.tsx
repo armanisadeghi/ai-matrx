@@ -3,7 +3,7 @@
 /**
  * ProposedDirectivesZone — the approve/decline cards for agent-proposed actions
  * (the `ask` apply policy). Renders one card per pending proposal for a
- * conversation; Approve POSTs the round-tripped envelope to `/directives/confirm`
+ * conversation; Approve POSTs the round-tripped two-key shell to `/directives/confirm`
  * (`confirmDirective`, runs as the user under RLS), Decline just dismisses it.
  *
  * Mounted beside the chat input (next to `PendingAsksZone`). Mirrors the visual
@@ -52,10 +52,9 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const [busy, setBusy] = useState(false);
 
-  const title =
-    proposal.verb && proposal.noun
-      ? `${proposal.verb} ${proposal.noun}`
-      : proposal.type;
+  // The slug's class + noun ARE the title — derived from the one identity, so
+  // the card can never name the action differently from what it will apply.
+  const title = `${proposal.directiveClass} ${proposal.noun}`;
   const itemLabel = `${proposal.itemCount} item${proposal.itemCount === 1 ? "" : "s"}`;
 
   const dismiss = () =>
@@ -69,8 +68,8 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
   const onApprove = async () => {
     setBusy(true);
     const body: DirectiveConfirmRequest = {
-      directive: proposal.type,
-      items: proposal.envelope.items,
+      directive: proposal.directive,
+      items: (proposal.shell.items ?? []) as Record<string, unknown>[],
       proposal_id: proposal.proposalId,
       force: false,
     };
@@ -107,7 +106,7 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
               {title}
             </div>
             <div className="truncate text-xs text-muted-foreground">
-              {proposal.summary ?? `${proposal.type} (${itemLabel})`}
+              {proposal.summary ?? `${proposal.directive} (${itemLabel})`}
             </div>
           </div>
         </div>

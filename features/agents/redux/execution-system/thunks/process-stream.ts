@@ -922,7 +922,7 @@ export async function processStream({
         }
 
         // Output-directive receipts — a lightweight toast when the server
-        // applies (or fails to apply) an `output_directive` envelope after the
+        // applies (or fails to apply) a side-effect Kind Directive after the
         // response is delivered. v1 is a toast (no new slice); the full data is
         // already on the timeline via appendDataPayload above. Discriminated by
         // `kind` (`directive_apply.*`), distinct from the `d.type` chain below.
@@ -933,7 +933,7 @@ export async function processStream({
         } else if (isDirectiveApplyEvent(d)) {
           if (d.kind === "directive_apply.completed") {
             const failedSuffix = d.failed > 0 ? `, ${d.failed} failed` : "";
-            const message = `Applied ${d.type}: ${d.applied} created${failedSuffix}`;
+            const message = `Applied ${d.directive}: ${d.applied} created${failedSuffix}`;
             // A partial failure is still a delivered directive (warn-not-fatal
             // per the envelope contract) — success toast with the failed count.
             if (d.failed > 0) {
@@ -942,7 +942,7 @@ export async function processStream({
               toast.success(message);
             }
           } else if (d.kind === "directive_apply.failed") {
-            toast.error(`Failed to apply ${d.type}: ${d.error}`);
+            toast.error(`Failed to apply ${d.directive}: ${d.error}`);
           } else if (d.kind === "directive_apply.proposed") {
             // `ask` policy: the agent proposed an action — surface an approve/
             // decline card (proposedDirectives inbox). It applies only on accept
@@ -951,12 +951,12 @@ export async function processStream({
               proposeDirective({
                 proposalId: d.proposal_id,
                 conversationId,
-                type: d.type,
-                verb: d.verb,
+                directive: d.directive,
+                directiveClass: d.directive_class,
                 noun: d.noun,
                 summary: d.summary,
                 itemCount: d.item_count,
-                envelope: d.envelope,
+                shell: d.shell,
               }),
             );
           }

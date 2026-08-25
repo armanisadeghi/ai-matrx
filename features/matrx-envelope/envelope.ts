@@ -1,50 +1,39 @@
 /**
- * Matrx Envelope — the canonical client mirror.
+ * Matrx reference taxonomy + the directive-apply receipt events.
  *
- * One flat shape for every kind: `{ matrx_version, kind, type, items: [...] }`.
- * Detect by `matrx_version` presence; route by `kind`; each item is typed per
- * `(kind, type)`. This module is the single FE home for the envelope contract —
- * detection, types, the directive-receipt events, and the output-schema builder.
+ * 🚨 THE SHELL NO LONGER LIVES HERE. A directive is
+ * `{"__kind":"directive_v1_<class>_<noun>","items":[…]}` and its grammar,
+ * detector and decoder are `features/content-ir/directives/` — one shape, one
+ * discriminator, shared with every other kind. What remains in this module is
+ * what is genuinely reference-specific: the reference NOUN taxonomy and the
+ * per-noun item shapes the chips render, plus the typed stream receipts.
  *
- * Spec (kept byte-identical with aidream): `docs/protocol/MATRX_ENVELOPE.md`.
+ * The retired 4-key shell (`matrx_version`/`kind`/`type`/`items`) is READ-ONLY
+ * and understood in exactly one place — `directives/legacyShell.ts`, reachable
+ * only through `decodeDirective`. Nothing here emits it and nothing here
+ * detects it. See common-docs/projects/kind-directives/PLAN.md.
  */
-
-export const MATRX_VERSION = 1 as const;
-
-export type MatrxKind =
-  "output_directive" | "function" | "reference" | "secret" | "validation";
-
-/** The universal outer shell. Items are unknown until routed by `(kind, type)`. */
-export interface MatrxEnvelope<Item = Record<string, unknown>> {
-  matrx_version: number;
-  kind: string;
-  type: string;
-  items: Item[];
-}
-
-/** The one detector — presence of `matrx_version`. */
-export function isMatrxEnvelope(value: unknown): value is MatrxEnvelope {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value) &&
-    "matrx_version" in (value as Record<string, unknown>)
-  );
-}
 
 // ── Output-directive receipt events (stream `data` events) ───────────────────
 
 export type DirectiveApplyStatus = "applied" | "already_applied" | "failed";
 export type DirectiveFault = "agent" | "processor";
 
+/**
+ * 🚨 EVERY receipt's identity field is `directive` and it carries the SLUG.
+ * There is deliberately no second field and no alias: the slug is the identity,
+ * and a receipt that named the thing differently from the payload it describes
+ * is the exact split the Kind Directives merge closed. Server contract:
+ * aidream `services/output_directives/events.py`.
+ */
 export interface DirectiveApplyStarted {
   kind: "directive_apply.started";
-  type: string;
+  directive: string;
   item_count: number;
 }
 export interface DirectiveItemApplied {
   kind: "directive_apply.item";
-  type: string;
+  directive: string;
   index: number;
   status: Exclude<DirectiveApplyStatus, "failed">;
   resource_kind: string;
@@ -53,37 +42,39 @@ export interface DirectiveItemApplied {
 }
 export interface DirectiveItemFailed {
   kind: "directive_apply.failed";
-  type: string;
+  directive: string;
   index: number;
   error: string;
   fault: DirectiveFault;
 }
 export interface DirectiveApplyCompleted {
   kind: "directive_apply.completed";
-  type: string;
+  directive: string;
   applied: number;
   failed: number;
 }
 /**
  * A model-emitted directive whose resolved apply policy is `ask` — NOT applied.
- * The client renders an approve/decline card and, on accept, POSTs `envelope`
+ * The client renders an approve/decline card and, on accept, POSTs `shell`
  * back to `/directives/confirm`. Idempotent by `proposal_id`. See the backend
  * cascade: aidream services/output_directives/policy.py + confirm.py.
  */
 export interface DirectiveProposed {
   kind: "directive_apply.proposed";
-  type: string;
+  directive: string;
   proposal_id: string;
   item_count: number;
-  verb: string | null;
-  noun: string | null;
+  /** Display hints DERIVED from the slug — never a second source of identity. */
+  directive_class: string;
+  noun: string;
   summary: string | null;
-  envelope: MatrxEnvelope;
+  /** The two-key shell, POSTed back to /directives/confirm verbatim. */
+  shell: Record<string, unknown>;
 }
 /** A directive suppressed by the cascade (`off`, or `ask` with no human). */
 export interface DirectiveApplyBlocked {
   kind: "directive_apply.blocked";
-  type: string;
+  directive: string;
   reason: string;
 }
 export type DirectiveApplyEvent =
@@ -118,6 +109,12 @@ export function isDirectiveProposed(
     (value as { kind?: unknown }).kind === "directive_apply.proposed"
   );
 }
+
+import {
+  type DirectiveClass,
+  KIND_KEY,
+  buildDirectiveSlug,
+} from "@/features/content-ir/directives/grammar";
 
 // ── Reference item (in a ```matrx fence) ─────────────────────────────────────
 //
@@ -289,30 +286,41 @@ export type ReferenceItem =
 type JsonSchema = Record<string, unknown>;
 
 /**
- * Build the strict-shell `output_schema` (`{ name, schema, strict }`) for a shape:
- * the fixed envelope with `const` control fields + `items` as an array of the
- * provided per-item JSON schema. The server owns the canonical generator
- * (`scripts/generate_envelope_registry.py`); this mirrors it for FE authoring.
+ * Build the strict output_schema (`{ name, schema, strict }`) for a directive
+ * shape: the two-key shell with `__kind` pinned `const` and FIRST, plus `items`
+ * as an array of the provided per-item JSON schema.
+ *
+ * `__kind` first is load-bearing, not cosmetic — the streaming detector types a
+ * JSON document by its first key alone, and a provider that emits the keys in
+ * declaration order is what makes a directive route through the kind pipeline
+ * from its first bytes instead of arriving as raw text and swapping at the end.
+ *
+ * `additionalProperties: false` mirrors the server's `extra="forbid"`: it makes
+ * "everything lives inside items" structurally true, so a stray top-level key
+ * is a hard error and never a silent passthrough. The server owns the canonical
+ * generator (`scripts/generate_kind_directive_registry.py`); this mirrors it for
+ * FE authoring.
  */
-export function buildEnvelopeOutputSchema(args: {
+export function buildDirectiveOutputSchema(args: {
   name: string;
-  kind: MatrxKind;
-  type: string;
+  directiveClass: DirectiveClass;
+  noun: string;
   itemSchema: JsonSchema;
   strict?: boolean;
 }): { name: string; strict: boolean; schema: JsonSchema } {
-  const { name, kind, type, itemSchema, strict = false } = args;
+  const { name, directiveClass, noun, itemSchema, strict = false } = args;
   return {
     name,
     strict,
     schema: {
       type: "object",
       additionalProperties: false,
-      required: ["matrx_version", "kind", "type", "items"],
+      required: [KIND_KEY, "items"],
       properties: {
-        matrx_version: { type: "integer", const: MATRX_VERSION },
-        kind: { type: "string", const: kind },
-        type: { type: "string", const: type },
+        [KIND_KEY]: {
+          type: "string",
+          const: buildDirectiveSlug(directiveClass, noun),
+        },
         items: { type: "array", items: itemSchema },
       },
     },

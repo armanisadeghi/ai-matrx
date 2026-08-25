@@ -242,12 +242,16 @@ export function isKindDirective(obj: unknown): boolean {
   return directiveSlugOf(obj) !== null;
 }
 
-/** The two-key shell, as it travels on the wire. */
-export interface KindDirectiveShell<Item = Record<string, unknown>> {
+/**
+ * The two-key shell, as it travels on the wire. A TYPE alias, not an interface,
+ * so a shell is structurally assignable to `Record<string, unknown>` — every
+ * render seam that takes "some decoded JSON object" accepts one without a cast.
+ */
+export type KindDirectiveShell<Item = Record<string, unknown>> = {
   /** The slug. Serialized FIRST — see the module doc. */
   [KIND_KEY]: string;
   items: Item[];
-}
+};
 
 /**
  * Build the two-key shell with `__kind` FIRST. Never hand-assemble the object
