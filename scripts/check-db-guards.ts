@@ -68,6 +68,11 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { unwrapRows } from "../lib/integrity/unwrap";
+import {
+  PUBLIC_EXPOSURE_QUERY,
+  classifyExposures,
+  type LiveExposure,
+} from "../lib/security/public-exposure";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -361,151 +366,23 @@ function reportOverlaps(rows: OverlapRow[]): number {
 /**
  * FOURTH DETECTOR — WHAT A LOGGED-OUT VISITOR CAN REACH, AND DID WE MEAN IT.
  *
- * Born from a real leak (2026-08-25): `users.guest_executions` carried a policy
- * named `guests_can_check_own_limits` whose predicate was `USING (true)`. Any
- * anonymous caller could download 21,840 rows of `ip_address`, `fingerprint` and
- * the fingerprint→account linkage using only the publishable key that ships in
- * the frontend bundle. Nothing flagged it, because nothing was looking: a policy
- * name is not a policy, and no guard compared the two.
- *
- * REACHABILITY IS THREE LAYERS, and a check on any one of them cries wolf:
- *   1. an RLS policy granting `anon`/PUBLIC UNCONDITIONAL access (literally
- *      `true` — the deliberate `visibility = 'public'` family is gated and does
- *      NOT count);
- *   2. the `anon` role actually holding schema USAGE + the table privilege
- *      (this is what makes `growth.*` unreachable despite a `true` policy); and
- *   3. the schema being exposed by PostgREST.
- *
- * This detector checks 1 AND 2, which are the two the database can answer. Layer
- * 3 lives in PostgREST's own config, outside SQL — where it matters, the reason
- * text below says so. That is deliberately conservative: a table failing 3 but
- * passing 1+2 is still misconfigured, and one config change away from live.
- *
- * THE CONTRACT: every exposure is declared here with a REASON, or the check
- * FAILS. Adding a row to the allowlist is the act of saying "this is intentional"
- * — do not add one to silence the guard. An entry carrying `defect` is a known
- * wrong we have not fixed yet; it warns rather than fails, and it goes away when
- * the defect does. The key includes the command, so a policy widening from
- * SELECT to ALL reads as a NEW undeclared exposure rather than passing silently.
+ * The declaration list, the SQL and the classification all live in ONE place —
+ * `lib/security/public-exposure.ts` — because the admin scoreboard at
+ * /administration/reporting/public-exposure reads exactly the same list. A
+ * second copy would be a second truth. Read that file's header for the contract,
+ * the three layers of reachability, and why this detector exists at all.
  */
-interface PublicExposure {
-  /** `schema.table` */
-  relation: string;
-  policy: string;
-  /** SELECT / INSERT / UPDATE / DELETE / ALL */
-  cmd: string;
-  why: string;
-  /** Set when this exposure is known-wrong and tracked — warns instead of passing. */
-  defect?: string;
-}
-
-const PUBLIC_EXPOSURE_ALLOWED: ReadonlyArray<PublicExposure> = [
-  // — Pricing and plan catalogue, rendered on the public marketing pages —
-  { relation: "billing.product", policy: "product_read", cmd: "SELECT", why: "public pricing page renders products before sign-in" },
-  { relation: "billing.price", policy: "price_read", cmd: "SELECT", why: "public pricing page renders prices before sign-in" },
-  { relation: "billing.plan_limit", policy: "plan_limit_public_read", cmd: "SELECT", why: "plan comparison table on the public pricing page" },
-  { relation: "billing.capability", policy: "capability_read", cmd: "SELECT", why: "plan capability catalogue shown on the public pricing page" },
-  { relation: "billing.capability_limit", policy: "capability_limit_read", cmd: "SELECT", why: "plan capability limits shown on the public pricing page" },
-
-  // — Reference/catalogue data with no personal content —
-  { relation: "crm.jurisdiction_policy", policy: "jurisdiction_policy_select_all", cmd: "SELECT", why: "outreach-compliance reference rules; jurisdictional policy, no personal data" },
-  { relation: "iam.industries", policy: "industries_select_all", cmd: "SELECT", why: "industry picker must populate on the sign-up form, before an account exists" },
-  { relation: "platform.assurance_level", policy: "assurance_level_select_all", cmd: "SELECT", why: "static reference enum" },
-  { relation: "platform.source_authority", policy: "source_authority_select_all", cmd: "SELECT", why: "static reference enum" },
-  { relation: "platform.shareable_resource_registry", policy: "shareable_resource_registry_select", cmd: "SELECT", why: "entity-type registry — describes shapes, contains no user rows" },
-  { relation: "platform.feature_knob", policy: "feature_knob_read", cmd: "SELECT", why: "client feature gating has to resolve before sign-in" },
-  { relation: "public.app_config", policy: "app_config_public_read", cmd: "SELECT", why: "client bootstrap config (min supported version); read before auth by design" },
-
-  // — Public tool / UI catalogues the shell needs before auth —
-  { relation: "tool.executor", policy: "ref_select", cmd: "SELECT", why: "public tool catalogue" },
-  { relation: "tool.mcp_config", policy: "ref_select", cmd: "SELECT", why: "public tool catalogue" },
-  { relation: "tool.mcp_server", policy: "ref_select", cmd: "SELECT", why: "public tool catalogue" },
-  { relation: "tool.surface_defaults", policy: "ref_select", cmd: "SELECT", why: "public tool catalogue" },
-  { relation: "ui.ui_client", policy: "ui_client_read_anon", cmd: "SELECT", why: "surface catalogue — the shell renders public routes before sign-in" },
-  { relation: "ui.ui_surface", policy: "ui_surface_read_anon", cmd: "SELECT", why: "surface catalogue — the shell renders public routes before sign-in" },
-  { relation: "ui.ui_surface_value", policy: "ui_surface_value_read_anon", cmd: "SELECT", why: "surface catalogue values for public routes" },
-  { relation: "ui.ui_surface_agent_role", policy: "ui_surface_agent_role_read", cmd: "SELECT", why: "surface catalogue agent roles for public routes" },
-  { relation: "ui.ui_surface_client_tool", policy: "ui_surface_client_tool_read_anon", cmd: "SELECT", why: "surface catalogue client tools for public routes" },
-  { relation: "ui.ui_surface_write_target", policy: "ui_surface_write_target_read_anon", cmd: "SELECT", why: "surface catalogue write targets for public routes" },
-
-  // — Deliberately public product surfaces —
-  { relation: "education.content_certification", policy: "cc_public_read", cmd: "SELECT", why: "certification badges shown on public education content" },
-  { relation: "education.math_course_structure", policy: "Public can view course structure", cmd: "SELECT", why: "public curriculum outline" },
-  { relation: "users.user_follows", policy: "Follows are viewable by everyone", cmd: "SELECT", why: "follow graph is public on creator profiles (/c/{handle})" },
-  { relation: "extend.wbx_recipe", policy: "wbx_recipe_read_all", cmd: "SELECT", why: "browser-automation recipe catalogue; no credentials — discloses which sites/routes we automate, accepted" },
-
-  // — Anonymous WRITES: each is a public form or the guest flow. INSERT only. —
-  { relation: "communication.emails", policy: "form_insert", cmd: "INSERT", why: "public contact form submits without an account; INSERT only, anon cannot read the table back" },
-  { relation: "users.guest_executions", policy: "Allow guest execution inserts", cmd: "INSERT", why: "a guest must be able to create their own usage row before signing up; INSERT only — the anon READ of this table was the 2026-08-25 leak and is closed" },
-  { relation: "users.guest_execution_log", policy: "Allow guest execution inserts", cmd: "INSERT", why: "per-execution guest usage log; INSERT only, same guest flow" },
-
-  // — KNOWN WRONG, tracked. These warn until fixed, then get deleted from here. —
-  {
-    relation: "extend.wbx_demo",
-    policy: "wbx_demo_svc",
-    cmd: "ALL",
-    why: "policy named for the service role but created TO PUBLIC — anon can read AND write. Table is empty so nothing has leaked. The `extend` schema IS PostgREST-exposed, so this one is internet-reachable. Needs the matrx-extend owner to confirm the extension does not write as anon, then scope it to service_role.",
-    defect: "D257",
-  },
-];
-
-const EXPOSURE_QUERY = `
-  select n.nspname || '.' || c.relname as relation,
-         p.polname as policy,
-         case p.polcmd when 'r' then 'SELECT' when 'a' then 'INSERT' when 'w' then 'UPDATE'
-              when 'd' then 'DELETE' else 'ALL' end as cmd,
-         (p.polcmd in ('a','w','d','*')
-          and (has_table_privilege('anon', c.oid, 'INSERT')
-            or has_table_privilege('anon', c.oid, 'UPDATE')
-            or has_table_privilege('anon', c.oid, 'DELETE'))) as write_open
-  from pg_policy p
-  join pg_class c on c.oid = p.polrelid
-  join pg_namespace n on n.oid = c.relnamespace
-  where p.polpermissive
-    -- polroles = {0} is PUBLIC, which includes anon
-    and (p.polroles = '{0}'::oid[]
-         or 'anon' = any(select pg_get_userbyid(x) from unnest(p.polroles) x))
-    -- UNCONDITIONAL only. A gated predicate (visibility='public') is not this.
-    and (pg_get_expr(p.polqual, p.polrelid) = 'true'
-         or pg_get_expr(p.polwithcheck, p.polrelid) = 'true')
-    -- layer 2: anon must actually hold the grants for this to be reachable
-    and has_schema_privilege('anon', n.nspname, 'USAGE')
-    and (has_table_privilege('anon', c.oid, 'SELECT')
-      or has_table_privilege('anon', c.oid, 'INSERT')
-      or has_table_privilege('anon', c.oid, 'UPDATE')
-      or has_table_privilege('anon', c.oid, 'DELETE'))
-  order by write_open desc, 1, 2
-`;
-
-interface ExposureRow {
-  relation: string;
-  policy: string;
-  cmd: string;
-  write_open: boolean;
-}
-
-const exposureKey = (e: { relation: string; policy: string; cmd: string }) =>
-  `${e.relation}::${e.policy}::${e.cmd}`;
-
 /** Returns the number of UNDECLARED exposures (0 = every one is intentional). */
-function reportPublicExposure(rows: ExposureRow[]): number {
-  const declared = new Map(
-    PUBLIC_EXPOSURE_ALLOWED.map((e) => [exposureKey(e), e]),
-  );
-  const live = new Set(rows.map(exposureKey));
-
-  const undeclared = rows.filter((r) => !declared.has(exposureKey(r)));
-  const tracked = rows.filter((r) => declared.get(exposureKey(r))?.defect);
-  const stale = PUBLIC_EXPOSURE_ALLOWED.filter(
-    (e) => !live.has(exposureKey(e)),
-  );
+function reportPublicExposure(rows: LiveExposure[]): number {
+  const { undeclared, tracked, stale } = classifyExposures(rows);
+  const declaredCount = rows.length - undeclared.length;
 
   console.log("");
   console.log(
     `${C.bold}Public exposure${C.reset} ${C.dim}(what a logged-out visitor can reach — every one must be declared)${C.reset}`,
   );
   console.log(
-    `${C.dim}       ${rows.length} live · ${declared.size - stale.length} declared intentional · ${tracked.length} tracked-wrong${C.reset}`,
+    `${C.dim}       ${rows.length} live · ${declaredCount} declared intentional · ${tracked.length} tracked-wrong${C.reset}`,
   );
 
   for (const r of undeclared) {
@@ -515,15 +392,14 @@ function reportPublicExposure(rows: ExposureRow[]): number {
     );
   }
   for (const r of tracked) {
-    const d = declared.get(exposureKey(r));
     console.log(
-      `  ${TAG.warn}tracked    ${r.relation} ${C.dim}(${r.policy}, ${r.cmd})${C.reset} — ${d?.defect}` +
+      `  ${TAG.warn}tracked    ${r.relation} ${C.dim}(${r.policy}, ${r.cmd})${C.reset} — ${r.defect}` +
         `${r.write_open ? ` ${C.red}— ANON CAN WRITE${C.reset}` : ""}`,
     );
   }
   for (const e of stale) {
     console.log(
-      `  ${TAG.info}stale      ${e.relation} ${C.dim}(${e.policy}, ${e.cmd})${C.reset} — no longer exposed; remove it from PUBLIC_EXPOSURE_ALLOWED`,
+      `  ${TAG.info}stale      ${e.relation} ${C.dim}(${e.policy}, ${e.cmd})${C.reset} — no longer exposed; remove it from PUBLIC_EXPOSURE_ALLOWED in lib/security/public-exposure.ts`,
     );
   }
 
@@ -536,7 +412,7 @@ function reportPublicExposure(rows: ExposureRow[]): number {
       `${TAG.fail}${undeclared.length} exposure(s) nobody declared. A logged-out visitor can reach these.`,
     );
     console.log(
-      `${C.dim}       If intentional, add it to PUBLIC_EXPOSURE_ALLOWED in this file WITH a reason.` +
+      `${C.dim}       If intentional, add it to PUBLIC_EXPOSURE_ALLOWED in lib/security/public-exposure.ts WITH a reason.` +
         ` If not, fix the policy — do not add a row to silence the check.${C.reset}`,
     );
     console.log(
@@ -622,11 +498,11 @@ async function main(): Promise<number> {
   let undeclaredExposures = 0;
   try {
     const { data, error } = await supabase.rpc("execute_admin_query", {
-      query: EXPOSURE_QUERY,
+      query: PUBLIC_EXPOSURE_QUERY,
     });
     if (error) throw new Error(error.message);
     undeclaredExposures = reportPublicExposure(
-      unwrapRows(data) as unknown as ExposureRow[],
+      unwrapRows(data) as unknown as LiveExposure[],
     );
   } catch (err) {
     console.error(`${TAG.fail}Public-exposure check: query failed — ${String(err)}`);

@@ -1250,6 +1250,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Public exposure",
+        description:
+          "Every table a signed-out visitor can actually reach, live from the database and judged against the one declaration list — each exposure must carry a written reason or the release gate fails. Undeclared, known-wrong, and anon-writable are called out separately.",
+        iconName: "Globe",
+        link: "/administration/reporting/public-exposure",
+        isNew: true,
+      },
+      {
         title: "No Dead Ends",
         description:
           "Door Law scoreboard — every surface that names a record without letting the user open it, ranked by feature and file, each row with a one-click repair brief.",

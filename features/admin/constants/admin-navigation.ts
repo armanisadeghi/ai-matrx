@@ -603,6 +603,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         destinations: [
           destination("/administration/reporting/reports"),
           destination("/administration/reporting/events"),
+          destination("/administration/reporting/public-exposure"),
           destination("/administration/reporting/dead-ends"),
           destination("/administration/reporting/unwired"),
           destination("/administration/reporting/lint-debt"),

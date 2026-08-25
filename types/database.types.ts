@@ -34430,6 +34430,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_public_exposure_report: {
+        Args: never
+        Returns: {
+          cmd: string
+          policy: string
+          relation: string
+          write_open: boolean
+        }[]
+      }
       admin_reachability_containers: {
         Args: { p_id: string; p_type: string }
         Returns: {
@@ -48788,6 +48797,7 @@ export type Database = {
           enabled: boolean
           engine_slug: string
           id: string
+          last_dispatched_at: string | null
           max_keywords_per_run: number
           metadata: Json
           notes: string | null
@@ -48811,6 +48821,7 @@ export type Database = {
           enabled?: boolean
           engine_slug: string
           id?: string
+          last_dispatched_at?: string | null
           max_keywords_per_run?: number
           metadata?: Json
           notes?: string | null
@@ -48834,6 +48845,7 @@ export type Database = {
           enabled?: boolean
           engine_slug?: string
           id?: string
+          last_dispatched_at?: string | null
           max_keywords_per_run?: number
           metadata?: Json
           notes?: string | null
@@ -52886,6 +52898,44 @@ export type Database = {
           place_id: string
           site_id: string
           value_id: string
+        }[]
+      }
+      engine_schedule_resolve: {
+        Args: { p_engine_slug: string; p_site_ids?: string[] }
+        Returns: {
+          cadence: string
+          day_of_week: number
+          enabled: boolean
+          last_dispatched_at: string
+          max_keywords_per_run: number
+          organization_id: string
+          run_at_utc: string
+          schedule_id: string
+          scope_tier: string
+          site_id: string
+          sites_per_run: number
+        }[]
+      }
+      engine_schedules_claim: {
+        Args: { p_now?: string }
+        Returns: {
+          engine_slug: string
+          max_keywords_per_run: number
+          organization_id: string
+          schedule_id: string
+          scope_tier: string
+          site_id: string
+        }[]
+      }
+      engine_schedules_due: {
+        Args: { p_now?: string }
+        Returns: {
+          engine_slug: string
+          max_keywords_per_run: number
+          organization_id: string
+          schedule_id: string
+          scope_tier: string
+          site_id: string
         }[]
       }
       facet_check_values: { Args: { p_facet: string }; Returns: string[] }
