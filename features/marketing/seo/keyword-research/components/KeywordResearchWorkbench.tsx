@@ -117,13 +117,14 @@ function TrajectoryBadge({ value }: { value: string | null }) {
 const DOSSIER_TABS: {
   key: "pipeline" | "relationships" | "classification" | "site" | "visibility";
   short: string;
-  label: string;
+  hasData: string;
+  noData: string;
 }[] = [
-  { key: "pipeline", short: "P", label: "Pipeline" },
-  { key: "relationships", short: "K", label: "Keywords" },
-  { key: "classification", short: "C", label: "Classification" },
-  { key: "site", short: "S", label: "Site performance" },
-  { key: "visibility", short: "V", label: "Search visibility" },
+  { key: "pipeline", short: "P", hasData: "Pipeline: saved research exists", noData: "Pipeline: no saved research yet" },
+  { key: "relationships", short: "K", hasData: "Keywords: has relationship edges", noData: "Keywords: no relationship edges yet" },
+  { key: "classification", short: "C", hasData: "Classification: intent is set", noData: "Classification: not classified yet" },
+  { key: "site", short: "S", hasData: "Site performance: tracked on a site", noData: "Site performance: not tracked on any site" },
+  { key: "visibility", short: "V", hasData: "Search visibility: has tracked rankings or SERP data", noData: "Search visibility: no rank tracking or SERP data yet" },
 ];
 
 function DossierCompletenessCell({
@@ -142,10 +143,10 @@ function DossierCompletenessCell({
   };
   return (
     <div className="flex items-center gap-0.5">
-      {DOSSIER_TABS.map(({ key, short, label }) => (
+      {DOSSIER_TABS.map(({ key, short, hasData, noData }) => (
         <span
           key={key}
-          title={`${label}: ${flags[key] ? "has data" : "no data yet"}`}
+          title={flags[key] ? hasData : noData}
           className={cn(
             "flex h-4 w-4 items-center justify-center rounded-[3px] text-[9px] font-semibold",
             flags[key]

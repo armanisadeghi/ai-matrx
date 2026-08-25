@@ -344,7 +344,7 @@ export interface KeywordDossierCompleteness {
   pipeline: boolean;
   /** Keywords tab — at least one live keyword_edge relationship. */
   relationships: boolean;
-  /** Site performance tab — real organic query performance on at least one site. */
+  /** Site performance tab — the keyword is tracked on at least one site (a prerequisite for that tab to show anything). */
   site: boolean;
   /** Search visibility tab — tracked as a rank target or has an observed SERP snapshot. */
   visibility: boolean;
@@ -372,7 +372,12 @@ function chunk<T>(items: T[], size: number): T[][] {
  *   - Pipeline: `content_ir.kind_instance` (kind `keyword_relationship_research`)
  *     whose `data->>primary_keyword` matches the phrase.
  *   - Keywords (relationships): `seo.keyword_edge`, either side.
- *   - Site performance: `seo.v_site_keyword_performance`, any site.
+ *   - Site performance: `seo.site_keyword_value`, any site (a keyword is
+ *     tracked there before it has anything to show on the Site tab; the
+ *     GSC-parity `seo.v_site_keyword_performance` VIEW is deliberately NOT
+ *     used here — it has no site-agnostic fast path and a bare `.in()` over
+ *     it hit the RLS-driven `57014` statement timeout the search-console
+ *     FEATURE.md already documents for exactly this shape of read).
  *   - Search visibility: `seo.rank_target` (tracked) or `seo.serp_snapshot`
  *     (observed) for the keyword.
  * Classification is NOT read here — it lives on the keyword row itself
@@ -421,14 +426,13 @@ export async function getKeywordDossierCompleteness(
             relationshipIds.add(row.target_keyword_id);
         }),
       seoDbInstance
-        .from("v_site_keyword_performance")
+        .from("site_keyword_value")
         .select("keyword_id")
         .in("keyword_id", idChunk)
         .abortSignal(abortSignal)
         .then((response) => {
           if (response.error) throw response.error;
-          for (const row of response.data ?? [])
-            if (row.keyword_id) siteIds.add(row.keyword_id);
+          for (const row of response.data ?? []) siteIds.add(row.keyword_id);
         }),
       seoDbInstance
         .from("rank_target")
