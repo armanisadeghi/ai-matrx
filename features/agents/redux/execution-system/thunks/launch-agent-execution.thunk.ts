@@ -911,19 +911,38 @@ export const launchAgentExecution = createAsyncThunk<
 
   // =========================================================================
   // Step 5: autoRun=false — component is open, user triggers execution manually.
-  // Uses the resolved autoRun (caller override → instance-ui-state →
+  //
+  // WHAT autoRun IS, because getting this wrong keeps breaking the app:
+  // autoRun is a USER-INTERFACE control and NOTHING else. It answers exactly
+  // one question — "does the UI stop and let the person touch anything before
+  // the request goes out?" It has never had, and must never be given, any
+  // authority over whether a run HAPPENS. Clicking a button that is wired to
+  // an agent runs that agent, full stop; Step 4 above therefore opens the
+  // component unconditionally, and this early return only defers the SEND to
+  // whatever the user presses next.
+  //
+  // Which is why it cannot apply to a display mode that has no interface.
+  // `background` renders nothing: no component, no composer, no button. There
+  // is no UI to pause, nobody to offer the choice to, and nothing that could
+  // ever fire the run later — so honoring `false` there does not "wait for the
+  // user", it silently deletes the run and leaves a seeded conversation that
+  // can never execute. A caller asking for it is describing an interface that
+  // does not exist, so the run proceeds and the mistake is made LOUD instead
+  // of swallowed. (Live example when this landed: image-studio's DESCRIBE
+  // launch passed `{ autoRun: false, displayMode: "background" }` and never
+  // ran.) Uses the resolved autoRun (caller override → instance-ui-state →
   // hard default false) so shortcut-level `autoRun: true` actually fires.
   // =========================================================================
 
-  if (!effectiveAutoRun) {
-    if (typeof window !== "undefined") {
-      // console.log(
-      //   "%c[Shortcut]%c autoRun=false — waiting for user to trigger execution (conversationId=%s)",
-      //   "color:#6366f1;font-weight:bold",
-      //   "color:inherit",
-      //   conversationId,
-      // );
-    }
+  const isHeadlessMode = resolvedDisplayMode === "background";
+
+  if (isHeadlessMode && !effectiveAutoRun) {
+    console.error(
+      `[launchAgentExecution] autoRun=false was passed with displayMode="background" (conversationId=${conversationId}). autoRun is a UI control — it decides whether the interface pauses for the user — and "background" has no interface, so there is nothing to pause and nothing that could ever start this run. Running it anyway. Fix the call site: drop autoRun, or pass true.`,
+    );
+  }
+
+  if (!isHeadlessMode && !effectiveAutoRun) {
     return { conversationId };
   }
 

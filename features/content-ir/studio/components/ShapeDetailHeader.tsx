@@ -15,10 +15,17 @@
 // A non-owner cannot edit this shape, so their agent action builds a NEW one
 // (still carrying this kind's context — "something like this one").
 //
-// Both actions used to be plain hrefs. "Edit Shape" pointed at
-// `#shape-editor`, which silently does NOTHING once that hash is already in
-// the URL (no navigation, no hashchange) — the "it stopped working" bug. It
-// scrolls imperatively now, so the second click works like the first.
+// "Edit Shape" only appears where it actually GOES somewhere. The owner
+// editor lives on the Preview route and is the first thing on that page, so
+// on Preview the button's whole job — take me to the editor — is already
+// done, and pressing it visibly did nothing (measured: the editor sits 56px
+// down at scrollTop 0). A control whose success looks identical to a broken
+// one IS a broken one, so it is hidden there and rendered on the other tabs,
+// where it genuinely navigates back to Preview and lands on the editor.
+//
+// (It was also a plain `#shape-editor` href, which is a hard no-op once that
+// hash is in the URL — no navigation, no hashchange, no scroll. It scrolls
+// imperatively now, so it works on every press, not just the first.)
 
 import {
   Boxes,
@@ -29,7 +36,7 @@ import {
   Pencil,
   Radio,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import type { Json } from "@/types/database.types";
 import {
@@ -64,12 +71,15 @@ export default function ShapeDetailHeader({
   emittedJsonSchema = null,
 }: ShapeDetailHeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { launch, launching } = useKindAgentLaunch(
     SHAPES_SURFACE_NAME,
     SHAPE_BUILDER_ROLE,
   );
 
   const detailHref = shapeDetailHref(kind);
+  // The owner editor is rendered by the Preview route only.
+  const editorIsOnThisPage = pathname === detailHref;
 
   // The owner editor lives on the Preview route only. On Preview, scroll to
   // it imperatively (idempotent — works on every click); from any other tab,
@@ -132,7 +142,7 @@ export default function ShapeDetailHeader({
         { name: "Schema", href: shapeSchemaHref(kind), icon: FileJson },
       ]}
       actions={
-        isOwnedByViewer
+        isOwnedByViewer && !editorIsOnThisPage
           ? [
               {
                 label: "Edit Shape",

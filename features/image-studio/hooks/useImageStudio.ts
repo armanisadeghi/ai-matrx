@@ -1073,7 +1073,10 @@ export function useImageStudio(
         // name-only launch would bind against baseline values only.
         const launchResult = await trigger(DESCRIBE.id, {
           sourceFeature: "image-studio",
-          config: { autoRun: false, displayMode: "background" },
+          // `background` renders no interface, so autoRun has nothing to
+          // control here — it used to say `false`, which meant the thunk
+          // returned before executing and this describe run never happened.
+          config: { autoRun: true, displayMode: "background" },
           scope: buildSurfaceScope(),
           runtime: {
             surfaceName: IMAGE_STUDIO_SURFACE_NAME,
