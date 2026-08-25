@@ -79,6 +79,34 @@ classification without buying a page-crawl autopsy. Everything lands `proposed`.
 
 ## Change log
 
+- 2026-08-24 — **Layout/table repair pass — MSR-16 through MSR-24** (Arman: "by far the worst… the
+  page is a disaster"). `CompetitorAutopsyWorkspace.tsx`: dropped the `max-w-[1800px]` cap on the
+  page `<main>` (MSR-24); the hero section now groups the three KPI tiles and
+  "Add a competitor you already know" into one left column, with "Run a fresh autopsy" alone in its
+  own right column, instead of the giant run card fighting three small tiles for space (MSR-17).
+  `GroundTruthQueue.tsx` was rewritten from hand-rolled ruling cards onto the canonical
+  `MatrxDataTable` — every column sorts and filters, "Right" is a row action with the free-text
+  "why" moved into a `Popover` (the training signal survives, just not as an always-open textarea),
+  and "Wrong" opens the row's `CompetitorClassificationEditor` in the canonical WindowPanel via
+  `controls.openWindow()` (MSR-16). The Competitors/Opportunities/History tables all switched from
+  `detail: {...}` (side drawer) to `detail: {enabled: false}` + `window: {openOnRowClick: true,
+  onOpen: () => {}}` — row click now opens the canonical WindowPanel, never the drawer; `onOpen` is
+  required or the opener falls through to `onRowOpen`, the same bug already fixed on the
+  search-console insight tables (MSR-19/20). `OpportunityDetail` and
+  `CompetitorClassificationEditor` (`CompetitorIdentification.tsx`) both went from `p-1` to `p-4` —
+  any panel that survives now has real padding. The Classification column is bound to the raw
+  `entity_role` enum (`accessorKey: "entity_role"`) with `editable: "select"` +
+  `ENTITY_ROLE_EDIT_OPTIONS` (new export, `CompetitorIdentification.tsx`) so it edits inline via a
+  dropdown with a visible chevron; `edit.onSave` calls the existing `saveCompetitorClassification`
+  with `confirm: false` — an inline pick is never itself a human ruling, matching the ground-truth
+  ruling flow's own semantics (MSR-18). The badge now truncates with `whitespace-nowrap` +
+  `title` instead of wrapping onto two lines (MSR-21). `estimated_traffic` renders through
+  `Intl.NumberFormat` and `average_position` through `toFixed(1)` instead of the raw six-decimal
+  provider floats (MSR-22). `last_observed_at` / run `created_at` / `completed_at` render through
+  the existing `formatRelativeTime` / `formatAbsoluteDate` (`utils/datetime.ts`) with the exact
+  timestamp on hover, instead of the raw machine timestamp (MSR-23). MSR-25 (national + local
+  search across every paid provider) is a separate, larger build and was not attempted here.
+
 - 2026-08-24 — **Local competitor search** (Arman's ruling, SEO VISION §2.7a): the Review tab
   gained a keyword + geographic-area search (`POST /seo/sites/{site_id}/competitors/discover-local`,
   `discoverLocalCompetitors` in `landscapeBrief.ts`). Runs the real Google local-pack search a
