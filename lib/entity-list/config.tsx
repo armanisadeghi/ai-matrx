@@ -19,7 +19,10 @@ import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
-import type { MatrxDataTableCopyConfig } from "@/components/official/matrx-data-table/types";
+import type {
+  MatrxDataTableCopyConfig,
+  MatrxDataTableMobileCardControls,
+} from "@/components/official/matrx-data-table/types";
 import type { EntityColumnSpec } from "./columns";
 import type {
   EntityFacets,
@@ -238,6 +241,17 @@ export interface EntityListConfig<TRow> {
 
   /** Copy / Copy-for-AI config, forwarded to MatrxDataTable. */
   copy?: MatrxDataTableCopyConfig<TRow>;
+
+  /**
+   * Optional phone-only rendering for the table view. The canonical table
+   * still owns the loaded page, pagination, copy controls, and row actions;
+   * the feature supplies only the compact record summary its users need.
+   */
+  mobileCards?: (
+    row: TRow,
+    index: number,
+    controls: MatrxDataTableMobileCardControls,
+  ) => ReactNode;
 
   /** Alternate views. Absent view → its toggle is not offered. */
   views?: {

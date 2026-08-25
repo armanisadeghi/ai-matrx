@@ -27,14 +27,10 @@ import {
   movementText,
   positionText,
 } from "./cross-site-columns";
+import { CrossSiteRankMobileCard } from "./CrossSiteRankMobileCard";
 import { setCrossSiteRankRuntime } from "./cross-site-runtime";
 
-const RANK_LIST_SCOPES: ListScopeKind[] = [
-  "mine",
-  "orgs",
-  "shared",
-  "public",
-];
+const RANK_LIST_SCOPES: ListScopeKind[] = ["mine", "orgs", "shared", "public"];
 
 export function rankTargetHref(row: CrossSiteRankRow): string | undefined {
   return row.site_id
@@ -199,6 +195,9 @@ export const crossSiteRankListConfig: EntityListConfig<CrossSiteRankRow> = {
     showRow: false,
     showToolbar: false,
   },
+  mobileCards: (row, _index, controls) => (
+    <CrossSiteRankMobileCard row={row} controls={controls} />
+  ),
   emptyState: {
     title: "No tracked keywords in this scope",
     description:

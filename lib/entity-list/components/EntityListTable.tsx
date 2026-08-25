@@ -22,10 +22,7 @@ import type {
   ColumnFiltersState,
   MatrxColumnDef,
 } from "@/components/official/matrx-data-table/types";
-import {
-  ItemContextMenu,
-  ItemMenu,
-} from "@/components/official/item/ItemMenu";
+import { ItemContextMenu, ItemMenu } from "@/components/official/item/ItemMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
@@ -290,6 +287,7 @@ export function EntityListTable<TRow>({
         </ItemMenu>
       )}
       copy={config.copy}
+      mobileCards={config.mobileCards}
       emptyState={emptyState ?? { ...config.emptyState, action: emptyAction }}
     />
   );

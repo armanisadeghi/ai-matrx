@@ -2,7 +2,7 @@
 
 One `<EntityListPage config={...} />` per feature list page. The feature
 supplies a config (service triple, column registry, declared scopes, a
-row-actions hook, optional card/row renderers); the shell owns everything
+row-actions hook, optional alternate views or phone-card renderer); the shell owns everything
 else: scope tabs with true server counts, search (+ optional deep toggle),
 Filters & Sort panel, column picker, the controlled MatrxDataTable, view/
 density persistence, inline edit commit, and the error banner.
@@ -61,15 +61,15 @@ names on one page.
 
 ## Ratified decisions — do not re-litigate
 
-| Decision | Ruling |
-|---|---|
-| Extraction shape | Config-driven shell + escape hatches: `<EntityListPage config={...} />`; render props for the bespoke parts |
-| Scope vocabulary | Fixed five: mine · my orgs · shared · industry · public. A surface declares its subset, never a sixth |
-| Industry semantics | Opt-in both ends (`iam.industry_curators` publish / `iam.org_industries` attach); records attach by grant row, never a column or association edge. Documented, still unwired — the first feature that needs it builds the grant table per `lib/list-scope/FEATURE.md` |
-| Per-feature RPCs | Hand-written from the template in `lib/list-scope/FEATURE.md`, never generated |
-| Column policy | Every column sorts AND filters, server-side, no exceptions; finite sets get options with counts; dates + numerics get buckets |
-| Heterogeneous rows | ONE row type with a `kind` column (proven on transcripts); never special-cased inside the shell |
-| Default sort / page size | Favorites first, most recent; relevance overrides both while searching. 25/page |
+| Decision                 | Ruling                                                                                                                                                                                                                                                                |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Extraction shape         | Config-driven shell + escape hatches: `<EntityListPage config={...} />`; render props for the bespoke parts                                                                                                                                                           |
+| Scope vocabulary         | Fixed five: mine · my orgs · shared · industry · public. A surface declares its subset, never a sixth                                                                                                                                                                 |
+| Industry semantics       | Opt-in both ends (`iam.industry_curators` publish / `iam.org_industries` attach); records attach by grant row, never a column or association edge. Documented, still unwired — the first feature that needs it builds the grant table per `lib/list-scope/FEATURE.md` |
+| Per-feature RPCs         | Hand-written from the template in `lib/list-scope/FEATURE.md`, never generated                                                                                                                                                                                        |
+| Column policy            | Every column sorts AND filters, server-side, no exceptions; finite sets get options with counts; dates + numerics get buckets                                                                                                                                         |
+| Heterogeneous rows       | ONE row type with a `kind` column (proven on transcripts); never special-cased inside the shell                                                                                                                                                                       |
+| Default sort / page size | Favorites first, most recent; relevance overrides both while searching. 25/page                                                                                                                                                                                       |
 
 ## The split that runs through everything
 
@@ -79,15 +79,15 @@ names on one page.
 
 ## Files
 
-| File | What it is |
-|---|---|
-| `types.ts` | Query/filter/facet/count vocabulary (`EntityListQuery`, `EntityFilters`, `EntityFacets`, `EntityScopeCounts`) |
-| `config.tsx` | `EntityListConfig<TRow>` — THE contract. Read its doc comments before adding a knob; a knob earns its place only when a second surface needs it |
-| `columns.tsx` | `EntityColumnSpec<TRow>` + shared cell helpers (`relativeTime`, `timeCell`, `DATE_FILTER_OPTIONS`) |
-| `useEntityList.ts` | The query hook — generation-guarded fetches, debounced search, counts/facets with deliberate dependency keys |
-| `components/EntityListPage.tsx` | The shell. Slots: `notice`, `headerActions`, `emptyAction`, `surface`; feature modals come back from `config.useRowActions` |
-| `components/EntityScopeTabs.tsx` | THE VIEW LAW tabs — fixed five vocabulary (lib/list-scope), narrowing options from the counts RPC, never Redux |
-| `components/EntityListToolbar.tsx` / `EntityFilterPanel.tsx` / `EntityColumnPicker.tsx` / `EntityListTable.tsx` | The lifted surface pieces |
+| File                                                                                                            | What it is                                                                                                                                      |
+| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types.ts`                                                                                                      | Query/filter/facet/count vocabulary (`EntityListQuery`, `EntityFilters`, `EntityFacets`, `EntityScopeCounts`)                                   |
+| `config.tsx`                                                                                                    | `EntityListConfig<TRow>` — THE contract. Read its doc comments before adding a knob; a knob earns its place only when a second surface needs it |
+| `columns.tsx`                                                                                                   | `EntityColumnSpec<TRow>` + shared cell helpers (`relativeTime`, `timeCell`, `DATE_FILTER_OPTIONS`)                                              |
+| `useEntityList.ts`                                                                                              | The query hook — generation-guarded fetches, debounced search, counts/facets with deliberate dependency keys                                    |
+| `components/EntityListPage.tsx`                                                                                 | The shell. Slots: `notice`, `headerActions`, `emptyAction`, `surface`; feature modals come back from `config.useRowActions`                     |
+| `components/EntityScopeTabs.tsx`                                                                                | THE VIEW LAW tabs — fixed five vocabulary (lib/list-scope), narrowing options from the counts RPC, never Redux                                  |
+| `components/EntityListToolbar.tsx` / `EntityFilterPanel.tsx` / `EntityColumnPicker.tsx` / `EntityListTable.tsx` | The lifted surface pieces                                                                                                                       |
 
 ## Rules
 
@@ -109,8 +109,8 @@ names on one page.
    search became an unranked `ILIKE OR` ordered by `updated_at`, so a passing
    mention in a description outranked a name match and searching "image"
    returned ten unrelated agents first. The proven scorer already existed
-   (`features/agents/search/score.ts` — *"One implementation, every surface.
-   Never fork this function."*), had been found during research and cited in
+   (`features/agents/search/score.ts` — _"One implementation, every surface.
+   Never fork this function."_), had been found during research and cited in
    the notes, and was simply not ported. **When you move something to a new
    layer, PORT the proven implementation first and improve it second.**
 5. **Bump `prefsVersion`** in the same change that adds/removes a column.
@@ -127,6 +127,10 @@ names on one page.
    attach a record that does not exist. Keep the entity identical to what the
    name column's `entityToken` resolves and what the kebab's share action uses:
    one record, one identity, three entry points.
+8. **Phone cards remain the table view.** `config.mobileCards` forwards only a
+   feature-owned row summary into `MatrxDataTable.mobileCards`; the canonical
+   table still owns query state, pagination, copy controls, and row actions.
+   Never fetch a second mobile list or rebuild those actions inside the card.
 
 ## Parity contracts (break these and users notice, not CI)
 
@@ -135,6 +139,7 @@ names on one page.
 `public.trx_search_score` share the same tiers. Server paging forces the SQL
 copies (ranking must happen before `LIMIT`). **Change one, change the others
 in the same commit.**
+
 - Fixture: `features/agents/search/__fixtures__/search-score-parity.json`
 - TS: `npx jest features/agents/search/score.parity.test.ts --no-coverage`
 - SQL: `scripts/search-parity/check-search-score-parity.sql` — every row `MATCH`
@@ -154,23 +159,25 @@ pnpm type-check
 npx jest features/agents/search/score.parity.test.ts --no-coverage
 pnpm check:migrations
 ```
+
 Live DB (Supabase MCP, project `brsgrqvjdzwihsvnfqkf`), after setting the JWT
 claim to a real user:
+
 ```sql
 select kind, count(*) from public.trx_list_scoped('mine',null,null,false,'updated','desc','{}'::jsonb,200,0) group by kind;
 select * from public.trx_list_scope_counts();   -- tab totals + org labels
 ```
 
 **Known cost, not yet a problem:** `trx_list_scoped` evaluates the
-transcript-segments `ILIKE` inside the pre-scope `unified` CTE, so a *deep*
+transcript-segments `ILIKE` inside the pre-scope `unified` CTE, so a _deep_
 search touches all users' transcripts before scoping narrows them. Counting
 calls skip per-row scoring (the `LIMIT <= 1` guard); the deep `ILIKE` still
 runs. Restructure if it ever shows up in timings.
 
 ## The agent surface (`surface`)
 
-A list has exactly one honest set of live values — *what is on screen, in which
-scope, out of what total* — and the shell is the only thing that holds all of
+A list has exactly one honest set of live values — _what is on screen, in which
+scope, out of what total_ — and the shell is the only thing that holds all of
 them. So a list page binds its agent surface here rather than wrapping itself in
 a `SurfaceRuntimeProvider` around a second copy of state it does not own:
 
@@ -207,6 +214,10 @@ how that savior page gets built.
 
 ## Change log
 
+- 2026-08-25 — Added the generic `config.mobileCards` forwarding seam so a
+  feature-entry list can expose its essential phone context while retaining the
+  canonical controlled table, pagination, copy, and row actions.
+
 - 2026-08-20 — Relocated the "feature entry pages are LIST views" doctrine
   here from CLAUDE.md (charter rewrite); CLAUDE.md now carries a one-liner.
 
@@ -233,7 +244,7 @@ how that savior page gets built.
   `sourceFeature="files"` for every consumer and never forwarded an `entity` at
   all, so Attach To and Share were unreachable from any list row while the slot
   sat unused in `MenuContent`. `/agents/all` passes the same `resourceType:
-  "agent"` its ShareModal uses; `/transcripts` returns an entity only for the
+"agent"` its ShareModal uses; `/transcripts` returns an entity only for the
   `transcript` kind.
 - 2026-08-08 — Extracted from features/agents/browse (steps 2–5 of the
   handoff); /transcripts migrated as the second consumer (step 6).
