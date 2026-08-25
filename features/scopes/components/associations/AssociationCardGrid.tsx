@@ -36,14 +36,20 @@ import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 export interface AssociationCardGridProps {
   /** Tokens to show. Defaults to every registry-listable token. */
   tokens?: EntityTypeToken[];
+  /** Registry tokens this surface cannot honestly support yet. */
+  excludeTokens?: EntityTypeToken[];
   className?: string;
 }
 
 export function AssociationCardGrid({
   tokens,
+  excludeTokens,
   className,
 }: AssociationCardGridProps) {
-  const list = tokens ?? curatedTokens();
+  const excluded = new Set(excludeTokens ?? []);
+  const list = (tokens ?? curatedTokens()).filter(
+    (token) => !excluded.has(token),
+  );
 
   return (
     <div className={cn("space-y-5", className)}>

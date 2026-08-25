@@ -139,8 +139,9 @@ export function AssociationCard({
           <button
             type="button"
             onClick={() => setOpen(true)}
+            aria-label={`Attach ${info.labelPlural.toLowerCase()}`}
             title={`Attach ${info.labelPlural.toLowerCase()}`}
-            className="mr-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
+            className="mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground lg:mr-3 lg:h-7 lg:w-7"
           >
             <Plus className="h-4 w-4" />
           </button>

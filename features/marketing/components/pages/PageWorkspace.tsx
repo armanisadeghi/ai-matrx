@@ -1136,7 +1136,11 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   // Neither current nor plan — the stuff ASSOCIATED with this page. Spans the
   // full workspace width below the split, in every mode.
   const associationsSection = (
-    <section className="rounded-lg border border-border bg-card p-3">
+    <section
+      id="page-section-attachments"
+      tabIndex={-1}
+      className="scroll-mt-14 rounded-lg border border-border bg-card p-3"
+    >
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Attached to this page
       </h2>
@@ -1149,7 +1153,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
         }}
       >
         <PageVisualFeedback page={page} />
-        <AssociationCardGrid />
+        <AssociationCardGrid excludeTokens={["project", "task"]} />
       </PrimaryEntityProvider>
     </section>
   );
@@ -1167,7 +1171,46 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       <MarketingPageWriteTargets page={page} />
       <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
         <div className="grid w-full gap-3">
-          <section className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+          <nav
+            aria-label="Page sections"
+            className="sticky top-0 z-20 -mx-3 -mt-3 border-b border-border bg-textured/95 px-3 py-1.5 backdrop-blur sm:-mx-4 sm:-mt-4 sm:px-4"
+          >
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <a
+                href="#page-section-overview"
+                className="inline-flex h-11 shrink-0 items-center rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                Overview
+              </a>
+              <a
+                href="#page-section-plan"
+                className="inline-flex h-11 shrink-0 items-center rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                Plan brief
+              </a>
+              {rows.map((row) => (
+                <a
+                  key={row.key}
+                  href={`#page-section-${row.key}`}
+                  className="inline-flex h-11 shrink-0 items-center rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {row.title}
+                </a>
+              ))}
+              <a
+                href="#page-section-attachments"
+                className="inline-flex h-11 shrink-0 items-center rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                Attachments
+              </a>
+            </div>
+          </nav>
+
+          <section
+            id="page-section-overview"
+            tabIndex={-1}
+            className="scroll-mt-14 flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
+          >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span data-surface-value="page_status">
@@ -1292,7 +1335,9 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               and not the editable plan, it is what the page was asked to be.
               Renders in every view mode; says so honestly when nothing planned
               this page. */}
-          <PagePlanContextCard page={page} site={site} />
+          <div id="page-section-plan" tabIndex={-1} className="scroll-mt-14">
+            <PagePlanContextCard page={page} site={site} />
+          </div>
 
           {/* Every paired row owns one compact disclosure in Studio. Nested
               card disclosures stay open there, so the two lanes can never be
@@ -1339,13 +1384,19 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               </section>
             ) : null}
             {rows.map((row) => (
-              <Pair
+              <div
                 key={row.key}
-                mode={viewMode}
-                title={row.title}
-                current={row.current}
-                plan={row.plan}
-              />
+                id={`page-section-${row.key}`}
+                tabIndex={-1}
+                className="scroll-mt-14"
+              >
+                <Pair
+                  mode={viewMode}
+                  title={row.title}
+                  current={row.current}
+                  plan={row.plan}
+                />
+              </div>
             ))}
           </div>
 

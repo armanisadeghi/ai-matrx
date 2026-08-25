@@ -100,9 +100,10 @@ export function WorkspaceViewToggle({
           type="button"
           onClick={() => onChange(value)}
           aria-pressed={mode === value}
+          aria-label={title}
           title={title}
           className={cn(
-            "flex h-8 items-center gap-1.5 px-2.5 text-xs font-medium transition-colors",
+            "flex h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 text-xs font-medium transition-colors lg:h-8 lg:min-w-0",
             index === 0 && "rounded-l-[5px]",
             index === OPTIONS.length - 1 && "rounded-r-[5px]",
             mode === value
