@@ -38048,7 +38048,7 @@ export interface components {
         };
         /**
          * EnrichDirective
-         * @description What the extension should go fetch + why (RESEARCH_ENRICHMENT.md §3).
+         * @description What the extension should go fetch + why (common-docs/systems/knowledge/research/EXTENSION_CAPTURE_CONTRACT.md § Enrichment).
          *
          *     `goal` is the only required field. `reason` is the human string shown to
          *     the user ("SPA shipped an empty shell"); `hints` carries optional
@@ -38959,7 +38959,7 @@ export interface components {
         };
         /**
          * ExtensionMediaVideo
-         * @description A video the extension found in the LIVE DOM (RESEARCH_ENRICHMENT.md §4).
+         * @description A video the extension found in the LIVE DOM (common-docs/systems/knowledge/research/EXTENSION_CAPTURE_CONTRACT.md § Submitting a capture).
          *
          *     Catches JS-injected `<video>` players and post-render YouTube/Vimeo iframes
          *     the server's HTML scan misses. `src` is the resolved URL; `poster`,

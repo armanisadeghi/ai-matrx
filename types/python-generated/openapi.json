@@ -99576,7 +99576,7 @@
           "goal"
         ],
         "title": "EnrichDirective",
-        "description": "What the extension should go fetch + why (RESEARCH_ENRICHMENT.md §3).\n\n`goal` is the only required field. `reason` is the human string shown to\nthe user (\"SPA shipped an empty shell\"); `hints` carries optional\nmachine nudges."
+        "description": "What the extension should go fetch + why (common-docs/systems/knowledge/research/EXTENSION_CAPTURE_CONTRACT.md § Enrichment).\n\n`goal` is the only required field. `reason` is the human string shown to\nthe user (\"SPA shipped an empty shell\"); `hints` carries optional\nmachine nudges."
       },
       "EnrichHints": {
         "properties": {
@@ -101964,7 +101964,7 @@
           "src"
         ],
         "title": "ExtensionMediaVideo",
-        "description": "A video the extension found in the LIVE DOM (RESEARCH_ENRICHMENT.md §4).\n\nCatches JS-injected `<video>` players and post-render YouTube/Vimeo iframes\nthe server's HTML scan misses. `src` is the resolved URL; `poster`,\n`duration` (seconds), and `type` (mime) are optional metadata."
+        "description": "A video the extension found in the LIVE DOM (common-docs/systems/knowledge/research/EXTENSION_CAPTURE_CONTRACT.md § Submitting a capture).\n\nCatches JS-injected `<video>` players and post-render YouTube/Vimeo iframes\nthe server's HTML scan misses. `src` is the resolved URL; `poster`,\n`duration` (seconds), and `type` (mime) are optional metadata."
       },
       "ExtensionPageMetadata": {
         "properties": {
