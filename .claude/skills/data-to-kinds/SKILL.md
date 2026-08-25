@@ -60,8 +60,8 @@ to end — point them at an API or some aspect of our system and ensure all of t
 
 | Stage | Repo | Produces | Gate (Arman) | Then |
 |---|---|---|---|---|
-| **A Distill** | aidream | tables agreed → `@kind` models + adapters + tests → published (inactive) → demo endpoint → ledger | approves every table, then the registered set | fire B |
-| **B Render** | matrx-frontend | `pnpm shape:types` → compiled mirrors → one canonical component per kind → `kind_component` rows → activation → live demo | approves the rendering on the demo | fire V+D (or C if this is a pilot) |
+| **A Distill** | aidream | shapes distilled → `@kind` models + adapters + tests → published (inactive) → demo endpoint → ledger | **none — do NOT stop for a table approval** (gap #14) | fire B |
+| **B Render** | matrx-frontend | `kind_component` rows → activation → `pnpm shape:types` → compiled mirrors → one canonical component per kind → live demo | **THE gate: approves the rendering on the demo** | fire V+D (or C if this is a pilot) |
 | **V Verify** | either | four legs per kind; stamps `verified` | — (report) | — |
 | **D Cutover** | aidream (+FE consumers) | emitters repointed to the family, collection schema superseded, legacy displays converged | approves cutover | — |
 | **C Review** | common-docs (owns this skill) | skill rewrite + replication run | — | — |
@@ -470,6 +470,114 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
     the things the scraper hides or considers noise are the things YOU MUST see because they're
     your call to action."* **Rule: when a source reports what IT discarded, that report is
     first-class data for a power-user/admin surface, never plumbing to drop.**
+
+### Friction from replication run 1, round 2 — the gate itself was wrong (2026-08-24)
+
+14. **THE STAGE A GATE IS WRONG, AND THIS IS THE BIGGEST FINDING OF THE RUN.** The skill ends
+    Stage A at *"Arman approves the registered set"* — tables, models, a JSON-returning endpoint.
+    He cannot rule on that. Arman, 2026-08-24: *"when I look at the data structure, what I look
+    for is to see what UI we can build from it. Without a UI, it's hard for me to know if what
+    we're getting is useful or not. The usefulness of it comes from what we're able to display."*
+    **Rule now: there is ONE approval gate, and it is on the RENDERED demo.** Stage A still
+    distills, registers and endpoints; it does NOT stop to collect an approval on tables. Ship
+    Stage B's components, then bring him the demo. Tables are how you show your work when he
+    asks, not the thing he signs.
+15. **The demo's primary tab must render through `KindInstanceRender` from the FIRST showing.**
+    A JSON inspector is not a demo — the search pilot's demo was *"a beautiful and masterful
+    display of kind components"* and the scraper's first showing was *"a bunch of garbage JSON
+    fields that are just spitting data out."* The comparison is the standard.
+16. **The activation chicken-and-egg is undocumented and cost a full cycle.** `GeneratedKindSlug`
+    contains only ACTIVE kinds, so `pnpm shape:types` does not emit types for a family you just
+    published — but activation needs a `kind_component` row, and the components need the types.
+    **The real order, which the skill must state:** publish INACTIVE → land the `kind_component`
+    rows (they need only a `component_key`, never compiled code) → re-run the publisher to
+    ACTIVATE → `pnpm shape:types` → now write the components against real types. Stage B's
+    current step order (types first) only works for a family that is already active.
+17. **`generic_structured` blocks activation and must be retired in the same migration.** A slug
+    whose only active `role='output'` row is the generic viewer fails the render gate with a
+    message saying so. The component migration deactivates it (never deletes) before inserting
+    the real row — the fallback law, applied.
+18. **A DROP REASON MUST BE VERIFIED AGAINST THE PRODUCING CODE, never inferred from
+    measurements.** This run wrote *"ai_content is a strictly narrower slice of
+    ai_research_content"* from comparing string lengths across captures. The extraction rules say
+    otherwise: `ai_content` allows `code` and strips anchors, `ai_research_content` forbids `code`
+    and keeps them. **Neither contains the other**, and the field was nearly dropped. Read the
+    code that PRODUCES a field before writing why you do not need it.
+19. **Run the duplicate proof BEFORE proposing the drops.** Arman had to ask: *"I just wanna make
+    sure that this stuff is already captured in full elsewhere, and you've done a side by side
+    comparison… if it's not, then we obviously would have a very serious problem on our hands."*
+    It found three non-duplicates out of twelve. **Rule: every DROPPED path ships with a runnable
+    assertion that its content is recoverable from what the kind carries — a test, not a claim —
+    and the drop table quotes the result.**
+20. **A peer agent may rewrite your in-progress files on a stale premise.** Mid-run, another
+    session rewrote this family's registry-typed reads as untyped `Record<string, unknown>`,
+    commenting that the slugs were *"not independently registered Shape slugs"* — true when it
+    looked, false ten minutes later. Shared-checkout normality; re-assert your typing after any
+    unexplained reformat, and check what the comment CLAIMS against the registry.
+
+### Friction from replication run 2 — rank / SERP-landscape family (2026-08-24, ledger `operations/rank-kinds-run.md`)
+
+20. **FIXED 2026-08-24 — Stage B.6 "re-run the family's publish and the dual gate now passes" DID NOT ACTIVATE ANYTHING.**
+    `publish_kind_catalog.py` wired activation into the CREATE path and the EVOLVE
+    path only. A kind that lands INACTIVE in Stage A (by design — the gate needs a
+    frontend `kind_component`) has an UNCHANGED schema by the time Stage B lands
+    that component, so it plans as **`match`**, and the match path did maturity +
+    example sync and nothing else. Measured: `provider_run_receipt`,
+    `seo_rank_reading` and `serp_placement` all had ACTIVE components and stayed
+    `is_active=false` across a full `--evolve --apply` run that reported no
+    problem. The whole Stage A → Stage B handoff ran through this hole. Fix:
+    `_sync_activation` (aidream `9ee104c5a`) re-evaluates a matching-but-INACTIVE
+    row through the ONE authority (`evaluate_kind_activation` →
+    `set_kind_activation`); an already-active row is untouched. **Standing rule:
+    Stage B ALWAYS ends by asserting activation with SQL, never by trusting the
+    publisher's exit code** — `select kind, is_active from
+    content_ir.kind_definition where kind in (…)`.
+21. **A discriminated union over kinds is `union`, not `object` — the skill never
+    says how to mirror one.** Stage B.3 says "`object/kind` + `array/itemKinds`
+    for nested kinds", which covers a single ref and a homogeneous array and
+    nothing else. A field whose payload is any of N registered kinds (the whole
+    point of a placement/slot kind) is
+    `{type:"union", scalars:[], kinds:["web_result", …]}` in `KindSchema`; the
+    refs externalize to `kind_edge` exactly like `array.itemKinds`.
+    `{type:"object", kind}` takes ONE slug and `itemKinds` is not a legal key on
+    it, so the obvious guess fails to compile.
+22. **THE SECOND FAMILY'S NESTING SEAM IS A NEW PROBLEM THE SKILL DOES NOT NAME.**
+    Stage B.4 says the collection delegates "via a static sibling map with a
+    db-override seam (pattern: `search-kinds/SearchKindNested.tsx`)". That
+    describes ONE family. A convergence family nests kinds from ANOTHER family,
+    and copying the seam would duplicate the resolution rule (and would re-render
+    a search result through a second component — the exact defect the canonical-
+    component law forbids). **Rule: the new family's seam owns ONLY its own slugs
+    and DELEGATES every foreign kind to that family's seam, one-way** (rank →
+    search; the search family knows nothing about rank). Reference:
+    `blocks/rank-kinds/RankKindNested.tsx`.
+23. **`pnpm shape:types` EXCLUDES INACTIVE KINDS, so Stage B's step order in the
+    skill cannot be followed literally.** The generator emits one interface per
+    ACTIVE row, and Stage A's kinds are inactive by design — so running B.2
+    (generate types) before B.5/B.6 (component rows + activation) produces an
+    artifact with no type for the very kinds you are about to write components
+    for. **The real order is: land the `kind_component` rows → activate → THEN
+    `pnpm shape:types` → then write the components against the generated types.**
+    The component_key is just a string, so the rows can land before any React
+    exists.
+24. **Stage B has no answer for "the shared preview server is on the wrong
+    profile".** One dev server is machine-wide; `/demos/*` needs
+    `MATRX_PREVIEW_PROFILE=user`, which PARKS `(admin)` and makes the admin kind
+    preview (`/administration/utilities/kind-registry/<slug>`) 307 to production
+    — and the reverse is true for `core`. With a concurrent session holding the
+    server, ONE of the skill's two required browser checks is unreachable, and
+    flipping the profile breaks the other session mid-verification. **Rule until
+    a better mechanism exists: do the DEMO leg first (it is the one that proves
+    real data end-to-end), record explicitly in the ledger which kinds the demo
+    could NOT exercise, and hand the admin-preview leg to Stage V.** A demo
+    endpoint that emits a collection does not exercise the family's sibling kinds
+    — plan for that when choosing what the Stage A endpoint returns.
+25. **`type-check must be green` is not a usable gate in a shared checkout.** The
+    tree carried 84 errors from a concurrent family's in-flight work, none of them
+    reachable from this stage's files. **Rule: run the gate, then attribute — the
+    finding is "zero errors in the files this stage touched", with the residue
+    named and attributed. Never "fix" a peer's in-flight file to make a gate
+    green, and never report a red tree as your own.**
 
 ## Chip prompts (standalone — paste as the chip body, fill the ⟨⟩)
 
