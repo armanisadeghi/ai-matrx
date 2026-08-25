@@ -44,7 +44,7 @@ export interface StaleDataNoticeProps {
    */
   hasData: boolean;
   /**
-   * What could not be read, as a plain noun phrase the user recognises —
+   * What could not be read, as a plain noun phrase the user recognizes —
    * "the admin roster", "feedback". Never a table or endpoint name: our user
    * is a subject-matter expert, not an engineer.
    */

@@ -37,7 +37,7 @@ const KIND_LABEL: Record<string, string> = {
   value_band: "Value band",
   geo_band: "Geo band",
   geo_area: "Service area",
-  topic: "Topic worth",
+  topic: "Offering worth",
 };
 
 /** One line each: what the pack says vs what the site has. */

@@ -368,7 +368,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     description: [
       "Stages a NEW data store into the create form in the left column — the same three inputs the user would type.",
       `Object with any of: name (string, 1-200 chars), kind (one of ${DATA_STORE_KINDS.join(" | ")}), description (string, max 2000 chars).`,
-      "Only the keys you send are changed; omit a key to leave the user's value alone, or pass an empty string to clear name/description. An unrecognised kind is rejected, never corrected.",
+      "Only the keys you send are changed; omit a key to leave the user's value alone, or pass an empty string to clear name/description. An unrecognized kind is rejected, never corrected.",
       'Pick kind from what the store is for: "case" for one matter or client, "project" for one initiative, "reference" for durable material consulted repeatedly, "inbox" for an unsorted landing bucket, "general" when nothing fits. Do NOT choose "library" — that is reserved for system-owned Shared Knowledge Resources published to tenants by audience.',
       "If the create form is collapsed, applying this OPENS it and stages the values there — a visible, reversible act.",
       "Nothing is created until the user presses Create. Choosing this does not add any documents; a new store starts empty and retrieves nothing until sources are bound to it by hand.",

@@ -58,13 +58,13 @@ function isKnown(value: string): value is OriginClass {
   return (ORIGIN_CLASSES as readonly string[]).includes(value);
 }
 
-/** Short analytics label. An unrecognised class renders as itself, never blank. */
+/** Short analytics label. An unrecognized class renders as itself, never blank. */
 export function originClassLabel(value: string | null | undefined): string {
   if (!value) return ORIGIN_LABELS.unknown;
   return isKnown(value) ? ORIGIN_LABELS[value] : value;
 }
 
-/** Stable chart/legend color; anything unrecognised falls back to the unknown grey. */
+/** Stable chart/legend color; anything unrecognized falls back to the unknown grey. */
 export function originClassColor(value: string | null | undefined): string {
   if (!value) return ORIGIN_COLORS.unknown;
   return isKnown(value) ? ORIGIN_COLORS[value] : ORIGIN_COLORS.unknown;

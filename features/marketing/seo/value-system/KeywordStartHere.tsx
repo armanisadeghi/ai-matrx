@@ -100,7 +100,7 @@ export function KeywordStartHere({
     },
     {
       action: "Group keywords into your Offerings",
-      screen: "Topics",
+      screen: "Offerings",
       line: "The Offering tree — what you actually sell — and what each Offering is worth to this site.",
       href: `${value}/offerings`,
       icon: TreePine,

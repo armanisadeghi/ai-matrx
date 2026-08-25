@@ -82,7 +82,7 @@ export interface RulebookInterview {
   expertTurnCount: number;
   /** How many characters the Expert contributed. The honest "how much is in here". */
   expertChars: number;
-  /** First line of the first thing the Expert said — how they recognise it. */
+  /** First line of the first thing the Expert said — how they recognize it. */
   firstExpertLine: string | null;
   /** Rules in the Rulebook whose provenance points at this conversation. */
   rulesProduced: number;
@@ -354,7 +354,7 @@ export function associateInterviewWhenPersisted(args: {
 /**
  * Give an interview conversation an honest title. The agent-execution system
  * auto-titles conversations ("Auto: expertise_interviewer"), which is a name
- * no Expert recognises. Best-effort and only ever REPLACES an auto title — a
+ * no Expert recognizes. Best-effort and only ever REPLACES an auto title — a
  * title the Expert (or the labeler) chose is never clobbered.
  */
 export async function ensureInterviewTitle(args: {
@@ -450,7 +450,7 @@ async function readExpertMessages(
 /**
  * The interviews on a Rulebook, richest-first metadata: when, how many turns,
  * how much the Expert said, how many rules it produced, and the first line so
- * the Expert recognises which conversation is which.
+ * the Expert recognizes which conversation is which.
  */
 export async function listRulebookInterviews(
   rulebookId: string,

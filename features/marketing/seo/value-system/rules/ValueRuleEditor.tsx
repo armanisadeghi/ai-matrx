@@ -135,7 +135,7 @@ function Field({
 /** Everything wrong with the draft, in the order a person would fix it. */
 function draftIssues(form: ValueRuleFormState): string[] {
   const issues: string[] = [];
-  if (!form.name.trim()) issues.push("Give the rule a name you will recognise later.");
+  if (!form.name.trim()) issues.push("Give the rule a name you will recognize later.");
   const multiplier = Number(form.multiplier.trim());
   if (!form.multiplier.trim() || !Number.isFinite(multiplier)) {
     issues.push("Enter a multiplier.");

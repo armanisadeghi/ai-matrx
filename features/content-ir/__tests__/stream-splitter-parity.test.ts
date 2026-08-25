@@ -71,7 +71,7 @@ const UNKNOWN_KIND = JSON.stringify(
 );
 
 /**
- * LEGACY JSON PAYLOADS — no `__kind`, recognised through the `json_root_key`
+ * LEGACY JSON PAYLOADS — no `__kind`, recognized through the `json_root_key`
  * surface registry (content_ir.kind_surface). These are the shapes the SERVER
  * maps onto their registered kind in `adapt_block_data`; the frontend does not
  * adapt, so they still degrade to raw — but the parser now NAMES the kind the

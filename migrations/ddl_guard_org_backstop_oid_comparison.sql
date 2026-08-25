@@ -56,7 +56,7 @@
 -- (its grandfather lists move almost daily). A full-body replace here would
 -- silently revert whatever landed between this file being written and being
 -- run. This edits ONE predicate, verifies the result, and RAISEs if the guard
--- is in a shape it does not recognise -- it never guesses.
+-- is in a shape it does not recognize -- it never guesses.
 --
 -- Idempotent: re-running when the four-backstop predicate is already present is
 -- a no-op.
@@ -84,7 +84,7 @@ BEGIN
   ELSIF position(v_three  in body) > 0 THEN newbody := replace(body, v_three,  v_fixed);
   ELSIF position(v_two    in body) > 0 THEN newbody := replace(body, v_two,    v_fixed);
   ELSE
-    RAISE EXCEPTION 'ddl_guard: org_not_null_no_backstop predicate is in an unrecognised shape — refusing to guess. Re-read pg_get_functiondef(''platform._ddl_guard()'') and update this migration.';
+    RAISE EXCEPTION 'ddl_guard: org_not_null_no_backstop predicate is in an unrecognized shape — refusing to guess. Re-read pg_get_functiondef(''platform._ddl_guard()'') and update this migration.';
   END IF;
 
   EXECUTE 'CREATE OR REPLACE FUNCTION platform._ddl_guard() RETURNS event_trigger LANGUAGE plpgsql AS $function$' || newbody || '$function$';

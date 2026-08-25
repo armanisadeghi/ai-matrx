@@ -198,6 +198,16 @@ export interface MandatePin {
   isEnabled: boolean;
 }
 
+/**
+ * Display identity for a mandate's platform-default Holder. This deliberately
+ * does not resolve user/org bindings: admin inventory surfaces need to show
+ * the system assignment they can inspect and repair in the Mandates console.
+ */
+export interface MandateAssignment extends MandatePin {
+  agentName: string | null;
+  agentType: string | null;
+}
+
 const pinCache = new Map<string, { at: number; value: MandatePin }>();
 
 /** Fetch the system default pins for a set of mandates in one query. */

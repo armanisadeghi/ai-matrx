@@ -149,7 +149,7 @@ export function buildBandMeta(vocab: ValueBandDef[]): BandMeta[] {
     label: negativeDef?.label ?? "Negative",
     description:
       negativeDef?.description ??
-      "Traffic your business does not want — excluded geo, not-offered services, actively avoided topics.",
+      "Traffic your business does not want — excluded geo, not-offered services, actively avoided offerings.",
     reserved: "negative",
     tone: NEGATIVE_META.tone,
     chip: NEGATIVE_META.chip,
@@ -163,7 +163,7 @@ export function buildBandMeta(vocab: ValueBandDef[]): BandMeta[] {
     label: unvaluedDef?.label ?? "Unvalued",
     description:
       unvaluedDef?.description ??
-      "No meaning expressed yet — no topic worth reaches these keywords and no rule fires. The honest bucket, and the work queue.",
+      "No meaning expressed yet — no offering worth reaches these keywords and no rule fires. The honest bucket, and the work queue.",
     reserved: "unvalued",
     tone: UNVALUED_META.tone,
     chip: UNVALUED_META.chip,

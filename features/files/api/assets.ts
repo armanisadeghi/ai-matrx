@@ -50,7 +50,7 @@ import type { components } from "@/types/python-generated/api-types";
  * Spec for a one-off custom variant — sent verbatim to the server in
  * `custom_variants_json`. Use this for ad-hoc dimensions that don't fit
  * any built-in preset. Prefer the preset registry when possible so the
- * resulting variant has a well-known key downstream renderers recognise.
+ * resulting variant has a well-known key downstream renderers recognize.
  */
 export interface CustomVariantSpec {
   key: string;

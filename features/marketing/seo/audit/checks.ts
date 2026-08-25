@@ -107,7 +107,7 @@ export const IMAGE_OVERSIZE_SEVERE_RATIO = 8.0;
 /** Broken images: the row's own band — 3+ is a page that looks abandoned. */
 export const BROKEN_IMAGE_FAIL_COUNT = 3;
 
-/** Extensions `imageFormat` recognises, and the spellings it folds together. */
+/** Extensions `imageFormat` recognizes, and the spellings it folds together. */
 const IMAGE_EXTENSIONS: ReadonlySet<string> = new Set([
   "apng",
   "avif",
@@ -1760,7 +1760,7 @@ export function checkHeadingHierarchy(ev: PageEvidence): CheckOutcome {
 /**
  * The page's own claim about what kind of page it is — schema.org `@type`
  * first, then `og:type`. Returns null when the page declares nothing we
- * recognise (a genuine "we don't know", not a default).
+ * recognize (a genuine "we don't know", not a default).
  */
 export function declaredPageType(ev: PageEvidence): string | null {
   const declared: string[] = [];

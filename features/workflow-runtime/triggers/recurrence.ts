@@ -149,7 +149,7 @@ function parseIntStrict(token: string): number | null {
 
 /**
  * Read a cron expression back as the plain-language shape that produced it.
- * Anything this does not recognise comes back as `advanced` with the original
+ * Anything this does not recognize comes back as `advanced` with the original
  * text — a person's own expression is never rewritten into an approximation.
  */
 export function fromCron(expression: string): Recurrence {

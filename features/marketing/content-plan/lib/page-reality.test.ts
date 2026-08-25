@@ -241,7 +241,7 @@ describe("buildChainToRealize", () => {
 });
 
 describe("isWritePolicyBlocked", () => {
-    it("recognises the server's refusal", () => {
+    it("recognizes the server's refusal", () => {
         expect(
             isWritePolicyBlocked("Write blocked: site policy 'blocked' forbids 'update'."),
         ).toBe(true);

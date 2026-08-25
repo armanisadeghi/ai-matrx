@@ -110,7 +110,7 @@ export interface CheckupDisposition {
  * forever. Approved findings need no memory — they CHANGED the Rulebook, so
  * the auditors no longer see the gap. A DISMISSAL is the fact that has nowhere
  * else to live, and it is fingerprinted (not by the run-scoped finding id,
- * which never repeats) so a later run can recognise the same suggestion.
+ * which never repeats) so a later run can recognize the same suggestion.
  *
  * aidream's checkup service reads this to suppress what the Expert already
  * said no to; this surface is its only writer.

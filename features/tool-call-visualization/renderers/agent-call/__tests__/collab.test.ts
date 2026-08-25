@@ -4,7 +4,7 @@
  * hangs on `history_mode`, and the output keys arrive on the SAME output
  * object as the ordinary agent_call result — so a plain call must never be
  * mistaken for a collaboration one, and a collaboration call must be
- * recognised from its ARGUMENTS alone while it is still running (the output
+ * recognized from its ARGUMENTS alone while it is still running (the output
  * does not exist yet).
  */
 
@@ -51,7 +51,7 @@ test("history_mode 'none' is NOT a collaboration call", () => {
   ).toBe(false);
 });
 
-test("a running call is recognised from its arguments alone", () => {
+test("a running call is recognized from its arguments alone", () => {
   const info = getCollabCallInfo(
     entry({
       status: "started",

@@ -63,7 +63,7 @@ describe("fromCron", () => {
     }
   });
 
-  it("keeps an unrecognised expression as the person typed it", () => {
+  it("keeps an unrecognized expression as the person typed it", () => {
     const weird = "0 2 */3 6 4";
     expect(fromCron(weird)).toEqual({ mode: "advanced", expression: weird });
   });

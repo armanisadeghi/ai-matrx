@@ -204,7 +204,7 @@ function PackCard({
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
         <Stat icon={ListChecks} count={pack.meaning_count} label="answers" />
-        <Stat icon={TreePine} count={pack.topic_count} label="topics" />
+        <Stat icon={TreePine} count={pack.topic_count} label="offerings" />
         <Stat icon={Layers} count={pack.value_band_count + pack.geo_band_count} label="bands" />
         <Stat icon={MapPinned} count={pack.geo_area_count} label="areas" />
       </div>
@@ -364,7 +364,7 @@ function PackSummaryPanel({
           {(
             [
               [ListChecks, pack.meaning_count, "answers", "what this industry's searches mean, and what each meaning is worth"],
-              [TreePine, pack.topic_count, "topic worths", "what each subject is worth — the base every rule multiplies"],
+              [TreePine, pack.topic_count, "offering worths", "what each offering or branch is worth — the base every rule multiplies"],
               [Layers, pack.value_band_count + pack.geo_band_count, "bands", "tier names and thresholds, geo band multipliers"],
               [MapPinned, pack.geo_area_count, "service areas", "archetypes you fill with your own places"],
             ] as const
@@ -536,7 +536,7 @@ export function StarterPackCatalog() {
           </h1>
           <p className="mt-0.5 max-w-3xl text-xs leading-relaxed text-muted-foreground">
             A pack is a day-one answer to &ldquo;what is this keyword worth to a business like
-            mine?&rdquo; — rules, topic worth, bands and service-area archetypes an expert
+            mine?&rdquo; — rules, offering worth, bands and service-area archetypes an expert
             ratified for an industry. Preview one on your own keywords, take the parts you
             want, and from then on they are yours.
           </p>

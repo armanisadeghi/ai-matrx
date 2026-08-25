@@ -557,7 +557,7 @@ function OfferingValuesView({ a }: { a: Record<string, unknown> }) {
       })}
       <p className="mt-1 text-[10px] text-muted-foreground">
         Proposals from the 100-point baseline — ratify or adjust them on the
-        Topics screen (worth per Offering); step 6 will bring one-click adoption
+        Offerings screen (worth per offering); step 6 will bring one-click adoption
         here.
       </p>
     </div>

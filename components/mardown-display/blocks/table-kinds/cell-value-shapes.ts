@@ -18,7 +18,7 @@
  * Nothing here re-implements a detector the platform already owns.
  * `looksLikeUuid`, `looksLikeUrl` and `humanizeKey` are the tool-result field
  * library's (`features/tool-call-visualization/result-fields/shape.ts`) — the
- * same functions `StructuredValueView` recognises values with, so a UUID looks
+ * same functions `StructuredValueView` recognizes values with, so a UUID looks
  * the same in a table cell as it does in a tool result. What is added here and
  * did not exist: whole-string EMAIL and ISO-TIMESTAMP recognition, and the
  * date-only formatting rule below.

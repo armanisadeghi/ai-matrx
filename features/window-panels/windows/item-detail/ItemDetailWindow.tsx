@@ -350,7 +350,7 @@ function ItemDetailWindowInner({
               {/* The record's own doors. Controls render as a SIBLING of the copy
                 button, never inside it — and `EntityDoorControls` renders no
                 chrome at all when the token has neither route nor peek, so an
-                unrecognised item type simply keeps the copy chip it had. */}
+                unrecognized item type simply keeps the copy chip it had. */}
               {doorToken ? (
                 <EntityDoorControls
                   token={doorToken}
@@ -381,7 +381,7 @@ function ItemDetailWindowInner({
           contentSource={{ type: "raw" }}
           // Attach To / Share need a REGISTERED entity token — `doorToken`
           // already normalises the item types whose token differs, and an
-          // unrecognised type simply gets a content-only menu rather than a
+          // unrecognized type simply gets a content-only menu rather than a
           // wrong association edge.
           {...(itemId && doorToken && isEntityTypeToken(doorToken)
             ? {

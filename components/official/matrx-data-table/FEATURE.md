@@ -210,7 +210,7 @@ expose `aria-sort` on the `<th>` automatically.
 | `anyOf`     | OR-search across named columns                                                    |
 | Copy        | Per-row + toolbar “this view”                                                     |
 | Inline edit | `editable` on col; string in-cell; else popover; Save/Cancel pill                 |
-| Hierarchy   | `processLocalRows(rows, state)`; canonical controls/rendering stay table-owned     |
+| Hierarchy   | `processLocalRows(rows, state)`; canonical controls/rendering stay table-owned    |
 | Window      | Sidebar View / Edit tabs; Edit = `renderEdit` ?? `detail.render`                  |
 | UUID / FK   | `MatrxUuidCell` via `cellKind` or auto-detect; `fk.onOpen` / `href` / `forbidden` |
 | Icon column | `compact: true` + `width` + `align: "center"` — tight padding, one header menu    |

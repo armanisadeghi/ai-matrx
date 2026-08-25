@@ -352,7 +352,7 @@ const writeTargets: SurfaceWriteTarget[] = [
       "Replaces the ENTIRE set of per-column filters — the same popovers the user opens from the column headers — with the one you send.",
       `Value is an OBJECT (send it as an object, not as a JSON string) with any of these keys: ${PARTY_COLUMN_FILTER_KEY_ENUM_TEXT}. Send {} to clear every column filter.`,
       `Shapes: display_name, job_title and primary_domain take a string matched as a case-insensitive substring server-side; party_kind takes an ARRAY of ${PARTY_KIND_ENUM_TEXT}; do_not_contact takes a boolean (true lists only records flagged do-not-contact); updated_at and created_at take ONE relative bucket from ${DATE_BUCKET_ENUM_TEXT}, meaning "changed/created at least that recently".`,
-      "It REPLACES rather than merges, so include every filter you want kept — read the column_filters value first and send it back with your change folded in. An empty string, or an empty party_kind array, means \"no filter on that column\" and is the same as omitting the key. An unrecognised key or a bad shape is REJECTED WHOLE and the existing filters are left completely untouched.",
+      "It REPLACES rather than merges, so include every filter you want kept — read the column_filters value first and send it back with your change folded in. An empty string, or an empty party_kind array, means \"no filter on that column\" and is the same as omitting the key. An unrecognized key or a bad shape is REJECTED WHOLE and the existing filters are left completely untouched.",
       "All column filters AND together with each other, with the kind facet and with the search box. Applying this resets the list to page 1.",
       "Ephemeral view state; nothing is saved and no record is changed. The visible-record values you read go stale the moment this lands.",
     ].join(" "),
@@ -369,7 +369,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     description: [
       "Re-sorts the table, exactly as clicking a column header does. Both halves of the sort are set together here because one header click sets both.",
       `Value is an OBJECT (not a JSON string) with either or both of: key — one of ${PARTY_SORT_KEY_ENUM_TEXT} — and direction — one of ${PARTY_SORT_DIRECTION_ENUM_TEXT}. Send only the half you mean to change; the other keeps its current value. Sending neither, or any other key, is rejected.`,
-      "These are DB columns, not rendered cells, which is why Employer is not sortable — it is a joined embed. An unrecognised key is REJECTED rather than silently falling back.",
+      "These are DB columns, not rendered cells, which is why Employer is not sortable — it is a joined embed. An unrecognized key is REJECTED rather than silently falling back.",
       'Dates sort by timestamp, so "most recently updated first" is {"key":"updated_at","direction":"desc"}; names sort alphabetically, so A-Z is {"key":"display_name","direction":"asc"}.',
       "Unlike the three narrowing targets this changes ORDER only — the same records stay in the result set, though which of them land on page 1 changes. This one preference IS remembered for the CRM list across visits (sort is saved view style, not query state); no record is changed. The visible-record values you read go stale the moment this lands.",
     ].join(" "),

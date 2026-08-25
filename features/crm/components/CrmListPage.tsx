@@ -268,7 +268,7 @@ function parseColumnFilters(value: unknown): PartyListFilters {
   );
   if (unknown.length > 0) {
     throw new Error(
-      `column_filters rejected: unrecognised key(s) ${unknown.join(", ")}. ` +
+      `column_filters rejected: unrecognized key(s) ${unknown.join(", ")}. ` +
         `The filters were left unchanged. Allowed keys are ${PARTY_COLUMN_FILTER_KEY_ENUM_TEXT} — send {} to clear every column filter.`,
     );
   }
@@ -398,7 +398,7 @@ function parseListSort(
   );
   if (unknown.length > 0) {
     throw new Error(
-      `list_sort rejected: unrecognised key(s) ${unknown.join(", ")}. The sort was left unchanged. Send {"key": …} and/or {"direction": …}.`,
+      `list_sort rejected: unrecognized key(s) ${unknown.join(", ")}. The sort was left unchanged. Send {"key": …} and/or {"direction": …}.`,
     );
   }
   if (!("key" in raw) && !("direction" in raw)) {

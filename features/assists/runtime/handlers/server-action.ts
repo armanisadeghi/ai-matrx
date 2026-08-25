@@ -55,7 +55,7 @@ registerAssistAction({
       // stale ledger row or something worse, and both are worth seeing.
       return {
         ok: false,
-        error: `This action points at an unrecognised address (${action.endpoint}) and was not run.`,
+        error: `This action points at an unrecognized address (${action.endpoint}) and was not run.`,
       };
     }
     const outcome = await ctx.callServer(action.endpoint, action.body ?? null);

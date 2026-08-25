@@ -43,7 +43,7 @@ const WORKING_DOC_ID_NAMESPACE = "6f3b2e9a-1c4d-4f8a-9b2e-7d5c1a0f3e8b";
  * window, and session agrees on the same id BEFORE the row exists. That makes
  * materialize-on-write idempotent across clients: two tabs that both start
  * typing reserve the SAME id and the upsert collapses to ONE row (no duplicate /
- * orphan docs), and hydrate can recognise the conversation's own (born-here)
+ * orphan docs), and hydrate can recognize the conversation's own (born-here)
  * document. Attached documents from OTHER conversations keep their own ids.
  */
 export function reservedWorkingDocumentId(

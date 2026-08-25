@@ -272,7 +272,7 @@ OR (id IN (<permissions ∪ memberships ∪ reachability ∪ entity_grants for t
 std_select USING (created_by = (select auth.uid()) OR iam.has_access('<token>', id, 'viewer'))
 ```
 
-`iam.has_access` is a `SECURITY DEFINER` function and is not `LEAKPROOF`, so Postgres must apply the RLS qual before the user's own `WHERE`; the `OR` means no index can serve it, and the planner falls back to a sequential scan calling `has_access` **once per row**. That is the D146 per-row-definer class — already recognised for the `ledger` variant (whose `std_select` was rewritten to a set-wise uncorrelated subquery for exactly this reason, `aidream/db/migrations/0439`) — but the `entity` lane still has it, on the biggest tables the platform owns.
+`iam.has_access` is a `SECURITY DEFINER` function and is not `LEAKPROOF`, so Postgres must apply the RLS qual before the user's own `WHERE`; the `OR` means no index can serve it, and the planner falls back to a sequential scan calling `has_access` **once per row**. That is the D146 per-row-definer class — already recognized for the `ledger` variant (whose `std_select` was rewritten to a set-wise uncorrelated subquery for exactly this reason, `aidream/db/migrations/0439`) — but the `entity` lane still has it, on the biggest tables the platform owns.
 
 **Why it matters more than a slow query:** `files.files` is the user's file list. A first-party user cannot enumerate their own files inside a normal request timeout. Under db-rules §6a that is as serious as a leak — *"a legitimate user blocked from their own data is as serious a bug as a stranger let in"*.
 

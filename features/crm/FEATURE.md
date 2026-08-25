@@ -570,7 +570,7 @@ edit it, which `iam.has_access` already confers — nothing invented).
   `definitionsMatch` / `describeDefinition`; `service.ts` — declared-scope read
   of mine + my orgs, create/update/touch/delete). UI:
   `components/saved-views/SavedViewBar.tsx`.
-- **The definition is jsonb and is validated on read.** An unrecognised field
+- **The definition is jsonb and is validated on read.** An unrecognized field
   falls back to its default rather than throwing away a list page the user only
   wanted to browse. `SAVED_VIEW_DEFINITION_VERSION` is the shape version —
   bump it and teach the parser when the definition changes.
@@ -1170,7 +1170,7 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
   People/Companies facet and the column filters; `useListViewPrefs.setPrefs`
   for the sort), so an agent write and a user click are indistinguishable
   downstream. They validate the whole value and THROW before mutating —
-  `column_filters` replaces the entire filter bag and rejects unrecognised
+  `column_filters` replaces the entire filter bag and rejects unrecognized
   keys rather than dropping them, `list_sort` reads the current sort through a
   ref because the writeback seam captures handler closures before the confirm
   dialog resolves. Enum checks read new shared constants in `types.ts`

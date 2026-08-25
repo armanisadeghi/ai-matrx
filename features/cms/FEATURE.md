@@ -226,7 +226,7 @@ could not see the row.
 - `canAccessCmsSite(caller, site, level)` is pure, and is a faithful twin of the
   org branch of MAIN's `iam.has_access_for_base`: **owner** → every level;
   **org admin** (`owner`/`admin` role) on `visibility >= internal` → every level;
-  **org member** → up to `editor`; **public** → `viewer`. An unrecognised
+  **org member** → up to `editor`; **public** → `viewer`. An unrecognized
   visibility label fails CLOSED.
 - `cmsVisibleSitesFilter(caller)` is the query form of that predicate for list
   reads. It returns `null` when the caller has no orgs, because an empty

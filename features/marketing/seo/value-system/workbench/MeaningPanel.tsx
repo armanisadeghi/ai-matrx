@@ -141,7 +141,7 @@ function guardChips(value: SiteTopicValue) {
     <span
       key={guard}
       className="rounded border border-destructive/40 bg-destructive/10 px-1 py-px text-[10px] text-destructive"
-      title="A guard: keywords under this topic resolve Negative regardless of arithmetic."
+      title="A guard: keywords under this offering resolve Negative regardless of arithmetic."
     >
       {GUARD_LABELS[guard]}
     </span>
@@ -265,7 +265,7 @@ export function MeaningPanel({
               Start from an industry starter pack
             </span>
             <span className="mt-0.5 block text-[10px] leading-4 text-muted-foreground">
-              Topic worth, qualifier rules and band vocabularies proposed from the
+              Offering worth, qualifier rules and band vocabularies proposed from the
               real demand of other companies in your industry. Adopt one, then prune
               it — nothing it writes is permanent.
             </span>
@@ -620,25 +620,25 @@ export function MeaningPanel({
           </ul>
         </section>
 
-        {/* Topic worth */}
+        {/* Offering worth */}
         <section className="space-y-2">
           <SectionHeader
             icon={TreePine}
-            title="Topic worth"
+            title="Offering worth"
             count={topicValues.data?.values.length ?? null}
-            hint="The starting number: a keyword inherits the nearest ancestor topic you weighted (0–100). Set worth high on the tree and it cascades down."
+            hint="The starting number: a keyword inherits the nearest offering or branch you weighted (0–100). Set worth high on the tree and it cascades down."
           />
           {topicValues.isLoading ? <SectionSkeleton /> : null}
           {topicValues.isError ? (
             <InlineQueryError
-              what="topic worth"
+              what="offering worth"
               error={topicValues.error}
               onRetry={() => void topicValues.refetch()}
             />
           ) : null}
           {topicValues.data && topicValues.data.values.length === 0 ? (
             <EmptyLine>
-              No topic worth expressed yet — this is why keywords sit in
+              No offering worth expressed yet — this is why keywords sit in
               Unvalued. Weighting even a handful of top-level topics values
               thousands of keywords at once.
             </EmptyLine>
@@ -657,7 +657,7 @@ export function MeaningPanel({
                     <p className="flex items-center justify-between gap-2 text-[11px]">
                       <span className="flex min-w-0 items-center gap-1.5">
                         <span className="truncate font-medium text-foreground">
-                          {topic?.name ?? "Unknown topic"}
+                          {topic?.name ?? "Unknown offering"}
                         </span>
                         {topic ? (
                           <span className="shrink-0 rounded border border-border bg-muted/40 px-1 py-px text-[10px] text-muted-foreground">

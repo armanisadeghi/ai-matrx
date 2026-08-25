@@ -92,7 +92,7 @@ attributes.inbox                  = { handled_at, handled_by }   ← OURS, RPC-w
 ```
 
 `label` is narrowed onto the closed set `bounce | unsubscribe | ooo | interested |
-not_interested | other`. **An unrecognised string becomes `other`; a MISSING label stays
+not_interested | other`. **An unrecognized string becomes `other`; a MISSING label stays
 `null` and renders as "Unclassified"** — those are different facts, and collapsing them
 would tell the user a model made a judgement it never made.
 

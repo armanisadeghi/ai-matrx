@@ -945,10 +945,10 @@ export function MeaningRulesWorkbench() {
           <Link
             href={marketingRoutes.site(brandId, siteId, "/value/offerings")}
             className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-            title="Rules are one half of the arithmetic; topic worth is the other — the base every rule multiplies."
+            title="Rules are one half of the arithmetic; offering worth is the other — the base every rule multiplies."
           >
             <ListTree className="h-3 w-3" aria-hidden />
-            Topic tree — what each subject is worth
+            Offering tree — what each branch is worth
           </Link>
           <Link
             href={marketingRoutes.site(brandId, siteId, "/value/packs")}

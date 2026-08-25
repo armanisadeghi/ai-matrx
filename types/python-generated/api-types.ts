@@ -10969,47 +10969,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/agent-factory/build": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Build One
-         * @description Non-streaming build of exactly one agent. Convenience for the script /
-         *     integration tests; the streaming variant below is the FE path.
-         */
-        post: operations["build_one_agent_factory_build_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/agent-factory/build-stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Build Stream Endpoint
-         * @description Streaming build of one or more agents. Emits `BuildEvent`s to the FE.
-         */
-        post: operations["build_stream_endpoint_agent_factory_build_stream_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/admin/tools": {
         parameters: {
             query?: never;
@@ -11127,6 +11086,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -26408,6 +26391,20 @@ export interface components {
             error?: string | null;
             /** Top Phrases */
             top_phrases?: string[];
+            /**
+             * Autonomy Mode
+             * @default
+             */
+            autonomy_mode?: string;
+            /**
+             * Autonomy Decision
+             * @default
+             */
+            autonomy_decision?: string;
+            /** Autonomy Refusal */
+            autonomy_refusal?: string | null;
+            /** Skipped */
+            skipped?: string | null;
         };
         /** BackgroundInteractionStart */
         BackgroundInteractionStart: {
@@ -28689,46 +28686,6 @@ export interface components {
              * @default 5
              */
             variant_count?: number;
-        };
-        /** BuildOnceResponse */
-        BuildOnceResponse: {
-            /** Name */
-            name: string;
-            /** Agent Id */
-            agent_id: string;
-            /** Version Id */
-            version_id: string;
-            /** Runner Path */
-            runner_path: string;
-            /** Spec Path */
-            spec_path: string;
-            /**
-             * Dry Run
-             * @default false
-             */
-            dry_run?: boolean;
-        };
-        /**
-         * BuildRequest
-         * @description Body for `POST /agent-factory/build`.
-         *
-         *     Three trigger modes (callers pick one):
-         *       * `names` — list of `internal_agents/<name>.md` specs to build
-         *       * `name` (alone) — single spec to build
-         *       * `name` + `contents` — write the spec file first, then build
-         */
-        BuildRequest: {
-            /** Names */
-            names?: string[];
-            /** Name */
-            name?: string | null;
-            /** Contents */
-            contents?: string | null;
-            /**
-             * Dry Run
-             * @default false
-             */
-            dry_run?: boolean;
         };
         /** BuiltinPromptCatalogResponse */
         BuiltinPromptCatalogResponse: {
@@ -34262,7 +34219,7 @@ export interface components {
             tools?: string[];
             /**
              * Owner User Id
-             * @description WHO this agent belongs to. Set it whenever the agent is being built FOR a user (a Masterwork's Maker/Editor/Chief, anything a customer's build produces): the agent is born agent_type='user', created_by=<this user>, in their effective org, with an internal card — exactly what a normal user-created agent gets. Leave it None ONLY for a platform builtin the PLATFORM ships to everyone (the internal_agents/*.md factory, seed scripts); a builtin is ownerless, sits in the Matrx System org, and shows in every user's browse list.
+             * @description WHO this agent belongs to. Set it whenever the agent is being built FOR a user (a Masterwork's Maker/Editor/Chief, anything a customer's build produces): the agent is born agent_type='user', created_by=<this user>, in their effective org, with an internal card — exactly what a normal user-created agent gets. Leave it None ONLY for a platform builtin the PLATFORM ships to everyone (the agent factory, seed scripts); a builtin is ownerless, sits in the Matrx System org, and shows in every user's browse list.
              */
             owner_user_id?: string | null;
             /**
@@ -36366,6 +36323,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -51535,6 +51519,25 @@ export interface components {
              * @default false
              */
             guidelines_applied?: boolean;
+            /**
+             * Autonomy Mode
+             * @default
+             */
+            autonomy_mode?: string;
+            /**
+             * Autonomy Decision
+             * @default
+             */
+            autonomy_decision?: string;
+            /** Autonomy Refusal */
+            autonomy_refusal?: string | null;
+            /**
+             * Timeout Applied
+             * @default 0
+             */
+            timeout_applied?: number;
+            /** Skipped */
+            skipped?: string | null;
             /** Error */
             error?: string | null;
             /** Top Phrases */
@@ -88247,72 +88250,6 @@ export interface operations {
             };
         };
     };
-    build_one_agent_factory_build_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BuildRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BuildOnceResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    build_stream_endpoint_agent_factory_build_stream_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BuildRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_tools_admin_tools_get: {
         parameters: {
             query?: never;
@@ -88530,6 +88467,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -35,7 +35,7 @@ export const CONVERSATION_LIST_SCOPES: ListScopeKind[] = [
 // in the filter bag, never a hidden SQL predicate — and the machine runs keep a
 // visible, counted door (`ConversationAudienceFilter`).
 
-/** Conversation types a person recognises as their own work. */
+/** Conversation types a person recognizes as their own work. */
 export const HUMAN_CONVERSATION_TYPES = [
   "standard",
   "workflow",

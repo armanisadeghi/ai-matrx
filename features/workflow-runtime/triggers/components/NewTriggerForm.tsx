@@ -64,7 +64,7 @@ export function NewTriggerForm({
 
   const submit = () => {
     if (!name.trim()) {
-      toast.error("Give it a name so you can recognise it later.");
+      toast.error("Give it a name so you can recognize it later.");
       return;
     }
     if (kind === "cron" && cronError) {

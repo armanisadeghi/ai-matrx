@@ -180,7 +180,7 @@ function base64ToBytes(b64: string): Uint8Array {
 }
 
 /**
- * Magic-byte sniffer. Recognises every common raster format plus SVG
+ * Magic-byte sniffer. Recognizes every common raster format plus SVG
  * (text-based, sniffed via leading whitespace + `<svg` or `<?xml`).
  */
 function sniffImageMime(
@@ -292,7 +292,7 @@ function sniffImageMime(
     }
   }
 
-  // Last-ditch: if the user declared a recognised MIME and the bytes weren't
+  // Last-ditch: if the user declared a recognized MIME and the bytes weren't
   // obviously something else, trust the declaration. This keeps niche
   // formats working without us needing magic bytes for every one.
   if (declared && (declared as SupportedMimeType) in MIME_TO_EXT) {

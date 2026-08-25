@@ -132,7 +132,7 @@ interface TableDataRow {
   data: Record<string, unknown>;
   /**
    * Server write time. Load-bearing: it is what lets a realtime echo of OUR
-   * OWN write be recognised and dropped instead of triggering a refetch.
+   * OWN write be recognized and dropped instead of triggering a refetch.
    * Always the value the SERVER returned — never a client clock, whose skew
    * would make a genuine remote change look older than ours and vanish.
    */
@@ -1796,7 +1796,7 @@ const UserTableViewer = ({
       value: unknown,
       /**
        * The `updated_at` the SERVER stored for this write. Recording it is what
-       * makes the incoming echo recognisable as ours: the echo arrives with the
+       * makes the incoming echo recognizable as ours: the echo arrives with the
        * same stamp and the same content, and is dropped. Omitted for a purely
        * local patch, which then simply fails to suppress — degrading to a
        * refetch, never to showing the wrong value.

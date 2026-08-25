@@ -25,7 +25,7 @@ export interface RequirementCopy {
   title: string;
   /** One sentence of what it is and why Stripe wants it. */
   description: string;
-  /** True when we recognised the code rather than falling back to humanising it. */
+  /** True when we recognized the code rather than falling back to humanising it. */
   known: boolean;
 }
 
@@ -217,7 +217,7 @@ function humanise(field: string): string {
 
 /**
  * One Stripe requirement code, in the user's words. Always returns usable copy
- * — an unrecognised code still names its subject rather than showing the raw
+ * — an unrecognized code still names its subject rather than showing the raw
  * string or, worse, nothing at all.
  */
 export function describeStripeRequirement(code: string): RequirementCopy {
@@ -270,7 +270,7 @@ export function describePayoutsDisabledReason(reason: string | null): string {
     case "other":
       return "Stripe hasn't switched payouts on yet, and hasn't told us why. Opening your Stripe details usually shows what's left.";
     default:
-      // An unrecognised reason is still a real reason — never swallow it.
+      // An unrecognized reason is still a real reason — never swallow it.
       return "Stripe hasn't switched payouts on yet. Opening your Stripe details shows what's left.";
   }
 }

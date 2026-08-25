@@ -435,7 +435,7 @@ export interface UploadOpts {
    * Ad-hoc custom variant specs sent verbatim to the server in
    * `custom_variants_json`. Use when the preset registry doesn't carry a
    * key you need; otherwise prefer presets so downstream renderers
-   * recognise the resulting variant keys.
+   * recognize the resulting variant keys.
    */
   customVariants?: CustomVariantSpec[];
 }

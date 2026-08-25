@@ -150,7 +150,7 @@ const MULTI_KEYS: GscFilterKey[] = ["stamps", "levels"];
  * Keys this bar deliberately leaves alone: they are part of the shared URL
  * dialect (so a pasted link means the same thing everywhere) but their own
  * surface owns the control AND the chip, because only that surface can turn
- * the stored id into a name a person recognises.
+ * the stored id into a name a person recognizes.
  */
 const SKIPPED_KEYS: GscFilterKey[] = ["topic", "placement"];
 

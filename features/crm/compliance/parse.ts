@@ -38,7 +38,7 @@ function parseBlocks(value: JsonValue | undefined): EligibilityBlock[] {
     const message = str(entry.message);
     if (!code || !message) continue;
     out.push({
-      // The DB is the authority on this union; an unrecognised code from a newer
+      // The DB is the authority on this union; an unrecognized code from a newer
       // migration must still render, so we accept the string and let the
       // exhaustive union in types.ts guide callers rather than gate them.
       code: code as EligibilityBlockCode,

@@ -40,9 +40,9 @@ const ASSIGN_TOPICS_PATH = "/seo/keywords/assign-topics";
 const ASSIGN_STAGES: Record<string, string> = {
   "seo.assign_topics_started": "Selecting unassigned keywords…",
   "seo.assign_topics_tree_loaded": "Reading the shared offering tree…",
-  "seo.assign_topics_agent_completed": "Pinning keywords to topics…",
+  "seo.assign_topics_agent_completed": "Pinning keywords to offerings…",
   "seo.assign_topics_applied": "Saving assignments…",
-  "seo.assign_topics_completed": "Topic assignment complete",
+  "seo.assign_topics_completed": "Offering assignment complete",
 };
 
 interface AssignTopicsResult {
@@ -154,7 +154,7 @@ export function UnplacedQueue({
                   onChange={(event) => setTerritory(event.target.value)}
                   placeholder="Industry (e.g. itad)"
                   className="h-7 w-40 text-xs"
-                  aria-label="Industry territory for the topic assigner"
+                  aria-label="Industry territory for the offering assigner"
                 />
                 <Button
                   size="sm"

@@ -144,7 +144,7 @@ export function TopicTreeWorkbench() {
     queryKey: ["seo", "topics", "delete-impact", siteId, deleteNode?.topic.id],
     queryFn: () => {
       const topicId = deleteNode?.topic.id;
-      if (!topicId) throw new Error("Choose a topic to delete.");
+      if (!topicId) throw new Error("Choose an offering to delete.");
       return getTopicDeleteImpact(siteId, topicId);
     },
     enabled: Boolean(deleteNode),

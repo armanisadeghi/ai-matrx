@@ -133,7 +133,7 @@ const ELICITATION_CHIPS = [
  * before anything else can go wrong — records the canonical
  * `conversation --(interview)--> rulebook` association so the Expert can always
  * find their way back to what they said. Also replaces the auto-generated
- * "Auto: expertise_interviewer" title with one a human recognises.
+ * "Auto: expertise_interviewer" title with one a human recognizes.
  */
 function InterviewConversation({
   rulebookId,

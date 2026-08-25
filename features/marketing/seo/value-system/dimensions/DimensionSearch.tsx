@@ -21,7 +21,7 @@
  *
  * REFERENCE PRODUCT: GitHub's in-repo search results — the matched text shown
  * in place with the term highlighted, the path above it, and the row itself the
- * link. Borrowed for the same reason it works there: you recognise the hit
+ * link. Borrowed for the same reason it works there: you recognize the hit
  * before you decide to open it.
  *
  * THE EMPTY STATE COUNTS WHAT IT SEARCHED. "Nothing mentions X" is only worth
@@ -46,7 +46,7 @@ import { getSiteMatchers, type FacetDimension } from "./data";
 /** Below this a query matches half the site and the list is noise, not an answer. */
 const MIN_QUERY = 2;
 
-/** The matched run, rendered in place — you recognise a hit by seeing it. */
+/** The matched run, rendered in place — you recognize a hit by seeing it. */
 function Highlight({ text, query }: { text: string; query: string }) {
   const at = text.toLowerCase().indexOf(query.toLowerCase());
   if (at < 0) return <>{text}</>;

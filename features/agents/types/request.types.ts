@@ -610,7 +610,7 @@ export interface TimelineReasoningEnd extends TimelineBase {
 
 export interface TimelineUnknown extends TimelineBase {
   kind: "unknown";
-  /** Server's `event` discriminator string for whatever wasn't recognised. */
+  /** Server's `event` discriminator string for whatever wasn't recognized. */
   originalEvent: string;
   /** Raw payload from the wire, untouched. */
   rawData: unknown;

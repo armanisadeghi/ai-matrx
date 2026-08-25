@@ -169,10 +169,10 @@ export function ImpactPanel({
               <strong className="text-foreground">
                 {formatCount(impact.stamped_only_keywords)}
               </strong>{" "}
-              of the matched keywords have no topic worth yet, so they receive
+              of the matched keywords have no offering worth yet, so they receive
               the stamp (you can filter and group by it) but their value band
               does not move — a stamp never invents value. Place them on the
-              topic tree and the stamp starts counting.
+              offering tree and the stamp starts counting.
             </p>
           ) : null}
           {impact.moved_keywords === 0 ? (

@@ -670,7 +670,7 @@ function ColorSwatchButton({
 
 // ---------------------------------------------------------------------------
 // Icon name picker (typeahead — free-string for now; the agent-connections
-// renderer already has fall-back logic for unrecognised names)
+// renderer already has fall-back logic for unrecognized names)
 // ---------------------------------------------------------------------------
 
 function IconNamePicker({

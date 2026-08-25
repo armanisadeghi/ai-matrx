@@ -174,7 +174,11 @@ describe("marketing site sub-view registry", () => {
     // ladder (platform -> organization -> brand -> site). The three tiers above
     // it live outside this map, so only this one is counted here.
     // 51 + 1 = 52, 73 + 1 = 74.
-    expect(MARKETING_SITE_SECTIONS.length).toBe(22);
+    //
+    // 2026-08-25 — KI-049 added the Run console as a 23rd site section; its
+    // organization-level sibling lives outside this map. Sub-views stay 52,
+    // so the complete site destination count is now 75.
+    expect(MARKETING_SITE_SECTIONS.length).toBe(23);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
@@ -182,7 +186,7 @@ describe("marketing site sub-view registry", () => {
       ),
     ).toBe(52);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      74,
+      75,
     );
   });
 });

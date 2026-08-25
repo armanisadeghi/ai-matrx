@@ -277,7 +277,7 @@ export interface SkillConfig {
  * implicit DEFAULT bucket). */
 export type SkillTier = "included" | "listed" | "forbidden" | "default";
 
-/** Free-string per the wire contract, but these are the recognised values
+/** Free-string per the wire contract, but these are the recognized values
  * for filtering / labelling. */
 export type SkillType =
   | "render_block"

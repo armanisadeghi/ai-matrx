@@ -38,7 +38,7 @@ const INLINE_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
  * thumbnail read `\frac{dy}{dx}` to the learner it was meant to help.
  *
  * Conservative on purpose — it makes the common forms legible and leaves
- * anything it does not recognise alone (a half-translated formula is worse
+ * anything it does not recognize alone (a half-translated formula is worse
  * than an untouched one). Never a substitute for KaTeX: when the surface can
  * render, it must render.
  */

@@ -52,7 +52,7 @@ begin
     raise exception 'seo_defaults_forbidden: platform defaults are an admin surface.';
   end if;
   if coalesce(trim(p_label),'') = '' then
-    raise exception 'seo_defaults_no_label: a rule needs a name you will recognise later.';
+    raise exception 'seo_defaults_no_label: a rule needs a name you will recognize later.';
   end if;
   if coalesce(trim(p_dimension_slug),'') = '' or coalesce(trim(p_value_slug),'') = '' then
     raise exception 'seo_defaults_no_meaning: a rule must say what the words MEAN (a dimension and one of its answers).';

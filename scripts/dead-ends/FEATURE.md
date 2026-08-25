@@ -186,7 +186,7 @@ and none of the audited versions shipped as-is:
 | 1 | ~31% | `unlinked-count` and `no-doors-in-file` both 0/9 |
 | 2 | ~55% | four *regressions* — skips so aggressive they silenced real violations, including the whole extracted-row-component idiom |
 | 3 | ~50% | the id-prop + selector detail-surface shape (`function X({ agentId })` → `const agent = useAppSelector(…)`), which no parameter check could see |
-| 4 (PR review) | — | the self-subject walk stopped at the first enclosing function; the extracted-row-with-callsite-`key` idiom was silently suppressed; `onActivate` was not recognised as a door |
+| 4 (PR review) | — | the self-subject walk stopped at the first enclosing function; the extracted-row-with-callsite-`key` idiom was silently suppressed; `onActivate` was not recognized as a door |
 
 Against the union of the hand-checked samples, the shipped version keeps
 **14/14** confirmed true positives and drops **20/20** confirmed false positives.

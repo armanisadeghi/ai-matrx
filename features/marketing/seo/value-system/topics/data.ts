@@ -42,7 +42,7 @@ async function seoDb() {
   return supabase.schema("seo");
 }
 
-const assertData = makeAssertData("reach your topic tree");
+const assertData = makeAssertData("reach your offering tree");
 
 /**
  * Governance rules speak for themselves — the same posture `../data.ts`
@@ -96,7 +96,9 @@ export async function listTopicWorth(
     await seoDb()
   )
     .from("site_topic_value")
-    .select("id, site_id, topic_id, weight, lead_quality, offering_match, notes")
+    .select(
+      "id, site_id, topic_id, weight, lead_quality, offering_match, notes",
+    )
     .eq("site_id", siteId)
     .is("deleted_at", null);
   return assertData(response.data, response.error) as SiteTopicValue[];
@@ -186,7 +188,7 @@ export async function saveTopic(
   return assertGoverned(
     response.data,
     response.error,
-    "save the topic",
+    "save the offering",
   ) as string;
 }
 
@@ -220,7 +222,7 @@ export async function setTopicWorth(
   return assertGoverned(
     response.data,
     response.error,
-    "save this topic's worth",
+    "save this offering's worth",
   ) as string | null;
 }
 
@@ -238,10 +240,10 @@ export async function getTopicDeleteImpact(
   const rows = assertGoverned(
     response.data,
     response.error,
-    "preview this topic's deletion",
+    "preview this offering's deletion",
   );
   const row = rows[0];
-  if (!row) throw new Error("The topic no longer exists.");
+  if (!row) throw new Error("The offering no longer exists.");
   return row;
 }
 
@@ -265,10 +267,10 @@ export async function deleteTopic(
   const rows = assertGoverned(
     response.data,
     response.error,
-    "delete this topic",
+    "delete this offering",
   );
   const row = rows[0];
-  if (!row) throw new Error("The topic could not be deleted.");
+  if (!row) throw new Error("The offering could not be deleted.");
   return row;
 }
 

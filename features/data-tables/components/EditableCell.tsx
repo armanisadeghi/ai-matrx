@@ -79,7 +79,7 @@ type Props = {
   /**
    * The write landed. `serverUpdatedAt` is the row's stored write time as the
    * RPC returned it — the parent records it so the realtime ECHO of this same
-   * write is recognised and dropped instead of refetching the table.
+   * write is recognized and dropped instead of refetching the table.
    */
   onSaved?: (newValue: unknown, serverUpdatedAt?: string) => void;
 

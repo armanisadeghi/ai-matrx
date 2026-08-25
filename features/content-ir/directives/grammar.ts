@@ -223,7 +223,7 @@ export function resolvesInContent(directiveClass: string): boolean {
  * The `__kind` of `obj` when it is in the reserved namespace, else null.
  *
  * Reads the RESERVED namespace, not the parsed grammar, so a malformed
- * directive is still recognised as a directive (and rejected downstream with a
+ * directive is still recognized as a directive (and rejected downstream with a
  * real message) rather than silently mistaken for an ordinary kind.
  */
 export function directiveSlugOf(obj: unknown): string | null {

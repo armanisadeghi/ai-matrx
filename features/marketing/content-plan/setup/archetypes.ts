@@ -258,7 +258,7 @@ export function asString(value: unknown, where: string, fallback?: string): stri
 }
 
 /**
- * Loud recovery, matching aidream's `coerce_node_type`: an unrecognised
+ * Loud recovery, matching aidream's `coerce_node_type`: an unrecognized
  * node_type falls back to `article` and SCREAMS. It is deliberately not a
  * refusal — the server writes that tree, so a twin that refused would preview
  * nothing for a plan the chat tool happily creates.

@@ -66,7 +66,7 @@ describe("classifyEcho", () => {
       ).toBe("deliver");
     });
 
-    it("still recognises our echo by content when timestamps are missing", () => {
+    it("still recognizes our echo by content when timestamps are missing", () => {
       expect(
         classifyEcho({
           localUpdatedAt: null,

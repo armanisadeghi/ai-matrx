@@ -66,7 +66,7 @@ SYSTEM_ORIGIN_FOLDERS = { "transcripts": "transcript_recordings" }
 An upload with `metadata.origin = "transcripts"` and `folderPath =
 "Transcripts/Recordings"` is rewritten to
 `system-files/transcripts/Recordings/<filename>` (first segment dropped, tail
-preserved). Unrecognised / absent origin → path is left untouched (normal user
+preserved). Unrecognized / absent origin → path is left untouched (normal user
 upload). This is server-enforced, so the placement can't drift per client.
 
 > **Contract:** `metadata.origin: "transcripts"` is now the **required signal**

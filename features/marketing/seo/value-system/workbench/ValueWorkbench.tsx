@@ -189,7 +189,7 @@ const SOURCE_META: Record<
   computed: {
     label: "Computed",
     description:
-      "Deterministic arithmetic over meaning you ratified — topic worth × rules × geo.",
+      "Deterministic arithmetic over meaning you ratified — offering worth × rules × geo.",
     tone: "border-border bg-muted/40 text-foreground",
   },
   unvalued: {

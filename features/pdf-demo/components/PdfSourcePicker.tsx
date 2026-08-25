@@ -206,7 +206,7 @@ export function PdfSourcePicker({ value, onChange }: Props) {
             </Button>
             <p className="text-xs text-muted-foreground">
               Backend resolves the URL through FileManager — any URL we issued
-              (share links, /files/&#123;id&#125;/url) is recognised; external
+              (share links, /files/&#123;id&#125;/url) is recognized; external
               URLs get fetched.
             </p>
           </TabsContent>

@@ -161,7 +161,7 @@ function parseFilters(raw: unknown): PartyListFilters {
 }
 
 /**
- * Read a stored definition defensively. Anything unrecognised falls back to the
+ * Read a stored definition defensively. Anything unrecognized falls back to the
  * default for that field — a smart view whose blob drifted still opens, showing
  * a list the user can see and re-save, instead of erroring on a page they only
  * wanted to browse.

@@ -95,7 +95,7 @@ export function findDraftIssues(
       issues.push({
         value: null,
         message:
-          "The reserved Negative band must stay — the resolver emits it for excluded geo, not-offered services and actively-avoided topics.",
+          "The reserved Negative band must stay — the resolver emits it for excluded geo, not-offered services and actively-avoided offerings.",
       });
     }
     const scored = rows.filter((row) => !isReservedNegative(row));

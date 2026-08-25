@@ -563,7 +563,7 @@ export function PackReview({
       toast.success(
         written === 0 && !result.guidelines_seeded
           ? "Nothing new to write — everything you ticked was already on this site."
-          : `Adopted ${written} item${written === 1 ? "" : "s"} from ${pack.name}: ${result.worths} worths and ${result.matchers} matchers across ${result.meaning_values} answers, ${result.topics} topic worths, ${result.value_bands + result.geo_bands} bands, ${result.geo_areas} service areas${result.guidelines_seeded ? ", plus the guidelines skeleton" : ""}. They are yours now — edit any of them on the Dimensions screen.${result.stamped !== null && !result.engineWaiting ? ` Applied to ${formatCount(result.stamped)} of your keywords.` : ""}`,
+          : `Adopted ${written} item${written === 1 ? "" : "s"} from ${pack.name}: ${result.worths} worths and ${result.matchers} matchers across ${result.meaning_values} answers, ${result.topics} offering worths, ${result.value_bands + result.geo_bands} bands, ${result.geo_areas} service areas${result.guidelines_seeded ? ", plus the guidelines skeleton" : ""}. They are yours now — edit any of them on the Dimensions screen.${result.stamped !== null && !result.engineWaiting ? ` Applied to ${formatCount(result.stamped)} of your keywords.` : ""}`,
         result.geo_areas_pending > 0
           ? {
               description: `${result.geo_areas_pending} service area${result.geo_areas_pending === 1 ? "" : "s"} still ${result.geo_areas_pending === 1 ? "has" : "have"} no places, so ${result.geo_areas_pending === 1 ? "it matches" : "they match"} nothing yet.`,
@@ -702,13 +702,13 @@ export function PackReview({
                     {formatCount(summary.stamped_only_keywords)} of those are
                     only <em>stamped</em>: the pack answers something about them
                     but nothing says what subject they belong to, so they stay
-                    Unvalued until a topic worth reaches them. Topic worth
-                    below, and the{" "}
+                    Unvalued until an offering worth reaches them. Offering
+                    worth below, and the{" "}
                     <Link
                       href={`/marketing/brands/${brandId ?? ""}/sites/${siteId}/value/offerings`}
                       className="underline underline-offset-2 hover:text-foreground"
                     >
-                      Topics screen
+                      Offerings screen
                     </Link>
                     , are where that gets fixed.
                   </span>
@@ -890,12 +890,12 @@ export function PackReview({
           )}
         </section>
 
-        {/* ── topic worth ── */}
+        {/* ── offering worth ── */}
         <section className="space-y-2">
           <SectionHeader
             icon={TreePine}
-            title="Topic worth"
-            hint="What each part of the shared topic tree is worth to a business like yours — the base every answer above adds to. A keyword with no topic worth above it stays Unvalued no matter how much the pack knows about it."
+            title="Offering worth"
+            hint="What each part of the shared offering tree is worth to a business like yours — the base every answer above adds to. A keyword with no offering worth above it stays Unvalued no matter how much the pack knows about it."
             selectable={selectableTopics.length}
             selected={
               selectableTopics.filter((t) =>
@@ -962,8 +962,8 @@ export function PackReview({
                       {onSite ? (
                         <span className="text-[11px] text-muted-foreground">
                           {state === "yours"
-                            ? "You already set this topic's worth yourself — the pack never overrides a ruling."
-                            : "Already on this site — manage it on the Topics screen."}
+                            ? "You already set this offering's worth yourself — the pack never overrides a ruling."
+                            : "Already on this site — manage it on the Offerings screen."}
                         </span>
                       ) : measuring && !stats ? (
                         <Skeleton className="inline-block h-3.5 w-40 align-middle" />

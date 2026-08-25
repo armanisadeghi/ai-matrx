@@ -154,7 +154,7 @@ describe("cross-repo identity guard", () => {
   );
 
   it("pageRouteKey is idempotent", () => {
-    // A normalizer that does not recognise its own output is how a route gets
+    // A normalizer that does not recognize its own output is how a route gets
     // re-wrapped and a page loses its measurement history.
     for (const [, raw] of casesOf("page_route_key_cases")) {
       const once = pageRouteKey(raw);

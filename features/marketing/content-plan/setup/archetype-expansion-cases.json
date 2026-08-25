@@ -816,7 +816,7 @@
     },
     {
       "name": "unknown_node_type_coerces_to_article",
-      "$note": "An unrecognised node_type is a LOUD RECOVERY, not a refusal: aidream's coerce_node_type falls back to 'article' and screams. The twin must land the same tree \u2014 a client that refused here would preview nothing for a plan the server happily writes.",
+      "$note": "An unrecognized node_type is a LOUD RECOVERY, not a refusal: aidream's coerce_node_type falls back to 'article' and screams. The twin must land the same tree \u2014 a client that refused here would preview nothing for a plan the server happily writes.",
       "archetype_key": "demo",
       "archetype": {
         "label": "Demo shape",

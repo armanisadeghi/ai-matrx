@@ -345,7 +345,7 @@ with multiple identifiers (422).
 - **Explicit purge** fires server-side on delete and on
   visibility-flip-to-private (the only two cases where the same URL
   should stop serving the same bytes).
-- **Boundary normaliser** at AI Dream recognises CDN URLs as ours and
+- **Boundary normaliser** at AI Dream recognizes CDN URLs as ours and
   resolves them via DB lookup → bytes from S3 (or in-memory cache).
   Never re-fetches via HTTP.
 

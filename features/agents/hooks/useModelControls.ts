@@ -320,14 +320,14 @@ export function useModelControls(
   const knownKeys = new Set<string>([
     ...LLM_PARAMS_KEYS,
     // Pre-canonical-rename DB keys — Python's LLMParams._remap_aliases
-    // normalises these at the API boundary. Recognised here so the FE
+    // normalises these at the API boundary. Recognized here so the FE
     // renders them when a model's controls JSONB declares them.
     "max_tokens",
     "output_format",
     "n",
     // Model-gated UI flags from model controls (e.g. { allowed: true }). These
     // indicate what a model supports — they live in agent.uiGates, not in
-    // LLMParams. Recognised here (via the canonical UI_GATE_KEYS) so the parser
+    // LLMParams. Recognized here (via the canonical UI_GATE_KEYS) so the parser
     // surfaces them in NormalizedControls, which the UI-gates editor reads to
     // know which gates to offer. Actual tool definitions are assembled
     // separately via client_tools.
@@ -338,7 +338,7 @@ export function useModelControls(
     // provider's API accepts. Python normalises aliases (`seconds` →
     // `duration_seconds`, `quality` → `render_quality`, `n` /
     // `num_outputs` / `number_of_images` → `count`, etc.). The FE just
-    // needs to recognise these as valid control keys so the parser
+    // needs to recognize these as valid control keys so the parser
     // surfaces them in NormalizedControls instead of dumping to
     // unmappedControls.
 

@@ -58,7 +58,7 @@ export const PARAM_ALIASES: Readonly<Record<string, string[]>> = {
  */
 const ALL_KNOWN_KEYS = new Set<string>([
   ...LLM_PARAMS_KEYS,
-  // Legacy DB keys — normalizer converts at Redux boundary, but we still recognise them
+  // Legacy DB keys — normalizer converts at Redux boundary, but we still recognize them
   "max_tokens",
   "output_format",
   "n",

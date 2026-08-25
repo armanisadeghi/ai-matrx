@@ -106,7 +106,7 @@ export async function fetchAssistLaunch(
   if ((PLAIN_OPEN_TARGETS as readonly string[]).includes(raw)) {
     open = raw as MasterworkAssistOpen;
   } else if (raw.startsWith("approach:")) {
-    // NO DEAD ENDS: an unrecognised key still opens the picker, where the
+    // NO DEAD ENDS: an unrecognized key still opens the picker, where the
     // Expert sees every Approach — never a chip that does nothing.
     open = "approaches";
     approachKey = raw.slice("approach:".length) || null;

@@ -184,7 +184,7 @@ export function reasonEditorLink(
     case "no_base":
       return {
         href: topicNodeHref(ctx, null),
-        label: "Place this keyword on a weighted topic",
+        label: "Place this keyword on a weighted offering",
       };
     case "stamp":
       return {

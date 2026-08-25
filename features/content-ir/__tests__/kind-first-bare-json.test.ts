@@ -3,7 +3,7 @@
  *
  * An agent bound to a kind through provider structured output
  * (`ai.agent.produce` → `response_format_for_kind`) streams a BARE JSON
- * document: no fence, no XML tag. Nothing about it is recognisable early
+ * document: no fence, no XML tag. Nothing about it is recognizable early
  * except its own `__kind`, and only if `__kind` arrives FIRST.
  *
  * Its sibling `bare-json-pending-kind.test.ts` pins the WORST case (`__kind`
@@ -91,7 +91,7 @@ const QUIZ_KIND_FIRST = JSON.stringify(
 function driveBare(document: string, requestId: string) {
   const { accumulator, upserts, dispatch } = makeAccumulator(requestId);
   // Bare and ALONE on the wire — exactly what a bound agent emits: no prose
-  // preamble, no fence, nothing to recognise it by but the document itself.
+  // preamble, no fence, nothing to recognize it by but the document itself.
   for (const chunk of chunkText(document, 11, 5)) accumulator.ingest(chunk, dispatch);
   accumulator.finalize(dispatch);
   return upserts;

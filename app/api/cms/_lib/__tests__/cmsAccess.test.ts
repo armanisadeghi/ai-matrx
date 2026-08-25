@@ -88,7 +88,7 @@ describe("canAccessCmsSite", () => {
     expect(canAccessCmsSite(outsiderCaller, site, "editor")).toBe(false);
   });
 
-  it("fails CLOSED on a visibility label it does not recognise", () => {
+  it("fails CLOSED on a visibility label it does not recognize", () => {
     const weird = { ...orgSite, visibility: "sort-of-shared" };
     expect(canAccessCmsSite(memberCaller, weird, "viewer")).toBe(false);
     // The owner still reaches their own row — the unknown label is not a lockout.

@@ -489,7 +489,7 @@ After Phase 1: every upload through `POST /assets` (and every AI-generated media
 | `audio/*` | Mime-family icon PNG (waveform deferred) | Same three variants |
 | `application/zip`, `application/x-tar`, ... | Mime-family icon PNG | Same three variants |
 | `text/*`, `application/json`, ... | Mime-family icon PNG | Same three variants |
-| Anything unrecognised | Generic icon PNG | Same three variants |
+| Anything unrecognized | Generic icon PNG | Same three variants |
 
 The dispatcher is implemented in [packages/matrx-utils/matrx_utils/file_handling/specific_handlers/thumbnail_source.py](../packages/matrx-utils/matrx_utils/file_handling/specific_handlers/thumbnail_source.py) — single function `render_thumbnail_source_bytes(content_bytes, mime_type, file_name=...) -> (image_bytes, mime)`. Per-kind rasteriser failures (corrupt PDF, unsupported video codec) fall back to the mime-family icon so the variant pipeline never fails for a usable upload.
 
@@ -1093,7 +1093,7 @@ After Phase 1d:
 audio/mpeg upload → pydub decodes via ffmpeg → 800 peak amplitudes
   → render 1600×400 waveform PNG (sky-400 on slate-900)  
   → SOCIAL_BASELINE downsamples to thumbnail/og/tiny variants
-  → grid views now show a recognisable audio signature instead of a generic badge
+  → grid views now show a recognizable audio signature instead of a generic badge
 ```
 
 ## Coverage matrix (post Phase 1d)

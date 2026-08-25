@@ -3,7 +3,7 @@
  * dispatched as its OUTPUT component.
  *
  * `content_ir.kind_component_role_check` accepts `loading` since 2026-08-25.
- * The Matrix resolver adapter coerces unrecognised roles to "output" so one
+ * The Matrix resolver adapter coerces unrecognized roles to "output" so one
  * bad row cannot blank a kind — which, for a loading row, would pin the
  * skeleton in place of the finished shape forever. This pins the exclusion.
  */

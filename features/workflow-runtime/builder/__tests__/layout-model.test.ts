@@ -75,7 +75,7 @@ describe("layout-model", () => {
     expect(positions(moved)["materials"]).toBe("12,6,12,8");
   });
 
-  it("never drops a key it does not recognise", () => {
+  it("never drops a key it does not recognize", () => {
     const withFuture = {
       ...STUDY_PACK,
       futureTopLevel: "keep me",

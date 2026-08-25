@@ -101,7 +101,7 @@ function clampHour(hour: number): number {
  *
  * Returns null for anything this file did not write AND cannot validate —
  * the UI shows those read-only as "custom" instead of rewriting them. Silently
- * coercing an unrecognised cadence into the nearest preset would let opening a
+ * coercing an unrecognized cadence into the nearest preset would let opening a
  * form change a schedule nobody touched.
  */
 export function parseCrawlCadence(value: unknown): CrawlCadence | null {

@@ -92,7 +92,7 @@ export interface CoveragePlan {
 
 /**
  * A line that starts a new unit of the source. Ingest hands us markdown from
- * several pipelines, so we recognise all of their boundary shapes:
+ * several pipelines, so we recognize all of their boundary shapes:
  *   - `## Slide 12: Title`      (office/pptx extract)
  *   - `# ` / `## ` / `### `     (markdown headings, scrape, paste)
  *   - `### Chunk c4`            (already chunk-marked, e.g. re-convert)

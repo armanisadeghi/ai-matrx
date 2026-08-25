@@ -120,7 +120,7 @@ function readContent(raw: unknown): AgentRunContentEntry[] {
 
 /**
  * True when `output` is an agent-run envelope. `final_text` alone is enough,
- * and a run that produced no text is still recognisable by the transcript +
+ * and a run that produced no text is still recognizable by the transcript +
  * usage pair.
  */
 export function isAgentRunEnvelope(

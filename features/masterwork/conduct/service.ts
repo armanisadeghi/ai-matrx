@@ -156,7 +156,7 @@ export function associateConductorWhenPersisted(args: {
 /**
  * Give a Conductor session an honest title. The execution system auto-titles
  * conversations ("Auto: masterwork_conductor"), which is a name no Expert
- * recognises. Best-effort, and only ever REPLACES an auto title.
+ * recognizes. Best-effort, and only ever REPLACES an auto title.
  */
 export async function ensureConductorTitle(args: {
   conversationId: string;
@@ -186,7 +186,7 @@ export async function ensureConductorTitle(args: {
 // Reads
 // =============================================================================
 
-/** One prior Conductor session, enough for the Expert to recognise it. */
+/** One prior Conductor session, enough for the Expert to recognize it. */
 export interface ConductorSession {
   conversationId: string;
   title: string | null;

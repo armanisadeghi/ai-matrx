@@ -47,7 +47,7 @@ describe("chunk-load failure detection", () => {
     }
   });
 
-  it("still recognises the webpack-era chunk failures", () => {
+  it("still recognizes the webpack-era chunk failures", () => {
     for (const message of [
       "ChunkLoadError: Loading chunk 4821 failed.",
       "Loading CSS chunk app-layout failed.",

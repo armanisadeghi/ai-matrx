@@ -122,7 +122,7 @@ export async function postBlobCacheClearUser(userId: string): Promise<void> {
 
 /**
  * Register a (canonical-URL → fileId+version+checksum) mapping so the SW
- * can recognise a public CDN URL or other byte URL the page has issued
+ * can recognize a public CDN URL or other byte URL the page has issued
  * and serve it from the same cache entry as the canonical
  * `/files/{id}/download` URL.
  */

@@ -1,7 +1,7 @@
 -- AI Work Saved Requests: one platform-seeded shortcut category.
 -- A Saved Request IS an agent.shortcut row (the platform's existing "stored,
 -- first-class invocation of an agent version"). This category is how AI Work
--- recognises its own rows without a new table.
+-- recognizes its own rows without a new table.
 insert into platform.categories (id, organization_id, dimension, name, slug, is_system, icon, position)
 select
   '3f2d5c8a-1b47-4e6d-9c0f-7a5e2d13b904'::uuid,

@@ -16,7 +16,7 @@ export const PROJECT_CREATE_MANDATE_KEY = "projects.creation_guide";
 
 /**
  * SEED MIRROR of the mandate's system default — kept only so
- * `isProjectCreateFlow` can still recognise legacy launches by agent id;
+ * `isProjectCreateFlow` can still recognize legacy launches by agent id;
  * flow detection primarily keys on `sourceFeature`. Never mount this id.
  */
 export const PROJECT_CREATE_AGENT_ID = "917074a0-fc06-4ff4-9805-4a517e04d08b";

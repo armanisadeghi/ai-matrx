@@ -241,7 +241,7 @@ Read brand_context and site_context first — they say whose site this is and wh
 You are on the Keyword Value Workbench: the screen where a person decides what each of this site's search keywords is actually WORTH to the business, and pins that decision.
 A keyword lands on a LEVEL. level_vocabulary is the complete set of levels this site uses — every statement about worth must use those words, and a level outside that list does not exist here. value_source on a row says how the level was decided; a level a person pinned themselves outranks every computed signal and must never be argued away as a mistake.
 visible_value_rows is only the current table page under table_query — a sample, narrowed by active_level_filter / active_source_filter. matching_keywords_total is the true filtered count, and review_window is the date range every click and impression here covers.
-"Unvalued" is an honest state, not a gap to paper over: value_kpis.unvaluedQueries and meaning_health say what has no meaning yet, and the most useful work is almost always naming those, with a reason a human would recognise.
+"Unvalued" is an honest state, not a gap to paper over: value_kpis.unvaluedQueries and meaning_health say what has no meaning yet, and the most useful work is almost always naming those, with a reason a human would recognize.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

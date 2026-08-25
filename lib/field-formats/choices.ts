@@ -54,7 +54,7 @@ export function isChoiceFormat(id: string | undefined | null): boolean {
 /**
  * The chip palette. Names, never raw hex, so a chip is legible on both grounds
  * and a theme change moves them all at once. `color` on a choice holds one of
- * these keys; anything unrecognised falls back to neutral rather than breaking.
+ * these keys; anything unrecognized falls back to neutral rather than breaking.
  */
 export const CHOICE_COLORS = {
   neutral: "bg-muted text-foreground border-border",

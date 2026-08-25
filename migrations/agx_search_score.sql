@@ -134,7 +134,7 @@ GRANT EXECUTE ON FUNCTION public.agx_search_score(text,uuid,text,text,text,text[
 --
 --   1. A `scored` CTE between `filtered` and `counted` that computes
 --      agx_search_score per row, passing `p_deep AND messages ILIKE …` so a
---      prompt-body-only hit is recognised and scored at the bottom tier.
+--      prompt-body-only hit is recognized and scored at the bottom tier.
 --
 --   2. RELEVANCE LEADS THE ORDER BY when a search is active:
 --        CASE WHEN v_search IS NOT NULL THEN c.s_score END DESC NULLS LAST,

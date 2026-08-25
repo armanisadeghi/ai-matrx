@@ -74,7 +74,7 @@ export function isCmsVisibility(value: unknown): value is CmsVisibility {
 
 function visibilityRank(value: unknown): number {
   const index = CMS_VISIBILITIES.indexOf(value as CmsVisibility);
-  // An unrecognised label is treated as the MOST restrictive, never the least:
+  // An unrecognized label is treated as the MOST restrictive, never the least:
   // an authorization check must fail closed on data it does not understand.
   return index === -1 ? 0 : index;
 }

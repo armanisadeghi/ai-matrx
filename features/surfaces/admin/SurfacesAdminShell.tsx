@@ -156,7 +156,7 @@ function MobileStack({
   basePath: string;
 }) {
   // Simple vertical stack. Each section gets a min-height so it's
-  // recognisable but doesn't dominate the screen. The page is not
+  // recognizable but doesn't dominate the screen. The page is not
   // designed FOR mobile — just functional ON it.
   return (
     <div className="h-full overflow-auto">

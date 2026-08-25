@@ -46,7 +46,7 @@ INSERT INTO seo.ai_capability (slug, label, description, default_mode, default_t
    'Decides which of your offerings a keyword belongs to. Confident placements apply; unsure ones already wait for you as proposals.',
    'auto_platform', NULL, false,
    'Runs automatically, and already holds low-confidence placements for review; it does not consult this setting yet.', 20),
-  ('place_detection', 'Recognising places in keywords',
+  ('place_detection', 'Recognizing places in keywords',
    'Spots cities, states and "near me" wording using the platform gazetteer. Deterministic — the same words always give the same answer.',
    'auto_platform', NULL, false,
    'Deterministic and applied on demand; it does not consult this setting yet.', 30),

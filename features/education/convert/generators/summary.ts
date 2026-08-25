@@ -94,7 +94,7 @@ async function run(
           : "";
       if (markdown) {
         proseBySection.set(segment.index, {
-          // The section's own heading is what a student recognises; the agent's
+          // The section's own heading is what a student recognizes; the agent's
           // per-section title is about the same text and adds nothing.
           label: segment.label || title || `Part ${segment.index}`,
           markdown,

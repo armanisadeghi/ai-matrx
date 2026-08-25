@@ -215,7 +215,7 @@ as $$
                  or d.last_dispatched_at
                     < date_trunc('day', p_now) + coalesce(d.run_at_utc, time '00:00')
                )
-             -- An unrecognised cadence never fires. Silence beats guessing with money.
+             -- An unrecognized cadence never fires. Silence beats guessing with money.
              else false
            end
   ),

@@ -396,7 +396,7 @@ async function verifyItemsOwnership(
  * The client sends the canonical filter shape
  * (`features/data-tables/column-filters.ts`) and the SQL twin reads it as jsonb,
  * so this is the boundary that decides what a filter may BE. It is a
- * whitelist, not a sanitiser: an unrecognised mode, a non-string value, or a
+ * whitelist, not a sanitiser: an unrecognized mode, a non-string value, or a
  * field name outside `[A-Za-z0-9_-]{1,64}` is DROPPED rather than repaired,
  * because a filter the server silently rewrote would narrow a list in a way the
  * user never asked for.

@@ -332,7 +332,7 @@ const SERVER_SCENARIOS: ServerScenario[] = [
   },
   {
     name: "unknown-event-types",
-    description: "Valid JSON with unrecognised 'event' values.",
+    description: "Valid JSON with unrecognized 'event' values.",
     expected: "Succeeds — client tolerates unknown types",
     heartbeatTimeoutMs: 30_000,
     maxLifetimeMs: 30_000,

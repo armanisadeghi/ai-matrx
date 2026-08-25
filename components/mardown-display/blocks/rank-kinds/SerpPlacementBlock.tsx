@@ -8,7 +8,7 @@
  * placement carries the two ranks, the block type and the "you are here"
  * flag; the RESULT itself is a discriminated union over the EIGHT search kinds
  * the search pilot already shipped, componented and verified. So the payload
- * is handed straight to `RankKindNested`, which recognises it as a search kind
+ * is handed straight to `RankKindNested`, which recognizes it as a search kind
  * and forwards it to `SearchKindNested` — the identical static-sibling-map +
  * db-override seam the search collection uses. A result inside a tracked SERP
  * therefore renders through the exact same component (and honours the exact

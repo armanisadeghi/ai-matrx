@@ -5,7 +5,7 @@
 // "Pick up the one I was having, or have a new one."
 //
 // Shown when a Rulebook already has interview conversations. Every prior
-// interview is a row the Expert can RECOGNISE — when it happened, how many
+// interview is a row the Expert can RECOGNIZE — when it happened, how many
 // turns they took, how much they said, how many rules it produced, and the
 // first line of what they actually said — with Continue on each, and Start a
 // new interview beside them. THE DOOR LAW: every row also opens the full

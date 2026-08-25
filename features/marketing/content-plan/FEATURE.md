@@ -595,7 +595,7 @@ DISTINCT`, resolved parent-first down the tree (`setup/service.ts#identityKey`,
   `tests/test_archetype_expansion_fixture.py`). Behaviour changes go: fixture in
   aidream → copy here → fix the twin. **Never edit the fixture to make the twin
   pass.** Two canonical behaviours it pins that are easy to get wrong: an
-  unrecognised `node_type` COERCES to `article` loudly (it does not refuse —
+  unrecognized `node_type` COERCES to `article` loudly (it does not refuse —
   refusing would preview nothing for a tree the chat tool happily writes), and
   unknown config keys are REJECTED (the canonical models are `extra="forbid"`).
 

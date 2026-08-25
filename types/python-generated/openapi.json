@@ -27506,88 +27506,6 @@
         }
       }
     },
-    "/agent-factory/build": {
-      "post": {
-        "tags": [
-          "Admin / Agent Factory"
-        ],
-        "summary": "Build One",
-        "description": "Non-streaming build of exactly one agent. Convenience for the script /\nintegration tests; the streaming variant below is the FE path.",
-        "operationId": "build_one_agent_factory_build_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BuildRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BuildOnceResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/agent-factory/build-stream": {
-      "post": {
-        "tags": [
-          "Admin / Agent Factory"
-        ],
-        "summary": "Build Stream Endpoint",
-        "description": "Streaming build of one or more agents. Emits `BuildEvent`s to the FE.",
-        "operationId": "build_stream_endpoint_agent_factory_build_stream_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BuildRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/admin/tools": {
       "get": {
         "tags": [
@@ -27958,6 +27876,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -68921,6 +68899,38 @@
             },
             "type": "array",
             "title": "Top Phrases"
+          },
+          "autonomy_mode": {
+            "type": "string",
+            "title": "Autonomy Mode",
+            "default": ""
+          },
+          "autonomy_decision": {
+            "type": "string",
+            "title": "Autonomy Decision",
+            "default": ""
+          },
+          "autonomy_refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Autonomy Refusal"
+          },
+          "skipped": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped"
           }
         },
         "additionalProperties": false,
@@ -74383,85 +74393,6 @@
         ],
         "title": "BuildMasterworkRequest",
         "description": "Build one Rulebook into a working Masterwork (agents + workflow).\n\nThe ONE button a non-technical expert presses on /masterwork/[id]. The\nbuilder reuses the generic Rulebook Auditor for every section, authors the\nMasterwork-specific agents (persona from the rulebook's source.author), and creates\na workflow stamped with the rulebook id + version it was built from."
-      },
-      "BuildOnceResponse": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "agent_id": {
-            "type": "string",
-            "title": "Agent Id"
-          },
-          "version_id": {
-            "type": "string",
-            "title": "Version Id"
-          },
-          "runner_path": {
-            "type": "string",
-            "title": "Runner Path"
-          },
-          "spec_path": {
-            "type": "string",
-            "title": "Spec Path"
-          },
-          "dry_run": {
-            "type": "boolean",
-            "title": "Dry Run",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "agent_id",
-          "version_id",
-          "runner_path",
-          "spec_path"
-        ],
-        "title": "BuildOnceResponse"
-      },
-      "BuildRequest": {
-        "properties": {
-          "names": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Names"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "contents": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Contents"
-          },
-          "dry_run": {
-            "type": "boolean",
-            "title": "Dry Run",
-            "default": false
-          }
-        },
-        "type": "object",
-        "title": "BuildRequest",
-        "description": "Body for `POST /agent-factory/build`.\n\nThree trigger modes (callers pick one):\n  * `names` — list of `internal_agents/<name>.md` specs to build\n  * `name` (alone) — single spec to build\n  * `name` + `contents` — write the spec file first, then build"
       },
       "BuiltinPromptCatalogResponse": {
         "properties": {
@@ -89468,7 +89399,7 @@
               }
             ],
             "title": "Owner User Id",
-            "description": "WHO this agent belongs to. Set it whenever the agent is being built FOR a user (a Masterwork's Maker/Editor/Chief, anything a customer's build produces): the agent is born agent_type='user', created_by=<this user>, in their effective org, with an internal card — exactly what a normal user-created agent gets. Leave it None ONLY for a platform builtin the PLATFORM ships to everyone (the internal_agents/*.md factory, seed scripts); a builtin is ownerless, sits in the Matrx System org, and shows in every user's browse list."
+            "description": "WHO this agent belongs to. Set it whenever the agent is being built FOR a user (a Masterwork's Maker/Editor/Chief, anything a customer's build produces): the agent is born agent_type='user', created_by=<this user>, in their effective org, with an internal card — exactly what a normal user-created agent gets. Leave it None ONLY for a platform builtin the PLATFORM ships to everyone (the agent factory, seed scripts); a builtin is ownerless, sits in the Matrx System org, and shows in every user's browse list."
           },
           "owner_organization_id": {
             "anyOf": [
@@ -95064,6 +94995,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -133920,6 +133906,43 @@
             "type": "boolean",
             "title": "Guidelines Applied",
             "default": false
+          },
+          "autonomy_mode": {
+            "type": "string",
+            "title": "Autonomy Mode",
+            "default": ""
+          },
+          "autonomy_decision": {
+            "type": "string",
+            "title": "Autonomy Decision",
+            "default": ""
+          },
+          "autonomy_refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Autonomy Refusal"
+          },
+          "timeout_applied": {
+            "type": "integer",
+            "title": "Timeout Applied",
+            "default": 0
+          },
+          "skipped": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped"
           },
           "error": {
             "anyOf": [

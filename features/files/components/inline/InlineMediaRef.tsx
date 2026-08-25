@@ -237,7 +237,7 @@ const UUID_RE =
 
 /**
  * Normalize the `ref` prop into a `FileSource` the handler understands.
- * Returns `null` for missing / unrecognised inputs so the component can
+ * Returns `null` for missing / unrecognized inputs so the component can
  * render its fallback.
  */
 function toFileSource(ref: InlineMediaRefProps["ref"]): FileSource | null {

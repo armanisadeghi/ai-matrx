@@ -73,7 +73,7 @@ export function entityListRowHref<TRow>(
 /**
  * Which column carries the record's door — explicit `door.column`, else the
  * first declared name/title column. `null` when the surface declared no door
- * at all, or declared one and has no recognisable name column (in which case
+ * at all, or declared one and has no recognizable name column (in which case
  * it must say `door.column` rather than have the shell anchor a random cell).
  */
 export function entityListDoorColumnId<TRow>(

@@ -1,7 +1,7 @@
 /**
  * Decode a Kind Directive — THE one entry point on the client.
  *
- * `decodeDirective()` recognises the shell (new OR, for stored content only,
+ * `decodeDirective()` recognizes the shell (new OR, for stored content only,
  * the retired 4-key one), reads the slug, and derives the class + noun. A
  * caller only ever sees a parsed {@link DecodedDirective}, so nothing
  * downstream ever inspects a raw shell again.

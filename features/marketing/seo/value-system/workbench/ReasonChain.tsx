@@ -163,8 +163,8 @@ function reasonView(reason: ValueReason): ReasonView {
         icon: TreePine,
         text: `${reason.topic} · worth ${reason.weight}`,
         detail: reason.negative_guard
-          ? `The topic "${reason.topic}" carries a negative guard (not offered / actively avoided), so this keyword is Negative regardless of arithmetic.`
-          : `Starts from the topic "${reason.topic}"${reason.root ? ` (a ${humanizeSlug(reason.root).toLowerCase()} root)` : ""}, which you weighted ${reason.weight} out of 100.`,
+          ? `The offering branch "${reason.topic}" carries a negative guard (not offered / actively avoided), so this keyword is Negative regardless of arithmetic.`
+          : `Starts from the offering branch "${reason.topic}"${reason.root ? ` (a ${humanizeSlug(reason.root).toLowerCase()} root)` : ""}, which you weighted ${reason.weight} out of 100.`,
         tone: reason.negative_guard ? "text-destructive" : undefined,
       };
     case "baseline":
@@ -219,7 +219,7 @@ export function ReasonChainInline({
       return (
         <span className="inline-flex items-center gap-1 text-[11px] text-warning">
           <CircleHelp className="h-3 w-3 shrink-0" />
-          No meaning expressed yet — pick a tier or add topic worth
+          No meaning expressed yet — pick a tier or add offering worth
         </span>
       );
     }
@@ -288,9 +288,9 @@ export function ReasonChainDetail({
             This keyword is honestly unvalued.
           </p>
           <p className="mt-1 text-muted-foreground">
-            No topic worth reaches it and none of your rules fire — the system
+            No offering worth reaches it and none of your rules fire — the system
             never guesses a middle tier. Rule a tier directly below, or give
-            its topic a worth in the meaning panel so keywords like it value
+            its offering a worth in the meaning panel so keywords like it value
             themselves.
           </p>
         </div>

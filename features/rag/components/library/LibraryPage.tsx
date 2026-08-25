@@ -489,7 +489,7 @@ export function LibraryPage() {
       const validKeys = ["search_query", "status_filter"];
       const badKeys = Object.keys(input).filter((k) => !validKeys.includes(k));
       if (badKeys.length > 0) {
-        // Ignoring an unrecognised key would report success for a write that
+        // Ignoring an unrecognized key would report success for a write that
         // did nothing — the worst outcome available here.
         throw new Error(
           `library_filters received unknown key(s): ${badKeys.join(", ")}. Nothing was changed. ` +

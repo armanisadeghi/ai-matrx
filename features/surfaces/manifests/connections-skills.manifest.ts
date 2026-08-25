@@ -193,7 +193,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "skill_draft_type",
     label: "Draft skill type",
     description:
-      'The value selected in the open editor\'s Type dropdown: one of "reference", "convention", "workflow", "task", "render_block", "mode", "agent_behavior" (an unrecognised value loaded from the backend is preserved and shown as an extra option). Absent unless the editor is mounted.',
+      'The value selected in the open editor\'s Type dropdown: one of "reference", "convention", "workflow", "task", "render_block", "mode", "agent_behavior" (an unrecognized value loaded from the backend is preserved and shown as an extra option). Absent unless the editor is mounted.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 12,
