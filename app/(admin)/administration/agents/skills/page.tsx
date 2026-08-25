@@ -11,7 +11,6 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  Brain,
   FolderTree,
   Globe2,
   Lightbulb,
@@ -100,25 +99,6 @@ function SkillsAdminPageInner() {
       })}
     >
     <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-shrink-0 p-4 border-b border-border bg-card">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-md bg-primary/10 text-primary flex items-center justify-center">
-              <Brain className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-foreground">
-                Agent Skills Registry
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Curate every skill on the platform — promote to system,
-                edit metadata, or soft-delete.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 overflow-hidden flex flex-col">
         {mode === "list" && (
           <>

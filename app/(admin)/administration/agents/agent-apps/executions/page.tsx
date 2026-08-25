@@ -140,15 +140,6 @@ export default function AgentAppsExecutionsAdminPage() {
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full bg-textured">
-        <div className="flex-shrink-0 p-4 border-b border-border bg-card">
-          <h1 className="text-xl font-semibold text-foreground flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Executions & Errors
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Recent runs across every agent app and any errors they surfaced.
-          </p>
-        </div>
         <Tabs
           value={activeTab}
           onValueChange={(v) => setActiveTab(v as "executions" | "errors")}
