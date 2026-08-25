@@ -118,7 +118,7 @@ const ARTIFACT_LOADING_COMPONENTS: Partial<
  */
 const KINDLESS_PATIENCE_CHARS = 300;
 
-function pendingStructuredEnvelope(block: {
+export function pendingStructuredEnvelope(block: {
   type: string;
   content?: string | null;
   metadata?: Record<string, unknown>;
