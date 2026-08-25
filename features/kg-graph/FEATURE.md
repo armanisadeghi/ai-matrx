@@ -1,259 +1,73 @@
-# FEATURE.md — `kg-graph`
+# FEATURE.md — `kg-graph` (local mechanics)
 
-**Status:** `active`
-**Tier:** `1`
-**Last updated:** `2026-06-02`
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/knowledge/knowledge-graph/STATE.md`
+> — read it before touching this feature in ANY repo. Purpose, product direction, the measured
+> state of the graph data, the rulings, and the roadmap all live there. This file is the file map
+> and the traps.
 
----
+The cytoscape knowledge-graph canvas. Two modes, one component: org-wide at `/knowledge-graph`
+and `/knowledge/graph`, per-scope neighbourhood at `/scopes/[scopeId]/graph`. Read-only.
 
-## Purpose
+## Files
 
-Interactive cytoscape visualization of the knowledge graph (`rag.kg_entities` +
-`rag.kg_edges`). Two surfaces: an org-wide canvas at `/knowledge-graph` and a
-per-scope neighborhood canvas at `/scopes/[scopeId]/graph`. Clicking a node opens
-a side panel showing that entity's source mentions, deep-linked to their source.
-Lets the product owner spot clusters, gaps, and weaknesses in their own data.
+**Routes** — `app/(core)/knowledge-graph/page.tsx`, `app/(core)/knowledge/graph/page.tsx`,
+`app/(core)/scopes/[scopeId]/graph/page.tsx`.
 
-This is Phase G of the Knowledge Graph plan. It is read-only and consumes the
-existing corpus (677 entities / 1,494 edges from code-graph work, growing with
-NER entities once backfill runs).
+**Components** — `KgGraphCanvas` (the single surface for both modes: fetch, toolbar, legend,
+empty/error/loading, side panel) · `KgGraphCytoscape` (presentational render surface, client-only)
+· `KgGraphLegend` · `KgGraphSidePanel` (evidence drill-down; reuses `citationHrefFor()` from
+`features/rag/api/search.ts`) · `KgGraphCard` (lazy mini preview) · `KgOrgFilter` / `KgScopeFilter`.
 
----
+**Cytoscape engine** (`cytoscape/`, direct integration, no React wrapper) — `useKgCytoscape.ts`
+(instance lifecycle only) · `ops.ts` (imperative ops) · `analysis.ts` (`buildElements`,
+`annotateGraph` PageRank + Markov, `applyEncoding`) · `style.ts` · `layouts.ts` · `register.ts`
+(the one place `cytoscape.use()` runs) · `extensions.d.ts`, `minimap.css`.
 
-## Entry points
+**Service** — `service/kgGraphService.ts` (`fetchKgGraph`, `fetchEntityMentions` over the aidream
+`/kg` router via `@/lib/python-client`) · `service/graphPreview.ts` (card cache/dedupe).
 
-**Routes**
-- `app/(core)/knowledge-graph/page.tsx` — org-wide graph. Server page wraps the
-  `KnowledgeGraphClient` shell, which reads the active org from
-  `useActiveContext()` and renders `<KgGraphCanvas mode="org" />`.
-- `app/(core)/scopes/[scopeId]/graph/page.tsx` — one scope's neighborhood.
-  Renders `<KgGraphCanvas mode="scope" scopeId={...} />`.
+**Types** — `types.ts` mirrors the backend Pydantic models; the backend is the source of truth.
 
-**Components**
-- `KgGraphCanvas` (`components/KgGraphCanvas.tsx`) — the single surface for both
-  modes. Owns the fetch and the chrome: toolbar (search / layout switcher /
-  colour + size encoding / kind-filter / node-count + truncated indicator),
-  legend, empty/error/loading states, and the side panel. Loads the cytoscape
-  render surface via `next/dynamic({ ssr: false })`.
-- `KgGraphCytoscape` (`components/KgGraphCytoscape.tsx`) — PRESENTATIONAL render
-  surface: renders the graph container + minimap + on-canvas zoom controls, then
-  wires reactive inputs (data / theme / encoding / layout / selection / search) to
-  imperative `cytoscape/ops` through thin effects. CLIENT-ONLY (imports cytoscape
-  + extensions, which touch `window` at import). Never import directly — only
-  `KgGraphCanvas` loads it dynamically.
-- `KgGraphLegend` (`components/KgGraphLegend.tsx`) — overlay key for the active
-  colour encoding (kind swatches, or detected-community count).
-- `KgGraphSidePanel` (`components/KgGraphSidePanel.tsx`) — clicked-entity drill
-  down: stats + source mentions. Reuses `citationHrefFor()` from
-  `features/rag/api/search.ts` (not redeclared) to deep-link each mention.
+**Redux** — none, by design. Read-mostly single-fetch-per-view → local component state.
 
-**Cytoscape engine** (`cytoscape/` — direct integration, no React wrapper)
-- `useKgCytoscape.ts` — instance LIFECYCLE only: create once, register extensions,
-  init layout-utilities + minimap, bind events once (latest-callback refs), observe
-  resize, `cy.destroy()` on unmount (StrictMode/HMR-safe). Returns `{ containerRef,
-  getCy }`.
-- `ops.ts` — imperative operations: `loadGraph` (swap elements → analyze → encode →
-  layout), `applyTheme` (live stylesheet swap, no re-layout), `runLayout`,
-  `focusNeighborhood`/`clearFocus`, `applySearch`, `selectNode`, animated
-  `fitAll`/`fitTo`/`zoomByFactor`.
-- `analysis.ts` — `buildElements`; `annotateGraph` (PageRank importance + Markov
-  communities, cached into element data); `applyEncoding` (point colour/size at the
-  chosen dimension). All algorithms ship in cytoscape core 3.x.
-- `style.ts` — theme-aware stylesheet (`buildStylesheet`) + interaction-class names.
-- `layouts.ts` — layout presets (`fcose` default, `cola` live, `concentric` by
-  importance, `grid`) + `KG_LAYOUTS` switcher metadata.
-- `register.ts` — the one place `cytoscape.use(...)` runs (globalThis-guarded);
-  imports the navigator CSS + `minimap.css` override.
-- `extensions.d.ts` / `minimap.css` — ambient types for the untyped extensions
-  (cola, layout-utilities) and the docked/themed minimap chrome.
+## Traps
 
-**Services**
-- `service/kgGraphService.ts` — typed client over the aidream `/kg` router via
-  `@/lib/python-client` (React → Python direct, JWT attached). `fetchKgGraph`,
-  `fetchEntityMentions`.
-
-**API endpoints** (aidream — bare prefix `/kg`, public URL `/api/kg/*`)
-- `GET /api/kg/graph?organization_id=&scope_id=&kind=&depth=&limit=` →
-  `GraphPayload`.
-- `GET /api/kg/graph/entity/{id}/mentions?limit=&offset=` → `MentionsPage`.
-
-**Redux slice(s)**
-- None. Read-mostly single-fetch-per-view → local component state (per the
-  "no parallel slice for a single-fetch view" guidance). KG suggestions own the
-  first KG slice; this view doesn't need one.
-
----
-
-## Data model
-
-**Database tables** (Supabase, schema `rag`, read-only)
-- `kg_entities` — graph nodes. Org-shared; `organization_id IS NULL` = global
-  code-graph data visible to all authenticated users.
-- `kg_edges` — typed edges between entities (`src_id`/`dst_id`).
-- `kg_chunk_entities` + `kg_chunks` — mentions. `kg_chunks.owner_id` is NOT NULL;
-  mention drill-down is filtered to chunks the caller owns or in an org they
-  belong to.
-- `ctx_scope_assignments` + `ctx_scopes` — scope tagging; the neighborhood seed.
-
-**Key types** (`features/kg-graph/types.ts`, mirror the Pydantic models)
-- `GraphNode`, `GraphEdge`, `GraphPayload`
-- `MentionRow`, `MentionsPage`
-- `GraphQueryParams`, `KgGraphMode`
-
----
-
-## Key flows
-
-1. **Org-wide:** canvas fetches `GET /kg/graph?organization_id=<active>`. Backend
-   returns the most-connected visible entities (NULL-org global + member orgs),
-   degree-ranked, capped at `limit` (default 500, max 2000); `truncated=true` when
-   capped. Edges returned are only those whose both endpoints are in the node set.
-2. **Scope neighborhood:** canvas fetches `GET /kg/graph?scope_id=<id>`. Backend
-   verifies scope access (404 otherwise), seeds from entities mentioned in the
-   scope's tagged sources, walks `depth` hops (hard-capped at 3) along edges.
-3. **Node click → side panel:** `fetchEntityMentions(id)` → mentions the caller
-   can access; each deep-links via `citationHrefFor()`.
-4. **Kind filter:** client-side narrowing of the already-fetched node/edge set.
-
----
-
-## Invariants / gotchas
-
-- `KgGraphCytoscape` is **client-only** — it MUST stay behind
-  `next/dynamic({ ssr: false })`. cytoscape touches `window`/DOM at import; a
-  static import in a server-rendered page breaks the build.
-- **Direct integration, no React wrapper.** `react-cytoscapejs` was dropped (it's
-  unmaintained, uses React-15-era `findDOMNode` removed in React 19, and offers no
-  extension API). The instance is owned by `useKgCytoscape` via `useRef` +
-  `useEffect`; every later change is imperative through `ops` against `getCy()`.
-- **`packComponents` needs `cytoscape-layout-utilities`.** fcose silently skips
-  component packing unless the extension is registered AND `cy.layoutUtilities(...)`
-  was called on the instance. Without it, disconnected clusters scatter across empty
-  canvas — the original "flung-apart" bug. The hook does that init.
-- **Extensions register exactly once** via `register.ts` (globalThis-guarded so
-  Turbopack HMR / StrictMode don't double-register and throw).
-- **Per-user visibility is enforced server-side**, two layers: entity nodes are
-  scoped to NULL-org + member orgs; mention snippets are scoped to chunks the
-  caller owns. The FE never assumes it can see everything — it renders whatever
-  the backend returns and shows the "capped" indicator.
-- Per-kind hues are raw hex in `constants.ts` (read fine on either theme); the
-  theme-dependent chrome (label/halo/edge/selection) is per-`ThemeMode` in
-  `KG_CHROME` and swapped live with `cy.style().fromJson(...).update()` (no
-  re-layout). cytoscape can't read Tailwind classes, so all values are literals.
-- `cytoscape-navigator` overwrites the minimap container's className → its chrome
-  is styled via `cytoscape/minimap.css` (a `body .cytoscape-navigator` override
-  using HSL design tokens, so it themes for free).
+- **`KgGraphCytoscape` MUST stay behind `next/dynamic({ ssr: false })`.** cytoscape touches
+  `window`/DOM at import; a static import in a server-rendered page breaks the build. Never import
+  it directly — only `KgGraphCanvas` loads it.
+- **Never reintroduce `react-cytoscapejs`.** Unmaintained, uses React-15-era `findDOMNode` removed
+  in React 19, no extension API.
+- **`packComponents` needs `cytoscape-layout-utilities`** registered AND `cy.layoutUtilities(...)`
+  called on the instance, or fcose silently skips packing and disconnected clusters scatter across
+  empty canvas. `useKgCytoscape` does that init.
+- **Extensions register exactly once** via `register.ts` (globalThis-guarded, so Turbopack HMR and
+  StrictMode do not double-register and throw).
+- **cytoscape cannot read Tailwind classes** — every colour is a literal. Per-kind hues are raw hex
+  in `constants.ts`; theme-dependent chrome is per-`ThemeMode` in `KG_CHROME` and swapped live with
+  `cy.style().fromJson(...).update()` (no re-layout, positions preserved).
+- **`cytoscape-navigator` overwrites the minimap container's className** → style it via
+  `cytoscape/minimap.css` (a `body .cytoscape-navigator` override using HSL design tokens).
+- **Per-user visibility is enforced server-side**, two layers: entity nodes scoped to NULL-org +
+  member orgs, mention snippets scoped to chunks the caller owns. The FE renders whatever the
+  backend returns and shows the "capped" indicator; it never assumes it can see everything.
+- **The engine is reused outside this feature** — `features/marketing/components/inspection/link-graph/`
+  consumes `useKgCytoscape`, `ops`, `layouts`, `style`/`KG_CLASS` and the chrome/tier constants.
+  Keep their signatures stable.
+- **Ranking must NOT use `confidence`** — it is an undecided trust placeholder, not a quality
+  signal (knowledge-graph DECISIONS D7).
+- **Agent-writable targets:** `graph_search`, `graph_kind_filter`, `graph_layout` (`applyPolicy:
+  "auto"`) and `graph_detail_level` (`"ask"` — it re-REQUESTS the graph at up to a 1000-node budget,
+  which is real backend work the user should get to decline). Every handler calls the SAME setter
+  the toolbar control's `onChange` calls and validates against the vocabulary the UI renders from
+  (`KG_DETAIL_LEVELS`, `KG_LAYOUTS`, the payload's own `kinds`) — never a re-typed literal.
+  Deliberately NOT writable and not worth re-litigating: the org / scope / scope-type selectors
+  (they choose *whose* knowledge is drawn — identity, not view state), the colour-by / size-by
+  encodings (`KgColorBy` / `KgSizeBy` are types with no runtime vocabulary constant), hide-noise,
+  and the entity payload itself. There is no entity-authoring editor on this canvas at all.
 - No emojis. Lucide icons only for chrome.
 
----
+## Endpoints consumed
 
-## Doctrine compliance
-
-- **No local types that belong elsewhere:** `types.ts` mirrors the backend
-  contract (the source of truth is the Pydantic model); reused `RagSearchHit` +
-  `citationHrefFor` from `features/rag` rather than redeclaring.
-- **No recreated components:** reused `Select`, `Skeleton`, `ScrollArea`,
-  `Badge`, `useIsMobile`, `citationHrefFor`.
-- **No parallel Redux slice:** read-mostly single fetch → local state, by design.
-- **No duplicated hook logic:** active-org via the existing `useActiveContext()`.
-- If deleted, this feature rebuilds in minutes from `KgGraphCanvas` +
-  `kgGraphService` + the `/kg` router — all generic, named, documented.
-
----
-
-## Change log
-
-- 2026-08-10 — Claude: **the canvas is agent-writable.** `KgGraphCanvas` now
-  passes `getWriteHandlers` to its `SurfaceRuntimeProvider`, registering four of
-  `matrx-user/knowledge`'s write targets: `graph_search`, `graph_kind_filter`
-  and `graph_layout` (`applyPolicy: "auto"`) plus `graph_detail_level`
-  (`"ask"` — it re-REQUESTS the graph from the service at up to a 1000-node
-  budget, which is real backend work the user should get to decline). Every
-  handler calls the SAME setter the toolbar control's own `onChange` calls, so
-  an agent write and a user click are indistinguishable, and each validates
-  against the vocabulary the UI itself renders from — `KG_DETAIL_LEVELS`,
-  `KG_LAYOUTS`, and the live payload's own `kinds` array — never a re-typed
-  literal. The three whose controls are `disabled={!showGraph}` throw rather
-  than write while the canvas is loading, errored, or fully filtered out;
-  `graph_detail_level` deliberately does not, because its Select stays enabled
-  during a load and the fetch effect's `AbortController` already handles a
-  change mid-flight. NOT writable: the org / scope / scope-type selectors (they
-  choose whose knowledge is drawn — scoping identity, not authoring), and the
-  colour-by / size-by / hide-noise encodings (mechanical toggles, and
-  `KgColorBy` / `KgSizeBy` are types with no runtime constant to validate
-  against — if you ever want them as targets, promote a canonical
-  `KG_COLOR_BY_OPTIONS` the toolbar renders from first). Live-verified with a
-  real agent run; full reasoning in the `features/surfaces` FEATURE.md Change
-  Log entry of the same date.
-- 2026-08-11 — Claude: the canvas's four `matrx-user/knowledge` write targets were live-verified with a real bound agent. `KgGraphCanvas` registers `graph_search` / `graph_kind_filter` / `graph_layout` on `applyPolicy:"auto"` and `graph_detail_level` on `"ask"`, all `mode:"ui"` — the canvas owns only camera/encoding state, so nothing here persists. Confirmed live: `graph_search` applied with no confirm dialog and the toolbar's search input showed the term, while `graph_detail_level` correctly went through an ask dialog, which is the intended line — raising Detail re-REQUESTS the graph from the service at up to a 1000-node budget and triggers a multi-second relayout, so it is real backend work the user should get to refuse. Deliberately NOT writable and worth not re-litigating: the org / scope / scope-type filters (they choose WHOSE knowledge is drawn — ownership, not view state), the colour-by and size-by encodings (`KgColorBy` / `KgSizeBy` are types with no runtime vocabulary constant, so a handler could only validate against re-typed literals), hide-noise, and the entity payload itself. There is no entity-authoring editor on this canvas at all — no canonical-name or alias field, and `KgGraphSidePanel` is read-only — so renaming a graph entity would be a `surface-authoring` job (build the editor first), not a write target.
-- 2026-07-20 — Claude: the cytoscape engine is now REUSED outside this feature — `features/marketing/components/inspection/link-graph/` consumes `useKgCytoscape`, `ops`, `layouts`, `style`/`KG_CLASS`, and the chrome/tier constants for the marketing site link graph; keep their signatures stable. Robustness fixes from that integration: camera ops (`fitAll`/`fitTo`/`zoomByFactor`) now `cy.stop(true)` first so a stalled/queued core animation can't make the buttons appear dead; `KgGraphCytoscape`'s StrictMode mount-guard refs (`firstData`/`layoutMounted`) reset on unmount — they previously survived the remount and made the second pass run a redundant animated layout against the fresh instance.
-- 2026-06-04 — Org picker + bigger card + org-page card. Toolbar now has an
-  always-visible **organization picker** (`KgOrgFilter`) beside the scope picker,
-  so org → scope-type → scope are manually changeable even when arriving via a
-  route filter (the canvas owns `orgFilter`, re-synced from the prop; switching org
-  resets the scope) — the "never feel stuck" fix. The preview card is ~2× taller
-  (elliptical spiral fills the space). The org workspace's plain "Knowledge graph"
-  CTA is replaced by the live `<KgGraphCard variant="org">` preview.
-- 2026-06-04 — Option A: scope filtering + mini graph card. **Filter** the org
-  graph to one scope (Client/Case/Kid) via a toolbar picker (`KgScopeFilter`,
-  reuses `useScopeTree`) **or** the route — `/knowledge-graph?org=&scope=&scopeType=`
-  (so org/scope pages deep-link a pre-filtered graph; backend resolves `scope_id`
-  → tagged sources → entities). **`KgGraphCard`** — a lazy, cached, click-through
-  mini preview (lightweight SVG, phyllotaxis layout, real top-N + decorative
-  filler, fake-graph-while-loading) embedded on the scope page; cached/deduped via
-  `service/graphPreview.ts`. (Org/scope-type page embeds: drop-in snippets provided
-  — OrgWorkspace left untouched as it was mid-edit; scope-type card needs a backend
-  `scope_type_id` filter, see 05.)
-- 2026-06-04 — Encoding + evidence tweaks. New **hierarchy ("tier") colour** mode
-  (`analysis.ensureTier`: BFS depth from each cluster's local importance peaks;
-  `KG_TIER_PALETTE`) — now the **default colour** (entity-kind colouring demoted to
-  opt-in). **Default size = importance** (PageRank), not raw connections. Evidence
-  panel now shows the **source's name** (note label, resolved via
-  `service/sourceNames.ts`), not just the kind; the **Open link opens in a new tab**
-  (`target=_blank`) so it doesn't disturb the slow graph load.
-- 2026-06-04 — Phase 1: de-noise + evidence drill-down (see
-  `docs/PRODUCT_DIRECTION.md` + `docs/knowledge/04_CURRENT_STATE_AND_PATH.md`).
-  Co-occurrence edges recede to a faint baseline (they're noise until typed); the
-  low-value scaffolding kinds (phone/email/url/address) are hidden by default with
-  a "Noise hidden (N)" toggle. The side panel is rebuilt as an **Evidence panel**:
-  dedupes inflated mentions by `(chunk_id, span_start)`, groups passages by source,
-  highlights the entity in each passage, supports copy, forward-wires a `?find=`
-  note anchor. **Fixed a real bug surfaced by verification:** the drill-down panel
-  rendered off-screen (canvas flex item lacked `min-w-0`, so a fixed-width
-  cytoscape `<canvas>` blocked it from shrinking) — the panel was never visible.
-  Ranking deliberately does NOT use confidence (undecided trust placeholder).
-  Verified live against the legal corpus.
-- 2026-06-03 — Performance: fast first paint, never load the whole graph.
-  Toolbar **Detail** budget (Overview 75 / Standard 150 / Detailed 350 / Maximum
-  1000) — fetch only the top-N most-connected nodes; "top N — raise Detail" when
-  capped. **Lazy analysis** — PageRank (importance) and Markov (community) now run
-  only when the chosen encoding needs them, cached per-instance in a WeakMap, so
-  the default kind/connections view runs none. **Adaptive layout** — fcose drops
-  to draft quality + fewer iterations above 150 nodes. cytoscape perf flags
-  (`hideEdgesOnViewport`, `textureOnViewport`). Measured first-paint compute at
-  345 nodes / 5.6k edges: ~9.2s → ~0.26s (layout 1900→120ms; analysis ~325ms→0
-  on default). NOTE: the remaining latency at scale is the backend `/kg/graph`
-  handler (the DB query itself is ~3ms) and ultimately needs server-side
-  pagination / a neighbour-expansion endpoint for 100×+ corpora.
-- 2026-06-03 — Interaction fixes: select-trigger icon alignment (inline flex over
-  shadcn's `[&>span]:line-clamp-1`), click-to-pin focus (persist via selectedId,
-  hover suppressed while pinned), Ctrl/Cmd-click multi-select (`additive`).
-- 2026-06-03 — Pro rebuild of the render surface. Dropped `react-cytoscapejs`
-  (unmaintained / React-19-incompatible) for a direct `useRef`+`useEffect`
-  integration (`cytoscape/` engine: `useKgCytoscape`, `ops`, `analysis`, `style`,
-  `layouts`, `register`). Added: `cytoscape-layout-utilities` (fixes flung-apart
-  disconnected clusters via fcose `packComponents`), `cytoscape-navigator` minimap,
-  `cytoscape-cola` live layout. New features — layout switcher (force / live /
-  by-importance / grid), colour-by kind **or** detected community (Markov
-  clustering), size-by connections **or** importance (PageRank), hover neighbour
-  highlight, box-select + native group-drag, node search, animated zoom/fit
-  controls, legend. Rich theme-aware stylesheet with focus/faded/selected states.
-- 2026-06-03 — Theme-aware canvas chrome. Per-`ThemeMode` label/halo/edge/
-  selection palette (`KG_CHROME` + `kgChrome()` in `constants.ts`); `text-outline`
-  label halo so labels stay legible over nodes, edge mats, or the bare canvas in
-  either theme; live re-skin on theme toggle via `cy.style().fromJson(...).update()`
-  (no re-layout, positions preserved); `nodeDimensionsIncludeLabels` to cut label
-  overlap. Fixes washed-out/illegible labels in light mode.
-- 2026-06-02 — Phase G: initial cytoscape KG canvas (org-wide + per-scope),
-  side-panel drill-down, `/kg` backend router, nav links from ScopesHub +
-  ScopeDetailView.
+`GET /api/kg/graph?organization_id=&scope_id=&kind=&depth=&limit=` → `GraphPayload`
+(default limit 500, max 2000, `truncated=true` when capped; scope walks are hard-capped at 3 hops).
+`GET /api/kg/graph/entity/{id}/mentions?limit=&offset=` → `MentionsPage`.

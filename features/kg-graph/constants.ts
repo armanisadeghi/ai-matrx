@@ -69,7 +69,7 @@ export function tierColor(tier: number): string {
 // letterhead, not substance. Hidden by DEFAULT in the canvas (the legal-doc test
 // drowned the signal in phones/addresses/emails); toggled back via "Show noise".
 // Purely a display filter — never deletes data. (Real importance/noise scoring is
-// a server/NER job — see docs/PRODUCT_DIRECTION.md §C4.)
+// a server/NER job — see common-docs/systems/knowledge/knowledge-graph/HANDOFF.md.)
 export const KG_NOISE_KINDS = new Set<string>([
   "phone",
   "email",

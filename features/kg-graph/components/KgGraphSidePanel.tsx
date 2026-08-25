@@ -10,7 +10,7 @@
 //   - highlights the entity inside each passage so you read the real context;
 //   - deep-links each source to its viewer (notes get a forward-compatible
 //     `?find=` anchor; passage-accurate page jumps await backend provenance — see
-//     features/kg-graph/docs/PRODUCT_DIRECTION.md §B1).
+//     common-docs/systems/knowledge/knowledge-graph/HANDOFF.md item 6).
 
 "use client";
 
