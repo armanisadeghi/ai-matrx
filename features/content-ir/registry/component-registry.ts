@@ -61,6 +61,23 @@ function toRow(
 }
 
 /**
+ * Roles the OUTPUT/INPUT resolver dispatches on. `loading` rows are real and
+ * valid (content_ir.kind_component_role_check allows them since 2026-08-25)
+ * but they are the kind's LOADING face, resolved by the loading layer — never
+ * by this resolver. They are dropped here rather than coerced, because
+ * `asComponentRole`'s fallback would register a kind's LOADING component as
+ * its OUTPUT component: the reader would see the skeleton where the finished
+ * shape belongs, permanently.
+ */
+const RESOLVER_ROLES = new Set(["output", "input"]);
+
+function dispatchableRows(
+  rows: readonly (KindComponentProjection | KindComponentRow)[],
+): KindComponentRow[] {
+  return rows.filter((r) => RESOLVER_ROLES.has(r.role)).map(toRow);
+}
+
+/**
  * `kind_component.role` is free text in the generated DB types; the resolver
  * models the two roles it actually dispatches on. An unrecognised role is a
  * malformed row, not a new tier — it screams and falls back to `output` so one
@@ -97,13 +114,13 @@ export class ComponentRegistry extends ComponentResolver {
   override ingestDbRows(
     rows: readonly (KindComponentProjection | KindComponentRow)[],
   ): void {
-    super.ingestDbRows(rows.map(toRow));
+    super.ingestDbRows(dispatchableRows(rows));
   }
 
   override replaceDbRows(
     rows: readonly (KindComponentProjection | KindComponentRow)[],
   ): void {
-    super.replaceDbRows(rows.map(toRow));
+    super.replaceDbRows(dispatchableRows(rows));
   }
 
   /** Historical name for the package's `refresh` — kept so call sites read the same. */
