@@ -47,7 +47,7 @@ const LINK_TYPE_TONE = {
 } as const;
 
 export function PageLinkBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"page_link">(serverData);
   const url = text(value.target_url);
   if (!url) return null;
   const anchor = text(value.anchor_text);
@@ -110,7 +110,7 @@ const BUCKETS = [
 ] as const;
 
 export function LinkBucketsBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"link_buckets">(serverData);
   const present = BUCKETS.map(([key, label]) => ({
     key,
     label,
@@ -162,7 +162,7 @@ export function LinkBucketsBlock({ serverData, className }: BlockProps) {
 /* ------------------------------------------------------------------ media */
 
 export function PageImageBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"page_image">(serverData);
   const src = text(value.src);
   if (!src) return null;
   const alt = text(value.alt);
@@ -191,7 +191,7 @@ export function PageImageBlock({ serverData, className }: BlockProps) {
 }
 
 export function PageVideoBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"page_video">(serverData);
   const src = text(value.src);
   if (!src) return null;
   const poster = text(value.poster);
@@ -221,7 +221,7 @@ export function PageVideoBlock({ serverData, className }: BlockProps) {
 }
 
 export function PageAudioBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"page_audio">(serverData);
   const src = text(value.src);
   if (!src) return null;
   return (
@@ -244,7 +244,7 @@ export function PageAudioBlock({ serverData, className }: BlockProps) {
 /* -------------------------------------------------------------- structure */
 
 export function PageHeadingBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"page_heading">(serverData);
   const label = text(value.text);
   if (!label) return null;
   const level = num(value.level) ?? 0;
@@ -268,7 +268,7 @@ export function PageHeadingBlock({ serverData, className }: BlockProps) {
 }
 
 export function PageSectionBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"page_section">(serverData);
   const heading = text(value.heading);
   const markdown = text(value.markdown);
   if (!heading && !markdown) return null;
@@ -285,7 +285,7 @@ export function PageSectionBlock({ serverData, className }: BlockProps) {
 }
 
 export function PageListBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"page_list">(serverData);
   const entries = strings(value.items);
   if (entries.length === 0) return null;
   const ordered = value.ordered === true;
@@ -310,7 +310,7 @@ export function PageListBlock({ serverData, className }: BlockProps) {
 }
 
 export function CodeBlockKindBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"code_block">(serverData);
   const code = text(value.code);
   if (!code) return null;
   const language = text(value.language);
@@ -335,7 +335,7 @@ export function CodeBlockKindBlock({ serverData, className }: BlockProps) {
  * dispatches on `type` rather than showing a field dump.
  */
 export function PageBlockBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"page_block">(serverData);
   const type = text(value.type);
   const body = text(value.text);
   const entries = strings(value.items);
@@ -400,7 +400,7 @@ export function PageBlockBlock({ serverData, className }: BlockProps) {
 /* ------------------------------------------------------- transport / meta */
 
 export function RedirectHopBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"redirect_hop">(serverData);
   const url = text(value.url);
   if (!url) return null;
   const status = num(value.status);
@@ -413,7 +413,7 @@ export function RedirectHopBlock({ serverData, className }: BlockProps) {
 }
 
 export function ContentFingerprintBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"content_fingerprint">(serverData);
   const simhash = text(value.simhash);
   const outline = text(value.outline_simhash);
   const minhash = Array.isArray(value.minhash) ? value.minhash : [];
@@ -449,7 +449,7 @@ export function ContentFingerprintBlock({ serverData, className }: BlockProps) {
  * link will produce, not a list of meta tags.
  */
 export function PageMetadataBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"page_metadata">(serverData);
   const og = isRecord(value.open_graph) ? value.open_graph : {};
   const ogTitle = text(og["og:title"]);
   const ogDesc = text(og["og:description"]);
@@ -541,7 +541,7 @@ export function PageMetadataBlock({ serverData, className }: BlockProps) {
 /* ---------------------------------------------------------------- removal */
 
 export function PageRemovalBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"page_removal">(serverData);
   const body = text(value.text);
   const trigger = text(value.trigger_value);
   const attribute = text(value.attribute);
@@ -574,7 +574,7 @@ export function PageRemovalBlock({ serverData, className }: BlockProps) {
 
 /** `parsed_table` — reused kind; a page table renders as a real table. */
 export function ParsedTableBlock({ serverData, className }: BlockProps) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"parsed_table">(serverData);
   const rows = records(value.rows);
   const columns = strings(value.columns);
   if (rows.length === 0) return null;

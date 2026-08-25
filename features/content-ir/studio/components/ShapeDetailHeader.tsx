@@ -80,7 +80,12 @@ export default function ShapeDetailHeader({
         ? document.getElementById(SHAPE_EDITOR_ANCHOR_ID)
         : null;
     if (node) {
-      node.scrollIntoView({ behavior: "smooth", block: "start" });
+      // `behavior: "auto"`, deliberately. Smooth scrolling a NESTED container
+      // (`.shell-main`, which is what actually scrolls on a (core) route) is a
+      // silent no-op in some engines — measured live 2026-08-25. This button
+      // exists because it stopped moving once already; it does not get to
+      // depend on an optional animation path.
+      node.scrollIntoView({ behavior: "auto", block: "start" });
       return;
     }
     router.push(`${detailHref}#${SHAPE_EDITOR_ANCHOR_ID}`);
@@ -99,12 +104,17 @@ export default function ShapeDetailHeader({
     );
   }
 
+  // The agent action is the PRIMARY pill on purpose: only primary/destructive
+  // actions render their name inline in this template, and an unlabeled AI
+  // icon next to an unlabeled pencil is precisely how "I don't know what the
+  // difference is" happens. The owner editor is already on screen on Preview,
+  // so "Edit Shape" is a jump-to, and reads fine as a tooltipped pencil.
   const agentAction = {
     label: isOwnedByViewer ? "Edit with agent" : "Build with agent",
     icon: BrainCircuit,
     onPress: launchAgent,
     disabled: launching,
-    primary: !isOwnedByViewer,
+    primary: true,
   };
 
   return (
@@ -125,7 +135,6 @@ export default function ShapeDetailHeader({
                 label: "Edit Shape",
                 icon: Pencil,
                 onPress: openOwnerEditor,
-                primary: true,
               },
               agentAction,
             ]

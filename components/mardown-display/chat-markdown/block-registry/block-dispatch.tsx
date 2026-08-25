@@ -401,6 +401,24 @@ export type FeSynthesizedBlockType =
   | "study_notes"
   | "lesson_scripts"
   | "study_pack"
+  | "scraped_page"
+  | "scraper_batch_result"
+  | "scraper_crawl_result"
+  | "page_link"
+  | "link_buckets"
+  | "page_image"
+  | "page_video"
+  | "page_audio"
+  | "page_heading"
+  | "page_section"
+  | "page_list"
+  | "page_block"
+  | "code_block"
+  | "redirect_hop"
+  | "content_fingerprint"
+  | "page_metadata"
+  | "page_removal"
+  | "page_cleaning_report"
   | "web_search_results"
   | "web_result"
   | "news_result"
@@ -524,6 +542,24 @@ export type ShapeBlockType =
   | "study_notes"
   | "lesson_scripts"
   | "study_pack"
+  | "scraped_page"
+  | "scraper_batch_result"
+  | "scraper_crawl_result"
+  | "page_link"
+  | "link_buckets"
+  | "page_image"
+  | "page_video"
+  | "page_audio"
+  | "page_heading"
+  | "page_section"
+  | "page_list"
+  | "page_block"
+  | "code_block"
+  | "redirect_hop"
+  | "content_fingerprint"
+  | "page_metadata"
+  | "page_removal"
+  | "page_cleaning_report"
   | "web_search_results"
   | "web_result"
   | "news_result"
@@ -1974,6 +2010,26 @@ const SHAPE_BLOCK_DISPATCH = {
   // serverData is the uniform `{ value, isComplete }` wrapper; the collection
   // delegates every nested instance to its kind's canonical component. Same
   // loader / readable-JSON fallback contract as the entries above.
+  // Kind-routed scraper / web_page family (Scraper Kinds Run): same uniform
+  // `{ value, isComplete }` bridge, so the SAME entry shape serves it.
+  scraped_page: searchKindEntry(BlockComponents.ScrapedPageBlock),
+  scraper_batch_result: searchKindEntry(BlockComponents.ScraperBatchResultBlock),
+  scraper_crawl_result: searchKindEntry(BlockComponents.ScraperCrawlResultBlock),
+  page_link: searchKindEntry(BlockComponents.PageLinkBlock),
+  link_buckets: searchKindEntry(BlockComponents.LinkBucketsBlock),
+  page_image: searchKindEntry(BlockComponents.PageImageBlock),
+  page_video: searchKindEntry(BlockComponents.PageVideoBlock),
+  page_audio: searchKindEntry(BlockComponents.PageAudioBlock),
+  page_heading: searchKindEntry(BlockComponents.PageHeadingBlock),
+  page_section: searchKindEntry(BlockComponents.PageSectionBlock),
+  page_list: searchKindEntry(BlockComponents.PageListBlock),
+  page_block: searchKindEntry(BlockComponents.PageBlockBlock),
+  code_block: searchKindEntry(BlockComponents.CodeBlockKindBlock),
+  redirect_hop: searchKindEntry(BlockComponents.RedirectHopBlock),
+  content_fingerprint: searchKindEntry(BlockComponents.ContentFingerprintBlock),
+  page_metadata: searchKindEntry(BlockComponents.PageMetadataBlock),
+  page_removal: searchKindEntry(BlockComponents.PageRemovalBlock),
+  page_cleaning_report: searchKindEntry(BlockComponents.PageCleaningReportBlock),
   web_search_results: searchKindEntry(BlockComponents.WebSearchResultsBlock),
   web_result: searchKindEntry(BlockComponents.WebResultBlock),
   news_result: searchKindEntry(BlockComponents.NewsResultBlock),

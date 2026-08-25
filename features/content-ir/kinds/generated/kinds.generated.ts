@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 433 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 450 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "0fdc72039820";
+export const KIND_REGISTRY_FINGERPRINT = "0ff8042808ab";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -826,24 +826,6 @@ export interface CmsReconcileRetiredItem {
 }
 
 /**
- * A literal code block lifted from the page.
- *
- * ``language`` is null today: the HTML parser does not report one. It is
- * declared because the datum exists on the page (``class="language-python"``)
- * and is a capability gap, not an absent concept.
- *  *
- *  * From kind `scraped_page`.
- */
-export interface CodeBlock {
-  code: string;
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "code_block";
-  language?: string | null;
-}
-
-/**
  * * From kind `comparison_set`.
  */
 export interface ComparisonCriterion {
@@ -924,35 +906,6 @@ export interface CompetitorOpportunityArtifactSection {
   strategist_version: string;
   internal_link_actions?: string[];
   already_have_percentage: number;
-}
-
-/**
- * Near-duplicate detection signatures for the page body.
- *
- * ``simhash`` is a STRING and must stay one. Measured: a real page returned
- * ``7046352583261510909`` — nineteen digits, past ``Number.MAX_SAFE_INTEGER``.
- * As a JSON number every JavaScript consumer silently rounds it, and two
- * different pages start comparing equal.
- *  *
- *  * From kind `scraped_page`.
- */
-export interface ContentFingerprint {
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "content_fingerprint";
-  /**
-   * MinHash signature vector.
-   */
-  minhash?: number[];
-  /**
-   * 64-bit simhash, as a decimal string.
-   */
-  simhash?: string | null;
-  /**
-   * Simhash over the outline only, as a decimal string.
-   */
-  outline_simhash?: string | null;
 }
 
 /**
@@ -2109,7 +2062,7 @@ export interface InterviewRoundContext {
 }
 
 /**
- * * Shared by 59 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
+ * * Shared by 61 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
  */
 export type JsonValue = unknown;
 
@@ -2213,31 +2166,6 @@ export interface LessonScriptSection {
    * Roughly how long this section runs when spoken, in seconds.
    */
   duration_seconds?: number;
-}
-
-/**
- * Every URL the page points at, bucketed by what it points to.
- *
- * KEPT ALONGSIDE ``page_link`` deliberately. Measured 2026-08-23 across seven
- * real captures: up to **121 bucket URLs on a single page never appear in the
- * link records** (mostly ``others``, ``external`` and ``images``). Deriving
- * one of these from the other would have silently lost them.
- *  *
- *  * From kind `scraped_page`.
- */
-export interface LinkBuckets {
-  audio?: string[];
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "link_buckets";
-  images?: string[];
-  others?: string[];
-  videos?: string[];
-  archives?: string[];
-  external?: string[];
-  internal?: string[];
-  documents?: string[];
 }
 
 /**
@@ -2524,114 +2452,6 @@ export interface OpportunityAssessment {
 }
 
 /**
- * An ``<audio>`` element. Shape from ``parser.data_types.Audio.to_data``.
- *  *
- *  * From kind `scraped_page`.
- */
-export interface PageAudio {
-  src: string;
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "page_audio";
-  tracks?: (Record<string, string>)[];
-  sources?: (Record<string, string>)[];
-}
-
-/**
- * One node of the page's ORDERED content stream.
- *
- * This is the only field that preserves document order ACROSS types — the
- * fact that a table sits between two paragraphs, and which two. ``sections``,
- * ``tables``, ``lists`` and ``code_blocks`` each re-present a slice of this
- * stream grouped by type; none of them can put it back together. Order is
- * unrecoverable later, which is why this ships on every page rather than on
- * request (Arman's call, 2026-08-23).
- *  *
- *  * From kind `scraped_page`.
- */
-export interface PageBlock {
-  /**
-   * Alt text, for type='image'.
-   */
-  alt?: string | null;
-  /**
-   * Media URL, for type='image'|'video'|'audio'.
-   */
-  src?: string | null;
-  /**
-   * Row objects, for type='table'.
-   */
-  rows?: unknown[];
-  /**
-   * Textual content, for the text-like types.
-   */
-  text?: string | null;
-  type: "text" | "header" | "list" | "code" | "table" | "image" | "video" | "audio" | "quote";
-  /**
-   * Text immediately following this block.
-   */
-  after?: string | null;
-  /**
-   * List entries, for type='list'.
-   */
-  items?: string[];
-  /**
-   * Heading depth, for type='header'.
-   */
-  level?: number | null;
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "page_block";
-  /**
-   * Text immediately preceding this block.
-   */
-  before?: string | null;
-}
-
-/**
- * Everything the cleaning pipeline stripped, kept for power-user review.
- *
- * An ordinary reader never sees this; an SEO analyst working an owned site
- * reads it FIRST, because a call to action living inside a "noisy" wrapper is
- * exactly what the noise remover eats.
- *
- * The ``*_in_page`` counts are the SURVIVAL LEDGER. They are counted at the
- * DOM dispatch site — every ``<table>``, ``<ul>``, ``<code>`` the page
- * actually contains — while the carried arrays hold only what survived
- * filtering. Measured: a page with 12 code blocks in its DOM handed us 4.
- * The gap is not a discrepancy to reconcile; it IS the finding.
- *  *
- *  * From kind `scraped_page`.
- */
-export interface PageCleaningReport {
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "page_cleaning_report";
-  removed?: PageRemoval[];
-  /**
-   * Lists present in the DOM, before filtering.
-   */
-  lists_in_page?: number | null;
-  /**
-   * Tables present in the DOM, before filtering.
-   */
-  tables_in_page?: number | null;
-  /**
-   * Total characters of HTML removed across both passes.
-   */
-  removed_char_total?: number;
-  /**
-   * Code blocks present in the DOM, before filtering.
-   */
-  code_blocks_in_page?: number | null;
-  noise_removed_count?: number;
-  filter_removed_count?: number;
-}
-
-/**
  * * From kind `page_keyword_map_v1`.
  */
 export interface PageConflict {
@@ -2656,148 +2476,6 @@ export interface PageDates {
 }
 
 /**
- * One entry in the document outline.
- *  *
- *  * From kind `scraped_page`.
- */
-export interface PageHeading {
-  text: string;
-  /**
-   * Heading depth; 0 is the parser's 'unassociated' preamble.
-   */
-  level: number;
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "page_heading";
-}
-
-/**
- * * From kind `scraped_page`.
- */
-export interface PageImage {
-  /**
-   * Alt text — the accessibility label.
-   */
-  alt?: string | null;
-  /**
-   * Image URL.
-   */
-  src: string;
-  title?: string | null;
-  /**
-   * Declared width attribute, as authored (may be a CSS length).
-   */
-  width?: string | null;
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "page_image";
-  height?: string | null;
-  /**
-   * Responsive candidate URLs, in source order.
-   */
-  srcset?: string[];
-  caption?: string | null;
-}
-
-/**
- * One ``<a href>`` on the page, with the human-authored label it carried.
- *
- * Anchor text is the strongest label a link has and is unrecoverable without
- * refetching, which is why the same parse that fills the URL buckets fills
- * these records.
- *  *
- *  * From kind `scraped_page`.
- */
-export interface PageLink {
-  /**
-   * The raw rel attribute, when present.
-   */
-  rel?: string | null;
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "page_link";
-  /**
-   * Page region the link sits in: main | body | article | nav | header | footer.
-   */
-  region?: string | null;
-  /**
-   * True when rel contains nofollow.
-   */
-  nofollow?: boolean;
-  /**
-   * 'internal' | 'external' | 'subdomain', relative to this page.
-   */
-  link_type?: string | null;
-  /**
-   * Absolute destination URL.
-   */
-  target_url: string;
-  /**
-   * The visible link text.
-   */
-  anchor_text?: string | null;
-  /**
-   * Where the label came from: 'anchor' (link text) or 'image_alt' (an image's alt).
-   */
-  text_source?: string | null;
-}
-
-/**
- * * From kind `scraped_page`.
- */
-export interface PageList {
-  /**
-   * Text immediately following the list.
-   */
-  after?: string | null;
-  items?: string[];
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "page_list";
-  /**
-   * Text immediately preceding the list.
-   */
-  before?: string | null;
-  /**
-   * True for a numbered list. The parser reports it when it knows.
-   */
-  ordered?: boolean;
-}
-
-/**
- * What the page declares about itself in its head.
- *  *
- *  * From kind `scraped_page`.
- */
-export interface PageMetadata {
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "page_metadata";
-  /**
-   * Parsed schema.org JSON-LD objects.
-   */
-  json_ld?: (Record<string, unknown>)[];
-  /**
-   * Every meta tag, name → content. A repeated name gives a list.
-   */
-  meta_tags?: Record<string, unknown>;
-  /**
-   * OpenGraph properties as an object. The parser emits [[k, v], …]; translated here.
-   */
-  open_graph?: Record<string, string>;
-  canonical_url?: string | null;
-  /**
-   * The robots meta value, e.g. 'noindex, follow'.
-   */
-  robots_directives?: string | null;
-}
-
-/**
  * * From kind `page_keyword_map_v1`.
  */
 export interface PagePlan {
@@ -2817,97 +2495,6 @@ export interface PageRef {
   __kind?: "page_ref_v1";
   proposed?: ProposedPage | null;
   existing_url?: string | null;
-}
-
-/**
- * One thing our own cleaning pipeline took OUT of the page, and why.
- *
- * Arman, 2026-08-23: *"in some cases we have good stuff that ends up in here…
- * when we're trying to analyze an 'owned' site for SEO, the things the scraper
- * hides or considers noise are the things YOU MUST see because they're your
- * call to action and other highly useful things."*
- *  *
- *  * From kind `scraped_page`.
- */
-export interface PageRemoval {
-  /**
-   * The readable text that was removed.
-   */
-  text?: string | null;
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "page_removal";
-  /**
-   * Which pass removed it.
-   */
-  remover: "noise_remover" | "content_filter";
-  /**
-   * What the rule matched on (class, id, tag name, …).
-   */
-  attribute?: string | null;
-  /**
-   * 'partial' | 'exact' | ''.
-   */
-  match_type?: string | null;
-  /**
-   * Size of the removed HTML, in chars.
-   */
-  html_length?: number | null;
-  /**
-   * The value that triggered the rule.
-   */
-  trigger_value?: string | null;
-}
-
-/**
- * The page's markdown, split at its headings.
- *
- * The parser hands this back as a DICT keyed by heading. A dict cannot carry
- * document order, and order is unrecoverable afterwards, so the adapter
- * converts it to this ordered list.
- *  *
- *  * From kind `scraped_page`.
- */
-export interface PageSection {
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "page_section";
-  heading: string;
-  markdown: string;
-}
-
-/**
- * A ``<video>`` (or an embed the media pass resolved to one).
- *
- * Shape read from ``matrx_scraper.parser.data_types.Video.to_data`` — the
- * parser's own contract — because no capture in the distillation set produced
- * one. Nothing here is invented; see the ledger's measured findings.
- *  *
- *  * From kind `scraped_page`.
- */
-export interface PageVideo {
-  src: string;
-  width?: string | null;
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "page_video";
-  height?: string | null;
-  poster?: string | null;
-  /**
-   * Caption/subtitle tracks.
-   */
-  tracks?: (Record<string, string>)[];
-  /**
-   * Alternate encodings: {src, type}.
-   */
-  sources?: (Record<string, string>)[];
-  /**
-   * Embed provider when the source was a third-party player.
-   */
-  provider?: string | null;
 }
 
 /**
@@ -3577,20 +3164,6 @@ export interface RecipeStep {
   __kind: "recipe_step";
   action: string;
   description: string;
-}
-
-/**
- * One hop of the redirect chain. A chain of length 1 means no redirect.
- *  *
- *  * From kind `scraped_page`.
- */
-export interface RedirectHop {
-  url: string;
-  /**
-   * The registered kind this payload is an instance of.
-   */
-  __kind?: "redirect_hop";
-  status: number;
 }
 
 /**
@@ -6412,6 +5985,24 @@ export interface CmsStarterKitResult {
 }
 
 /**
+ * A literal code block lifted from the page.
+ *
+ * ``language`` is null today: the HTML parser does not report one. It is
+ * declared because the datum exists on the page (``class="language-python"``)
+ * and is a capability gap, not an absent concept.
+ *  *
+ *  * Kind `code_block` (registry v2).
+ */
+export interface CodeBlock {
+  code: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "code_block";
+  language?: string | null;
+}
+
+/**
  * Output of ``ai.util.format_scraped_content`` — scraped pages joined into one block.
  *  *
  *  * Kind `combined_page_text` (registry v5).
@@ -6567,6 +6158,35 @@ export interface CompetitorPageAutopsyV1 {
     own_supporting_links: number | null;
     competitor_supporting_links: number | null;
   };
+}
+
+/**
+ * Near-duplicate detection signatures for the page body.
+ *
+ * ``simhash`` is a STRING and must stay one. Measured: a real page returned
+ * ``7046352583261510909`` — nineteen digits, past ``Number.MAX_SAFE_INTEGER``.
+ * As a JSON number every JavaScript consumer silently rounds it, and two
+ * different pages start comparing equal.
+ *  *
+ *  * Kind `content_fingerprint` (registry v2).
+ */
+export interface ContentFingerprint {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "content_fingerprint";
+  /**
+   * MinHash signature vector.
+   */
+  minhash?: number[];
+  /**
+   * 64-bit simhash, as a decimal string.
+   */
+  simhash?: string | null;
+  /**
+   * Simhash over the outline only, as a decimal string.
+   */
+  outline_simhash?: string | null;
 }
 
 /**
@@ -8518,6 +8138,31 @@ export interface LessonScriptSet {
 }
 
 /**
+ * Every URL the page points at, bucketed by what it points to.
+ *
+ * KEPT ALONGSIDE ``page_link`` deliberately. Measured 2026-08-23 across seven
+ * real captures: up to **121 bucket URLs on a single page never appear in the
+ * link records** (mostly ``others``, ``external`` and ``images``). Deriving
+ * one of these from the other would have silently lost them.
+ *  *
+ *  * Kind `link_buckets` (registry v2).
+ */
+export interface LinkBuckets {
+  audio?: string[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "link_buckets";
+  images?: string[];
+  others?: string[];
+  videos?: string[];
+  archives?: string[];
+  external?: string[];
+  internal?: string[];
+  documents?: string[];
+}
+
+/**
  * In-study answer to a learner's 'I'm confused' on the current flashcard: the answer text, how much it gives away, optional followup questions, and an embedded trust_envelope.
  *  *
  *  * Kind `live_help_answer` (registry v6).
@@ -9285,6 +8930,73 @@ export interface Page {
 }
 
 /**
+ * An ``<audio>`` element. Shape from ``parser.data_types.Audio.to_data``.
+ *  *
+ *  * Kind `page_audio` (registry v2).
+ */
+export interface PageAudio {
+  src: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "page_audio";
+  tracks?: (Record<string, string>)[];
+  sources?: (Record<string, string>)[];
+}
+
+/**
+ * One node of the page's ORDERED content stream.
+ *
+ * This is the only field that preserves document order ACROSS types — the
+ * fact that a table sits between two paragraphs, and which two. ``sections``,
+ * ``tables``, ``lists`` and ``code_blocks`` each re-present a slice of this
+ * stream grouped by type; none of them can put it back together. Order is
+ * unrecoverable later, which is why this ships on every page rather than on
+ * request (Arman's call, 2026-08-23).
+ *  *
+ *  * Kind `page_block` (registry v2).
+ */
+export interface PageBlock {
+  /**
+   * Alt text, for type='image'.
+   */
+  alt?: string | null;
+  /**
+   * Media URL, for type='image'|'video'|'audio'.
+   */
+  src?: string | null;
+  /**
+   * Row objects, for type='table'.
+   */
+  rows?: unknown[];
+  /**
+   * Textual content, for the text-like types.
+   */
+  text?: string | null;
+  type: "text" | "header" | "list" | "code" | "table" | "image" | "video" | "audio" | "quote";
+  /**
+   * Text immediately following this block.
+   */
+  after?: string | null;
+  /**
+   * List entries, for type='list'.
+   */
+  items?: string[];
+  /**
+   * Heading depth, for type='header'.
+   */
+  level?: number | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "page_block";
+  /**
+   * Text immediately preceding this block.
+   */
+  before?: string | null;
+}
+
+/**
  * Kind `page_brief` (registry v5).
  */
 export interface PageBrief {
@@ -9318,6 +9030,47 @@ export interface PageBrief {
    * Target length for the finished page, in words.
    */
   suggested_word_count?: number;
+}
+
+/**
+ * Everything the cleaning pipeline stripped, kept for power-user review.
+ *
+ * An ordinary reader never sees this; an SEO analyst working an owned site
+ * reads it FIRST, because a call to action living inside a "noisy" wrapper is
+ * exactly what the noise remover eats.
+ *
+ * The ``*_in_page`` counts are the SURVIVAL LEDGER. They are counted at the
+ * DOM dispatch site — every ``<table>``, ``<ul>``, ``<code>`` the page
+ * actually contains — while the carried arrays hold only what survived
+ * filtering. Measured: a page with 12 code blocks in its DOM handed us 4.
+ * The gap is not a discrepancy to reconcile; it IS the finding.
+ *  *
+ *  * Kind `page_cleaning_report` (registry v3).
+ */
+export interface PageCleaningReport {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "page_cleaning_report";
+  removed?: PageRemoval[];
+  /**
+   * Lists present in the DOM, before filtering.
+   */
+  lists_in_page?: number | null;
+  /**
+   * Tables present in the DOM, before filtering.
+   */
+  tables_in_page?: number | null;
+  /**
+   * Total characters of HTML removed across both passes.
+   */
+  removed_char_total?: number;
+  /**
+   * Code blocks present in the DOM, before filtering.
+   */
+  code_blocks_in_page?: number | null;
+  noise_removed_count?: number;
+  filter_removed_count?: number;
 }
 
 /**
@@ -9359,6 +9112,52 @@ export interface PageExtractionValidateResult {
 }
 
 /**
+ * One entry in the document outline.
+ *  *
+ *  * Kind `page_heading` (registry v2).
+ */
+export interface PageHeading {
+  text: string;
+  /**
+   * Heading depth; 0 is the parser's 'unassociated' preamble.
+   */
+  level: number;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "page_heading";
+}
+
+/**
+ * Kind `page_image` (registry v2).
+ */
+export interface PageImage {
+  /**
+   * Alt text — the accessibility label.
+   */
+  alt?: string | null;
+  /**
+   * Image URL.
+   */
+  src: string;
+  title?: string | null;
+  /**
+   * Declared width attribute, as authored (may be a CSS length).
+   */
+  width?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "page_image";
+  height?: string | null;
+  /**
+   * Responsive candidate URLs, in source order.
+   */
+  srcset?: string[];
+  caption?: string | null;
+}
+
+/**
  * `page_keyword_analysis_v1` — the Page Analyzer's artifact.
  *  *
  *  * Kind `page_keyword_analysis_v1` (registry v2).
@@ -9397,6 +9196,193 @@ export interface PageKeywordMapV1 {
   page_plans: PagePlan[];
   topic_slug?: string;
   mapper_version?: string;
+}
+
+/**
+ * One ``<a href>`` on the page, with the human-authored label it carried.
+ *
+ * Anchor text is the strongest label a link has and is unrecoverable without
+ * refetching, which is why the same parse that fills the URL buckets fills
+ * these records.
+ *  *
+ *  * Kind `page_link` (registry v2).
+ */
+export interface PageLink {
+  /**
+   * The raw rel attribute, when present.
+   */
+  rel?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "page_link";
+  /**
+   * Page region the link sits in: main | body | article | nav | header | footer.
+   */
+  region?: string | null;
+  /**
+   * True when rel contains nofollow.
+   */
+  nofollow?: boolean;
+  /**
+   * 'internal' | 'external' | 'subdomain', relative to this page.
+   */
+  link_type?: string | null;
+  /**
+   * Absolute destination URL.
+   */
+  target_url: string;
+  /**
+   * The visible link text.
+   */
+  anchor_text?: string | null;
+  /**
+   * Where the label came from: 'anchor' (link text) or 'image_alt' (an image's alt).
+   */
+  text_source?: string | null;
+}
+
+/**
+ * Kind `page_list` (registry v2).
+ */
+export interface PageList {
+  /**
+   * Text immediately following the list.
+   */
+  after?: string | null;
+  items?: string[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "page_list";
+  /**
+   * Text immediately preceding the list.
+   */
+  before?: string | null;
+  /**
+   * True for a numbered list. The parser reports it when it knows.
+   */
+  ordered?: boolean;
+}
+
+/**
+ * What the page declares about itself in its head.
+ *  *
+ *  * Kind `page_metadata` (registry v2).
+ */
+export interface PageMetadata {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "page_metadata";
+  /**
+   * Parsed schema.org JSON-LD objects.
+   */
+  json_ld?: (Record<string, unknown>)[];
+  /**
+   * Every meta tag, name → content. A repeated name gives a list.
+   */
+  meta_tags?: Record<string, unknown>;
+  /**
+   * OpenGraph properties as an object. The parser emits [[k, v], …]; translated here.
+   */
+  open_graph?: Record<string, string>;
+  canonical_url?: string | null;
+  /**
+   * The robots meta value, e.g. 'noindex, follow'.
+   */
+  robots_directives?: string | null;
+}
+
+/**
+ * One thing our own cleaning pipeline took OUT of the page, and why.
+ *
+ * Arman, 2026-08-23: *"in some cases we have good stuff that ends up in here…
+ * when we're trying to analyze an 'owned' site for SEO, the things the scraper
+ * hides or considers noise are the things YOU MUST see because they're your
+ * call to action and other highly useful things."*
+ *  *
+ *  * Kind `page_removal` (registry v2).
+ */
+export interface PageRemoval {
+  /**
+   * The readable text that was removed.
+   */
+  text?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "page_removal";
+  /**
+   * Which pass removed it.
+   */
+  remover: "noise_remover" | "content_filter";
+  /**
+   * What the rule matched on (class, id, tag name, …).
+   */
+  attribute?: string | null;
+  /**
+   * 'partial' | 'exact' | ''.
+   */
+  match_type?: string | null;
+  /**
+   * Size of the removed HTML, in chars.
+   */
+  html_length?: number | null;
+  /**
+   * The value that triggered the rule.
+   */
+  trigger_value?: string | null;
+}
+
+/**
+ * The page's markdown, split at its headings.
+ *
+ * The parser hands this back as a DICT keyed by heading. A dict cannot carry
+ * document order, and order is unrecoverable afterwards, so the adapter
+ * converts it to this ordered list.
+ *  *
+ *  * Kind `page_section` (registry v2).
+ */
+export interface PageSection {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "page_section";
+  heading: string;
+  markdown: string;
+}
+
+/**
+ * A ``<video>`` (or an embed the media pass resolved to one).
+ *
+ * Shape read from ``matrx_scraper.parser.data_types.Video.to_data`` — the
+ * parser's own contract — because no capture in the distillation set produced
+ * one. Nothing here is invented; see the ledger's measured findings.
+ *  *
+ *  * Kind `page_video` (registry v2).
+ */
+export interface PageVideo {
+  src: string;
+  width?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "page_video";
+  height?: string | null;
+  poster?: string | null;
+  /**
+   * Caption/subtitle tracks.
+   */
+  tracks?: (Record<string, string>)[];
+  /**
+   * Alternate encodings: {src, type}.
+   */
+  sources?: (Record<string, string>)[];
+  /**
+   * Embed provider when the source was a third-party player.
+   */
+  provider?: string | null;
 }
 
 /**
@@ -10665,6 +10651,20 @@ export interface RecordResult {
 }
 
 /**
+ * One hop of the redirect chain. A chain of length 1 means no redirect.
+ *  *
+ *  * Kind `redirect_hop` (registry v2).
+ */
+export interface RedirectHop {
+  url: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "redirect_hop";
+  status: number;
+}
+
+/**
  * Kind `regex_extract_result` (registry v5).
  */
 export interface RegexExtractResult {
@@ -11420,6 +11420,45 @@ export interface ScrapedPage {
    * The same projection with image references retained.
    */
   research_text_with_images?: string | null;
+}
+
+/**
+ * Output of ``scraper.scrape_many`` — a parallel scrape of N URLs.
+ *
+ * UPGRADED from the placeholder: ``pages`` was a plain ``BaseModel`` mirror of
+ * the node's projection and is now the real nested ``scraped_page`` kind, so a
+ * batch renders with exactly the components a single page renders with.
+ *  *
+ *  * Kind `scraper_batch_result` (registry v6).
+ */
+export interface ScraperBatchResult {
+  pages?: ScrapedPage[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "scraper_batch_result";
+  failed?: number;
+  successful?: number;
+}
+
+/**
+ * Output of ``scraper.crawl_site`` — a BFS crawl capped at ``max_pages``.
+ *
+ * Crawl-level state the engine currently discards (pages discovered vs
+ * fetched, robots-blocked, skipped) is approved to land here at Stage D, when
+ * the engine's return type changes — together with the repair of the node,
+ * which passes three keyword arguments the engine has never accepted.
+ *  *
+ *  * Kind `scraper_crawl_result` (registry v6).
+ */
+export interface ScraperCrawlResult {
+  pages?: ScrapedPage[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "scraper_crawl_result";
+  seed_url?: string;
+  total_pages?: number;
 }
 
 /**
@@ -17496,12 +17535,14 @@ export type GeneratedKindSlug =
   | "cms_publish_result"
   | "cms_reconcile_report"
   | "cms_starter_kit_result"
+  | "code_block"
   | "combined_page_text"
   | "comparison_set"
   | "competitor_lookup_result"
   | "competitor_opportunity_autopsy_result"
   | "competitor_opportunity_autopsy_v1"
   | "competitor_page_autopsy_v1"
+  | "content_fingerprint"
   | "content_plan_archetype_instantiation"
   | "content_plan_archetype_list"
   | "content_plan_foundation_checklist"
@@ -17589,6 +17630,7 @@ export type GeneratedKindSlug =
   | "kg_entity_mentions_page"
   | "kg_graph_neighborhood"
   | "lesson_script_set"
+  | "link_buckets"
   | "live_help_answer"
   | "local_place"
   | "loop_iteration_result"
@@ -17618,11 +17660,22 @@ export type GeneratedKindSlug =
   | "opening_hours"
   | "operation_result"
   | "page"
+  | "page_audio"
+  | "page_block"
   | "page_brief"
+  | "page_cleaning_report"
   | "page_extraction_run_result"
   | "page_extraction_validate_result"
+  | "page_heading"
+  | "page_image"
   | "page_keyword_analysis_v1"
   | "page_keyword_map_v1"
+  | "page_link"
+  | "page_list"
+  | "page_metadata"
+  | "page_removal"
+  | "page_section"
+  | "page_video"
   | "parsed_datetime"
   | "parsed_json"
   | "parsed_table"
@@ -17671,6 +17724,7 @@ export type GeneratedKindSlug =
   | "random_string_result"
   | "rating"
   | "record_result"
+  | "redirect_hop"
   | "regex_extract_result"
   | "regex_replace_result"
   | "rendered_text"
@@ -17691,6 +17745,8 @@ export type GeneratedKindSlug =
   | "schema_proposal"
   | "schema_qc_result"
   | "scraped_page"
+  | "scraper_batch_result"
+  | "scraper_crawl_result"
   | "seo_authority_route_analysis"
   | "seo_authority_route_result"
   | "seo_backlink_enrichment_result"
@@ -17932,12 +17988,14 @@ export interface KindPayloadBySlug {
   "cms_publish_result": CmsPublishResult;
   "cms_reconcile_report": CmsReconcileReport;
   "cms_starter_kit_result": CmsStarterKitResult;
+  "code_block": CodeBlock;
   "combined_page_text": CombinedPageText;
   "comparison_set": ComparisonSet;
   "competitor_lookup_result": CompetitorLookupResult;
   "competitor_opportunity_autopsy_result": CompetitorOpportunityAutopsyResult;
   "competitor_opportunity_autopsy_v1": CompetitorOpportunityAutopsyV1;
   "competitor_page_autopsy_v1": CompetitorPageAutopsyV1;
+  "content_fingerprint": ContentFingerprint;
   "content_plan_archetype_instantiation": ContentPlanArchetypeInstantiation;
   "content_plan_archetype_list": ContentPlanArchetypeList;
   "content_plan_foundation_checklist": ContentPlanFoundationChecklist;
@@ -18025,6 +18083,7 @@ export interface KindPayloadBySlug {
   "kg_entity_mentions_page": KgEntityMentionsPage;
   "kg_graph_neighborhood": KgGraphNeighborhood;
   "lesson_script_set": LessonScriptSet;
+  "link_buckets": LinkBuckets;
   "live_help_answer": LiveHelpAnswer;
   "local_place": LocalPlace;
   "loop_iteration_result": LoopIterationResult;
@@ -18054,11 +18113,22 @@ export interface KindPayloadBySlug {
   "opening_hours": OpeningHours;
   "operation_result": OperationResult;
   "page": Page;
+  "page_audio": PageAudio;
+  "page_block": PageBlock;
   "page_brief": PageBrief;
+  "page_cleaning_report": PageCleaningReport;
   "page_extraction_run_result": PageExtractionRunResult;
   "page_extraction_validate_result": PageExtractionValidateResult;
+  "page_heading": PageHeading;
+  "page_image": PageImage;
   "page_keyword_analysis_v1": PageKeywordAnalysisV1;
   "page_keyword_map_v1": PageKeywordMapV1;
+  "page_link": PageLink;
+  "page_list": PageList;
+  "page_metadata": PageMetadata;
+  "page_removal": PageRemoval;
+  "page_section": PageSection;
+  "page_video": PageVideo;
   "parsed_datetime": ParsedDatetime;
   "parsed_json": ParsedJson;
   "parsed_table": ParsedTable;
@@ -18107,6 +18177,7 @@ export interface KindPayloadBySlug {
   "random_string_result": RandomStringResult;
   "rating": Rating;
   "record_result": RecordResult;
+  "redirect_hop": RedirectHop;
   "regex_extract_result": RegexExtractResult;
   "regex_replace_result": RegexReplaceResult;
   "rendered_text": RenderedText;
@@ -18127,6 +18198,8 @@ export interface KindPayloadBySlug {
   "schema_proposal": SchemaProposal;
   "schema_qc_result": SchemaQcResult;
   "scraped_page": ScrapedPage;
+  "scraper_batch_result": ScraperBatchResult;
+  "scraper_crawl_result": ScraperCrawlResult;
   "seo_authority_route_analysis": SeoAuthorityRouteAnalysis;
   "seo_authority_route_result": SeoAuthorityRouteResult;
   "seo_backlink_enrichment_result": SeoBacklinkEnrichmentResult;
@@ -18372,12 +18445,14 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "cms_publish_result",
   "cms_reconcile_report",
   "cms_starter_kit_result",
+  "code_block",
   "combined_page_text",
   "comparison_set",
   "competitor_lookup_result",
   "competitor_opportunity_autopsy_result",
   "competitor_opportunity_autopsy_v1",
   "competitor_page_autopsy_v1",
+  "content_fingerprint",
   "content_plan_archetype_instantiation",
   "content_plan_archetype_list",
   "content_plan_foundation_checklist",
@@ -18465,6 +18540,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "kg_entity_mentions_page",
   "kg_graph_neighborhood",
   "lesson_script_set",
+  "link_buckets",
   "live_help_answer",
   "local_place",
   "loop_iteration_result",
@@ -18494,11 +18570,22 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "opening_hours",
   "operation_result",
   "page",
+  "page_audio",
+  "page_block",
   "page_brief",
+  "page_cleaning_report",
   "page_extraction_run_result",
   "page_extraction_validate_result",
+  "page_heading",
+  "page_image",
   "page_keyword_analysis_v1",
   "page_keyword_map_v1",
+  "page_link",
+  "page_list",
+  "page_metadata",
+  "page_removal",
+  "page_section",
+  "page_video",
   "parsed_datetime",
   "parsed_json",
   "parsed_table",
@@ -18547,6 +18634,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "random_string_result",
   "rating",
   "record_result",
+  "redirect_hop",
   "regex_extract_result",
   "regex_replace_result",
   "rendered_text",
@@ -18567,6 +18655,8 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "schema_proposal",
   "schema_qc_result",
   "scraped_page",
+  "scraper_batch_result",
+  "scraper_crawl_result",
   "seo_authority_route_analysis",
   "seo_authority_route_result",
   "seo_backlink_enrichment_result",

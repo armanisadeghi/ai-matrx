@@ -30,6 +30,7 @@ import type React from "react";
 import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
 import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { reportKindComponentIncident } from "./kindComponentIncident";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import type { ComponentResolution } from "../../registry/component-registry";
 import type { RunKindAction } from "../actions/useKindActionRunner";
@@ -104,14 +105,38 @@ function cacheKey(
   return `${kind}${platform}${role}${updatedAt ?? ""}`;
 }
 
-/** Loud recovery: one console scream per key + structured capture. */
-function screamCompileFailure(key: string, kind: string, error: string): void {
+/**
+ * Loud recovery: one console scream per key + structured capture + a durable
+ * incident on the kind's own queue.
+ *
+ * The capture serves the ADMIN looking at this browser. The incident serves the
+ * person (or agent) who can actually fix the component — without it, a broken
+ * component seen only by ordinary users is invisible to its author forever
+ * (kindComponentIncident.ts).
+ */
+function screamCompileFailure(
+  key: string,
+  kind: string,
+  error: string,
+  resolution?: ComponentResolution,
+  platform = "web",
+  role = "output",
+): void {
   const message = `[content-ir] DB kind component for "${kind}" failed to compile — rendering the generic structured viewer instead: ${error}`;
   if (!screamedKeys.has(key)) {
     screamedKeys.add(key);
     console.error(message);
   }
   captureError({ source: "content-ir", message, raw: { kind, error } });
+  reportKindComponentIncident({
+    kind,
+    errorType: "compile_error",
+    message,
+    platform,
+    role,
+    componentKey: resolution?.componentKey ?? null,
+    componentUpdatedAt: resolution?.updatedAt ?? null,
+  });
 }
 
 /**
@@ -165,7 +190,7 @@ export function getOrCompileDbKindComponent(
       ok: false,
       error: "db-source resolution has no component_source",
     };
-    screamCompileFailure(key, kind, result.error);
+    screamCompileFailure(key, kind, result.error, resolution, platform, role);
     cache.set(key, result);
     return result;
   }
@@ -183,7 +208,7 @@ export function getOrCompileDbKindComponent(
       ok: false,
       error: error ?? "compile produced no component",
     };
-    screamCompileFailure(key, kind, result.error);
+    screamCompileFailure(key, kind, result.error, resolution, platform, role);
     cache.set(key, result);
     return result;
   }
@@ -208,6 +233,15 @@ export function getOrCompileDbKindComponent(
         source: "content-ir",
         message,
         raw: { kind, error: transformError },
+      });
+      reportKindComponentIncident({
+        kind,
+        errorType: "transform_error",
+        message,
+        platform,
+        role,
+        componentKey: resolution.componentKey,
+        componentUpdatedAt: resolution.updatedAt,
       });
     }
   }
@@ -245,6 +279,13 @@ export function applyPropsTransform(
     }`;
     console.error(message);
     captureError({ source: "content-ir", message, raw: { kind } });
+    reportKindComponentIncident({
+      kind,
+      errorType: "transform_error",
+      message,
+      stack: error instanceof Error ? (error.stack ?? null) : null,
+      data: value,
+    });
     return value;
   }
 }

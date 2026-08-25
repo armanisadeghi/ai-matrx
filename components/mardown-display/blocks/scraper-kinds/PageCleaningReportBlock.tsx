@@ -60,7 +60,7 @@ function LedgerRow({
 }
 
 export default function PageCleaningReportBlock({ serverData, className, survivors }: Props) {
-  const { value } = readScraperKindValue(serverData);
+  const { value } = readScraperKindValue<"page_cleaning_report">(serverData);
   const removed = items(value.removed);
   const noiseCount = num(value.noise_removed_count) ?? 0;
   const filterCount = num(value.filter_removed_count) ?? 0;

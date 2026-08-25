@@ -20,7 +20,7 @@
  * Resolution failure is LOUD: no fallback agent, ever.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { BrainCircuit, CircleAlert, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -115,18 +115,20 @@ function NewShapeLauncher() {
 
 export default function NewShapeClient() {
   const { roles } = useSurfaceAgentRoles(SHAPES_SURFACE_NAME);
-  const builderAgentId = roles[SHAPE_BUILDER_ROLE]?.effectiveAgentId ?? null;
+  // Ref-held, not a useCallback dep: the role resolves asynchronously and the
+  // window opens the instant it does, so a closure captured on an earlier
+  // render would emit `shape_creator_agent_id` as absent — a surface value
+  // the page really does have. Read it at TRIGGER time instead.
+  const builderAgentIdRef = useRef<string | null>(null);
+  builderAgentIdRef.current = roles[SHAPE_BUILDER_ROLE]?.effectiveAgentId ?? null;
 
-  // Surface scope (matrx-user/shapes) — the create entry. Built at TRIGGER
-  // time; no kind exists yet, so no kind_* values are emitted here.
-  const getSurfaceScope = useCallback(
-    () =>
-      createShapesScope({
-        studio_tab: "new",
-        shape_creator_agent_id: builderAgentId || undefined,
-      }),
-    [builderAgentId],
-  );
+  // Surface scope (matrx-user/shapes) — the create entry. No kind exists yet,
+  // so no kind_* values are emitted here.
+  const getSurfaceScope = () =>
+    createShapesScope({
+      studio_tab: "new",
+      shape_creator_agent_id: builderAgentIdRef.current || undefined,
+    });
 
   return (
     <SurfaceRuntimeProvider

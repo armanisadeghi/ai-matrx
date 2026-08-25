@@ -19,6 +19,7 @@
  */
 import React from "react";
 import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
+import { reportKindComponentIncident } from "./kindComponentIncident";
 
 interface Props {
   kind: string;
@@ -70,6 +71,17 @@ export class DbKindComponentErrorBoundary extends React.Component<
       boundary: "DbKindComponentErrorBoundary",
       componentStack: errorInfo.componentStack ?? null,
       relation: `kind:${this.props.kind}`,
+    });
+    // The capture above serves an admin watching THIS browser. The incident
+    // below reaches whoever can fix the component — the only path that works
+    // when the person who hit the bug is an ordinary user
+    // (kindComponentIncident.ts).
+    reportKindComponentIncident({
+      kind: this.props.kind,
+      errorType: "render_throw",
+      message: error instanceof Error ? error.message : String(error),
+      componentUpdatedAt: this.props.resetSignal,
+      stack: errorInfo.componentStack ?? null,
     });
   }
 

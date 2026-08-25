@@ -39,6 +39,28 @@ import MemoryHintBlock from "../../blocks/memory-aid/MemoryHintBlock";
 import SeoPackageBlock from "../../blocks/seo-package/SeoPackageBlock";
 // Search kind family (Search Kinds Pilot) — one canonical component per kind.
 import WebSearchResultsBlockImpl from "../../blocks/search-kinds/WebSearchResultsBlock";
+import ScrapedPageBlockImpl from "../../blocks/scraper-kinds/ScrapedPageBlock";
+import PageCleaningReportBlockImpl from "../../blocks/scraper-kinds/PageCleaningReportBlock";
+import {
+  ScraperBatchResultBlock as ScraperBatchResultBlockImpl,
+  ScraperCrawlResultBlock as ScraperCrawlResultBlockImpl,
+} from "../../blocks/scraper-kinds/collection-blocks";
+import {
+  CodeBlockKindBlock as CodeBlockKindBlockImpl,
+  ContentFingerprintBlock as ContentFingerprintBlockImpl,
+  LinkBucketsBlock as LinkBucketsBlockImpl,
+  PageAudioBlock as PageAudioBlockImpl,
+  PageBlockBlock as PageBlockBlockImpl,
+  PageHeadingBlock as PageHeadingBlockImpl,
+  PageImageBlock as PageImageBlockImpl,
+  PageLinkBlock as PageLinkBlockImpl,
+  PageListBlock as PageListBlockImpl,
+  PageMetadataBlock as PageMetadataBlockImpl,
+  PageRemovalBlock as PageRemovalBlockImpl,
+  PageSectionBlock as PageSectionBlockImpl,
+  PageVideoBlock as PageVideoBlockImpl,
+} from "../../blocks/scraper-kinds/primitive-blocks";
+
 import {
   WebResultBlock as WebResultBlockImpl,
   NewsResultBlock as NewsResultBlockImpl,
@@ -464,6 +486,97 @@ export const BlockComponents = {
   SeoPackageBlock: (props: React.ComponentProps<typeof SeoPackageBlock>) => (
     <LazyBlockWrapper>
       <SeoPackageBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  // Scraper / web_page kind family (Scraper Kinds Run).
+  ScrapedPageBlock: (props: React.ComponentProps<typeof ScrapedPageBlockImpl>) => (
+    <LazyBlockWrapper>
+      <ScrapedPageBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  ScraperBatchResultBlock: (props: React.ComponentProps<typeof ScraperBatchResultBlockImpl>) => (
+    <LazyBlockWrapper>
+      <ScraperBatchResultBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  ScraperCrawlResultBlock: (props: React.ComponentProps<typeof ScraperCrawlResultBlockImpl>) => (
+    <LazyBlockWrapper>
+      <ScraperCrawlResultBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageLinkBlock: (props: React.ComponentProps<typeof PageLinkBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PageLinkBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  LinkBucketsBlock: (props: React.ComponentProps<typeof LinkBucketsBlockImpl>) => (
+    <LazyBlockWrapper>
+      <LinkBucketsBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageImageBlock: (props: React.ComponentProps<typeof PageImageBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PageImageBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageVideoBlock: (props: React.ComponentProps<typeof PageVideoBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PageVideoBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageAudioBlock: (props: React.ComponentProps<typeof PageAudioBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PageAudioBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageHeadingBlock: (props: React.ComponentProps<typeof PageHeadingBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PageHeadingBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageSectionBlock: (props: React.ComponentProps<typeof PageSectionBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PageSectionBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageListBlock: (props: React.ComponentProps<typeof PageListBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PageListBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageBlockBlock: (props: React.ComponentProps<typeof PageBlockBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PageBlockBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  CodeBlockKindBlock: (props: React.ComponentProps<typeof CodeBlockKindBlockImpl>) => (
+    <LazyBlockWrapper>
+      <CodeBlockKindBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  RedirectHopBlock: (props: React.ComponentProps<typeof RedirectHopBlockImpl>) => (
+    <LazyBlockWrapper>
+      <RedirectHopBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  ContentFingerprintBlock: (props: React.ComponentProps<typeof ContentFingerprintBlockImpl>) => (
+    <LazyBlockWrapper>
+      <ContentFingerprintBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageMetadataBlock: (props: React.ComponentProps<typeof PageMetadataBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PageMetadataBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageRemovalBlock: (props: React.ComponentProps<typeof PageRemovalBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PageRemovalBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageCleaningReportBlock: (props: React.ComponentProps<typeof PageCleaningReportBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PageCleaningReportBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
   // Search kind family (Search Kinds Pilot).

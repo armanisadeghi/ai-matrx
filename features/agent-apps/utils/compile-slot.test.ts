@@ -183,7 +183,14 @@ describe("author-local import names", () => {
           (MarkdownStreamMod as any).NotAnExport ||
           (MarkdownStreamMod as any).default;
         export default function Article() {
-          return <div data-bound={String(typeof Renderer === "function")} />;
+          return (
+            <div
+              data-missing={String(
+                (MarkdownStreamMod as any).NotAnExport === undefined,
+              )}
+              data-bound={String(Renderer != null)}
+            />
+          );
         }
       `,
       allowedImports: ["react", "@/components/MarkdownStream"],
@@ -192,9 +199,9 @@ describe("author-local import names", () => {
     expect(result.error).toBeNull();
     const Component = result.Component;
     if (!Component) throw new Error("Expected the slot component to compile");
-    expect(renderToStaticMarkup(createElement(Component, {}))).toContain(
-      'data-bound="true"',
-    );
+    const markup = renderToStaticMarkup(createElement(Component, {}));
+    expect(markup).toContain('data-missing="true"');
+    expect(markup).toContain('data-bound="true"');
   });
 
   it("binds an aliased named import", () => {

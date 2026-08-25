@@ -18,6 +18,7 @@ import {
 import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
 import { useEnsureKindRenderable } from "@/features/content-ir/react/ensure-kind-renderable";
 import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
+import { inferLoadingSlug } from "@/features/content-ir/react/loading/infer-loading-slug";
 import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
@@ -129,9 +130,14 @@ const PendingStructuredBlock: React.FC<{ envelope: CanonicalBlockIR }> = ({
   envelope,
 }) => {
   const kind = envelope.root.kind || undefined;
-  const slug = kind
-    ? (kindRegistry.getDefinition(kind)?.loadingComponent ?? null)
-    : null;
+  // Declared slug wins; otherwise DERIVE one from the kind's own schema
+  // (inferLoadingSlug) so an unauthored kind still gets a loader with the
+  // right silhouette instead of the shapeless generic skeleton — 354 of 357
+  // renderable ACTIVE kinds declared nothing on 2026-08-25. `generic`
+  // remains the last resort inside resolveKindLoadingComponent.
+  const definition = kind ? kindRegistry.getDefinition(kind) : undefined;
+  const slug =
+    definition?.loadingComponent ?? inferLoadingSlug(definition?.schema) ?? null;
   const early = earlyKeysFromValue(envelope.root.value, kind);
   // createElement over JSX: the loader is a STATIC module-level component
   // selected from the registry at render time (not created during render) —

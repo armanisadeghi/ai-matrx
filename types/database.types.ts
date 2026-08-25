@@ -38730,6 +38730,26 @@ export type Database = {
         }
         Returns: string
       }
+      log_kind_component_incident: {
+        Args: {
+          p_browser_info?: Json
+          p_component_id?: string
+          p_component_key?: string
+          p_component_semver?: string
+          p_component_updated_at?: string
+          p_component_version?: number
+          p_data_shape?: Json
+          p_error_message: string
+          p_error_stack?: string
+          p_error_type: string
+          p_kind: string
+          p_platform?: string
+          p_role?: string
+          p_route?: string
+          p_session_id?: string
+        }
+        Returns: string
+      }
       lookup_user_by_email: {
         Args: { lookup_email: string }
         Returns: {
