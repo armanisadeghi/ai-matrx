@@ -44,7 +44,7 @@ export interface EduToolNavEntry {
 }
 
 /**
- * All 17 application tools. Grouped by what a learner is trying to DO, not by
+ * All 18 application tools. Grouped by what a learner is trying to DO, not by
  * how the code is organized — a student looking for "quiz me" should not have to
  * know whether that lives under assessment or flashcards.
  */
@@ -121,6 +121,13 @@ export const EDU_TOOL_NAV: EduToolNavEntry[] = [
     iconName: "FileText",
     group: "Understand",
     description: "Grounded summaries of anything you bring in",
+  },
+  {
+    slug: "kits",
+    label: "Study Kits",
+    iconName: "Package",
+    group: "Understand",
+    description: "One upload, and everything made from it in one place",
   },
   {
     slug: "notes",
