@@ -94,6 +94,7 @@ import { LESSON_SCRIPTS_KIND_DEFINITIONS } from "../kinds/lesson-scripts";
 import { STUDY_PACK_KIND_DEFINITIONS } from "../kinds/study-pack";
 import { SEARCH_RESULTS_KIND_DEFINITIONS } from "../kinds/search-results";
 import { RANK_KINDS_KIND_DEFINITIONS } from "../kinds/rank-kinds";
+import { RAG_KINDS_KIND_DEFINITIONS } from "../kinds/rag-kinds";
 import { TRUST_ENVELOPE_KIND_DEFINITIONS } from "../kinds/trust-envelope";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
@@ -164,6 +165,14 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // convergence family that mints no second copy of a search result.
   // Python-owned models: aidream/aidream/services/rank_kinds/models.py.
   ...RANK_KINDS_KIND_DEFINITIONS,
+  // RAG retrieval + citation family (RAG Kinds Run, 2026-08-24). `source_ref`
+  // is a SYSTEM-WIDE primitive, not a RAG kind — "here is a fact, and here is
+  // where it came from" had been built four times in four vocabularies, and
+  // this is the one shape all of them describe. `rag_search_result` and
+  // `rag_cross_doc_search_result` are mirrored at their POST-cutover shape; see
+  // the module header. Python-owned models:
+  // aidream/aidream/services/rag_kinds/models.py.
+  ...RAG_KINDS_KIND_DEFINITIONS,
   // Compiled MIRROR of the already-registered python-owned `trust_envelope` +
   // `citation` kinds (their DB rows carry a NULL `data[]`, so nothing else can
   // resolve them). Registered here so every kind that carries grounding
