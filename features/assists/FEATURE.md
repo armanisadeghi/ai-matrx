@@ -242,6 +242,8 @@ an assist is personal and addressed to one person by design.
 
 ## Change Log
 
+- 2026-08-25 — **Presentable-assist reads wait for the authenticated Supabase session.** The dock and page strip require auth readiness plus an access token before calling `list_my_presentable_assists`; an idempotent migration restores that RPC's authenticated-only execute grant without widening it to anon.
+
 - 2026-08-24 — Invalid or stale ledger actions remain visibly skipped with a developer warning, but no longer use `console.error`; expected schema-validation fallout must not enter the durable system-error queue.
 
 - 2026-08-23 — **Editable assists are truthful and keyboard-safe.** The suggestion remains the card headline while its separate editable item is plainly labeled **Keyword guidelines**—no payload lectures or redundant status copy. **Edit** opens the guidelines fully selected before approval, mobile cards expand in the Drawer's single keyboard-aware scroll chain, and bulk approval cannot bypass individual review.

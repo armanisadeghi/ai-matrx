@@ -18,7 +18,11 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import type { RootState } from "@/lib/redux/store";
 import {
@@ -43,6 +47,8 @@ export function AssistStrip({
 }) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
+  const authReady = useAppSelector(selectAuthReady);
+  const accessToken = useAppSelector(selectAccessToken);
   const loaded = useAppSelector(selectAssistsLoaded);
   const surfaceAssists = useAppSelector((state: RootState) =>
     selectAssistsForSurface(state, surfaceName),
@@ -50,8 +56,10 @@ export function AssistStrip({
 
   // Hydrate the shared slice even if the (deferred) global dock hasn't yet.
   useEffect(() => {
-    if (userId && !loaded) void dispatch(fetchMyAssists({ userId }));
-  }, [dispatch, userId, loaded]);
+    if (authReady && userId && accessToken && !loaded) {
+      void dispatch(fetchMyAssists({ userId }));
+    }
+  }, [dispatch, authReady, userId, accessToken, loaded]);
 
   const assists = filter ? surfaceAssists.filter(filter) : surfaceAssists;
   if (assists.length === 0) return null;

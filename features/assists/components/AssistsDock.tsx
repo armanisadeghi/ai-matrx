@@ -57,7 +57,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import {
   fetchMyAssists,
   selectAssistsLoaded,
@@ -82,6 +86,8 @@ import {
 export default function AssistsDock() {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
+  const authReady = useAppSelector(selectAuthReady);
+  const accessToken = useAppSelector(selectAccessToken);
   const pending = useAppSelector(selectPendingAssists);
   const loaded = useAppSelector(selectAssistsLoaded);
   const [openRequested, setOpen] = useState(false);
@@ -107,14 +113,14 @@ export default function AssistsDock() {
   );
 
   useEffect(() => {
-    if (!userId) return;
+    if (!authReady || !userId || !accessToken) return;
     if (!loaded) {
       void dispatch(fetchMyAssists({ userId }));
     }
     const onFocus = () => void dispatch(fetchMyAssists({ userId }));
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [dispatch, userId, loaded]);
+  }, [dispatch, authReady, userId, accessToken, loaded]);
 
   useEffect(() => {
     if (!loaded || !preferencesReady) return;
