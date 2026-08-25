@@ -11,16 +11,12 @@ The system-of-record (evidence, counts, acceptance) is `common-docs/systems/cont
 
 > Sibling handoff: `docs/handoffs/kind-authoring-and-interactivity.md` owns the **authoring experience** (admin builder, alive/interactive components, the action registry, Kind Request). THIS doc owns the **platform rollout** (enforcement flips, tool_ui subsumption, workflows, bulk-bind). Keep them non-overlapping.
 
-## Vision — Arman's words (verbatim; never paraphrase these into agent-speak)
+## Vision — Arman's words
 
-- **What this system IS:** "THE ONLY reason we have built all of this content_ir stuff is so that users can create whatever they want for inputs, outputs, streaming, tools, workflows, and more and have it all instantly render for them in react, our extension, matrx local, and our soon to come mobile app. **THIS IS the system. It's not a feature, it is it!**"
-- **The north star (LIVE):** "1. Create the kind based on the user's data. 2. Create the custom component for the user. 3. Create the agent skills and render blocks for the user. 4. Then, the user can test it out and the real magic is when the user sees a COMPLETELY customized, beautiful component that they designed with an agent."
-- **Unification endgame:** "eventually **eliminate tools components** because their results are nothing more than a `__kind`."
-- **Component trust:** "absolutely must be SUPER open… allowlist and massively expand our allow list… we make our safety systems better when we get users fully on it." Iframes = a user html/js OPTION, never a trust tier.
-- **The Convert Pattern:** "Some items simply don't start and instantly be the `__kind` but you **click to convert**!" Tables stay markdown-first forever.
-- **Production agents:** untouched until the system is 100% complete; never auto-list skills ("95% of our calls are… highly deterministic and with small models"). Rollout to agents comes LAST.
-- **Workflows:** no investment "until I'm certain that the inputs and outputs for all fully and properly use the system and there is nothing left to do."
-- **Persistence ruling:** dedicated canonical tables ("built solid from the ground up… powerful… that makes it EASIER, not over-engineering"), respecting every platform base/canonical system.
+**Moved 2026-08-25 to [`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md).** Every quote that was here is preserved there verbatim,
+grouped by theme with its source and date, alongside the rest of his Content IR vision — which
+had been split across four work orders in this repo and was invisible to agents in every other
+repo. **Read it before touching anything here; it outranks this work order.**
 
 ## Current state (2026-07-18 EOD — everything below is LIVE, adversarially reviewed, findings fixed)
 

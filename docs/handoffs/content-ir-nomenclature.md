@@ -15,22 +15,12 @@ vision:
 An orchestrating session owns this (2026-08-17) and has chips in flight — read "Remaining work"
 before starting anything, so you don't collide with a running chip.
 
-## Vision — Arman's words (2026-08-17)
+## Vision — Arman's words
 
-> **"It's one system, and it needs to be one system."** Actions and Content IR were created the
-> same day as one system; the `__kind` underscores and the `matrx_version` wrapper were two
-> encodings of one idea. *"They're just a family of content IRs. That's all it is."* Actions =
-> the automated family (*"some actions can actually do things"*); block types = *"content IR
-> without a schema — if they're not JSON, it's XML, it's markdown"*; artifacts: merging them in
-> is overdue. And explicitly: *"we will never have everything be a JSON object"* — arrival forms
-> are permanent; unification is registry + vocabulary, never wire coercion.
-
-> 🚨 **THE CONSTRAINT:** ~95% of everything we render goes through the primitives (mostly XML);
-> they are great and NOT going away. **Every block-type string value, route, dispatch outcome,
-> and stored content byte is FROZEN.** A change that alters behavior is a defect.
-
-Full ruling + phases U1–U4: `common-docs/systems/content-ir-system/UNIFICATION.md` (U1 docs are
-DONE; U4 is gated on Arman's blocked Action/Function naming cluster — do not start it).
+**Moved 2026-08-25 to [`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md).** Every quote that was here is preserved there verbatim,
+grouped by theme with its source and date, alongside the rest of his Content IR vision — which
+had been split across four work orders in this repo and was invisible to agents in every other
+repo. **Read it before touching anything here; it outranks this work order.**
 
 ## Rules binding every piece of work
 

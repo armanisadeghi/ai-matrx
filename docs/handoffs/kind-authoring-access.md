@@ -15,40 +15,10 @@ at the DB. The third is now understood and chipped.
 
 ## Vision — Arman's words
 
-On the trigger, when the admin kind-registry refused his own edit:
-
-> "I'm trying to update a kind from the admin system and the agent is saying I don't
-> have access."
-
-> "Find out what's going on and how we can address this right now so it doesn't
-> happen again."
-
-Read literally, that is the whole spec: **diagnose the real cause, fix it now, and make the
-class impossible** — not "grant Arman access to this row." A fork (`seo_meta_tags_v2`) and
-"ask an owner to apply it by hand" were both implicitly rejected by that instruction.
-
-On the duplicate-slug incident, which sets the bar for the area:
-
-> "an agent was asked to create a new kind, and it named it the same as an existing
-> one, and no one complained. The agent did it without saying anything. The system
-> saved it. And even the database didn't reject duplicates. But then, of course, it
-> crashed the system and caused all kinds of problems."
-
-> "when I did this, I was doing it as a user. and that's a problem because that means
-> that a user can create a kind that has the same name as a system one, and that will
-> crash the system... So that can't be."
-
-Note what he counted as failures: the agent didn't warn, **the system saved it**, and **the
-database didn't reject it** — three layers, each of which should independently have stopped
-it. "A user can break the system" is the unacceptable part, not the agent's mistake, which
-will always recur.
-
-On duplicates generally (2026-08-14, ruling on D164):
-
-> Things like this are rarely a simple accidental duplication — in almost every case two
-> things were meant to have two different intents and someone collapsed them. Deleting one
-> deepens the destruction. Only documentation proving they were the same from the beginning
-> justifies removing one.
+**Moved 2026-08-25 to [`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md).** Every quote that was here is preserved there verbatim,
+grouped by theme with its source and date, alongside the rest of his Content IR vision — which
+had been split across four work orders in this repo and was invisible to agents in every other
+repo. **Read it before touching anything here; it outranks this work order.**
 
 ## Done
 

@@ -9,17 +9,12 @@ vision: [/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE
 
 Scope: **how a kind gets built (esp. by an ADMIN agent) and how its component comes alive and DOES things.** The broader platform rollout (enforcement flips, tool_ui subsumption, workflows, bulk-bind) is a separate handoff — `docs/handoffs/content-ir-integration-map.md`. Read that one's Vision section too; it is the ground truth for the whole system. System-of-record (evidence/counts): `common-docs/systems/content-ir-system/FEATURE.md`.
 
-## Vision — Arman's words (verbatim; never paraphrase into agent-speak)
+## Vision — Arman's words
 
-- **The north star:** "Create the kind based on the user's data → create the custom component → create the agent skills and render blocks → the user tests it and the real magic is when the user sees a COMPLETELY customized, beautiful component that they designed with an agent."
-- **The admin builder (his #1 repeated ask):** "we need an ADMIN UI and an ADMIN agent where you give it the stuff and it builds everything end to end." One-shot, no interview, admin-grade — distinct from the cautious user-facing agent. And: "what I need will ALWAYS be the full thing, including the components and all."
-- **Components must be ALIVE:** "these components cannot look dead… black and white gray components that look dead, we don't want that. They need to be alive… react, tailwind, animations at their best… the wow factor is this is impressive because it comes to life." Look at the flashcards (3D flip, fullscreen, mobile) and cooking recipes as the bar.
-- **Components must DO things:** "they need to actually do stuff. It can't be just here's some information… copy to clipboard buttons where you can copy things for AI — that's critical… collapsible sections… they need to do stuff."
-- **The action registry — "trigger ANYTHING (safely)":** "the key is to eliminate the word 'narrow'… the goal is ANYTHING BUT NARROW. AS LONG AS IT'S SAFE, we can trigger ANYTHING. Our goal is eventually a registry of thousands or more of things it can trigger. The hard part is being smart so they're easy to use and safe and don't cause errors if something isn't perfect."
-- **The image example (the trigger's motivating case):** an agent writes an image description (a kind); the kind's component has a button that triggers an image-gen agent, maps the description into its variable, and shows the image in place.
-- **Kind Request — get a value back:** a droppable control "triggers an agent… you get your result. Now what? That's where our system stops. What I wanna do is encapsulate that whole thing and actually return a value."
-- **The `__kind` sample:** "there is no actual sample of the data that includes the kind entry… the agent does it incorrectly and doesn't include the kind key… after creating the system, its final step should output an example that uses the kind key so the user immediately sees the component in action."
-- **No "legacy" anywhere:** if something is named legacy it is either dead (kill it) or the name is a lie (rename it). There is no third state.
+**Moved 2026-08-25 to [`/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md`](/Users/armanisadeghi/code/common-docs/systems/content-ir-system/VISION.md).** Every quote that was here is preserved there verbatim,
+grouped by theme with its source and date, alongside the rest of his Content IR vision — which
+had been split across four work orders in this repo and was invisible to agents in every other
+repo. **Read it before touching anything here; it outranks this work order.**
 
 ## Resources (pointers, not explanations)
 
