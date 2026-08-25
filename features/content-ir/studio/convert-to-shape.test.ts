@@ -1,7 +1,48 @@
 import {
   analyzeShapeSample,
-  buildConvertToShapeIntent,
+  buildConvertToShapeSeed,
+  buildShapeReadiness,
+  type ShapeDefinitionSnapshot,
 } from "@/features/content-ir/studio/convert-to-shape";
+import type { KindComponentProjection } from "@/features/content-ir/registry/schema-source-kind-components";
+
+const DEFINITION: ShapeDefinitionSnapshot = {
+  id: "kind-definition-id",
+  kind: "sales_summary",
+  label: "Sales summary",
+  isActive: true,
+  version: 4,
+  visibility: "public",
+  emittedJsonSchema: {
+    type: "object",
+    properties: { total: { type: "number" } },
+  },
+  metadata: { loading_component: "card" },
+  authoringOwner: "typescript",
+  isContractArtifact: false,
+};
+
+function component(
+  patch: Partial<KindComponentProjection> = {},
+): KindComponentProjection {
+  return {
+    kind: "sales_summary",
+    platform: "web",
+    role: "output",
+    componentKey: "db_kind_component",
+    source: "db",
+    isActive: true,
+    config: {},
+    componentSource: "export default function SalesSummary() { return null; }",
+    propsTransform: null,
+    pinnedKindVersion: null,
+    updatedAt: "2026-08-24T00:00:00Z",
+    createdAt: "2026-08-24T00:00:00Z",
+    id: "component-id",
+    createdBy: "user-id",
+    ...patch,
+  };
+}
 
 describe("convert-to-shape preflight", () => {
   it("detects only a root __kind and suggests a readable name", () => {
@@ -25,9 +66,71 @@ describe("convert-to-shape preflight", () => {
     expect(result.errorMessage).toBeTruthy();
   });
 
-  it("tells the creator to inspect an existing kind before creating", () => {
-    const intent = buildConvertToShapeIntent("Sales Summary", "sales_summary");
-    expect(intent).toContain('existing __kind "sales_summary"');
-    expect(intent).toContain("instead of creating a duplicate");
+  it("distinguishes an unregistered kind from a registered generic fallback", () => {
+    const unregistered = buildShapeReadiness({ rootKind: "sales_summary" });
+    expect(unregistered.definition).toBeNull();
+    expect(unregistered.focus).toBe("register_shape");
+
+    const generic = buildShapeReadiness({
+      rootKind: "sales_summary",
+      definition: { ...DEFINITION, metadata: {} },
+      components: [
+        component({
+          componentKey: "generic_structured",
+          source: "bundled",
+          componentSource: null,
+        }),
+      ],
+    });
+    expect(generic.component.state).toBe("generic");
+    expect(generic.loading.state).toBe("generic");
+    expect(generic.focus).toBe("build_component");
+  });
+
+  it("recognizes complete custom output and loading assets", () => {
+    const readiness = buildShapeReadiness({
+      rootKind: "sales_summary",
+      definition: DEFINITION,
+      components: [component()],
+    });
+
+    expect(readiness.component.state).toBe("custom");
+    expect(readiness.loading).toEqual({ state: "custom", slug: "card" });
+    expect(readiness.focus).toBe("review_shape");
+  });
+
+  it("fills every declared creator variable when existing data is available", () => {
+    const readiness = buildShapeReadiness({
+      rootKind: "sales_summary",
+      definition: DEFINITION,
+      components: [component()],
+    });
+    const seed = buildConvertToShapeSeed({
+      requestedName: "Sales Summary",
+      sampleContent: '{"__kind":"sales_summary","total":42}',
+      readiness,
+    });
+
+    expect(seed.draftText).toBe('I want to call this Shape "Sales Summary".');
+    expect(Object.keys(seed.variables).sort()).toEqual(
+      [
+        "existing_component_context",
+        "existing_component_source",
+        "existing_kind_context",
+        "kind_schema",
+        "task_brief",
+        "user_data_sample",
+      ].sort(),
+    );
+    for (const value of Object.values(seed.variables)) {
+      expect(value).not.toBe("");
+    }
+    expect(seed.variables.existing_kind_context).toContain(
+      "kind-definition-id",
+    );
+    expect(seed.variables.existing_component_context).toContain(
+      "db_kind_component",
+    );
+    expect(seed.variables.existing_component_source).toContain("SalesSummary");
   });
 });
