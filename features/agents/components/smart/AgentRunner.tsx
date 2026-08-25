@@ -36,6 +36,7 @@ import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { PreExecutionAgentInput } from "../inputs/PreExecutionAgentInput";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
+import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
 
 interface AgentRunnerProps {
   conversationId: string;
@@ -164,6 +165,7 @@ export function AgentRunner({
       {/* Input panel — pinned to bottom, grows upward, never taller than 70% of container */}
       {shouldShowInput && (
         <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-stretch justify-end px-3 pb-3 pt-1 bg-gradient-to-t from-background via-background/95 to-transparent max-h-[70%] overflow-hidden">
+          <PendingAsksZone conversationId={conversationId} />
           <ProposedDirectivesZone conversationId={conversationId} />
           <SmartAgentInput
             conversationId={conversationId}
