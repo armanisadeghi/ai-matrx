@@ -204,6 +204,7 @@ export default function CompetitorAutopsyWorkspace() {
   const [localKeyword, setLocalKeyword] = useState("");
   const [localArea, setLocalArea] = useState("");
   const [localSearching, setLocalSearching] = useState(false);
+  const [localStage, setLocalStage] = useState<string | null>(null);
   const [localResult, setLocalResult] = useState<LocalCompetitorSearchResult | null>(null);
   const [activeTab, setActiveTab] = useState("competitors");
 
@@ -279,12 +280,14 @@ export default function CompetitorAutopsyWorkspace() {
   const findLocalCompetitors = async () => {
     if (!resolvedSiteId || !localKeyword.trim() || !localArea.trim()) return;
     setLocalSearching(true);
+    setLocalStage("Running the local search");
     try {
       const result = await discoverLocalCompetitors(
         resolvedSiteId,
         localKeyword.trim(),
         localArea.trim(),
         dispatch,
+        setLocalStage,
       );
       setLocalResult(result);
       await refresh();
@@ -299,6 +302,7 @@ export default function CompetitorAutopsyWorkspace() {
       );
     } finally {
       setLocalSearching(false);
+      setLocalStage(null);
     }
   };
 
@@ -1003,6 +1007,11 @@ export default function CompetitorAutopsyWorkspace() {
                   Find local competitors
                 </Button>
               </div>
+              {localSearching && localStage ? (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  {localStage}…
+                </p>
+              ) : null}
               <p className="mt-1.5 text-xs text-muted-foreground">
                 Runs the real local search a customer would run and shows who Google
                 puts on the map for it. For local businesses this is the truest

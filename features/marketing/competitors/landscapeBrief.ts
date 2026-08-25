@@ -12,6 +12,14 @@
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { callApi } from "@/lib/api/call-api";
+import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import {
+  describeBackendFailure,
+  parseCallApiError,
+  parseStreamError,
+} from "@/lib/api/errors";
+import { isErrorEvent, type TypedStreamEvent } from "@/lib/api/types";
+import { isJsonObject } from "@/types/json";
 import type { AppDispatch } from "@/lib/redux/store";
 import { guardedUpdate, type GuardedUpdateResult } from "@/utils/supabase/guardedUpdate";
 
@@ -177,22 +185,66 @@ export interface LocalCompetitorSearchResult {
 
 /** Search Google's local pack for a keyword in a geographic area and propose
  *  every business with a website as a competitor. The primary discovery path
- *  for local businesses — the literal map-pack rivals, not keyword overlap. */
+ *  for local businesses — the literal map-pack rivals, not keyword overlap.
+ *
+ *  STREAMED: one provider search plus a classification pass per business runs
+ *  well past any synchronous request budget (27s measured on a three-result
+ *  pack), so the result arrives as the run's final stream event. `onStage`
+ *  receives each stage so the caller can say what is happening. */
 export async function discoverLocalCompetitors(
   siteId: string,
   keyword: string,
   location: string,
   dispatch: AppDispatch,
+  onStage?: (stage: string) => void,
 ): Promise<LocalCompetitorSearchResult> {
-  const result = await dispatch(callApi({
-    path: "/seo/sites/{site_id}/competitors/discover-local",
-    method: "POST",
-    pathParams: { site_id: siteId },
-    body: { keyword, location },
-  }));
-  if (result.error)
-    throw new Error(result.error.message ?? "Local competitor search failed");
-  return result.data as LocalCompetitorSearchResult;
+  let finalResult: LocalCompetitorSearchResult | null = null;
+  let streamError: string | null = null;
+  const abortController = new AbortController();
+  const consumeStream = dispatch(
+    adoptForeignStream({
+      abortController,
+      onEvent: (event: TypedStreamEvent) => {
+        if (isErrorEvent(event)) {
+          streamError = describeBackendFailure(parseStreamError(event.data)).headline;
+          return;
+        }
+        if (event.event !== "data") return;
+        const data: unknown = event.data;
+        if (!isJsonObject(data)) return;
+        const kind = typeof data.kind === "string" ? data.kind : "";
+        if (kind === "seo.local_search_started") onStage?.("Running the local search");
+        if (kind === "seo.local_search_completed") onStage?.("Reading who Google shows");
+        if (kind === "seo.local_competitors_persisted")
+          onStage?.("Proposing each business");
+        if (kind === "seo.local_competitors_completed") {
+          const payload = isJsonObject(data.result) ? data.result : data;
+          finalResult = payload as unknown as LocalCompetitorSearchResult;
+        }
+      },
+    }),
+  );
+  const result = await dispatch(
+    callApi({
+      path: "/seo/sites/{site_id}/competitors/discover-local",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: { keyword, location },
+      stream: true,
+      consumeStream,
+      signal: abortController.signal,
+    }),
+  );
+  if (streamError) throw new Error(streamError);
+  if (result.error) {
+    throw new Error(
+      describeBackendFailure(parseCallApiError(result.error)).headline ??
+        "Local competitor search failed",
+    );
+  }
+  if (!finalResult)
+    throw new Error("The local search finished without returning its results.");
+  return finalResult;
 }
 
 /** Find the rivals and classify them — without buying a full page-crawl autopsy. */
