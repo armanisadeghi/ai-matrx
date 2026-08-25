@@ -58,11 +58,20 @@ const MIRROR_FILES = [
 ];
 
 if (!existsSync(join(AIDREAM_DIR, "docs", "protocol"))) {
-  console.log(
-    `${YELLOW}[WARN]${RESET} Protocol sync check SKIPPED — no aidream checkout at ${AIDREAM_DIR}\n` +
-      `       (set AIDREAM_DIR to point at one). The byte-identical pact with aidream\n` +
-      `       was NOT verified this run.`,
-  );
+  // THE STRICTNESS LAW, clause 7: a guard that cannot reach its dependency
+  // FAILS. It never degrades to a warning that reads as a pass. In advisory
+  // mode (a dev box with no sibling checkout) an honest skip is still a skip;
+  // in --strict / --fix, where somebody is relying on the answer, "I could not
+  // look" exits 2 (UNMEASURED) so nothing downstream mistakes it for "clean".
+  const line =
+    `Protocol mirror UNMEASURED — no aidream checkout at ${AIDREAM_DIR}\n` +
+    `       (set AIDREAM_DIR to point at one). The byte-identical pact with aidream\n` +
+    `       was NOT verified this run.`;
+  if (STRICT || FIX) {
+    console.error(`${RED}${BOLD}[UNMEASURED]${RESET} ${line}`);
+    process.exit(2);
+  }
+  console.log(`${YELLOW}[WARN]${RESET} ${line}`);
   process.exit(0);
 }
 

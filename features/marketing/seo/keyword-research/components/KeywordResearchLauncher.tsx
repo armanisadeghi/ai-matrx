@@ -51,9 +51,16 @@ export interface KeywordResearchLauncherProps {
   feedMaxHeightClassName?: string;
   /** Notified on every input change — hosts persist it (window panels). */
   onKeywordChange?: (keyword: string) => void;
-  /** Org owning the durable saved-research read. Defaults to the effective
-   * organization (the same org callApi stamps on the run itself). */
+  /** Org context for the keyword-input's own suggestion scope only (NOT the
+   * saved-research read — that is site-scoped, see `siteId`). */
   organizationId?: string | null;
+  /**
+   * MSR-26: the site this research run is FOR — required to actually run
+   * (the button disables and explains itself without one) and the scope the
+   * durable saved-research read binds to. `null` while the host is still
+   * gating on a site pick.
+   */
+  siteId?: string | null;
   /**
    * Surface whose `research_input_keyword` write target this launcher should
    * service. ONLY the host that actually mounts that surface passes it — the
@@ -88,6 +95,7 @@ export default function KeywordResearchLauncher({
   feedMaxHeightClassName = "max-h-[26rem]",
   onKeywordChange,
   organizationId,
+  siteId = null,
   writeTargetSurfaceName = null,
   liveFeed = "inline",
   actions,
@@ -108,7 +116,7 @@ export default function KeywordResearchLauncher({
   // The live stream is ephemeral (the server's rejoin replays stages, never
   // AI chunks), so after a remount/reopen this is what keeps results visible.
   const savedPhrase = run.primaryKeyword ?? primaryInput;
-  const saved = useSavedKeywordResearch(savedPhrase, organizationId, {
+  const saved = useSavedKeywordResearch(savedPhrase, siteId, {
     debounceMs: 350,
   });
 
@@ -123,13 +131,10 @@ export default function KeywordResearchLauncher({
   useEffect(() => {
     if (run.status === "done") {
       void queryClient.invalidateQueries({
-        queryKey: savedKeywordResearchQueryKey(
-          saved.organizationId,
-          savedPhrase,
-        ),
+        queryKey: savedKeywordResearchQueryKey(saved.siteId, savedPhrase),
       });
     }
-  }, [run.status, queryClient, saved.organizationId, savedPhrase]);
+  }, [run.status, queryClient, saved.siteId, savedPhrase]);
 
   // Floating hosts stream into the canonical LiveRunWindow instead of growing
   // an inline feed that would push the host's own content down.
@@ -199,7 +204,8 @@ export default function KeywordResearchLauncher({
         <button
           type="button"
           onClick={handleRun}
-          disabled={run.status === "running" || !primaryInput.trim()}
+          disabled={run.status === "running" || !primaryInput.trim() || !siteId}
+          title={siteId ? undefined : "Select a site before running research"}
           className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {run.status === "running" ? (
@@ -213,6 +219,12 @@ export default function KeywordResearchLauncher({
           <div className="ml-auto flex items-center gap-2">{actions}</div>
         ) : null}
       </div>
+      {!siteId ? (
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          Select a site above — keyword research belongs to a site, not the
+          organization.
+        </p>
+      ) : null}
       {/* Live feed: the agent's structured output rendered as real
           components key-by-key while streaming — never raw JSON. Stays
           visible after completion or failure so the run never vanishes while

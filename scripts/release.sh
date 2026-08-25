@@ -437,7 +437,17 @@ fi
 # migration applier above (AIDREAM_DIR override; missing checkout = warn+skip).
 sync_protocol_mirror() {
     info "Checking docs/protocol mirror against aidream..."
-    if pnpm check:protocol-sync:strict; then
+    local verdict=0
+    pnpm check:protocol-sync:strict || verdict=$?
+    if [ $verdict -eq 0 ]; then
+        return 0
+    fi
+    # Exit 2 = UNMEASURED (no aidream checkout). There is nothing to sync FROM,
+    # so "auto-syncing from aidream" below would be a lie that commits nothing.
+    # Say what actually happened instead (THE STRICTNESS LAW, clause 7).
+    if [ $verdict -eq 2 ]; then
+        warn "Protocol mirror was NOT verified this run — no aidream checkout (set AIDREAM_DIR)."
+        warn "The byte-identical pact with aidream is UNMEASURED for this release."
         return 0
     fi
     if $DRY_RUN; then

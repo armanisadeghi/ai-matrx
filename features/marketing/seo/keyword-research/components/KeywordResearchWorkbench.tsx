@@ -32,8 +32,15 @@ import { buildKeywordResearchScope } from "@/features/marketing/lib/scopes/keywo
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Globe2 } from "lucide-react";
+import { useSiteOptions } from "@/features/marketing/data/hooks";
 
 import { useKeywordResearch } from "../useKeywordResearch";
 import {
@@ -166,6 +173,23 @@ export default function KeywordResearchWorkbench() {
   // ("Open workbench"). Read once; the launcher owns the input from then on.
   const searchParams = useSearchParams();
   const initialKeyword = searchParams.get("keyword") ?? undefined;
+
+  // MSR-26 (Arman): "keyword research should go to a site" — the org-level
+  // workbench requires picking a site before it will run research or show
+  // that site's saved library. `?site=` mirrors the front-door pattern (the
+  // page a user is looking at is the page they can send someone) but is NOT
+  // auto-selected — an unpicked site is the honest starting state here,
+  // since a wrong silent default would bind a paid run to the wrong site.
+  const siteOptions = useSiteOptions();
+  const requestedSiteId = searchParams.get("site");
+  const [pickedSiteId, setPickedSiteId] = useState<string | null>(null);
+  const selectedSiteId =
+    pickedSiteId ??
+    (requestedSiteId &&
+    (siteOptions.data ?? []).some((site) => site.id === requestedSiteId)
+      ? requestedSiteId
+      : null);
+
   const {
     clusterPhrases,
     clusterPrimaryKeyword,
@@ -181,7 +205,7 @@ export default function KeywordResearchWorkbench() {
     runResearch,
     refreshVolume,
     reloadKeywords,
-  } = useKeywordResearch();
+  } = useKeywordResearch(selectedSiteId);
   const openKeywordIntel = useOpenKeywordWindow();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(
@@ -216,7 +240,10 @@ export default function KeywordResearchWorkbench() {
    * One shot: the moment the user touches the cluster or the search box, this
    * stops interfering.
    */
-  const deepLinkSaved = useSavedKeywordResearch(initialKeyword ?? "");
+  const deepLinkSaved = useSavedKeywordResearch(
+    initialKeyword ?? "",
+    selectedSiteId,
+  );
   const deepLinkAppliedRef = useRef(false);
   useEffect(() => {
     if (!initialKeyword || deepLinkAppliedRef.current) return;
@@ -294,7 +321,6 @@ export default function KeywordResearchWorkbench() {
   // batched read (4 tables, never per-row) regardless of how many rows are
   // showing. Classification isn't looked up here — it's the row's own
   // `intent_class` column, already in `sorted`.
-  const effectiveOrganizationId = useAppSelector(selectEffectiveOrganizationId);
   const [completeness, setCompleteness] = useState<Map<
     string,
     KeywordDossierCompleteness
@@ -312,7 +338,7 @@ export default function KeywordResearchWorkbench() {
     const controller = new AbortController();
     getKeywordDossierCompleteness(
       rowsForLookup,
-      effectiveOrganizationId ?? null,
+      selectedSiteId,
       controller.signal,
     )
       .then((result) => {
@@ -330,7 +356,7 @@ export default function KeywordResearchWorkbench() {
     // `sorted` is memoized off `[keywords, clusterPhrases]`, the same inputs
     // `visibleIdsKey` derives from, so this only re-runs when the id set
     // actually changes.
-  }, [visibleIdsKey, effectiveOrganizationId, sorted]);
+  }, [visibleIdsKey, selectedSiteId, sorted]);
 
   /** Archive library rows (bulk or single) with confirm + undo. */
   const archiveRows = useCallback(
@@ -666,16 +692,39 @@ export default function KeywordResearchWorkbench() {
         className="flex h-full flex-col overflow-hidden"
         style={{ paddingTop: "var(--shell-header-h)" }}
       >
+        {/* Site picker — MSR-26: research belongs to a site, never the org.
+          Required before Research can run or the saved library can show
+          anything; `?site=` mirrors the front-door deep-link pattern. */}
+        <div className="flex items-center gap-2 border-b border-border px-4 py-2">
+          <Globe2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <Select
+            value={selectedSiteId ?? undefined}
+            onValueChange={setPickedSiteId}
+          >
+            <SelectTrigger className="h-8 w-64 text-xs">
+              <SelectValue placeholder="Select a site to research" />
+            </SelectTrigger>
+            <SelectContent>
+              {(siteOptions.data ?? []).map((site) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name ?? site.domain}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Research launcher — the canonical shared component (also hosted by
           KeywordResearchWindow, opened from anywhere). */}
         <div className="border-b border-border px-4 py-3">
           <KeywordResearchLauncher
             run={run}
             runResearch={runResearch}
-            // The org's saved artifacts — each one a report permalink and a
+            siteId={selectedSiteId}
+            // The site's saved artifacts — each one a report permalink and a
             // share point (the workbench's page-level share affordance). It
             // rides the launcher's own row; a row of its own was pure waste.
-            actions={<SavedResearchLibrary />}
+            actions={<SavedResearchLibrary siteId={selectedSiteId} />}
             // Deep link from a report ("Open workbench") pre-fills the input;
             // it never auto-runs — a run spends a paid provider request.
             initialKeyword={initialKeyword}

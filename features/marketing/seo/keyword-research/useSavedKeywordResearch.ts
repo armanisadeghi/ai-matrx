@@ -7,42 +7,38 @@
  * the live stream is ephemeral, but the pipeline persisted the artifact to
  * `content_ir.kind_instance` — this hook reads it back.
  *
- * Org resolution mirrors callApi exactly (explicit override wins, else the
- * effective organization from appContext) so the org we READ saved research
- * from is always the org a run would WRITE to.
+ * MSR-26 (Arman): keyword research belongs to a SITE, never the
+ * organization — so the read this hook backs is site-scoped, through the
+ * `content_ir_kind_instance` -> `web_site` binding in
+ * `platform.associations` (see `data/queries.ts`).
  */
 
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 
 import { getLatestSavedKeywordResearch } from "./data/queries";
 
 /** Query key shared with every consumer — invalidate THIS after a run lands. */
 export function savedKeywordResearchQueryKey(
-  organizationId: string | null | undefined,
+  siteId: string | null | undefined,
   phrase: string,
 ) {
   return [
     "seo",
     "keyword-research",
     "saved",
-    organizationId ?? null,
+    siteId ?? null,
     normalizeKeywordPhrase(phrase),
   ] as const;
 }
 
 export function useSavedKeywordResearch(
   phrase: string,
-  explicitOrganizationId?: string | null,
+  siteId: string | null | undefined,
   options?: { debounceMs?: number },
 ) {
-  const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
-  const organizationId = explicitOrganizationId ?? effectiveOrgId ?? null;
-
   // Launcher hosts feed a live input — debounce so we don't query per keystroke.
   const debounceMs = options?.debounceMs ?? 0;
   const [debouncedPhrase, setDebouncedPhrase] = useState(phrase);
@@ -53,13 +49,13 @@ export function useSavedKeywordResearch(
   const settledPhrase = debounceMs ? debouncedPhrase : phrase;
 
   const query = useQuery({
-    queryKey: savedKeywordResearchQueryKey(organizationId, settledPhrase),
+    queryKey: savedKeywordResearchQueryKey(siteId, settledPhrase),
     queryFn: ({ signal }) =>
-      organizationId
-        ? getLatestSavedKeywordResearch(organizationId, settledPhrase, signal)
+      siteId
+        ? getLatestSavedKeywordResearch(siteId, settledPhrase, signal)
         : Promise.resolve(null),
-    enabled: Boolean(organizationId && settledPhrase.trim()),
+    enabled: Boolean(siteId && settledPhrase.trim()),
   });
 
-  return { ...query, organizationId, settledPhrase };
+  return { ...query, siteId: siteId ?? null, settledPhrase };
 }
