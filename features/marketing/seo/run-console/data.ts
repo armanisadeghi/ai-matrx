@@ -16,7 +16,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { makeAssertData } from "@/utils/errors";
+import { makeAssertData, extractErrorMessage } from "@/utils/errors";
 import { readAllRows } from "@/lib/supabase/readAllRows";
 import type {
   ConsoleSiteRow,
@@ -194,4 +194,111 @@ export async function retireEngineSchedule(id: string): Promise<void> {
     .select("id")
     .single();
   assertData(response.data, response.error, "retire the schedule");
+}
+
+/* ─────────────────────────── WHAT THE AI DECIDED ───────────────────────────
+
+   An admin console that shows counts and hides decisions is useless for the
+   one job it exists for: judging whether the machine is any good. These rows
+   ARE the run — one per keyword the assigner touched, with the Offering it
+   chose, how sure it was, and what else it considered. Read from the durable
+   placement rows rather than the stream, so the analysis survives a reload,
+   a refresh, and tomorrow.
+   ------------------------------------------------------------------------- */
+
+export interface RunPlacementRow {
+  keywordId: string;
+  phrase: string;
+  /** The Offering the assigner chose. */
+  offering: string;
+  /** Everything else it thought applied, in its own order. */
+  secondary: string[];
+  /** 0–100, the assigner's own number. Null when a human placed it. */
+  confidence: number | null;
+  /** `human` once confirmed; the assigner version otherwise. */
+  decidedBy: string;
+  /** Below the site's confidence floor ⇒ it is a proposal, not a ruling. */
+  proposal: boolean;
+  appliedAt: string | null;
+}
+
+/**
+ * Every placement made on this site since `sinceIso` (defaults to the last
+ * hour), newest first. `p_confidence_floor` is the site's own knob — a row
+ * under it is a proposal awaiting a human, which is exactly the distinction
+ * an operator is trying to see.
+ */
+export async function listRunPlacements(
+  siteId: string,
+  sinceIso: string,
+  confidenceFloor: number,
+  signal?: AbortSignal,
+): Promise<RunPlacementRow[]> {
+  const db = await seoDb();
+  const { data, error } = await db
+    .from("keyword_topic")
+    .select(
+      "keyword_id, confidence, assigned_by, is_primary, metadata, updated_at, keyword:keyword_id(phrase), topic:topic_id(name)",
+    )
+    .gte("updated_at", sinceIso)
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false })
+    .limit(500)
+    .abortSignal(signal ?? new AbortController().signal)
+    .returns<
+      Array<{
+        keyword_id: string;
+        confidence: number | null;
+        assigned_by: string | null;
+        is_primary: boolean;
+        metadata: Record<string, unknown> | null;
+        updated_at: string;
+        keyword: { phrase: string } | null;
+        topic: { name: string } | null;
+      }>
+    >();
+  if (error) throw new Error(extractErrorMessage(error));
+
+  // One row per keyword: the primary is the ruling, the rest are what else it
+  // considered. A keyword with no primary row is still worth showing — the
+  // assigner reached it and chose only secondaries, which is a finding.
+  const byKeyword = new Map<string, RunPlacementRow>();
+  const secondaries = new Map<string, string[]>();
+  for (const row of data ?? []) {
+    const phrase = row.keyword?.phrase ?? row.keyword_id;
+    const topic = row.topic?.name ?? "—";
+    if (!row.is_primary) {
+      secondaries.set(row.keyword_id, [
+        ...(secondaries.get(row.keyword_id) ?? []),
+        topic,
+      ]);
+      continue;
+    }
+    const placement =
+      (row.metadata?.placement as Record<string, unknown> | undefined) ??
+      undefined;
+    const confidence =
+      typeof row.confidence === "number" ? row.confidence : null;
+    byKeyword.set(row.keyword_id, {
+      keywordId: row.keyword_id,
+      phrase,
+      offering: topic,
+      secondary: [],
+      confidence,
+      decidedBy: row.assigned_by ?? "unknown",
+      proposal:
+        row.assigned_by !== "human" &&
+        confidence !== null &&
+        confidence < confidenceFloor,
+      appliedAt:
+        typeof placement?.applied_at === "string"
+          ? placement.applied_at
+          : row.updated_at,
+    });
+  }
+  for (const [keywordId, list] of secondaries) {
+    const row = byKeyword.get(keywordId);
+    if (row) row.secondary = list;
+  }
+  return [...byKeyword.values()];
 }

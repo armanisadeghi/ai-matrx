@@ -26,6 +26,7 @@
 import React from "react";
 
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { cn } from "@/styles/themes/utils";
 import { useLiveRunStatus } from "@/features/agents/components/live-run/useLiveRunStatus";
 import { RunSetDisplay } from "@/features/agents/components/live-run/RunSetDisplay";
 import { selectRunSetEntries } from "@/features/agents/redux/execution-system/run-sets/run-sets.slice";
@@ -126,6 +127,10 @@ export default function LiveRunWindow({
   // The phase rides in the frame's OWN title bar. It is not a second row, not
   // a subtitle strip, and not a status bar inside the body — the window
   // already has exactly one place for "what is happening", so it goes there.
+  // Is there any streamed output to make room for? (A pure-progress pipeline
+  // has none, and its stages should then use the whole body.)
+  const hasOutput = Boolean(requestId || conversationId || runSetKey);
+
   const title = statusText
     ? `${label ?? "AI is working"} — ${statusText}`
     : (label ?? "AI is working");
@@ -149,22 +154,37 @@ export default function LiveRunWindow({
           (the body already has `p-1.5`, and every kind component brings its
           own internal spacing). Anything added between these two lines shows
           up as a band of dead space the user can see. */}
-      <div className="h-full min-h-0 overflow-hidden">
+      {/* 🚨 PROGRESS AND OUTPUT ARE NOT ALTERNATIVES. Rendering stages INSTEAD
+          of content hid the actual answer — the run narrated itself while the
+          thing the user came for (the model's own output) was never shown.
+          When a run has both, the stages ride on top as a compact strip and
+          the output owns the rest of the body. */}
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
         {progress ? (
-          <LiveRunProgress progress={progress} />
-        ) : runSetKey ? (
-          <div className="h-full min-h-0 overflow-y-auto">
+          <div
+            className={cn(
+              "min-h-0 shrink-0",
+              hasOutput && "max-h-[45%] overflow-y-auto border-b border-border",
+            )}
+          >
+            <LiveRunProgress progress={progress} />
+          </div>
+        ) : null}
+        {runSetKey ? (
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <RunSetDisplay setKey={runSetKey} variant="bare" />
           </div>
         ) : (
-          <LiveRunDisplay
-            conversationId={conversationId}
-            requestId={requestId}
-            pending={pending}
-            variant="bare"
-            className="h-full"
-            bodyClassName="max-h-none h-full overflow-y-auto"
-          />
+          <div className={cn("min-h-0", progress ? "flex-1" : "h-full")}>
+            <LiveRunDisplay
+              conversationId={conversationId}
+              requestId={requestId}
+              pending={pending && !progress}
+              variant="bare"
+              className="h-full"
+              bodyClassName="max-h-none h-full overflow-y-auto"
+            />
+          </div>
         )}
       </div>
     </WindowPanel>

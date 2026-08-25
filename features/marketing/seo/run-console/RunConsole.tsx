@@ -59,7 +59,11 @@ import type { TopicPlacementPassResult } from "@/features/marketing/seo/value-sy
 import { ProposedQueue } from "@/features/marketing/seo/value-system/topics/ProposedQueue";
 import { UnplacedQueue } from "@/features/marketing/seo/value-system/topics/UnplacedQueue";
 import { TOPIC_PLACEMENT_ENGINE, type ConsoleEngine } from "./engines";
-import { listConsoleSites, listEngineSchedules } from "./data";
+import {
+  listConsoleSites,
+  listEngineSchedules,
+  listRunPlacements,
+} from "./data";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { ScheduleCascadePanel } from "./ScheduleCascadePanel";
 import type { ConsoleSiteRow, RunConsoleScope, RunOutcome } from "./types";
@@ -448,7 +452,41 @@ export function RunConsole({
 
       {/* ── Body: brands on the left, everything you poke holes in on the right ── */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 lg:grid-cols-12">
+        {/* LEFT — what you pick FROM. The brand list and the schedule both
+            answer "which brands", so they live together here; the right side
+            is always the SELECTED brand's data. Mixing a global schedule into
+            brand-keyed tabs is what made the tab strip lie. */}
         <section className="flex min-h-0 flex-col rounded-lg border border-border bg-card lg:col-span-5">
+          <Tabs
+            defaultValue="brands"
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            <TabsList className="h-8 shrink-0 justify-start rounded-none border-b border-border bg-transparent px-1">
+              <TabsTrigger value="brands" className="h-6 text-xs">
+                Brands
+              </TabsTrigger>
+              <TabsTrigger value="schedule" className="h-6 text-xs">
+                Schedule
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent
+              value="schedule"
+              className="m-0 flex min-h-0 flex-1 flex-col"
+            >
+              <ScheduleCascadePanel
+                engine={engine}
+                scope={scope}
+                sites={siteRows}
+                schedules={schedules.data ?? []}
+                capCeiling={capCeiling || 1}
+              />
+            </TabsContent>
+
+            <TabsContent
+              value="brands"
+              className="m-0 flex min-h-0 flex-1 flex-col"
+            >
           <div className="flex items-center gap-1.5 border-b border-border px-2 py-1.5">
             <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <Input
@@ -545,6 +583,8 @@ export function RunConsole({
               </table>
             )}
           </div>
+            </TabsContent>
+          </Tabs>
         </section>
 
         <section className="flex min-h-0 flex-col rounded-lg border border-border bg-card lg:col-span-7">
@@ -558,9 +598,6 @@ export function RunConsole({
               </TabsTrigger>
               <TabsTrigger value="unplaced" className="h-6 text-xs">
                 Not placed
-              </TabsTrigger>
-              <TabsTrigger value="schedule" className="h-6 text-xs">
-                Schedule
               </TabsTrigger>
             </TabsList>
 
@@ -707,21 +744,116 @@ export function RunConsole({
               )}
             </TabsContent>
 
-            <TabsContent
-              value="schedule"
-              className="m-0 flex min-h-0 flex-1 flex-col"
-            >
-              <ScheduleCascadePanel
-                engine={engine}
-                scope={scope}
-                sites={siteRows}
-                schedules={schedules.data ?? []}
-                capCeiling={capCeiling || 1}
-              />
-            </TabsContent>
           </Tabs>
         </section>
       </div>
+    </div>
+  );
+}
+
+
+/**
+ * WHAT THE AI ACTUALLY DID — the point of an admin console.
+ *
+ * One row per keyword the assigner touched: the phrase, the Offering it chose,
+ * everything else it considered, and its own confidence. Read from the durable
+ * placement rows, so this survives a reload and can be studied later — the
+ * stream scrolls away, the record does not.
+ */
+function RunDecisions({
+  siteId,
+  siteName,
+  brandId,
+  since,
+  confidenceFloor,
+}: {
+  siteId: string;
+  siteName: string;
+  brandId: string | undefined;
+  since: string;
+  confidenceFloor: number;
+}) {
+  const openKeywordWindow = useOpenKeywordWindow();
+  const decisions = useQuery({
+    queryKey: ["seo", "run-console", "decisions", siteId, since],
+    queryFn: ({ signal }) =>
+      listRunPlacements(siteId, since, confidenceFloor, signal),
+    staleTime: 10 * 1000,
+  });
+
+  if (decisions.isPending)
+    return (
+      <p className="px-1 py-2 text-xs text-muted-foreground">
+        Reading what the assigner decided…
+      </p>
+    );
+  if (decisions.isError)
+    return (
+      <p className="px-1 py-2 text-xs text-destructive">
+        {extractErrorMessage(decisions.error)}
+      </p>
+    );
+
+  const rows = decisions.data ?? [];
+  if (rows.length === 0)
+    return (
+      <p className="px-1 py-2 text-xs text-muted-foreground">
+        This pass changed no placements on {siteName}.
+      </p>
+    );
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-[11px]">
+        <thead className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <tr>
+            <th className="px-1.5 py-1 font-medium">Keyword</th>
+            <th className="px-1.5 py-1 font-medium">Offering it chose</th>
+            <th className="px-1.5 py-1 font-medium">Also considered</th>
+            <th className="w-20 px-1.5 py-1 text-right font-medium">Sure</th>
+            <th className="w-24 px-1.5 py-1 font-medium">Decided by</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.keywordId} className="border-t border-border/60">
+              <td className="max-w-[16rem] truncate px-1.5 py-1">
+                {/* NO DEAD ENDS: every keyword named here opens. */}
+                <button
+                  type="button"
+                  className="truncate text-left text-foreground underline-offset-2 hover:underline"
+                  onClick={() =>
+                    openKeywordWindow({
+                      phrase: row.phrase,
+                      siteId,
+                      ...(brandId ? { brandId } : {}),
+                    })
+                  }
+                >
+                  {row.phrase}
+                </button>
+              </td>
+              <td className="max-w-[14rem] truncate px-1.5 py-1 text-foreground">
+                {row.offering}
+                {row.proposal ? (
+                  <span className="ml-1 rounded border border-warning/50 bg-warning/10 px-1 py-px text-[9px] text-warning">
+                    proposal
+                  </span>
+                ) : null}
+              </td>
+              <td className="max-w-[12rem] truncate px-1.5 py-1 text-muted-foreground">
+                {row.secondary.length > 0 ? row.secondary.join(" · ") : "—"}
+              </td>
+              <td className="px-1.5 py-1 text-right tabular-nums text-muted-foreground">
+                {row.confidence === null ? "—" : `${row.confidence}%`}
+              </td>
+              <td className="px-1.5 py-1 text-muted-foreground">
+                {row.decidedBy}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

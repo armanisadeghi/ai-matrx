@@ -1,17 +1,29 @@
 "use client";
 
 /**
- * Matrx Envelope — FE renderer registry (the client mirror of the backend's
- * shape registry). Recognize the OUTER canonical envelope once, then route the
- * INTERNAL parts through this registry by `(kind, type)`:
+ * Kind Directives — the FE renderer registry, and THE PREFIX TIER.
  *
- *   getEnvelopeRenderer(kind, type)
- *     → a `kind:type`-specific renderer, else a `kind`-default renderer, else null
+ * One identity, one lookup. A directive IS a kind instance
+ * (`{"__kind":"directive_v1_<class>_<noun>","items":[…]}`), so the renderer for
+ * one is resolved from its SLUG, in the same shape the kind component resolver
+ * uses:
  *
- * A null result is the graceful-fallback signal — `MatrxEnvelopeBlock` shows a
+ *   getDirectiveRenderer(slug)
+ *     → an exact-slug renderer            (directive_v1_action_plan_tree)
+ *     → else the CLASS prefix rule        (every directive_v1_reference_* )
+ *     → else null — the graceful floor    (EnvelopeFallbackCard)
+ *
+ * THE PREFIX RULE is the point, and it is Arman's routing-language ruling made
+ * real: registering `reference` once gives EVERY enrolled noun a live chip
+ * renderer for free, and a custom renderer for one slug overrides it. 419
+ * catalogued nouns do not need 419 registrations, and a brand-new server noun
+ * renders with ZERO frontend edits.
+ *
+ * A null result is the graceful-fallback signal — `MatrxEnvelopeBlock` shows the
  * neutral card so an unknown shape is still displayed, never dropped.
  *
- * Add a renderer = one `registerEnvelopeRenderer(...)` call. No switch to edit.
+ * Add a renderer = one `registerDirectiveRenderer(...)` call. No switch to edit.
+ * Spec: common-docs/projects/kind-directives/PLAN.md (KD3/KD4).
  */
 
 import type { ComponentType } from "react";
@@ -40,10 +52,12 @@ import {
 
 import { cn } from "@/lib/utils";
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
-import type {
-  MatrxEnvelope,
-  ReferenceItem,
-} from "@/features/matrx-envelope/envelope";
+import type { DecodedDirective } from "@/features/content-ir/directives/decode";
+import {
+  type DirectiveClass,
+  buildDirectiveSlug,
+} from "@/features/content-ir/directives/grammar";
+import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 import {
   coerceRefToStrings,
   getReferenceResolver,
@@ -74,29 +88,43 @@ const PlanNodePatchRenderer = dynamic(
   { ssr: false, loading: () => null },
 );
 
-export interface EnvelopeRendererProps {
-  envelope: MatrxEnvelope;
+export interface DirectiveRendererProps {
+  /** The decoded two-key shell — slug, class, noun, items, position law. */
+  directive: DecodedDirective;
 }
 
-export type EnvelopeRenderer = ComponentType<EnvelopeRendererProps>;
+export type DirectiveRenderer = ComponentType<DirectiveRendererProps>;
 
-const _registry = new Map<string, EnvelopeRenderer>();
+/** Exact-slug renderers. */
+const _bySlug = new Map<string, DirectiveRenderer>();
+/** THE PREFIX TIER: one renderer for a whole class. */
+const _byClass = new Map<DirectiveClass, DirectiveRenderer>();
 
-/** Register a renderer for a whole `kind`, or a specific `kind:type` (type wins). */
-export function registerEnvelopeRenderer(
-  kind: string,
-  renderer: EnvelopeRenderer,
-  type?: string,
+/**
+ * Register a renderer for a whole CLASS (the prefix rule — every
+ * `directive_v1_<class>_*` renders through it), or for one exact `(class, noun)`
+ * pair, which wins.
+ *
+ * `noun` is passed as a noun, never as a hand-typed slug: the slug is BUILT by
+ * the grammar, so a registration whose slug could not be parsed back is
+ * unconstructable rather than silently unreachable.
+ */
+export function registerDirectiveRenderer(
+  directiveClass: DirectiveClass,
+  renderer: DirectiveRenderer,
+  noun?: string,
 ): void {
-  _registry.set(type ? `${kind}:${type}` : kind, renderer);
+  if (noun) _bySlug.set(buildDirectiveSlug(directiveClass, noun), renderer);
+  else _byClass.set(directiveClass, renderer);
 }
 
-/** The renderer for `(kind, type)`: type-specific → kind-default → null (fallback). */
-export function getEnvelopeRenderer(
-  kind: string,
-  type: string,
-): EnvelopeRenderer | null {
-  return _registry.get(`${kind}:${type}`) ?? _registry.get(kind) ?? null;
+/** The renderer for a slug: exact → class prefix rule → null (the floor). */
+export function getDirectiveRenderer(
+  directive: Pick<DecodedDirective, "slug" | "directiveClass">,
+): DirectiveRenderer | null {
+  return (
+    _bySlug.get(directive.slug) ?? _byClass.get(directive.directiveClass) ?? null
+  );
 }
 
 // ── Built-in renderers ───────────────────────────────────────────────────────
@@ -240,43 +268,48 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
  * from Supabase (graceful fallback to the item's display hints) and opens the
  * underlying entity in a window panel on click. Chips flow inline in prose.
  */
-const ReferenceRenderer: EnvelopeRenderer = ({ envelope }) => {
-  const items = Array.isArray(envelope.items)
-    ? (envelope.items as unknown as ReferenceItem[])
-    : [];
+const ReferenceRenderer: DirectiveRenderer = ({ directive }) => {
+  const items = directive.items as unknown as ReferenceItem[];
   return (
     <span className="my-1 inline-flex flex-wrap items-center gap-1.5 align-middle">
       {items.map((item, i) => (
         <ReferenceChip
-          key={`${envelope.type}:${JSON.stringify(item) ?? i}`}
+          key={`${directive.noun}:${JSON.stringify(item) ?? i}`}
           item={item}
-          type={envelope.type}
+          type={directive.noun}
         />
       ))}
     </span>
   );
 };
 
-registerEnvelopeRenderer("reference", ReferenceRenderer);
+// THE PREFIX RULE. One registration covers every `directive_v1_reference_*`
+// slug the server can mint — the 419-noun catalog included — because the noun
+// IS the chip's reference type and the chip resolves it live. A noun that needs
+// something richer than a chip registers itself by name below and wins.
+registerDirectiveRenderer("reference", ReferenceRenderer);
 
-registerEnvelopeRenderer(
-  "output_directive",
+// A Kind Action, not a create-class noun: the server registers it via
+// `register_action("create_project_with_tasks")`, so its canonical slug is
+// `directive_v1_action_create_project_with_tasks` — and the legacy shim maps
+// the stored `output_directive:create_project_with_tasks` onto the same one.
+registerDirectiveRenderer(
+  "action",
   CreateProjectWithTasksRenderer,
   "create_project_with_tasks",
 );
 
 /**
- * `output_directive:context_groom` — the inline groom fence an agent emits in
- * its own prose (`{"kind":"output_directive","type":"context_groom",
- * "items":[{"key":"…"}]}`). Position decides capability: in content it is a
+ * `directive_v1_action_context_groom` — the inline groom fence an agent emits
+ * in its own prose. Position decides capability: in content it is a
  * RECEIPT, never executed (the server's turn_directive_handler already acted
  * on it). Render a quiet one-line indicator, never prose/code — the model's
  * view was compacted; the user-facing transcript is unchanged. Contract:
  * aidream services/conversation_values/FEATURE.md (Grooming) +
  * docs/cx_chat/FE_HANDOFF_AGENT_PATTERNS.md §4.
  */
-const ContextGroomRenderer: EnvelopeRenderer = ({ envelope }) => {
-  const count = Array.isArray(envelope.items) ? envelope.items.length : 0;
+const ContextGroomRenderer: DirectiveRenderer = ({ directive }) => {
+  const count = directive.items.length;
   return (
     <span className="my-1 inline-flex items-center gap-1.5 align-middle text-xs text-muted-foreground">
       <Layers className="h-3 w-3 shrink-0" />
@@ -288,23 +321,15 @@ const ContextGroomRenderer: EnvelopeRenderer = ({ envelope }) => {
   );
 };
 
-registerEnvelopeRenderer("output_directive", ContextGroomRenderer, "context_groom");
+registerDirectiveRenderer("action", ContextGroomRenderer, "context_groom");
 
 // Content Planning (plan schema) — applied server-side by aidream's
-// services/content_plan directives; these cards are receipts that resolve
-// to live plan.node routes and deep-link into /content-plan.
-registerEnvelopeRenderer("output_directive", PlanTreeRenderer, "plan_tree");
-registerEnvelopeRenderer(
-  "output_directive",
-  PlanNodePatchRenderer,
-  "plan_node_patch",
-);
-
-// Plane 2 (`kind:"function"`) — the same procedures may arrive under their
-// canonical function encoding (server dual-registers them). Same renderers;
-// an unregistered function type falls back to EnvelopeFallbackCard, whose
-// Apply button posts /directives/confirm — a brand-new server function renders
-// and applies with ZERO frontend edits.
-registerEnvelopeRenderer("function", PlanTreeRenderer, "plan_tree");
-registerEnvelopeRenderer("function", PlanNodePatchRenderer, "plan_node_patch");
-registerEnvelopeRenderer("function", ContextGroomRenderer, "context_groom");
+// services/content_plan directives; these cards are receipts that resolve to
+// live plan.node routes and deep-link into /content-plan. Both arrived under
+// two encodings before the merge (`output_directive:` and `function:`); the
+// merge gave them ONE identity — class `action` — so there is one registration
+// each, not two. An unregistered action falls to EnvelopeFallbackCard, whose
+// Apply button posts /directives/confirm: a brand-new server action renders and
+// applies with ZERO frontend edits.
+registerDirectiveRenderer("action", PlanTreeRenderer, "plan_tree");
+registerDirectiveRenderer("action", PlanNodePatchRenderer, "plan_node_patch");
