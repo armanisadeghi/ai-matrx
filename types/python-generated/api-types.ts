@@ -292,6 +292,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rank-kinds/landscape": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rank Landscape As Kinds
+         * @description Translate one stored SERP snapshot into the rank kind family.
+         *
+         *     Errors before the stream opens are surfaced as HTTP, not as a stream that
+         *     ends with nothing in it — a client cannot act on a silent empty stream.
+         */
+        post: operations["rank_landscape_as_kinds_rank_kinds_landscape_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag-kinds/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rag Search As Kinds */
+        post: operations["rag_search_as_kinds_rag_kinds_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/table-kinds/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Table Read As Kinds */
+        post: operations["table_read_as_kinds_table_kinds_read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scraper-kinds/scrape": {
         parameters: {
             query?: never;
@@ -5048,6 +5105,13 @@ export interface paths {
          *
          *     The cheap half of the autopsy, on its own. Every row lands `proposed` and
          *     waits for a human: nothing becomes a competitor because software said so.
+         *
+         *     STREAMED for the same reason its local sibling is: one provider call plus a
+         *     classification pass per competitor runs well past the client's request
+         *     budget. **Every `competitors.discover` run ever recorded (8 of 8) is
+         *     `abandoned`** — the row never terminalized (fixed 2026-08-24) and the
+         *     request never survived long enough to report, so the button reported
+         *     failure while the work landed.
          */
         post: operations["discover_site_competitors_seo_sites__site_id__competitors_discover_post"];
         delete?: never;
@@ -5072,8 +5136,14 @@ export interface paths {
          *
          *     The primary discovery path for LOCAL businesses (the map-pack rivals for
          *     "keyword near place"), distinct from the keyword-overlap rivals
-         *     `/competitors/discover` finds. An ambiguous place name returns 400 with
-         *     the catalogue's suggestions. Every proposal waits for a human ruling.
+         *     `/competitors/discover` finds. Every proposal waits for a human ruling.
+         *
+         *     STREAMED, because it is not fast: one provider search plus a classification
+         *     pass per business measured 27s on a three-result pack, which a synchronous
+         *     POST loses to a gateway timeout while the server keeps working. The place
+         *     name resolves BEFORE the stream opens, so an ambiguous one still returns a
+         *     clean 400 carrying the catalogue's suggestions instead of a stream that
+         *     dies on its first event.
          */
         post: operations["discover_local_site_competitors_seo_sites__site_id__competitors_discover_local_post"];
         delete?: never;
@@ -32483,15 +32553,6 @@ export interface components {
              */
             force_refresh?: boolean;
         };
-        /** CompetitorDiscoveryResponse */
-        CompetitorDiscoveryResponse: {
-            /** Competitor Ids */
-            competitor_ids: string[];
-            /** Count */
-            count: number;
-            /** Limitations */
-            limitations: string[];
-        };
         /** CompetitorInput */
         CompetitorInput: {
             /** Key */
@@ -45596,34 +45657,6 @@ export interface components {
             /** Uptime Seconds */
             uptime_seconds: number;
         };
-        /** LocalBusinessOut */
-        LocalBusinessOut: {
-            /** Position */
-            position?: number | null;
-            /** Name */
-            name: string;
-            /** Domain */
-            domain?: string | null;
-            /** Website */
-            website?: string | null;
-            /** Address */
-            address?: string | null;
-            /** Phone */
-            phone?: string | null;
-            /** Category */
-            category?: string | null;
-            /** Rating */
-            rating?: number | null;
-            /** Reviews */
-            reviews?: number | null;
-            /**
-             * Is Own
-             * @default false
-             */
-            is_own?: boolean;
-            /** Competitor Id */
-            competitor_id?: string | null;
-        };
         /** LocalClusterResponse */
         LocalClusterResponse: {
             /** Id */
@@ -45693,19 +45726,6 @@ export interface components {
              * @default false
              */
             force_refresh?: boolean;
-        };
-        /** LocalCompetitorSearchResponse */
-        LocalCompetitorSearchResponse: {
-            /** Keyword */
-            keyword: string;
-            /** Canonical Location */
-            canonical_location: string;
-            /** Businesses */
-            businesses: components["schemas"]["LocalBusinessOut"][];
-            /** Competitor Ids */
-            competitor_ids: string[];
-            /** Count */
-            count: number;
         };
         /** LocalCourtResponse */
         LocalCourtResponse: {
@@ -53524,6 +53544,78 @@ export interface components {
              * @default 94b375b4-9e4f-4306-9ea7-032a5cd3e8d8
              */
             challenger_definition_id?: string;
+        };
+        /** RagKindsRequest */
+        RagKindsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Query */
+            query: string;
+            /**
+             * Limit
+             * @default 8
+             */
+            limit?: number;
+            /**
+             * Source Kinds
+             * @description Restrict to these source kinds. None searches everything.
+             */
+            source_kinds?: string[] | null;
+            /**
+             * Include Raw
+             * @description Also stream the raw engine hits (the second projection). Off by default.
+             * @default false
+             */
+            include_raw?: boolean;
+        };
+        /** RankKindsRequest */
+        RankKindsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Snapshot Id
+             * @description A specific seo.serp_snapshot to translate. Omit to take the most recent.
+             */
+            snapshot_id?: string | null;
+            /**
+             * Provider
+             * @description Used only when snapshot_id is omitted.
+             * @default serpapi
+             * @enum {string}
+             */
+            provider?: "brave" | "serpapi" | "dataforseo";
+            /**
+             * Include Raw
+             * @description Also stream the raw provider payload (the second projection). Off by default.
+             * @default false
+             */
+            include_raw?: boolean;
         };
         /** RankPortfolioItem */
         RankPortfolioItem: {
@@ -62146,6 +62238,41 @@ export interface components {
             /** Editable */
             editable?: boolean | null;
         };
+        /** TableKindsRequest */
+        TableKindsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Table
+             * @description Schema-qualified table to read, e.g. 'seo.serp_opportunity'.
+             * @default seo.serp_opportunity
+             */
+            table?: string;
+            /**
+             * Limit
+             * @default 5
+             */
+            limit?: number;
+            /**
+             * Include Raw
+             * @description Also stream the flat legacy rows.
+             * @default false
+             */
+            include_raw?: boolean;
+        };
         /** TableRowBookmark */
         TableRowBookmark: {
             /**
@@ -69201,6 +69328,105 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SearchKindsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rank_landscape_as_kinds_rank_kinds_landscape_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RankKindsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rag_search_as_kinds_rag_kinds_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RagKindsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    table_read_as_kinds_table_kinds_read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TableKindsRequest"];
             };
         };
         responses: {
@@ -77882,7 +78108,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CompetitorDiscoveryResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -77917,7 +78143,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LocalCompetitorSearchResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -79746,7 +79972,9 @@ export interface operations {
     sync_site_analytics_seo_sites__site_id__analytics_sync_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 site_id: string;
             };

@@ -436,6 +436,124 @@
         }
       }
     },
+    "/rank-kinds/landscape": {
+      "post": {
+        "tags": [
+          "Rank Kinds"
+        ],
+        "summary": "Rank Landscape As Kinds",
+        "description": "Translate one stored SERP snapshot into the rank kind family.\n\nErrors before the stream opens are surfaced as HTTP, not as a stream that\nends with nothing in it — a client cannot act on a silent empty stream.",
+        "operationId": "rank_landscape_as_kinds_rank_kinds_landscape_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankKindsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag-kinds/search": {
+      "post": {
+        "tags": [
+          "RAG Kinds"
+        ],
+        "summary": "Rag Search As Kinds",
+        "operationId": "rag_search_as_kinds_rag_kinds_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RagKindsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/table-kinds/read": {
+      "post": {
+        "tags": [
+          "Table Kinds"
+        ],
+        "summary": "Table Read As Kinds",
+        "operationId": "table_read_as_kinds_table_kinds_read_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TableKindsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/scraper-kinds/scrape": {
       "post": {
         "tags": [
@@ -13094,7 +13212,7 @@
           "SEO Collections"
         ],
         "summary": "Discover Site Competitors",
-        "description": "Find the rivals and classify each one — WITHOUT buying a page-crawl autopsy.\n\nThe cheap half of the autopsy, on its own. Every row lands `proposed` and\nwaits for a human: nothing becomes a competitor because software said so.",
+        "description": "Find the rivals and classify each one — WITHOUT buying a page-crawl autopsy.\n\nThe cheap half of the autopsy, on its own. Every row lands `proposed` and\nwaits for a human: nothing becomes a competitor because software said so.\n\nSTREAMED for the same reason its local sibling is: one provider call plus a\nclassification pass per competitor runs well past the client's request\nbudget. **Every `competitors.discover` run ever recorded (8 of 8) is\n`abandoned`** — the row never terminalized (fixed 2026-08-24) and the\nrequest never survived long enough to report, so the button reported\nfailure while the work landed.",
         "operationId": "discover_site_competitors_seo_sites__site_id__competitors_discover_post",
         "parameters": [
           {
@@ -13122,9 +13240,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CompetitorDiscoveryResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -13147,7 +13263,7 @@
           "SEO Collections"
         ],
         "summary": "Discover Local Site Competitors",
-        "description": "Search Google's local pack for a keyword in a geographic area and turn\nthe businesses it returns into competitor proposals.\n\nThe primary discovery path for LOCAL businesses (the map-pack rivals for\n\"keyword near place\"), distinct from the keyword-overlap rivals\n`/competitors/discover` finds. An ambiguous place name returns 400 with\nthe catalogue's suggestions. Every proposal waits for a human ruling.",
+        "description": "Search Google's local pack for a keyword in a geographic area and turn\nthe businesses it returns into competitor proposals.\n\nThe primary discovery path for LOCAL businesses (the map-pack rivals for\n\"keyword near place\"), distinct from the keyword-overlap rivals\n`/competitors/discover` finds. Every proposal waits for a human ruling.\n\nSTREAMED, because it is not fast: one provider search plus a classification\npass per business measured 27s on a three-result pack, which a synchronous\nPOST loses to a gateway timeout while the server keeps working. The place\nname resolves BEFORE the stream opens, so an ambiguous one still returns a\nclean 400 carrying the catalogue's suggestions instead of a stream that\ndies on its first event.",
         "operationId": "discover_local_site_competitors_seo_sites__site_id__competitors_discover_local_post",
         "parameters": [
           {
@@ -13175,9 +13291,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LocalCompetitorSearchResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -15786,6 +15900,15 @@
             "schema": {
               "type": "string",
               "title": "Site Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -84980,36 +85103,6 @@
         "type": "object",
         "title": "CompetitorDiscoverBody"
       },
-      "CompetitorDiscoveryResponse": {
-        "properties": {
-          "competitor_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Competitor Ids"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "limitations": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Limitations"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "competitor_ids",
-          "count",
-          "limitations"
-        ],
-        "title": "CompetitorDiscoveryResponse"
-      },
       "CompetitorInput": {
         "properties": {
           "key": {
@@ -119184,124 +119277,6 @@
         ],
         "title": "LivenessResponse"
       },
-      "LocalBusinessOut": {
-        "properties": {
-          "position": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Position"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "domain": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Domain"
-          },
-          "website": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Website"
-          },
-          "address": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Address"
-          },
-          "phone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Phone"
-          },
-          "category": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category"
-          },
-          "rating": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rating"
-          },
-          "reviews": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reviews"
-          },
-          "is_own": {
-            "type": "boolean",
-            "title": "Is Own",
-            "default": false
-          },
-          "competitor_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Competitor Id"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "LocalBusinessOut"
-      },
       "LocalClusterResponse": {
         "properties": {
           "id": {
@@ -119523,46 +119498,6 @@
           "location"
         ],
         "title": "LocalCompetitorSearchBody"
-      },
-      "LocalCompetitorSearchResponse": {
-        "properties": {
-          "keyword": {
-            "type": "string",
-            "title": "Keyword"
-          },
-          "canonical_location": {
-            "type": "string",
-            "title": "Canonical Location"
-          },
-          "businesses": {
-            "items": {
-              "$ref": "#/components/schemas/LocalBusinessOut"
-            },
-            "type": "array",
-            "title": "Businesses"
-          },
-          "competitor_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Competitor Ids"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "keyword",
-          "canonical_location",
-          "businesses",
-          "competitor_ids",
-          "count"
-        ],
-        "title": "LocalCompetitorSearchResponse"
       },
       "LocalCourtResponse": {
         "properties": {
@@ -138466,6 +138401,155 @@
         ],
         "title": "RaceRequest",
         "description": "One race's locked spec — the SAME instruction to every arm.\n\n🚨 Inherits ScopedRequest, not BaseModel: the frontend's `callApi` injects\norganization/project/task onto every mutating body, and an `extra=\"forbid\"`\nmodel without the scope base 422s the moment a real UI calls it."
+      },
+      "RagKindsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Query"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 8
+          },
+          "source_kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kinds",
+            "description": "Restrict to these source kinds. None searches everything."
+          },
+          "include_raw": {
+            "type": "boolean",
+            "title": "Include Raw",
+            "description": "Also stream the raw engine hits (the second projection). Off by default.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "RagKindsRequest"
+      },
+      "RankKindsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id",
+            "description": "A specific seo.serp_snapshot to translate. Omit to take the most recent."
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "brave",
+              "serpapi",
+              "dataforseo"
+            ],
+            "title": "Provider",
+            "description": "Used only when snapshot_id is omitted.",
+            "default": "serpapi"
+          },
+          "include_raw": {
+            "type": "boolean",
+            "title": "Include Raw",
+            "description": "Also stream the raw provider payload (the second projection). Off by default.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "RankKindsRequest"
       },
       "RankPortfolioItem": {
         "properties": {
@@ -160426,6 +160510,67 @@
           "type"
         ],
         "title": "TableInputPart"
+      },
+      "TableKindsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "table": {
+            "type": "string",
+            "title": "Table",
+            "description": "Schema-qualified table to read, e.g. 'seo.serp_opportunity'.",
+            "default": "seo.serp_opportunity"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 5
+          },
+          "include_raw": {
+            "type": "boolean",
+            "title": "Include Raw",
+            "description": "Also stream the flat legacy rows.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "TableKindsRequest"
       },
       "TableRowBookmark": {
         "properties": {
