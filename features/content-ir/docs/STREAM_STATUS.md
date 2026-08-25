@@ -1,6 +1,6 @@
 # Stream status — generated, never hand-maintained
 
-`pnpm check:shapes:stream` replays every kind's canonical example through the
+`pnpm check:shapes:stream` replays every kind's stored example through the
 REAL streaming pipeline (accumulator + kind route) and reports what a reader
 would see. Laws checked: detected while streaming · kind resolved live · no
 raw-JSON flash · completes as its kind · the real component renders live ·
