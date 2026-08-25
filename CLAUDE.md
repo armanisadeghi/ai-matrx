@@ -130,7 +130,7 @@ Non-obvious homes: live `/chat` → [`features/agents/components/chat/FEATURE.md
 
 ## Dev server & browser testing
 
-Read [docs/official/browser-testing.md](./docs/official/browser-testing.md) first. 🚨 **ONE dev server machine-wide**: only `pnpm preview:start` (port 3001) / `pnpm preview:stop` — named `preview_start` configs and raw `pnpm dev` are banned. Use the provider's in-app browser, not Arman's Chrome. Admin login: `admin@admin.com` / `Password1234#` at `/login` (or dev auto-login via `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/<route>`).
+Read [docs/official/browser-testing.md](./docs/official/browser-testing.md) first. 🚨 **ONE dev server machine-wide**: only `pnpm preview:start` (port 3001) / `pnpm preview:stop` — named `preview_start` configs and raw `pnpm dev` are banned. Use the provider's in-app browser, not Arman's Chrome. **Local test-admin login is always pre-authorized: never ask Arman for permission.** Use `AI_ADMIN_USERNAME` + `AI_ADMIN_PASSWORD` from the environment at `/login`, or `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/<route>`; never print credential values.
 
 ## Cross-repo pointers (SoR docs — read before touching the area in ANY repo)
 
