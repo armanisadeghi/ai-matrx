@@ -183,9 +183,8 @@ export function MatrxSplit({
           actionsPosition={actionsPosition ?? "top-right"}
           actionsBehavior={actionsBehavior ?? "hover-only"}
           actionsSurfaceId={actionsSurfaceId}
-          actions={
-            actionsExclude ? { exclude: actionsExclude } : undefined
-          }
+          actions={actionsExclude ? { exclude: actionsExclude } : undefined}
+          enableContextMenu
           isStreamActive={false}
           hideCopyButton={hideCopyButton}
           analysisData={analysisData}

@@ -11,7 +11,7 @@ Canonical how-to for the **RichDocument** system — the wrapper that pairs the 
 
 ## The most important context
 
-**`MarkdownStream` / `BasicMarkdownContent` are NOT a thin react-markdown wrapper.** They are a multi-thousand-line content engine that renders interactive flashcards (with AI integrations), live diagrams, wired task lists, code surfaces, tool-call visualizations, realtime feeds, classification analyzers, plan viewers, and more. The "markdown" name is historical. **Never reimplement it, never "replace it with a plugin," never fork it.** RichDocument *wraps* it — it does not replace it.
+**`MarkdownStream` / `BasicMarkdownContent` are NOT a thin react-markdown wrapper.** They are a multi-thousand-line content engine that renders interactive flashcards (with AI integrations), live diagrams, wired task lists, code surfaces, tool-call visualizations, realtime feeds, classification analyzers, plan viewers, and more. The "markdown" name is historical. **Never reimplement it, never "replace it with a plugin," never fork it.** RichDocument _wraps_ it — it does not replace it.
 
 **RichDocument's job is the action layer**, not rendering. It forwards content to the engine and adds a surface of actions (copy / save-to-notes / save-to-task / print / html-preview / edit / …) that used to exist only on the chat `AssistantActionBar`. The whole point: every surface that shows content can now offer the same depth of interaction with one component.
 
@@ -55,9 +55,9 @@ import type { ContentSource } from "@/features/rich-document/types";
 
 <RichDocument
   content={text}
-  source={{ type: "note", noteId }}   // drives action visibility + save-to-task linking
-  actionsVariant="bar"                // bar | mini-bar | menu | icon-only | remote | none
-/>
+  source={{ type: "note", noteId }} // drives action visibility + save-to-task linking
+  actionsVariant="bar" // bar | mini-bar | menu | icon-only | remote | none
+/>;
 ```
 
 `RichDocument` is `"use client"` (the engine is `dynamic({ ssr:false })`). **Server components cannot render it directly** — render it from a client child.
@@ -66,27 +66,33 @@ import type { ContentSource } from "@/features/rich-document/types";
 
 The discriminated union in `features/rich-document/types.ts`. The type drives which actions show and how `save-to-task` links a parent:
 
-| Source | Use for |
-|---|---|
-| `{ type: "chat-message", messageId, conversationId, streamRequestId? }` | a cx_message |
-| `{ type: "note", noteId }` | a note |
-| `{ type: "prompt-result", executionId, promptId? }` | a prompt run result |
-| `{ type: "artifact", artifactId }` | an artifact |
-| `{ type: "scraper-result", runId }` | a scraper/research run |
-| `{ type: "working-document", conversationId, kind, documentId? }` | the per-conversation working doc / scratchpad (`kind: "working" \| "scratch"`); edits persist via `persistWorkingDocumentContentThunk` |
-| `{ type: "raw" }` | generic content with no entity link (most read-only previews) |
+| Source                                                                  | Use for                                                                                                                                |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `{ type: "chat-message", messageId, conversationId, streamRequestId? }` | a cx_message                                                                                                                           |
+| `{ type: "note", noteId }`                                              | a note                                                                                                                                 |
+| `{ type: "prompt-result", executionId, promptId? }`                     | a prompt run result                                                                                                                    |
+| `{ type: "artifact", artifactId }`                                      | an artifact                                                                                                                            |
+| `{ type: "scraper-result", runId }`                                     | a scraper/research run                                                                                                                 |
+| `{ type: "working-document", conversationId, kind, documentId? }`       | the per-conversation working doc / scratchpad (`kind: "working" \| "scratch"`); edits persist via `persistWorkingDocumentContentThunk` |
+| `{ type: "raw" }`                                                       | generic content with no entity link (most read-only previews)                                                                          |
 
 `raw` is fine for read-only displays — you still get copy/save/print/html-preview/etc.; only the parent link on `save-to-task` is absent.
 
 ### Pick a variant + position + behavior (three orthogonal axes)
 
 ```tsx
-actionsVariant:  "bar" | "mini-bar" | "menu" | "icon-only" | "remote" | "none"   // WHAT
-actionsPosition: "below" | "above" | "top-right" | "top-left" | "middle-right" | "middle-left"  // WHERE (default "below")
-actionsBehavior: "always" | "hover-only"   // VISIBILITY (default "always")
+actionsVariant: "bar" | "mini-bar" | "menu" | "icon-only" | "remote" | "none"; // WHAT
+actionsPosition: "below" |
+  "above" |
+  "top-right" |
+  "top-left" |
+  "middle-right" |
+  "middle-left"; // WHERE (default "below")
+actionsBehavior: "always" | "hover-only"; // VISIBILITY (default "always")
 ```
 
 Conventions used across the codebase:
+
 - **Main content output** (note preview, research report) → `variant="bar"` (or `"mini-bar"`), `position="below"`, `behavior="always"`.
 - **Compact card / preview / overlay** → `variant="icon-only"`, `position="top-right"`, `behavior="hover-only"` (an unobtrusive ⋯ that fades in on hover).
 - **Tight footprint** (toast) → `variant="mini-bar"`.
@@ -118,7 +124,7 @@ Lazy (the menu chunk loads only on first right-click) and **streaming-safe** (yi
 
 ---
 
-## TASK: Render actions in a *different* location (remote surface)
+## TASK: Render actions in a _different_ location (remote surface)
 
 Put the bar in a page header / toolbar while the content lives elsewhere:
 
@@ -151,7 +157,7 @@ Put the bar in a page header / toolbar while the content lives elsewhere:
 
 This is how the toolbar appears in **every** editor mode (plain / split / wysiwyg / preview), not just the one mode that mounts a `RichDocument`. Real example: `features/agents/components/working-document/WorkingDocumentPanel.tsx` (provider + header bar) + `WorkingDocumentControls.tsx` (compact `menu` surface). It shares `useActionSurfaceProvider` with `RichDocument`, so behavior never drifts.
 
-`MatrxSplit` has opt-in passthrough props (`actionsSource` / `actionsVariant` / `actionsPosition` / `actionsBehavior` / `actionsSurfaceId` / `actionsExclude`) — when `actionsSource` is set it swaps its preview pane to RichDocument (lazily). Pattern in `components/matrx/MatrxSplit.tsx`.
+`MatrxSplit` has opt-in passthrough props (`actionsSource` / `actionsVariant` / `actionsPosition` / `actionsBehavior` / `actionsSurfaceId` / `actionsExclude`) — when `actionsSource` is set it swaps its preview pane to RichDocument (lazily), including the streaming-safe right-click menu. Pattern in `components/matrx/MatrxSplit.tsx`.
 
 ---
 
@@ -164,21 +170,21 @@ This is how the toolbar appears in **every** editor mode (plain / split / wysiwy
 import { registerAction } from "../registry";
 
 registerAction({
-  id: "my-action",                       // unique; built-ins are in RichDocumentActionId
-  label: "Do the thing",                 // string OR (ctx) => string for dynamic labels
+  id: "my-action", // unique; built-ins are in RichDocumentActionId
+  label: "Do the thing", // string OR (ctx) => string for dynamic labels
   icon: SomeLucideIcon,
-  iconColor: "text-blue-500 dark:text-blue-400",   // optional, preserves visual variety
-  category: "save",                      // feedback|copy|export|save|edit|share|creator|app|admin
-  supportedSources: "*",                 // or ["chat-message", "note", ...]
-  renderSlot: "overflow",                // "primary" (inline) | "overflow" (⋯) | "both"
+  iconColor: "text-blue-500 dark:text-blue-400", // optional, preserves visual variety
+  category: "save", // feedback|copy|export|save|edit|share|creator|app|admin
+  supportedSources: "*", // or ["chat-message", "note", ...]
+  renderSlot: "overflow", // "primary" (inline) | "overflow" (⋯) | "both"
   order: 5,
-  visible: (ctx) => true,                // optional
-  disabled: (ctx) => false,              // optional; return { reason } for a tooltip
+  visible: (ctx) => true, // optional
+  disabled: (ctx) => false, // optional; return { reason } for a tooltip
   run: async (ctx) => {
     // ctx: content, source, metadata, dispatch, isAuthenticated, isAdmin,
     //      isCreator, surfaceKey, instanceKey(prefix), sourceAdapter, callbacks, extensions
     await doSomething(ctx.content);
-    toast.success("Done");               // handlers OWN their toasts/dialogs
+    toast.success("Done"); // handlers OWN their toasts/dialogs
   },
 });
 ```
@@ -201,7 +207,7 @@ run: ({ dispatch, source, instanceKey }) =>
   })),
 ```
 
-The shape is `{ overlayId, data, instanceId }` — **not** `{ component, props }`. To add a *new* overlay, follow `features/overlays/FEATURE.md` (the 3-file process). Invoke the `overlay-system` skill.
+The shape is `{ overlayId, data, instanceId }` — **not** `{ component, props }`. To add a _new_ overlay, follow `features/overlays/FEATURE.md` (the 3-file process). Invoke the `overlay-system` skill.
 
 ---
 
@@ -221,9 +227,9 @@ The shape is `{ overlayId, data, instanceId }` — **not** `{ component, props }
 - **`"use client"` is mandatory** on anything rendering RichDocument; the engine is SSR-disabled.
 - **No `useMemo` / `useCallback` / `React.memo`** — the React Compiler is on. Refs are read only inside event handlers / effects, never during render (`react-hooks/refs`). Avoid impure calls (`Date.now()`) the `react-hooks/purity` rule flags.
 - **`renderer` has no `"auto"`.** The basic vs configurable engines preprocess differently; silent swaps diverge output. Default is the standard engine path; pick explicitly only when needed.
-- **Do NOT wrap engine-internal block renderers** (`ArtifactBlock`, `MarkdownPreviewBlock`, `StructuredPlanViewer`, anything in `components/mardown-display/`) in RichDocument — they run *inside* the engine, so wrapping recurses infinitely. The parent message/surface provides actions at the outer level.
+- **Do NOT wrap engine-internal block renderers** (`ArtifactBlock`, `MarkdownPreviewBlock`, `StructuredPlanViewer`, anything in `components/mardown-display/`) in RichDocument — they run _inside_ the engine, so wrapping recurses infinitely. The parent message/surface provides actions at the outer level.
 - **`MarkdownRenderer`** (`components/ai/MarkdownRenderer` and `components/mardown-display/MarkdownRenderer`) is a SEPARATE lightweight react-markdown primitive, not the heavy engine — out of scope; don't migrate those to RichDocument reflexively.
-- **The live chat bar is off-limits here.** `AssistantActionBar` + `messageActionRegistry.ts` (1.6k lines) still power chat and carry intricate chat-only behavior (fork-vs-delete dialog, local thumbs state, density hover, group aggregation, the per-conversation menu gate). RichDocument's handlers were *ported* from it and are equivalent for `chat-message`, but swapping the live bar is a supervised consolidation (plan Phase 4), not a casual change. Until then the duplication is intentional.
+- **The live chat bar is off-limits here.** `AssistantActionBar` + `messageActionRegistry.ts` (1.6k lines) still power chat and carry intricate chat-only behavior (fork-vs-delete dialog, local thumbs state, density hover, group aggregation, the per-conversation menu gate). RichDocument's handlers were _ported_ from it and are equivalent for `chat-message`, but swapping the live bar is a supervised consolidation (plan Phase 4), not a casual change. Until then the duplication is intentional.
 
 ---
 

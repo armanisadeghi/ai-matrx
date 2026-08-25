@@ -24,7 +24,7 @@
 
 On a mobile viewport (`useIsMobile()`) the shell renders a vaul `Drawer` instead of the Radix menus — a constant **70dvh** bottom sheet, one internal scroll area, iPhone-style **multi-tier drill-down** (tap a category → slide to its list with a Back button; the sheet height never changes). Triggered by **long-press** (480 ms, cancels on drag so text-selection/scroll still work) or the **floating selection icon**. `MobileMenuContent` reuses the EXACT same data hooks (`useUnifiedAgentContextMenu`, `useSurfaceBoundAgents`) and `useAgentLauncher`, resolving the SAME scope — so the agent menus (My / Org / System / Default) and the values that reach a launched agent are identical to desktop. Navigation is **path-based** (a list of submenu ids re-resolved against live `rootNodes` each render), so a page updates as agents finish loading or debug toggles, never a stale snapshot.
 
-Both renderers consume ONE `useContextMenuActions` hook (extracted 2026-07-21) — desktop and mobile behavior cannot drift; a launch-path or handler change lands in the hook once.
+Both renderers consume ONE `useContextMenuActions` hook (extracted 2026-07-21) — desktop and mobile behavior cannot drift; a launch-path or handler change lands in the hook once. **Nested triggers stop propagation on every open path, so the innermost eligible menu owns the gesture** (for example, a RichDocument preview inside the Notes editor).
 
 **The mobile shell attaches its handlers with NO wrapper element.** Desktop has always merged onto the child (Radix `ContextMenuTrigger asChild`); mobile now does the same through Radix `Slot` whenever `children` is a single non-Fragment element, composing (never clobbering) the child's own handlers and ref. The `display:contents` `<div>` survives ONLY as the multi-children/Fragment fallback. **A wrapper element is not always legal:** `display:contents` costs no layout box but is still a `<div>` in the DOM, and when the child is a `<tr>` (the canonical list shell wraps every row) that div sits between `<tbody>` and `<tr>` — which no element may do. React logged hydration errors on `/cms/html-pages` at mobile widths until the wrapper went away. The fallback is safe by construction: a Fragment or multi-child payload can never be a lone `<tr>`. Nested mobile triggers stop propagation after the native-text-menu guard, so the innermost row owns the long-press/contextmenu gesture instead of opening its surrounding list menu too.
 
@@ -360,6 +360,8 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 ---
 
 ## Change Log
+
+- `2026-08-25` — **Nested desktop menus now honor the innermost surface.** Desktop right-click stops propagation after the native-text-menu guard, matching mobile; a RichDocument preview nested inside an editable Notes menu now opens its content-specific menu instead of being covered by the outer editor menu.
 
 - `2026-08-25` — Added `/demos/context-menu/consolidation`, a deterministic review route that mounts the real transcript, task-checklist, candidate-profile, JSON Explorer, and Processor Extractor components; the canonical candidate profile now delegates item-scoped Copy/Agents through one v3 pane menu.
 

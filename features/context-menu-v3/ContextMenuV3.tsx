@@ -65,7 +65,6 @@ export { CANONICAL_MENU_VERSION_V3 };
 import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
 
-
 /**
  * Text-entry targets whose NATIVE menu we must never steal.
  *
@@ -381,7 +380,9 @@ export function ContextMenuV3({
   // right-click path (mousedown then contextmenu) is deliberate — re-resolving
   // is idempotent and keeps lazy configs fresh.
   const resolvePerTargetContext = (target: HTMLElement | null) => {
-    setResolvedContext(resolveContextOnOpen ? resolveContextOnOpen(target) : null);
+    setResolvedContext(
+      resolveContextOnOpen ? resolveContextOnOpen(target) : null,
+    );
   };
 
   // Shared capture — populates selection/content state from a right-click target
@@ -441,6 +442,11 @@ export function ContextMenuV3({
 
   const handleContextMenu = (e: React.MouseEvent) => {
     if (suppressed) return; // trigger is disabled; native menu shows
+    // Nested menus are deliberate (for example, RichDocument preview content
+    // inside the editable Notes surface). The innermost eligible trigger owns
+    // the gesture; otherwise both Radix roots open and the outer menu covers
+    // the content-specific one. This matches the mobile trigger contract.
+    e.stopPropagation();
     captureContext(e.target as HTMLElement, e.currentTarget as HTMLElement);
     setMenuOpen(true);
   };

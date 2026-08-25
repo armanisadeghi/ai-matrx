@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-07-14`
+**Last updated:** `2026-08-25`
 
 > **Skill**: [`.claude/skills/rich-document-actions/SKILL.md`](../../.claude/skills/rich-document-actions/SKILL.md) — the how-to for using RichDocument on a page, adding an action, adding a content source, and wiring a remote surface. Read the skill for tasks; read this FEATURE.md for deep reference.
 
@@ -19,20 +19,25 @@
 ## Entry points
 
 **Components**
+
 - `features/rich-document/RichDocument.tsx` — the wrapper. Use everywhere markdown content needs rich interactions. Marked `"use client"` because the underlying engine is `dynamic({ ssr: false })`.
 - `features/rich-document/RichDocumentActionSurface.tsx` — the remote-surface consumer. Renders the action set registered by a `RichDocument` with `actionsVariant="remote"`. Place this anywhere in the tree — header, sidebar, modal footer — and connect by `surfaceId`.
 - `features/rich-document/RichDocumentActionProvider.tsx` — **headless** sibling of `RichDocument`: registers the full action toolkit for a `surfaceId` WITHOUT rendering the content engine. Renders `null`; feed it `content` + `source`, render the toolbar via a `RichDocumentActionSurface`. For surfaces that draw their OWN content (the working document, custom editors) and want the toolbar available in **every** view mode — not just the one mode that happens to mount a `RichDocument`.
 
 **Hooks**
+
 - `features/rich-document/runtime/useActionSurfaceProvider.ts` — the shared registration brain: builds the live action context, resolves the action list, and runs the provider/bridge registration effects. Consumed by **both** `RichDocument` and the headless `RichDocumentActionProvider`, so there is one implementation, not two that drift.
 
 **Services**
+
 - `features/rich-document/actions/sources/*.ts` — per-source adapters. Today: `instanceKeyPrefix` only. Phase 1 wires `edit`, `delete`, `reRun`.
 
 **Redux slice(s)**
+
 - `features/rich-document/redux/actionSurfacesSlice.ts` — `richDocumentActionSurfaces` slice. Shape: `{ bySurfaceId: Record<string, RichDocumentSurfaceRegistration[]> }`. **No functions, no React elements, no live content** — all of those are held by the registering component in refs and looked up by id at render/invocation time. The slice is a pure router.
 
 **Action registry**
+
 - `features/rich-document/actions/registry.ts` — module-scope `Map<string, RichDocumentAction>`. Populated by handler modules at import time (Phase 1).
 
 ---
@@ -42,6 +47,7 @@
 This feature owns no database tables. It composes content originating elsewhere (`messages`, `notes`, `prompt_executions`, `artifacts`, `scraper_runs`).
 
 **Key types** (`features/rich-document/types.ts`)
+
 - `ContentSource` — discriminated union over `chat-message | note | prompt-result | artifact | scraper-result | working-document | raw`. The discriminator drives which adapter handles edit/delete, which actions are visible, and how overlay `instanceId`s are derived. `working-document` carries `{ conversationId, kind, documentId? }` — the per-conversation collaborative doc/scratchpad; its adapter persists edits through `persistWorkingDocumentContentThunk`, and `documentId` (the `cx_working_documents` backing) lets save-to-task link a parent.
 - `RichDocumentAction` — `{ id, label, icon, category, supportedSources, visible?, disabled?, run, renderSlot?, order?, requiresAuth? }`. Handler-side type.
 - `RichDocumentActionContext` — runtime context passed to every `run` / `visible` / `disabled`. Carries live `content`, `source`, `dispatch`, auth flags, callbacks, `instanceKey(prefix)`, and a discriminated `extensions` field for source-specific baggage (the chat-message variant holds `streamRequestId`, `contentHistoryCount`, `groupMessageIds`, etc.).
@@ -56,7 +62,8 @@ This feature owns no database tables. It composes content originating elsewhere 
 
 **Trigger** — `AgentAssistantMessage.tsx` mounts a `<RichDocument actionsVariant="bar" source={{type:"chat-message", messageId, conversationId}}/>` under an assistant turn after `isStreamActive` flips false.
 
-**Path** *(target architecture; current chat surface still uses `AssistantActionBar` pending Phase 4)*
+**Path** _(target architecture; current chat surface still uses `AssistantActionBar` pending Phase 4)_
+
 1. `RichDocument` resolves the action registry → list of `RichDocumentAction` for source type `chat-message`.
 2. Variant renderer (`variants/ActionBar.tsx`, Phase 2) splits primary (inline buttons: thumbs, copy, speaker, edit, ⋯) vs overflow (full menu).
 3. User clicks an action → variant looks up the handler by id from `registry.ts`, calls `run(buildContext(...))`.
@@ -71,6 +78,7 @@ This feature owns no database tables. It composes content originating elsewhere 
 **Trigger** — `WorkingDocumentPanel.tsx` mounts a headless `<RichDocumentActionProvider surfaceId={wdSurfaceId}/>` next to the custom editor body and renders `<RichDocumentActionSurface surfaceId={wdSurfaceId} variant="bar"/>` in its header. The live `/notes` route deliberately uses inline variants because its page header does not mount a remote consumer.
 
 **Path**
+
 1. The headless provider mounts. It generates a per-instance `providerId` via `useId()`. Its shared registration hook dispatches `registerProvider(surfaceId, registration)` — push onto the stack.
 2. The header's `RichDocumentActionSurface` selects `selectTopProvider("notes-detail-toolbar")` → reads `computedActionSpecs`.
 3. The surface renders the spec-list using the same variant renderer the inline `"bar"` variant would use. Click handlers look up the handler by id from the module-scope registry, then build a live context via the body's still-mounted refs (Phase 2 wires this).
@@ -85,6 +93,7 @@ This feature owns no database tables. It composes content originating elsewhere 
 **Trigger** — Notes consumer wants a "Open in floating window" action only on Notes.
 
 **Path**
+
 1. Consumer passes `actions={{ extra: [{id: "open-in-window", label, icon, category: "app", supportedSources: ["note"], run: ({dispatch, source, instanceKey}) => dispatch(openOverlay({overlayId: "noteWindow", instanceId: instanceKey("note-window"), data: {noteId: (source as Extract<ContentSource,{type:"note"}>).noteId}}))}]}}`.
 2. `resolveActions` includes it in the visible set alongside the built-ins.
 3. Click → `run` dispatches `openOverlay` with the standard shape.
@@ -114,13 +123,14 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
    without it, and never "fix" a firing by silencing the capture — the producer
    emitting the broken delimiter is the bug.
 10. **Raw-source `instanceKey` includes a content hash.** Two raw RichDocuments on the same page (e.g. multiple PromptToasts) need distinct overlay `instanceId`s. The hash is FNV-1a, 8 hex chars — collision-tolerable, deterministic, fast.
+11. **Right-click preserves `MENU_STRUCTURE`.** RichDocument delegates to context-menu v3, but converts its remaining registry actions through `buildMenuTree`; Edit/Creator/Admin/App stay named submenus inside the **Document** section instead of flattening into an anonymous surface section. Context-menu v3's own Compare verbs are excluded from the bridge so no duplicate Compare group appears. Nested triggers stop at the innermost eligible menu, so a preview inside an editor keeps its RichDocument actions. `MatrxSplit` enables the menu whenever `actionsSource` opts its preview into RichDocument.
 
 ---
 
 ## Related features
 
 - **Depends on:** `components/mardown-display/` (the content engine), `lib/redux/slices/overlaySlice.ts` (overlay dispatch), `features/overlays/` (overlay registration), `components/icons/tap-buttons` (button primitives for inline variants), `features/tts/components/StreamingSpeakerButton` (TTS inline button), `features/notes/service/notesApi` (save-to-notes), `features/code-files/service/codeFilesApi` (save-to-code), `features/tasks/redux/taskAssociationsSlice` (save-to-task).
-- **Depended on by:** *(post-migration)* `features/agents/components/messages-display/assistant/AgentAssistantMessage.tsx`, `features/notes/components/*Preview*`, `features/prompts/components/results-display/*`, `components/socket-io/presets/preset-manager/responses/admin-tabs/*`, `features/scraper/parts/recipes/*`, and ~25 more consumer sites.
+- **Depended on by:** _(post-migration)_ `features/agents/components/messages-display/assistant/AgentAssistantMessage.tsx`, `features/notes/components/*Preview*`, `features/prompts/components/results-display/*`, `components/socket-io/presets/preset-manager/responses/admin-tabs/*`, `features/scraper/parts/recipes/*`, and ~25 more consumer sites.
 - **Cross-links:** `features/overlays/FEATURE.md` (overlay registration contract), `components/mardown-display/chat-markdown/REACT_RENDER_CONTRACT.md` (engine block protocol), `components/mardown-display/GUIDE.md` (engine event-mode vs legacy-mode).
 
 ---
@@ -130,12 +140,14 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 > Required by [PRINCIPLES.md](../../PRINCIPLES.md). The artifact is disposable; the platform is the product.
 
 **Primitives reused** — every type, component, slice, hook, and service this feature consumes from elsewhere.
+
 - Types: `AppDispatch` (`lib/redux/store.ts`), `RootState` (`lib/redux/rootReducer.ts`), `ServerProcessedBlock` (`components/mardown-display/chat-markdown/EnhancedChatMarkdown`), `TypedStreamEvent` (`components/mardown-display/chat-markdown/types`).
 - Components: `MarkdownStream` (`components/MarkdownStream`) — the content engine, dynamically imported.
-- Redux slices / selectors: dispatches `openOverlay` / `closeOverlay` from `lib/redux/slices/overlaySlice`; subscribes to `state.userAuth.id` and `state.userAuth.isAdmin`. *(Phase 1+)* dispatches `editMessage`, `deleteMessage`, `forkConversation` from `features/agents/redux/execution-system/message-crud/*` via the chat-message source adapter; calls `NotesAPI.update` via the note adapter; etc.
+- Redux slices / selectors: dispatches `openOverlay` / `closeOverlay` from `lib/redux/slices/overlaySlice`; subscribes to `state.userAuth.id` and `state.userAuth.isAdmin`. _(Phase 1+)_ dispatches `editMessage`, `deleteMessage`, `forkConversation` from `features/agents/redux/execution-system/message-crud/*` via the chat-message source adapter; calls `NotesAPI.update` via the note adapter; etc.
 - Hooks: `useAppDispatch` / `useAppSelector` (`lib/redux/hooks`), `useId` (React 19), `useRef` / `useLayoutEffect` / `useEffect` (React).
 
 **Primitives introduced** — every new type, component, slice, or hook this feature added.
+
 - `RichDocument` component (`features/rich-document/RichDocument.tsx`) — why a new component: nothing in the codebase pairs the content engine with a generalized action surface. Considered extending `MarkdownStream` directly; rejected because it's already a dynamic shell over a heavy implementation, adding action-surface concerns there would mix the rendering and interaction layers and break the 30+ existing usages that want bare rendering.
 - `RichDocumentActionSurface` component (`features/rich-document/RichDocumentActionSurface.tsx`) — why a new component: no existing primitive renders a portaled action set from a remote location-by-id. The overlay system has a single mount and isn't designed for "render here, content lives there" inversion.
 - `RichDocumentActionProvider` component + `useActionSurfaceProvider` hook (`features/rich-document/RichDocumentActionProvider.tsx`, `runtime/useActionSurfaceProvider.ts`) — why new: `RichDocument` coupled the toolkit to the content engine, so a surface that drew its own content (the working document, with five editor modes) could only get the toolbar in the one mode that mounted a `RichDocument`. Extracted the registration brain into the hook, reused it headless. Considered rendering a hidden `RichDocument` to register — rejected: it would double-render the heavy `MarkdownStream` engine off-screen.
@@ -152,17 +164,17 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 
 **Phase map:**
 
-| Phase | Scope | Status |
-|---|---|---|
-| 0 | Foundations: feature dir, FEATURE.md, types, registry skeleton, surface slice (registered), empty RichDocument + RichDocumentActionSurface shells | ✅ Done |
-| 1 | Move handlers from `messageActionRegistry.ts` into `features/rich-document/actions/handlers/*.ts`, tagged with `supportedSources`. Old file re-exports. | ✅ Done |
-| 2 | Build inline variants (`ActionBar`, `MiniActionBar`, `OverflowMenu`, `HoverMenu`) + module-scope provider bridge so `RichDocumentActionSurface` can invoke handlers without functions in Redux. | ✅ Done |
-| 3 | Wrapping-parity gate on PromptToast — vanilla content, no interactive blocks, isolates wrapper from registry. Exercises the remote-surface pattern end-to-end. | ✅ Done |
-| 4 | Chat parity migration — replace `AssistantActionBar` | ⏸ Deferred — chat already has the action toolkit via `AssistantActionBar`; migration is consolidation only. Specced in detail in the master plan; revisit when consolidation is the priority. |
-| 5 | Notes uplift — preview surfaces (desktop NoteEditor preview, NoteEditorCore preview, MobileNoteEditor preview). | ✅ Done. The live Notes route uses inline variants in preview and MatrxSplit; its decluttered page header intentionally does not host a remote action surface. |
-| 6 | Tier-2 surfaces — PromptInlineOverlay, PromptExecutionTestModal (3 result panes), WebResearchOverlay (2 panes). | ✅ Done |
-| 7 | Long tail — scoped down: block-level renderers (ArtifactBlock, MarkdownPreviewBlock, StructuredPlanViewer) intentionally stay on `BasicMarkdownContent` (they live INSIDE the engine; wrapping with RichDocument would recurse). Socket admin tabs deliberately keep `BasicMarkdownContent` because they're A/B-comparison renderer tools — adding the wrapper defeats the comparison. Flashcards / AI modals use `MarkdownRenderer` (a separate, lightweight primitive — not the heavy engine), out of scope. | ✅ Done (scope-clarified) |
-| 8 | Cleanup — delete `messageActionRegistry.ts` shim, delete `AssistantActionBar.tsx`, audit remaining `BasicMarkdownContent` imports | ⏸ Blocked on Phase 4 |
+| Phase | Scope                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Status                                                                                                                                                                                        |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | Foundations: feature dir, FEATURE.md, types, registry skeleton, surface slice (registered), empty RichDocument + RichDocumentActionSurface shells                                                                                                                                                                                                                                                                                                                                                              | ✅ Done                                                                                                                                                                                       |
+| 1     | Move handlers from `messageActionRegistry.ts` into `features/rich-document/actions/handlers/*.ts`, tagged with `supportedSources`. Old file re-exports.                                                                                                                                                                                                                                                                                                                                                        | ✅ Done                                                                                                                                                                                       |
+| 2     | Build inline variants (`ActionBar`, `MiniActionBar`, `OverflowMenu`, `HoverMenu`) + module-scope provider bridge so `RichDocumentActionSurface` can invoke handlers without functions in Redux.                                                                                                                                                                                                                                                                                                                | ✅ Done                                                                                                                                                                                       |
+| 3     | Wrapping-parity gate on PromptToast — vanilla content, no interactive blocks, isolates wrapper from registry. Exercises the remote-surface pattern end-to-end.                                                                                                                                                                                                                                                                                                                                                 | ✅ Done                                                                                                                                                                                       |
+| 4     | Chat parity migration — replace `AssistantActionBar`                                                                                                                                                                                                                                                                                                                                                                                                                                                           | ⏸ Deferred — chat already has the action toolkit via `AssistantActionBar`; migration is consolidation only. Specced in detail in the master plan; revisit when consolidation is the priority. |
+| 5     | Notes uplift — preview surfaces (desktop NoteEditor preview, NoteEditorCore preview, MobileNoteEditor preview).                                                                                                                                                                                                                                                                                                                                                                                                | ✅ Done. The live Notes route uses inline variants in preview and MatrxSplit; its decluttered page header intentionally does not host a remote action surface.                                |
+| 6     | Tier-2 surfaces — PromptInlineOverlay, PromptExecutionTestModal (3 result panes), WebResearchOverlay (2 panes).                                                                                                                                                                                                                                                                                                                                                                                                | ✅ Done                                                                                                                                                                                       |
+| 7     | Long tail — scoped down: block-level renderers (ArtifactBlock, MarkdownPreviewBlock, StructuredPlanViewer) intentionally stay on `BasicMarkdownContent` (they live INSIDE the engine; wrapping with RichDocument would recurse). Socket admin tabs deliberately keep `BasicMarkdownContent` because they're A/B-comparison renderer tools — adding the wrapper defeats the comparison. Flashcards / AI modals use `MarkdownRenderer` (a separate, lightweight primitive — not the heavy engine), out of scope. | ✅ Done (scope-clarified)                                                                                                                                                                     |
+| 8     | Cleanup — delete `messageActionRegistry.ts` shim, delete `AssistantActionBar.tsx`, audit remaining `BasicMarkdownContent` imports                                                                                                                                                                                                                                                                                                                                                                              | ⏸ Blocked on Phase 4                                                                                                                                                                          |
 
 ---
 
@@ -170,6 +182,7 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
 
 Newest first.
 
+- `2026-08-25` — codex: **Restored the complete RichDocument right-click hierarchy in nested editors.** The shared context-menu trigger now lets the innermost preview own desktop right-click, `MatrxSplit` enables that menu when `actionsSource` opts into RichDocument, and RichDocument converts non-core registry actions through `buildMenuTree` inside a named Document section, restoring Edit content, full-screen editor, and the App subgroup without duplicating handlers or Compare verbs.
 - `2026-07-26` — claude: **Runaway-delimiter guard (the "big red text" bug).** A single stray `$$` in an answer made remark-math swallow ~400 chars of prose into a math node; `rehype-katex` then rendered it through its built-in error fallback (`<span class="katex-error" style="color:#cc0000">`), which our display-math `font-size: 1.5em` rule blew up into a wall of red unrendered markdown. New shared primitive `lib/markdown/delimiter-guard.ts` neutralizes runaway `$$` and `[` openers (zero-width-space split / character reference) while leaving genuine math and links untouched, and reports every firing to the Error Inspector (`markdown-delimiters`). Wired into `BasicMarkdownContent`, `ConfigurableMarkdownContent`, `MarkdownWithPlugins`, and the file-preview markdown renderer.
 - `2026-07-14` — codex: **Removed the orphaned `/notes` remote publisher (D47).** The Notes page had intentionally removed its header `RichDocumentActionSurface` but still passed `note-detail-*` into `NoteContentEditor`, forcing preview/split actions into `remote` mode with no consumer. `NotesView` now omits the remote ID, restoring the canonical inline `bar` in preview and `icon-only` menu in MatrxSplit. Remote-surface documentation now uses the live headless working-document integration and explicitly requires a mounted matching consumer.
 - `2026-07-08` — claude: **HTML-preview save-back works on every editable source (D33).** The `html-preview` action (`actions/handlers/export.ts`) now registers a `createFullScreenEditorCallbackGroup` whose `onSave` routes through `ctx.sourceAdapter.edit` and passes only the `callbackGroupId` string through Redux — the `htmlPreview` overlay is callback-aware (see `features/overlays/FEATURE.md`). Saving from an HTML preview opened on a note (or any source whose adapter implements `edit`) persists; chat keeps its `editMessage` self-handle when no group is passed; read-only sources get no Save button; failures toast + console.error, never silent. The generic `ContentActionBar` html-preview item honors its `onSave` prop the same way.

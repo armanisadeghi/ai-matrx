@@ -25,6 +25,7 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
+import { FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resolveActions } from "./actions/registry";
 // Side-effect import — registers every built-in action handler at module load.
@@ -36,10 +37,14 @@ import { useActionSurfaceProvider } from "./runtime/useActionSurfaceProvider";
 import { ActionBar } from "./variants/ActionBar";
 import { MiniActionBar } from "./variants/MiniActionBar";
 import { MenuVariant } from "./variants/MenuVariant";
+import { buildMenuTree } from "./variants/shared/menuStructure";
 // The UNIVERSAL context menu (v3) — the light shell; MenuContent stays lazy
 // inside it, so this static import costs nothing until the user right-clicks.
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
 import type {
   ContentSource,
   RichDocumentAction,
@@ -174,9 +179,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
       variantNode = <ActionBar actions={resolvedActions} getCtx={getCtx} />;
       break;
     case "mini-bar":
-      variantNode = (
-        <MiniActionBar actions={resolvedActions} getCtx={getCtx} />
-      );
+      variantNode = <MiniActionBar actions={resolvedActions} getCtx={getCtx} />;
       break;
     case "menu":
     case "icon-only":
@@ -202,8 +205,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         actionsPosition === "top-left" && "left-1 top-1",
         actionsPosition === "middle-right" &&
           "right-1 top-1/2 -translate-y-1/2",
-        actionsPosition === "middle-left" &&
-          "left-1 top-1/2 -translate-y-1/2",
+        actionsPosition === "middle-left" && "left-1 top-1/2 -translate-y-1/2",
       )
     : null;
 
@@ -288,35 +290,57 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
         a.category !== "copy" &&
         a.category !== "export" &&
         a.category !== "save" &&
-        a.id !== "save-as-file",
+        a.id !== "save-as-file" &&
+        // Context-menu v3 already owns these three Compare verbs. Ferrying
+        // their RichDocument twins creates a second Compare submenu.
+        ![
+          "compare-with-clipboard",
+          "set-compare-base",
+          "compare-with-base",
+        ].includes(a.id),
     );
     const extraActions = [
       ...registryRest,
       ...(actionsProp?.extra ?? []),
       ...(cmOptions.extra ?? []),
     ];
+    const toContextMenuItem = (
+      action: RichDocumentAction,
+    ): ContextMenuExtraItem => {
+      const label =
+        typeof action.label === "function" ? action.label(ctx) : action.label;
+      const disabledResult = action.disabled?.(ctx);
+      return {
+        kind: "item",
+        id: action.id,
+        label,
+        icon: action.icon,
+        disabled:
+          typeof disabledResult === "object" ? true : Boolean(disabledResult),
+        onSelect: () => void action.run(getCtx()),
+      };
+    };
+    const extraTree = buildMenuTree(extraActions);
+    const extraItems: ContextMenuExtraItem[] = [
+      ...extraTree.topLevel.map(toContextMenuItem),
+      ...extraTree.submenus.map((submenu) => ({
+        kind: "submenu" as const,
+        id: `rich-doc-${submenu.label.toLowerCase().replaceAll(" ", "-")}`,
+        label: submenu.label,
+        icon: submenu.icon,
+        children: submenu.actions.map(toContextMenuItem),
+      })),
+      ...extraTree.extras.map(toContextMenuItem),
+    ];
     const extraSections: ContextMenuExtraSection[] =
-      extraActions.length > 0
+      extraItems.length > 0
         ? [
             {
               id: "rich-doc-extra",
+              label: "Document",
+              icon: FileText,
               anchor: "after-compare",
-              items: extraActions.map((a) => {
-                const label =
-                  typeof a.label === "function" ? a.label(ctx) : a.label;
-                const disabledResult = a.disabled?.(ctx);
-                return {
-                  kind: "item" as const,
-                  id: a.id,
-                  label,
-                  icon: a.icon,
-                  disabled:
-                    typeof disabledResult === "object"
-                      ? true
-                      : Boolean(disabledResult),
-                  onSelect: () => void a.run(getCtx()),
-                };
-              }),
+              items: extraItems,
             },
           ]
         : [];
