@@ -16,6 +16,7 @@ import type { UnknownAction } from "@reduxjs/toolkit";
 import { toast } from "@/lib/toast";
 
 import { callApi } from "@/lib/api/call-api";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import type { RootState } from "@/lib/redux/store";
 
 /**
@@ -30,10 +31,12 @@ export const reloadAiCatalog = (): ThunkAction<
   UnknownAction
 > => {
   return async (dispatch) => {
+    const organizationId = await resolveSystemOrgId();
     const result = await dispatch(
       callApi({
         path: "/admin/ai-catalog/reload",
         method: "POST",
+        scopeOverrides: { organization_id: organizationId },
       }),
     );
     if (result.error) {

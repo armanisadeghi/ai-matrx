@@ -55,7 +55,7 @@ release-audit coverage.
 **Services**
 
 - `features/ai-models/service.ts` — `aiModelService`: client-side CRUD (`fetchAll`, `create`, `update`, `remove`, `bulkPatchField`, `patchField`), provider-cache ops, usage lookup (`fetchUsage` across `agent.definition`/`agent.template`), and deprecation-migration helpers (`replaceModelIn*`). `fetchAll` merges editable `ai.model_definition` rows with the preferred-offering price from `public.admin_model_catalog()`; the model table NEVER reads or edits a retired model-level pricing column. `public.prompts`/`prompt_builtins` are graveyarded — `fetchUsage`/`replaceModelInPrompts` treat that leg as a no-op (0 rows, intentional). Also: `fetchAllProviders`/`createProvider`/`updateProvider`/`deleteProvider`, `fetchEndpoints`/`createEndpoint`/`updateEndpoint`/`deleteEndpoint`, `fetchApis`/`createApi`/`updateApi`/`deleteApi`, `fetchOfferings`/`createOffering`/`updateOffering`/`deleteOffering`/`fetchModelOfferingView`, `fetchSettings`/`createSetting`/`updateSetting`/`deleteSetting`, `fetchAliases`/`createAlias`/`updateAlias`/`deleteAlias`, and `fetchModelConfig(modelId)` (the resolved `ai.model_config` row) — full CRUD for the catalog's other tables/views.
-- `features/ai-models/catalogReload.ts` — `reloadAiCatalog()` thunk → `POST /admin/ai-catalog/reload` via `callApi`. EVERY rule-editing save (api rules, offering override) dispatches it; the aidream brain caches the catalog and stays stale otherwise.
+- `features/ai-models/catalogReload.ts` — `reloadAiCatalog()` thunk → `POST /admin/ai-catalog/reload` via `callApi`, explicitly scoped to `resolveSystemOrgId()` because this is a platform-catalog operation independent of the admin's active organization. EVERY rule-editing save (api rules, offering override) dispatches it; the aidream brain caches the catalog and stays stale otherwise.
 - `features/ai-models/server/ai-models-server.ts` — `fetchAIModels()` (React-cached server reader for SSR shells)
 
 **Redux slice**
@@ -200,6 +200,8 @@ Phase D (2026-07-10) is DONE: the resolution layer (`ai.resolve_model_config` + 
 ---
 
 ## Change log
+
+- `2026-08-25` — Bound `reloadAiCatalog()` to the platform system organization so catalog edits reload the live backend even when the admin has no active organization selected; added a forcing thunk test for the request scope and loud failure path.
 
 - `2026-08-25` — **Made the admin model registry usable below desktop width.** The filter/title bar now exposes the one semantic `h1`, wraps instead of clipping, keeps phone inputs at zoom-safe sizing, and preserves touch-sized controls. The comparison table gives an explicit horizontal-scroll cue, freezes Display Name and Actions through tablet widths, and keeps row actions visible without hover so model identity and operations remain reachable at 820 px and 390 px.
 
