@@ -7,22 +7,24 @@
  * already does this for chat/agent content. These helpers are the lightweight
  * equivalent for a raw string:
  *
- *   splitMatrxFences(text)   → ordered [text | envelope] segments (render with
+ *   splitMatrxFences(text)   → ordered [text | directive] segments (render with
  *                              `<TextWithReferences>`, never hand-rolled)
  *   summarizeMatrxText(text) → a one-line plain-text summary with each fence
  *                              collapsed to its human label ("Note: Hosting")
  *   buildFencesFromAttachments(refs) → the fence string(s) an authoring surface
  *                              appends to a message it is about to send
  *
- * Fail-safe by the protocol rule (docs/protocol/MATRX_REFERENCES.md): the gate
- * is `matrx_version` presence; anything that does not parse stays verbatim text.
+ * Fail-safe by the protocol rule: the gate is the ONE decoder
+ * (`features/content-ir/directives/decode`) — a reserved `__kind` slug, or a
+ * stored 4-key fence it translates. Anything it does not recognize stays
+ * verbatim text; nothing is ever dropped.
  */
 
 import {
-  isMatrxEnvelope,
-  type MatrxEnvelope,
-  type ReferenceItem,
-} from "@/features/matrx-envelope/envelope";
+  type DecodedDirective,
+  tryDecodeDirective,
+} from "@/features/content-ir/directives/decode";
+import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 import { buildReferenceFence } from "@/features/matrx-envelope/referenceFence";
 import {
   referenceCellSummary,
@@ -34,12 +36,11 @@ const matrxFenceRe = (): RegExp => /```matrx[ \t]*\r?\n([\s\S]*?)\r?\n```/g;
 
 export type MatrxTextSegment =
   | { kind: "text"; text: string }
-  | { kind: "envelope"; envelope: MatrxEnvelope };
+  | { kind: "directive"; directive: DecodedDirective };
 
-function tryParseEnvelope(raw: string): MatrxEnvelope | null {
+function tryParseDirective(raw: string): DecodedDirective | null {
   try {
-    const parsed: unknown = JSON.parse(raw);
-    return isMatrxEnvelope(parsed) ? parsed : null;
+    return tryDecodeDirective(JSON.parse(raw));
   } catch {
     return null;
   }
@@ -58,12 +59,12 @@ export function splitMatrxFences(text: string): MatrxTextSegment[] {
   let cursor = 0;
   for (const match of text.matchAll(matrxFenceRe())) {
     const start = match.index ?? 0;
-    const envelope = tryParseEnvelope(match[1] ?? "");
-    if (!envelope) continue; // leave the raw fence inside the surrounding text
+    const directive = tryParseDirective(match[1] ?? "");
+    if (!directive) continue; // leave the raw fence inside the surrounding text
     if (start > cursor) {
       segments.push({ kind: "text", text: text.slice(cursor, start) });
     }
-    segments.push({ kind: "envelope", envelope });
+    segments.push({ kind: "directive", directive });
     cursor = start + match[0].length;
   }
   if (cursor < text.length) {
@@ -72,18 +73,16 @@ export function splitMatrxFences(text: string): MatrxTextSegment[] {
   return segments;
 }
 
-/** True when the string carries at least one parseable ```matrx envelope. */
+/** True when the string carries at least one decodable ```matrx fence. */
 export function hasMatrxFence(text: string | null | undefined): boolean {
   if (!text) return false;
-  return splitMatrxFences(text).some((s) => s.kind === "envelope");
+  return splitMatrxFences(text).some((s) => s.kind === "directive");
 }
 
-function envelopeSummary(envelope: MatrxEnvelope): string {
-  const type = String(envelope.type);
-  const items = Array.isArray(envelope.items)
-    ? (envelope.items as unknown as ReferenceItem[])
-    : [];
-  if (envelope.kind !== "reference" || items.length === 0) {
+function directiveSummary(directive: DecodedDirective): string {
+  const type = directive.noun;
+  const items = directive.items as unknown as ReferenceItem[];
+  if (directive.directiveClass !== "reference" || items.length === 0) {
     return `${referenceTypeLabel(type)}`;
   }
   return referenceCellSummary({ type, items });
@@ -97,7 +96,7 @@ function envelopeSummary(envelope: MatrxEnvelope): string {
 export function summarizeMatrxText(text: string | null | undefined): string {
   if (!text) return "";
   return splitMatrxFences(text)
-    .map((s) => (s.kind === "text" ? s.text : envelopeSummary(s.envelope)))
+    .map((s) => (s.kind === "text" ? s.text : directiveSummary(s.directive)))
     .join(" ")
     .replace(/\s+/g, " ")
     .trim();

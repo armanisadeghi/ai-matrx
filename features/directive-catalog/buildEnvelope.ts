@@ -1,12 +1,14 @@
 /**
- * Directive Catalog — (verb, noun) → canonical Matrx envelope.
+ * Directive Catalog — (verb, noun) → the canonical Kind Directive shell.
  *
  * The builder's core. Given a chosen verb + noun + the admin-typed item fields,
- * produce the exact `{ matrx_version, kind, type, items }` envelope the backend
- * understands:
+ * produce the exact two-key shell the backend understands:
  *
- *   - reference / view  → kind:"reference", type:"<noun>"   (a pure read)
- *   - create/update/delete → kind:"output_directive", type:"<verb>:<noun>"  (a side effect)
+ *   { "__kind": "directive_v1_<verb>_<noun>", "items": [ … ] }
+ *
+ * The verb IS the class, so the read-vs-write split that used to pick between
+ * two different `kind` words and two different `type` spellings is now a fact
+ * the slug carries. Capability is derived from the class, never restated here.
  *
  * Identity-field requirements for the `reference`/`view` path are read from the
  * canonical reference taxonomy (`features/matrx-envelope/`) so this never forks
@@ -16,9 +18,10 @@
  */
 
 import {
-  MATRX_VERSION,
-  type MatrxEnvelope,
-} from "@/features/matrx-envelope/envelope";
+  type KindDirectiveShell,
+  buildDirectiveSlug,
+  buildKindDirective,
+} from "@/features/content-ir/directives/grammar";
 import type {
   DirectiveVerb,
   NounDirectives,
@@ -176,25 +179,15 @@ export function buildDirectiveEnvelope(
   verb: DirectiveVerb,
   noun: string,
   fields: Record<string, string>,
-): MatrxEnvelope {
+): KindDirectiveShell {
   const item: Record<string, string> = {};
   for (const [k, v] of Object.entries(fields)) {
     if (typeof v === "string" && v.trim().length > 0) item[k] = v.trim();
   }
 
-  if (isReferenceVerb(verb)) {
-    return {
-      matrx_version: MATRX_VERSION,
-      kind: "reference",
-      type: noun,
-      items: [item],
-    };
-  }
-
-  return {
-    matrx_version: MATRX_VERSION,
-    kind: "output_directive",
-    type: `${verb}:${noun}`,
-    items: [item],
-  };
+  // The verb IS the directive class — the catalog's five verbs are five of the
+  // eight, so there is no mapping table to keep in step. `buildDirectiveSlug`
+  // refuses anything outside the closed vocabulary rather than minting a slug
+  // nothing can route.
+  return buildKindDirective(buildDirectiveSlug(verb, noun), [item]);
 }

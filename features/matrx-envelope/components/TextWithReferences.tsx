@@ -32,7 +32,7 @@ export function TextWithReferences({
         segment.kind === "text" ? (
           <React.Fragment key={`t${i}`}>{segment.text}</React.Fragment>
         ) : (
-          <MatrxEnvelopeBlock key={`e${i}`} content={segment.envelope} />
+          <MatrxEnvelopeBlock key={`e${i}`} content={segment.directive.shell} />
         ),
       )}
     </span>

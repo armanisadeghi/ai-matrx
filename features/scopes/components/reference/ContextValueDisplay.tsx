@@ -18,9 +18,9 @@ import type { ReactNode } from "react";
 import { Ban, FileText, Mail, Phone, ExternalLink } from "lucide-react";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import {
-  MATRX_VERSION,
-  type MatrxEnvelope,
-} from "@/features/matrx-envelope/envelope";
+  buildDirectiveSlug,
+  buildKindDirective,
+} from "@/features/content-ir/directives/grammar";
 import { cn } from "@/utils/cn";
 import { parseReferenceCellValue } from "@/features/scopes/utils/referenceCell";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
@@ -189,15 +189,14 @@ export function ContextValueDisplay({
     if (parsed.items.length === 0) {
       return <EmptyState emptyLabel={emptyLabel} className={className} />;
     }
-    const envelope: MatrxEnvelope = {
-      matrx_version: MATRX_VERSION,
-      kind: "reference",
-      type: parsed.type,
-      items: parsed.items,
-    };
     return (
       <div className={className}>
-        <MatrxEnvelopeBlock content={envelope} />
+        <MatrxEnvelopeBlock
+          content={buildKindDirective(
+            buildDirectiveSlug("reference", parsed.type),
+            parsed.items,
+          )}
+        />
       </div>
     );
   }

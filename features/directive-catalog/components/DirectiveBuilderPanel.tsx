@@ -36,7 +36,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MATRX_VERSION } from "@/features/matrx-envelope/envelope";
+import {
+  buildDirectiveSlug,
+  buildKindDirective,
+} from "@/features/content-ir/directives/grammar";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import { getReferenceResolver } from "@/features/matrx-envelope/referenceResolvers";
 import { StateBadge } from "@/features/directive-catalog/components/StateCell";
@@ -183,12 +186,9 @@ export function DirectiveBuilderPanel({
     if (!nounName) return null;
     if (isReference)
       return buildDirectiveEnvelope(verb, nounName, currentReferenceFields);
-    return {
-      matrx_version: MATRX_VERSION,
-      kind: "output_directive" as const,
-      type: `${verb}:${nounName}`,
-      items: payloadOk ? [parsed.value] : [],
-    };
+    return buildKindDirective(buildDirectiveSlug(verb, nounName),
+      payloadOk ? [parsed.value] : [],
+    );
   }, [
     verb,
     nounName,
