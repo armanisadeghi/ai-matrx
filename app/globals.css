@@ -317,6 +317,28 @@
     }
   }
 
+  /* "Look here" — the ring a surface draws around an element it just took the
+     user to. Fades in, breathes twice, fades out; never loops, because an
+     attention cue that never stops stops being one. Consumed by
+     `lib/dom/flash-attention.ts`. */
+  @keyframes attention-ring {
+    0% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+    }
+    12% {
+      box-shadow: 0 0 0 4px hsl(var(--primary) / 0.45);
+    }
+    45% {
+      box-shadow: 0 0 0 6px hsl(var(--primary) / 0.18);
+    }
+    70% {
+      box-shadow: 0 0 0 4px hsl(var(--primary) / 0.4);
+    }
+    100% {
+      box-shadow: 0 0 0 10px hsl(var(--primary) / 0);
+    }
+  }
+
   @keyframes glow {
     0% {
       filter: drop-shadow(0 0 8px var(--glow-color))
@@ -532,6 +554,7 @@
   --animate-pizza: pulse 5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animate-pulse: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animate-slowPulse: slowPulse 5s ease-in-out infinite;
+  --animate-attention-ring: attention-ring 1.8s cubic-bezier(0.4, 0, 0.2, 1) 1;
   --animate-glow: glow 2s ease-in-out infinite alternate;
   --animate-glow-sweep: glow-sweep 3s ease-in-out infinite;
   --animate-slide-down: slide-down 0.5s ease-out;
@@ -679,6 +702,21 @@
 }
 .matrx-md-ol ol ol {
   list-style-type: lower-alpha;
+}
+
+/* The shared "look here" cue — see `lib/dom/flash-attention.ts`. Animation
+   only (box-shadow), never layout, so flashing an element cannot nudge the
+   page around it. */
+.matrx-attention-ring {
+  border-radius: var(--radius, 0.5rem);
+  animation: var(--animate-attention-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .matrx-attention-ring {
+    animation: none;
+    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.4);
+  }
 }
 
 .animate-slide-in-from-right {

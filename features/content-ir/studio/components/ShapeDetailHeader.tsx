@@ -15,17 +15,17 @@
 // A non-owner cannot edit this shape, so their agent action builds a NEW one
 // (still carrying this kind's context — "something like this one").
 //
-// "Edit Shape" only appears where it actually GOES somewhere. The owner
-// editor lives on the Preview route and is the first thing on that page, so
-// on Preview the button's whole job — take me to the editor — is already
-// done, and pressing it visibly did nothing (measured: the editor sits 56px
-// down at scrollTop 0). A control whose success looks identical to a broken
-// one IS a broken one, so it is hidden there and rendered on the other tabs,
-// where it genuinely navigates back to Preview and lands on the editor.
+// "Edit Shape" always ANSWERS. It used to be a plain `#shape-editor` href,
+// which is a hard no-op once that hash is in the URL — no navigation, no
+// hashchange, no scroll. Then it scrolled imperatively, which fixed the other
+// tabs but still read as dead on Preview, where the owner editor is already
+// the first thing on the page (measured: 56px down at scrollTop 0) so there
+// was nothing to scroll. A control whose success looks identical to a broken
+// one IS a broken one.
 //
-// (It was also a plain `#shape-editor` href, which is a hard no-op once that
-// hash is in the URL — no navigation, no hashchange, no scroll. It scrolls
-// imperatively now, so it works on every press, not just the first.)
+// It now reveals AND flashes the editor (`lib/dom/flash-attention.ts`), so
+// every press produces a visible answer: from another tab it navigates and
+// lands on it, and on Preview it rings the panel it is talking about.
 
 import {
   Boxes,
@@ -36,7 +36,8 @@ import {
   Pencil,
   Radio,
 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { revealAndFlash } from "@/lib/dom/flash-attention";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import type { Json } from "@/types/database.types";
 import {
@@ -71,15 +72,12 @@ export default function ShapeDetailHeader({
   emittedJsonSchema = null,
 }: ShapeDetailHeaderProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const { launch, launching } = useKindAgentLaunch(
     SHAPES_SURFACE_NAME,
     SHAPE_BUILDER_ROLE,
   );
 
   const detailHref = shapeDetailHref(kind);
-  // The owner editor is rendered by the Preview route only.
-  const editorIsOnThisPage = pathname === detailHref;
 
   // The owner editor lives on the Preview route only. On Preview, scroll to
   // it imperatively (idempotent — works on every click); from any other tab,
@@ -98,7 +96,7 @@ export default function ShapeDetailHeader({
       // animation never ticks. A real user never sees that. This button still
       // jumps because it is a one-shot "take me there" affordance that must
       // land even in a rAF-starved tab, and it has no animation to lose.
-      node.scrollIntoView({ behavior: "auto", block: "start" });
+      revealAndFlash(node, { behavior: "auto", block: "start" });
       return;
     }
     router.push(`${detailHref}#${SHAPE_EDITOR_ANCHOR_ID}`);
@@ -142,7 +140,7 @@ export default function ShapeDetailHeader({
         { name: "Schema", href: shapeSchemaHref(kind), icon: FileJson },
       ]}
       actions={
-        isOwnedByViewer && !editorIsOnThisPage
+        isOwnedByViewer
           ? [
               {
                 label: "Edit Shape",

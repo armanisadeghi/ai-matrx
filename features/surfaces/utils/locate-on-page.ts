@@ -6,18 +6,11 @@
  * The Surface Context window calls `locateSurfaceValueOnPage(name)` to scroll
  * the first match into view and flash a ring on every match — connecting the
  * declared contract to the visible UI. Pure DOM, no state layer; the
- * attribute's presence is the truth (no manifest field needed).
+ * attribute's presence is the truth (no manifest field needed). The highlight
+ * itself is the shared `flashAttention` cue, not a local ring.
  */
 
-const FLASH_CLASSES = [
-  "ring-2",
-  "ring-primary",
-  "ring-offset-2",
-  "ring-offset-background",
-  "rounded-md",
-  "transition-shadow",
-];
-const FLASH_MS = 2200;
+import { flashAttention } from "@/lib/dom/flash-attention";
 
 /* Chrome's smooth scroll is rAF-driven and finishes well inside this window for
    any realistic distance; the check below therefore never fires for a user. It
@@ -55,11 +48,9 @@ export function locateSurfaceValueOnPage(valueName: string): boolean {
     }
   }, SMOOTH_SETTLE_MS);
 
-  for (const el of matches) {
-    el.classList.add(...FLASH_CLASSES);
-    window.setTimeout(() => {
-      el.classList.remove(...FLASH_CLASSES);
-    }, FLASH_MS);
-  }
+  // ONE attention cue platform-wide — `lib/dom/flash-attention.ts`. A ring
+  // that looks different here than everywhere else would teach people two
+  // things instead of one.
+  for (const el of matches) flashAttention(el);
   return true;
 }
