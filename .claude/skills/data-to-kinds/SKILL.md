@@ -91,14 +91,19 @@ is the durable completion signal the orchestrator watches; it is only true once 
 
 0. **Map the blast radius FIRST — it gates the keep/drop tables.** You cannot ask Arman to
    approve dropping a field without knowing who reads it. Produce the full consumer set for the
-   family's existing slugs across **all four surfaces** and paste it into the ledger; the
+   family's existing slugs across **all five surfaces** and paste it into the ledger; the
    enumeration, the live counts, and the reason grep alone returns a clean wrong answer are in
    [`common-docs/operations/kind-conversion-board.md`](../../operations/kind-conversion-board.md)
    § four consumer surfaces — **read it, do not improvise this step**. In short: code (all repos)
-   is one surface; the other three are DB rows (`agent.mandate.output_kind`,
+   is one surface; the others are DB rows (`agent.mandate.output_kind`,
    `content_ir.kind_component`, `workflow.trigger.kind`), persisted history
    (`workflow.node_outcome`, `node_data_slot`, `hindsight.replay_step`, `kind_instance`/
-   `kind_example`), and generated artifacts (`.gen.ts`, compiled mirrors, matrx-extend). When
+   `kind_example`), and generated artifacts (`.gen.ts`, compiled mirrors, matrx-extend). **And a
+   FIFTH, found 2026-08-25 after four were called complete: DATABASE FUNCTIONS AND TRIGGERS** —
+   `pg_proc.prosrc`, where PL/pgSQL parses, validates, indexes and MINTS our shapes. No grep of any
+   repo returns a deployed function body, and `kind_consumers.py` reads DB rows, not function
+   source. A live example: `context.parse_reference_fence` returned NULL for the new shape while
+   `context.provision_scope_dataset` kept minting the old one — invisible to every other surface. When
    `scripts/kind_consumers.py` exists, run it and paste its output instead of hand-building the
    list. Register the family on the conversion board at G1/G2 before you go further.
 1. **Find the source's ONE engine and capture real data.** Locate the live client the nodes use
