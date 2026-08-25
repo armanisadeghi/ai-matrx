@@ -1,7 +1,7 @@
 import { humanizeKind } from "@/features/content-ir/kinds/kind-markdown-utils";
 import { formatKindSchemaVariable } from "@/features/content-ir/studio/kind-agent-intents";
 import type { KindComponentProjection } from "@/features/content-ir/registry/schema-source-kind-components";
-import { GENERIC_FALLBACK_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
+import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
 import { isKnownKindLoadingSlug } from "@/features/content-ir/react/loading/kind-loading-slugs";
 import type { Json } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
@@ -76,7 +76,7 @@ function realOutputRows(
     (row) =>
       row.platform === "web" &&
       row.role === "output" &&
-      row.componentKey !== GENERIC_FALLBACK_COMPONENT_KEY &&
+      row.componentKey !== GENERIC_STRUCTURED_COMPONENT_KEY &&
       (row.source !== "db" || Boolean(row.componentSource?.trim())),
   );
 }
@@ -99,7 +99,7 @@ export function buildShapeReadiness(
         row.platform === "web" &&
         row.role === "output" &&
         row.isActive &&
-        row.componentKey === GENERIC_FALLBACK_COMPONENT_KEY,
+        row.componentKey === GENERIC_STRUCTURED_COMPONENT_KEY,
     ) ?? null;
 
   const component: ShapeReadiness["component"] = activeCustom

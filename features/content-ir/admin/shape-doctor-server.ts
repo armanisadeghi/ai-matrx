@@ -50,6 +50,7 @@ import type {
   KindStatusBoardModel,
 } from "@/features/content-ir/admin/kind-detail-types";
 import { KIND_LOADING_SLUGS } from "@/features/content-ir/react/loading/kind-loading-slugs";
+import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
 import {
   artifactKindSlugsFromText,
   compiledKindSlugsFromText,
@@ -61,16 +62,16 @@ import {
 } from "@/features/content-ir/registry/shape-doctor-extract";
 
 /**
- * Keep the server-only doctor out of the React renderer package. These are the
- * two computed dispatch-table keys consumed by the source-text extractor;
- * importing @ai-matrx/content-ir-react here evaluates its client provider and
- * error-boundary graph during Next's server configuration pass.
- *
- * Equality with the renderer-owned constants is enforced by the same dispatch
- * extraction and Content IR tests that gate the registry.
+ * Keep the server-only doctor out of the React renderer package: importing
+ * @ai-matrx/content-ir-react here evaluates its client provider and
+ * error-boundary graph during Next's server configuration pass. The generic
+ * fallback key comes from the registry's server-safe mirror (no react, no
+ * module-eval side effects) so this file declares no second spelling of it;
+ * `db_kind_component` has no such mirror and stays a local literal, its
+ * equality enforced by the same dispatch extraction and Content IR tests that
+ * gate the registry.
  */
 const DB_KIND_COMPONENT_KEY = "db_kind_component";
-const GENERIC_STRUCTURED_COMPONENT_KEY = "generic_structured";
 
 // ─── Code-derived inputs (fs, loud-degrade) ─────────────────────────────────
 

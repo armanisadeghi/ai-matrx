@@ -29,6 +29,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   applyIrKindRoute,
   DB_KIND_COMPONENT_KEY,
+  GENERIC_STRUCTURED_COMPONENT_KEY,
   IR_ROUTE_KEY,
 } from "../react/kind-route";
 import {
@@ -38,6 +39,7 @@ import {
 } from "../registry/component-registry";
 import { getSystemComponentEntries } from "../registry/system-components";
 import {
+  GENERIC_STRUCTURED_COMPONENT_KEY as REGISTRY_GENERIC_STRUCTURED_COMPONENT_KEY,
   sortKindComponentRows,
   type KindComponentProjection,
 } from "../registry/schema-source-kind-components";
@@ -445,6 +447,14 @@ describe("staleness — refresh re-keys the compile cache", () => {
 });
 
 describe("deterministic db-row ordering", () => {
+  it("mirrors the renderer-owned fallback key without a second spelling", () => {
+    // ONE name platform-wide. The registry cannot import the react layer
+    // (import cycle), so it mirrors the literal; this pins the mirror.
+    expect(REGISTRY_GENERIC_STRUCTURED_COMPONENT_KEY).toBe(
+      GENERIC_STRUCTURED_COMPONENT_KEY,
+    );
+  });
+
   it("orders is_default DESC, sort_order ASC, created_at ASC, id ASC — equal-priority rows tie-break on created_at then id, never physical order", () => {
     const base = {
       is_default: false,

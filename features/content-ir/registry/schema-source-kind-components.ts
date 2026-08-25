@@ -67,14 +67,17 @@ export interface KindComponentProjection {
 }
 
 /**
- * THE generic fallback's component key. MUST equal
- * `GENERIC_STRUCTURED_COMPONENT_KEY` (@ai-matrx/content-ir-react) and
- * `content_ir.evaluate_kind_activation`'s render leg. The literal is
- * duplicated rather than imported for the same reason system-components.ts
- * duplicates it: importing it pulls this registry module into the react layer
- * and closes an import cycle.
+ * THE generic fallback's component key — the platform-wide ONE spelling.
+ * `@ai-matrx/content-ir-react` owns and exports this name (re-exported by
+ * react/kind-route.ts); every non-react module that cannot reach the react
+ * layer mirrors THE SAME NAME here, never a second one. This literal MUST
+ * equal the package's export and `content_ir.evaluate_kind_activation`'s
+ * render leg; it is mirrored rather than imported for the same reason
+ * system-components.ts mirrors it — importing it pulls this registry module
+ * into the react layer and closes an import cycle. Equality is pinned by
+ * `__tests__/db-kind-component.test.tsx`.
  */
-export const GENERIC_FALLBACK_COMPONENT_KEY = "generic_structured";
+export const GENERIC_STRUCTURED_COMPONENT_KEY = "generic_structured";
 
 /**
  * THE deterministic row order — the ingest contract (first row per (kind,
@@ -111,7 +114,7 @@ export function sortKindComponentRows<
   },
 >(rows: T[]): T[] {
   const fallbackOf = (r: T) =>
-    (r.component_key ?? r.componentKey) === GENERIC_FALLBACK_COMPONENT_KEY;
+    (r.component_key ?? r.componentKey) === GENERIC_STRUCTURED_COMPONENT_KEY;
   const defaultOf = (r: T) => Boolean(r.is_default ?? r.isDefault);
   const orderOf = (r: T) => r.sort_order ?? r.sortOrder ?? 0;
   const createdOf = (r: T) => r.created_at ?? r.createdAt ?? "";
