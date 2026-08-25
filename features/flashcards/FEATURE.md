@@ -177,12 +177,16 @@ own fresh conversation):
   [`data/enrichCardLane.ts`](./data/enrichCardLane.ts) (`enrichAndSaveCard`): generate →
   persist via `fcService.addDetail` → clear the D151 pending proposal, shared by the on-card
   button and the batch. **The batch:** set detail's "Enhance" (a modal LIST of every card you
-  scrolled and picked from — nonsense at 80 cards) is replaced by **Enrich all cards**, running
+  scrolled and picked from — nonsense at 80 cards) is replaced by **Enrich all cards** plus the
+  set-detail grid's existing multi-select for **Enrich selected**, running
   [`bulkEnrichRun.ts`](./components/set-detail/bulkEnrichRun.ts) (pure reducer + hook, shaped
   like `illustrateSetRun`) into [`BulkEnrichWindow`](./components/set-detail/BulkEnrichWindow.tsx):
-  a live "N of M cards enriched", cancellable (cancel stops the CURSOR; in-flight cards land and
-  are counted), per-card fault isolated, and a summary that names every bucket ("68 enriched, 2
-  failed, 10 already had layers"). Cards that already carry layers are skipped, never re-billed.
+  a live cascade of the real card fronts, backs, and registered `card_enrichment` kind output as
+  each layer streams in; an honest "N of M cards enriched" count; cancellation (cancel stops the
+  CURSOR; in-flight cards land and are counted); per-card fault isolation; and a summary that
+  names every bucket ("68 enriched, 2 failed, 10 already had layers"). In all-cards mode, cards
+  that already carry layers are skipped and never re-billed. An explicitly selected card is the
+  user's instruction to add more even when it already has layers, and the summary says so.
   Guarded ONCE for the batch on `education.card_enrichment`, committed per successful card;
   COPPA before billing. Per-card enrich/deepen still exists but is now initiated **from a
   specific card tile** (the tile's lamp icon), and the study surface's dialog is `modes=["deepen"]`

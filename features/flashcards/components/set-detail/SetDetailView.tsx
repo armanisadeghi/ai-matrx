@@ -34,6 +34,7 @@ import {
   Mic,
   Headphones,
   Merge,
+  MousePointerClick,
   Printer,
   Images,
   Loader2,
@@ -93,10 +94,11 @@ import { IllustrateSetWindow } from "./IllustrateSetWindow";
 import { BulkEnrichWindow } from "./BulkEnrichWindow";
 import {
   useBulkEnrichRun,
+  bulkEnrichActionLabel,
+  planBulkEnrich,
   summarizeBulkEnrichCounts,
 } from "./bulkEnrichRun";
 import {
-  cardHasDetailLayers,
   selectCardDetailLayers,
 } from "../../data/cardDetailLayers";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
@@ -505,12 +507,34 @@ export function SetDetailView({ setId }: { setId: string }) {
   /** Per-card "make this deeper", opened FROM a tile (never a modal list). */
   const [enhanceCard, setEnhanceCard] = useState<CardWithDetails | null>(null);
 
+  // F3 lives here now that every card kind is selectable: merge is offered
+  // only when the SELECTION is entirely text-mergeable (basic / cloze). A
+  // matching or formula card carries its structure in dynamic_content, which a
+  // front/back merge destroys silently.
+  const canMergeSelection =
+    selectedIds.size >= 2 &&
+    (data?.cards ?? [])
+      .filter((c) => selectedIds.has(c.id))
+      .every(
+        (c) =>
+          asCardKind(c.card_kind) === CARD_KIND.basic ||
+          asCardKind(c.card_kind) === CARD_KIND.cloze,
+      );
+
+  // ONE plan drives the button's words and the run's work, so the label can
+  // never promise cards the run won't touch. `planBulkEnrich` is the only place
+  // that decides: an explicit selection IS the plan (a picked card runs even if
+  // it already has layers); with no selection, every card that lacks layers.
+  const enrichPlan = planBulkEnrich(data?.cards ?? [], selectedIds);
+
   const runBulkEnrich = async (): Promise<void> => {
     if (!data) return;
     const cards = data.cards;
-    const todo = cards.filter((c) => !cardHasDetailLayers(c.details));
-    if (todo.length === 0) {
-      toast.info("Every card in this set already has detail layers.");
+    const selected = selectedIds.size > 0 ? selectedIds : null;
+    if (enrichPlan.todo.length === 0) {
+      toast.info(
+        "Every card in this set already has detail layers. Select the cards you want more on and run it again.",
+      );
       return;
     }
     if (!(await coppa.ensureAllowed())) return;
@@ -520,6 +544,7 @@ export function SetDetailView({ setId }: { setId: string }) {
       setBulkOpen(true);
       const outcome = await startBulkEnrich({
         cards,
+        selectedIds: selected,
         depth: "applied",
         onCardEnriched: async () => {
           await enrichGuard.commit();
@@ -900,7 +925,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                     ) : (
                       <Lightbulb className="mr-1.5 h-4 w-4" />
                     )}
-                    Enrich all cards
+                    {bulkEnrichActionLabel(enrichPlan)}
                   </Button>
                   {/* Limit shown BEFORE the action (TRUST mandate). */}
                   <EntitlementMeter capability="education.card_enrichment" />
@@ -1071,22 +1096,44 @@ export function SetDetailView({ setId }: { setId: string }) {
                 </div>
               ) : (
                 <>
-                  {/* WP3 gap 5 — merge near-duplicate cards (Arman asked for
-                      it by name). Selection is opt-in so a normal visit is
-                      unchanged; the bar states exactly what will happen. */}
+                  {/* ONE selection, several actions. WP3 gap 5 introduced this
+                      bar for merging; enrichment reuses the SAME `selectedIds`
+                      rather than forking a second selection UI — a user with 83
+                      cards who wants 10 enriched picks them here. Selection
+                      stays opt-in so a normal visit is unchanged, and the bar
+                      states exactly what each action will do. */}
                   {canEdit && (
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       {selecting ? (
                         <>
                           <span className="text-xs text-muted-foreground">
                             {selectedIds.size === 0
-                              ? "Pick the cards to merge"
+                              ? "Pick cards to enrich or merge"
                               : `${selectedIds.size} selected`}
                           </span>
                           <Button
                             size="sm"
+                            onClick={() => void runBulkEnrich()}
+                            disabled={
+                              selectedIds.size === 0 ||
+                              enrichGuard.isChecking ||
+                              bulkRun.phase === "running"
+                            }
+                            title="Add explanations, examples and memory tricks to just these cards — a card you pick is enriched even if it already has layers"
+                          >
+                            <Lightbulb className="mr-1.5 h-3.5 w-3.5" />
+                            Enrich selected ({selectedIds.size})
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => setMergeOpen(true)}
-                            disabled={selectedIds.size < 2}
+                            disabled={!canMergeSelection}
+                            title={
+                              canMergeSelection
+                                ? undefined
+                                : "Pick two or more basic or cloze cards to merge — other card kinds keep their structure in dynamic content, which a front/back merge would destroy"
+                            }
                           >
                             <Merge className="mr-1.5 h-3.5 w-3.5" />
                             Merge{" "}
@@ -1108,10 +1155,10 @@ export function SetDetailView({ setId }: { setId: string }) {
                           size="sm"
                           variant="outline"
                           onClick={() => setSelecting(true)}
-                          disabled={data.cards.length < 2}
+                          disabled={data.cards.length === 0}
                         >
-                          <Merge className="mr-1.5 h-3.5 w-3.5" />
-                          Merge cards
+                          <MousePointerClick className="mr-1.5 h-3.5 w-3.5" />
+                          Select cards
                         </Button>
                       )}
                     </div>
@@ -1123,14 +1170,13 @@ export function SetDetailView({ setId }: { setId: string }) {
                         card={card}
                         index={i}
                         mastery={masteryByCard[card.id]}
-                        // F3 — only TEXT-mergeable kinds: a matching/formula
+                        // Every kind is selectable, because every kind can be
+                        // ENRICHED. F3's text-mergeable restriction still holds
+                        // — it just moved to the Merge button, which judges the
+                        // selection (`canMergeSelection`): a matching/formula
                         // card's structure lives in dynamic_content, which a
                         // front/back merge would silently destroy.
-                        selectable={
-                          selecting &&
-                          (asCardKind(card.card_kind) === CARD_KIND.basic ||
-                            asCardKind(card.card_kind) === CARD_KIND.cloze)
-                        }
+                        selectable={selecting}
                         selected={selectedIds.has(card.id)}
                         onToggleSelected={() =>
                           setSelectedIds((prev) => {
@@ -1338,7 +1384,8 @@ export function SetDetailView({ setId }: { setId: string }) {
                             bulkRun.phase === "running"
                           }
                         >
-                          <Lightbulb className="mr-2 h-4 w-4" /> Enrich all cards
+                          <Lightbulb className="mr-2 h-4 w-4" />{" "}
+                          {bulkEnrichActionLabel(enrichPlan)}
                         </Button>
                       )}
                       {canEdit && (

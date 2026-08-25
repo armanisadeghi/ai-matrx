@@ -11,7 +11,6 @@ import {
   bulkEnrichProgressLabel,
   bulkEnrichSummary,
   reduceBulkEnrichRun,
-  toBulkEnrichProgressState,
   type BulkEnrichEvent,
   type BulkEnrichRunState,
 } from "../bulkEnrichRun";
@@ -19,13 +18,22 @@ import {
 const fold = (events: BulkEnrichEvent[]): BulkEnrichRunState =>
   events.reduce(reduceBulkEnrichRun, EMPTY_BULK_ENRICH_RUN);
 
+const layers = (count: number) =>
+  Array.from({ length: count }, (_, i) => ({
+    kind: "explanation",
+    text: `Layer ${i + 1}`,
+  }));
+
 const startOf = (n: number, alreadyEnriched = 0): BulkEnrichEvent => ({
   type: "start",
   depth: "applied",
   alreadyEnriched,
+  fromSelection: false,
   cards: Array.from({ length: n }, (_, i) => ({
     cardId: `c${i}`,
-    label: `Card ${i}`,
+    front: `Card ${i}`,
+    back: `Answer ${i}`,
+    reEnriched: false,
   })),
 });
 
@@ -33,7 +41,7 @@ describe("progress accounting", () => {
   it("counts only settled cards — an in-flight card is not 'enriched' yet", () => {
     const state = fold([
       startOf(80),
-      { type: "card_enriched", cardId: "c0", layersAdded: 3 },
+      { type: "card_enriched", cardId: "c0", layers: layers(3) },
       { type: "card_running", cardId: "c1" },
     ]);
     expect(bulkEnrichProgressLabel(state)).toBe("1 of 80 cards enriched");
@@ -46,7 +54,7 @@ describe("progress accounting", () => {
       state = reduceBulkEnrichRun(state, {
         type: "card_enriched",
         cardId: `c${i}`,
-        layersAdded: 2,
+        layers: layers(2),
       });
     }
     expect(bulkEnrichProgressLabel(state)).toBe("6 of 80 cards enriched");
@@ -57,7 +65,7 @@ describe("progress accounting", () => {
     const state = fold([
       startOf(2),
       { type: "card_running", cardId: "c0" },
-      { type: "card_enriched", cardId: "c0", layersAdded: 4 },
+      { type: "card_enriched", cardId: "c0", layers: layers(4) },
       { type: "card_running", cardId: "c1" },
       { type: "card_failed", cardId: "c1", error: "timeout" },
     ]);
@@ -74,7 +82,7 @@ describe("progress accounting", () => {
   it("never silently drops a card the plan didn't name", () => {
     const state = fold([
       startOf(1),
-      { type: "card_enriched", cardId: "ghost", layersAdded: 1 },
+      { type: "card_enriched", cardId: "ghost", layers: layers(1) },
     ]);
     expect(state.cards).toHaveLength(2);
     expect(bulkEnrichCounts(state).enriched).toBe(1);
@@ -86,8 +94,8 @@ describe("failure isolation", () => {
     const state = fold([
       startOf(3),
       { type: "card_failed", cardId: "c0", error: "The AI couldn't enrich this card." },
-      { type: "card_enriched", cardId: "c1", layersAdded: 3 },
-      { type: "card_enriched", cardId: "c2", layersAdded: 2 },
+      { type: "card_enriched", cardId: "c1", layers: layers(3) },
+      { type: "card_enriched", cardId: "c2", layers: layers(2) },
       { type: "finish" },
     ]);
     expect(state.phase).toBe("done");
@@ -104,8 +112,10 @@ describe("failure isolation", () => {
       { type: "card_failed", cardId: "c0", error: "rate limited" },
     ]);
     expect(state.cards[0].error).toBe("rate limited");
-    const items = toBulkEnrichProgressState(state, "Bio").items;
-    expect(items[0]).toMatchObject({ status: "failed", detail: "rate limited" });
+    expect(state.cards[0]).toMatchObject({
+      status: "failed",
+      error: "rate limited",
+    });
   });
 
   it("an agent with nothing to add is 'empty', not a failure", () => {
@@ -114,9 +124,7 @@ describe("failure isolation", () => {
     expect(counts.failed).toBe(0);
     expect(counts.empty).toBe(1);
     expect(counts.processed).toBe(1);
-    expect(toBulkEnrichProgressState(state, "Bio").items[0].status).toBe(
-      "completed",
-    );
+    expect(state.cards[0].status).toBe("empty");
   });
 });
 
@@ -124,10 +132,10 @@ describe("cancellation", () => {
   it("stops the cursor but still counts what already landed", () => {
     const state = fold([
       startOf(10),
-      { type: "card_enriched", cardId: "c0", layersAdded: 3 },
+      { type: "card_enriched", cardId: "c0", layers: layers(3) },
       { type: "card_running", cardId: "c1" },
       { type: "cancel" },
-      { type: "card_enriched", cardId: "c1", layersAdded: 2 },
+      { type: "card_enriched", cardId: "c1", layers: layers(2) },
       { type: "finish" },
     ]);
     expect(state.phase).toBe("cancelled");
@@ -157,7 +165,7 @@ describe("the end-of-run summary is the truth", () => {
       state = reduceBulkEnrichRun(state, {
         type: "card_enriched",
         cardId: `c${i}`,
-        layersAdded: 3,
+        layers: layers(3),
       });
     }
     for (let i = 68; i < 70; i++) {
@@ -176,7 +184,7 @@ describe("the end-of-run summary is the truth", () => {
   it("reports cards a cancel never reached instead of hiding them", () => {
     const state = fold([
       startOf(10),
-      { type: "card_enriched", cardId: "c0", layersAdded: 1 },
+      { type: "card_enriched", cardId: "c0", layers: layers(1) },
       { type: "cancel" },
       { type: "finish" },
     ]);
@@ -193,7 +201,7 @@ describe("reset", () => {
   it("returns to the idle run", () => {
     const state = fold([
       startOf(3),
-      { type: "card_enriched", cardId: "c0", layersAdded: 1 },
+      { type: "card_enriched", cardId: "c0", layers: layers(1) },
       { type: "reset" },
     ]);
     expect(state).toEqual(EMPTY_BULK_ENRICH_RUN);
