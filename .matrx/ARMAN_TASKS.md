@@ -15,7 +15,7 @@ _(none)_
 
 ### Restart the main Supabase database to release a signal-immune backend (P0)
 
-**Date / source:** 2026-08-25 (rechecked 07:07Z) · `supabase-postgrest` 57014
+**Date / source:** 2026-08-25 (rechecked 08:37Z) · `supabase-postgrest` 57014
 class on `/marketing/search-console` · 12 exact unresolved system-error IDs:
 `637011ab-d262-4362-bf1c-f4962498a1f0`,
 `d117aa73-5ec4-479b-a06a-b3941380d564`,
@@ -41,10 +41,14 @@ running an `_ip.row_versions` read in one transaction since
 `pg_terminate_backend(pid, 5000)` were attempted; the timed termination returned
 false and the backend remained active. A temporary one-statement `pg_cron`
 drop job also hit lock timeout and was unscheduled, so no patrol job remains.
-The 2026-08-25 07:07Z patrol recheck found the same transaction still active,
+The 2026-08-25 08:37Z direct live recheck found the same transaction still active,
 the index still `indisvalid=false`, and no index builder currently progressing.
-One bounded retry returned `pg_cancel_backend=true` but
+Another bounded retry returned `pg_cancel_backend=true` but
 `pg_terminate_backend(pid, 5000)=false`; the backend remained active.
+
+**Current-state clarification:** the database is not presently down. The stale
+backend and invalid index are still live now; the proposed brief outage is the
+recovery action, not a report of yesterday's completed outage.
 
 **Decision / action required:** choose one external-authority recovery:
 
