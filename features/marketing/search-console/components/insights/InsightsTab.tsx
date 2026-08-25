@@ -300,6 +300,8 @@ export function InsightsTab({
           <CannibalizationTable
             siteId={siteId}
             siteName={siteName}
+            brandId={brandId}
+            organizationId={organizationId}
             periods={periods}
             minImpressions={minImpressions}
             onDrill={onDrill}
@@ -340,6 +342,8 @@ export function InsightsTab({
           <TrendTable
             siteId={siteId}
             siteName={siteName}
+            brandId={brandId}
+            organizationId={organizationId}
             periods={periods}
             dimension={dimension}
             direction={active === "decay" ? "decay" : "growth"}
