@@ -5,6 +5,10 @@ let mockDbSegments: Array<Record<string, unknown>> = [];
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
+  // useRetainRequestForViewer (StreamAwareChatMarkdown) dispatches retention
+  // actions on mount; a noop dispatch keeps this render-path test focused on
+  // rendering.
+  useAppDispatch: () => () => undefined,
 }));
 
 jest.mock(

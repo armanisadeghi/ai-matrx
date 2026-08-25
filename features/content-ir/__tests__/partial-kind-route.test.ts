@@ -347,20 +347,50 @@ describe("a kind-bound agent's unfenced answer", () => {
     expect(new Set(counts).size).toBeGreaterThan(1);
   });
 
-  it("routes the provisional value into the REAL flashcards component", () => {
-    const withCards = rows.find((r) => {
+  it("routes the provisional value into the REAL flashcards component from the FIRST RENDERABLE UNIT", () => {
+    const hasRenderableCard = (r: (typeof rows)[number]) => {
       const value = (r.event.root as { value: Record<string, unknown> })?.value;
-      return r.event.state === "partial" && Array.isArray(value?.cards) && value.cards.length > 0;
+      return (
+        r.event.state === "partial" &&
+        Array.isArray(value?.cards) &&
+        (value.cards as Array<Record<string, unknown>>).some(
+          (card) => typeof card?.front === "string" && card.front !== "",
+        )
+      );
+    };
+
+    // Before the first card FACE exists, the bridge declines the frame — the
+    // kind's loader stays up (first-renderable-unit law, 2026-08-24). A frame
+    // with raw cards but no front yet is exactly such a too-thin frame.
+    const tooThin = rows.find((r) => {
+      const value = (r.event.root as { value: Record<string, unknown> })?.value;
+      return (
+        r.event.state === "partial" &&
+        Array.isArray(value?.cards) &&
+        value.cards.length > 0 &&
+        !hasRenderableCard(r)
+      );
     });
-    expect(withCards).toBeDefined();
-    const routed = resolveProvisionalKindRender(blockFor(withCards!.event), {
+    if (tooThin) {
+      expect(
+        resolveProvisionalKindRender(blockFor(tooThin.event), {
+          streamActive: true,
+        }),
+      ).toBeNull();
+    }
+
+    const withFace = rows.find(hasRenderableCard);
+    expect(withFace).toBeDefined();
+    const routed = resolveProvisionalKindRender(blockFor(withFace!.event), {
       streamActive: true,
     });
     expect(routed?.kind).toBe("flashcard_set");
     // The same serverData shape the FINAL value produces — one component, one
     // render path, no bespoke stream renderer.
     expect(routed?.block.type).toBe("flashcards");
-    expect(Array.isArray(routed?.block.serverData?.cards)).toBe(true);
+    const cards = routed?.block.serverData?.cards as unknown[];
+    expect(Array.isArray(cards)).toBe(true);
+    expect(cards.length).toBeGreaterThan(0);
   });
 
   it("ends in exactly one terminal, and it is superseded", () => {

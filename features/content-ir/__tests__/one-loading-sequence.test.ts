@@ -179,7 +179,7 @@ describe("component-fetch window — loader, never a JSON tree, while streaming"
         kind: CLOUD_KIND,
         fields: {
           title: { type: "string", required: true },
-          items: { type: "array", items: { type: "string" } },
+          items: { type: "array", itemKinds: ["string"] },
         },
       },
     });
