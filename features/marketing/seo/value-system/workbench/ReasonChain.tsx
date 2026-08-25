@@ -131,7 +131,7 @@ function reasonView(reason: ValueReason): ReasonView {
       };
     }
     case "override": {
-      // KI-051 — the ruling no longer stands alone. When the working-out has
+      // KI-054 — the ruling no longer stands alone. When the working-out has
       // moved away from what you ruled, the chain says so ON THE ROW: nothing
       // is overwritten, but a disagreement you cannot see is a disagreement you
       // can never settle.

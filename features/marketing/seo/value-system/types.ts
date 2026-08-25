@@ -52,7 +52,7 @@ export interface ValueCombo {
 
 export type ValueReason =
   /**
-   * KI-051 — A HUMAN RULING SITS ON TOP OF THE MACHINE'S ANSWER, NOT INSTEAD OF
+   * KI-054 — A HUMAN RULING SITS ON TOP OF THE MACHINE'S ANSWER, NOT INSTEAD OF
    * IT. Until 2026-08-25 this object was the WHOLE receipt for an overridden
    * keyword: a level, and nothing else, forever. The resolver now works the
    * score out for every keyword and hands the disagreement back here, so the

@@ -174,7 +174,7 @@ export function ValueKpiBand({
   onClearFilters: () => void;
   onShowLevels: () => void;
   onStartSession: () => void;
-  /** KI-051 — opens the floating one-question-five-keywords panel. */
+  /** KI-054 — opens the floating one-question-five-keywords panel. */
   onQuickAnswers: () => void;
   sessionOpen: boolean;
 }) {
@@ -248,7 +248,7 @@ export function ValueKpiBand({
         doorLabel="Opens exactly those keywords in the table below."
         action={
           queueOpen && !sessionOpen ? (
-            // TWO WAYS IN, and the fast one leads (KI-051). Quick answers asks
+            // TWO WAYS IN, and the fast one leads (KI-054). Quick answers asks
             // ONE question of five keywords in a floating panel, so the table
             // stays live behind it; the ruling session takes the page over and
             // asks everything about one keyword. Most of this queue is cleared

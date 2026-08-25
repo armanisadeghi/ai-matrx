@@ -815,7 +815,7 @@ export function ValueWorkbench() {
       align: "right",
       width: 70,
       mobileHidden: true,
-      // KI-051 — an overridden row used to show a dash here, because the
+      // KI-054 — an overridden row used to show a dash here, because the
       // resolver did not compute a score for it at all. It does now, so the
       // machine's number is shown in brackets: your ruling decides the level,
       // and you can still see the working-out you overruled.

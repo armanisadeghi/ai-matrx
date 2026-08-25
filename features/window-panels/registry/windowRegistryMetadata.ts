@@ -45,7 +45,7 @@ export type {
 
 const STATIC_REGISTRY: WindowStaticMetadata[] = [
   // ── Keyword Quick Answers ─────────────────────────────────────────────────
-  // KI-051. A WINDOW on purpose: the value table stays live behind it, so the
+  // KI-054. A WINDOW on purpose: the value table stays live behind it, so the
   // levels visibly move as you answer. A takeover would hide the consequence
   // of the very thing it is asking you to do.
   {

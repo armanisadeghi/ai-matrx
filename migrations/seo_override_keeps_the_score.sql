@@ -1,5 +1,5 @@
 -- ============================================================================
--- KI-051 — A HUMAN RULING SITS ON TOP OF THE MACHINE'S ANSWER, IT DOES NOT
+-- KI-054 — A HUMAN RULING SITS ON TOP OF THE MACHINE'S ANSWER, IT DOES NOT
 -- DELETE IT.
 --
 -- Arman, 2026-08-25, choosing between "pin forever", "keep the computed score

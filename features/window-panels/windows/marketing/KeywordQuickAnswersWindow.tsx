@@ -3,7 +3,7 @@
 /**
  * QUICK ANSWERS — the window shell.
  *
- * A WINDOW rather than a takeover on purpose (KI-051): the value table stays
+ * A WINDOW rather than a takeover on purpose (KI-054): the value table stays
  * live behind it, so the levels visibly move as you answer. A full-screen
  * session would hide the consequence of the very thing it is asking you to do.
  *
