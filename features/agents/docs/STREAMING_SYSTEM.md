@@ -117,15 +117,15 @@ See [`AGENTS_OVERVIEW.MD`](./AGENTS_OVERVIEW.MD) §Layer 3 for the full slice in
 - `features/agents/redux/execution-system/thunks/process-stream.ts` — the dispatcher. Takes a parsed event, routes to the right action on `activeRequests`, `instanceConversationHistory`, or tool result handlers.
 - `features/agents/redux/execution-system/thunks/execute-instance.thunk.ts` — the convergence point. Fires fetch, pipes to parser, pipes to process-stream.
 
-The public package is not yet the replay authority for Matrix request state.
-Its `0.2.1` normalizer drops top-level `stream_seq`; the Matrix cursor therefore
-sees `0`, and replaying a chunk can duplicate answer text. Its pure projector
-also omits answer-bearing explicit render blocks from `answer` and suspends on
-normal server `tool_started` events. The golden-event parity test at
+Public `@ai-matrx/agents@0.3.0` owns the portable framing and normalization
+contract. It preserves top-level `stream_seq`, so Matrix's existing request
+cursor rejects replayed frames, and its projector suspends only delegated
+client tools. The golden-event parity test at
 `features/agents/redux/execution-system/thunks/__tests__/portable-request-parity.test.ts`
-locks those divergences while validating every currently matching shared field.
-Do not claim request-reducer or replay parity until a public release closes all
-three gaps.
+drives identical settled, replayed, and server-tool fixtures through both
+runtimes and requires every shared field to agree. The raw chunk answer and
+explicit render blocks are separate portable channels; Matrix composes both
+for presentation without making either disappear from parity proof.
 
 ---
 
@@ -205,6 +205,7 @@ Cross-repo system-of-record for the planned unification of this pipeline: /Users
 
 ## Change log
 
+- `2026-08-25` — codex: **Public `@ai-matrx/agents@0.3.0` now backs Matrix's live stream boundary with complete portable parity.** Golden fixtures prove replay idempotence through preserved `stream_seq`, correct server-versus-delegated tool suspension, and lossless separate comparison of raw answer chunks and explicit render blocks. The richer Redux reducer remains the host persistence/effects layer, not a duplicate wire kernel.
 - `2026-08-24` — codex: **Pinned the public portable runtime to `@ai-matrx/agents@0.2.1` and made its remaining parity gaps executable.** Matrix has no private agents facade/bootstrap now. Golden settled, replay, and server-tool streams compare the package's pure request projection with the real Redux stream path; the test records the exact `stream_seq`, explicit-answer-block, and server-tool suspension divergences, so the local request reducer remains authoritative until the package fixes are released.
 - `2026-07-18` — codex: **Manual-stream artifact foreign keys now follow the reserved message.** Builder streams continue mapping fresh `/ai/manual` wire conversations onto one stable local Redux key, but canvas upserts no longer forward that UI key. The RPC resolves `chat.message.conversation_id`, and materialization reuses the returned server id for adapters/discovery, eliminating the `canvas_items_conversation_id_fkey` 409/materialization-error cascade.
 - `2026-07-18` — codex: **Cross-browser stream cancellation no longer becomes a red runtime error.** Safari can reject an intentionally aborted `ReadableStreamDefaultReader.read()` as `TypeError("Load failed")` instead of `AbortError`. The shared NDJSON read loop now treats `signal.aborted` as the cross-browser cancellation source of truth while continuing to report the same failure when the signal is live. Focused parser tests cover both branches.

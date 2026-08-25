@@ -104,8 +104,8 @@ export const PORTABLE_PARITY_REPLAY_EVENTS = [
 
 /**
  * A normal server-side tool start is not necessarily a client suspension.
- * The public 0.2.1 summary currently says awaiting-tools; Matrix deliberately
- * stays streaming/complete unless a delegated client call is pending.
+ * A normal server-side tool start is not a client suspension. Public 0.3.0
+ * and Matrix both stay streaming unless a delegated client call is pending.
  */
 export const PORTABLE_PARITY_SERVER_TOOL_EVENTS = [
   {
@@ -133,4 +133,5 @@ export const PORTABLE_PARITY_SERVER_TOOL_EVENTS = [
       data: { query: "parity" },
     },
   },
+  { event: "end", stream_seq: 3, data: {} },
 ] as const satisfies readonly AgentProjectionEvent[];

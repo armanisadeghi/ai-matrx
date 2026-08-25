@@ -5,7 +5,22 @@ import type {
   AgentRequestProjection,
 } from "@ai-matrx/agents/projection/request";
 import type { ActiveRequest } from "@/features/agents/types/request.types";
-import { deriveAnswerText } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+
+/**
+ * The package's `answer` is the raw chunk channel. Matrix additionally folds
+ * explicit server render blocks into its UI answer, but those blocks already
+ * have their own portable parity field below. Compare like with like so a
+ * code/image block is neither dropped nor counted twice.
+ */
+function projectRawChunkAnswer(request: ActiveRequest): string {
+  const closedRuns = request.timeline.flatMap((entry) =>
+    entry.kind === "text_end" ? [entry.rawText] : [],
+  );
+  if (request.isTextStreaming && request.currentTextRunRaw) {
+    closedRuns.push(request.currentTextRunRaw);
+  }
+  return closedRuns.join("");
+}
 
 /**
  * Project Matrix's richer request row onto the framework-independent fields
@@ -77,7 +92,7 @@ export function projectMatrixRequestForPortableParity(
       request.status === "timeout" || request.status === "connecting"
         ? "error"
         : request.status,
-    answer: deriveAnswerText(request),
+    answer: projectRawChunkAnswer(request),
     reasoning: request.accumulatedReasoning,
     reasoningActive: request.isReasoningStreaming,
     phase: request.currentPhase,

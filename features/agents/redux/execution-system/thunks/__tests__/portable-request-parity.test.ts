@@ -136,7 +136,7 @@ function runPortable(events: readonly AgentProjectionEvent[]) {
   );
 }
 
-test("the public projector and Matrix agree on the settled portable core", async () => {
+test("the public projector and Matrix agree on the complete portable core", async () => {
   const matrixRequest = await runMatrix(PORTABLE_PARITY_SETTLED_EVENTS);
   const portable = runPortable(PORTABLE_PARITY_SETTLED_EVENTS);
   const report = compareMatrixRequestToPortableProjection(
@@ -148,7 +148,7 @@ test("the public projector and Matrix agree on the settled portable core", async
     requestId: true,
     conversationId: true,
     status: true,
-    answer: false,
+    answer: true,
     reasoning: true,
     reasoningActive: true,
     phase: true,
@@ -158,38 +158,33 @@ test("the public projector and Matrix agree on the settled portable core", async
     explicitRenderBlocks: true,
     completion: true,
     error: true,
-    lastTransportSeq: false,
+    lastTransportSeq: true,
   });
 
-  // Exact intentional divergence: Matrix's canonical answer includes both
-  // client-derived text blocks and explicit server blocks. The package's
-  // summary currently concatenates only raw chunk events.
+  // The package answer owns raw chunks; explicit server blocks are compared
+  // independently so they cannot be lost or double-counted.
   expect(projectMatrixRequestForPortableParity(matrixRequest).answer).toBe(
-    "Portable answer.\nconst proven = true;",
+    "Portable answer.",
   );
   expect(portable.answer).toBe("Portable answer.");
   expect(report.matrixOnlyRenderBlockIds).not.toHaveLength(0);
 });
 
-test("the stream reader's lost stream_seq is an explicit replay blocker", async () => {
+test("stream_seq makes replay idempotent in both consumers", async () => {
   const matrixRequest = await runMatrix(PORTABLE_PARITY_REPLAY_EVENTS);
   const portable = runPortable(PORTABLE_PARITY_REPLAY_EVENTS);
 
-  // The direct projector does the right thing. The public NDJSON reader used
-  // by Matrix currently strips stream_seq while normalizing the envelope, so
-  // Matrix cannot see the cursor and replays the duplicated chunk.
-  // Matrix batches adjacent chunks into one reducer write, so chunkCount is
-  // not the replay signal; the doubled answer is.
+  // The duplicate frame is dropped before either reducer sees it.
   expect(matrixRequest.chunkCount).toBe(1);
   expect(portable.answer).toBe("Portable answer.");
-  expect(projectMatrixRequestForPortableParity(matrixRequest).answer).toContain(
-    "Portable answer.Portable answer.",
+  expect(projectMatrixRequestForPortableParity(matrixRequest).answer).toBe(
+    "Portable answer.",
   );
-  expect(matrixRequest.lastTransportSeq).toBe(0);
+  expect(matrixRequest.lastTransportSeq).toBe(11);
   expect(portable.lastTransportSeq).toBe(11);
 });
 
-test("server tool starts remain a documented status blocker", async () => {
+test("server tool starts do not falsely suspend either consumer", async () => {
   const matrixRequest = await runMatrix(PORTABLE_PARITY_SERVER_TOOL_EVENTS);
   const portable = runPortable(PORTABLE_PARITY_SERVER_TOOL_EVENTS);
   const report = compareMatrixRequestToPortableProjection(
@@ -198,7 +193,7 @@ test("server tool starts remain a documented status blocker", async () => {
   );
 
   expect(matrixRequest.status).toBe("complete");
-  expect(portable.status).toBe("awaiting-tools");
-  expect(report.shared.status).toBe(false);
+  expect(portable.status).toBe("complete");
+  expect(report.shared.status).toBe(true);
   expect(report.shared.tools).toBe(true);
 });
