@@ -13,8 +13,12 @@
 //   QUERY (scope, search, filters, page) → useEntityList, always starts clean.
 
 import type { ReactNode } from "react";
+import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { toast } from "@/lib/toast";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +27,11 @@ import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { defaultHiddenColumns } from "../columns";
 import type { EntityListConfig, EntityListController } from "../config";
 import { useEntityList } from "../useEntityList";
-import { commitUrlParams, readSortFromParams, sortToParamPatch } from "../urlQuery";
+import {
+  commitUrlParams,
+  readSortFromParams,
+  sortToParamPatch,
+} from "../urlQuery";
 import { entityListRowHref } from "../doors";
 import { countActiveFilters } from "../types";
 import { EntityScopeTabs } from "./EntityScopeTabs";
@@ -40,11 +48,27 @@ import { EntityListTable } from "./EntityListTable";
  * controller to its manifest values, done. The scope is built at Run time only
  * (never on mount), so this costs a page that never launches an agent nothing.
  */
+export interface EntityListSurfaceController<
+  TRow,
+> extends EntityListController<TRow> {
+  /** The exact persisted view state the list currently renders. */
+  view: Pick<
+    ListViewPrefs,
+    "sort" | "direction" | "favoritesFirst" | "pageSize"
+  >;
+  /** Apply view changes through the same preference/URL path as the toolbar. */
+  patchView: (patch: Partial<ListViewPrefs>) => void;
+}
+
 export interface EntityListSurface<TRow> {
   /** Canonical `ui_surface.name`, from the feature's manifest. */
   surfaceName: string;
   /** Live manifest values, read from the same controller the list renders. */
-  getScope: (list: EntityListController<TRow>) => SurfaceScopePayload;
+  getScope: (list: EntityListSurfaceController<TRow>) => SurfaceScopePayload;
+  /** Optional handlers for manifest-declared writes into this list's UI. */
+  getWriteHandlers?: (
+    list: EntityListSurfaceController<TRow>,
+  ) => SurfaceWriteHandlers;
 }
 
 export interface EntityListPageProps<TRow> {
@@ -95,6 +119,17 @@ export function EntityListPage<TRow>({
     if (config.urlState) {
       commitUrlParams(sortToParamPatch(next, prefsSort), "push");
     }
+  };
+
+  const patchView = (patch: Partial<ListViewPrefs>) => {
+    const { sort, direction, ...rest } = patch;
+    if (sort !== undefined || direction !== undefined) {
+      commitSort({
+        sort: sort ?? effectiveSort.sort,
+        direction: direction ?? effectiveSort.direction,
+      });
+    }
+    if (Object.keys(rest).length > 0) setPrefs(rest);
   };
 
   // An empty RESULT is not an empty LIST. Saying "Nothing here yet — create
@@ -240,16 +275,7 @@ export function EntityListPage<TRow>({
           onPatchQuery={list.patchQuery}
           // Sort changes route through commitSort so the panel's sort and the
           // table header's sort write the same two places (prefs + URL).
-          onPatchPrefs={(patch) => {
-            const { sort, direction, ...rest } = patch;
-            if (sort !== undefined || direction !== undefined) {
-              commitSort({
-                sort: sort ?? effectiveSort.sort,
-                direction: direction ?? effectiveSort.direction,
-              });
-            }
-            if (Object.keys(rest).length > 0) setPrefs(rest);
-          }}
+          onPatchPrefs={patchView}
           onResetFilters={list.resetFilters}
           onResetView={reset}
         />
@@ -332,10 +358,25 @@ export function EntityListPage<TRow>({
   );
 
   if (!surface) return page;
+  const surfaceList: EntityListSurfaceController<TRow> = {
+    ...list,
+    view: {
+      sort: effectiveSort.sort,
+      direction: effectiveSort.direction,
+      favoritesFirst: prefs.favoritesFirst,
+      pageSize: prefs.pageSize,
+    },
+    patchView,
+  };
   return (
     <SurfaceRuntimeProvider
       surfaceName={surface.surfaceName}
-      getScope={() => surface.getScope(list)}
+      getScope={() => surface.getScope(surfaceList)}
+      getWriteHandlers={
+        surface.getWriteHandlers
+          ? () => surface.getWriteHandlers?.(surfaceList) ?? {}
+          : undefined
+      }
     >
       {page}
     </SurfaceRuntimeProvider>

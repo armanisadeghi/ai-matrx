@@ -62,14 +62,11 @@ import {
   resolveAgentVersionId,
 } from "@/features/agents/redux/agent-definition/thunks";
 import {
-  AGENT_NONE_SENTINEL,
   setAgentConsumerFilter,
-  type AgentArchFilter,
   type AgentConsumerState,
-  type AgentFavFilter,
   type AgentSortOption,
-  type AgentTab,
 } from "@/features/agents/redux/agent-consumers/slice";
+import { parseAgentsHubCatalogFilters } from "@/features/agents/agents-hub-catalog-filter-contract";
 import type {
   AgentDefinitionRecord,
   AgentVersionLookup,
@@ -435,225 +432,53 @@ export function AgentsGrid() {
   // reads and corrects from, which beats a silent coercion that would leave
   // the user's view in a state nobody asked for.
 
-  /** Keys `catalog_filters` accepts — anything else is a typo worth hearing about. */
-  const CATALOG_FILTER_KEYS = [
-    "search_query",
-    "deep_search",
-    "ownership_tab",
-    "sort_by",
-    "included_categories",
-    "included_tags",
-    "favorites_filter",
-    "archived_filter",
-    "favorites_first",
-  ] as const;
-
-  /**
-   * Booleans arrive already parsed. The exact "true"/"false" strings are
-   * tolerated because the inline-tool layer's parsing makes double-encoding a
-   * common model correction; anything else throws rather than being guessed at
-   * for truthiness.
-   */
-  const readBoolean = (key: string, raw: unknown): boolean => {
-    if (typeof raw === "boolean") return raw;
-    if (raw === "true") return true;
-    if (raw === "false") return false;
-    throw new Error(
-      `catalog_filters.${key} expects a boolean (true or false) — received ${JSON.stringify(raw)}.`,
-    );
-  };
-
-  /** Enum check against the options the UI actually renders, never a re-typed literal. */
-  const readEnum = <T extends string>(
-    key: string,
-    raw: unknown,
-    allowed: readonly T[],
-  ): T => {
-    if (
-      typeof raw === "string" &&
-      (allowed as readonly string[]).includes(raw)
-    ) {
-      return raw as T;
-    }
-    throw new Error(
-      `catalog_filters.${key} must be exactly one of: ${allowed.join(", ")}. ` +
-        `Received ${JSON.stringify(raw)}, which is not an option this gallery offers.`,
-    );
-  };
-
-  /**
-   * A facet set (categories or tags) validated against the LIVE vocabulary.
-   *
-   * Validation reads the store at call time rather than trusting the
-   * `available_categories` / `available_tags` the agent was handed at launch:
-   * that vocabulary GROWS as the agents list finishes loading, so the live set
-   * can only ever accept more than the snapshot, never fewer. A rejection
-   * lists the real vocabulary back — an agent that guessed a plural or a
-   * synonym fixes it in one step instead of retrying blind.
-   */
-  const readFacetSet = (
-    key: string,
-    raw: unknown,
-    vocabulary: string[],
-  ): string[] => {
-    let list = raw;
-    if (typeof list === "string") {
-      try {
-        list = JSON.parse(list);
-      } catch {
-        throw new Error(
-          `catalog_filters.${key} expects an array of strings (pass [] to clear this filter) — received a string that is not valid JSON.`,
-        );
-      }
-    }
-    if (!Array.isArray(list)) {
-      throw new Error(
-        `catalog_filters.${key} expects an array of strings (pass [] to clear this filter) — received ${typeof list}.`,
-      );
-    }
-    const values = list.map((entry, index) => {
-      if (typeof entry !== "string" || !entry.trim()) {
-        throw new Error(
-          `catalog_filters.${key} entry ${index} is not a non-empty string.`,
-        );
-      }
-      return entry.trim();
-    });
-    // `__none__` is the Uncategorized / Untagged chip the filter panel really
-    // renders, so it belongs in the accepted vocabulary even though it is not
-    // a value any agent carries.
-    const allowed = new Set([...vocabulary, AGENT_NONE_SENTINEL]);
-    const unknown = values.filter((entry) => !allowed.has(entry));
-    if (unknown.length > 0) {
-      throw new Error(
-        `catalog_filters.${key} rejected: ${unknown.map((u) => JSON.stringify(u)).join(", ")} ` +
-          `${unknown.length === 1 ? "is not a value" : "are not values"} this library uses, so no filter was changed. ` +
-          `Available: ${vocabulary.length > 0 ? vocabulary.join(", ") : "(none — no agent has one yet)"}` +
-          `, plus "${AGENT_NONE_SENTINEL}" for the Uncategorized/Untagged chip.`,
-      );
-    }
-    // A facet set is a set: the same value twice is the same filter.
-    return Array.from(new Set(values));
-  };
-
   const buildHubWriteHandlers = () => ({
     catalog_filters: (value: unknown) => {
-      let raw = value;
-      if (typeof raw === "string") {
-        try {
-          raw = JSON.parse(raw);
-        } catch {
-          throw new Error(
-            "catalog_filters expects an object of filter keys, e.g. " +
-              '{"ownership_tab": "mine", "sort_by": "updated-desc"} — received a string that is not valid JSON.',
-          );
-        }
-      }
-      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-        throw new Error(
-          `catalog_filters expects an object of filter keys — received ${Array.isArray(raw) ? "an array" : typeof raw}.`,
-        );
-      }
-      const input = raw as Record<string, unknown>;
-
-      const badKeys = Object.keys(input).filter(
-        (key) => !(CATALOG_FILTER_KEYS as readonly string[]).includes(key),
-      );
-      if (badKeys.length > 0) {
-        // Silently ignoring an unrecognised key would report success for a
-        // write that did nothing — the worst outcome available here.
-        throw new Error(
-          `catalog_filters received unknown key(s): ${badKeys.join(", ")}. ` +
-            `Nothing was changed. Valid keys are: ${CATALOG_FILTER_KEYS.join(", ")}. ` +
-            `This target only shapes the VIEW — it cannot favorite, archive, delete, publish or share an agent.`,
-        );
-      }
-      if (Object.keys(input).length === 0) {
-        throw new Error(
-          `catalog_filters needs at least one of: ${CATALOG_FILTER_KEYS.join(", ")}. An empty object would change nothing.`,
-        );
-      }
-
       // Live state, read AFTER the user pressed Apply.
       const state = store.getState();
       const liveCategories = selectAllAgentCategories(state);
       const liveTags = selectAllAgentTags(state);
       const liveSharedTotal = selectTotalSharedAgentsCount(state);
+      const parsed = parseAgentsHubCatalogFilters(value, {
+        categories: liveCategories,
+        tags: liveTags,
+        ownershipTabs: ["mine", "shared", "all"] as const,
+        sortOptions: SORT_OPTIONS.map((option) => option.value),
+        archivedOptions: ["active", "archived", "both"] as const,
+      });
 
       const patch: Partial<
         Omit<AgentConsumerState, "listPage" | "sharedPage">
       > = {};
 
-      if ("search_query" in input) {
-        if (typeof input.search_query !== "string") {
-          throw new Error(
-            `catalog_filters.search_query expects a string (pass "" to clear the search) — received ${typeof input.search_query}.`,
-          );
-        }
-        patch.searchTerm = input.search_query;
-      }
-      if ("deep_search" in input) {
-        patch.deepSearch = readBoolean("deep_search", input.deep_search);
-      }
-      if ("ownership_tab" in input) {
+      if (parsed.search_query !== undefined)
+        patch.searchTerm = parsed.search_query;
+      if (parsed.deep_search !== undefined)
+        patch.deepSearch = parsed.deep_search;
+      if (parsed.ownership_tab !== undefined) {
         // "system" is a valid slice type but this gallery renders no System
         // tab, and the tab row itself only appears once something is shared —
         // so either would strand the user in a view with no control to leave
         // it. Refusing is kinder than a state they cannot click their way out
         // of.
-        const tab = readEnum<Exclude<AgentTab, "system">>(
-          "ownership_tab",
-          input.ownership_tab,
-          ["mine", "shared", "all"],
-        );
-        if (tab === "shared" && liveSharedTotal === 0) {
+        if (parsed.ownership_tab === "shared" && liveSharedTotal === 0) {
           throw new Error(
             'catalog_filters.ownership_tab cannot be "shared": nothing is shared with this user, so the gallery renders no Shared tab and the view would be empty with no way back. Use "mine" or "all".',
           );
         }
-        patch.tab = tab;
+        patch.tab = parsed.ownership_tab;
       }
-      if ("sort_by" in input) {
-        patch.sortBy = readEnum<AgentSortOption>(
-          "sort_by",
-          input.sort_by,
-          SORT_OPTIONS.map((option) => option.value),
-        );
-      }
-      if ("included_categories" in input) {
-        patch.includedCats = readFacetSet(
-          "included_categories",
-          input.included_categories,
-          liveCategories,
-        );
-      }
-      if ("included_tags" in input) {
-        patch.includedTags = readFacetSet(
-          "included_tags",
-          input.included_tags,
-          liveTags,
-        );
-      }
-      if ("favorites_filter" in input) {
-        patch.favFilter = readEnum<AgentFavFilter>(
-          "favorites_filter",
-          input.favorites_filter,
-          ["all", "yes", "no"],
-        );
-      }
-      if ("archived_filter" in input) {
-        patch.archFilter = readEnum<AgentArchFilter>(
-          "archived_filter",
-          input.archived_filter,
-          ["active", "archived", "both"],
-        );
-      }
-      if ("favorites_first" in input) {
-        patch.favoritesFirst = readBoolean(
-          "favorites_first",
-          input.favorites_first,
-        );
-      }
+      if (parsed.sort_by !== undefined) patch.sortBy = parsed.sort_by;
+      if (parsed.included_categories !== undefined)
+        patch.includedCats = parsed.included_categories;
+      if (parsed.included_tags !== undefined)
+        patch.includedTags = parsed.included_tags;
+      if (parsed.favorites_filter !== undefined)
+        patch.favFilter = parsed.favorites_filter;
+      if (parsed.archived_filter !== undefined)
+        patch.archFilter = parsed.archived_filter;
+      if (parsed.favorites_first !== undefined)
+        patch.favoritesFirst = parsed.favorites_first;
 
       // Validated in full above, so this single dispatch either applies
       // everything the agent asked for or nothing at all.

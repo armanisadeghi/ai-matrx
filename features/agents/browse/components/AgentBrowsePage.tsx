@@ -12,6 +12,7 @@ import { Plus, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { agentListConfig } from "../listConfig";
+import { AGENT_BROWSE_SURFACE } from "../surface";
 import { ClassicViewNotice } from "./ClassicViewNotice";
 
 export function AgentBrowsePage() {
@@ -27,6 +28,7 @@ export function AgentBrowsePage() {
   return (
     <EntityListPage
       config={agentListConfig}
+      surface={AGENT_BROWSE_SURFACE}
       notice={<ClassicViewNotice />}
       headerActions={
         <>

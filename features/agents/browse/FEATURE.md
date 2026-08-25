@@ -166,19 +166,20 @@ Org/Owner/Access columns appear only when scope ≠ `mine` — inside "Mine" eve
 | column picker, table, and page assembly are shared with `/transcripts` and |
 | future list surfaces. What remains here is the AGENT half:                 |
 
-| File                                  | Role                                                                                                                                              |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `types.ts`                            | `AgentBrowseRow` (derived from the generated RPC return — never hand-mirrored), declared scopes, re-exports of the generic vocabulary             |
-| `service.ts`                          | The RPC calls + inline-edit save. Browser → Supabase direct; no Next hop, no Python hop                                                           |
-| `listConfig.tsx`                      | THE config handed to `<EntityListPage>` — service, columns, scopes, row-actions hook + modals, card/row renderers, copy config                    |
-| `useAgentRowActions.tsx`              | Binds the registry to behaviour; owns the modals as page-level singletons (not one `ShareModal` per row)                                          |
-| `agentActionRegistry.tsx`             | THE action list                                                                                                                                   |
-| `columns.tsx`                         | EVERY column the row can show, with `defaultHidden` / `locked` / `scopedToShared` flags (spec type + cell helpers from `lib/entity-list/columns`) |
-| `components/AgentBrowsePage.tsx`      | Thin: `<EntityListPage config>` + this page's slots (notice, Orchestras/New buttons)                                                              |
-| `components/AgentBrowseCards.tsx`     | Card view (render prop in the config)                                                                                                             |
-| `components/AgentBrowseRows.tsx`      | Dense view — full-width rows, aligned zones                                                                                                       |
-| `components/ClassicViewNotice.tsx`    | TEMPORARY cutover banner → `/agents/classic`                                                                                                      |
-| `components/AddToOrchestraDialog.tsx` | Dialog shell over the existing `useOrchestrasList` + `addAgentToOrchestra`                                                                        |
+| File                                  | Role                                                                                                                                                                     |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `types.ts`                            | `AgentBrowseRow` (derived from the generated RPC return — never hand-mirrored), declared scopes, re-exports of the generic vocabulary                                    |
+| `service.ts`                          | The RPC calls + inline-edit save. Browser → Supabase direct; no Next hop, no Python hop                                                                                  |
+| `listConfig.tsx`                      | THE config handed to `<EntityListPage>` — service, columns, scopes, row-actions hook + modals, card/row renderers, copy config                                           |
+| `surface.ts`                          | Adapts the live entity-list query/view controller to the `matrx-user/agents` surface manifest and routes `catalog_filters` writes back through the visible list controls |
+| `useAgentRowActions.tsx`              | Binds the registry to behaviour; owns the modals as page-level singletons (not one `ShareModal` per row)                                                                 |
+| `agentActionRegistry.tsx`             | THE action list                                                                                                                                                          |
+| `columns.tsx`                         | EVERY column the row can show, with `defaultHidden` / `locked` / `scopedToShared` flags (spec type + cell helpers from `lib/entity-list/columns`)                        |
+| `components/AgentBrowsePage.tsx`      | Thin: `<EntityListPage config>` + this page's slots (notice, Orchestras/New buttons)                                                                                     |
+| `components/AgentBrowseCards.tsx`     | Card view (render prop in the config)                                                                                                                                    |
+| `components/AgentBrowseRows.tsx`      | Dense view — full-width rows, aligned zones                                                                                                                              |
+| `components/ClassicViewNotice.tsx`    | TEMPORARY cutover banner → `/agents/classic`                                                                                                                             |
+| `components/AddToOrchestraDialog.tsx` | Dialog shell over the existing `useOrchestrasList` + `addAgentToOrchestra`                                                                                               |
 
 ## Invariants
 
@@ -210,6 +211,15 @@ hostile at 2,000.
 - Column ORDER and width are not user-controlled yet (visibility is).
 
 ## Change log
+
+- **2026-08-25 (surface runtime)** — `/agents/all` now supplies the
+  `matrx-user/agents` runtime through the generic `EntityListPage` surface seam.
+  `surface.ts` maps the canonical list's rows, counts, facets, query, and view
+  preferences to the existing manifest and validates the shared
+  `catalog_filters` contract before applying query/view changes. This repairs
+  the production state where route naming showed "Agents Hub" but Run received
+  0/27 values and no write tool. Independent post-deployment Browser
+  verification remains required before the manifest can return to `verified`.
 
 - **2026-08-09 (doors)** — THE DOOR LAW moved into the shell: the config now
   declares `door: { token: "agent" }` and `lib/entity-list` anchors the Name

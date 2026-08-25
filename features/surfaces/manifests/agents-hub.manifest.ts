@@ -6,18 +6,15 @@
  * steps into an agent (view / build / run / versions) or creates a new one.
  *
  * WHERE THIS ACTUALLY MOUNTS — read before verifying anything here.
- * `surfaceFromPathname` maps the whole `/agents` prefix to this surface, but
- * the ONLY component that mounts `SurfaceRuntimeProvider` for it is
- * `AgentsGrid` (`features/agents/components/agent-listings/AgentsGrid.tsx`),
- * and `AgentsGrid` renders on **`/agents/classic`** alone. `/agents/all` —
- * where `/agents` redirects an authenticated user — has been the
- * `lib/entity-list` browse shell (`features/agents/browse/AgentBrowsePage`)
- * since that migration, and it mounts NO runtime. So on `/agents/all` the
- * header popover still names this surface (route mapping), while the live
- * values and the write tool come from the mounted stack and are therefore
- * absent. Verified live 2026-08-12. Adopting the emitter on `AgentBrowsePage`
- * is a `surface-authoring` job, not a write-target one; until then, verify on
- * `/agents/classic`.
+ * `surfaceFromPathname` maps the whole `/agents` prefix to this surface. Both
+ * list implementations now mount the runtime: `AgentsGrid` on
+ * `/agents/classic`, and the canonical `lib/entity-list` shell on `/agents/all`
+ * through `features/agents/browse/surface.ts`. The canonical adapter translates
+ * the shell's live query/view controller into this manifest and sends writes
+ * back through the same setters as its visible toolbar. The `/agents/all`
+ * source wiring was added 2026-08-25 after a production review found that route
+ * naming alone exposed a popover with no runtime; independent production
+ * verification remains required after deployment.
  *
  * A list surface guarantees a different kind of context than a record
  * surface: no single entity is "open" here. What IS always present is the
@@ -160,7 +157,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "ownership_tab",
     label: "Ownership tab",
     description:
-      '"mine", "shared", "all", or "system" — which ownership slice of the catalog the user is viewing. Defaults to "all"; "system" (built-in agents) is not offered on this gallery today.',
+      'Which ownership slice the current gallery is viewing. The canonical gallery offers "mine", "orgs", "shared", or "public"; the temporary classic gallery offers "mine", "shared", or "all".',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 6,
@@ -343,7 +340,7 @@ const writeTargets: SurfaceWriteTarget[] = [
       "Value is an OBJECT containing ONLY the keys you want to change; every key is optional and each one you send REPLACES that filter outright. " +
       'Keys: `search_query` (string; matches agent names and tags, or prompt text too when `deep_search` is on; "" clears it), ' +
       "`deep_search` (boolean; true also searches INSIDE agent prompts, server-side), " +
-      '`ownership_tab` ("mine" | "shared" | "all" — which slice of the library; "shared" is rejected when nothing is shared with the user, because the tab is not rendered then), ' +
+      '`ownership_tab` (one of the ownership tabs visible in the current gallery: canonical `/agents/all` offers "mine" | "orgs" | "shared" | "public"; temporary `/agents/classic` offers "mine" | "shared" | "all", and rejects "shared" when that tab is not rendered), ' +
       "`sort_by` (" +
       SORT_OPTIONS.map((o) => `"${o.value}"`).join(" | ") +
       "), " +
@@ -368,9 +365,9 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const agentsHubManifest: SurfaceManifest = {
   surfaceName: AGENTS_HUB_SURFACE_NAME,
-  readiness: "verified",
+  readiness: "partial",
   readinessNote:
-    "Values and the catalog_filters write target are live-verified against a real agent run — but ONLY on /agents/classic, the single route that renders AgentsGrid. /agents/all (where /agents redirects) is the lib/entity-list browse shell and mounts no runtime, so it resolves this surface by route while offering neither live values nor the write tool. Adopting the emitter on AgentBrowsePage is open (surface-authoring).",
+    "Values and catalog_filters remain production-verified on /agents/classic. The canonical /agents/all source now mounts the shared entity-list runtime adapter and write handler after a live review found 0/27 values there; local contract checks pass, but an independent post-deployment production run must verify the canonical route before this surface returns to verified.",
   label: "Agents Hub",
   urlPattern: "/agents",
   intro: `<surface_intro>
@@ -411,7 +408,7 @@ export function createAgentsHubScope(values: {
   list_loading: boolean;
   search_query: string;
   deep_search: boolean;
-  ownership_tab: "mine" | "shared" | "all" | "system";
+  ownership_tab: "mine" | "orgs" | "shared" | "public" | "all" | "system";
   sort_by: string;
   included_categories: string[];
   included_tags: string[];
