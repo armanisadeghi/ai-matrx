@@ -112,6 +112,7 @@ import {
 } from "@/features/education/tutor/lanes/learnerContext";
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
 import { MemoryAidButton } from "@/features/education/memory/components/MemoryAidButton";
+import { CardDetailLayers } from "./CardDetailLayers";
 
 // One-at-a-time on user action — the enhance dialog (its agents, preview flow,
 // entitlement chrome) loads only when the learner actually asks to improve a
@@ -917,6 +918,16 @@ export function StudyDeck(props: StudyDeckProps) {
           />
         )}
 
+        {/* 🚨 The enrichment the learner already paid for, RENDERED — plus the
+            in-place "explain more" that adds to it. Collapsed by default so it
+            never spoils the answer or crowds the phone. */}
+        <CardDetailLayers
+          key={`m-layers-${current.id}`}
+          card={current}
+          canEnrich={Boolean(setId)}
+          onEnriched={() => onCardsChanged?.()}
+        />
+
         {currentKind !== CARD_KIND.matching && (
           <CardAudioHelp
             key={`m-audio-${current.id}`}
@@ -996,7 +1007,7 @@ export function StudyDeck(props: StudyDeckProps) {
             onClick={() => setEnhanceOpen(true)}
           >
             <Expand className="h-3.5 w-3.5" />
-            Improve this card
+            Split into sub-cards
           </Button>
         )}
 
@@ -1037,6 +1048,7 @@ export function StudyDeck(props: StudyDeckProps) {
               onOpenChange={setEnhanceOpen}
               setId={setId}
               cards={[current]}
+              modes={["deepen"]}
               onChanged={() => onCardsChanged?.()}
             />
           </Suspense>
@@ -1158,6 +1170,17 @@ export function StudyDeck(props: StudyDeckProps) {
                   className="mt-2"
                 />
               )}
+
+              {/* 🚨 The enrichment the learner already paid for, RENDERED —
+                  every stored detail layer, labelled, under the card it belongs
+                  to, plus the in-place "explain more" that adds to it. */}
+              <CardDetailLayers
+                key={`layers-${current.id}`}
+                card={current}
+                canEnrich={Boolean(setId)}
+                onEnriched={() => onCardsChanged?.()}
+                className="mt-2"
+              />
             </>
           )}
 
@@ -1331,7 +1354,7 @@ export function StudyDeck(props: StudyDeckProps) {
                 onClick={() => setEnhanceOpen(true)}
               >
                 <Expand className="h-3.5 w-3.5" />
-                Improve this card
+                Split into sub-cards
               </Button>
             )}
           </div>
@@ -1370,6 +1393,7 @@ export function StudyDeck(props: StudyDeckProps) {
             onOpenChange={setEnhanceOpen}
             setId={setId}
             cards={[current]}
+            modes={["deepen"]}
             onChanged={() => onCardsChanged?.()}
           />
         </Suspense>

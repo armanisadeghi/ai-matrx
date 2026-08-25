@@ -84,12 +84,21 @@ export function EnhanceSetDialog({
   onOpenChange,
   setId,
   cards,
+  modes = ["enrich", "deepen"],
   onChanged,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   setId: string;
   cards: CardWithDetails[];
+  /**
+   * Which actions this opening offers. The study surface passes
+   * `["deepen"]`: enriching a card you are studying happens IN PLACE on the
+   * card (`CardDetailLayers`), where the new layers are immediately readable —
+   * so offering a second, preview-first enrich button here would be two doors
+   * to one room. Set detail's per-card opening offers both.
+   */
+  modes?: Mode[];
   /** Called after a card is enriched/deepened so the parent can refetch. */
   onChanged: () => void;
 }) {
@@ -325,6 +334,7 @@ export function EnhanceSetDialog({
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
+                        {modes.includes("enrich") && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -339,6 +349,8 @@ export function EnhanceSetDialog({
                           )}
                           Enrich
                         </Button>
+                        )}
+                        {modes.includes("deepen") && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -353,6 +365,7 @@ export function EnhanceSetDialog({
                           )}
                           Deepen
                         </Button>
+                        )}
                       </div>
                     </div>
 
