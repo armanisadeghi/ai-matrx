@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "2a140b646be1";
+export const KIND_REGISTRY_FINGERPRINT = "bc2d786f3edc";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -48,10 +48,26 @@ export interface AiAnswerReference {
   url: string;
   index?: number | null;
   /**
+   * Title of the cited page, as the source gave it.
+   */
+  title?: string | null;
+  /**
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
+  /**
+   * End offset of the supported span in the answer text.
+   */
+  end_index?: number | null;
+  /**
+   * The cited excerpt, when the source supplies one.
+   */
+  quoted_text?: string | null;
   source_name?: string | null;
+  /**
+   * Start offset of the supported span in the answer text.
+   */
+  start_index?: number | null;
 }
 
 /**
@@ -659,53 +675,6 @@ export interface BiasRiskSignals {
   is_affiliate_or_sales_driven?: boolean;
   lacks_sources_for_major_claims?: boolean;
   contains_obvious_factual_errors?: boolean;
-}
-
-/**
- * One raw Brave result (a ``web.results`` or ``news.results`` item).
- *
- * The Brave Search API item is passed through unmodified — declared fields
- * are the ones our consumers read (see
- * ``matrx_scraper.search.search.generate_search_text_summary``); the many
- * provider-specific keys (``meta_url``, ``profile``, ``thumbnail``, …)
- * remain reachable via ``extra="allow"`` — a genuinely dynamic passthrough,
- * so the open shape stays.
- *  *
- *  * From kind `web_search_results`.
- */
-export interface BraveSearchResultItem {
-  /**
-   * Human-readable content age reported by Brave.
-   */
-  age?: string | null;
-  /**
-   * Canonical destination URL for the result.
-   */
-  url?: string | null;
-  /**
-   * Result headline supplied by Brave.
-   */
-  title?: string | null;
-  /**
-   * The registered kind this payload is an instance of, when it is one.
-   */
-  __kind?: string;
-  /**
-   * Detected language code for the result page.
-   */
-  language?: string | null;
-  /**
-   * Published or indexed page-age value reported by Brave.
-   */
-  page_age?: string | null;
-  /**
-   * Primary search-result snippet.
-   */
-  description?: string | null;
-  /**
-   * Additional relevant snippets returned for the result.
-   */
-  extra_snippets?: string[];
 }
 
 /**
@@ -5611,13 +5580,28 @@ export interface AggregateResult {
 }
 
 /**
- * Kind `ai_answer` (registry v8).
+ * Kind `ai_answer` (registry v10).
  */
 export interface AiAnswer {
-  __kind: "ai_answer";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "ai_answer";
   blocks: AiAnswerBlock[];
   source: string;
+  /**
+   * The model that produced the answer, e.g. 'sonar', 'gemini-2.5-flash'.
+   */
+  model_name?: string | null;
   references?: AiAnswerReference[];
+  /**
+   * Whether the model searched the web before answering.
+   */
+  web_search?: boolean | null;
+  /**
+   * The sub-queries the model actually ran, when the source reports them.
+   */
+  fan_out_queries?: string[];
 }
 
 /**
@@ -7026,13 +7010,16 @@ export interface DirectoryListing {
 }
 
 /**
- * Kind `discussion_result` (registry v7).
+ * Kind `discussion_result` (registry v9).
  */
 export interface DiscussionResult {
   url: string;
   score?: string | null;
   title: string;
-  __kind: "discussion_result";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "discussion_result";
   source: string;
   favicon?: string | null;
   snippet?: string | null;
@@ -7105,13 +7092,16 @@ export interface DomainFoldReport {
 }
 
 /**
- * Kind `entity_card` (registry v8).
+ * Kind `entity_card` (registry v10).
  */
 export interface EntityCard {
   name: string;
   facts?: Fact[];
   image?: string | null;
-  __kind: "entity_card";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "entity_card";
   rating?: Rating | null;
   source: string;
   category?: string | null;
@@ -7173,10 +7163,13 @@ export interface EvidenceSource {
  * `source`/`position` are OPTIONAL here because authored FAQs have neither —
  * the search adapters always fill both.
  *  *
- *  * Kind `faq_item` (registry v6).
+ *  * Kind `faq_item` (registry v8).
  */
 export interface FaqItem {
-  __kind: "faq_item";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "faq_item";
   /**
    * Inline answer when the provider ships one (Brave does; Google PAA does not).
    */
@@ -7650,10 +7643,13 @@ export interface GeneratedVideoSet {
 }
 
 /**
- * Kind `geo_coordinates` (registry v7).
+ * Kind `geo_coordinates` (registry v9).
  */
 export interface GeoCoordinates {
-  __kind: "geo_coordinates";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "geo_coordinates";
   latitude: number;
   longitude: number;
 }
@@ -8630,13 +8626,16 @@ export interface LiveHelpAnswer {
 }
 
 /**
- * Kind `local_place` (registry v8).
+ * Kind `local_place` (registry v10).
  */
 export interface LocalPlace {
   name: string;
   hours?: OpeningHours | null;
   phone?: string | null;
-  __kind: "local_place";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "local_place";
   rating?: Rating | null;
   source: string;
   address?: PostalAddress | null;
@@ -8660,6 +8659,10 @@ export interface LocalPlace {
   coordinates?: GeoCoordinates | null;
   description?: string | null;
   website_url?: string | null;
+  /**
+   * ADDITIVE 2026-08-24 (rank run). Position on the WHOLE result page across every block, where `position` is the rank within the local pack.
+   */
+  absolute_position?: number | null;
 }
 
 /**
@@ -8996,13 +8999,16 @@ export interface MetaTagOptions {
 }
 
 /**
- * Kind `news_result` (registry v7).
+ * Kind `news_result` (registry v9).
  */
 export interface NewsResult {
   url: string;
   tags?: string[];
   title: string;
-  __kind: "news_result";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "news_result";
   author?: string | null;
   source: string;
   snippet?: string | null;
@@ -9225,7 +9231,7 @@ export interface OfficeSpreadsheet {
 }
 
 /**
- * Kind `opening_hours` (registry v8).
+ * Kind `opening_hours` (registry v10).
  */
 export interface OpeningHours {
   /**
@@ -9236,7 +9242,10 @@ export interface OpeningHours {
    * Today's hours when the source reports them.
    */
   today?: DayHours | null;
-  __kind: "opening_hours";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "opening_hours";
 }
 
 /**
@@ -9988,11 +9997,14 @@ export interface PodcastVideoComposeResult {
 }
 
 /**
- * Kind `postal_address` (registry v7).
+ * Kind `postal_address` (registry v9).
  */
 export interface PostalAddress {
   city?: string | null;
-  __kind: "postal_address";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "postal_address";
   region?: string | null;
   street?: string | null;
   country?: string | null;
@@ -10531,7 +10543,7 @@ export interface RandomStringResult {
 }
 
 /**
- * Kind `rating` (registry v7).
+ * Kind `rating` (registry v9).
  */
 export interface Rating {
   /**
@@ -10542,7 +10554,10 @@ export interface Rating {
    * The rating value on the scale [0, best_possible].
    */
   value: number;
-  __kind: "rating";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "rating";
   /**
    * Top of the rating scale.
    */
@@ -13598,13 +13613,16 @@ export interface VideoPromptOptions {
 }
 
 /**
- * Kind `video_result` (registry v7).
+ * Kind `video_result` (registry v9).
  */
 export interface VideoResult {
   url: string;
   tags?: string[];
   title: string;
-  __kind: "video_result";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "video_result";
   source: string;
   channel?: string | null;
   favicon?: string | null;
@@ -16109,12 +16127,15 @@ export interface WebRedirectLoopV1 {
 }
 
 /**
- * Kind `web_result` (registry v9).
+ * Kind `web_result` (registry v11).
  */
 export interface WebResult {
   url: string;
   title: string;
-  __kind: "web_result";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "web_result";
   author?: string | null;
   rating?: Rating | null;
   /**
@@ -16150,6 +16171,10 @@ export interface WebResult {
   displayed_url: string;
   extra_snippets?: string[];
   family_friendly?: boolean | null;
+  /**
+   * ADDITIVE 2026-08-24 (rank run). Position on the WHOLE result page across every block, where `position` is the rank within the organic list. Only a source that reports whole-page ordering can fill it; never derived from `position`.
+   */
+  absolute_position?: number | null;
   highlighted_terms?: string[];
   source_description?: string | null;
 }
@@ -16246,7 +16271,7 @@ export interface WebSearchResults {
    * The registered kind this payload is an instance of.
    */
   __kind: "web_search_results";
-  results?: BraveSearchResultItem[];
+  results?: WebResult[];
 }
 
 /**
