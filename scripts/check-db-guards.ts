@@ -209,6 +209,127 @@ function reportPlannerTraps(rows: PlannerTrapRow[]): number {
   return rows.length;
 }
 
+/**
+ * THIRD DETECTOR — MULTIPLE PERMISSIVE POLICIES ON ONE ROLE+COMMAND.
+ *
+ * Postgres OR's every permissive policy that applies to a (role, command), and
+ * it evaluates ALL of them for every row — there is no short-circuit across
+ * policies. Two policies on one table+role+command is therefore a permanent
+ * per-row tax, and it is invisible: nothing errors, the rows are correct, the
+ * query is just slower forever.
+ *
+ * The dominant instance here is structural, not accidental. `iam.apply_rls`
+ * emits BOTH a standalone `platform_admin_all` policy (USING/CHECK
+ * `is_platform_admin()`) AND `std_select|insert|update|delete`, each of whose
+ * predicates ALREADY opens with `is_platform_admin() OR …`. Because permissive
+ * policies are OR'd, `(admin OR X) OR admin` ≡ `admin OR X` — the standalone
+ * policy grants nothing whatsoever and costs one extra evaluation per row.
+ *
+ * `redundant_admin_tables` counts the tables where that redundancy is PROVEN
+ * for all four commands: a `std_*` policy exists for each command and its
+ * predicate begins with the admin disjunct at top level. Dropping
+ * `platform_admin_all` on exactly those tables is an access no-op.
+ *
+ * It is NOT safe everywhere, and the difference is the whole point of the
+ * counter: on tables with no `std_*` policy for some command, that standalone
+ * policy is the ONLY thing granting admin access there, and dropping it would
+ * REMOVE access — a narrowing, which db-rules §6 treats as seriously as a
+ * widening. Never drop by name in bulk; drop only the proven set.
+ */
+const OVERLAP_QUERY = `
+  with pol as (
+    select p.polrelid, n.nspname as sch, c.relname as tbl, p.polname, p.polpermissive,
+           case p.polcmd when 'r' then 'SELECT' when 'a' then 'INSERT' when 'w' then 'UPDATE'
+                when 'd' then 'DELETE' else 'ALL' end as cmd,
+           coalesce(array_agg(distinct pg_get_userbyid(r.oid)) filter (where r.oid is not null),
+                    array['PUBLIC']) as roles
+    from pg_policy p
+    join pg_class c on c.oid = p.polrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    left join lateral unnest(p.polroles) as pr(oid) on true
+    left join pg_roles r on r.oid = pr.oid
+    group by 1,2,3,4,5,6
+  ),
+  norm as (
+    select sch, tbl, polname, role,
+           unnest(case when cmd = 'ALL'
+                       then array['SELECT','INSERT','UPDATE','DELETE']
+                       else array[cmd] end) as cmd
+    from (select sch, tbl, polname, cmd, unnest(roles) as role from pol where polpermissive) e
+  ),
+  combo as (
+    select sch, tbl, role, cmd, count(*) as n
+    from norm group by 1,2,3,4 having count(*) > 1
+  ),
+  adm as (
+    select p.polrelid, n.nspname as sch, c.relname as tbl
+    from pg_policy p
+    join pg_class c on c.oid = p.polrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    where p.polname = 'platform_admin_all'
+  ),
+  cmds(cmd, code) as (values ('SELECT','r'),('INSERT','a'),('UPDATE','w'),('DELETE','d')),
+  cell as (
+    select a.sch, a.tbl, k.cmd,
+      exists(
+        select 1 from pg_policy q
+        where q.polrelid = a.polrelid
+          and q.polname in ('std_select','std_insert','std_update','std_delete')
+          and (q.polcmd = k.code::"char" or q.polcmd = '*')
+          and coalesce(pg_get_expr(q.polqual, q.polrelid),
+                       pg_get_expr(q.polwithcheck, q.polrelid))
+              like '(( SELECT is_platform_admin() AS is_platform_admin) OR %'
+          and (q.polcmd <> 'w'::"char" or (
+                pg_get_expr(q.polqual, q.polrelid) like '(( SELECT is_platform_admin()%'
+            and pg_get_expr(q.polwithcheck, q.polrelid) like '(( SELECT is_platform_admin()%'))
+      ) as safe
+    from adm a cross join cmds k
+  ),
+  redundant as (select sch, tbl from cell group by sch, tbl having bool_and(safe))
+  select 'overlapping_combos' as metric, count(*)::bigint as value from combo
+  union all select 'tables_with_overlap', count(distinct sch || '.' || tbl)::bigint from combo
+  union all select 'redundant_admin_tables', (select count(*)::bigint from redundant)
+  union all select 'combos_cleared_by_drop',
+    (select count(*)::bigint from combo c
+      where c.role = 'authenticated' and c.n = 2
+        and exists (select 1 from redundant r where r.sch = c.sch and r.tbl = c.tbl))
+  order by 1
+`;
+
+interface OverlapRow {
+  metric: string;
+  value: number;
+}
+
+/** Reports the overlap census. Returns the number of overlapping combos. */
+function reportOverlaps(rows: OverlapRow[]): number {
+  const m = new Map(rows.map((r) => [r.metric, Number(r.value)]));
+  const combos = m.get("overlapping_combos") ?? 0;
+  const tables = m.get("tables_with_overlap") ?? 0;
+  const redundant = m.get("redundant_admin_tables") ?? 0;
+  const clearable = m.get("combos_cleared_by_drop") ?? 0;
+
+  console.log("");
+  console.log(
+    `${C.bold}RLS policy overlap${C.reset} ${C.dim}(permissive policies sharing a role+command are all evaluated, every row)${C.reset}`,
+  );
+  if (!combos) {
+    console.log(`${TAG.ok}Every role+command is served by a single permissive policy.`);
+    return 0;
+  }
+  console.log(
+    `  ${TAG.warn}${combos} overlapping role+command combos across ${tables} tables.`,
+  );
+  console.log(
+    `  ${TAG.info}${clearable} of them (${redundant} tables) are the PROVEN-redundant` +
+      ` \`platform_admin_all\` pattern — droppable with zero access change.`,
+  );
+  console.log(
+    `${C.dim}       System + batch recipe: common-docs/systems/platform/access/POLICY_OVERLAP.md${C.reset}`,
+  );
+  return combos;
+}
+
 async function main(): Promise<number> {
   const strict = process.argv.includes("--strict");
   const env = loadEnv();
@@ -270,6 +391,17 @@ async function main(): Promise<number> {
     return 2;
   }
   const traps = reportPlannerTraps(trapRows);
+
+  try {
+    const { data, error } = await supabase.rpc("execute_admin_query", {
+      query: OVERLAP_QUERY,
+    });
+    if (error) throw new Error(error.message);
+    reportOverlaps(unwrapRows(data) as unknown as OverlapRow[]);
+  } catch (err) {
+    console.error(`${TAG.fail}Policy-overlap census: query failed — ${String(err)}`);
+    return 2;
+  }
 
   if (!missing.length && !disabled.length) {
     console.log("");

@@ -1,0 +1,35 @@
+{
+  "$comment": "Parity fixture for the canonical ColumnFilter model executed in TWO places: matrx-frontend features/data-tables/column-filters.ts matchesFilter() (the ONE browser implementation, shared by every grid) and the CMS database function public.cms_item_matches_filter (viyklljfdhtidwecakwx), which exists so a collection can be filtered, faceted and paged over EVERY row instead of the page the browser holds. A grid that filters one page and paginates the result lies about its own data. Both must answer identically for every case here. The TS half runs in column-filter-parity.test.ts; the SQL half runs from db/checks/cms_item_matches_filter_parity.sql (same cases, same expectations).",
+  "cases": [
+    { "name": "text_empty_filter_is_absent_not_matches_nothing", "cell": "anything", "filter": { "mode": "text", "text": "   " }, "expect": true },
+    { "name": "text_is_case_insensitive_substring", "cell": "Herbal Workshop", "filter": { "mode": "text", "text": "herbal" }, "expect": true },
+    { "name": "text_misses", "cell": "Herbal Workshop", "filter": { "mode": "text", "text": "yoga" }, "expect": false },
+    { "name": "text_on_a_missing_cell_misses", "cell": null, "filter": { "mode": "text", "text": "x" }, "expect": false },
+    { "name": "text_matches_inside_a_json_object_cell", "cell": { "city": "Austin" }, "filter": { "mode": "text", "text": "austin" }, "expect": true },
+    { "name": "text_needle_is_trimmed_cell_is_not", "cell": "  padded  ", "filter": { "mode": "text", "text": " padded " }, "expect": true },
+
+    { "name": "values_selected_hits", "cell": "cardiology", "filter": { "mode": "values", "values": ["cardiology"], "includeBlank": false, "negate": false }, "expect": true },
+    { "name": "values_compare_is_case_and_space_insensitive", "cell": "  Cardiology ", "filter": { "mode": "values", "values": ["cardiology"], "includeBlank": false, "negate": false }, "expect": true },
+    { "name": "values_unselected_misses", "cell": "oncology", "filter": { "mode": "values", "values": ["cardiology"], "includeBlank": false, "negate": false }, "expect": false },
+    { "name": "values_blank_is_not_a_hit_unless_asked_for", "cell": "", "filter": { "mode": "values", "values": ["cardiology"], "includeBlank": false, "negate": false }, "expect": false },
+    { "name": "values_include_blank_hits_a_missing_cell", "cell": null, "filter": { "mode": "values", "values": [], "includeBlank": true, "negate": false }, "expect": true },
+    { "name": "values_include_blank_hits_a_whitespace_only_cell", "cell": "   ", "filter": { "mode": "values", "values": [], "includeBlank": true, "negate": false }, "expect": true },
+    { "name": "values_include_blank_does_not_hit_a_filled_cell", "cell": "cardiology", "filter": { "mode": "values", "values": [], "includeBlank": true, "negate": false }, "expect": false },
+    { "name": "values_negate_excludes_the_selection", "cell": "cardiology", "filter": { "mode": "values", "values": ["cardiology"], "includeBlank": false, "negate": true }, "expect": false },
+    { "name": "values_negate_keeps_everything_else", "cell": "oncology", "filter": { "mode": "values", "values": ["cardiology"], "includeBlank": false, "negate": true }, "expect": true },
+    { "name": "values_negate_keeps_blanks_when_blank_was_not_selected", "cell": "", "filter": { "mode": "values", "values": ["cardiology"], "includeBlank": false, "negate": true }, "expect": true },
+    { "name": "values_negate_drops_blanks_when_blank_was_selected", "cell": "", "filter": { "mode": "values", "values": ["cardiology"], "includeBlank": true, "negate": true }, "expect": false },
+    { "name": "values_matches_a_boolean_cell_by_its_text", "cell": true, "filter": { "mode": "values", "values": ["true"], "includeBlank": false, "negate": false }, "expect": true },
+    { "name": "values_matches_a_number_cell_by_its_text", "cell": 3, "filter": { "mode": "values", "values": ["3"], "includeBlank": false, "negate": false }, "expect": true },
+
+    { "name": "range_open_upper_bound", "cell": "2026-09-03T18:00:00Z", "filter": { "mode": "range", "min": "2026-08-01", "max": "" }, "expect": true },
+    { "name": "range_excludes_a_past_date", "cell": "2026-07-10T18:00:00Z", "filter": { "mode": "range", "min": "2026-08-01", "max": "" }, "expect": false },
+    { "name": "range_open_lower_bound", "cell": "2026-07-10T18:00:00Z", "filter": { "mode": "range", "min": "", "max": "2026-08-01" }, "expect": true },
+    { "name": "range_bounds_are_inclusive", "cell": "5", "filter": { "mode": "range", "min": "5", "max": "5" }, "expect": true },
+    { "name": "range_compares_numbers_as_numbers_not_text", "cell": "10", "filter": { "mode": "range", "min": "9", "max": "" }, "expect": true },
+    { "name": "range_strips_currency_and_separators", "cell": "$1,250", "filter": { "mode": "range", "min": "1000", "max": "2000" }, "expect": true },
+    { "name": "range_excludes_an_unparseable_cell", "cell": "soon", "filter": { "mode": "range", "min": "1", "max": "" }, "expect": false },
+    { "name": "range_excludes_a_blank_cell", "cell": "", "filter": { "mode": "range", "min": "", "max": "99" }, "expect": false },
+    { "name": "range_empty_bounds_still_require_a_comparable_cell", "cell": "soon", "filter": { "mode": "range", "min": "", "max": "" }, "expect": false }
+  ]
+}
