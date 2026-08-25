@@ -49,6 +49,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { formatRelativeTime } from "@/utils/datetime";
 import { useDigStampMutations } from "@/features/marketing/search-console/hooks/useDigRules";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { DimensionForm, type DimensionFormValue } from "./DimensionForm";
 import { ValueForm, type ValueFormValue } from "./ValueForm";
 import { MatcherEditor } from "./MatcherEditor";
@@ -68,20 +69,43 @@ function CountChip({
   value,
   label,
   title,
+  onOpen,
 }: {
   icon: typeof Tag;
   value: number;
   label: string;
   title: string;
+  /**
+   * NO DEAD ENDS — a count that names records the app can show is a door, not
+   * a label. Omit it only when nothing can be opened (a zero count).
+   */
+  onOpen?: () => void;
 }) {
-  return (
-    <span
-      title={title}
-      className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-muted-foreground"
-    >
+  const body = (
+    <>
       <Icon className="h-3 w-3 shrink-0" />
       {formatCount(value)} {label}
-    </span>
+    </>
+  );
+  if (!onOpen) {
+    return (
+      <span
+        title={title}
+        className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-muted-foreground"
+      >
+        {body}
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onOpen}
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded text-[11px] text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+    >
+      {body}
+    </button>
   );
 }
 
@@ -116,6 +140,7 @@ function ValueRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [matchersOpen, setMatchersOpen] = useState(autoOpenMatchers);
+  const openKeywordsWithAnswer = useOpenGscDrilldownWindow();
   const remove = useMutation({
     mutationFn: () =>
       archiveFacetValue({
@@ -233,11 +258,33 @@ function ValueRow({
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        {/* NO DEAD ENDS — this row states how many keywords carry this answer;
+            clicking the count opens exactly those, through the SAME drilldown
+            window and the SAME `stamps` filter the rest of the value system
+            uses (`dimension:value`). No second list, no bespoke route. */}
         <CountChip
           icon={Tag}
           value={value.keyword_count}
           label="keywords"
-          title={`${value.keyword_count} keywords currently carry this answer`}
+          title={
+            value.keyword_count > 0
+              ? // Deliberately NOT "open all N": the drilldown is the Search
+                // Console view, so it shows the ones with demand in the
+                // period, which is fewer than the total carrying the stamp.
+                "See the keywords that carry this answer"
+              : "No keyword carries this answer yet"
+          }
+          onOpen={
+            value.keyword_count > 0
+              ? () =>
+                  openKeywordsWithAnswer({
+                    siteId,
+                    dimension: "query",
+                    filters: { stamps: `${dimensionSlug}:${value.key}` },
+                    title: `${dimensionLabel}: ${value.label}`,
+                  })
+              : undefined
+          }
         />
         {/* P20 — a situational answer never shows a count without the moment
             it was worked out. A present-tense number with no time behind it
