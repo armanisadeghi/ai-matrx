@@ -1551,19 +1551,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 >
                   {rulebook.description}
                 </p>
-                {descriptionOverflows || descriptionExpanded ? (
-                  <button
-                    type="button"
-                    className="mt-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
-                    onClick={() => setDescriptionExpanded((expanded) => !expanded)}
-                    aria-expanded={descriptionExpanded}
-                  >
-                    {descriptionExpanded ? "Show less" : "Read more"}
-                  </button>
-                ) : null}
               </div>
             ) : null}
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
               {rulebook.source.author ? (
                 <span>
                   {rulebook.source.title
@@ -1586,8 +1576,20 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     ? "Active"
                     : "Archived"}
               </Badge>
+              {descriptionOverflows || descriptionExpanded ? (
+                <button
+                  type="button"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                  onClick={() =>
+                    setDescriptionExpanded((expanded) => !expanded)
+                  }
+                  aria-expanded={descriptionExpanded}
+                >
+                  {descriptionExpanded ? "Show less" : "Read more"}
+                </button>
+              ) : null}
             </div>
-            <div className="mt-3">
+            <div className="mt-4">
               <RulebookKpiStrip
                 kpis={kpis}
                 journey={journey ?? undefined}
@@ -1599,7 +1601,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 the KPIs rather than beside the build actions. Every one of them
                 used to be a row inside `More`, where none of them had a tooltip
                 and none of them said what it was. */}
-            <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none">
+            <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -1681,23 +1683,23 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               />
               {draftCount > 0 && canEdit ? (
                 <>
-                <Button
-                  size="sm"
-                  className="h-8 w-full min-w-0 justify-center px-2 text-xs"
-                  onClick={() => setWizardOpen(true)}
-                >
-                  <ListTodo className="h-3.5 w-3.5" />
-                  Review
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 w-full min-w-0 justify-center px-2 text-xs"
-                  onClick={() => void approveAllDrafts()}
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Approve all
-                </Button>
+                  <Button
+                    size="sm"
+                    className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                    onClick={() => setWizardOpen(true)}
+                  >
+                    <ListTodo className="h-3.5 w-3.5" />
+                    Review
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                    onClick={() => void approveAllDrafts()}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Approve all
+                  </Button>
                 </>
               ) : null}
             </div>
@@ -1797,7 +1799,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           </div>
 
           {/* Sections */}
-          <div data-surface-value="rules" className="contents">
+          <div data-surface-value="rules" className="space-y-6">
             {rulebook.rules.length === 0 ? (
               /* Empty state — one sentence and ONE button. Every other way in
                  lives in Sources above; repeating them here is what made this
@@ -1824,7 +1826,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             ) : (
               grouped.map((group) =>
                 group.rules.length === 0 && search ? null : (
-                  <section key={group.code} className="space-y-4 sm:space-y-2">
+                  <section key={group.code} className="space-y-2">
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between sm:gap-0">
                       <h3 className="min-w-0 text-sm font-semibold leading-snug text-foreground sm:leading-normal">
                         <span>{group.label}</span>
