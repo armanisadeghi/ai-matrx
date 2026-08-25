@@ -161,6 +161,14 @@ type ResearchStreamRequest =
     };
 
 export function useKeywordResearch(
+  /**
+   * MSR-26 (Arman): keyword research belongs to a SITE, never the
+   * organization — a brand can own multiple sites with different keyword
+   * sets. `null`/`undefined` while the host is still gating on a site pick;
+   * `runResearch` refuses (with a loud run-state error, never a silent
+   * no-op) rather than firing an org-wide run.
+   */
+  siteId?: string | null,
   organizationId?: string | null,
   options?: {
     /**
@@ -549,6 +557,17 @@ export function useKeywordResearch(
     async (primaryKeyword: string, runOptions?: { forceRefresh?: boolean }) => {
       const phrase = primaryKeyword.trim();
       if (!phrase) return;
+      if (!siteId) {
+        // MSR-26: research is bound to a site — a run without one is not a
+        // valid request. Refuse loudly instead of silently no-op'ing or
+        // falling back to an org-wide run.
+        setRunState({
+          status: "error",
+          primaryKeyword: phrase,
+          error: "Select a site before running keyword research.",
+        });
+        return;
+      }
       runEpochRef.current += 1;
       // A new logical run supersedes any reattach still chasing the old one.
       reattacherRef.current?.cancel();
@@ -559,17 +578,18 @@ export function useKeywordResearch(
       setRunState({
         status: "running",
         primaryKeyword: phrase,
-        stage: "Checking organization access and DataForSEO credentials",
+        stage: "Checking site access and DataForSEO credentials",
       });
       await consumeResearchStream(phrase, {
         path: "/seo/keywords/research",
         body: {
+          site_id: siteId,
           primary_keyword: phrase,
           force_refresh: runOptions?.forceRefresh === true,
         },
       });
     },
-    [consumeResearchStream, dispatch],
+    [consumeResearchStream, dispatch, siteId],
   );
 
   const rejoinResearch = useCallback(

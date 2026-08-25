@@ -27,6 +27,7 @@
 import { Boxes } from "lucide-react";
 
 import type { DecodedDirective } from "@/features/content-ir/directives/decode";
+import { directiveDisplay } from "@/features/content-ir/directives/nounDisplay";
 import { ApplyDirectiveButton } from "@/features/matrx-envelope/ApplyDirectiveButton";
 
 export interface EnvelopeFallbackCardProps {
@@ -40,11 +41,16 @@ export function EnvelopeFallbackCard({
   reason,
 }: EnvelopeFallbackCardProps) {
   const count = directive.items.length;
+  // THE AUTO-VIEW: the catalog names the shape, so a noun this frontend has
+  // never heard of still reads as "Create Agent · Agents" rather than as a slug.
+  const display = directiveDisplay(directive.directiveClass, directive.noun);
   return (
     <div className="my-3 inline-flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted px-2.5 py-1 text-sm">
       <Boxes className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      <span className="text-foreground">{directive.directiveClass}</span>
-      <span className="text-muted-foreground">/ {directive.noun}</span>
+      <span className="text-foreground">{display.title}</span>
+      {display.family ? (
+        <span className="text-muted-foreground">· {display.family}</span>
+      ) : null}
       <span className="text-muted-foreground">
         · {count} {count === 1 ? "item" : "items"}
       </span>

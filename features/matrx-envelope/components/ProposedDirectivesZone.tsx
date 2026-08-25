@@ -16,6 +16,8 @@ import { useState } from "react";
 import { Check, ListChecks, Loader2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
+import { isDirectiveClass } from "@/features/content-ir/directives/grammar";
+import { directiveDisplay } from "@/features/content-ir/directives/nounDisplay";
 import { confirmDirective } from "@/features/directive-catalog/service";
 import type { DirectiveConfirmRequest } from "@/features/directive-catalog/types";
 import {
@@ -53,8 +55,11 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
   const [busy, setBusy] = useState(false);
 
   // The slug's class + noun ARE the title — derived from the one identity, so
-  // the card can never name the action differently from what it will apply.
-  const title = `${proposal.directiveClass} ${proposal.noun}`;
+  // the card can never name the action differently from what it will apply,
+  // and the catalog supplies the human label ("Create Agent", not "create agent").
+  const title = isDirectiveClass(proposal.directiveClass)
+    ? directiveDisplay(proposal.directiveClass, proposal.noun).title
+    : proposal.directive;
   const itemLabel = `${proposal.itemCount} item${proposal.itemCount === 1 ? "" : "s"}`;
 
   const dismiss = () =>
@@ -102,7 +107,7 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
         <div className="flex min-w-0 items-center gap-2">
           <ListChecks className="size-4 shrink-0 text-primary" />
           <div className="min-w-0">
-            <div className="truncate text-sm font-medium capitalize text-foreground">
+            <div className="truncate text-sm font-medium text-foreground">
               {title}
             </div>
             <div className="truncate text-xs text-muted-foreground">
