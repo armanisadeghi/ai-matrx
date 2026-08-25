@@ -86,7 +86,7 @@ interface RouteModeNavProps {
 const PILL =
   "matrx-glass-thin-border flex items-center gap-0 rounded-full p-0.5 whitespace-nowrap";
 const ITEM =
-  "flex min-h-11 items-center justify-center gap-1 py-0.5 px-2.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer whitespace-nowrap [&_svg]:w-3.5 [&_svg]:h-3.5";
+  "flex min-h-11 min-w-11 items-center justify-center gap-1 py-0.5 px-2.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer whitespace-nowrap [&_svg]:w-3.5 [&_svg]:h-3.5";
 
 // Breathing room the nav must keep between itself and the header's left/right
 // flanks. Without it the measurement picks "full" whenever the content fits by
