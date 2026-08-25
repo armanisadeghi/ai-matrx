@@ -306,6 +306,103 @@ export function GscDimensionTable({
     });
   };
 
+  // Captured at right-click time; read by resolveRowContext below and by
+  // the keyword menu section's getRow (declared before its first use).
+  const clickedRowRef = useRef<GscBreakdownRow | null>(null);
+
+  // MSR-03/04 — this site's own value-band vocabulary, for the Level
+  // column's filter options (bands are per-site; there is no fixed enum).
+  const bandVocab = useQuery({
+    queryKey: ["marketing", "value", "vocab", siteId, "value_band"],
+    queryFn: ({ signal }) => getValueVocabulary(siteId, "value_band", signal),
+    enabled: dimension === "query",
+    staleTime: 5 * 60_000,
+  });
+  const levelFilterOptions = [
+    ...(bandVocab.data ?? [])
+      .slice()
+      .sort((a, b) => a.sort - b.sort)
+      .map((b) => ({ value: b.value, label: b.label })),
+    { value: "unvalued", label: "Unvalued" },
+    { value: "negative", label: "Negative" },
+  ];
+
+  // MSR-05 — bulk class assignment: filter to "no class", sort by
+  // clicks/level/score, select the rows, assign in one action. Controlled
+  // selection (opt-in on MatrxDataTable) — query dimension only, since Class
+  // is a keyword-level ruling.
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkPending, setBulkPending] = useState(false);
+  const BULK_CLASS_OPTIONS: { value: GscClassRuling; label: string }[] = [
+    { value: "money", label: "Money" },
+    { value: "educational", label: "Educational" },
+    { value: "brand", label: "Brand" },
+    { value: "clear", label: "Unclassified" },
+  ];
+  const runBulkClassAssign = async (
+    ruling: GscClassRuling,
+    selected: GscBreakdownRow[],
+  ) => {
+    const keywordIds = selected
+      .map((row) => row.keyword_id)
+      .filter((id): id is string => !!id);
+    if (keywordIds.length === 0) {
+      toast.error(
+        "None of the selected rows are mapped to the keyword library yet.",
+      );
+      return;
+    }
+    setBulkPending(true);
+    try {
+      // Same canonical write as the single-cell edit — `mismatch` is
+      // deliberately not offered here, it requires a written reason.
+      await setGscKeywordClass(siteId, keywordIds, ruling, null, {
+        origin: "manual",
+        confirmed: true,
+      });
+      toast.success(
+        `Set ${keywordIds.length.toLocaleString()} keyword${keywordIds.length === 1 ? "" : "s"} to ${BULK_CLASS_OPTIONS.find((o) => o.value === ruling)?.label ?? ruling}.`,
+      );
+      setSelectedIds([]);
+      await queryClient.invalidateQueries({
+        queryKey: ["marketing", "gsc", "keyword-value-for", siteId],
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not set the class.",
+      );
+    } finally {
+      setBulkPending(false);
+    }
+  };
+
+  // MSR-01 — the shared keyword row-actions family (Set class / Set service /
+  // Set level / Open Keyword Intelligence), the same menu every other keyword
+  // surface offers. Query dimension only — a page/country/device row has no
+  // single keyword behind it.
+  const keywordSurfaces = useKeywordAssignSurfaces({
+    siteId,
+    onChanged: () =>
+      void queryClient.invalidateQueries({
+        queryKey: ["marketing", "gsc", "keyword-value-for", siteId],
+      }),
+  });
+  const keywordMenuSection = useKeywordMenuSection({
+    siteId,
+    siteName,
+    surfaces: keywordSurfaces,
+    getRow: (): KeywordMenuRow | null => {
+      const row = clickedRowRef.current;
+      if (!row || dimension !== "query") return null;
+      return {
+        phrase: row.key,
+        keywordId: row.keyword_id ?? null,
+        currentLevel: valueFor(row)?.value_band ?? null,
+        levelIsRuling: valueFor(row)?.value_source === "override",
+      };
+    },
+  });
+
   // Watch column wiring (query/page only; hook order stays stable).
   const watchKind = dimension === "page" ? "page" : "query";
   const rowWatch = useRowWatch(watchKind);

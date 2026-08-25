@@ -74,6 +74,34 @@ function trendPercent(cur: number | null, prev: number | null): number | null {
   return ((cur - prev) / prev) * 100;
 }
 
+/** Bordered up/down delta pill — icon + number, never color alone. */
+function TrendPill({
+  percent,
+  compact = false,
+}: {
+  percent: number | null;
+  compact?: boolean;
+}) {
+  if (percent === null) return null;
+  const rising = percent >= 0;
+  const Icon = rising ? TrendingUp : TrendingDown;
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-0.5 rounded-full border font-medium tabular-nums",
+        compact ? "px-1 py-0 text-[10px]" : "px-1.5 py-0.5 text-[11px]",
+        rising
+          ? "border-success/30 bg-success/10 text-success"
+          : "border-destructive/30 bg-destructive/10 text-destructive",
+      )}
+    >
+      <Icon className={compact ? "h-2.5 w-2.5" : "h-3 w-3"} />
+      {rising ? "+" : ""}
+      {percent.toFixed(0)}%
+    </span>
+  );
+}
+
 // GSC finalizes ~2 days back; anything older than that plus two missed
 // nights is stale. Kept in step with `seo.gsc_ingestion_health`'s thresholds
 // (v_lag_days / v_stale_threshold in migrations/seo_gsc_ingestion_health_v5.sql).
