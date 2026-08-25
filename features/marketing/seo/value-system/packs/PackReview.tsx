@@ -60,7 +60,7 @@ import {
   previewStarterPack,
   starterPackPreviewQueryKey,
 } from "../data";
-import { runSiteMatchers } from "../workbench/session/data";
+import { describeMatcherRun, runSiteMatchers } from "../workbench/session/data";
 import {
   bandMetaFor,
   buildBandMeta,
@@ -465,15 +465,21 @@ export function PackReview({
       // way, and re-running is one press on the Dimensions screen.
       let stamped: number | null = null;
       let engineFailed = false;
+      let engineWaiting: string | null = null;
       if (written.matchers > 0) {
         try {
           const run = await runSiteMatchers(siteId);
+          // KI-044: a run held back by autonomy stamped nothing, and saying
+          // "0 keywords" without saying WHY is the silent-control failure.
           stamped = run.stamped;
+          engineWaiting = describeMatcherRun(run).waiting
+            ? describeMatcherRun(run).headline
+            : null;
         } catch {
           engineFailed = true;
         }
       }
-      return { ...written, stamped, engineFailed };
+      return { ...written, stamped, engineFailed, engineWaiting };
     },
     onSuccess: (result) => {
       const written =
@@ -493,10 +499,18 @@ export function PackReview({
           },
         );
       }
+      if (result.engineWaiting) {
+        // KI-044 — the rules are saved but nothing was stamped, on purpose.
+        // Say which, or the next sentence's "Applied to 0 keywords" reads as
+        // a bug.
+        toast.info("Adopted — your rules are waiting on a person.", {
+          description: result.engineWaiting,
+        });
+      }
       toast.success(
         written === 0 && !result.guidelines_seeded
           ? "Nothing new to write — everything you ticked was already on this site."
-          : `Adopted ${written} item${written === 1 ? "" : "s"} from ${pack.name}: ${result.worths} worths and ${result.matchers} matchers across ${result.meaning_values} answers, ${result.topics} topic worths, ${result.value_bands + result.geo_bands} bands, ${result.geo_areas} service areas${result.guidelines_seeded ? ", plus the guidelines skeleton" : ""}. They are yours now — edit any of them on the Dimensions screen.${result.stamped !== null ? ` Applied to ${formatCount(result.stamped)} of your keywords.` : ""}`,
+          : `Adopted ${written} item${written === 1 ? "" : "s"} from ${pack.name}: ${result.worths} worths and ${result.matchers} matchers across ${result.meaning_values} answers, ${result.topics} topic worths, ${result.value_bands + result.geo_bands} bands, ${result.geo_areas} service areas${result.guidelines_seeded ? ", plus the guidelines skeleton" : ""}. They are yours now — edit any of them on the Dimensions screen.${result.stamped !== null && !result.engineWaiting ? ` Applied to ${formatCount(result.stamped)} of your keywords.` : ""}`,
         result.geo_areas_pending > 0
           ? {
               description: `${result.geo_areas_pending} service area${result.geo_areas_pending === 1 ? "" : "s"} still ${result.geo_areas_pending === 1 ? "has" : "have"} no places, so ${result.geo_areas_pending === 1 ? "it matches" : "they match"} nothing yet.`,

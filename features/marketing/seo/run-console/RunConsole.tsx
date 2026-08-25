@@ -59,7 +59,13 @@ import type {
 } from "@/features/marketing/seo/value-system/topics/types";
 import { ProposedQueue } from "@/features/marketing/seo/value-system/topics/ProposedQueue";
 import { UnplacedQueue } from "@/features/marketing/seo/value-system/topics/UnplacedQueue";
-import { TOPIC_PLACEMENT_ENGINE, type ConsoleEngine } from "./engines";
+import {
+  CONSOLE_ENGINES,
+  SITUATIONAL_REFRESH_ENGINE,
+  TOPIC_PLACEMENT_ENGINE,
+  type ConsoleEngine,
+} from "./engines";
+import { SituationalRefreshConsole } from "./SituationalRefreshConsole";
 import {
   listConsoleSites,
   listEngineSchedules,
@@ -265,13 +271,169 @@ function buildBrandColumns({
   ];
 }
 
+/**
+ * THE SHELL — which engine, at which tier.
+ *
+ * Arman's ruling made the TIER a prop; the engine registry
+ * (`CONSOLE_ENGINES`) makes the ENGINE a tab. Both engines answer to the same
+ * mount, the same permission scope and the same schedule cascade; only the
+ * body differs, because what "owed work" means differs.
+ */
 export function RunConsole({
   scope,
-  engine = TOPIC_PLACEMENT_ENGINE,
+  engine: initialEngine = TOPIC_PLACEMENT_ENGINE,
 }: {
   scope: RunConsoleScope;
   engine?: ConsoleEngine;
 }) {
+  const [engineSlug, setEngineSlug] = useState<string>(initialEngine.slug);
+  const engine =
+    CONSOLE_ENGINES.find((row) => row.slug === engineSlug) ?? TOPIC_PLACEMENT_ENGINE;
+
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-textured">
+      <Tabs
+        value={engineSlug}
+        onValueChange={setEngineSlug}
+        className="flex min-h-0 flex-1 flex-col"
+      >
+        <TabsList className="h-9 shrink-0 justify-start gap-1 rounded-none border-b border-border bg-card px-2">
+          {CONSOLE_ENGINES.map((row) => (
+            <TabsTrigger key={row.slug} value={row.slug} className="h-7 text-xs">
+              {row.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {CONSOLE_ENGINES.map((row) => (
+          <TabsContent
+            key={row.slug}
+            value={row.slug}
+            className="m-0 flex min-h-0 flex-1 flex-col"
+          >
+            {/* `key` remounts on engine change: two engines never share run
+                state, a queue draining for one must not appear under the other. */}
+            {row.slug === SITUATIONAL_REFRESH_ENGINE.slug ? (
+              <SituationalEngineView key={row.slug} scope={scope} engine={row} />
+            ) : (
+              <TopicPlacementConsole key={row.slug} scope={scope} engine={row} />
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  );
+}
+
+/**
+ * KI-016's body: the same brand list, the same schedule editor and the same
+ * cascade the placement engine uses, with the situational engine's own notion
+ * of owed work.
+ */
+function SituationalEngineView({
+  scope,
+  engine,
+}: {
+  scope: RunConsoleScope;
+  engine: ConsoleEngine;
+}) {
+  const [selected, setSelected] = useState<string[]>([]);
+
+  const sites = useQuery({
+    queryKey: ["seo", "run-console", "sites", scope],
+    queryFn: () => listConsoleSites(scope),
+    staleTime: 60 * 1000,
+  });
+  const schedules = useQuery({
+    queryKey: ["seo", "run-console", "schedules", engine.slug],
+    queryFn: () => listEngineSchedules(engine.slug),
+    staleTime: 60 * 1000,
+  });
+  const knobs = useQuery({
+    queryKey: ["seo", "run-console", "knobs", engine.knobFeature],
+    queryFn: () => fetchFeatureKnobValues(engine.knobFeature),
+    staleTime: 5 * 60 * 1000,
+  });
+  const capCeiling = Number(knobs.data?.[engine.capKnobKey] ?? 0);
+  const siteRows = sites.data ?? [];
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5">
+        <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
+        <div className="min-w-0">
+          <h1 className="text-sm font-semibold leading-tight text-foreground">
+            Run console — {engine.label}
+          </h1>
+          <p className="truncate text-[10px] text-muted-foreground">
+            {engine.what}
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          <ShieldCheck className="h-3 w-3" />
+          {scopeHeadline(scope)}
+        </span>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+            <Gauge className="h-3 w-3" />
+            {/* No dollars are spent here, so the only ceiling worth showing is
+                how much one pass may write. It is a knob, and it is named. */}
+            up to {formatCount(capCeiling)} stamps per pass
+            <Link
+              href="/administration/users/limits"
+              className="ml-1 text-primary underline-offset-2 hover:underline"
+            >
+              knobs
+            </Link>
+          </span>
+        </div>
+      </header>
+
+      {knobs.isSuccess && capCeiling === 0 ? (
+        <p className="rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive">
+          The <code>{engine.knobFeature}</code> knob{" "}
+          <code>{engine.capKnobKey}</code> has no row, so this console cannot
+          know its own ceiling. Add it in Limits &amp; Knobs.
+        </p>
+      ) : null}
+
+      <SituationalRefreshConsole
+        sites={siteRows}
+        sitesLoading={sites.isLoading}
+        sitesError={sites.isError}
+        selected={selected}
+        onSelectedChange={setSelected}
+        schedulePanel={
+          <ScheduleCascadePanel
+            engine={engine}
+            scope={scope}
+            sites={siteRows}
+            schedules={schedules.data ?? []}
+            capCeiling={capCeiling || 1}
+          />
+        }
+      />
+    </div>
+  );
+}
+
+function TopicPlacementConsole({
+  scope,
+  engine,
+}: {
+  scope: RunConsoleScope;
+  engine: ConsoleEngine;
+}) {
+  // This body only ever drives a streaming aidream command; the registry says
+  // so per engine, and a mismatch is a wiring bug worth failing loudly on
+  // rather than rendering a console whose Run button cannot work. Checked
+  // before any hook runs, and `engine` never changes for a given mount (the
+  // shell remounts on engine change), so this is not a conditional hook path.
+  if (engine.runner.kind !== "aidream_command") {
+    throw new Error(
+      `${engine.label} is not an aidream command engine — it must not render the placement console.`,
+    );
+  }
+  const runner = engine.runner;
   const queryClient = useQueryClient();
 
   const [selected, setSelected] = useState<string[]>([]);
@@ -321,10 +483,10 @@ export function RunConsole({
 
   const pass = useSeoCommandRun<TopicPlacementPassResult>({
     key: "run-console-topic-placement",
-    path: engine.path,
-    finalKind: engine.finalKind,
-    stageLabels: engine.stageLabels,
-    live: { label: engine.liveLabel },
+    path: runner.path,
+    finalKind: runner.finalKind,
+    stageLabels: runner.stageLabels,
+    live: { label: runner.liveLabel },
     ...(requestOrganizationId
       ? { scopeOverrides: { organization_id: requestOrganizationId } }
       : {}),
@@ -428,7 +590,7 @@ export function RunConsole({
   });
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2 bg-textured p-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
       {/* ── Control bar ──────────────────────────────────────────────────── */}
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5">
         <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
@@ -442,14 +604,7 @@ export function RunConsole({
         </div>
 
         {/* NO SECRET AI: this console runs an agent — name it. */}
-        <PageAgents
-          agents={[
-            {
-              mandateKey: "seo.topic_assigner",
-              does: "places keywords onto the Offering tree",
-            },
-          ]}
-        />
+        <PageAgents agents={[...engine.agents]} />
 
         <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
           <ShieldCheck className="h-3 w-3" />

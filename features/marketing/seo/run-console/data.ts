@@ -19,11 +19,14 @@ import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { makeAssertData, extractErrorMessage } from "@/utils/errors";
 import { readAllRows } from "@/lib/supabase/readAllRows";
 import type { Database } from "@/types/database.types";
+import { evaluateConditionMatchers } from "@/features/marketing/search-console/data-dig";
 import type {
   ConsoleSiteRow,
   EngineScheduleRow,
   RunConsoleScope,
   ScheduleTier,
+  SituationalRefreshStatus,
+  SituationalRunOutcome,
 } from "./types";
 
 const assertData = makeAssertData("reach the run console");
@@ -315,4 +318,109 @@ export async function listRunPlacements(
     if (row) row.secondary = list;
   }
   return [...byKeyword.values()];
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * KI-016 — the situational refresh engine's reads and its run.
+ *
+ * 🚨 THE RUN IS NOT NEW CODE. `evaluateConditionMatchers`
+ * (`features/marketing/search-console/data-dig.ts`) is the ONE client wrapper
+ * over `seo.fn_evaluate_condition_matchers`, and it is what the Dig Here stamp
+ * strip and the Dimensions screen's Re-evaluate button already press. The
+ * console presses the SAME thing — a console with its own copy of the engine
+ * call would drift from the button a person uses, which is the whole class of
+ * defect this feature exists to prevent.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/** One brand's situational standing — the read the console's table sorts on. */
+export async function getSituationalRefreshStatus(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<SituationalRefreshStatus> {
+  const db = await seoDb();
+  const response = await db
+    .rpc("situational_refresh_status", { p_site_id: siteId })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(
+    response.data,
+    response.error,
+    "read this brand's situational segments",
+  ) as unknown as SituationalRefreshStatus[];
+  const row = Array.isArray(rows) ? rows[0] : (rows as unknown as SituationalRefreshStatus);
+  // A brand with no condition matchers returns no row at all — that is a real
+  // and common state (most brands have never written a Dig Here rule), so it
+  // renders as zeroes, never as an error.
+  return (
+    row ?? {
+      site_id: siteId,
+      matchers: 0,
+      stale_matchers: 0,
+      oldest_evaluated_at: null,
+      newest_evaluated_at: null,
+      stamps: 0,
+      stale_after_hours: 0,
+      autonomy: null,
+    }
+  );
+}
+
+/** One refresh pass over one brand, through the ONE engine wrapper. */
+export async function runSituationalRefresh(
+  site: ConsoleSiteRow,
+): Promise<SituationalRunOutcome> {
+  const started = new Date().toISOString();
+  try {
+    const result = await evaluateConditionMatchers(site.id);
+    const segments = (result.results ?? []).map((row) => ({
+      matcherId: row.matcher_id,
+      rule: row.rule ?? "—",
+      dimension: row.dimension ?? "—",
+      value: row.value ?? "—",
+      matched: row.matched ?? 0,
+      stamped: row.stamped ?? 0,
+      removed: row.removed ?? 0,
+      proposed: Number(
+        (row as { proposed?: { keywords?: number } }).proposed?.keywords ?? 0,
+      ),
+      error: row.error ?? null,
+    }));
+    return {
+      siteId: site.id,
+      siteName: site.name,
+      finishedAt: new Date().toISOString(),
+      window: result.window
+        ? { start: result.window.start, end: result.window.end }
+        : null,
+      matchers: result.matchers ?? 0,
+      stamped: result.stamped ?? 0,
+      removed: result.removed ?? 0,
+      remaining: result.remaining ?? 0,
+      passes: result.passes ?? 1,
+      refusal: result.autonomy?.refusal ?? null,
+      autonomyMode: result.autonomy?.mode ?? null,
+      proposals: segments.reduce((sum, row) => sum + (row.proposed > 0 ? 1 : 0), 0),
+      timeoutApplied: result.timeout_pass?.applied ?? 0,
+      error: null,
+      segments,
+    };
+  } catch (error) {
+    // A failed brand is reported, never swallowed, and never ends the queue.
+    return {
+      siteId: site.id,
+      siteName: site.name,
+      finishedAt: started,
+      window: null,
+      matchers: 0,
+      stamped: 0,
+      removed: 0,
+      remaining: 0,
+      passes: 0,
+      refusal: null,
+      autonomyMode: null,
+      proposals: 0,
+      timeoutApplied: 0,
+      error: extractErrorMessage(error),
+      segments: [],
+    };
+  }
 }

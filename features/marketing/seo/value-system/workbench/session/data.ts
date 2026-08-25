@@ -20,6 +20,7 @@ import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage, makeAssertData } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 import type { KeywordMeaningProposal } from "@/features/marketing/seo/value-system/suggestions/proposal";
+import type { AutonomyVerdict } from "@/features/marketing/search-console/data-dig";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -264,6 +265,19 @@ export interface MatcherRunResult {
   stamped: number;
   removed: number;
   conflicts: number;
+  /**
+   * KI-044 — which autonomy mode the engine obeyed. `decision !== "apply"`
+   * means NOTHING was stamped: either the step is off, or what it found is
+   * waiting in Approvals. A caller that reports "stamped 0" without saying
+   * which of those happened is the silent-control failure this closes.
+   */
+  autonomy: AutonomyVerdict | null;
+  /** Set when the mode is `off` — the engine did not run. */
+  skipped: string | null;
+  /** How many proposals it wrote instead of stamping. */
+  proposals: number;
+  /** Mode 3's bounded catch-up, when it ran. */
+  timeoutApplied: number;
 }
 
 /**
@@ -290,13 +304,65 @@ export async function runSiteMatchers(
     response.error,
     "run your rules over the keywords",
   ) as unknown as Record<string, Json>;
+  const proposals = Array.isArray(raw.proposals) ? raw.proposals : [];
+  const timeout = raw.timeout_pass as { applied?: number } | undefined;
   return {
     scopeKeywords: num(raw, "scope_keywords"),
     matchers: num(raw, "matchers"),
     stamped: num(raw, "stamped"),
     removed: num(raw, "removed"),
     conflicts: num(raw, "single_cardinality_conflicts"),
+    autonomy: (raw.autonomy as unknown as AutonomyVerdict) ?? null,
+    skipped: typeof raw.skipped === "string" ? raw.skipped : null,
+    proposals: proposals.length,
+    timeoutApplied: Number(timeout?.applied ?? 0),
   };
+}
+
+/**
+ * ONE sentence for what a run actually did — used by every surface that
+ * presses the engine (the Dimensions matcher editor, the trial panel, pack
+ * adoption), so none of them can report "0 stamped" while the real answer is
+ * "it is off" or "it is waiting for you" (KI-044).
+ */
+export function describeMatcherRun(result: MatcherRunResult): {
+  headline: string;
+  detail: string | null;
+  waiting: boolean;
+} {
+  if (result.skipped || result.autonomy?.decision === "off") {
+    return {
+      headline: result.autonomy?.refusal ?? "Your rules are turned off, so nothing ran.",
+      detail: null,
+      waiting: true,
+    };
+  }
+  if (result.autonomy && result.autonomy.decision !== "apply") {
+    return {
+      headline:
+        result.proposals === 0
+          ? "Nothing new to propose — your keywords already say what your rules found."
+          : `${result.proposals.toLocaleString()} proposal${result.proposals === 1 ? "" : "s"} are waiting for you in Approvals. Nothing was stamped.`,
+      detail: result.autonomy.refusal,
+      waiting: true,
+    };
+  }
+  const headline =
+    result.stamped === 0 && result.removed === 0
+      ? "Already up to date — nothing changed."
+      : `${result.stamped.toLocaleString()} keywords stamped, ${result.removed.toLocaleString()} released across the site.`;
+  const parts: string[] = [];
+  if (result.conflicts > 0) {
+    parts.push(
+      `${result.conflicts.toLocaleString()} kept their existing single-answer stamp instead of switching.`,
+    );
+  }
+  if (result.timeoutApplied > 0) {
+    parts.push(
+      `${result.timeoutApplied.toLocaleString()} earlier proposal${result.timeoutApplied === 1 ? "" : "s"} applied after their waiting period.`,
+    );
+  }
+  return { headline, detail: parts.join(" ") || null, waiting: false };
 }
 
 /* ------------------------------------------------------- the C9 proposal */

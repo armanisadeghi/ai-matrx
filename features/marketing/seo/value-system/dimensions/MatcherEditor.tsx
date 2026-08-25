@@ -76,6 +76,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { reviewWindow } from "../lib";
 import {
   previewMatcherReach,
+  describeMatcherRun,
   runSiteMatchers,
   type MatcherReach,
 } from "../workbench/session/data";
@@ -597,16 +598,12 @@ export function MatcherEditor({
   const run = useMutation({
     mutationFn: () => runSiteMatchers(siteId),
     onSuccess: (result) => {
-      toast.success(
-        result.stamped === 0 && result.removed === 0
-          ? "Already up to date — nothing changed."
-          : `${result.stamped.toLocaleString()} keywords stamped, ${result.removed.toLocaleString()} released across the site.`,
-        result.conflicts > 0
-          ? {
-              description: `${result.conflicts.toLocaleString()} kept their existing single-answer stamp instead of switching.`,
-            }
-          : undefined,
-      );
+      // AUTONOMY IS PART OF THE RECEIPT (KI-044). A run that wrote nothing
+      // because the step is off, or because it is set to wait for a person,
+      // must not report as "already up to date".
+      const said = describeMatcherRun(result);
+      const notify = said.waiting ? toast.info : toast.success;
+      notify(said.headline, said.detail ? { description: said.detail } : undefined);
       refresh();
     },
     onError: (error) =>

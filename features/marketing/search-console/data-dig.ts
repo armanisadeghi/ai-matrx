@@ -19,6 +19,7 @@ import type { GscDigRuleContent } from "@/features/marketing/search-console/lib/
 import { serializeDigConditions } from "@/features/marketing/search-console/lib/dig-rules";
 import { makeAssertData } from "@/utils/errors";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -312,6 +313,28 @@ export interface ConditionEvaluationResult {
   error?: string;
 }
 
+/**
+ * What the autonomy ladder said when the engine was asked to run (KI-044).
+ * `seo.fn_autonomy_gate` is the ONE read; this is its shape on the wire.
+ */
+export interface AutonomyVerdict {
+  capability: string;
+  label: string;
+  mode:
+    | "auto_platform"
+    | "auto_org"
+    | "review_timeout"
+    | "review_required"
+    | "off";
+  decision: "apply" | "propose" | "propose_only" | "off";
+  source: string;
+  scope: string;
+  timeout_hours: number | null;
+  enforced: boolean;
+  /** The sentence to show a human when the engine declined to write. */
+  refusal: string | null;
+}
+
 export interface ConditionEvaluation {
   window: { start: string; end: string; compare_start: string; compare_end: string };
   matchers: number;
@@ -325,6 +348,12 @@ export interface ConditionEvaluation {
   passes?: number;
   evaluated_at: string;
   results: ConditionEvaluationResult[];
+  /** Which autonomy mode the engine obeyed, and what it decided to do. */
+  autonomy?: AutonomyVerdict;
+  /** Set when the mode is `off` — the engine did not run at all. */
+  skipped?: string;
+  /** Mode 3's bounded catch-up: proposals nobody answered in time. */
+  timeout_pass?: { applied: number; skipped: number; waited_hours: number };
 }
 
 /**
@@ -342,7 +371,19 @@ export interface ConditionEvaluation {
  * the segment holds. A steady-state re-evaluation writes nothing and returns
  * in one pass.
  */
-const MAX_EVALUATION_PASSES = 25;
+/**
+ * The pass ceiling is a KNOB (`seo.situational_stamps.max_passes_per_run`), not
+ * the constant that used to live here. A ceiling in code is not a ceiling an
+ * admin can move. The fallback exists only so a missing knob row degrades to
+ * the measured value rather than looping forever.
+ */
+const MAX_PASSES_FALLBACK = 25;
+
+async function maxEvaluationPasses(): Promise<number> {
+  const knobs = await fetchFeatureKnobValues("seo.situational_stamps");
+  const value = Number(knobs?.max_passes_per_run);
+  return Number.isFinite(value) && value > 0 ? value : MAX_PASSES_FALLBACK;
+}
 
 async function evaluateOnce(
   siteId: string,
@@ -364,9 +405,16 @@ export async function evaluateConditionMatchers(
   siteId: string,
   scope: { matcherId?: string; dimensionId?: string } = {},
 ): Promise<ConditionEvaluation> {
+  const maxPasses = await maxEvaluationPasses();
   let total: ConditionEvaluation | null = null;
-  for (let pass = 1; pass <= MAX_EVALUATION_PASSES; pass += 1) {
+  for (let pass = 1; pass <= maxPasses; pass += 1) {
     const current = await evaluateOnce(siteId, scope);
+    // AUTONOMY (KI-044). `off` never ran; a review mode wrote proposals and
+    // stamped nothing. Neither has anything left to fill, so looping would be
+    // one wasted round-trip per pass and a "remaining: 0" that means nothing.
+    if (current.skipped || (current.autonomy && current.autonomy.decision !== "apply")) {
+      return { ...current, passes: pass };
+    }
     total = total
       ? {
           // The latest pass describes the CURRENT state (matched, remaining,

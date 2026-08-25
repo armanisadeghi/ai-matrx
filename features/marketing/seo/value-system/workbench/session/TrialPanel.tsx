@@ -68,6 +68,7 @@ import {
   previewMatcherReach,
   probeSiteMatchers,
   proposeKeywordMeaning,
+  describeMatcherRun,
   runSiteMatchers,
   type MatcherReach,
   type MatcherRunResult,
@@ -705,7 +706,13 @@ export function TrialPanel({
                   )}
                   Run my rules over the site
                 </Button>
-                {engine ? (
+                {engine && describeMatcherRun(engine).waiting ? (
+                  // KI-044 — the engine read its autonomy mode and declined to
+                  // write. Saying "nothing changed" here would be a lie.
+                  <p className="text-xs text-warning">
+                    {describeMatcherRun(engine).headline}
+                  </p>
+                ) : engine ? (
                   <p className="text-xs text-foreground">
                     {engine.stamped === 0 && engine.removed === 0 ? (
                       <>
