@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 454 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 455 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "fef19163a7ca";
+export const KIND_REGISTRY_FINGERPRINT = "b72a3b68db64";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -1106,6 +1106,35 @@ export interface DailySpendPoint {
 }
 
 /**
+ * One column: what it is called, and — when anyone knows — what it holds.
+ *  *
+ *  * From kind `data_table`.
+ */
+export interface DataColumn {
+  /**
+   * Column name as the source presents it.
+   */
+  name: string;
+  /**
+   * Portable type, one of: string, number, integer, boolean, datetime, date, time, json, array, uuid, binary, unknown. NULL means the producer genuinely does not know — a parsed CSV cell is a string whatever it looks like. NULL is never a synonym for 'string'.
+   */
+  type?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Whether the source permits a null in this column.
+   */
+  nullable?: boolean | null;
+  description?: string | null;
+  /**
+   * The source's own type name, verbatim ('NUMERIC', 'TEXT[]').
+   */
+  source_type?: string | null;
+}
+
+/**
  * * Shared by 3 kinds (local_place, opening_hours, serp_placement).
  */
 export interface DayHours {
@@ -2062,7 +2091,7 @@ export interface InterviewRoundContext {
 }
 
 /**
- * * Shared by 61 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
+ * * Shared by 62 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
  */
 export type JsonValue = unknown;
 
@@ -2495,26 +2524,6 @@ export interface PageRef {
   __kind?: "page_ref_v1";
   proposed?: ProposedPage | null;
   existing_url?: string | null;
-}
-
-/**
- * One table detected on one page.
- *  *
- *  * From kind `pdf_table_extraction`.
- */
-export interface PdfExtractedTable {
-  bbox: PdfTableBbox;
-  rows: ((string | null)[])[];
-  /**
-   * The registered kind this payload is an instance of, when it is one.
-   */
-  __kind?: string;
-  header: (string | null)[];
-  markdown: string;
-  row_count: number;
-  page_number: number;
-  table_index: number;
-  column_count: number;
 }
 
 /**
@@ -4627,6 +4636,53 @@ export interface SuggestedTag {
 }
 
 /**
+ * Where the table came from — enough to go back and get it again.
+ *
+ * A table with no provenance cannot be refreshed, audited or explained, and
+ * every one of the four producers had a different amount of this (the SQL one
+ * had NONE: not the table queried, not the filters, not the columns asked for).
+ *  *
+ *  * From kind `data_table`.
+ */
+export interface TableSource {
+  /**
+   * A human-readable description of what was asked for.
+   */
+  query?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * What produced it: sql | data_table | csv | pdf | office | api.
+   */
+  origin?: string | null;
+  /**
+   * The document a table was lifted from.
+   */
+  file_id?: string | null;
+  /**
+   * What found the table, e.g. 'pymupdf.find_tables'.
+   */
+  detector?: string | null;
+  /**
+   * Our id for a user-owned data table.
+   */
+  table_id?: string | null;
+  table_name?: string | null;
+  /**
+   * 1-based page, for extracted tables.
+   */
+  page_number?: number | null;
+  schema_name?: string | null;
+  /**
+   * 0-based index of this table within its page or document.
+   */
+  table_index?: number | null;
+  detector_version?: string | null;
+}
+
+/**
  * * From kind `page_keyword_analysis_v1`.
  */
 export interface TargetAlignment {
@@ -6478,6 +6534,64 @@ export interface CustomScriptResult {
    */
   __kind: "custom_script_result";
   result?: JsonValue;
+}
+
+/**
+ * Rows and columns, from wherever they came.
+ *
+ * ROWS ARE POSITIONAL, aligned to `columns`. That is the one representation
+ * every producer can supply honestly: a parsed CSV with no header has cells
+ * but no names, and forcing it into objects would mean inventing `col_1`,
+ * `col_2` — names no source ever gave. Object-keyed rows are trivially derived
+ * from `columns` when the names exist; invented names are not recoverable.
+ *
+ * A ragged row is a real thing (PDF extraction produces them), so rows are not
+ * forced to the column count. A renderer pads; it must never silently drop a
+ * cell it cannot place.
+ *  *
+ *  * Kind `data_table` (registry v2).
+ */
+export interface DataTable {
+  /**
+   * Data rows, positional, aligned to `columns`.
+   */
+  rows?: JsonValue[][];
+  /**
+   * Honest caveats a reader needs: a heuristic header, ragged rows, a lossy numeric coercion. Empty is a claim that there are none.
+   */
+  notes?: string[];
+  /**
+   * A human name for the table.
+   */
+  title?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "data_table";
+  /**
+   * Where it came from.
+   */
+  source?: TableSource | null;
+  /**
+   * Declared columns. Present even when there are zero rows.
+   */
+  columns?: DataColumn[];
+  /**
+   * How many DATA rows this table carries. The header is never one of them.
+   */
+  row_count?: number;
+  /**
+   * Whether rows were cut off. Never left to be inferred.
+   */
+  truncated?: boolean;
+  /**
+   * The limit that did the cutting, when there was one.
+   */
+  truncated_at?: number | null;
+  /**
+   * How many rows EXIST at the source, when known and different from `row_count`. This is what makes '500 of 40,000' sayable.
+   */
+  total_row_count?: number | null;
 }
 
 /**
@@ -9474,7 +9588,7 @@ export interface PdfTableExtraction {
    * The registered kind this payload is an instance of.
    */
   __kind: "pdf_table_extraction";
-  tables?: PdfExtractedTable[];
+  tables?: DataTable[];
   detector?: string;
   table_count?: number;
   tables_path?: string | null;
@@ -17768,6 +17882,7 @@ export type GeneratedKindSlug =
   | "criterion_coverage"
   | "crm_fold_settings"
   | "custom_script_result"
+  | "data_table"
   | "datetime_snapshot"
   | "decision_tree"
   | "diagram_spec"
@@ -18225,6 +18340,7 @@ export interface KindPayloadBySlug {
   "criterion_coverage": CriterionCoverage;
   "crm_fold_settings": CrmFoldSettings;
   "custom_script_result": CustomScriptResult;
+  "data_table": DataTable;
   "datetime_snapshot": DatetimeSnapshot;
   "decision_tree": DecisionTree;
   "diagram_spec": DiagramSpec;
@@ -18686,6 +18802,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "criterion_coverage",
   "crm_fold_settings",
   "custom_script_result",
+  "data_table",
   "datetime_snapshot",
   "decision_tree",
   "diagram_spec",
