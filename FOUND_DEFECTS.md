@@ -215,6 +215,32 @@ regenerated against it. Old and new builds both read successfully — no deploy 
 Vercel projects, drop `orchestrator_id` and `set_label` from the `returns table(...)` list and
 from the select body. Nothing else reads them — verified by grep across both repos.
 
+### D261 — `iam.accessible_entity_ids` and `iam.has_access` DISAGREE: the set resolver never learned the library-grant lanes the kernel gained (2026-08-23)
+
+**Two functions that must answer the same question give different answers for the same (token, id, level).** Measured live as a real non-admin (`929274b1…`), on rulebook `e492a07f…`:
+
+| call | result |
+|---|---|
+| `iam.has_access('rulebook', e492a07f, 'viewer')` | **True** |
+| `e492a07f = ANY(iam.accessible_entity_ids('rulebook','viewer',0,true))` | **False** |
+
+**Cause.** `iam.has_access_for_base` gained two token-agnostic viewer lanes earlier the same day — `public.user_can_read_via_library_grant(...)` and `public.library_is_open(...)` ("THE OPEN LIBRARY"), both reading `platform.entity_grants`. `iam.accessible_entity_ids` was not updated. Its candidate sources are `iam.permissions`, `iam.memberships`, `platform.reachability` and assignment associations — **`platform.entity_grants` is not among them** — so a row readable ONLY through a library grant never becomes a candidate and is never tested. Verified:
+
+```
+accessible_entity_ids mentions entity_grants              : false
+accessible_entity_ids mentions user_can_read_via_library_grant : false
+has_access_for_base   mentions user_can_read_via_library_grant : true
+platform.entity_grants where entity_type='rulebook'       : 2 rows, audience='global'
+```
+
+**Why it matters far beyond the rulebook.** The generated `component` `std_select` has ALWAYS resolved its parent through `accessible_entity_ids`. So for any component whose parent is reachable only via a library grant, the parent arm has always been blind. Until now that was masked by the trailing unbounded `iam.has_access(child, id, 'viewer')`, which caught those rows the expensive way. The D254 work bounds that call — correctly — and the mask comes off.
+
+**Confirmed blast radius so far:** `platform.masterwork_run` (lost=90 of 222 compared) and `platform.masterwork_corpus_item` (lost=10 of 48), both components of `rulebook`. Both were **refused by the rollout gate and left on the original lane**, so nothing is broken today — they simply keep paying the per-row cost D254 removes elsewhere.
+
+**The fix is in `accessible_entity_ids`, not in the read lane.** Add `platform.entity_grants` (keyed on `entity_type`/`entity_id`) to its candidate sources so the set form and the per-row form agree again. That is a change to shared access machinery used by every component parent arm on the platform, which is why it is filed rather than done inside a performance change: it wants its own equivalence pass. `scripts/_verify_entity_read_equivalence.py --variant component --baseline original` will confirm the two masterwork tables once it lands.
+
+**The general lesson, and it is the same one D254's own history taught twice:** when a resolver is expressed in two forms — one per-row, one set-wise — a lane added to one and not the other is invisible until something stops masking it. There is no test asserting `has_access(t,id,l) == (id = ANY(accessible_entity_ids(t,l)))`. There should be; it is a one-query property check over real rows.
+
 ### D254 — the `component` read lane has the SAME per-row `has_access` defect D249 just fixed for `entity`; `files.file_versions` is unreadable (2026-08-23)
 
 **Measured live as the real non-admin `test@test.com`, immediately after D249's rollout:**
