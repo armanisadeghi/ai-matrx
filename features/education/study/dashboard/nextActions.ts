@@ -56,15 +56,32 @@ export function dueWeakByMode(
   );
 }
 
-/** Deep link into a mode's due-review surface (null when it has no dedicated one yet). */
+/**
+ * Deep link into a mode's due-review surface (null when it has no dedicated one
+ * yet).
+ *
+ * 🚨 The keys here are the study spine's REAL `item_mastery.item_type` values,
+ * verified against the live table. An earlier version switched on
+ * `quiz_question` / `practice_test_item`, which the spine has never written —
+ * so every quiz and practice-test item the learner had due surfaced in "Study
+ * today" with NO link (THE DOOR LAW), while the two branches that did exist
+ * were dead code. Assessment items of both kinds are stored as
+ * `assessment_item`; `flashcard` is the pre-`fc_card` spelling and still has
+ * rows, so it maps to the same review surface rather than falling through.
+ * Before adding a case, confirm the value exists:
+ *   select distinct item_type from education.item_mastery;
+ */
 export function modeReviewHref(itemType: string): string | null {
   switch (itemType) {
     case "fc_card":
+    case "flashcard":
       return "/education/flashcards/review";
-    case "quiz_question":
+    case "assessment_item":
       return "/education/quizzes";
-    case "practice_test_item":
-      return "/education/practice-tests";
+    case "spoken_prompt":
+      return "/education/practice-oral";
+    case "handwritten_work":
+      return "/education/grade-work";
     default:
       return null;
   }
@@ -74,6 +91,7 @@ export function modeReviewHref(itemType: string): string | null {
 export function modeWeakHref(itemType: string): string | null {
   switch (itemType) {
     case "fc_card":
+    case "flashcard":
       return "/education/flashcards/weak-areas";
     default:
       return modeReviewHref(itemType);
