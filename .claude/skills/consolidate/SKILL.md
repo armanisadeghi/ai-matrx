@@ -284,6 +284,26 @@ sources, dates, and the consequence of each reading.
 
 ## Step 5 — Annihilate the source
 
+🚨 **MOVE, NEVER COPY. One file at a time, write + delete in ONE commit.**
+
+This is the ordering law, and it exists because breaking it corrupted the corpus. A run that
+writes the kit first and defers the deletions to "later in Step 5" has, at every moment until it
+finishes, **created the exact duplication this skill removes** — and if it dies there (API limit,
+crash, interruption), it leaves the corpus WORSE than it found it. That is not hypothetical: a
+batch-3 run died mid-flight having added 8 satellites (2,771 lines) with zero deletions, and every
+one of those files then existed in two places.
+
+So the unit of work is ONE file, moved:
+
+1. write the kit file (or merge the content into an existing kit file)
+2. `git rm` the source
+3. repoint that file's inbound references
+4. **commit all three together** — `git commit -m "<msg>" -- <kit path> <source path> <ref paths>`
+
+Then the next file. **At no point may a file exist in both places across a commit boundary.**
+Interrupt the run at any moment and the corpus is consistent: some files moved, the rest untouched.
+Never batch the writes and then batch the deletions.
+
 This is the step every prior sweep skipped. Do it in the same session, before you report.
 
 1. **A file that was pure MEANING is DELETED.** Not stubbed, not slimmed, not "kept for safety",
@@ -439,6 +459,14 @@ on disk still holds the old copies — out of scope, but say so if you find one.
 
 # Changelog
 
+- 2026-08-25 (v5 — the ordering law, learned from a crash). **MOVE, NEVER COPY.** The unit of work
+  is ONE file: write the kit entry, `git rm` the source, repoint its references, and commit all
+  three together, then move to the next. Previously the skill let a run write the kit and defer the
+  deletions, which means that for the whole middle of a run the corpus holds BOTH copies — and a run
+  killed there leaves it worse than it found it. A batch-3 run died exactly there, adding 8
+  satellites (2,771 lines) with zero deletions and duplicating all 8 against live repo sources. The
+  new rule makes every crash point safe: interrupt at any moment and some files are moved, the rest
+  untouched, none duplicated.
 - 2026-08-25 (v4 — Arman's provenance ruling; the corpus-level fix). **Provenance now outranks
   type**, in this skill (new Steps 3.5/3.6) and in the ladder itself
   ([`document-types.md` Rung 0](/policies/document-types.md)). His documents are the bible whatever
