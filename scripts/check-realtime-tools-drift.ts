@@ -1,7 +1,8 @@
 #!/usr/bin/env npx tsx
 /**
  * Realtime-tools drift gate — the matrx-frontend half of the realtime tool
- * bridge cross-repo contract (REALTIME_TOOL_BRIDGE_CONTRACT.md §6).
+ * bridge cross-repo contract
+ * (common-docs/systems/agents/voice/REALTIME_TOOL_BRIDGE.md §6).
  *
  * The browser is a PURE INTERMEDIARY for realtime tools: both the resolve and
  * execute endpoints read tool defs from the DB, and the FE just relays the
@@ -33,7 +34,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
 
-// ── The contract shape (REALTIME_TOOL_BRIDGE_CONTRACT.md §3). Single source. ──
+// ── The contract shape (common-docs .../voice/REALTIME_TOOL_BRIDGE.md §3). Single source. ──
 const CONTRACT_FIELDS = ["name", "description", "parameters", "execution"] as const;
 const CONTRACT_EXECUTIONS = ["server", "client", "builtin"] as const;
 
@@ -235,7 +236,8 @@ async function main(): Promise<void> {
   console.log("");
   console.log(
     `${DIM}Fix: align features/voice-agent/types.ts ResolvedRealtimeTool with ` +
-      `REALTIME_TOOL_BRIDGE_CONTRACT.md §3 (or update the contract if it changed).${RESET}`,
+      `common-docs/systems/agents/voice/REALTIME_TOOL_BRIDGE.md §3 ` +
+      `(or update the contract if it changed).${RESET}`,
   );
   // Non-blocking by default (pre-commit), exit non-zero only with --strict (CI).
   process.exit(STRICT ? 1 : 0);
