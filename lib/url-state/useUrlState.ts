@@ -282,14 +282,33 @@ export function useMirroredUrlState<T>(
 
   // URL → value (Back/Forward, a pasted link, another control writing)
   useEffect(() => {
-    const fromUrl = optionsRef.current.parse(params);
+    // Read the URL at EFFECT time, not the render snapshot. The value→URL
+    // effect runs first. When it commits a local filter/sort decision it
+    // synchronously notifies the external store, but `params` in this render
+    // still describes the URL from before that write. Re-applying that stale
+    // snapshot here ping-pongs state and URL until React raises #185.
+    const fromUrl = optionsRef.current.parse(
+      new URLSearchParams(window.location.search),
+    );
     setValue((prev) => (optionsRef.current.isSame(prev, fromUrl) ? prev : fromUrl));
   }, [params]);
 
+  // Clearing on a subject change is deliberate; clearing on a subject ARRIVING
+  // is destructive. A surface whose id is undefined for its first render (async
+  // params, a late store hydration, a suspended boundary) would otherwise wipe
+  // the very view the user just loaded — and the symptom is indistinguishable
+  // from "the URL never saved my filters", because the write lands and is
+  // erased a tick later.
+  //
+  // So: only a transition between two REAL, DIFFERENT keys resets.
   const previousResetKey = useRef(resetKey);
   useEffect(() => {
-    if (previousResetKey.current === resetKey) return;
+    const previous = previousResetKey.current;
     previousResetKey.current = resetKey;
+    if (previous === resetKey) return;
+    if (previous === undefined || previous === "") return; // arriving, not changing
+    if (resetKey === undefined || resetKey === "") return; // leaving, not changing
+
     const cleared = optionsRef.current.parse(new URLSearchParams());
     setValue(cleared);
     commitUrlParams(optionsRef.current.toParams(cleared), "replace");
