@@ -184,7 +184,7 @@ Current merge-ordered projects live in `/Users/armanisadeghi/code/common-docs/sy
 - **Feedback loop LIVE:** `/administration/utilities/kind-registry` status board (live doctor vs committed snapshot) + `/administration/utilities/kind-registry/<kind>` Preview/Gate/Schema/Assets (Preview renders through the REAL route path; Gate runs the dual gate in-browser, read-only). `pnpm shape:sample <kind> --file|--stdin [--apply]` = the sanctioned sample path (never writes `is_active`). check-doctrine "Frozen sets" detector guards the legacy literals.
 - **Converter LIVE (faithful since W3-A):** `convert/kind-variable-bridge.ts` — kind fields ⇄ `VariableDefinition` (+ ContextSlot→fields). STRUCTURE rides FieldSchema (option sets incl. `enum.open`/allowOther, defaults, help text, numeric bounds, `string[].values` items-enums, toggleValues as 2-value enum); PROVENANCE rides the out-of-band `VariableBridgeSidecar` (picklist `structured_list`, scope `binding`, input-role component identity) — reverse returns `{fields, losses, sidecar}`, forward reattaches it. Losses are only what NEITHER channel carries (runtime-resolved picklist options, currency, optionless selects, duplicates).
 - **flashcard_set = the first all-green 7/7 kind** (canonical example authored through the real gate).
-- Python enablement shipped in aidream: `.claude/skills/workflow-io-kinds/` + `docs/workflow/KINDS_ROLLOUT.md`.
+- Python enablement shipped in aidream: `.claude/skills/workflow-io-kinds/` + `docs/workflow/KIND_ENFORCEMENT.md`.
 
 ## Change Log
 
