@@ -538,7 +538,16 @@ export function AgentPayloadSheet({
                 </div>
               ) : null}
             </>
-          ) : null}
+          ) : (
+            /* Between the failed attempt and the retry react-query holds no
+              data, no error and no pending flag — and a payload screen that
+              renders NOTHING is the exact silence this feature exists to end.
+              Say what state we are in instead. */
+            <div className="flex items-center gap-2 py-6 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              The first read did not come back — retrying.
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>

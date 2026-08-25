@@ -7484,6 +7484,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-plan/sites/{site_id}/plan-index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Plan Index Route
+         * @description The PLAN INDEX — exactly what the family step hands an agent.
+         *
+         *     Every page of the plan as one condensed identity line, the plan's topical
+         *     groups, and the coverage line that says how much of the plan is being shown
+         *     and how it was chosen. With `?node_id=` it also returns the neighbours
+         *     selected for that node — the pages most likely to compete with it — each
+         *     with the reason it was selected, plus the rendered text blobs.
+         *
+         *     🚨 PLAN ONLY: `plan.node` (+ the `seo.keyword` phrase it points at). Never
+         *     `web.page` — a content plan REPLACES the site, so live-site pages are not a
+         *     comparable set (`services/content_plan/plan_index.py`).
+         */
+        get: operations["plan_index_route_content_plan_sites__site_id__plan_index_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cms/validate": {
         parameters: {
             query?: never;
@@ -23518,6 +23548,11 @@ export interface components {
             agents: components["schemas"]["AgentListItem"][];
             /** Count */
             count: number;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
         };
         /** AgentStartRequest */
         AgentStartRequest: {
@@ -27268,6 +27303,63 @@ export interface components {
             pinned_version_output_schema?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+        };
+        /**
+         * BranchContext
+         * @description The walk UP the tree from one page.
+         *
+         *     To place ONE page you do not need the site — you need the branch you are in
+         *     (its purpose and your siblings), the branches above it (why this section
+         *     exists at all), and the branches beside those (what belongs to a neighbour
+         *     instead of to you). That is tens of lines whether the plan holds 300 pages
+         *     or 6,000, which is why this shape — not the full index — is the one that
+         *     survives scale.
+         */
+        BranchContext: {
+            /**
+             * Route
+             * @default
+             */
+            route?: string;
+            own_branch?: components["schemas"]["BranchRef"] | null;
+            /** Ancestors */
+            ancestors?: components["schemas"]["BranchRef"][];
+            /** Adjacent */
+            adjacent?: components["schemas"]["BranchRef"][];
+            /**
+             * Adjacent Omitted
+             * @default 0
+             */
+            adjacent_omitted?: number;
+        };
+        /**
+         * BranchRef
+         * @description One branch, as a placement decision needs to see it: what it is FOR and
+         *     what it holds — never its full member list, which is what makes the walk
+         *     bounded.
+         */
+        BranchRef: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * Purpose
+             * @default
+             */
+            purpose?: string;
+            /**
+             * Size
+             * @default 0
+             */
+            size?: number;
+            /** Child Routes */
+            child_routes?: string[];
+            /**
+             * Relation
+             * @default
+             */
+            relation?: string;
         };
         /**
          * BridgeAccountIdentity
@@ -48081,6 +48173,42 @@ export interface components {
             /** Text Preview */
             text_preview?: string | null;
         };
+        /**
+         * NeighbourSelection
+         * @description One plan page selected as a likely competitor of the target, with the
+         *     reason it was selected. The reason is not decoration — it is what lets a
+         *     human (or a later audit) see whether the selector actually knew.
+         */
+        NeighbourSelection: {
+            /** Route */
+            route: string;
+            /** Label */
+            label: string;
+            /**
+             * Node Type
+             * @default
+             */
+            node_type?: string;
+            /**
+             * Depth
+             * @default 0
+             */
+            depth?: number;
+            /**
+             * Keyword
+             * @default
+             */
+            keyword?: string;
+            /** Topics */
+            topics?: string[];
+            /**
+             * Score
+             * @default 0
+             */
+            score?: number;
+            /** Reasons */
+            reasons?: string[];
+        };
         /** NewsroomSyncBody */
         NewsroomSyncBody: {
             /**
@@ -51551,6 +51679,35 @@ export interface components {
             /** Blocking */
             blocking: number;
         };
+        /**
+         * PlanCoverage
+         * @description The honesty line. What the agent IS seeing, out of what exists, chosen
+         *     how — stated to the agent, never left implicit.
+         */
+        PlanCoverage: {
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
+            /**
+             * Shown
+             * @default 0
+             */
+            shown?: number;
+            /**
+             * Selected By
+             * @default
+             */
+            selected_by?: string;
+            /**
+             * Full Index Offered
+             * @default true
+             */
+            full_index_offered?: boolean;
+            /** Caveats */
+            caveats?: string[];
+        };
         /** PlanEventRecord */
         PlanEventRecord: {
             /** Id */
@@ -51578,6 +51735,166 @@ export interface components {
             samples: components["schemas"]["PlanSampleRecord"][];
             /** Events */
             events: components["schemas"]["PlanEventRecord"][];
+        };
+        /**
+         * PlanGroup
+         * @description A GROUP IS A BRANCH of the plan tree — a `plan.node` that has children,
+         *     plus its subtree.
+         *
+         *     Not a similarity cluster: the planner already decided this split when it
+         *     designed the tree, and re-deriving groups from token overlap would be a
+         *     second, arguing structure. Groups therefore NEST, exactly as branches do.
+         *
+         *     An LLM refinement pass may later improve `label`/`purpose` behind this same
+         *     shape; it may not re-partition the membership, because the membership is
+         *     the plan's own.
+         */
+        PlanGroup: {
+            /** Key */
+            key: string;
+            /**
+             * Node Id
+             * @default
+             */
+            node_id?: string;
+            /** Label */
+            label: string;
+            /**
+             * Purpose
+             * @default
+             */
+            purpose?: string;
+            /** Routes */
+            routes?: string[];
+            /** Child Routes */
+            child_routes?: string[];
+            /**
+             * Parent Key
+             * @default
+             */
+            parent_key?: string;
+            /**
+             * Depth
+             * @default 0
+             */
+            depth?: number;
+            /**
+             * Reason
+             * @default
+             */
+            reason?: string;
+            /**
+             * Basis
+             * @default tree_branch
+             */
+            basis?: string;
+        };
+        /**
+         * PlanIndexEntry
+         * @description ONE plan page, as the smallest thing a placement decision can read.
+         *
+         *     Deliberately NOT the node: no brief body, no attributes, no timestamps. The
+         *     question this line has to answer is "is that page the same subject as mine,
+         *     and what is its route?" — everything else is weight.
+         */
+        PlanIndexEntry: {
+            /** Node Id */
+            node_id: string;
+            /**
+             * Parent Id
+             * @default
+             */
+            parent_id?: string;
+            /** Route */
+            route: string;
+            /** Label */
+            label: string;
+            /** Node Type */
+            node_type: string;
+            /**
+             * Page Type
+             * @default
+             */
+            page_type?: string;
+            /**
+             * Depth
+             * @default 0
+             */
+            depth?: number;
+            /**
+             * Keyword
+             * @default
+             */
+            keyword?: string;
+            /** Topics */
+            topics?: string[];
+            /**
+             * Title Source
+             * @default authored
+             */
+            title_source?: string;
+            /**
+             * Branch
+             * @default /
+             */
+            branch?: string;
+            /**
+             * Purpose
+             * @default
+             */
+            purpose?: string;
+        };
+        /**
+         * PlanIndexView
+         * @description The whole offer, as one readable payload.
+         *
+         *     This is deliberately *the agent's view*, not a report about it: `rendered`
+         *     holds the exact text blobs `_run_family` sends as `plan_index_full`,
+         *     `plan_neighbours`, `plan_groups` and `plan_coverage`, so a UI showing this
+         *     page is showing the input, not a reconstruction of it. If the two ever
+         *     diverge, the screen is lying — which is why both read the same functions.
+         */
+        PlanIndexView: {
+            /** Site Id */
+            site_id: string;
+            /** Total */
+            total: number;
+            /** Included */
+            included: number;
+            /** Threshold */
+            threshold: number;
+            /** Full Index Offered */
+            full_index_offered: boolean;
+            /** Authored Titles */
+            authored_titles: number;
+            /** Briefed */
+            briefed: number;
+            /** Keyworded */
+            keyworded: number;
+            /** Entries */
+            entries: components["schemas"]["PlanIndexEntry"][];
+            /** Groups */
+            groups: components["schemas"]["PlanGroup"][];
+            coverage: components["schemas"]["PlanCoverage"];
+            /** Coverage Line */
+            coverage_line: string;
+            /**
+             * Node Id
+             * @default
+             */
+            node_id?: string;
+            /**
+             * Node Route
+             * @default
+             */
+            node_route?: string;
+            /** Neighbours */
+            neighbours?: components["schemas"]["NeighbourSelection"][];
+            branch_context?: components["schemas"]["BranchContext"] | null;
+            /** Rendered */
+            rendered?: {
+                [key: string]: string;
+            };
         };
         /** PlanListResponse */
         PlanListResponse: {
@@ -81969,6 +82286,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CmsFillStatusResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plan_index_route_content_plan_sites__site_id__plan_index_get: {
+        parameters: {
+            query?: {
+                node_id?: string | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanIndexView"];
                 };
             };
             /** @description Validation Error */

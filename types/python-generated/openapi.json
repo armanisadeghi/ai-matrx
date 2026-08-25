@@ -18594,6 +18594,66 @@
         }
       }
     },
+    "/content-plan/sites/{site_id}/plan-index": {
+      "get": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Plan Index Route",
+        "description": "The PLAN INDEX — exactly what the family step hands an agent.\n\nEvery page of the plan as one condensed identity line, the plan's topical\ngroups, and the coverage line that says how much of the plan is being shown\nand how it was chosen. With `?node_id=` it also returns the neighbours\nselected for that node — the pages most likely to compete with it — each\nwith the reason it was selected, plus the rendered text blobs.\n\n🚨 PLAN ONLY: `plan.node` (+ the `seo.keyword` phrase it points at). Never\n`web.page` — a content plan REPLACES the site, so live-site pages are not a\ncomparable set (`services/content_plan/plan_index.py`).",
+        "operationId": "plan_index_route_content_plan_sites__site_id__plan_index_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Node Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanIndexView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/cms/validate": {
       "post": {
         "tags": [
@@ -62095,6 +62155,11 @@
           "count": {
             "type": "integer",
             "title": "Count"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
           }
         },
         "type": "object",
@@ -71036,6 +71101,90 @@
           "declared_variables"
         ],
         "title": "BoundAgentTruth"
+      },
+      "BranchContext": {
+        "properties": {
+          "route": {
+            "type": "string",
+            "title": "Route",
+            "default": ""
+          },
+          "own_branch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BranchRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ancestors": {
+            "items": {
+              "$ref": "#/components/schemas/BranchRef"
+            },
+            "type": "array",
+            "title": "Ancestors"
+          },
+          "adjacent": {
+            "items": {
+              "$ref": "#/components/schemas/BranchRef"
+            },
+            "type": "array",
+            "title": "Adjacent"
+          },
+          "adjacent_omitted": {
+            "type": "integer",
+            "title": "Adjacent Omitted",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BranchContext",
+        "description": "The walk UP the tree from one page.\n\nTo place ONE page you do not need the site — you need the branch you are in\n(its purpose and your siblings), the branches above it (why this section\nexists at all), and the branches beside those (what belongs to a neighbour\ninstead of to you). That is tens of lines whether the plan holds 300 pages\nor 6,000, which is why this shape — not the full index — is the one that\nsurvives scale."
+      },
+      "BranchRef": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose",
+            "default": ""
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size",
+            "default": 0
+          },
+          "child_routes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Child Routes"
+          },
+          "relation": {
+            "type": "string",
+            "title": "Relation",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "BranchRef",
+        "description": "One branch, as a placement decision needs to see it: what it is FOR and\nwhat it holds — never its full member list, which is what makes the walk\nbounded."
       },
       "BridgeAccountIdentity": {
         "properties": {
@@ -125551,6 +125700,60 @@
         ],
         "title": "NavigateResult"
       },
+      "NeighbourSelection": {
+        "properties": {
+          "route": {
+            "type": "string",
+            "title": "Route"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "node_type": {
+            "type": "string",
+            "title": "Node Type",
+            "default": ""
+          },
+          "depth": {
+            "type": "integer",
+            "title": "Depth",
+            "default": 0
+          },
+          "keyword": {
+            "type": "string",
+            "title": "Keyword",
+            "default": ""
+          },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Topics"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "default": 0
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "route",
+          "label"
+        ],
+        "title": "NeighbourSelection",
+        "description": "One plan page selected as a likely competitor of the target, with the\nreason it was selected. The reason is not decoration — it is what lets a\nhuman (or a later audit) see whether the selector actually knew."
+      },
       "NewsroomSyncBody": {
         "properties": {
           "organization_id": {
@@ -134039,6 +134242,41 @@
         ],
         "title": "PlanBlockersResponse"
       },
+      "PlanCoverage": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          },
+          "shown": {
+            "type": "integer",
+            "title": "Shown",
+            "default": 0
+          },
+          "selected_by": {
+            "type": "string",
+            "title": "Selected By",
+            "default": ""
+          },
+          "full_index_offered": {
+            "type": "boolean",
+            "title": "Full Index Offered",
+            "default": true
+          },
+          "caveats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Caveats"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PlanCoverage",
+        "description": "The honesty line. What the agent IS seeing, out of what exists, chosen\nhow — stated to the agent, never left implicit."
+      },
       "PlanEventRecord": {
         "properties": {
           "id": {
@@ -134111,6 +134349,251 @@
           "events"
         ],
         "title": "PlanFullResponse"
+      },
+      "PlanGroup": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id",
+            "default": ""
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose",
+            "default": ""
+          },
+          "routes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Routes"
+          },
+          "child_routes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Child Routes"
+          },
+          "parent_key": {
+            "type": "string",
+            "title": "Parent Key",
+            "default": ""
+          },
+          "depth": {
+            "type": "integer",
+            "title": "Depth",
+            "default": 0
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "basis": {
+            "type": "string",
+            "title": "Basis",
+            "default": "tree_branch"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "PlanGroup",
+        "description": "A GROUP IS A BRANCH of the plan tree — a `plan.node` that has children,\nplus its subtree.\n\nNot a similarity cluster: the planner already decided this split when it\ndesigned the tree, and re-deriving groups from token overlap would be a\nsecond, arguing structure. Groups therefore NEST, exactly as branches do.\n\nAn LLM refinement pass may later improve `label`/`purpose` behind this same\nshape; it may not re-partition the membership, because the membership is\nthe plan's own."
+      },
+      "PlanIndexEntry": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "parent_id": {
+            "type": "string",
+            "title": "Parent Id",
+            "default": ""
+          },
+          "route": {
+            "type": "string",
+            "title": "Route"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "node_type": {
+            "type": "string",
+            "title": "Node Type"
+          },
+          "page_type": {
+            "type": "string",
+            "title": "Page Type",
+            "default": ""
+          },
+          "depth": {
+            "type": "integer",
+            "title": "Depth",
+            "default": 0
+          },
+          "keyword": {
+            "type": "string",
+            "title": "Keyword",
+            "default": ""
+          },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Topics"
+          },
+          "title_source": {
+            "type": "string",
+            "title": "Title Source",
+            "default": "authored"
+          },
+          "branch": {
+            "type": "string",
+            "title": "Branch",
+            "default": "/"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id",
+          "route",
+          "label",
+          "node_type"
+        ],
+        "title": "PlanIndexEntry",
+        "description": "ONE plan page, as the smallest thing a placement decision can read.\n\nDeliberately NOT the node: no brief body, no attributes, no timestamps. The\nquestion this line has to answer is \"is that page the same subject as mine,\nand what is its route?\" — everything else is weight."
+      },
+      "PlanIndexView": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "included": {
+            "type": "integer",
+            "title": "Included"
+          },
+          "threshold": {
+            "type": "integer",
+            "title": "Threshold"
+          },
+          "full_index_offered": {
+            "type": "boolean",
+            "title": "Full Index Offered"
+          },
+          "authored_titles": {
+            "type": "integer",
+            "title": "Authored Titles"
+          },
+          "briefed": {
+            "type": "integer",
+            "title": "Briefed"
+          },
+          "keyworded": {
+            "type": "integer",
+            "title": "Keyworded"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/PlanIndexEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/PlanGroup"
+            },
+            "type": "array",
+            "title": "Groups"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/PlanCoverage"
+          },
+          "coverage_line": {
+            "type": "string",
+            "title": "Coverage Line"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id",
+            "default": ""
+          },
+          "node_route": {
+            "type": "string",
+            "title": "Node Route",
+            "default": ""
+          },
+          "neighbours": {
+            "items": {
+              "$ref": "#/components/schemas/NeighbourSelection"
+            },
+            "type": "array",
+            "title": "Neighbours"
+          },
+          "branch_context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BranchContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rendered": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Rendered"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "total",
+          "included",
+          "threshold",
+          "full_index_offered",
+          "authored_titles",
+          "briefed",
+          "keyworded",
+          "entries",
+          "groups",
+          "coverage",
+          "coverage_line"
+        ],
+        "title": "PlanIndexView",
+        "description": "The whole offer, as one readable payload.\n\nThis is deliberately *the agent's view*, not a report about it: `rendered`\nholds the exact text blobs `_run_family` sends as `plan_index_full`,\n`plan_neighbours`, `plan_groups` and `plan_coverage`, so a UI showing this\npage is showing the input, not a reconstruction of it. If the two ever\ndiverge, the screen is lying — which is why both read the same functions."
       },
       "PlanListResponse": {
         "properties": {
