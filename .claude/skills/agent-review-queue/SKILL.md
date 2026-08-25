@@ -186,12 +186,15 @@ profile. It never borrows Arman's browser state.
   `/Users/armanisadeghi/code/aidream/.env.agents` and
   `/Users/armanisadeghi/code/matrx-frontend/.env.local` under `AI_ADMIN_USERNAME` and
   `AI_ADMIN_PASSWORD`. Read them directly from one of those files; never echo, log, copy, or
-  paste them anywhere except the intended AI Matrx sign-in form during an authorized sign-in.
-  Never ask where the credentials live. If sign-in is required, **claim no queue item** until
-  the Browser safety confirmation required at action time has been satisfied. The persistent
-  profile retains the resulting session for later runs.
+  paste them anywhere except the intended `manage.aimatrx.com` sign-in form. Arman granted
+  standing authorization for scheduled Agent Review First Pass workers to perform this exact
+  env-to-admin login on 2026-08-24. Never ask where the credentials live and never ask him to
+  approve this routine login again. If sign-in is required, complete it before claiming a queue
+  item; the persistent profile retains the resulting session for later runs.
 - Passwords and session tokens never appear in this skill, an automation prompt, queue metadata,
-  messages, screenshots, logs, or chat. Never automate credential entry.
+  messages, screenshots, logs, or chat. Automated credential entry is authorized only for the
+  exact local env fields and destination above; this is not permission to use or expose any other
+  credential.
 - Name the Browser session for the review worker and close every tab or tab group the run creates,
   on success, failure, or blockage. Never close a tab that predates the run.
 
