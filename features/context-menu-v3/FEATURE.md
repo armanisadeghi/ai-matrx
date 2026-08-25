@@ -336,18 +336,18 @@ The hard-won pieces are carried over (and improved): the floating selection icon
 
 For wiring a surface, **invoke the `context-menu-v3` skill** — the per-surface recipe.
 
-## Consolidation backlog — bespoke right-click menus still alive (2026-07-21 inventory)
+## Consolidation backlog — bespoke right-click menus still alive (re-censused 2026-08-25)
 
-v3 is the only UNIVERSAL menu, but these independent right-click implementations remain; each is a scoped fold-into-v3 (or explicit keep-with-reason) task. Work top-traffic first:
+v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` sweep + raw `ui/context-menu` importers): adoption is 90 files on the wrappers + 9 real `ItemContextMenu` consumers; the old plumbing (`contextMenuCache` slices, `UnifiedAgentContextMenu`) is fully gone — `agent.context_menu_view` via `/api/agent-context-menu` is v3's CURRENT data path, not legacy. What remains:
 
-1. ~~**Files**~~ — DONE 2026-07-21: `FileRowContextMenu` / `FolderRowContextMenu` / `FileRightClickMenu` now render v3 with file actions as `extraSections` (same exports/props; consumers untouched). The 3-dot `FileContextMenu` DropdownMenu stays (button menu, not right-click).
-2. ~~**ItemMenu right-click mode**~~ — DONE 2026-07-22: `ItemContextMenu` renders v3 (config → extraSections via `itemMenuToV3.ts`; shared `run-entry.ts` execution; v3 gained checkbox/link kinds + onMenuOpenChange/onCloseAutoFocus + all-open-paths per-target resolution + z-9999 above WindowPanels). Deliberate delta: in-menu single-key shortcut EXECUTION dropped (hints still render) — restore in the engine if missed.
-3. **Notes legacy shell** — `NotesSidebar.tsx` / `NoteTabs.tsx` via `AdvancedMenu`. Corrected 2026-08-14: canonical `NoteTabItem.tsx` was listed here in error — it mounts no `AdvancedMenu`. Both real holdouts are reachable only from `NotesLayout`, which itself has **zero mounters** (the notes-salvage dev page only names it in prose), so this exception is inert today and dies with the shell. Do NOT spend a v3 migration on it; see `features/notes/FEATURE.md` 2026-08-14 — retiring the shell is Arman's ruling to make.
-4. **rich-document** — `runtime/ContextMenuMount.tsx` + `variants/ContextMenu.tsx` (own cursor-anchored menu; overlaps v3's action set almost 1:1).
-5. **Code trees** — `features/code/views/explorer/FileTreeNode.tsx`, `views/library/SourceEntryNode.tsx`; **user-lists** `TreeNode.tsx`; **org** `OrgResourceDetail.tsx` local menu.
-6. ~~**Coordinate menus**~~ — DONE: `RawJsonExplorer` and `ProcessorExtractor` delegate navigation-row actions through v3.
-7. **Markdown block menus** — `AdvancedTranscriptViewer`, `TaskChecklist`, and the canonical `CandidateProfileView` use v3; the remaining candidate-profile variants still need the same pane-level delegation.
-8. **Dormant** — `PdfAnnotationLayer` region-menu plumbing (no consumer passes the handler; suppresses native menu and renders nothing — fix or delete).
+1. ~~**Files**~~ · ~~**ItemMenu right-click**~~ · ~~**Coordinate menus**~~ — DONE (2026-07-21/22 entries preserved in git history of this file).
+2. ~~**rich-document cursor menu**~~ — DONE `2e5246f5f6` "cursor menu folded into the universal v3 menu" (`runtime/ContextMenuMount.tsx` + `variants/ContextMenu.tsx` deleted; the surviving `variants/*` are button surfaces).
+3. ~~**Code trees / user-lists / org**~~ — DONE: `FileTreeNode.tsx:507`, `SourceEntryNode.tsx:177`, `user-lists/TreeNode.tsx:163` wrap `NonEditableContextMenu`; `OrgResourceDetail.tsx:461` uses `ItemContextMenu`.
+4. **Note tabs (HIGH, NEW find)** — `features/notes/components/NoteTabItem.tsx` hand-rolls a fixed-position div menu (`ctxMenu` state ~:110, render ~:549) on every note tab; live on `/notes` (via `NoteTabBar` → `NotesView`) AND the floating Notes window. The 2026-08-14 correction cleared this file because it mounts no `AdvancedMenu` — it is bespoke a different way. Items are already a `menuItems` array → convert to `extraSections`, small.
+5. **Image / video block renderers (HIGH + medium, NEW finds)** — `features/files/blocks/image/UnifiedImageBlockRenderer.tsx` (~:403) and `video/UnifiedVideoBlockRenderer.tsx` (~:267) import raw `@/components/ui/context-menu` and hand-build full menus (expand/open/copy/download/share); mounted from the canonical `BlockComponentRegistry` (all chat markdown), `ImageArrivalPeek`, `AssetCard`, studio views. The only raw-primitive importers left outside v3. Actions already live in `features/files/blocks/actions.ts` → wrap + `extraSections`, one pass for both.
+6. **Candidate-profile variants (low)** — the 3 non-canonical views in `components/mardown-display/markdown-classification/custom-views/view-components/` have NO menu at all (canonical `CandidateProfileView` is on v3); give them the same pane-level delegation.
+7. **Delete-candidates (need Arman to name them dead)** — the notes legacy shell family (`NotesLayout.tsx`, sole importer of `NotesSidebar.tsx` + `NoteTabs.tsx`, zero mounters; likely also legacy `NoteEditor.tsx` + `useAutoSave.ts`) and the `PdfAnnotationLayer` `onRegionContextMenu` prop chain (no caller anywhere; both real consumers use the v3 `PdfRegionContextMenu` and omit it). Killing NotesLayout ends AdvancedMenu-as-context-menu entirely (AdvancedMenu itself stays — it is a legitimate kebab/button menu with ~9 live consumers).
+8. Doc-only: stale `UnifiedAgentContextMenu` mentions survive in comments/manifests (workingDocumentSurface, useAgentBuilderSurfaceScope, agent-shortcuts thunks, notesEditorExtraSections, 4 manifests) — sweep opportunistically.
 
 ---
 
