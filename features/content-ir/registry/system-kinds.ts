@@ -329,7 +329,8 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
       kind: "quiz_set",
       fields: {
         title: { type: "string", required: true },
-        description: { type: "string" },
+        // Nullable: the live Assessment agents type description ["string","null"].
+        description: { type: "string", nullable: true },
         questions: {
           type: "array",
           itemKinds: ["quiz_question"],
@@ -349,8 +350,29 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
         type: { type: "string", required: true },
         question: { type: "string", required: true },
         options: { type: "string[]" },
-        correct_answer: { type: "string", required: true },
+        // Nullable: written_response questions have no single canonical
+        // answer (the live Assessment agents emit null there); forcing a
+        // string made the kind-bound path fabricate one.
+        correct_answer: { type: "string", required: true, nullable: true },
         explanation: { type: "string" },
+        // ── Registry correction, 2026-08-25 (feedback 499a460f) ──────────
+        // The live Assessment Quiz agents (education.quiz_generate /
+        // quiz_generate_from_source, also bound by the study_pack_v2 quiz +
+        // practice_test nodes) REQUIRE these per question; the kind had no
+        // room for them, so `ai.agent.produce` — which binds the KIND schema
+        // above the agent's own — silently deleted every citation. Same
+        // correction flashcard_set got on 2026-08-22. All optional: the
+        // study-pack quiz agents (Study Quiz Generator/Composer) do not
+        // ground and emit none of them.
+        acceptable_answers: { type: "string[]", nullable: true },
+        rubric: { type: "string", nullable: true },
+        depth: { type: "string" },
+        topic: { type: "string", nullable: true },
+        points: { type: "number" },
+        // P0 TrustEnvelope — a REFERENCE to the registered `trust_envelope`
+        // kind, exactly as on `flashcard`.
+        trust: { type: "object", kind: "trust_envelope" },
+        additionalDetails: { type: "inline_object", open: true, fields: {} },
       },
     },
   },
