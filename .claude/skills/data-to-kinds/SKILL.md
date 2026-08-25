@@ -710,6 +710,52 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
     db-override path — a DB-authored renderer owns its presentation entirely. A posture is a
     `variant` prop on the ONE component, exactly as `RagHitCard` does compact/expanded.**
 
+### Friction from replication run 4 — tabular family (2026-08-25, ledger `operations/table-kinds-run.md`)
+
+44. **A ONE-KIND FAMILY NEEDS NO NESTING SEAM, AND #22 IMPLIES EVERY FAMILY BUILDS ONE.** Stage
+    B.4 and gap #22 both describe a seam as though it were mandatory. A family whose kind nests
+    NO other kind (`data_table` — its columns and source are plain sub-structure, not registered
+    kinds) has nothing to delegate, and writing a `*KindNested.tsx` for it would be a file that
+    routes one slug to one component. **Rule: build the seam only when a kind's field can hold
+    another KIND. For a leaf primitive, note in the ledger that delegation runs INWARD — the
+    families that will nest it delegate to its slug at cutover, one-way, and it stays ignorant
+    of them.**
+45. **THE DEMO CAN ONLY EXERCISE WHAT ITS ENDPOINT PRODUCES — SAY SO PER FEATURE, NOT PER KIND.**
+    Gap #24 says to record which KINDS the demo could not exercise. This run had ONE kind and
+    still could not exercise half of it: every measured defect the component fixes for the
+    UNTYPED producers (a CSV cell that is a string whatever it looks like, a ragged PDF row) is
+    unreachable from a demo endpoint that reads through a registered ORM model, where every
+    column is typed by construction. **Rule: before building, list the DEFECTS the component
+    exists to fix and check which ones the Stage A endpoint can actually produce. Anything it
+    cannot goes in the ledger as UNVERIFIED with the reason, and Stage A owes a second endpoint
+    verb for it — a code path nobody has watched render real data is not shipped, it is
+    written.**
+46. **A FIELD THE STAGE A ADAPTER ACCEPTS BUT NEVER MEASURES IS AN UNVERIFIABLE FEATURE.** The
+    adapter took `total_row_count` and the service never supplied one, so the component's
+    "500 of 40,000" branch — the entire reason the field exists — could not fire on real data
+    and the run's headline defect fix would have shipped unwatched. **Rule: for every optional
+    field whose absence changes what the component SAYS, check at Stage B that some real
+    producer populates it, and fix the producer when none does.** (Fixed here: the endpoint now
+    counts the source ONLY when rows were actually cut; an uncountable source stays UNKNOWN
+    rather than becoming a guess.)
+47. **A WIDE TABLE HIDES ITS OWN EMPTY STATE, AND EVERY `colSpan` EMPTY ROW IN THE PLATFORM HAS
+    THIS BUG.** A `<td colSpan={n}>` centred inside a horizontally-scrolling table puts its
+    message at the centre of the FULL table width — measured on a 32-column empty result, the
+    "no rows" explanation sat far off the right edge, invisible exactly when it was the only
+    content. **Rule: an empty-state cell inside an `overflow-x-auto` table is `sticky left-0`
+    and left-aligned, never centred.**
+48. **THE LOCAL aidream SERVER DOES NOT HOT-RELOAD, AND THE SKILL NEVER SAYS IT.** `run.py` sets
+    `reload=False`, so a Stage B fix to the Stage A service is invisible to the browser until
+    the process is restarted — and the symptom is a demo that keeps rendering the OLD answer
+    while the file on disk is correct, which reads as a component bug. **Rule: after ANY edit to
+    aidream during Stage B, restart `python run.py` (it runs detached, PPID 1) and re-run the
+    demo before concluding anything about the frontend.**
+49. **JSX WHITESPACE AROUND A CONDITIONAL SWALLOWS THE SPACE, AND IT ONLY SHOWS IN THE BROWSER.**
+    `{cond ? "column" : "columns"} arrived` rendered as `columnsarrived`. It is invisible in the
+    source, in `type-check`, and in every test. **Rule: build a sentence that interleaves
+    expressions and prose as ONE template literal, and read the rendered text (not the source)
+    before calling copy done — `javascript_tool` reading `document.body.innerText` is the check.**
+
 ## Chip prompts (standalone — paste as the chip body, fill the ⟨⟩)
 
 **Stage A:** "You are STAGE A of the data-to-kinds run for ⟨family⟩. Read ONLY
@@ -733,6 +779,7 @@ render approval, mark DONE, fire V + D."
 |---|---|---|
 | Search results (Brave + SerpAPI Google) — the pilot | `common-docs/operations/search-kinds-pilot.md` | A+B approved; C done 2026-08-23; V + D pending (cutover gated) |
 | Scraper / crawl results (`scraper.*`) — replication run 1 | `common-docs/operations/scraper-kinds-run.md` | Stage A fired 2026-08-23 |
+| Tabular results (`data_table`) — replication run 4 | `common-docs/operations/table-kinds-run.md` | A done; **B done 2026-08-25** (`data_table` ACTIVE, demo live); V + D pending, 3 slugs cutover-gated |
 | SEO rank tracking + SERP landscape — queue row 2 | `common-docs/operations/rank-kinds-run.md` | A + B DONE 2026-08-24; V + D pending |
 | RAG retrieval + citations — queue row 3 | `common-docs/operations/rag-kinds-run.md` | A DONE 2026-08-24; B in flight; mints `source_ref` |
 | Tabular results — queue row 4 | `common-docs/operations/table-kinds-run.md` | A DONE 2026-08-24; B in flight; mints `data_table` |
