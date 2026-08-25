@@ -7,14 +7,13 @@ raw-JSON flash · completes as its kind · the real component renders live ·
 the loader never returns once it does.
 
 - kinds checked: **484** (active: 323)
-- ACTIVE kinds failing at least one law: **34**
+- ACTIVE kinds failing at least one law: **13**
 
 ## Failures by law
 
 | law | active kinds failing | examples |
 | --- | --- | --- |
-| `loader-flicker` | 27 | claim_evidence, comparison_set, cooking_recipe, decision_tree, entity_mention |
+| `no-live-render` | 8 | claim_evidence, entity_mention, evidence_source, item_presentation, node_outcome |
 | `did-not-complete-as-kind` | 5 | node_outcome, retrieved_chunk, scraped_page, serp_placement, source_ref |
-| `no-live-render` | 1 | citation |
 | `kind-not-resolved-live` | 1 | dispatch_result |
 

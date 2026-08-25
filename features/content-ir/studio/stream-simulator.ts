@@ -30,6 +30,10 @@ import {
   isCanonicalBlockIR,
   type CanonicalBlockIR,
 } from "@ai-matrx/content-ir";
+import {
+  DB_KIND_COMPONENT_KEY,
+  GENERIC_STRUCTURED_COMPONENT_KEY,
+} from "@ai-matrx/content-ir-react";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 
 export type WireMode = "fenced" | "bare";
@@ -126,8 +130,29 @@ export function frameShowsLoader(r: StreamTickRecord): boolean {
   if (r.status !== "streaming") return false;
   if (!r.envelope) return false;
   if (!r.routed) return !r.envelope.kind || r.envelope.kindState === "pending_schema";
-  if (r.routed.hasServerData) return false;
-  return true;
+  return !frameRendersRealComponent(r);
+}
+
+/**
+ * Does THIS frame put the kind's real component on screen?
+ *
+ * Two routes qualify, and only one of them carries `serverData`:
+ *  - the COMPILED bridge — `serverData` is the bridge's first-renderable-unit
+ *    gate, so its presence is the signal;
+ *  - a DB-AUTHORED component (`db_kind_component`) — the route deliberately
+ *    CLEARS `serverData` because the component parses `content` itself. Reading
+ *    serverData alone marked every DB-authored kind as never rendering
+ *    (measured 2026-08-25) — the exact population this system exists to watch.
+ *
+ * `generic_structured` is the R6 fallback, not the kind's component, so a
+ * streaming frame that routes there is still the loader window (BlockRenderer
+ * stage 2.5 renders the kind's loader for it).
+ */
+export function frameRendersRealComponent(r: StreamTickRecord): boolean {
+  if (!r.routed) return false;
+  if (r.routed.type === DB_KIND_COMPONENT_KEY) return true;
+  if (r.routed.type === GENERIC_STRUCTURED_COMPONENT_KEY) return false;
+  return r.routed.hasServerData;
 }
 
 /** THE ONE LOADING SEQUENCE, measured per kind. */
@@ -165,9 +190,15 @@ export function deriveLoadingVerdicts(
   let loaderNeverReturns = true;
 
   for (const r of records) {
-    if (r.envelope && r.envelope.kind !== null && r.envelope.kind !== kind) continue;
+    // ONLY this kind's own region counts. A frame with no envelope is not the
+    // kind's block at all, and its `serverData` says nothing about the kind —
+    // an envelope-less block whose `data` is an empty object read as "the real
+    // component rendered" at chunk 1, before any JSON had arrived (measured
+    // 2026-08-25). Both signals below are therefore gated on the envelope
+    // naming THIS kind.
+    if (!r.envelope || r.envelope.kind !== kind) continue;
     const isLoader = frameShowsLoader(r);
-    const isReal = r.status === "streaming" && r.routed?.hasServerData === true;
+    const isReal = r.status === "streaming" && frameRendersRealComponent(r);
     const seenUnit = firstUnitByBlock.has(r.blockId);
 
     if (isLoader && !seenUnit) loaderBeforeUnit.add(r.blockId);

@@ -34,6 +34,7 @@ import { StreamBlockAccumulator } from "../../features/agents/redux/execution-sy
 import { applyIrKindRoute } from "../../features/content-ir/react/kind-route";
 import { kindRegistry } from "../../features/content-ir/registry/kind-registry";
 import { componentRegistry } from "../../features/content-ir/registry/component-registry";
+import type { KindComponentProjection } from "../../features/content-ir/registry/schema-source-kind-components";
 import {
   buildWireText,
   chunkWireText,
@@ -43,6 +44,8 @@ import {
   type StreamTickRecord,
 } from "../../features/content-ir/studio/stream-simulator";
 import { readAllRows } from "../../lib/supabase/readAllRows";
+import type { Json } from "../../types/database.types";
+import { isJsonObject } from "../../types/json";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 dotenv.config({ path: resolve(ROOT, ".env.local") });
@@ -221,19 +224,21 @@ async function main(): Promise<void> {
     component_key: string;
     source: string;
     is_active: boolean;
-    config: Record<string, unknown> | null;
+    config: Json;
     component_source: string | null;
     props_transform: string | null;
     pinned_kind_version: number | null;
     updated_at: string | null;
-    kind_definition: { kind: string } | null;
+    created_at: string;
+    created_by: string | null;
+    kind_definition: { kind: string; deleted_at: string | null }[];
   }>(
     ({ from, to }) =>
       supabase
         .schema("content_ir")
         .from("kind_component")
         .select(
-          "id,platform,role,component_key,source,is_active,config,component_source,props_transform,pinned_kind_version,updated_at,kind_definition!inner(kind,deleted_at)",
+          "id,platform,role,component_key,source,is_active,config,component_source,props_transform,pinned_kind_version,updated_at,created_at,created_by,kind_definition!inner(kind,deleted_at)",
           { count: "exact" },
         )
         .is("deleted_at", null)
@@ -242,23 +247,34 @@ async function main(): Promise<void> {
         .range(from, to),
     { label: "content_ir.kind_component" },
   );
-  componentRegistry.ingestDbRows(
-    componentRows
-      .filter((r) => r.kind_definition?.kind)
-      .map((r) => ({
-        kind: r.kind_definition!.kind,
+  const resolverRows: KindComponentProjection[] = componentRows.flatMap((r) => {
+    const definition = r.kind_definition[0];
+    if (!definition?.kind) return [];
+    if (!isJsonObject(r.config)) {
+      throw new Error(
+        `[stream] kind_component ${r.id} has a non-object config`,
+      );
+    }
+    return [
+      {
+        kind: definition.kind,
         platform: r.platform,
         role: r.role,
         componentKey: r.component_key,
         source: r.source,
         isActive: r.is_active,
-        config: (r.config ?? {}) as never,
+        config: r.config,
         componentSource: r.component_source,
         propsTransform: r.props_transform,
         pinnedKindVersion: r.pinned_kind_version,
-        updatedAt: r.updated_at,
-      })) as never,
-  );
+        updatedAt: r.updated_at ?? r.created_at,
+        createdAt: r.created_at,
+        id: r.id,
+        createdBy: r.created_by,
+      },
+    ];
+  });
+  componentRegistry.ingestDbRows(resolverRows);
   console.log(`[stream] resolver primed with ${componentRows.length} kind_component row(s)`);
 
   const canonicalByKindId = new Map<string, unknown>();
