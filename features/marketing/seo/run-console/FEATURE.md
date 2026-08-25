@@ -149,6 +149,39 @@ which tier is winning. It saves storage and nothing else.
 
 ## Change log
 
+- `2026-08-25` — **The two hand-rolled `<table>`s became the canonical
+  `MatrxDataTable`, and the page names its AI.** Arman: *"you're showing
+  tabular data, but you're not using our canonical table... you've handled
+  this new shitty table that doesn't do what we needed to do."* The brand
+  list (left panel) and `RunDecisions` (what the AI decided per keyword)
+  each rendered a hand-rolled `<table>` with zero sort/filter/search. Both
+  now render `MatrxDataTable` in its default `local` (client-side)
+  query mode — every column sorts and filters, plus a search box, for free.
+  **Brand table:** per-site `topic_placement_status` reads moved out of the
+  old per-row `BrandRow` component into a parent-level `useBrandTableRows`
+  (`useQueries`, same query key, same cache entry) so every row's sort/filter
+  values exist before the table renders them; checkbox selection now rides
+  `MatrxDataTable`'s own `selection` config, the focused-row highlight rides
+  `selectedId`/`onRowOpen`, and the per-row Run button is a trailing column.
+  **`RunDecisions`:** considered using the shared `features/marketing/seo/
+  keyword-table` (`<KeywordTable>`) since these rows are keyword-shaped, but
+  its ONE QUERY is `seo.gsc_perf_breakdown` — these rows come from
+  `listRunPlacements` (`seo.keyword_topic`, a run-scoped window with no
+  Search Console dimensions) and carry columns (Offering it chose, Also
+  considered, Decided by) that don't exist in that table's core set. Forcing
+  them through `<KeywordTable>` would have meant extending its shared query
+  and column set for a shape that isn't a keyword-performance row — so this
+  went to `MatrxDataTable` directly, not a third keyword table. The keyword
+  cell keeps its `useOpenKeywordWindow` button (NO DEAD ENDS): clicking the
+  phrase opens its dossier exactly as before. Also mounted `<PageAgents>` in
+  the header (`components/agents/PageAgents.tsx`, built the same day) naming
+  `seo.topic_assigner` — the page now says which agent it runs and links
+  straight into the mandate console (`?mandate=seo.topic_assigner`
+  deep-links to the row). Live-verified on **All Green Recycling**: ran a
+  cap-5 pass, sorted/filtered/searched both tables, opened a decided
+  keyword's dossier from the sorted+searched decisions table, and confirmed
+  the mandate link opens Mandates pre-selected on `seo.topic_assigner`.
+
 - `2026-08-25` — **Run history + AI-call-by-call detail (KI-049 addendum).** Arman: *"I need a place where I can go and I can look at the actual runs. And if we made fifty AI calls, I need to be able to click through them one by one and see what they generated."* New right-side tab, `RunHistoryPanel.tsx` + `runHistoryData.ts`: a master list of recent `scheduler.sch_run` + `seo.collection_run` runs (newest first, status/duration/summary/error, AI-call-count + cost badge), click-through to every `chat.request` row attributed to that run — model, full prompt, the full generated output text (recovered from `chat.request_snapshot`, since these internal calls never write `chat.message`), tokens, cost, duration, status, error. Required an aidream-side attribution fix first: `chat.request.execution_kind`/`execution_id` was only ever stamped for `workflow_run`; `run_agent_for_scheduler` and `command_runs.run_streamed_command` now stamp `sch_run` / `seo_collection_run` on the same columns (aidream `agent_runner_adapter.py`, `command_runs.py`). Two new admin-gated RPCs: `admin_list_run_history`, `admin_list_run_ai_calls` (`migrations/run_console_attribution_rpcs.sql`). Manual trigger reuses the console's existing "Run now" — no second run mechanism. **Left:** the aidream deploy for the attribution fix is blocked on an unrelated GitHub Actions billing failure (see the register's Updates entry); until it deploys, new scheduled/SEO-command AI calls stay unattributed and Run history reports 0 calls for them.
 
 - `2026-08-24` — **Nothing the AI decides is hidden, and the tab strip stops lying.** Three faults reported together: (1) the live window narrated steps but showed no output — my own regression, since progress was rendered INSTEAD of content; the window now carries stages as a strip with the model's output owning the body. (2) `Schedule` sat in the brand-keyed tab strip while being global, so selecting a brand changed three tabs and not the fourth; Schedule is now a LEFT-side tab beside Brands, and everything on the right is the selected brand's own data. (3) "This run" reported only counts — useless for judging the machine. It now renders **RunDecisions**: one row per keyword the assigner touched, with the Offering it chose, everything else it considered, its own confidence, whether the row is a proposal under the site's floor, and who decided. Read from the durable placement rows (`seo.keyword_topic`), not the stream, so the analysis survives a reload and can be studied later; every keyword opens its dossier (no dead ends).

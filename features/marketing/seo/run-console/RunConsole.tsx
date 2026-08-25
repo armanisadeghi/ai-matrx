@@ -30,7 +30,7 @@
  */
 
 import { useEffect, useState , useRef} from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   BrainCircuit,
@@ -39,13 +39,11 @@ import {
   Loader2,
   Play,
   RefreshCw,
-  Search,
   ShieldCheck,
   UserCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -55,7 +53,10 @@ import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import { getTopicPlacementStatus } from "@/features/marketing/seo/value-system/topics/data";
-import type { TopicPlacementPassResult } from "@/features/marketing/seo/value-system/topics/types";
+import type {
+  TopicPlacementPassResult,
+  TopicPlacementStatus,
+} from "@/features/marketing/seo/value-system/topics/types";
 import { ProposedQueue } from "@/features/marketing/seo/value-system/topics/ProposedQueue";
 import { UnplacedQueue } from "@/features/marketing/seo/value-system/topics/UnplacedQueue";
 import { TOPIC_PLACEMENT_ENGINE, type ConsoleEngine } from "./engines";
@@ -69,7 +70,11 @@ import { ScheduleCascadePanel } from "./ScheduleCascadePanel";
 import { RunHistoryPanel } from "./RunHistoryPanel";
 import { extractErrorMessage } from "@/utils/errors";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
+import { PageAgents } from "@/components/agents/PageAgents";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import type { ConsoleSiteRow, RunConsoleScope, RunOutcome } from "./types";
+import type { RunPlacementRow } from "./data";
 
 function pct(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
@@ -82,131 +87,182 @@ function scopeHeadline(scope: RunConsoleScope): string {
 }
 
 /**
- * One brand's row. It reads its OWN coverage through the shared status query
- * key, so the topics screen and this console are literally the same cache
- * entry — two surfaces, one truth.
+ * One brand row for the canonical table — the site plus its OWN coverage,
+ * read through the shared status query key so the topics screen and this
+ * console are literally the same cache entry — two surfaces, one truth.
  */
-function BrandRow({
-  site,
-  minImpressions,
-  selected,
-  focused,
-  running,
-  onToggle,
-  onFocus,
-  onRunOne,
-}: {
+interface BrandTableRow {
   site: ConsoleSiteRow;
-  minImpressions: number;
-  selected: boolean;
-  focused: boolean;
-  running: boolean;
-  onToggle: (checked: boolean) => void;
-  onFocus: () => void;
-  onRunOne: () => void;
-}) {
-  const status = useQuery({
-    queryKey: ["seo", "topics", "placement-status", site.id, minImpressions],
-    queryFn: ({ signal }) =>
-      getTopicPlacementStatus(site.id, minImpressions, signal),
-    staleTime: 30 * 1000,
+  isLoading: boolean;
+  isError: boolean;
+  status: TopicPlacementStatus | undefined;
+  clicksPlacedPct: number | null;
+  owed: number | null;
+}
+
+/**
+ * `MatrxDataTable` needs every row's sort/filter values up front, so the
+ * per-site coverage reads that used to live inside each hand-rolled `<tr>`
+ * are hoisted here — same query key, same cache entry, fired in parallel via
+ * `useQueries` instead of one `useQuery` per rendered row.
+ */
+function useBrandTableRows(
+  siteRows: ConsoleSiteRow[],
+  minImpressions: number,
+): BrandTableRow[] {
+  const statusQueries = useQueries({
+    queries: siteRows.map((site) => ({
+      queryKey: ["seo", "topics", "placement-status", site.id, minImpressions],
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        getTopicPlacementStatus(site.id, minImpressions, signal),
+      staleTime: 30 * 1000,
+    })),
   });
 
-  const row = status.data;
-  const owed = row ? row.queue_pending - row.queue_deferred : null;
-  const clicksPlaced = row
-    ? pct(row.demand_clicks_placed, row.demand_clicks)
-    : null;
+  return siteRows.map((site, index) => {
+    const query = statusQueries[index];
+    const status = query?.data;
+    return {
+      site,
+      isLoading: query?.isLoading ?? false,
+      isError: query?.isError ?? false,
+      status,
+      clicksPlacedPct: status
+        ? pct(status.demand_clicks_placed, status.demand_clicks)
+        : null,
+      owed: status ? status.queue_pending - status.queue_deferred : null,
+    };
+  });
+}
 
-  return (
-    <tr
-      className={cn(
-        "cursor-pointer border-t border-border/60 hover:bg-accent/40",
-        focused && "bg-accent",
-      )}
-      onClick={onFocus}
-    >
-      <td className="w-8 px-2 py-1" onClick={(event) => event.stopPropagation()}>
-        <Checkbox
-          checked={selected}
-          onCheckedChange={(checked) => onToggle(checked === true)}
-          aria-label={`Select ${site.name}`}
-        />
-      </td>
-      <td className="px-2 py-1">
-        <div className="truncate text-xs font-medium text-foreground">
-          {site.name}
+function buildBrandColumns({
+  running,
+  onRunOne,
+}: {
+  running: boolean;
+  onRunOne: (siteId: string) => void;
+}): MatrxColumnDef<BrandTableRow>[] {
+  return [
+    {
+      id: "brand",
+      header: "Brand",
+      accessorFn: (r) => r.site.name,
+      cell: (r) => (
+        <div>
+          <div className="truncate text-xs font-medium text-foreground">
+            {r.site.name}
+          </div>
+          <div className="truncate text-[10px] text-muted-foreground">
+            {r.site.domain}
+          </div>
         </div>
-        <div className="truncate text-[10px] text-muted-foreground">
-          {site.domain}
-        </div>
-      </td>
-      <td className="px-2 py-1">
-        {status.isLoading ? (
-          <span className="text-[10px] text-muted-foreground">reading…</span>
-        ) : status.isError ? (
-          <span className="inline-flex items-center gap-1 text-[10px] text-warning">
-            <AlertTriangle className="h-3 w-3" /> unreadable
-          </span>
-        ) : row ? (
+      ),
+    },
+    {
+      id: "clicks_placed",
+      header: "Clicks placed",
+      accessorFn: (r) => r.clicksPlacedPct ?? -1,
+      cell: (r) => {
+        if (r.isLoading)
+          return (
+            <span className="text-[10px] text-muted-foreground">reading…</span>
+          );
+        if (r.isError)
+          return (
+            <span className="inline-flex items-center gap-1 text-[10px] text-warning">
+              <AlertTriangle className="h-3 w-3" /> unreadable
+            </span>
+          );
+        if (!r.status) return null;
+        const clicksPlaced = r.clicksPlacedPct ?? 0;
+        return (
           <div className="min-w-[7rem]">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-[11px] font-semibold tabular-nums text-foreground">
-                {(clicksPlaced ?? 0).toFixed(clicksPlaced! >= 10 ? 0 : 1)}%
+                {clicksPlaced.toFixed(clicksPlaced >= 10 ? 0 : 1)}%
               </span>
               <span className="text-[10px] tabular-nums text-muted-foreground">
-                {formatCount(row.demand_clicks_placed)} /{" "}
-                {formatCount(row.demand_clicks)}
+                {formatCount(r.status.demand_clicks_placed)} /{" "}
+                {formatCount(r.status.demand_clicks)}
               </span>
             </div>
             <div className="mt-0.5 h-1 w-full overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full rounded-full bg-primary"
-                style={{ width: `${Math.min(clicksPlaced ?? 0, 100)}%` }}
+                style={{ width: `${Math.min(clicksPlaced, 100)}%` }}
               />
             </div>
           </div>
-        ) : null}
-      </td>
-      <td className="px-2 py-1 text-right text-[11px] tabular-nums text-foreground">
-        {owed == null ? "—" : owed > 0 ? formatCount(owed) : "0"}
-      </td>
-      <td className="px-2 py-1 text-right text-[11px] tabular-nums">
-        {row && row.proposals_pending > 0 ? (
-          <span className="inline-flex items-center gap-1 text-warning">
+        );
+      },
+    },
+    {
+      id: "owed",
+      header: "Owed",
+      align: "right",
+      accessorFn: (r) => r.owed ?? -1,
+      cell: (r) => (
+        <span className="tabular-nums text-foreground">
+          {r.owed == null ? "—" : r.owed > 0 ? formatCount(r.owed) : "0"}
+        </span>
+      ),
+    },
+    {
+      id: "proposals",
+      header: "Proposals",
+      align: "right",
+      accessorFn: (r) => r.status?.proposals_pending ?? 0,
+      cell: (r) =>
+        r.status && r.status.proposals_pending > 0 ? (
+          <span className="inline-flex items-center gap-1 tabular-nums text-warning">
             <UserCheck className="h-3 w-3" />
-            {formatCount(row.proposals_pending)}
+            {formatCount(r.status.proposals_pending)}
           </span>
         ) : (
-          <span className="text-muted-foreground">0</span>
-        )}
-      </td>
-      <td className="px-2 py-1 text-right text-[11px] tabular-nums">
-        {row && row.queue_failed > 0 ? (
-          <span className="text-destructive" title={row.last_error ?? undefined}>
-            {formatCount(row.queue_failed)}
+          <span className="tabular-nums text-muted-foreground">0</span>
+        ),
+    },
+    {
+      id: "failed",
+      header: "Failed",
+      align: "right",
+      accessorFn: (r) => r.status?.queue_failed ?? 0,
+      cell: (r) =>
+        r.status && r.status.queue_failed > 0 ? (
+          <span
+            className="tabular-nums text-destructive"
+            title={r.status.last_error ?? undefined}
+          >
+            {formatCount(r.status.queue_failed)}
           </span>
         ) : (
-          <span className="text-muted-foreground">0</span>
-        )}
-      </td>
-      <td
-        className="w-16 px-2 py-1 text-right"
-        onClick={(event) => event.stopPropagation()}
-      >
+          <span className="tabular-nums text-muted-foreground">0</span>
+        ),
+    },
+    {
+      id: "run",
+      header: "",
+      sortable: false,
+      filter: false,
+      compact: true,
+      width: 40,
+      cell: (r) => (
         <Button
           size="sm"
           variant="ghost"
           className="h-6 px-1.5 text-[10px]"
           disabled={running}
-          onClick={onRunOne}
-          title={`Run ${TOPIC_PLACEMENT_ENGINE.label} on ${site.name}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRunOne(r.site.id);
+          }}
+          title={`Run ${TOPIC_PLACEMENT_ENGINE.label} on ${r.site.name}`}
         >
           <Play className="h-3 w-3" />
         </Button>
-      </td>
-    </tr>
-  );
+      ),
+    },
+  ];
 }
 
 export function RunConsole({
@@ -218,7 +274,6 @@ export function RunConsole({
 }) {
   const queryClient = useQueryClient();
 
-  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [focusedSiteId, setFocusedSiteId] = useState<string | null>(null);
   const [queue, setQueue] = useState<string[]>([]);
@@ -280,14 +335,11 @@ export function RunConsole({
 
   const siteRows = sites.data ?? [];
   const siteById = new Map(siteRows.map((site) => [site.id, site]));
-  const visible = siteRows.filter((site) => {
-    const needle = search.trim().toLowerCase();
-    if (!needle) return true;
-    return (
-      site.name.toLowerCase().includes(needle) ||
-      site.domain.toLowerCase().includes(needle)
-    );
-  });
+  // The canonical table owns its own search/sort/filter over the full brand
+  // list — "All"/"None" therefore act on the whole list, not a pre-filtered
+  // one (a filtered-only bulk-select is a MatrxDataTable enhancement, not
+  // something this console can express without a second filter pass).
+  const visible = siteRows;
 
   /**
    * The run settles on the HANDLE, not on `launch()` — a durable run can also
@@ -369,6 +421,12 @@ export function RunConsole({
   const running = pass.running || queue.length > 0;
   const knobsBroken = knobs.isSuccess && capCeiling === 0;
 
+  const brandRows = useBrandTableRows(visible, minImpressions);
+  const brandColumns = buildBrandColumns({
+    running,
+    onRunOne: (siteId) => startRun([siteId]),
+  });
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 bg-textured p-2">
       {/* ── Control bar ──────────────────────────────────────────────────── */}
@@ -382,6 +440,16 @@ export function RunConsole({
             {engine.what}
           </p>
         </div>
+
+        {/* NO SECRET AI: this console runs an agent — name it. */}
+        <PageAgents
+          agents={[
+            {
+              mandateKey: "seo.topic_assigner",
+              does: "places keywords onto the Offering tree",
+            },
+          ]}
+        />
 
         <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
           <ShieldCheck className="h-3 w-3" />
@@ -497,14 +565,6 @@ export function RunConsole({
               className="m-0 flex min-h-0 flex-1 flex-col"
             >
           <div className="flex items-center gap-1.5 border-b border-border px-2 py-1.5">
-            <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Find a brand"
-              className="h-7 flex-1 text-xs"
-              aria-label="Find a brand"
-            />
             <Button
               size="sm"
               variant="ghost"
@@ -536,60 +596,30 @@ export function RunConsole({
             </Button>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {sites.isLoading ? (
-              <p className="p-3 text-xs text-muted-foreground">
-                Reading the brands you control…
-              </p>
-            ) : sites.isError ? (
+          <div className="flex min-h-0 flex-1 flex-col">
+            {sites.isError ? (
               <p className="p-3 text-xs text-destructive">
                 Could not read the brand list.
               </p>
-            ) : visible.length === 0 ? (
-              <p className="p-3 text-xs text-muted-foreground">
-                No brand matches “{search}”.
-              </p>
             ) : (
-              <table className="w-full table-fixed text-left">
-                <thead className="sticky top-0 z-10 bg-muted/70 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="w-8 px-2 py-1" />
-                    <th className="px-2 py-1 font-medium">Brand</th>
-                    <th className="w-32 px-2 py-1 font-medium">Clicks placed</th>
-                    <th className="w-16 px-2 py-1 text-right font-medium">
-                      Owed
-                    </th>
-                    <th className="w-16 px-2 py-1 text-right font-medium">
-                      Proposals
-                    </th>
-                    <th className="w-16 px-2 py-1 text-right font-medium">
-                      Failed
-                    </th>
-                    <th className="w-16 px-2 py-1" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {visible.map((site) => (
-                    <BrandRow
-                      key={site.id}
-                      site={site}
-                      minImpressions={minImpressions}
-                      selected={selected.includes(site.id)}
-                      focused={focusedSiteId === site.id}
-                      running={running}
-                      onToggle={(checked) =>
-                        setSelected((current) =>
-                          checked
-                            ? [...current, site.id]
-                            : current.filter((id) => id !== site.id),
-                        )
-                      }
-                      onFocus={() => setFocusedSiteId(site.id)}
-                      onRunOne={() => startRun([site.id])}
-                    />
-                  ))}
-                </tbody>
-              </table>
+              <MatrxDataTable<BrandTableRow>
+                data={brandRows}
+                columns={brandColumns}
+                getRowId={(r) => r.site.id}
+                isLoading={sites.isLoading}
+                toolbar={{ search: true, searchPlaceholder: "Find a brand" }}
+                selectedId={focusedSiteId}
+                onRowOpen={(r) => setFocusedSiteId(r.site.id)}
+                selection={{
+                  selectedIds: selected,
+                  onSelectedIdsChange: setSelected,
+                  noun: "brand",
+                }}
+                pageSize={0}
+                zebra
+                emptyState={{ title: "No brands match your search." }}
+                className="h-full"
+              />
             )}
           </div>
             </TabsContent>
@@ -834,58 +864,82 @@ function RunDecisions({
       </p>
     );
 
+  const columns: MatrxColumnDef<RunPlacementRow>[] = [
+    {
+      id: "keyword",
+      header: "Keyword",
+      accessorKey: "phrase",
+      cell: (row) => (
+        // NO DEAD ENDS: every keyword named here opens.
+        <button
+          type="button"
+          className="truncate text-left text-foreground underline-offset-2 hover:underline"
+          onClick={(event) => {
+            event.stopPropagation();
+            openKeywordWindow({
+              phrase: row.phrase,
+              siteId,
+              ...(brandId ? { brandId } : {}),
+            });
+          }}
+        >
+          {row.phrase}
+        </button>
+      ),
+    },
+    {
+      id: "offering",
+      header: "Offering it chose",
+      accessorKey: "offering",
+      cell: (row) => (
+        <span className="text-foreground">
+          {row.offering}
+          {row.proposal ? (
+            <span className="ml-1 rounded border border-warning/50 bg-warning/10 px-1 py-px text-[9px] text-warning">
+              proposal
+            </span>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      id: "secondary",
+      header: "Also considered",
+      accessorFn: (row) => row.secondary.join(" · "),
+      cell: (row) => (
+        <span className="text-muted-foreground">
+          {row.secondary.length > 0 ? row.secondary.join(" · ") : "—"}
+        </span>
+      ),
+    },
+    {
+      id: "confidence",
+      header: "Sure",
+      align: "right",
+      accessorFn: (row) => row.confidence ?? -1,
+      cell: (row) => (
+        <span className="tabular-nums text-muted-foreground">
+          {row.confidence === null ? "—" : `${row.confidence}%`}
+        </span>
+      ),
+    },
+    {
+      id: "decidedBy",
+      header: "Decided by",
+      accessorKey: "decidedBy",
+    },
+  ];
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-[11px]">
-        <thead className="text-[10px] uppercase tracking-wide text-muted-foreground">
-          <tr>
-            <th className="px-1.5 py-1 font-medium">Keyword</th>
-            <th className="px-1.5 py-1 font-medium">Offering it chose</th>
-            <th className="px-1.5 py-1 font-medium">Also considered</th>
-            <th className="w-20 px-1.5 py-1 text-right font-medium">Sure</th>
-            <th className="w-24 px-1.5 py-1 font-medium">Decided by</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.keywordId} className="border-t border-border/60">
-              <td className="max-w-[16rem] truncate px-1.5 py-1">
-                {/* NO DEAD ENDS: every keyword named here opens. */}
-                <button
-                  type="button"
-                  className="truncate text-left text-foreground underline-offset-2 hover:underline"
-                  onClick={() =>
-                    openKeywordWindow({
-                      phrase: row.phrase,
-                      siteId,
-                      ...(brandId ? { brandId } : {}),
-                    })
-                  }
-                >
-                  {row.phrase}
-                </button>
-              </td>
-              <td className="max-w-[14rem] truncate px-1.5 py-1 text-foreground">
-                {row.offering}
-                {row.proposal ? (
-                  <span className="ml-1 rounded border border-warning/50 bg-warning/10 px-1 py-px text-[9px] text-warning">
-                    proposal
-                  </span>
-                ) : null}
-              </td>
-              <td className="max-w-[12rem] truncate px-1.5 py-1 text-muted-foreground">
-                {row.secondary.length > 0 ? row.secondary.join(" · ") : "—"}
-              </td>
-              <td className="px-1.5 py-1 text-right tabular-nums text-muted-foreground">
-                {row.confidence === null ? "—" : `${row.confidence}%`}
-              </td>
-              <td className="px-1.5 py-1 text-muted-foreground">
-                {row.decidedBy}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <MatrxDataTable<RunPlacementRow>
+      data={rows}
+      columns={columns}
+      getRowId={(row) => row.keywordId}
+      toolbar={{ search: true, searchPlaceholder: "Find a keyword" }}
+      pageSize={0}
+      zebra
+      className="h-full"
+      tableClassName="text-[11px]"
+    />
   );
 }
