@@ -145,6 +145,8 @@
     "check:release-gates:advisory": "bash scripts/run-release-gates.sh --advisory",
     "check:release-gates:strict": "bash scripts/run-release-gates.sh --strict",
     "test:release-fail-forward": "node --test scripts/release-fail-forward.test.mjs",
+    "check:parked-routes": "tsx scripts/check-parked-route-groups.ts",
+    "check:parked-routes:strict": "tsx scripts/check-parked-route-groups.ts --strict",
     "check:route-metadata": "tsx scripts/check-route-metadata.ts",
     "check:route-metadata:strict": "tsx scripts/check-route-metadata.ts --strict",
     "check:admin-catalog": "tsx scripts/check-admin-catalog.ts",
