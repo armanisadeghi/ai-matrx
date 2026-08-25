@@ -199,14 +199,7 @@ export default function AliasesContainer() {
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden p-3 gap-3">
-      <div className="flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-sm font-semibold">Model Aliases</h1>
-          <p className="text-xs text-muted-foreground">
-            Alternate names (old ids, latest pointers) resolving to live model
-            rows — ai.model_alias.
-          </p>
-        </div>
+      <div className="flex items-center justify-end shrink-0">
         <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={startNew}>
           <Plus className="h-3.5 w-3.5" />
           New Alias

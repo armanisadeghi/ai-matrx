@@ -58,12 +58,9 @@ export default function AiTasksPage() {
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
       <div className="flex-shrink-0 p-4 border-b bg-card">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">AI Tasks</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {total} total tasks
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            {total} total tasks
+          </p>
           <div className="flex items-center gap-2">
             {tasks.length > 0 && (
               <CopyButtons

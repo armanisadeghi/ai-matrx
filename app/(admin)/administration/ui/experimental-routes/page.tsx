@@ -78,12 +78,9 @@ export default function ExperimentalRoutesPage() {
                     <div className="p-2 bg-violet-100 dark:bg-violet-900/20 rounded-lg">
                         <Beaker className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold">Experimental Routes</h1>
-                        <p className="text-sm text-muted-foreground">
-                            {totalRoutes} test and demo routes across {experimentalRoutes.length} sections
-                        </p>
-                    </div>
+                    <p className="text-sm text-muted-foreground">
+                        {totalRoutes} test and demo routes across {experimentalRoutes.length} sections
+                    </p>
                 </div>
 
                 {/* Search */}

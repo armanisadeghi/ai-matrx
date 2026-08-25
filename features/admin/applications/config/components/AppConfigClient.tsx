@@ -217,17 +217,6 @@ export function AppConfigClient({
       getScope={getSurfaceScope}
     >
       <div className="flex h-full flex-col gap-3 p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <MonitorCog className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <h1 className="text-base font-semibold">Configuration</h1>
-            <p className="text-xs text-muted-foreground">
-              Remote runtime configuration for shipped clients — one row per
-              application, read by every installed copy in the field.
-            </p>
-          </div>
-        </div>
-
         <div className="min-h-0 flex-1">
           <MatrxDataTable
             urlState={{ id: "application-config" }}

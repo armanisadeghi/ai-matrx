@@ -35,9 +35,6 @@ export default async function ReportsPage() {
       </PageHeader>
       <div className="w-full">
         <div className="container mx-auto max-w-[1400px] px-4 pb-6 pt-[calc(var(--shell-header-h)+1.5rem)] sm:px-6 md:px-8">
-          <p className="mb-4 text-sm text-muted-foreground">
-            Cross-cutting views over your work. Open a report to drill in.
-          </p>
           <ReportsLanding mode="user" />
         </div>
       </div>

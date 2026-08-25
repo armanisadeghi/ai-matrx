@@ -248,17 +248,11 @@ export default function ContextInspectorPage() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-3 p-3 sm:p-5">
       <div className="flex flex-col gap-2 border-b border-border pb-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <Braces className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold">Context Inspector</h1>
-            <Badge variant="outline" className="gap-1 text-[10px]">
-              <ShieldCheck className="h-3 w-3" /> Super admin
-            </Badge>
-          </div>
-          <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
-            Calls the live aidream renderer and displays its response without client-side JSON reserialization.
-          </p>
+        <div className="flex items-center gap-2">
+          <Braces className="h-5 w-5 text-primary" />
+          <Badge variant="outline" className="gap-1 text-[10px]">
+            <ShieldCheck className="h-3 w-3" /> Super admin
+          </Badge>
         </div>
         <Button onClick={runRender} disabled={running} className="gap-2 sm:mt-0">
           {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}

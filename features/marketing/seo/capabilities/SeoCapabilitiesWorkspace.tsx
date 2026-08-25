@@ -96,16 +96,8 @@ export function SeoCapabilitiesWorkspace() {
 
   return (
     <div className="flex w-full flex-col gap-5 p-4 lg:p-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          SEO capabilities
-        </h1>
-        <p className="max-w-3xl text-sm text-muted-foreground">
-          The shared catalogue of what Marketing can measure, where each result
-          lives, and which system produces it. Choose a website only to open
-          that capability's evidence.
-        </p>
-        <div className="mt-3 flex w-full items-center gap-2 sm:w-auto">
+      <header>
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <Select
             value={site.id}
             onValueChange={(siteId) =>

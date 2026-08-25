@@ -463,17 +463,12 @@ export function CatalogsClient({
       getScope={getSurfaceScope}
     >
       <div className="flex h-full flex-col gap-3 p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <LibraryBig className="h-5 w-5 text-muted-foreground" />
-          <div>
-            <h1 className="text-base font-semibold">Catalogs</h1>
-            <p className="text-xs text-muted-foreground">
-              DB-backed catalogs for shipped clients — models, LoRAs, presets,
-              prompts, voices. Active entries are read by every installed copy
-              in the field. New entries start inactive.
-            </p>
-          </div>
-        </div>
+        <p
+          className="truncate text-xs text-muted-foreground"
+          title="New catalog entries start inactive — active entries are read by every installed copy in the field."
+        >
+          New catalog entries start inactive — active entries are read by every installed copy in the field.
+        </p>
 
         <div className="min-h-0 flex-1">
           <MatrxDataTable

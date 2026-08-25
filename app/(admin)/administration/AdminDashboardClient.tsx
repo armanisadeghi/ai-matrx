@@ -104,10 +104,6 @@ export default function AdminDashboardClient({
     <div className="h-full w-full overflow-y-auto">
       <div className="w-full bg-neutral-100 px-4 py-4 dark:bg-neutral-900">
         <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          <h1 className="whitespace-nowrap text-xl font-bold">
-            Administration
-          </h1>
-
           <div className="relative mx-0 w-full max-w-2xl flex-1 sm:mx-4">
             <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
