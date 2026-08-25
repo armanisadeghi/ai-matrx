@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Boxes,
   CheckCircle,
-  Globe,
   Loader2,
   RefreshCw,
   ShieldCheck,
@@ -163,24 +162,7 @@ export default function AgentAppsAdminDashboardPage() {
     >
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-shrink-0 p-4 border-b border-border bg-card">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-md bg-primary/10 text-primary flex items-center justify-center">
-              <Globe className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-foreground">
-                Agent Apps Admin
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Managing{" "}
-                <Badge variant="outline" className="ml-0.5 text-[11px]">
-                  platform-wide
-                </Badge>{" "}
-                apps. Every user&apos;s public apps are visible here.
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center justify-end gap-3 flex-wrap">
           <Button
             variant="outline"
             size="sm"
