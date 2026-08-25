@@ -140,6 +140,72 @@ export async function listSavedKeywordResearch(
 }
 
 /**
+ * The real (not inferred-by-guess) site association for a set of research
+ * phrases: which sites already TRACK a keyword with this exact normalized
+ * phrase via `seo.site_keyword_value`. This is the only site/brand binding
+ * that exists anywhere in the data — a saved research artifact
+ * (`content_ir.kind_instance`) carries only `organization_id`, and
+ * `seo.keyword` itself has no `site_id`/`brand_id` column (see
+ * keyword-research FEATURE.md § MSR-14). A keyword becomes site-bound only
+ * once a human explicitly tracks it on a site's keyword table.
+ *
+ * Two batched reads regardless of how many research rows call this (never
+ * per-row): phrase -> keyword_id, then keyword_id -> site_id, each chunked to
+ * stay under PostgREST's URL-length limit on a big `.in()` list.
+ */
+export async function getSiteIdsByKeywordPhrase(
+  phrases: string[],
+  signal?: AbortSignal,
+): Promise<Map<string, Set<string>>> {
+  const CHUNK = 300;
+  const normalized = Array.from(
+    new Set(phrases.map(normalizeKeywordPhrase).filter(Boolean)),
+  );
+  const bySitePhrase = new Map<string, Set<string>>();
+  if (normalized.length === 0) return bySitePhrase;
+
+  const db = await seoDb();
+  const keywordIdByPhrase = new Map<string, string>();
+  for (let i = 0; i < normalized.length; i += CHUNK) {
+    const chunk = normalized.slice(i, i + CHUNK);
+    const response = await db
+      .from("keyword")
+      .select("id, normalized_phrase")
+      .in("normalized_phrase", chunk)
+      .is("deleted_at", null)
+      .abortSignal(signal ?? new AbortController().signal);
+    if (response.error) throw response.error;
+    for (const row of response.data ?? []) {
+      keywordIdByPhrase.set(row.normalized_phrase, row.id);
+    }
+  }
+  const keywordIds = Array.from(new Set(keywordIdByPhrase.values()));
+  if (keywordIds.length === 0) return bySitePhrase;
+
+  const siteIdsByKeywordId = new Map<string, Set<string>>();
+  for (let i = 0; i < keywordIds.length; i += CHUNK) {
+    const chunk = keywordIds.slice(i, i + CHUNK);
+    const response = await db
+      .from("site_keyword_value")
+      .select("keyword_id, site_id")
+      .in("keyword_id", chunk)
+      .abortSignal(signal ?? new AbortController().signal);
+    if (response.error) throw response.error;
+    for (const row of response.data ?? []) {
+      const set = siteIdsByKeywordId.get(row.keyword_id) ?? new Set<string>();
+      set.add(row.site_id);
+      siteIdsByKeywordId.set(row.keyword_id, set);
+    }
+  }
+
+  for (const [phrase, keywordId] of keywordIdByPhrase) {
+    const sites = siteIdsByKeywordId.get(keywordId);
+    if (sites?.size) bySitePhrase.set(phrase, sites);
+  }
+  return bySitePhrase;
+}
+
+/**
  * Latest durable relationship-research artifact for this org + keyword.
  * Reads the canonical internal `content_ir.kind_instance`, not a paid compute
  * endpoint or creator-private command ledger, so every authorized org member
@@ -271,6 +337,163 @@ export async function fetchResearchDiscoveredKeywordIds(
     ...(asSource.data ?? []).map((row) => row.source_keyword_id),
     ...(asTarget.data ?? []).map((row) => row.target_keyword_id),
   ]);
+}
+
+export interface KeywordDossierCompleteness {
+  /** Pipeline tab — a saved research run exists with this keyword as the primary. */
+  pipeline: boolean;
+  /** Keywords tab — at least one live keyword_edge relationship. */
+  relationships: boolean;
+  /** Site performance tab — real organic query performance on at least one site. */
+  site: boolean;
+  /** Search visibility tab — tracked as a rank target or has an observed SERP snapshot. */
+  visibility: boolean;
+}
+
+const EMPTY_COMPLETENESS: KeywordDossierCompleteness = {
+  pipeline: false,
+  relationships: false,
+  site: false,
+  visibility: false,
+};
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+/**
+ * MSR-15 (Arman): a keyword row opens a dossier with six tabs, "and some of
+ * those tabs are completed, and some of them are not, yet our table doesn't
+ * know that, but it should." This is the hint — four batched reads total
+ * (never one per row) across the visible keyword set, answering "does this
+ * tab have real data" per keyword:
+ *   - Pipeline: `content_ir.kind_instance` (kind `keyword_relationship_research`)
+ *     whose `data->>primary_keyword` matches the phrase.
+ *   - Keywords (relationships): `seo.keyword_edge`, either side.
+ *   - Site performance: `seo.v_site_keyword_performance`, any site.
+ *   - Search visibility: `seo.rank_target` (tracked) or `seo.serp_snapshot`
+ *     (observed) for the keyword.
+ * Classification is NOT read here — it lives on the keyword row itself
+ * (`intent_class` etc.), already in hand wherever this is called from.
+ */
+export async function getKeywordDossierCompleteness(
+  rows: { id: string; phrase: string }[],
+  organizationId: string | null,
+  signal?: AbortSignal,
+): Promise<Map<string, KeywordDossierCompleteness>> {
+  const result = new Map<string, KeywordDossierCompleteness>();
+  for (const row of rows) result.set(row.id, { ...EMPTY_COMPLETENESS });
+  if (rows.length === 0) return result;
+
+  const abortSignal = signal ?? new AbortController().signal;
+  const ids = Array.from(new Set(rows.map((row) => row.id)));
+  const CHUNK = 150;
+  const seoDbInstance = await seoDb();
+
+  const relationshipIds = new Set<string>();
+  const siteIds = new Set<string>();
+  const visibilityIds = new Set<string>();
+
+  await Promise.all([
+    ...chunk(ids, CHUNK).flatMap((idChunk) => [
+      seoDbInstance
+        .from("keyword_edge")
+        .select("source_keyword_id")
+        .is("deleted_at", null)
+        .in("source_keyword_id", idChunk)
+        .abortSignal(abortSignal)
+        .then((response) => {
+          if (response.error) throw response.error;
+          for (const row of response.data ?? [])
+            relationshipIds.add(row.source_keyword_id);
+        }),
+      seoDbInstance
+        .from("keyword_edge")
+        .select("target_keyword_id")
+        .is("deleted_at", null)
+        .in("target_keyword_id", idChunk)
+        .abortSignal(abortSignal)
+        .then((response) => {
+          if (response.error) throw response.error;
+          for (const row of response.data ?? [])
+            relationshipIds.add(row.target_keyword_id);
+        }),
+      seoDbInstance
+        .from("v_site_keyword_performance")
+        .select("keyword_id")
+        .in("keyword_id", idChunk)
+        .abortSignal(abortSignal)
+        .then((response) => {
+          if (response.error) throw response.error;
+          for (const row of response.data ?? [])
+            if (row.keyword_id) siteIds.add(row.keyword_id);
+        }),
+      seoDbInstance
+        .from("rank_target")
+        .select("keyword_id")
+        .is("deleted_at", null)
+        .in("keyword_id", idChunk)
+        .abortSignal(abortSignal)
+        .then((response) => {
+          if (response.error) throw response.error;
+          for (const row of response.data ?? []) visibilityIds.add(row.keyword_id);
+        }),
+      seoDbInstance
+        .from("serp_snapshot")
+        .select("keyword_id")
+        .in("keyword_id", idChunk)
+        .abortSignal(abortSignal)
+        .then((response) => {
+          if (response.error) throw response.error;
+          for (const row of response.data ?? []) visibilityIds.add(row.keyword_id);
+        }),
+    ]),
+  ]);
+
+  const pipelinePhrases = new Set<string>();
+  if (organizationId) {
+    const contentDb = await contentIrDb();
+    const definitionId = await keywordResearchDefinitionId(contentDb);
+    if (definitionId) {
+      const normalizedPhrases = Array.from(
+        new Set(rows.map((row) => row.phrase.trim()).filter(Boolean)),
+      );
+      await Promise.all(
+        chunk(normalizedPhrases, CHUNK).map((phraseChunk) =>
+          contentDb
+            .from("kind_instance")
+            .select("data->>primary_keyword")
+            .eq("organization_id", organizationId)
+            .eq("kind_definition_id", definitionId)
+            .is("deleted_at", null)
+            .in("data->>primary_keyword", phraseChunk)
+            .abortSignal(abortSignal)
+            .then((response) => {
+              if (response.error) throw response.error;
+              for (const row of (response.data ?? []) as Record<
+                string,
+                string | null
+              >[]) {
+                const value = row.primary_keyword;
+                if (value) pipelinePhrases.add(value);
+              }
+            }),
+        ),
+      );
+    }
+  }
+
+  for (const row of rows) {
+    result.set(row.id, {
+      pipeline: pipelinePhrases.has(row.phrase.trim()),
+      relationships: relationshipIds.has(row.id),
+      site: siteIds.has(row.id),
+      visibility: visibilityIds.has(row.id),
+    });
+  }
+  return result;
 }
 
 /** All edges touching a keyword, annotated with the partner phrase. */
