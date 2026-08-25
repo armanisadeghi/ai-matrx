@@ -10,9 +10,11 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { US_LOCATION_CODE } from "@/features/marketing/seo/keyword-research/types";
+import { attachUniversalFacets } from "./universal-facets";
 import type {
   KeywordMarketRow,
   KeywordWithMarket,
+  KeywordWithMarketBeforeFacets,
   SiteKeywordPerformanceRow,
 } from "@/features/marketing/seo/keyword-research/types";
 
@@ -103,7 +105,10 @@ export async function resolveKeyword(
     .abortSignal(signal ?? new AbortController().signal)
     .maybeSingle();
   if (response.error) throw response.error;
-  const keyword = (response.data as KeywordWithMarket | null) ?? null;
+  const raw = (response.data as KeywordWithMarketBeforeFacets | null) ?? null;
+  const keyword = raw
+    ? ((await attachUniversalFacets(supabase, [raw]))[0] ?? null)
+    : null;
   return { keyword, market: pickKeywordMarket(keyword?.keyword_market) };
 }
 

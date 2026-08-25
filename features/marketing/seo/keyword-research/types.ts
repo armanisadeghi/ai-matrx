@@ -1,5 +1,9 @@
 import type { Database } from "@/types/database.types";
 import type {
+  KeywordUniversalFacetKey,
+  KeywordUniversalFacets,
+} from "@/features/marketing/seo/keyword/universal-facets";
+import type {
   KeywordResearchResult,
   KeywordVolumeRefreshResult,
 } from "@/types/python-generated/stream-events";
@@ -16,10 +20,31 @@ export interface SiteKeywordPerformancePage {
   total: number;
 }
 
-/** One explorer row: the universal keyword plus its US market cache (if fetched). */
-export interface KeywordWithMarket extends KeywordRow {
+/**
+ * One explorer row: the universal keyword, its US market cache (if fetched),
+ * and the 13 universal classification facts.
+ *
+ * The facts come from `seo.keyword_universal_facet` — the fact store — NOT
+ * from `seo.keyword`'s frozen legacy mirror columns of the same names, which
+ * are omitted here on purpose so the drop cannot change this shape. Every
+ * producer of this type merges them in via `attachUniversalFacets`.
+ */
+export interface KeywordWithMarket
+  extends Omit<KeywordRow, KeywordUniversalFacetKey>,
+    KeywordUniversalFacets {
   keyword_market: KeywordMarketRow[];
 }
+
+/**
+ * A keyword+market row exactly as `seo.keyword` returns it — BEFORE
+ * `attachUniversalFacets` merges the fact store in. Nothing renders this:
+ * it is the intermediate every producer casts its raw response to, so the
+ * cast never silently depends on the legacy mirror columns still existing.
+ */
+export type KeywordWithMarketBeforeFacets = Omit<
+  KeywordWithMarket,
+  KeywordUniversalFacetKey
+>;
 
 export interface MonthlySearchPoint {
   year: number;

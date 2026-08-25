@@ -21,7 +21,11 @@ import type { AssociationEdge, ScopesRpcResult } from "@/features/scopes/types";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { SEO_KEYWORD_TOKEN } from "@/features/marketing/content-plan/types";
-import type { KeywordWithMarket } from "@/features/marketing/seo/keyword-research/types";
+import type {
+  KeywordWithMarket,
+  KeywordWithMarketBeforeFacets,
+} from "@/features/marketing/seo/keyword-research/types";
+import { attachUniversalFacets } from "@/features/marketing/seo/keyword/universal-facets";
 import {
   ensureKeywordId,
   normalizeKeywordPhrase,
@@ -70,7 +74,10 @@ export async function fetchKeywordsByIds(
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal);
   if (response.error) throw response.error;
-  return (response.data ?? []) as KeywordWithMarket[];
+  return attachUniversalFacets(
+    supabase,
+    (response.data ?? []) as KeywordWithMarketBeforeFacets[],
+  );
 }
 
 export async function addPageSupportingKeyword(

@@ -13,9 +13,11 @@ import type {
   KeywordEdgeRow,
   KeywordEdgeView,
   KeywordWithMarket,
+  KeywordWithMarketBeforeFacets,
 } from "../types";
 import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
+import { attachUniversalFacets } from "@/features/marketing/seo/keyword/universal-facets";
 import { parseKeywordResearchArtifact } from "./artifact";
 import { isJsonObject } from "@/types/json";
 
@@ -84,7 +86,10 @@ export async function listKeywordsWithMarket(options: {
     signal ?? new AbortController().signal,
   );
   if (response.error) throw response.error;
-  return (response.data ?? []) as KeywordWithMarket[];
+  return attachUniversalFacets(
+    supabase,
+    (response.data ?? []) as KeywordWithMarketBeforeFacets[],
+  );
 }
 
 /** Resolve a bounded research cluster by exact normalized phrase. */
@@ -103,7 +108,10 @@ export async function listKeywordsWithMarketByPhrases(
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal);
   if (response.error) throw response.error;
-  return (response.data ?? []) as KeywordWithMarket[];
+  return attachUniversalFacets(
+    supabase,
+    (response.data ?? []) as KeywordWithMarketBeforeFacets[],
+  );
 }
 
 export interface SavedKeywordResearch {

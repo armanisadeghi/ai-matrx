@@ -12,6 +12,9 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import type { Database } from "@/types/database.types";
+import { attachUniversalFacets } from "@/features/marketing/seo/keyword/universal-facets";
+
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/normalize";
 import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
 
@@ -70,7 +73,7 @@ export async function loadKindInstance(
  * report without the market table rather than an error screen.
  */
 export async function loadKeywordMetricsForArtifact(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   artifact: KeywordResearchArtifact,
 ): Promise<KeywordReportRow[]> {
   const normalized = Array.from(
@@ -87,5 +90,10 @@ export async function loadKeywordMetricsForArtifact(
     console.error("[keyword-research] metrics join failed", error);
     return [];
   }
-  return (data ?? []) as unknown as KeywordReportRow[];
+  // The 13 classification facts come from the fact store, never from
+  // `seo.keyword`'s frozen mirror columns — see `universal-facets.ts`.
+  return attachUniversalFacets(
+    supabase,
+    (data ?? []) as unknown as (KeywordReportRow & { id: string })[],
+  );
 }
