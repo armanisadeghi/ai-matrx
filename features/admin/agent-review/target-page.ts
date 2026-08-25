@@ -2,6 +2,7 @@ const ADMIN_ORIGIN = "https://manage.aimatrx.com";
 
 export interface ReviewTargetPageDisplay {
   href: string;
+  fullHref: string;
   label: string;
 }
 
@@ -17,13 +18,14 @@ export function reviewTargetPageDisplay(
     const url = new URL(target, ADMIN_ORIGIN);
     const route = `${url.pathname}${url.search}${url.hash}`;
     return {
-      href: url.href,
+      href: target,
+      fullHref: url.href,
       label:
         url.origin === ADMIN_ORIGIN
           ? route
           : `${url.hostname}${url.port ? `:${url.port}` : ""}${route}`,
     };
   } catch {
-    return { href: target, label: target };
+    return { href: target, fullHref: target, label: target };
   }
 }

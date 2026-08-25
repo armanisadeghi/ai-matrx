@@ -107,23 +107,35 @@ export default function AgentReviewQueueTable() {
         sortable: false,
         filter: false,
         width: 92,
-        cell: (row) => (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1.5"
-            title="Open the review and launch its target page"
-            aria-label={`Open review and launch target page: ${row.title}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              const target = reviewTargetPageDisplay(row.url);
-              window.open(target.href, "_blank", "noopener,noreferrer");
-              router.push(`/administration/users/agent-review/${row.id}`);
-            }}
-          >
-            Open <ArrowRight className="h-3.5 w-3.5" />
-          </Button>
-        ),
+        cell: (row) => {
+          const target = reviewTargetPageDisplay(row.url);
+          return (
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5"
+            >
+              <Link
+                href={target.href}
+                target="_blank"
+                rel="noreferrer"
+                title="Open the review and launch its target page"
+                aria-label={`Open review and launch target page: ${row.title}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  window.setTimeout(() => {
+                    router.push(
+                      `/administration/users/agent-review/${row.id}`,
+                    );
+                  }, 0);
+                }}
+              >
+                Open <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          );
+        },
       },
       {
         accessorKey: "title",
@@ -175,8 +187,8 @@ export default function AgentReviewQueueTable() {
           return (
             <Link
               href={target.href}
-              title={target.href}
-              aria-label={`Open target page: ${target.href}`}
+              title={target.fullHref}
+              aria-label={`Open target page: ${target.fullHref}`}
               className="flex min-w-0 max-w-full items-center gap-1 text-primary hover:underline"
               target="_blank"
               rel="noreferrer"
