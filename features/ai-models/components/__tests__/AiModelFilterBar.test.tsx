@@ -3,8 +3,9 @@ import { createRoot, type Root } from "react-dom/client";
 import AiModelFilterBar from "../AiModelFilterBar";
 import type { TabState } from "../../hooks/useTabUrlState";
 
-(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
-  .IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 function tabState(q: string): TabState {
   return {
@@ -34,6 +35,26 @@ describe("AiModelFilterBar search focus", () => {
     act(() => root.unmount());
     container.remove();
     jest.useRealTimers();
+  });
+
+  it("exposes the registry title as the page heading", () => {
+    act(() =>
+      root.render(
+        <AiModelFilterBar
+          tabState={tabState("")}
+          totalCount={0}
+          filteredCount={0}
+          models={[]}
+          onUpdateQ={() => undefined}
+          onUpdateFilters={() => undefined}
+          onClearAll={() => undefined}
+          onCreate={() => undefined}
+          onRefresh={() => undefined}
+        />,
+      ),
+    );
+
+    expect(container.querySelector("h1")?.textContent).toBe("AI Models");
   });
 
   it("keeps the focused draft and cursor owner during a URL-state refresh", () => {

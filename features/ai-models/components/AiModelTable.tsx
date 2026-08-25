@@ -38,6 +38,7 @@ import {
   ArrowDown,
   ArrowUpDown,
   ListFilter,
+  MoveHorizontal,
 } from "lucide-react";
 import type { AiModel, AiProvider } from "../types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -53,10 +54,7 @@ import AiModelFilterBar from "./AiModelFilterBar";
 import { cn } from "@/lib/utils";
 import { MOBILE_TABLE_FROZEN_SECOND } from "@/components/official/mobile-table/mobileTable";
 import { parseCapabilities } from "../capabilities/parse";
-import {
-  isContentType,
-  type ContentType,
-} from "../capabilities/types";
+import { isContentType, type ContentType } from "../capabilities/types";
 import { priceFieldLabel } from "../usageBasis";
 import { applyAiModelFilters, sortAiModels } from "../utils/filterUtils";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
@@ -129,7 +127,11 @@ function ModalityBadges({ values }: { values: ContentType[] }) {
   return (
     <div className="flex items-center gap-1 whitespace-nowrap">
       {values.map((value) => (
-        <Badge key={value} variant="outline" className="h-5 px-1.5 text-[10px] capitalize">
+        <Badge
+          key={value}
+          variant="outline"
+          className="h-5 px-1.5 text-[10px] capitalize"
+        >
           {value}
         </Badge>
       ))}
@@ -156,7 +158,10 @@ function PriceCell({
   }
   const unit = priceFieldLabel(item.preferred_pricing?.usage_basis, field);
   return (
-    <span className="block text-right text-xs tabular-nums" title={`${formatPrice(value)} · ${unit}`}>
+    <span
+      className="block text-right text-xs tabular-nums"
+      title={`${formatPrice(value)} · ${unit}`}
+    >
       <span className="font-medium">{formatPrice(value)}</span>
       <span className="ml-1 text-[10px] text-muted-foreground">
         {unit.replace("$ / ", "/")}
@@ -263,10 +268,12 @@ const COLUMNS: ColDef[] = [
     filterType: "input_capability",
     render: (item) => (
       <ModalityBadges
-        values={parseCapabilities(item.capabilities, {
-          modelId: item.id,
-          modelName: item.name,
-        }).input}
+        values={
+          parseCapabilities(item.capabilities, {
+            modelId: item.id,
+            modelName: item.name,
+          }).input
+        }
       />
     ),
   },
@@ -278,10 +285,12 @@ const COLUMNS: ColDef[] = [
     filterType: "output_capability",
     render: (item) => (
       <ModalityBadges
-        values={parseCapabilities(item.capabilities, {
-          modelId: item.id,
-          modelName: item.name,
-        }).output}
+        values={
+          parseCapabilities(item.capabilities, {
+            modelId: item.id,
+            modelName: item.name,
+          }).output
+        }
       />
     ),
   },
@@ -395,11 +404,11 @@ function RowActions({
 
   return (
     <>
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-0.5 opacity-100 transition-opacity xl:opacity-0 xl:group-hover:opacity-100">
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6"
+          className="h-6 w-6 max-lg:h-10 max-lg:w-10"
           title="View"
           onClick={(e) => {
             e.stopPropagation();
@@ -411,7 +420,7 @@ function RowActions({
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6"
+          className="h-6 w-6 max-lg:h-10 max-lg:w-10"
           title="Edit"
           onClick={(e) => {
             e.stopPropagation();
@@ -423,7 +432,7 @@ function RowActions({
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6"
+          className="h-6 w-6 max-lg:h-10 max-lg:w-10"
           title="Duplicate"
           onClick={(e) => {
             e.stopPropagation();
@@ -453,7 +462,7 @@ function RowActions({
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+          className="h-6 w-6 text-destructive hover:bg-destructive/10 hover:text-destructive max-lg:h-10 max-lg:w-10"
           title="Delete"
           onClick={(e) => {
             e.stopPropagation();
@@ -937,28 +946,29 @@ export default function AiModelTable({
     [providers],
   );
 
-  const filterOptions = useMemo<FilterOptions>(
-    () => {
-      const capabilities = models.map((model) =>
-        parseCapabilities(model.capabilities, {
-          modelId: model.id,
-          modelName: model.name,
-        }),
-      );
-      return {
-        providers: [
-          ...new Set(
-            models
-              .map((model) => model.maker)
-              .filter((maker): maker is string => Boolean(maker)),
-          ),
-        ].sort(),
-        inputCapabilities: [...new Set(capabilities.flatMap((c) => c.input))].sort(),
-        outputCapabilities: [...new Set(capabilities.flatMap((c) => c.output))].sort(),
-      };
-    },
-    [models],
-  );
+  const filterOptions = useMemo<FilterOptions>(() => {
+    const capabilities = models.map((model) =>
+      parseCapabilities(model.capabilities, {
+        modelId: model.id,
+        modelName: model.name,
+      }),
+    );
+    return {
+      providers: [
+        ...new Set(
+          models
+            .map((model) => model.maker)
+            .filter((maker): maker is string => Boolean(maker)),
+        ),
+      ].sort(),
+      inputCapabilities: [
+        ...new Set(capabilities.flatMap((c) => c.input)),
+      ].sort(),
+      outputCapabilities: [
+        ...new Set(capabilities.flatMap((c) => c.output)),
+      ].sort(),
+    };
+  }, [models]);
 
   const filteredModels = useMemo(
     () => applyAiModelFilters(models, q, filters),
@@ -1014,8 +1024,15 @@ export default function AiModelTable({
         onRefresh={onRefresh}
       />
 
+      <div className="flex shrink-0 items-center gap-1.5 border-b bg-muted/30 px-2 py-1 text-xs text-muted-foreground xl:hidden">
+        <MoveHorizontal className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span>
+          Swipe horizontally for model details; name and actions stay visible.
+        </span>
+      </div>
+
       {/* Scrollable table — single scroll container, thead is sticky within it */}
-      <div className="flex-1 overflow-auto min-h-0">
+      <div className="relative min-h-0 flex-1 overflow-auto">
         <table
           className={cn(
             "caption-bottom text-xs border-collapse",
@@ -1028,6 +1045,10 @@ export default function AiModelTable({
                 <th
                   key={col.key}
                   className={`${col.width} ${col.className ?? ""} px-2 py-1.5 text-xs font-semibold text-left align-middle text-muted-foreground whitespace-nowrap ${
+                    col.key === "common_name"
+                      ? "max-xl:sticky max-xl:left-0 max-xl:z-30 max-xl:bg-card max-xl:shadow-[2px_0_0_hsl(var(--border))]"
+                      : ""
+                  } ${
                     col.sortable
                       ? "cursor-pointer select-none hover:text-primary"
                       : ""
@@ -1050,7 +1071,7 @@ export default function AiModelTable({
                   </span>
                 </th>
               ))}
-              <th className="w-[120px] min-w-[120px] px-2 py-1.5 text-xs font-semibold text-right align-middle text-muted-foreground pr-3">
+              <th className="w-[210px] min-w-[210px] px-2 py-1.5 text-xs font-semibold text-right align-middle text-muted-foreground pr-3 max-xl:sticky max-xl:right-0 max-xl:z-30 max-xl:bg-card max-xl:shadow-[-2px_0_0_hsl(var(--border))]">
                 Actions
               </th>
             </tr>
@@ -1106,12 +1127,16 @@ export default function AiModelTable({
                   {COLUMNS.map((col) => (
                     <td
                       key={col.key}
-                      className={`py-1 px-2 align-middle ${col.className ?? ""}`}
+                      className={`py-1 px-2 align-middle ${col.className ?? ""} ${
+                        col.key === "common_name"
+                          ? "max-xl:sticky max-xl:left-0 max-xl:z-20 max-xl:bg-card max-xl:shadow-[2px_0_0_hsl(var(--border))]"
+                          : ""
+                      }`}
                     >
                       {col.render(item, providerMap)}
                     </td>
                   ))}
-                  <td className="py-1 px-2 align-middle text-right">
+                  <td className="min-w-[210px] py-1 px-2 align-middle text-right max-xl:sticky max-xl:right-0 max-xl:z-20 max-xl:bg-card max-xl:shadow-[-2px_0_0_hsl(var(--border))]">
                     <RowActions
                       item={item}
                       onView={onSelect}

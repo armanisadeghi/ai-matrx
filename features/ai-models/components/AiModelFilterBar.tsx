@@ -195,13 +195,11 @@ export default function AiModelFilterBar({
   return (
     <div className="flex-shrink-0 border-b bg-card">
       {/* ── Row 1: always visible ────────────────────────────── */}
-      <div className="flex items-center gap-1.5 px-2 py-1.5 overflow-x-auto">
+      <div className="flex flex-wrap items-center gap-1.5 px-2 py-1.5 xl:flex-nowrap">
         {/* Brand */}
-        <div className="flex items-center gap-1.5 shrink-0 mr-1">
+        <div className="flex items-center gap-1.5 shrink-0 mr-1 max-xl:w-full">
           <BrainCircuit className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-sm font-semibold whitespace-nowrap">
-            AI Models
-          </span>
+          <h1 className="text-sm font-semibold whitespace-nowrap">AI Models</h1>
           <Badge
             variant="secondary"
             className="h-5 px-1.5 text-xs shrink-0 font-mono"
@@ -212,10 +210,10 @@ export default function AiModelFilterBar({
           </Badge>
         </div>
 
-        <div className="w-px h-5 bg-border shrink-0" />
+        <div className="h-5 w-px shrink-0 bg-border max-xl:hidden" />
 
         {/* Search */}
-        <div className="relative shrink-0">
+        <div className="relative shrink-0 max-sm:w-full">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             value={localQ}
@@ -232,7 +230,7 @@ export default function AiModelFilterBar({
             }}
             aria-label="Search AI models"
             placeholder="Search model, provider, modality…"
-            className="h-7 pl-7 pr-6 text-xs w-52"
+            className="h-7 w-52 pl-7 pr-6 text-xs max-sm:h-11 max-sm:w-full max-sm:text-base"
           />
           {localQ && (
             <button
@@ -252,13 +250,11 @@ export default function AiModelFilterBar({
           onValueChange={(value) =>
             onUpdateFilters({
               output_capability:
-                value !== "__all__" && isContentType(value)
-                  ? value
-                  : undefined,
+                value !== "__all__" && isContentType(value) ? value : undefined,
             })
           }
         >
-          <SelectTrigger className="h-7 text-xs w-32 shrink-0">
+          <SelectTrigger className="h-7 w-32 shrink-0 text-xs max-lg:h-11 max-sm:w-[calc(50%-0.1875rem)] max-sm:text-base">
             <SelectValue placeholder="Output" />
           </SelectTrigger>
           <SelectContent>
@@ -278,7 +274,7 @@ export default function AiModelFilterBar({
             onUpdateFilters({ provider: v === "__all__" ? undefined : v })
           }
         >
-          <SelectTrigger className="h-7 text-xs w-32 shrink-0">
+          <SelectTrigger className="h-7 w-32 shrink-0 text-xs max-lg:h-11 max-sm:w-[calc(50%-0.1875rem)] max-sm:text-base">
             <SelectValue placeholder="Provider" />
           </SelectTrigger>
           <SelectContent>
@@ -306,7 +302,7 @@ export default function AiModelFilterBar({
             })
           }
         >
-          <SelectTrigger className="h-7 text-xs w-28 shrink-0">
+          <SelectTrigger className="h-7 w-28 shrink-0 text-xs max-lg:h-11 max-sm:w-[calc(50%-0.1875rem)] max-sm:text-base">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -320,7 +316,7 @@ export default function AiModelFilterBar({
         <Button
           variant="ghost"
           size="sm"
-          className={`h-7 px-2 text-xs gap-1 shrink-0 ${expanded ? "text-primary" : "text-muted-foreground"}`}
+          className={`h-7 px-2 text-xs gap-1 shrink-0 max-lg:min-h-11 max-sm:w-[calc(50%-0.1875rem)] ${expanded ? "text-primary" : "text-muted-foreground"}`}
           onClick={() => setExpanded((v) => !v)}
           title="More filters"
         >
@@ -361,7 +357,7 @@ export default function AiModelFilterBar({
           </Button>
         )}
 
-        <div className="flex-1 min-w-2" />
+        <div className="min-w-2 flex-1 max-xl:hidden" />
 
         {models.length > 0 && (
           <CopyButtons
@@ -380,7 +376,7 @@ export default function AiModelFilterBar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 shrink-0"
+          className="h-7 w-7 shrink-0 max-lg:h-11 max-lg:w-11"
           onClick={onRefresh}
           title="Refresh"
         >
@@ -389,7 +385,7 @@ export default function AiModelFilterBar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 shrink-0"
+          className="h-7 w-7 shrink-0 max-lg:h-11 max-lg:w-11"
           onClick={onCreate}
           title="New Model"
         >

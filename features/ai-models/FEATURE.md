@@ -4,7 +4,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-08-22`
+**Last updated:** `2026-08-25`
 
 ---
 
@@ -200,6 +200,8 @@ Phase D (2026-07-10) is DONE: the resolution layer (`ai.resolve_model_config` + 
 ---
 
 ## Change log
+
+- `2026-08-25` — **Made the admin model registry usable below desktop width.** The filter/title bar now exposes the one semantic `h1`, wraps instead of clipping, keeps phone inputs at zoom-safe sizing, and preserves touch-sized controls. The comparison table gives an explicit horizontal-scroll cue, freezes Display Name and Actions through tablet widths, and keeps row actions visible without hover so model identity and operations remain reachable at 820 px and 390 px.
 
 - `2026-08-22` — **Restored model comparison pricing and modality filtering.** The admin registry table now merges each editable model row with its preferred-offering `pricing` from the existing super-admin `admin_model_catalog()` RPC, renders sortable Input Price / Output Price columns with their real `usage_basis` units, and exposes canonical Input/Output modality chips plus URL-persisted filters (`capabilities.input` / `.output`). Search includes modalities and keeps its local draft while focused so debounced URL persistence cannot replace text or move the cursor. The inert Provider FK now opens the exact provider via `/administration/ai/ai-models/providers?provider=<id>`.
 
