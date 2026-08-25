@@ -44,7 +44,7 @@ export function ServiceFilterControl({
 
   if (active) {
     return (
-      <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs text-foreground sm:max-w-72">
+      <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs text-foreground max-lg:min-h-11 sm:max-w-72">
         <Network className="h-3 w-3 shrink-0 text-muted-foreground" />
         <span className="shrink-0 whitespace-nowrap text-muted-foreground">
           Offering:
@@ -55,7 +55,7 @@ export function ServiceFilterControl({
         <button
           type="button"
           aria-label="Remove Offering filter"
-          className="ml-0.5 shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="ml-0.5 shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground max-lg:min-h-11 max-lg:min-w-11"
           onClick={() => onChange(undefined)}
         >
           <X className="h-3 w-3" />
@@ -74,7 +74,7 @@ export function ServiceFilterControl({
         placeholder="Filter by offering"
         unplacedLabel="Not placed yet"
         ariaLabel="Filter by offering"
-        className="h-7 text-xs"
+        className="h-7 text-xs max-lg:h-11"
       />
     </div>
   );

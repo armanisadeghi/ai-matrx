@@ -404,7 +404,7 @@ export function FilterBar({
       {chips.map((chip) => (
         <span
           key={chip.id}
-          className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs text-foreground sm:max-w-72"
+          className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs text-foreground max-lg:min-h-11 sm:max-w-72"
         >
           <span className="shrink-0 whitespace-nowrap text-muted-foreground">
             {chip.label}:
@@ -415,7 +415,7 @@ export function FilterBar({
           <button
             type="button"
             aria-label={`Remove ${chip.label} filter`}
-            className="ml-0.5 shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="ml-0.5 shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground max-lg:min-h-11 max-lg:min-w-11"
             onClick={chip.remove}
           >
             <X className="h-3 w-3" />
@@ -428,7 +428,7 @@ export function FilterBar({
             <Button
               variant="outline"
               size="sm"
-              className="h-6 gap-1 rounded-full border-dashed px-2 text-xs text-muted-foreground"
+              className="h-6 gap-1 rounded-full border-dashed px-2 text-xs text-muted-foreground max-lg:h-11 max-lg:min-w-11"
             >
               <Plus className="h-3 w-3" />
               Filter

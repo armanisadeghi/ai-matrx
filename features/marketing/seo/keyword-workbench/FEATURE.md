@@ -236,6 +236,10 @@ key + `p_sort = 'topic'` on `gsc_perf_breakdown` /
 
 ## Change log
 
+- **2026-08-25** — The shared Filter trigger and the workbench's Offering
+  filter now keep 44 px touch targets through tablet and phone widths,
+  including active-filter removal controls.
+
 - **2026-08-25** — The workbench owns one semantic `Keyword workbench` H1. Its
   shared keyword table supplies the complete phone classification card and a
   non-contradictory count/row loading state; no second grid or query exists.
