@@ -15,6 +15,27 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D256 — `rag.library_docs`: restrictive admin-only gate hides rows marked PUBLIC from everyone (2026-08-25)
+
+The table carries three RESTRICTIVE policies — `platform_admin_select_only`,
+`platform_admin_insert_only`, `platform_admin_update_only` — each
+`USING (( SELECT is_platform_admin() ))`. Restrictive policies are AND-ed with the
+whole permissive OR-set, so `is_platform_admin()` is an absolute gate: the
+table's `pub_read` and `std_select` policies cannot grant anything to a
+non-admin. Verified live as a non-admin (rolled back): **0 rows visible**.
+
+All 6 live rows are `visibility = 'public'` and have `created_by IS NULL`, so the
+effect is that six deliberately-public library documents are readable only by
+platform admins. db-rules §6 treats over-tightening as a defect, but a restrictive
+security policy is not an agent's to change on its own authority — someone who
+owns RAG/library needs to say whether the admin-only gate is intended (in which
+case `pub_read` on this table is dead and should go) or whether the public rows
+should actually be readable.
+
+Found in passing during the 2026-08-25 policy-overlap investigation
+(common-docs/systems/platform/access/POLICY_OVERLAP.md); unrelated to it.
+
+
 ### D255 — text inputs are 14px, so iOS zooms the page on every focus (2026-08-24)
 
 `components/ui/input.tsx` renders `text-sm` (14px computed, verified live on the

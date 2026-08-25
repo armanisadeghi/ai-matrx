@@ -225,16 +225,29 @@ function reportPlannerTraps(rows: PlannerTrapRow[]): number {
  * policies are OR'd, `(admin OR X) OR admin` ≡ `admin OR X` — the standalone
  * policy grants nothing whatsoever and costs one extra evaluation per row.
  *
- * `redundant_admin_tables` counts the tables where that redundancy is PROVEN
- * for all four commands: a `std_*` policy exists for each command and its
- * predicate begins with the admin disjunct at top level. Dropping
- * `platform_admin_all` on exactly those tables is an access no-op.
+ * 🚨 DO NOT "FIX" THIS BY DROPPING `platform_admin_all`. That was tried on
+ * 2026-08-25 across 387 tables and reverted the same day. It was proven
+ * access-safe, and it still had to come back, for two reasons:
  *
- * It is NOT safe everywhere, and the difference is the whole point of the
- * counter: on tables with no `std_*` policy for some command, that standalone
- * policy is the ONLY thing granting admin access there, and dropping it would
- * REMOVE access — a narrowing, which db-rules §6 treats as seriously as a
- * widening. Never drop by name in bulk; drop only the proven set.
+ *   1. ZERO BENEFIT. The advisor's model assumes a per-row cost. Since the
+ *      2026-08-22 InitPlan sweep the predicate is `( SELECT is_platform_admin() )`,
+ *      which the planner lifts into an InitPlan — evaluated ONCE per query, then
+ *      OR'd as a cached boolean. Measured on agent.definition: 6.097 ms with the
+ *      policy vs 6.275 ms without. Noise.
+ *   2. IT BREAKS CERTIFICATION. `iam.verify_canonical` expects
+ *      `platform_admin_all` for most variants ("canonical, not drift"), and the
+ *      platform gates done-ness on `iam.canonical_certify_ok`. Every dropped
+ *      table reported `policies_canonical FAIL — missing={platform_admin_all}`.
+ *
+ * `redundant_admin_tables` therefore reports where the policy is ALGEBRAICALLY
+ * redundant — useful context, NOT a worklist. It is also not redundant
+ * everywhere: on tables with no `std_*` policy for some command it is the only
+ * grant of admin access, and dropping it would REMOVE access (db-rules §6 —
+ * narrowing is as serious as widening).
+ *
+ * The number is kept visible so the shape stays known, not because it is a
+ * defect. Full write-up, measurements and proofs:
+ * common-docs/systems/platform/access/POLICY_OVERLAP.md
  */
 const OVERLAP_QUERY = `
   with pol as (
@@ -318,14 +331,19 @@ function reportOverlaps(rows: OverlapRow[]): number {
     return 0;
   }
   console.log(
-    `  ${TAG.warn}${combos} overlapping role+command combos across ${tables} tables.`,
+    `  ${TAG.info}${combos} overlapping role+command combos across ${tables} tables` +
+      ` ${C.dim}(context, not a defect)${C.reset}`,
   );
   console.log(
-    `  ${TAG.info}${clearable} of them (${redundant} tables) are the PROVEN-redundant` +
-      ` \`platform_admin_all\` pattern — droppable with zero access change.`,
+    `  ${TAG.info}${clearable} of them (${redundant} tables) are the algebraically-redundant` +
+      ` \`platform_admin_all\` pattern.`,
   );
   console.log(
-    `${C.dim}       System + batch recipe: common-docs/systems/platform/access/POLICY_OVERLAP.md${C.reset}`,
+    `${C.dim}       Measured 2026-08-25: dropping these buys NOTHING (the predicate is an` +
+      ` InitPlan, evaluated once per query) and breaks canonical certification.${C.reset}`,
+  );
+  console.log(
+    `${C.dim}       Do not "fix" this without reading common-docs/systems/platform/access/POLICY_OVERLAP.md${C.reset}`,
   );
   return combos;
 }
