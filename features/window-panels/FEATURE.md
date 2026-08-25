@@ -56,6 +56,35 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
 
 ---
 
+## 🚨 A PANEL WRAPS THE CANONICAL COMPONENT — never a hand-rolled copy
+
+**Arman, 2026-08-25**, on a cannibalization drill panel that re-rendered its own partial
+page list:
+
+> "Whenever we get a window panel of something, it needs to just wrap the actual identical
+> component as a window panel. In this case, when I click on any keyword, it routes me to a
+> page that is essentially the same page I'm on here, and it shows me a table filtered for
+> that particular keyword. That's exactly what the window panel should show me… So it's
+> actually easier than you're making it out to be. You're writing a bunch of extra code, but
+> all that does is just make something ugly that we don't need. And it's not as useful as the
+> one we already have. So just use what we already have."
+
+The rule, and why it is not a style preference:
+
+- **Find the route or component that already answers this question, and put THAT in the
+  panel.** If clicking the thing navigates somewhere, the panel shows what that destination
+  shows.
+- A bespoke panel body is a **second renderer of the same data**, so it drifts, and it
+  usually drifts by *truncating* — the offending panel showed 5 of 83 pages while the
+  canonical table paginated all 83. That is not a smaller view; it is a **wrong** one.
+- Worked example: `GscDrilldownWindow` (`features/marketing/search-console/windows/`) is the
+  Search Console page for one slice — `KpiBand` + `PerformanceChart` + `GscDimensionTable`.
+  Every insight table's panel action opens it with `filters: { query_eq: row.query }` instead
+  of rendering its own list.
+- Mechanical note: `MatrxDataTable`'s `window` prop is for the table's own record window.
+  When the panel should be a canonical surface instead, set `window={{ enabled: false }}` and
+  open the canonical window from a `rowActions` button.
+
 ## Change Log
 
 - 2026-08-22 — **Smart Code Editor tiles carry a MANDATE KEY, never an agent id.** `tools-grid/toolsGridTiles.ts` deleted `SMART_CODE_EDITOR_DEFAULT_AGENT_ID` (a personal "Code Editor" clone — forbidden as a default): `tile.smart-code-editor` seeds `agents: [GENERIC_CODE_EDITOR_AGENT]` + `defaultPickerMandateKey` (the window's real contract — its stale `agentId`/`variables` seed was being silently dropped), and `tile.smart-multi-file` seeds `mandateKey: "code_editor.code_edit"`; `MultiFileSmartCodeEditorWindow` / `useOpenMultiFileSmartCodeEditorWindow` / the OverlayController wiring took `mandateKey` in place of `agentId` and launch via `launchAgentExecution({ mandateKey })`.
