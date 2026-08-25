@@ -149,6 +149,7 @@ export function TryMasterworkBox({
   masterworkKind,
   whatItRuns = "Your Masterwork",
   submitLabel = null,
+  fieldLabels,
   onRunFinished,
   onCompare,
 }: {
@@ -169,6 +170,14 @@ export function TryMasterworkBox({
    * gave us one, an ICON ALONE when it did not. Never invented words.
    */
   submitLabel?: string | null;
+  /**
+   * Surface-specific display labels for otherwise-canonical run fields. The
+   * field keys and submitted payload never change. This is intentionally an
+   * ordered presentation override: generic system workflows such as the
+   * Understudy can use plain human labels without rewriting purpose-built
+   * Masterwork intake copy or forking the run form.
+   */
+  fieldLabels?: readonly string[];
   /** Fired when a run reaches a terminal state (refresh Past runs). */
   onRunFinished: () => void;
   /**
@@ -519,30 +528,33 @@ export function TryMasterworkBox({
           this makes, and repeating it here ("You get back: …" under "It
           makes: …") is the same sentence twice. Whatever the builder wants
           to say lives in the FIELDS — their labels, placeholders and help. */}
-      {fields.map((f) => (
-        <div key={f.key} className="space-y-1">
-          <label className="text-xs font-medium text-foreground">
-            {f.label}
-            {f.required ? null : (
-              <span className="ml-1 font-normal text-muted-foreground">
-                (optional)
-              </span>
-            )}
-          </label>
-          {/* THE canonical control — same renderer as the run form and the
+      {fields.map((f, index) => {
+        const displayLabel = fieldLabels?.[index] ?? f.label;
+        return (
+          <div key={f.key} className="space-y-1">
+            <label className="text-xs font-medium text-foreground">
+              {displayLabel}
+              {f.required ? null : (
+                <span className="ml-1 font-normal text-muted-foreground">
+                  (optional)
+                </span>
+              )}
+            </label>
+            {/* THE canonical control — same renderer as the run form and the
               trigger surface, so every field type, placeholder and choice
               list the input node can declare renders here without this file
               knowing about any of them. */}
-          <RunFormFieldControl
-            field={f}
-            value={values[f.key] ?? f.defaultValue ?? ""}
-            onChange={(v) => setField(f.key, v)}
-          />
-          {f.help ? (
-            <p className="text-[11px] text-muted-foreground">{f.help}</p>
-          ) : null}
-        </div>
-      ))}
+            <RunFormFieldControl
+              field={f}
+              value={values[f.key] ?? f.defaultValue ?? ""}
+              onChange={(v) => setField(f.key, v)}
+            />
+            {f.help ? (
+              <p className="text-[11px] text-muted-foreground">{f.help}</p>
+            ) : null}
+          </div>
+        );
+      })}
       <div
         className={cn("flex items-center gap-2", !onCompare && "justify-end")}
       >

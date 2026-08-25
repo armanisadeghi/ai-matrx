@@ -134,6 +134,7 @@ export function UnderstudyCard({
         masterworkId={understudy.id}
         masterworkKind="generate"
         whatItRuns="Your understudy"
+        fieldLabels={["Your request", "Supporting material"]}
         onRunFinished={() => undefined}
       />
     </div>
