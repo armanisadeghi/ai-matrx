@@ -53,8 +53,22 @@ to end — point them at an API or some aspect of our system and ensure all of t
   (arrays of structures, recurring sub-objects, heterogeneous sections) earns the full treatment.
 - **The three projections of one result**: (1) the KIND — canonical, what travels/persists/
   renders; (2) the RAW payload — on demand (`include_raw=`), off by default; (3) the AI VIEW —
-  a context-trimmed projection made at the TOOL boundary, never in the engine, never in the kind.
-  One core engine per source; the engine's result gets its kind at that boundary.
+  **DECLARED ON THE KIND** as `@kind(..., ai_view=(...))`, naming which of its own fields a model
+  receives. Published to `kind_definition.metadata.ai_view` and applied at the ONE prompt door
+  (`matrx_ai.config.prompt_values`), which recurses into collections. Omit it and the whole
+  payload travels, as before. One core engine per source; the engine's result gets its kind at
+  that boundary.
+  **Why it is on the kind and not at the tool boundary** (Arman, 2026-08-24 — this SUPERSEDES the
+  earlier "never in the kind" rule): a workflow step emits a kind and the author binds it to an
+  agent variable, and no tool is involved at all. *"If you overdo it, then you're killing the
+  model's context window."* A second kind per family doubles the vocabulary and makes every author
+  learn a conversion; the kind naming its own fields costs one line and needs nobody to remember.
+  **What to put in it:** the markdown/body plus the provenance a model cannot infer from the body.
+  Arman: *"as long as you include those [links and media] in your markdown inline, that's the best
+  way to include them… the agent sees what's a header tag, sees what's an image, sees what's a
+  link just because it's built into the markdown. And then you don't have to add them as extras."*
+  So a field already inline in the body is a DUPLICATE, not an addition. Measured on one real
+  page: 235,442 chars → 288.
 
 ## The pipeline at a glance
 
@@ -185,14 +199,22 @@ is the durable completion signal the orchestrator watches; it is only true once 
    `features/content-ir/registry/system-kinds.ts`. (Rows whose schema can't be flattened have
    `kind_definition.data` NULL, so the streaming parser has no warm schema without this mirror —
    still hand-written; SDK gap.)
-4. **Build the components** in `components/mardown-display/blocks/<family>/` — one per kind,
+4. **Every data surface carries COPY controls** (Arman, 2026-08-24): *"when you have something
+   like this, in almost all instances, you're going to want to copy things. And considering the
+   fact that we specialize in AI, that's one of the most important things we need to offer."* The
+   canonical pair is `components/agent-copy/CopyButtons` — plain Copy + the `CopyForAiIcon`
+   Copy-for-AI, `json` as a menu item, never a third button. On a collection or a rich card the
+   AI copy is **graded** (`aiVariants`): the declared `ai_view` first, the body alone second, the
+   full payload as the automatic "Everything" escape hatch. Put the pair on the card header AND on
+   every section, each scoped to that section's data.
+5. **Build the components** in `components/mardown-display/blocks/<family>/` — one per kind,
    defensive readers (a half-arrived value is a NORMAL state), the collection delegating every
    nested instance via a static sibling map with a db-override seam (pattern:
    `search-kinds/SearchKindNested.tsx`), never a per-item `next/dynamic` re-entry, never
    reimplementing a nested kind. Register each in `BlockComponentRegistry.tsx`, the dispatch
    shape table (`block-dispatch.tsx`), the `FeSynthesizedBlockType`/`ShapeBlockType` unions, and
    the pin test `__tests__/component-registry.test.ts`.
-5. **Land the `kind_component` rows** as one idempotent migration
+9. **Land the `kind_component` rows** as one idempotent migration
    (`migrations/content_ir_<family>_components.sql`, role=`output`, source=`bundled`,
    platform web), apply, ledger it.
 6. **Activate:** re-run the family's publish (`publish_kind_catalog.py … --apply`; the search
