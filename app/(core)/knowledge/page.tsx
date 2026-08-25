@@ -6,7 +6,7 @@ import { MarketingPageShell } from "@/features/shell/components/MarketingPageShe
  *
  * Distinct from the guest sales landing at `/knowledge/data-stores` (KnowledgeLanding).
  * This page documents what the system actually does, built around a rebuilt,
- * theme-aware version of `docs/knowledge/visuals/matrx_knowledge_system_full.svg`.
+ * theme-aware version of `common-docs/projects/knowledge-system/vision/visuals/matrx_knowledge_system_full.svg`.
  * See `features/rag/FEATURE.md` for the full vision + truthful built/
  * missing map and the planned guided walkthrough.
  */

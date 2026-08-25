@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
  * KnowledgePipelineDiagram
  *
  * A responsive, theme-aware, lightly-interactive rebuild of
- * `docs/knowledge/visuals/matrx_knowledge_system_full.svg`. Instead of a fixed
+ * `common-docs/projects/knowledge-system/vision/visuals/matrx_knowledge_system_full.svg`. Instead of a fixed
  * 1040×1060 raster-ish SVG, the seven phases are HTML bands that reflow on
  * mobile, respect light/dark tokens, and let a visitor click a phase to focus
  * it (dimming the rest) so the "source → knowledge → answer" story reads at a

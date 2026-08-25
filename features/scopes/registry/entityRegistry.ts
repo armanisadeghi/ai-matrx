@@ -90,7 +90,7 @@ export const DEFAULT_OWNER_COLUMN = "created_by";
 export const DEFAULT_ORG_COLUMN = "organization_id";
 
 // ─── Content roles ──────────────────────────────────────────────────────────
-// The knowledge-model grouping axis (docs/knowledge/scopeable_entities.md):
+// The knowledge-model grouping axis (common-docs/projects/knowledge-system/vision/scopeable_entities.md):
 // every entity brings knowledge in (source), produces it (destination), does
 // both (hybrid), operates on it without truth of its own (utility), or
 // organizes other entities (container). Resource surfaces group by this.

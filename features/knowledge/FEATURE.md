@@ -33,7 +33,7 @@ conversion-oriented sales landing shown to guests at `/rag/data-stores`.
 
 ## Source asset
 
-- `docs/knowledge/visuals/matrx_knowledge_system_full.svg` — the original
+- `common-docs/projects/knowledge-system/vision/visuals/matrx_knowledge_system_full.svg` — the original
   hand-authored diagram. Kept as the canonical reference; the page rebuilds it
   in React/HTML for responsiveness + light/dark theming rather than embedding
   the raster-ish SVG. If you change the system's phases, update **both** the SVG

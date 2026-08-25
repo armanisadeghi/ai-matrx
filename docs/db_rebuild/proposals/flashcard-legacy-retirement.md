@@ -162,7 +162,7 @@ These reference the legacy shapes as TypeScript types only — no query. Recomme
 the same pass (separate commit) but it is not required for the cutover.
 
 Docs to update: `features/sharing/README.md:275`, `features/scopes/docs/scopeable_entities.md:25`,
-`docs/knowledge/scopeable_entities.md`.
+`common-docs/projects/knowledge-system/vision/scopeable_entities.md`.
 
 ### aidream — generated ORM only, zero service consumers
 

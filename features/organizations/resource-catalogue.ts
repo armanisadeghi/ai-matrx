@@ -29,7 +29,7 @@
  *
  * ── (original note, retained) ──
  * This is the FE expression of the knowledge-system "content role" concept
- * (docs/knowledge/scopeable_entities.md → Source / Destination / Utility /
+ * (common-docs/projects/knowledge-system/vision/scopeable_entities.md → Source / Destination / Utility /
  * Container). The DB `shareable_resource_registry` does not yet carry a
  * `content_role` / `is_scopeable` column; when it does, this catalogue should
  * be generated from it.
