@@ -62,6 +62,7 @@ import {
   peekOfficeExtraction,
   peekOfficePdf,
 } from "@/features/files/hooks/office-extraction-cache";
+import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { extractErrorMessage } from "@/utils/errors";
 
 const PdfPreview = lazy(() => import("./PdfPreview"));
@@ -191,8 +192,29 @@ export function OfficePreview({
   const [retryToken, setRetryToken] = useState(0);
 
   const mode = state.fileId === fileId ? state.mode : deck ? "visual" : "text";
+  const { asset, refresh: refreshSourceAsset } = useFileAsset(
+    deck ? fileId : null,
+    { signedUrlTtl: 3600 },
+  );
+  const sourceAsset = asset?.file_id === fileId ? asset : null;
+  const firstSlideUrl =
+    sourceAsset?.variants?.page1_url?.url ??
+    sourceAsset?.variants?.thumbnail_url?.url ??
+    null;
+  const [firstSlideImage, setFirstSlideImage] = useState<{
+    url: string | null;
+    failed: boolean;
+  }>({ url: firstSlideUrl, failed: false });
+  if (firstSlideImage.url !== firstSlideUrl) {
+    setFirstSlideImage({ url: firstSlideUrl, failed: false });
+  }
 
   useEffect(() => {
+    // Visual mode does not need the source extraction. On very large decks,
+    // extracting the 80–90 MB PPTX while LibreOffice is rendering the PDF
+    // downloads and parses the source twice and makes both jobs slower. Load
+    // markdown only when the user actually opens Text mode.
+    if (mode !== "text") return;
     // Always go through getOfficeExtraction: a cache hit resolves instantly
     // (async .then — no sync setState), an in-flight fetch is shared, a miss
     // fetches. This also covers the parallel-mount race where another
@@ -222,7 +244,7 @@ export function OfficePreview({
     return () => {
       cancelled = true;
     };
-  }, [fileId, retryToken]);
+  }, [fileId, mode, retryToken]);
 
   useEffect(() => {
     // Resolve the PDF derivative only when the visual mode wants it. The
@@ -261,6 +283,24 @@ export function OfficePreview({
   const error = state.fileId === fileId ? state.error : null;
   const pdfRef = state.fileId === fileId ? state.pdfRef : null;
   const pdfError = state.fileId === fileId ? state.pdfError : null;
+
+  useEffect(() => {
+    // The full-res first-slide variant is produced independently during
+    // upload. It can appear while the cached full-deck PDF is still warming,
+    // so refresh the small Asset envelope until either representation lands.
+    if (mode !== "visual" || pdfRef || firstSlideUrl) return undefined;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const poll = async () => {
+      await refreshSourceAsset();
+      if (!cancelled) timer = setTimeout(() => void poll(), 2_500);
+    };
+    timer = setTimeout(() => void poll(), 1_000);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [firstSlideUrl, mode, pdfRef, refreshSourceAsset]);
 
   const setMode = useCallback((next: ViewMode) => {
     setState((s) => (s.mode === next ? s : { ...s, mode: next }));
@@ -467,14 +507,47 @@ export function OfficePreview({
               className="flex-1 min-h-0"
               pageNumber={state.fileId === fileId ? state.page : 1}
               onPageChange={onPageChange}
+              pageLabel={isDeck ? "slide" : "page"}
+              floatingPageControls={isDeck}
             />
           </Suspense>
         ) : (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">
-              Rendering {isDeck ? "slides" : "pages"}…
-            </span>
+          <div
+            className="relative flex flex-1 items-center justify-center overflow-hidden bg-muted/20 p-4"
+            role="status"
+            aria-label={`Preparing ${fileName ?? (isDeck ? "presentation" : "document")}`}
+          >
+            {firstSlideImage.url && !firstSlideImage.failed ? (
+              // The source asset's full-resolution page1_url is the earliest
+              // faithful visual. It stays visible until the range-ready PDF
+              // derivative replaces it; no blank full-file download gate.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={firstSlideImage.url}
+                alt={isDeck ? "First slide preview" : "First page preview"}
+                draggable={false}
+                onError={() =>
+                  setFirstSlideImage((current) => ({
+                    ...current,
+                    failed: true,
+                  }))
+                }
+                className="max-h-full max-w-full rounded-md border border-border/60 object-contain shadow-sm"
+              />
+            ) : (
+              <div className="aspect-video w-full max-w-4xl animate-pulse rounded-lg border border-border/70 bg-card shadow-sm">
+                <div className="flex h-full flex-col gap-4 p-[7%]">
+                  <div className="h-[10%] w-2/5 rounded bg-muted" />
+                  <div className="h-[5%] w-4/5 rounded bg-muted/70" />
+                  <div className="h-[5%] w-3/5 rounded bg-muted/70" />
+                  <div className="mt-auto h-[38%] rounded bg-muted/40" />
+                </div>
+              </div>
+            )}
+            <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-glass-edge bg-glass px-3 py-2 text-xs font-medium text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              Preparing remaining {isDeck ? "slides" : "pages"}…
+            </div>
           </div>
         )
       ) : !extraction ? (
