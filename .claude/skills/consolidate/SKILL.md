@@ -83,8 +83,11 @@ Exclusions, absolute: `node_modules/`, `.venv/`, `.git/`, `matrx-frontend/type-e
 `common-docs/inbox/` — Arman's lane, never touched by an agent, ever.**
 
 **Term greps under-catch. Also `ls -R` the node's own code and doc directories** — a file sitting
-inside your own feature dir whose name shares none of your terms is exactly the one you will miss
-(`scopeable_entities.md` was found only after the proof gate).
+inside your own feature dir whose name shares none of your terms is exactly the one you will miss.
+
+🚨 **Read every file over ~200 lines in your lane, whatever its name suggests.** Wave 2 listed a
+513-line `README.md`, skipped it as boilerplate, and discovered at the proof gate that it was the
+node's ONLY vision document. `README.md`, `GOAL.md`, `notes.md` — size decides, not the filename.
 
 **Every IN-LANE file gets its own census row** — path, one-line subject, verdict. **OUT files are
 grouped by justification class**, not enumerated: a foundational node's term sweep hits a tenth of
@@ -97,6 +100,8 @@ The four verdicts:
 - **LANDMINE** — stays in the repo under the Step 3 cap.
 - **SEAM** — real meaning that belongs to a NEIGHBOUR node. Never absorbed, never deleted, never
   rewritten. You record the seam and plant a pointer; fixing it is that node's run.
+  🚨 **SEAM beats MEANING.** A neighbour's content is left standing however meaning-shaped it is.
+  Destroying homeless truth is a worse error than the duplication you came to remove.
 - **OUT** — mentions your node while being about something else; archives; generated output.
 
 ## Step 3 — The line: MEANING or LANDMINE
@@ -121,12 +126,20 @@ description, any status or roadmap, any decision or its rationale, any vision or
 cross-repo contract, any plan. If YOUR NODE's surviving content runs past ~80 lines, meaning
 survived — cut again.
 
-**The cap is scoped, in three ways.** It counts only *your node's* lines — a neighbour node's
-meaning in the same file is left verbatim and recorded as a SEAM, so a legitimately co-hosted file
-can finish well over 80 lines. It governs `FEATURE.md`-class docs, **not** a repo's or package's
-`CLAUDE.md`/`AGENTS.md` (an agent rulebook of imperatives — plant the pointer, leave it standing).
-And a survivor that was already pure landmine needs no surgery at all; the cap is a ceiling, not a
-quota.
+**The cap counts NON-IMPERATIVE lines only. Imperatives and file maps are uncapped.** A file that
+finishes at 111 lines because 68 of them are pure "never do X, use Y" invariants has PASSED — cutting
+a real code-safety rule to hit a number is the worst outcome this skill can produce. The number is a
+smell threshold for prose, not a budget for guards.
+
+It is scoped three further ways. It counts only *your node's* lines — a neighbour's meaning in the
+same file is left verbatim as a SEAM. It governs `FEATURE.md`-class docs, **not** a repo's or
+package's `CLAUDE.md`/`AGENTS.md` (an agent rulebook — plant the pointer, leave it standing). And a
+survivor that arrived pure needs no surgery at all.
+
+**A landmine may carry the minimum of its own "why".** The ban is on restating the product story,
+not on the one clause that makes a trap comprehensible — *"`p_user_id` must never be inserted
+directly (it bypasses the RLS check)"* is a landmine, not meaning. A guard nobody understands gets
+"cleaned up" by the next agent.
 
 **Four file classes have fixed verdicts — do not re-litigate them:**
 
@@ -135,7 +148,11 @@ quota.
 | **Generated** (`<!-- AUTO: -->` blocks, `*.generated.md`, `openapi.json`, `api-types.ts`) | Never edited, never deleted. Fix the generator or the source docstring; file the drift. |
 | **Repo `SKILL.md`** | Procedure, not node truth. Leave it. Repoint its dead links; if its body is stale, flag it — rewriting it is not this run. |
 | **Repo changelog inside a `FEATURE.md`** | The still-true FACTS migrate (to STATE, or as a landmine). The narrative stays in git. Never copy months of entries into STATE — that is the bloat this system exists to prevent. |
-| **Bannered historical / archived doc in a live path** | Noted, not moved, not deleted. If it is genuinely load-bearing truth, that is a finding you report, not a file you quietly absorb. |
+| **Archived doc under `docs/archive/**`** | Noted, not moved, not deleted. |
+| **Bannered "STALE"/"SUPERSEDED" doc in a LIVE path** | Extract anything still true, then DELETE. A banner is not a home — leaving 4,000 lines of contradicted spec in a live directory is the disease, not the cure. |
+| **CODE ARTIFACT — a `.md` that code reads or a guard scans** | Never absorbed, never deleted, whatever it contains. Confirm by grepping the repo's `.py`/`.ts`/scripts for its filename before you touch it. (Wave 2: 11 `ner_*.md` files are the declared source of truth for agent slots and a guard script scans them — deleting them would have broken the guard.) |
+| **PUBLISHED PAYLOAD — shipped inside a package tarball** (a `README.md`/`CHANGELOG.md` listed in `package.json` `files:`) | Never deleted; it is a public artifact. Plant the pointer, leave it. |
+| **A repo's working-backlog lane** (`.research/`, `.arman/`, `.matrx/`, `FOUND_DEFECTS.md`, task registers) | Left standing, recorded as survivors. **A repo `.arman/` is Arman's lane by the same law as `common-docs/inbox/` — never delete from it, ever**, even when it holds a byte-identical duplicate of something you just removed. Report it instead. A register that cites a doc you deleted gets a one-line annotation, not a rewrite. |
 
 🚨 **The classification pressure runs one way.** Calling meaning "local mechanics" is how 148 fat
 `FEATURE.md` files got there in the first place. **When a passage could be read either way, it is
@@ -157,15 +174,25 @@ The node's home holds the kit — [`cross-repo-docs`](/skills/cross-repo-docs/SK
   Merge in place; never append addenda. Carries a verification-date line, a **Repositories table
   (repo | role)** naming every repo the node touches, and a changelog.
 - **`DECISIONS.md`** — settled rulings with dates, so they are never re-asked.
-- **`HANDOFF.md`** — forward work only, ≤150 lines, groomed not grown. **Re-verify every gap
+- **`HANDOFF.md`** — forward work only, groomed not grown. **The test is "no closed items and no
+  restated STATE", not a line count** — compressing a true backlog into 150 lines by writing dense
+  prose trades readability for a number. **Re-verify every gap
   before you carry it forward** — the same evidence bar as a STATE claim. Wave 1 found several
   "open gaps" that had been closed for months. A stale to-do that outlives the work is the same
   disease in a different file.
 
-**Satellites are allowed, narrowly** (the registry policy provides for them): a long verified
-artifact that would swamp STATE if inlined — a wire contract, a schema reference, a fixture spec.
-A satellite states a contract; it never states status, vision, or decisions. When in doubt it is
-not a satellite, it is a STATE section.
+**Satellites are allowed** (the registry policy provides for them): a long verified artifact that
+would swamp STATE if inlined — a wire contract, a schema reference, a capability inventory, a
+fixture spec. A satellite states a contract or an inventory; it never states status, vision, or
+decisions. **A foundational node legitimately needs several** — nine satellites is the honest shape
+of a node with nine contracts, and jamming 4,000 lines into STATE.md to avoid them is the failure,
+not the discipline. There is no line ceiling on a satellite that is genuinely de-duplicated; the
+test is whether every section is load-bearing and stated once.
+
+**Before you finalise the kit, `git status` the bundle for files a CONCURRENT run just created.**
+Consolidate runs overlap: wave 2 had two runs independently write satellites covering the same
+contract. The proof gate cannot catch this — it greps for what you deleted, never for what a
+sibling just wrote. Found one? Cut yours to a pointer.
 
 **Meaning with no home yet is never deleted.** If a cut turns up cross-repo truth that belongs to
 a neighbour node whose docs do not cover it, record it in YOUR STATE and plant a seam pointer in
@@ -189,6 +216,15 @@ This is the step every prior sweep skipped. Do it in the same session, before yo
 1. **A file that was pure MEANING is DELETED.** Not stubbed, not slimmed, not "kept for safety",
    not moved to an archive folder. `git rm` it. Git keeps the history; deleting is the success
    state. (Arman, 2026-08-25: *"These are documents that never should have existed."*)
+
+   🚨 **`git rm` ALWAYS stages. Commit it in the SAME command — never `git rm` and keep working.**
+   `git rm <paths> && git commit -m "<msg>" -- <paths>`. This is not bookkeeping you can defer to
+   Step 7; by the time you reach Step 7 the deletion has been exposed for twenty minutes. The
+   failure is not hypothetical: in wave 2 a staged deletion was swept into an unrelated agent's
+   commit about API authorization, a third agent saw doc deletions inside an API commit, reasonably
+   concluded they were collateral damage, and committed *"restore unrelated documentation"* —
+   **putting every deleted file back.** A swept deletion does not just lose provenance; it looks
+   like a mistake to the next agent and gets reverted.
 2. **A file that mixed the two** is rewritten down to its landmines under the Step 3 cap, plus one
    pointer line. If nothing survives the cut, it is deleted too.
 3. **The pointer line** goes where an agent working on that code will trip over it — the nearest
@@ -224,8 +260,10 @@ repo it returns hundreds of files and drowns the signal.
 3. **The broad sweep, grouped.** Re-run the wide term search and group what is left by
    justification class with counts — not one row per file.
 
-**Count from git, never from memory:** `git diff --cached --name-status` and `git show --stat`.
-Wave 1 had a run report "23 deleted" in four places before recounting to 22.
+**Count from git, never from memory** — two wave runs published a wrong count in four places
+before recounting. But **`git show --stat` on your own SHA under-reports**, because your deletions
+may sit in another agent's commit. The reliable method is per-file:
+`git log --diff-filter=D --name-only <baseline>..HEAD -- '*.md'`.
 
 Report per repo: **files deleted (and the lines they took with them)** · files cut down
 (`before → after`) · **inbound references repointed** · survivors by class. The deleted-line count
@@ -244,23 +282,43 @@ on disk still holds the old copies — out of scope, but say so if you find one.
 - **Bundle conformance:** every new/moved file gets frontmatter with a non-empty `type`, an entry
   in the affected `index.md`, and a `log.md` line under today's date. Run
   `python3 meta/scripts/okf_lint.py` — it must print CONFORMANT (exit 0) before you commit.
-- **Board:** the consolidate runs have their OWN section on the board (§ Consolidate runs) with
-  its own row numbering — Wave 3 is repo-scoped by construction and your run is node-scoped. Take
-  the next unused number in that section; re-read it first, since a concurrent run may have taken
-  one since you looked.
-- **Ship — the shared-checkout protocol. Read this before your first `git` command.** Other
-  agents are working these same trees right now, and **they will not follow your rules.** In wave
-  1 every single run had work swept into an unrelated agent's commit.
-  - **`git commit -- <pathspecs>`, always.** A bare `git commit` after `git add` commits the WHOLE
-    index — including whatever another agent staged seconds ago. "Never `git add -A`" is not
-    enough protection; this is.
-  - **Stage nothing you are not committing right now.** A `git rm` or `git mv` left sitting staged
-    is a race you lose — commit each one in the same breath.
-  - **Verify, don't assume:** `git show --stat HEAD` after committing, and confirm your files are
-    actually in YOUR commit. If another agent already swept them, the content is fine — say so in
-    the report and move on. Never try to rewrite their commit.
+- **Board:** add your row to § Consolidate runs on
+  [`operations/doc-migration.md`](/operations/doc-migration.md). **Key the row by your NODE SLUG,
+  never by an integer** — concurrent runs claimed the number 66 twice in wave 2 and concatenated
+  one row onto another. Re-reading the section first does not prevent that race; a slug key does.
+- **Ship — the shared-checkout protocol. Read this before your first `git` command.** Dozens of
+  other sessions work these same trees, and **they will not follow your rules.** Every run in both
+  waves had work swept into an unrelated agent's commit. Know exactly what the protocol does and
+  does not buy you:
+  - **`git commit -m "<msg>" -- <pathspecs>`, always.** Note the order: `-m` BEFORE `--`. Git
+    parses everything after `--` as pathspecs, so `git commit -- <paths> -m "msg"` fails with
+    *"pathspec '-m' did not match any file(s)"*. For a multi-line message use `-F <file>`.
+  - **What it protects, honestly:** it stops YOU committing another agent's staged work. It does
+    **nothing** to stop another agent's bare `git commit` from vacuuming up yours. There is no
+    command that prevents that — only committing fast enough that the window never opens.
+  - **Edit-and-commit in one breath, per unit of work.** Anything staged, and anything merely
+    edited, is exposed until committed.
+  - **Enumerate the paths you touched AS you touch them.** Never build a pathspec list from
+    `git status` — in a busy tree that list is full of other agents' work, and you will sweep
+    THEIR files into YOUR commit (wave 2 did exactly this).
+  - **zsh does not word-split unquoted variables.** `git commit -- $PATHS` sends one giant
+    pathspec and fails, sometimes silently. Pass paths literally or use an array.
+  - **Verify, never assume:** `git show --stat HEAD` after committing, and re-check the remote SHA
+    before believing a push error — a `cannot lock ref` failure in a busy tree often means your
+    commit already landed via someone else's push. If your files were swept, the content is fine:
+    say so in the report and move on. **Never rewrite another agent's commit.**
   - **Push every touched repo.** Unpushed consolidation is lost, and the deletions are the half
     that matters.
+- **The scratchpad is NOT isolated.** Four wave-2 runs had working files overwritten mid-run by
+  other sessions — one had three registry `UPDATE`s silently execute someone else's script and
+  report success. Give every scratch file a unique name, never share a scratch path with a
+  subagent, and **read back anything you write to the DB** (`RETURNING`, or a follow-up `select`).
+  An unexpected output shape is a FAILED WRITE, not a formatting quirk.
+- **Verify your bookkeeping landed with `git diff --stat` — `okf_lint.py` passing proves nothing
+  about whether your edits exist.** A wave-2 heredoc died on an encoding error and the chained
+  lint still printed CONFORMANT over a board row and log line that had never been written.
+- **If you delegate a lane to a subagent, verify its commits landed yourself.** One wave-2
+  subagent did its work correctly and ended with everything staged and uncommitted.
 
 ## Step 8 — The report
 
@@ -292,6 +350,27 @@ on disk still holds the old copies — out of scope, but say so if you find one.
 
 # Changelog
 
+- 2026-08-25 (v3, revised from wave-2 evidence — 5 more parallel runs; both waves together deleted
+  201 repo docs and 62,836 lines, measured from git). Fixes: **`git commit -m "msg" -- <paths>`** —
+  v2's own mandated syntax was broken (git parses everything after `--` as pathspecs) and two runs
+  hit it; the deletion-commit imperative moved INTO Step 5, because a staged deletion swept into an
+  unrelated commit got REVERTED by a third agent as apparent collateral damage; an honest statement
+  of what the pathspec protocol does and does not protect (it stops you committing others' work, not
+  others committing yours); enumerate paths as you touch them (never from `git status`); zsh
+  word-splitting; count deletions with `git log --diff-filter=D`, since `git show --stat` on your
+  own SHA under-reports when you have been swept; the scratchpad documented as contended, with
+  read-back-your-DB-writes; bookkeeping verified with `git diff --stat` because a passing lint
+  proves nothing; **the cap now counts non-imperative lines only** (a survivor that is 68 lines of
+  guards has PASSED — four runs hit this); a landmine may carry the minimum of its own why; **SEAM
+  beats MEANING**; two new fixed verdicts — **CODE ARTIFACT** (a `.md` that code reads or a guard
+  scans; a literal v2 reading would have broken a guard script) and **PUBLISHED PAYLOAD** (shipped
+  in an npm tarball); working-backlog lanes ruled, with a repo `.arman/` protected exactly like
+  `inbox/`; bannered-STALE-in-a-live-path now extract-and-delete, distinguished from
+  `docs/archive/`; satellites plural for foundational nodes, plus a check for a CONCURRENT run
+  writing the same satellite; read every file over ~200 lines whatever its name (a 513-line README
+  turned out to be a node's only vision doc); HANDOFF judged by content not line count; board rows
+  keyed by node slug after two runs claimed the same integer; proof-gate exception for the kit's own
+  required provenance lines.
 - 2026-08-25 (v2, revised from wave-1 evidence — 5 parallel runs, 70 repo docs deleted, ~20,400
   lines removed). Every change below fixes something at least two runs hit independently:
   satellites permitted (the old text contradicted the registry policy and would have forced a
