@@ -8,7 +8,6 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { associationsService } from "@/features/scopes/service/associationsService";
 
 import type {
   KeywordEdgeRow,
@@ -27,17 +26,23 @@ import { isJsonObject } from "@/types/json";
  * organization. Returns `[]` for a site with no bound research, never throws
  * on an empty result (an association read that finds nothing is not an
  * error).
+ *
+ * Calls `seo.fn_list_site_research_instance_ids` rather than the generic
+ * `associationsService.listForTargets` — that RPC gates reads on
+ * `iam.org_readable(edge.organization_id)` (plain ORG membership), which is
+ * exactly the permissions-follow-the-org shape Arman's ruling rejected
+ * ("permissions need to follow the site... automatically comes from the
+ * parent"). This RPC gates on `seo.fn_is_site_editor`, the SAME site-based
+ * authorization every other keyword-plane site read/write already uses.
  */
 async function savedResearchInstanceIdsForSite(
   siteId: string,
 ): Promise<string[]> {
-  const result = await associationsService.listForTargets("web_site", [
-    siteId,
-  ]);
-  if (!result.ok) throw new Error(result.error.message);
-  return result.data.edges
-    .filter((edge) => edge.sourceType === "content_ir_kind_instance")
-    .map((edge) => edge.sourceId);
+  const response = await (
+    await seoDb()
+  ).rpc("fn_list_site_research_instance_ids", { p_site_id: siteId });
+  if (response.error) throw response.error;
+  return (response.data ?? []) as string[];
 }
 
 async function seoDb() {

@@ -53087,6 +53087,10 @@ export type Database = {
         Returns: Json
       }
       fn_is_site_editor: { Args: { p_site_id: string }; Returns: boolean }
+      fn_list_site_research_instance_ids: {
+        Args: { p_site_id: string }
+        Returns: string[]
+      }
       fn_merge_monthly: { Args: { p_new: Json; p_old: Json }; Returns: Json }
       fn_normalize_phrase: { Args: { p: string }; Returns: string }
       fn_refresh_keyword_classification_queue: {
