@@ -518,6 +518,19 @@ to_jsonb(NEW))` and dereference that composite so column drift still fails
 
 ### Keyword Value offering tree
 
+**The current `seo.topic`-backed offering model is a known cross-tenant product
+defect and must not be extended.** A company offering belongs to `web.brand`,
+while a website exposes only offerings selected through an explicit site
+availability edge. Offering parent/child describes the brand's product or
+service hierarchy; it never grants site availability. Shared suggestions belong
+only inside Add offering and never appear in normal lists, filters, assignment
+controls, reports, or agent context before adoption. `topic` is not an offering
+name: retain it only for genuine semantic taxonomy and move commercial identity
+to `brand_offering`. Cutover proposal:
+[`docs/db_rebuild/proposals/brand-offerings-cutover.md`](../../docs/db_rebuild/proposals/brand-offerings-cutover.md).
+
+#### Current legacy surface (pending cutover)
+
 `.../value/offerings` is the customer-facing route and vocabulary. The stored
 catalog entity remains `seo.topic` because the hierarchy also contains
 non-offering roots such as authority and reputation; that database name is not
@@ -579,6 +592,13 @@ judgments are removed rather than silently transplanted to a different offering.
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. GA4 is in a contained `internal_test` campaign: a fresh allowlisted identity has completed the canonical authorization, property binding, bounded collection, persisted-fact, and live Site settings rendering path; normal users and scheduled collection remain blocked until Google approves the scope. YouTube now has the matching contained reviewer path in Google Connections: explicit read-only disclosure, separate incremental authorization, deliberate owned-channel selection, and an in-app channel/recent-video preview; its real fresh-identity certification still remains. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-08-25 — Codex: **Brand ownership and explicit site availability are the
+  required replacement for the global offering tree.** `seo.topic` may remain
+  only for genuine taxonomy; company offerings move to a brand-owned identity,
+  and every site list or assignment requires its own availability row. The
+  additive, lossless cross-repo cutover is documented in
+  `docs/db_rebuild/proposals/brand-offerings-cutover.md` and awaits GO.
 
 - 2026-08-25 — Codex: **AI autonomy rows disclose their live runtime
   assignment without expanding the panel.** Keyword classification and topic
