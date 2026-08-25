@@ -15,6 +15,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   History,
@@ -152,6 +153,13 @@ export function MandatesConsole() {
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // DEEP LINK — `?mandate=<mandate_key>` selects that mandate on arrival.
+  // Any surface that names the AI it runs links here (see
+  // `components/agents/PageAgents.tsx`); without this the link would open the
+  // console on nothing, which is the dead end THE DOOR LAW forbids.
+  const searchParams = useSearchParams();
+  const deepLinkKey = searchParams.get("mandate");
+  const deepLinkedRef = useRef<string | null>(null);
 
   // Canonical agent listing: the Redux agent-definition slice, filtered to
   // SYSTEM agents. A mandate default must be a system (builtin) agent — an
@@ -382,6 +390,16 @@ export function MandatesConsole() {
   // live-ref idiom `UserTableViewer` uses, and the only one that stays fresh
   // every render without touching a ref during render.
   const rowsRef = useRef<MandateRow[]>(rows);
+  // Runs once per distinct ?mandate= value, after rows load.
+  useEffect(() => {
+    if (!deepLinkKey || rows.length === 0) return;
+    if (deepLinkedRef.current === deepLinkKey) return;
+    const match = rows.find((row) => row.mandateKey === deepLinkKey);
+    if (!match) return;
+    deepLinkedRef.current = deepLinkKey;
+    setSelectedId(match.id);
+  }, [deepLinkKey, rows]);
+
   const selectedIdRef = useRef<string | null>(selectedId);
 
   const getMandatesWriteHandlers = (): SurfaceWriteHandlers => ({
