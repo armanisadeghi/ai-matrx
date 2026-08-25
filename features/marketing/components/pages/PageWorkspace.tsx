@@ -1209,7 +1209,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           <section
             id="page-section-overview"
             tabIndex={-1}
-            className="scroll-mt-14 flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
+            className="scroll-mt-14 flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-card p-3 xl:flex-row xl:items-center xl:justify-between"
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -1225,13 +1225,13 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 </Badge>
               </div>
               <h1
-                className="mt-2 truncate font-mono text-sm font-semibold text-foreground"
+                className="mt-2 break-all font-mono text-sm font-semibold text-foreground"
                 data-surface-value="page_path"
               >
                 {page.path || "/"}
               </h1>
               <MarketingUrlRow url={page.url} className="mt-0.5" />
-              <p className="mt-1 truncate text-[11px] text-muted-foreground">
+              <p className="mt-1 flex flex-wrap gap-x-1 text-[11px] text-muted-foreground">
                 <span data-surface-value="first_seen">
                   First seen {formatDateOnly(page.first_seen)}
                 </span>

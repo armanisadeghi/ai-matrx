@@ -61,10 +61,10 @@ export function MarketingUrlRow({
   };
 
   return (
-    <div className={cn("flex min-w-0 items-center gap-1", className)}>
+    <div className={cn("flex min-w-0 items-start gap-1", className)}>
       <span
         className={cn(
-          "min-w-0 truncate text-xs text-muted-foreground",
+          "min-w-0 flex-1 break-all text-xs text-muted-foreground",
           textClassName,
         )}
       >
@@ -76,7 +76,7 @@ export function MarketingUrlRow({
         aria-label={copied ? "Copied" : "Copy URL"}
         title="Copy URL"
         className={cn(
-          "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus:outline-none",
+          "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus:outline-none lg:h-8 lg:w-8",
           copied && "text-primary",
         )}
       >
@@ -88,7 +88,7 @@ export function MarketingUrlRow({
         rel="noreferrer"
         aria-label="Open URL in new tab"
         title="Open in new tab"
-        className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus:outline-none"
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus:outline-none lg:h-8 lg:w-8"
       >
         <ExternalLink className="h-3 w-3" />
       </a>
