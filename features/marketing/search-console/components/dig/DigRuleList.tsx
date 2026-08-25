@@ -32,7 +32,7 @@ function RuleRow({
   return (
     <div
       className={cn(
-        "group flex items-start justify-between gap-1 rounded-md border px-2 py-1.5 transition-colors",
+        "group flex min-h-11 items-start justify-between gap-1 rounded-md border px-2 py-0 transition-colors lg:min-h-0 lg:py-1.5",
         selected
           ? "border-primary/50 bg-accent"
           : "border-border bg-card hover:bg-accent/60",
@@ -41,7 +41,7 @@ function RuleRow({
       <button
         type="button"
         onClick={onSelect}
-        className="min-w-0 flex-1 cursor-pointer text-left"
+        className="min-h-11 min-w-0 flex-1 cursor-pointer py-1.5 text-left lg:min-h-0 lg:py-0"
       >
         <p className="truncate text-xs font-medium text-foreground">
           {rule.name}
@@ -54,7 +54,7 @@ function RuleRow({
           {parsed.ok ? digRuleSummary(parsed.conditions) : "Unreadable conditions"}
         </p>
       </button>
-      <span className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
+      <span className="flex min-h-11 shrink-0 items-center opacity-100 transition-opacity lg:min-h-0 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
         {actions}
       </span>
     </div>
@@ -114,7 +114,7 @@ export function DigRuleList({
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 gap-1 px-1.5 text-[11px]"
+          className="h-11 gap-1 px-2 text-xs lg:h-6 lg:px-1.5 lg:text-[11px]"
           title="Copy this template into an editable rule of your own"
           onClick={() => onAdopt(rule)}
         >
@@ -127,7 +127,7 @@ export function DigRuleList({
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0"
+            className="h-11 w-11 p-0 lg:h-6 lg:w-6"
             aria-label={`Edit ${rule.name}`}
             onClick={() => onEdit(rule)}
           >
@@ -136,7 +136,7 @@ export function DigRuleList({
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+            className="h-11 w-11 p-0 text-muted-foreground hover:text-destructive lg:h-6 lg:w-6"
             aria-label={`Delete ${rule.name}`}
             onClick={() => onDelete(rule)}
           >

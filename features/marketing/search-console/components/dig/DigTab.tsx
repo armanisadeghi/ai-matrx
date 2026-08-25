@@ -296,7 +296,7 @@ export function DigTab({
         <Button
           variant="outline"
           size="sm"
-          className="h-7 w-full gap-1 text-xs"
+          className="h-11 w-full gap-1 text-xs lg:h-7"
           onClick={() => {
             setDraft(NEW_DRAFT);
             setEditingRuleId(null);
