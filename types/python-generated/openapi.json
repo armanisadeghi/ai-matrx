@@ -161658,6 +161658,11 @@
               }
             ],
             "title": "Resolved At"
+          },
+          "class_token_similar": {
+            "type": "string",
+            "title": "Class Token Similar",
+            "default": ""
           }
         },
         "additionalProperties": false,

@@ -62690,6 +62690,11 @@ export interface components {
             age_secs: number;
             /** Resolved At */
             resolved_at: string | null;
+            /**
+             * Class Token Similar
+             * @default
+             */
+            class_token_similar?: string;
         };
         /**
          * SystemInstructionInput

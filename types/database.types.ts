@@ -24661,7 +24661,12 @@ export type Database = {
         }[]
       }
       entity_read_expr: {
-        Args: { p_schema: string; p_table: string; p_token: string }
+        Args: {
+          p_schema: string
+          p_table: string
+          p_token: string
+          p_variant?: string
+        }
         Returns: string
       }
       entity_read_kernel_expected: { Args: never; Returns: string }
@@ -52814,6 +52819,33 @@ export type Database = {
       }
     }
     Views: {
+      keyword_universal_facet: {
+        Row: {
+          audience_type: string | null
+          brand_presence: string | null
+          comparison_intent: string | null
+          compliance_framing: string | null
+          fulfillment_mode: string | null
+          funnel_stage: string | null
+          intent_class: string | null
+          keyword_id: string | null
+          local_intent: string | null
+          price_sensitivity: string | null
+          query_form: string | null
+          specificity: string | null
+          transaction_direction: string | null
+          urgency: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_facet_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_change_set_summary: {
         Row: {
           business_outcome: string | null
