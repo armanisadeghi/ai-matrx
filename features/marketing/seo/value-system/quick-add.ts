@@ -99,30 +99,12 @@ export async function quickAddDimensionValue(input: {
   return assertGoverned(response.data, response.error) as unknown as QuickAddedValue;
 }
 
+/* ------------------------------------------------- the stamp write lives elsewhere */
+
 /**
- * Assign (or clear) a dimension value on keywords — single row, quick-assign
- * from a right-click, or a bulk selection. `notes` is the expert's REASON and
- * is stored on the stamp, because that sentence is what an AI later learns the
- * pattern from (P24). Human stamps are pinned: no matcher run overwrites them.
+ * There is no `setKeywordStamps` here. Assigning (or clearing) a dimension
+ * value on keywords is `setKeywordStamps` in
+ * `features/marketing/seo/keyword-workbench/data.ts` — THE one human write for
+ * a stamp, returning the full `SetStampsResult`. This module owns creation
+ * ("+ Add"), not assignment.
  */
-export async function setKeywordStamps(input: {
-  siteId: string;
-  keywordIds: string[];
-  valueId: string;
-  notes?: string | null;
-  clear?: boolean;
-}): Promise<{ written: number; replaced?: number; cleared?: number; notes_saved?: boolean }> {
-  const response = await (await seoDb()).rpc("gsc_set_keyword_stamps", {
-    p_site_id: input.siteId,
-    p_keyword_ids: input.keywordIds,
-    p_value_id: input.valueId,
-    p_notes: input.notes ?? undefined,
-    p_clear: input.clear ?? false,
-  });
-  return assertGoverned(response.data, response.error) as unknown as {
-    written: number;
-    replaced?: number;
-    cleared?: number;
-    notes_saved?: boolean;
-  };
-}

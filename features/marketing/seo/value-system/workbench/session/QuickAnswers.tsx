@@ -44,7 +44,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
-import { setKeywordStamps } from "@/features/marketing/seo/value-system/quick-add";
+import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
 import { getBatchQuestion, type BatchKeyword } from "./batch";
 
 export function QuickAnswers({

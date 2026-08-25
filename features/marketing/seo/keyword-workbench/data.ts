@@ -130,6 +130,15 @@ export interface SetStampsResult {
  * P24 — the expert's WHY rides along with the assignment and is stored ON the
  * stamp, because that sentence is the training material an AI later learns
  * the pattern from. A bulk assignment carries one shared reason.
+ *
+ * THE ONE STAMP WRITE for every surface — ruling session, quick answers, the
+ * right-click menu, the bulk bar. A second copy of this lived in
+ * `value-system/quick-add.ts` until 2026-08-24 with a thinner return shape;
+ * it was deleted, not aliased. Argument handling verified against
+ * `pg_get_functiondef(seo.gsc_set_keyword_stamps)`: `p_notes text DEFAULT
+ * NULL` and `p_clear boolean DEFAULT false`, so omitting a key is identical
+ * to passing the falsy value, and the RPC's own `NULLIF(btrim(p_notes),'')`
+ * makes an empty reason and no reason the same thing.
  */
 export async function setKeywordStamps(input: {
   siteId: string;
