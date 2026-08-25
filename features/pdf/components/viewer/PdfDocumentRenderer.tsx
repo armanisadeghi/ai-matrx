@@ -52,6 +52,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import { cn } from "@/lib/utils";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 import { PdfLoadingState } from "@/features/pdf/components/viewer/PdfLoadingState";
+import { resolvePageSwipe } from "./page-swipe";
 
 // Worker source — pinned to the installed pdfjs version and served from
 // our own origin (`/public/pdfjs/pdf.worker.min.mjs`, mirrored by a post-
@@ -157,6 +158,16 @@ export interface PdfDocumentRendererProps {
   pageNumber?: number;
   onPageChange?: (page: number) => void;
 
+  /** Human label used by navigation affordances. Defaults to "page". */
+  pageLabel?: string;
+
+  /**
+   * Mount large translucent previous / next buttons over the viewport.
+   * Presentation previews enable this because slide navigation is their
+   * primary interaction; ordinary PDFs retain the compact toolbar only.
+   */
+  floatingPageControls?: boolean;
+
   /**
    * Optional render-slot for an overlay mounted directly on top of the
    * rendered `<Page>` element. The renderer hands the caller the page
@@ -240,6 +251,8 @@ export default function PdfDocumentRenderer({
   onRetry,
   pageNumber: controlledPage,
   onPageChange,
+  pageLabel = "page",
+  floatingPageControls = false,
   renderOverlay,
   className,
 }: PdfDocumentRendererProps) {
@@ -640,6 +653,89 @@ export default function PdfDocumentRenderer({
     };
   }, [viewerReady]);
 
+  // ── Touch swipe navigation ─────────────────────────────────────────
+  // Touch remains native for vertical reading, pinch zoom, and horizontal
+  // panning of an enlarged page. A decisive horizontal swipe flips only when
+  // the page cannot pan further in that direction (or has no horizontal
+  // overflow), so zoomed content never becomes impossible to inspect.
+  const touchStart = useRef<{
+    x: number;
+    y: number;
+    at: number;
+    canScrollX: boolean;
+    atLeft: boolean;
+    atRight: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return undefined;
+
+    const handleTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1 || numPagesRef.current <= 1) {
+        touchStart.current = null;
+        return;
+      }
+      const touch = event.touches[0];
+      if (!touch) return;
+      const maxScrollLeft = Math.max(0, node.scrollWidth - node.clientWidth);
+      touchStart.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        at: event.timeStamp,
+        canScrollX: maxScrollLeft > WHEEL_EDGE_EPSILON_PX,
+        atLeft: node.scrollLeft <= WHEEL_EDGE_EPSILON_PX,
+        atRight: node.scrollLeft >= maxScrollLeft - WHEEL_EDGE_EPSILON_PX,
+      };
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      const start = touchStart.current;
+      touchStart.current = null;
+      const touch = event.changedTouches[0];
+      if (!start || !touch) return;
+
+      const direction = resolvePageSwipe({
+        startX: start.x,
+        startY: start.y,
+        endX: touch.clientX,
+        endY: touch.clientY,
+        startedAt: start.at,
+        endedAt: event.timeStamp,
+      });
+      if (direction === 0) return;
+      if (start.canScrollX) {
+        if (direction > 0 && !start.atRight) return;
+        if (direction < 0 && !start.atLeft) return;
+      }
+
+      const current = pageNumberRef.current;
+      const total = numPagesRef.current;
+      if (direction > 0 && current < total) {
+        node.scrollLeft = 0;
+        node.scrollTop = 0;
+        setPageNumberRef.current((page) => Math.min(total, page + 1));
+      } else if (direction < 0 && current > 1) {
+        node.scrollLeft = 0;
+        node.scrollTop = 0;
+        setPageNumberRef.current((page) => Math.max(1, page - 1));
+      }
+    };
+
+    const cancelTouch = () => {
+      touchStart.current = null;
+    };
+
+    node.addEventListener("touchstart", handleTouchStart, { passive: true });
+    node.addEventListener("touchend", handleTouchEnd, { passive: true });
+    node.addEventListener("touchcancel", cancelTouch, { passive: true });
+    return () => {
+      node.removeEventListener("touchstart", handleTouchStart);
+      node.removeEventListener("touchend", handleTouchEnd);
+      node.removeEventListener("touchcancel", cancelTouch);
+    };
+  }, [viewerReady]);
+
   // ── Render branches ────────────────────────────────────────────────
 
   if (combinedError) {
@@ -689,8 +785,18 @@ export default function PdfDocumentRenderer({
     );
   }
 
+  const pageLabelTitle =
+    pageLabel.length > 0
+      ? `${pageLabel[0]?.toUpperCase()}${pageLabel.slice(1)}`
+      : "Page";
+
   return (
-    <div className={cn("flex h-full w-full flex-col bg-muted/20", className)}>
+    <div
+      className={cn(
+        "group/pdf-viewer flex h-full w-full flex-col bg-muted/20",
+        className,
+      )}
+    >
       {/* Toolbar — zoom + rotate + page nav */}
       <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-background/80 px-3 py-1.5 text-xs shrink-0">
         <div className="flex items-center gap-1">
@@ -769,16 +875,16 @@ export default function PdfDocumentRenderer({
         {numPages > 1 ? (
           <div
             className="flex items-center gap-1.5"
-            aria-label="PDF pagination"
+            aria-label={`${pageLabelTitle} pagination`}
           >
             <button
               type="button"
               onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
               disabled={pageNumber <= 1}
-              aria-label="Previous page"
-              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
+              aria-label={`Previous ${pageLabel}`}
+              className="flex h-10 w-10 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
             <span className="min-w-[3.5rem] text-center font-medium tabular-nums">
               {pageNumber} / {numPages}
@@ -787,17 +893,34 @@ export default function PdfDocumentRenderer({
               type="button"
               onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
               disabled={pageNumber >= numPages}
-              aria-label="Next page"
-              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
+              aria-label={`Next ${pageLabel}`}
+              className="flex h-10 w-10 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
             >
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="h-5 w-5" />
             </button>
           </div>
         ) : null}
       </div>
 
-      {/* Scrollable viewport — measured with ResizeObserver. */}
-      <div ref={containerRef} className="relative min-h-0 flex-1 overflow-auto">
+      {/* Viewport frame keeps floating deck controls anchored while the inner
+       * canvas scrolls independently at high zoom. */}
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={containerRef}
+          tabIndex={0}
+          role="region"
+          aria-label={`${pageLabelTitle} viewer. Swipe horizontally or use the arrow keys to navigate.`}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowRight" && pageNumber < numPages) {
+              event.preventDefault();
+              setPageNumber((page) => Math.min(numPages, page + 1));
+            } else if (event.key === "ArrowLeft" && pageNumber > 1) {
+              event.preventDefault();
+              setPageNumber((page) => Math.max(1, page - 1));
+            }
+          }}
+          className="absolute inset-0 overflow-auto overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+        >
         {/* Full-size loading overlay covering the pdfjs PARSE phase (bytes
           * already in hand, document not yet rendered). Without this, pdfjs's
           * own in-<Document> `loading` placeholder renders in a height-less
@@ -849,6 +972,32 @@ export default function PdfDocumentRenderer({
               : null}
           </div>
         </Document>
+        </div>
+
+        {floatingPageControls && numPages > 1 ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setPageNumber((page) => Math.max(1, page - 1))}
+              disabled={pageNumber <= 1}
+              aria-label={`Previous ${pageLabel}`}
+              className="absolute left-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-glass-edge bg-glass text-foreground opacity-75 shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[opacity,transform,background-color] hover:scale-105 hover:bg-glass-hover hover:opacity-100 focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-0"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setPageNumber((page) => Math.min(numPages, page + 1))
+              }
+              disabled={pageNumber >= numPages}
+              aria-label={`Next ${pageLabel}`}
+              className="absolute right-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-glass-edge bg-glass text-foreground opacity-75 shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[opacity,transform,background-color] hover:scale-105 hover:bg-glass-hover hover:opacity-100 focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-0"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </>
+        ) : null}
       </div>
     </div>
   );

@@ -221,7 +221,7 @@ export async function PATCH(request: NextRequest) {
       : {};
     update.app_metadata = withMcpFullAccessPermission(
       appMetadata,
-      body.mcpFullAccess!,
+      body.mcpFullAccess === true,
     );
   }
 
