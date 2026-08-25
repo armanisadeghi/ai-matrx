@@ -48,7 +48,7 @@ bad agents get made.
 
 ### 0. Can the agent even answer? — run the manifest work FIRST
 
-🚨 **Before anything else, run [agent-manifest](/skills/agent-manifest/SKILL.md).** Every rule
+🚨 **Before anything else, run [agent-provision](/skills/agent-provision/SKILL.md).** Every rule
 in this skill is about building the agent well; NONE of it helps if the agent is handed a
 question it cannot possibly answer. Measured 2026-08-23: a family-comparison agent built to
 this skill's full bar — pretty name, granular variables, conversational user turn, two green
@@ -240,7 +240,7 @@ schema that can only drift.
 step 1 — **and against ground truth, not just shape.** A run that returns valid JSON has
 proven nothing: check that every entity it named (route, id, keyword, quote, citation)
 actually exists in what you sent it, and count the fabrications. The passing number is zero.
-Full method: [agent-manifest](/skills/agent-manifest/SKILL.md) § Verifying. Refine the system prompt with `update` and run again. Two runs minimum — this
+Full method: [agent-provision](/skills/agent-provision/SKILL.md) § Verifying. Refine the system prompt with `update` and run again. Two runs minimum — this
 also exercises the kind component twice so you catch shape problems now, not in
 production. An agent that has never been run is not created; it is a liability.
 
