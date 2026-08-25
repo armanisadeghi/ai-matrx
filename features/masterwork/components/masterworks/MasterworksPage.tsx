@@ -407,7 +407,7 @@ export function MasterworksPage({
                   <TryMasterworkBox
                     masterworkId={masterwork.id}
                     masterworkKind={masterwork.masterwork_kind}
-                    makes={masterwork.deliverable}
+                    submitLabel={masterwork.submit_label}
                     onRunFinished={() => void refreshRuns()}
                     onCompare={
                       isOwner

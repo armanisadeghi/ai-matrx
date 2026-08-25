@@ -42,11 +42,12 @@ import {
 } from "@/features/workflow-runtime/run-failure-explanation";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import {
-  getMasterworkAsk,
+  getMasterworkRunFields,
   getMasterworkRunVerdict,
-  type MasterworkAskSpec,
   type MasterworkRunVerdict,
 } from "../../service";
+import { RunFormFieldControl } from "@/features/workflow-runtime/components/RunFormFieldControl";
+import type { RunFormField } from "@/features/workflow-runtime/surface/run-form";
 
 type Phase = "idle" | "starting" | "running" | "done" | "failed";
 
@@ -142,7 +143,7 @@ export function TryMasterworkBox({
   masterworkId,
   masterworkKind,
   whatItRuns = "Your Masterwork",
-  makes = null,
+  submitLabel = null,
   onRunFinished,
   onCompare,
 }: {
@@ -156,12 +157,13 @@ export function TryMasterworkBox({
    */
   whatItRuns?: string;
   /**
-   * What this system MAKES, in the Expert's own words (definition metadata
-   * `deliverable`). Rendered above the fields so the box can never be mistaken
-   * for the build form that produced it — Arman, 2026-08-24: "I genuinely do
-   * not know what the fuck this thing wants from me."
+   * The button's words, from the builder's own intake design
+   * (`metadata.submit_label`, e.g. "Find my keywords"). Arman, 2026-08-25:
+   * "'Do the work' as the button — that is fucking stupid. If you don't know
+   * what the button does, just put an icon." So: the builder's verb when it
+   * gave us one, an ICON ALONE when it did not. Never invented words.
    */
-  makes?: string | null;
+  submitLabel?: string | null;
   /** Fired when a run reaches a terminal state (refresh Past runs). */
   onRunFinished: () => void;
   /**
@@ -177,8 +179,8 @@ export function TryMasterworkBox({
   // a generic "Try it now" textarea. The spec is read off the definition; the
   // generic pair below is only the fallback while it loads (or for a
   // hand-authored workflow with no legible ask node).
-  const [askSpec, setAskSpec] = useState<MasterworkAskSpec | null>(null);
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [askFields, setAskFields] = useState<RunFormField[] | null>(null);
+  const [values, setValues] = useState<Record<string, unknown>>({});
   const [phase, setPhase] = useState<Phase>("idle");
   const [stages, setStages] = useState<StageRow[]>([]);
   const [verdict, setVerdict] = useState<MasterworkRunVerdict | null>(null);
@@ -196,34 +198,30 @@ export function TryMasterworkBox({
 
   useEffect(() => {
     let alive = true;
-    void getMasterworkAsk(masterworkId).then((spec) => {
-      if (alive && spec) setAskSpec(spec);
+    void getMasterworkRunFields(masterworkId).then((f) => {
+      if (alive && f.length) setAskFields(f);
     });
     return () => {
       alive = false;
     };
   }, [masterworkId]);
 
-  // The fields to render: the builder's own, or the generic pair.
-  const fields = askSpec?.fields ?? [
+  // The fields to render: the builder's own, or — only for a definition with
+  // no legible input node — one honest fallback. The fallback deliberately
+  // does NOT invent domain wording it cannot know.
+  const fields: RunFormField[] = askFields ?? [
     {
       key: isEdit ? "document" : "job_brief",
-      label: isEdit
-        ? "Paste the text to check against your rules"
-        : "Describe the job — what should it produce, for whom?",
+      label: isEdit ? "The text to check" : "What you want made",
+      type: "long_text",
       required: true,
+      options: [],
+      help: "",
+      placeholder: "",
+      defaultValue: null,
     },
-    ...(isEdit
-      ? [
-          {
-            key: "notes",
-            label: "Facts that must not change (names, numbers, claims) — optional",
-            required: false,
-          },
-        ]
-      : []),
   ];
-  const setField = (key: string, value: string) =>
+  const setField = (key: string, value: unknown) =>
     setValues((prev) => ({ ...prev, [key]: value }));
 
   // THE ONE FAILURE DOOR. Every path that can stop a run goes through here, so
@@ -408,7 +406,12 @@ export function TryMasterworkBox({
       : null;
 
   const start = async () => {
-    const missing = fields.find((f) => f.required && !(values[f.key] ?? "").trim());
+    // "Empty" depends on the field type now that these are real controls:
+    // a blank string, an unticked yes/no and an unpicked choice are all
+    // holes; the number 0 is a real answer.
+    const isBlank = (v: unknown) =>
+      v === undefined || v === null || (typeof v === "string" && !v.trim());
+    const missing = fields.find((f) => f.required && isBlank(values[f.key]));
     if (missing) {
       toast.error(`${missing.label.split("(")[0].trim()} — fill this in first.`);
       return;
@@ -493,22 +496,12 @@ export function TryMasterworkBox({
   };
 
   return (
-    <div className="space-y-2">
-      {/* ONE sentence, never two saying the same thing (2026-08-24, seen in
-          the browser): the Understudy card explains itself AND this box was
-          repeating the ask node's description underneath it — "Your system is
-          already running…" directly below "A rough stand-in using your 100
-          approved rules." That is the novel Arman keeps refusing to read. The
-          ask node's description is for surfaces that draw no chrome of their
-          own; here the host owns the explaining, and the only thing worth
-          adding is what comes back OUT. */}
-      {makes && makes.trim() ? (
-        <p className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5 text-xs text-foreground">
-          <span className="text-muted-foreground">You get back: </span>
-          {makes.trim()}
-        </p>
-      ) : null}
-      {fields.map((f, i) => (
+    <div className="space-y-3">
+      {/* NO PREAMBLE. Arman, 2026-08-25: the screen above already says what
+          this makes, and repeating it here ("You get back: …" under "It
+          makes: …") is the same sentence twice. Whatever the builder wants
+          to say lives in the FIELDS — their labels, placeholders and help. */}
+      {fields.map((f) => (
         <div key={f.key} className="space-y-1">
           <label className="text-xs font-medium text-foreground">
             {f.label}
@@ -518,14 +511,18 @@ export function TryMasterworkBox({
               </span>
             )}
           </label>
-          <ProTextarea
-            value={values[f.key] ?? ""}
-            onChange={(e) => setField(f.key, e.target.value)}
-            className="text-base sm:text-sm"
-            rows={i === 0 ? 3 : 1}
-            enableTextStats={isEdit && i === 0}
-            disabled={phase === "starting" || phase === "running"}
+          {/* THE canonical control — same renderer as the run form and the
+              trigger surface, so every field type, placeholder and choice
+              list the input node can declare renders here without this file
+              knowing about any of them. */}
+          <RunFormFieldControl
+            field={f}
+            value={values[f.key] ?? f.defaultValue ?? ""}
+            onChange={(v) => setField(f.key, v)}
           />
+          {f.help ? (
+            <p className="text-[11px] text-muted-foreground">{f.help}</p>
+          ) : null}
         </div>
       ))}
       <div className="flex items-center gap-2">
@@ -533,13 +530,15 @@ export function TryMasterworkBox({
           size="sm"
           onClick={() => void start()}
           disabled={phase === "starting" || phase === "running"}
+          aria-label={submitLabel ?? `Run ${whatItRuns}`}
+          title={submitLabel ?? `Run ${whatItRuns}`}
         >
-          <Play className="mr-1 h-4 w-4" />
+          <Play className={submitLabel ? "mr-1 h-4 w-4" : "h-4 w-4"} />
           {phase === "starting"
             ? "Starting…"
             : phase === "running"
               ? "Working…"
-              : "Do the work"}
+              : (submitLabel ?? "")}
         </Button>
         {/* One compare entry per Masterwork: it moves to the verdict
             (prefilled) the moment there is output to compare, so the two

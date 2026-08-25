@@ -44,6 +44,8 @@ export interface BuiltMasterwork {
   name: string;
   masterworkKind: MasterworkKind;
   agentCount: number;
+  /** The run button's words from the builder's intake design; null = icon only. */
+  submitLabel: string | null;
 }
 
 /**
@@ -60,6 +62,10 @@ function parseBuilt(raw: unknown): BuiltMasterwork | null {
     name: typeof data.name === "string" ? data.name : "Your Masterwork",
     masterworkKind: data.masterwork_kind === "generate" ? "generate" : "edit",
     agentCount: Array.isArray(data.agent_ids) ? data.agent_ids.length : 0,
+    submitLabel:
+      typeof data.submit_label === "string" && data.submit_label.trim()
+        ? data.submit_label.trim()
+        : null,
   };
 }
 

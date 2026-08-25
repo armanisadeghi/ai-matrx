@@ -318,6 +318,12 @@ export interface Masterwork {
   rule_count: number | null;
   /** generate only: how many drafts it writes before picking a winner. */
   variant_count: number | null;
+  /**
+   * The run button's words, designed with the intake by the builder
+   * ("Find my keywords"). Null = the button shows its icon alone rather than
+   * inventing a verb (Arman, 2026-08-25).
+   */
+  submit_label: string | null;
   /** When the Expert released it to Operators; null = draft (Studio-only). */
   released_at: string | null;
   /**

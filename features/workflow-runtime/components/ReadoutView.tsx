@@ -66,6 +66,8 @@ import { InvocationBody, PhaseIcon, PHASE_LABEL } from "./readout-parts";
 import { RUN_STATUS_LABEL, RUN_STATUS_PHASE } from "../run-status";
 import { ProgressRailReadout } from "./ProgressRailReadout";
 import { definitionNodeLabels, RunSurfaceView } from "./RunSurfaceView";
+import { nodeOutputKind } from "./run/node-presentation";
+import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
 import { WorkflowRunBoard } from "./WorkflowRunBoard";
 
 /** Promotion callback bound to the readout's run by the hosting surface. */
@@ -199,12 +201,15 @@ function NodeReadout({
   multiRun,
   prefer,
   ensureLane,
+  definition,
 }: {
   runId: string;
   nodeId: string;
   multiRun: "stack" | "latest" | "table";
   prefer: "live" | "persisted";
   ensureLane?: EnsureLaneFn;
+  /** Read for the node's declared `output_kind` — what shape to reserve. */
+  definition?: WorkflowDefinitionLike;
 }) {
   const aggregate = useAppSelector(selectNodeAggregate(runId, nodeId));
   const runStatus = useAppSelector(selectRunStatus(runId));
@@ -232,6 +237,26 @@ function NodeReadout({
     // "Study notes" forever, because that one node of 24 never ran
     // (2026-08-18). A finished run says so.
     const waiting = phase === "idle" || phase === "waiting";
+    // A step that has not started yet RESERVES the shape it will produce,
+    // when its definition declares one. A single line of grey text reserved
+    // nothing, so the surface lurched the moment any step settled — the
+    // reader's page jumping by whatever height a flashcard set or a deck
+    // happened to need. Still and quiet: nothing has started.
+    //
+    // A TERMINAL run reserves nothing: there is no future to hold space for,
+    // and "This step never ran." is the final, honest answer.
+    const reservedKind =
+      waiting && !terminal ? nodeOutputKind(definition, nodeId) : null;
+    if (reservedKind) {
+      return (
+        <KindSlot
+          slotKey={`${runId}:${nodeId}`}
+          kind={reservedKind}
+          phase="reserved"
+          chrome="bare"
+        />
+      );
+    }
     return (
       <p className="text-xs text-muted-foreground">
         {!waiting
@@ -583,6 +608,7 @@ export function ReadoutView({
           multiRun={readout.multiRun ?? "stack"}
           prefer={prefer}
           ensureLane={ensureLane}
+          definition={definition}
         />
       );
     case "group":

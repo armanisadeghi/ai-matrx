@@ -313,18 +313,11 @@ function BuildWindowInner({
                 Masterworks page and Encore use, never a second run surface.
                 Everything else is one quiet text link below the fold. */}
             <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-sm font-semibold text-foreground">
-                Now use it
-              </p>
-              <p className="mb-3 mt-0.5 text-xs text-muted-foreground">
-                This is no longer setup — you are running the finished system.
-                Give it one real job and see what comes back.
-              </p>
               <TryMasterworkBox
                 masterworkId={result.workflowId}
                 masterworkKind={result.masterworkKind}
                 whatItRuns={`“${result.name}”`}
-                makes={deliverable.trim() || null}
+                submitLabel={result.submitLabel}
                 onRunFinished={() => undefined}
               />
             </div>

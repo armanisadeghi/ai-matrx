@@ -198,6 +198,28 @@ export function describeWorkflowSteps(
   });
 }
 
+/**
+ * The kind ONE node declares it will produce, straight from the definition —
+ * so a surface can reserve that kind's shape before the run has produced
+ * anything at all. Null when the definition is absent, the node is unknown,
+ * or it declares no `output_kind` (a programmatic node often does not).
+ *
+ * THE ONE lookup for "what shape is coming" — both the authored surface
+ * (`RunSurfaceView`) and the per-step readouts (`ReadoutView`) call this
+ * rather than each walking the graph their own way.
+ */
+export function nodeOutputKind(
+  definition: WorkflowDefinitionLike | undefined,
+  nodeId: string,
+): string | null {
+  if (!definition) return null;
+  for (const node of definition.nodes) {
+    if (node.id !== nodeId) continue;
+    return readString(node.data as Record<string, unknown> | undefined, "output_kind");
+  }
+  return null;
+}
+
 /** nodeId → its presentation, for the joins the live components do per row. */
 export function stepsByNodeId(
   steps: RunStepPresentation[],

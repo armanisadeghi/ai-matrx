@@ -199,7 +199,7 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
         <TryMasterworkBox
           masterworkId={masterwork.id}
           masterworkKind={masterwork.masterwork_kind}
-          makes={masterwork.deliverable}
+          submitLabel={masterwork.submit_label}
           onRunFinished={refreshRuns}
         />
       </div>

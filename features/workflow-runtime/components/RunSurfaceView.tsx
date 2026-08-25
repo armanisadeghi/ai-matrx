@@ -47,6 +47,8 @@ import {
 import { useWorkflowRun } from "../hooks/useWorkflowRun";
 import { InterruptCard, RunErrorCard } from "./readout-parts";
 import { ReadoutView } from "./ReadoutView";
+import { nodeOutputKind } from "./run/node-presentation";
+import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
 
 /** nodeId → human label from the definition (label ?? id). */
 export function definitionNodeLabels(
@@ -104,6 +106,23 @@ type ReadoutRender =
   | { readout: Readout; mode: "content" }
   | { readout: Readout; mode: "placeholder" };
 
+/**
+ * Which kind will fill this readout? Only a readout bound to a NODE can
+ * answer — a group narrates many nodes, a rail narrates progress, static
+ * content is already itself — and only when that node's definition declares
+ * an `output_kind`. Known from the DEFINITION, so a correctly-shaped
+ * placeholder is available at first paint, before the run has produced
+ * anything at all.
+ */
+function readoutOutputKind(
+  readout: Readout,
+  definition?: WorkflowDefinitionLike,
+): string | null {
+  const source = readout.source;
+  if (source.kind !== "node" && source.kind !== "childRun") return null;
+  return nodeOutputKind(definition, source.nodeId);
+}
+
 /** The flow grid the authored 24-column `pos.w` maps onto. */
 const FLOW_COLUMNS = 12;
 /** A tall readout still scrolls internally rather than running off forever. */
@@ -160,6 +179,10 @@ function ReadoutCell({
 }) {
   const { readout, mode } = item;
   const title = deriveTitle(readout);
+  // The kind this readout is waiting for, when the definition declares one —
+  // read only while placeholding, so a live tile pays nothing for it.
+  const placeholderKind =
+    mode === "placeholder" ? readoutOutputKind(readout, definition) : null;
   // `h` is the author's intent for how much room this deserves — honoured as a
   // floor so a short readout keeps its shape, never as a ceiling that clips
   // live writing.
@@ -201,10 +224,27 @@ function ReadoutCell({
         style={{ maxHeight: READOUT_MAX_HEIGHT_PX }}
       >
         {mode === "placeholder" ? (
-          <div aria-hidden className="space-y-1.5 pt-0.5">
-            <div className="h-2 w-2/3 rounded-full bg-muted/70" />
-            <div className="h-2 w-1/2 rounded-full bg-muted/50" />
-          </div>
+          // THE RESERVED SLOT. Two grey bars said "something goes here" and
+          // nothing more, whatever this readout was about to become. When the
+          // authored source names a node whose definition declares an
+          // `output_kind`, reserve THAT kind's silhouette instead — the shape
+          // the reader is waiting for, still and quiet, in the footprint the
+          // author already sized. `chrome="bare"`: this tile draws the frame
+          // and the title. Sourceless or kindless readouts keep the bars,
+          // which remain the honest answer when nothing is known.
+          placeholderKind ? (
+            <KindSlot
+              slotKey={`${runId}:${readout.id}`}
+              kind={placeholderKind}
+              phase="reserved"
+              chrome="bare"
+            />
+          ) : (
+            <div aria-hidden className="space-y-1.5 pt-0.5">
+              <div className="h-2 w-2/3 rounded-full bg-muted/70" />
+              <div className="h-2 w-1/2 rounded-full bg-muted/50" />
+            </div>
+          )
         ) : (
           <ReadoutView
             runId={runId}
