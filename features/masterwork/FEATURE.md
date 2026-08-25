@@ -109,7 +109,9 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `POST /masterworks/ingest`; upload → `POST /masterworks/ingest-file`).
 - `components/detail/ScoutInterviewPanel.tsx` — the Scout interview Approach (side sheet).
 - `components/masterworks/MasterworksPage.tsx` — Masterworks list, run links into
-  workflows.aimatrx.com, recent-run history, and the owner-only Audition + feedback doors.
+  workflows.aimatrx.com, recent-run history, and the owner-only Audition + feedback doors. Its
+  Built, Current, and Released KPIs filter the inventory directly; compact card-header doors open
+  each Masterwork in Studio, Encore, or its run history.
 - `components/masterworks/TryMasterworkBox.tsx` — "Try your Masterwork" in place: starts the run
   (adoptForeignStream + followWorkflowRunStream), narrates real node stages, renders the verdict
   through RichDocument. **A refresh rejoins the run** — the run id is kept per Masterwork in
@@ -127,6 +129,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- `2026-08-25` — Made every Rulebook and Masterwork KPI a door to its underlying records. Rules now have compact Approved, Waiting, interviewer, and change-request filters beside search; the Masterworks inventory has the same Built, Current, and Released KPI strip with URL-backed filters, compact metadata, and top-right icon actions.
 - `2026-08-25` — The Understudy card now uses the concise title `Understudy` and describes the run as a quick test of the temporary stand-in being built in real time.
 - `2026-08-25` — The Understudy now presents its canonical two-field run intake as `Your request` and `Supporting material (optional)`. This is a display-only override: the generated field keys and run payload remain unchanged, and purpose-built Masterworks keep their own intake labels.
 

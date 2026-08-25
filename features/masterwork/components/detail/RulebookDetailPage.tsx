@@ -101,6 +101,7 @@ import {
   computeMasterworkKpis,
   MasterworkKpiStrip,
   RulebookKpiStrip,
+  type RuleKpiFilter,
 } from "./RulebookKpiStrip";
 import {
   computeJourney,
@@ -552,6 +553,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [search, setSearch] = useState("");
+  const [ruleFilter, setRuleFilter] = useState<RuleKpiFilter>("all");
+  const rulesSectionRef = useRef<HTMLDivElement | null>(null);
   const descriptionRef = useRef<HTMLParagraphElement | null>(null);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [descriptionOverflows, setDescriptionOverflows] = useState(false);
@@ -909,11 +912,25 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     if (!rulebook)
       return [] as { code: string; label: string; rules: RulebookRule[] }[];
     const q = search.trim().toLowerCase();
-    const match = (r: RulebookRule) =>
-      !q ||
-      r.name.toLowerCase().includes(q) ||
-      r.statement.toLowerCase().includes(q) ||
-      r.id.includes(q);
+    const match = (r: RulebookRule) => {
+      const state = ruleState(r);
+      const matchesFilter =
+        ruleFilter === "all" ||
+        (ruleFilter === "approved" && state === "approved") ||
+        (ruleFilter === "draft" && state === "draft") ||
+        (ruleFilter === "rejected" && state === "rejected") ||
+        (ruleFilter === "changes" &&
+          Boolean(r.feedback) &&
+          state !== "rejected" &&
+          state !== "retired");
+      return (
+        matchesFilter &&
+        (!q ||
+          r.name.toLowerCase().includes(q) ||
+          r.statement.toLowerCase().includes(q) ||
+          r.id.includes(q))
+      );
+    };
     const codes = Object.keys(rulebook.sections);
     const known = new Set(codes);
     const groups = codes.map((code) => ({
@@ -928,7 +945,18 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       groups.push({ code: "?", label: "Unsorted", rules: orphans });
     }
     return groups;
-  }, [rulebook, search]);
+  }, [rulebook, ruleFilter, search]);
+
+  const showRules = useCallback((filter: RuleKpiFilter) => {
+    setRuleFilter(filter);
+    setSearch("");
+    requestAnimationFrame(() => {
+      rulesSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, []);
 
   const visibleRules = useMemo(
     () => grouped.flatMap((group) => group.rules),
@@ -1537,6 +1565,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 kpis={kpis}
                 journey={journey ?? undefined}
                 live={understudy !== null}
+                activeFilter={ruleFilter}
+                onFilterChange={showRules}
               />
             </div>
             {/* Rules-only actions. Masterwork creation and inventory have a
@@ -1651,7 +1681,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 </div>
 
                 <div className="mt-4">
-                  <MasterworkKpiStrip kpis={masterworkKpis} />
+                  <MasterworkKpiStrip
+                    kpis={masterworkKpis}
+                    rulebookId={rulebook.id}
+                  />
                 </div>
 
                 {canEdit && approvedCount > 0 ? (
@@ -1782,112 +1815,158 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           feeding this Rulebook moved into the Sources section above; this row
           used to also carry "Interview me", "From a source", "Your published
           work" and "Your AI chats". */}
-          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search rules…"
-              className="h-10 max-w-none text-base sm:h-8 sm:max-w-xs sm:text-sm"
-              data-surface-value="search_query"
-            />
-            {canEdit ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
+          <div ref={rulesSectionRef} className="scroll-mt-4 space-y-2">
+            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search rules…"
+                className="h-10 max-w-none text-base sm:h-8 sm:max-w-xs sm:text-sm"
+                data-surface-value="search_query"
+              />
+              <div className="flex min-w-0 flex-wrap gap-1">
+                {(
+                  [
+                    ["all", "All"],
+                    ["approved", "Approved"],
+                    ["draft", "Waiting"],
+                    ...(kpis.rejected > 0
+                      ? [["rejected", "With interviewer"]]
+                      : []),
+                    ...(kpis.changeRequests > 0
+                      ? [["changes", "Changes"]]
+                      : []),
+                  ] as [RuleKpiFilter, string][]
+                ).map(([filter, label]) => (
                   <Button
+                    key={filter}
+                    type="button"
                     size="sm"
-                    className="h-10 w-full sm:h-8 sm:w-auto"
-                    onClick={() => openAddRuleWindow()}
+                    variant={ruleFilter === filter ? "secondary" : "ghost"}
+                    className="h-8 px-2.5 text-xs"
+                    onClick={() => setRuleFilter(filter)}
                   >
-                    <Plus className="h-4 w-4" />
-                    Add rule
+                    {label}
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Write one rule yourself, or have AI draft it
-                </TooltipContent>
-              </Tooltip>
-            ) : null}
-          </div>
+                ))}
+              </div>
+              {canEdit ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="h-10 w-full sm:h-8 sm:w-auto"
+                      onClick={() => openAddRuleWindow()}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add rule
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Write one rule yourself, or have AI draft it
+                  </TooltipContent>
+                </Tooltip>
+              ) : null}
+            </div>
 
-          {/* Sections */}
-          <div data-surface-value="rules" className="space-y-6">
-            {rulebook.rules.length === 0 ? (
-              /* Empty state — one sentence and ONE button. Every other way in
+            {/* Sections */}
+            <div data-surface-value="rules" className="space-y-6">
+              {rulebook.rules.length === 0 ? (
+                /* Empty state — one sentence and ONE button. Every other way in
                  lives in Sources above; repeating them here is what made this
                  page a maze. */
-              <div className="rounded-lg border border-dashed border-border p-6 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No rules yet. Rules come from what you put in{" "}
-                  <span className="font-medium text-foreground">Sources</span>{" "}
-                  above — start an interview and they get written down as you
-                  speak.
-                </p>
-                {canEdit ? (
+                <div className="rounded-lg border border-dashed border-border p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No rules yet. Rules come from what you put in{" "}
+                    <span className="font-medium text-foreground">Sources</span>{" "}
+                    above — start an interview and they get written down as you
+                    speak.
+                  </p>
+                  {canEdit ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3"
+                      onClick={() => openAddRuleWindow()}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Or write one yourself
+                    </Button>
+                  ) : null}
+                </div>
+              ) : visibleRules.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No rules match this view.
+                  </p>
                   <Button
+                    type="button"
                     size="sm"
-                    variant="outline"
-                    className="mt-3"
-                    onClick={() => openAddRuleWindow()}
+                    variant="ghost"
+                    className="mt-2"
+                    onClick={() => {
+                      setSearch("");
+                      setRuleFilter("all");
+                    }}
                   >
-                    <Plus className="h-4 w-4" />
-                    Or write one yourself
+                    Show all rules
                   </Button>
-                ) : null}
-              </div>
-            ) : (
-              grouped.map((group) =>
-                group.rules.length === 0 && search ? null : (
-                  <section key={group.code} className="space-y-2">
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between sm:gap-0">
-                      <h3 className="min-w-0 text-sm font-semibold leading-snug text-foreground sm:leading-normal">
-                        <span>{group.label}</span>
-                        <span className="mt-0.5 block text-xs font-normal text-muted-foreground sm:ml-2 sm:mt-0 sm:inline">
-                          {group.rules.length}{" "}
-                          {group.rules.length === 1 ? "rule" : "rules"}
-                        </span>
-                      </h3>
-                      {canEdit && group.code !== "?" ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-10 sm:h-7"
-                          onClick={() => openAddRuleWindow(group.code)}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                          Add here
-                        </Button>
-                      ) : null}
-                    </div>
-                    <div className="space-y-1">
-                      {group.rules.map((rule) => (
-                        <RuleRow
-                          key={rule.id}
-                          rule={rule}
-                          allRules={rulebook.rules}
-                          canEdit={canEdit}
-                          onEdit={() => {
-                            setEditing(rule);
-                            setEditorSection(undefined);
-                            setStagedRuleDraft(undefined);
-                            setEditorOpen(true);
-                          }}
-                          onToggleRetired={() => void toggleRetired(rule)}
-                          onApprove={() => void approveRule(rule)}
-                          onReject={() =>
-                            setFeedbackTarget({ rule, mode: "reject" })
-                          }
-                          onImprove={() => openImprove(rule)}
-                          onRequestChanges={() =>
-                            setFeedbackTarget({ rule, mode: "request" })
-                          }
-                          onReconsider={() => void reconsiderRule(rule)}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ),
-              )
-            )}
+                </div>
+              ) : (
+                grouped.map((group) =>
+                  group.rules.length === 0 ? null : (
+                    <section key={group.code} className="space-y-2">
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 sm:flex sm:items-center sm:justify-between sm:gap-0">
+                        <h3 className="min-w-0 text-sm font-semibold leading-snug text-foreground sm:leading-normal">
+                          <span>{group.label}</span>
+                          <span className="mt-0.5 block text-xs font-normal text-muted-foreground sm:ml-2 sm:mt-0 sm:inline">
+                            {group.rules.length}{" "}
+                            {group.rules.length === 1 ? "rule" : "rules"}
+                          </span>
+                        </h3>
+                        {canEdit && group.code !== "?" ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-10 sm:h-7"
+                            onClick={() => openAddRuleWindow(group.code)}
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Add here
+                          </Button>
+                        ) : null}
+                      </div>
+                      <div className="space-y-1">
+                        {group.rules.map((rule) => (
+                          <RuleRow
+                            key={rule.id}
+                            rule={rule}
+                            allRules={rulebook.rules}
+                            canEdit={canEdit}
+                            onEdit={() => {
+                              setEditing(rule);
+                              setEditorSection(undefined);
+                              setStagedRuleDraft(undefined);
+                              setEditorOpen(true);
+                            }}
+                            onToggleRetired={() => void toggleRetired(rule)}
+                            onApprove={() => void approveRule(rule)}
+                            onReject={() =>
+                              setFeedbackTarget({ rule, mode: "reject" })
+                            }
+                            onImprove={() => openImprove(rule)}
+                            onRequestChanges={() =>
+                              setFeedbackTarget({ rule, mode: "request" })
+                            }
+                            onReconsider={() => void reconsiderRule(rule)}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  ),
+                )
+              )}
+            </div>
           </div>
 
           {/* AMBIENT, NEVER THE HEADLINE — the improvement brain's chips

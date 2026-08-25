@@ -18,6 +18,7 @@ import {
   Workflow,
   XCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { Masterwork, Rulebook } from "../../types";
 import { ruleState } from "../../types";
@@ -129,11 +130,17 @@ function Tile({
   value,
   label,
   tone,
+  href,
+  onClick,
+  active = false,
 }: {
   icon: React.ReactNode;
   value: number;
   label: string;
   tone?: "positive" | "attention" | "negative" | "muted";
+  href?: string;
+  onClick?: () => void;
+  active?: boolean;
 }) {
   const valueCls =
     tone === "positive"
@@ -143,8 +150,17 @@ function Tile({
         : tone === "negative"
           ? "text-destructive"
           : "text-foreground";
-  return (
-    <div className="flex min-w-[5.5rem] flex-1 items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5">
+  const className = cn(
+    "flex min-w-[5.5rem] flex-1 items-center gap-2 rounded-md border bg-card px-2.5 py-1.5 text-left transition-colors",
+    href || onClick
+      ? "cursor-pointer hover:border-primary/40 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      : "border-border",
+    active
+      ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20"
+      : "border-border",
+  );
+  const content = (
+    <>
       <span className="text-muted-foreground">{icon}</span>
       <div className="min-w-0 leading-tight">
         <div className={`text-base font-semibold tabular-nums ${valueCls}`}>
@@ -154,14 +170,32 @@ function Tile({
           {label}
         </div>
       </div>
-    </div>
+    </>
   );
+  if (href)
+    return (
+      <Link href={href} className={className}>
+        {content}
+      </Link>
+    );
+  if (onClick)
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        {content}
+      </button>
+    );
+  return <div className={className}>{content}</div>;
 }
+
+export type RuleKpiFilter =
+  "all" | "approved" | "draft" | "rejected" | "changes";
 
 export function RulebookKpiStrip({
   kpis,
   journey,
   live = false,
+  activeFilter,
+  onFilterChange,
 }: {
   kpis: RulebookKpis;
   /**
@@ -175,6 +209,8 @@ export function RulebookKpiStrip({
    * running, and every approval visibly improves it (vision doc 13).
    */
   live?: boolean;
+  activeFilter?: RuleKpiFilter;
+  onFilterChange?: (filter: RuleKpiFilter) => void;
 }) {
   const done = kpis.progressPct >= 100 && kpis.approved > 0;
   return (
@@ -184,18 +220,26 @@ export function RulebookKpiStrip({
           icon={<ListChecks className="h-4 w-4" />}
           value={kpis.approved + kpis.drafts + kpis.rejected}
           label="Rules"
+          active={activeFilter === "all"}
+          onClick={onFilterChange ? () => onFilterChange("all") : undefined}
         />
         <Tile
           icon={<BadgeCheck className="h-4 w-4" />}
           value={kpis.approved}
           label="Approved"
           tone="positive"
+          active={activeFilter === "approved"}
+          onClick={
+            onFilterChange ? () => onFilterChange("approved") : undefined
+          }
         />
         <Tile
           icon={<CircleDashed className="h-4 w-4" />}
           value={kpis.drafts}
           label="Waiting on you"
           tone={kpis.drafts > 0 ? "attention" : "muted"}
+          active={activeFilter === "draft"}
+          onClick={onFilterChange ? () => onFilterChange("draft") : undefined}
         />
         {kpis.rejected > 0 ? (
           <Tile
@@ -203,6 +247,10 @@ export function RulebookKpiStrip({
             value={kpis.rejected}
             label="With the interviewer"
             tone="negative"
+            active={activeFilter === "rejected"}
+            onClick={
+              onFilterChange ? () => onFilterChange("rejected") : undefined
+            }
           />
         ) : null}
         {kpis.changeRequests > 0 ? (
@@ -211,6 +259,10 @@ export function RulebookKpiStrip({
             value={kpis.changeRequests}
             label="Change requests"
             tone="attention"
+            active={activeFilter === "changes"}
+            onClick={
+              onFilterChange ? () => onFilterChange("changes") : undefined
+            }
           />
         ) : null}
       </div>
@@ -257,7 +309,17 @@ export function RulebookKpiStrip({
   );
 }
 
-export function MasterworkKpiStrip({ kpis }: { kpis: MasterworkKpis }) {
+export type MasterworkKpiFilter = "all" | "current" | "released";
+
+export function MasterworkKpiStrip({
+  kpis,
+  rulebookId,
+  activeFilter,
+}: {
+  kpis: MasterworkKpis;
+  rulebookId?: string;
+  activeFilter?: MasterworkKpiFilter;
+}) {
   const allCurrent = kpis.built > 0 && kpis.current === kpis.built;
   const freshnessLine =
     kpis.built === 0
@@ -273,18 +335,36 @@ export function MasterworkKpiStrip({ kpis }: { kpis: MasterworkKpis }) {
           icon={<Workflow className="h-4 w-4" />}
           value={kpis.built}
           label="Built"
+          href={
+            rulebookId
+              ? `/masterwork/${rulebookId}/masterworks?status=all`
+              : undefined
+          }
+          active={activeFilter === "all"}
         />
         <Tile
           icon={<BadgeCheck className="h-4 w-4" />}
           value={kpis.current}
           label="Current"
           tone={allCurrent ? "positive" : "attention"}
+          href={
+            rulebookId
+              ? `/masterwork/${rulebookId}/masterworks?status=current`
+              : undefined
+          }
+          active={activeFilter === "current"}
         />
         <Tile
           icon={<Rocket className="h-4 w-4" />}
           value={kpis.released}
           label="Released"
           tone={kpis.released > 0 ? "positive" : "muted"}
+          href={
+            rulebookId
+              ? `/masterwork/${rulebookId}/masterworks?status=released`
+              : undefined
+          }
+          active={activeFilter === "released"}
         />
       </div>
       <div>

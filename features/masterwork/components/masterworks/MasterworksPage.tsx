@@ -1,17 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   ExternalLink,
+  History,
   MessageCircleQuestion,
   Play,
+  Rocket,
+  SquareArrowOutUpRight,
+  Undo2,
   Workflow,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -21,6 +31,11 @@ import { ScoutInterviewPanel } from "../detail/ScoutInterviewPanel";
 import { AuditionDialog } from "./AuditionDialog";
 import { MasterworkDriftDialog } from "./MasterworkDriftDialog";
 import { TryMasterworkBox } from "./TryMasterworkBox";
+import {
+  computeMasterworkKpis,
+  MasterworkKpiStrip,
+  type MasterworkKpiFilter,
+} from "../detail/RulebookKpiStrip";
 import {
   listMasterworksForRulebook,
   listRecentRunsForMasterworks,
@@ -32,10 +47,13 @@ import type { Masterwork, Rulebook } from "../../types";
 function runDuration(run: MasterworkRun): string | null {
   if (!run.started_at || !run.completed_at) return null;
   const seconds =
-    (new Date(run.completed_at).getTime() - new Date(run.started_at).getTime()) /
+    (new Date(run.completed_at).getTime() -
+      new Date(run.started_at).getTime()) /
     1000;
   if (!Number.isFinite(seconds) || seconds < 0) return null;
-  return seconds < 90 ? `${Math.round(seconds)}s` : `${Math.round(seconds / 60)}m`;
+  return seconds < 90
+    ? `${Math.round(seconds)}s`
+    : `${Math.round(seconds / 60)}m`;
 }
 
 function runWhen(run: MasterworkRun): string {
@@ -79,7 +97,12 @@ function MasterworkRunRow({
         <span>· {runWhen(run)}</span>
         {duration ? <span>· {duration}</span> : null}
         {run.cost_usd !== null ? (
-          <span>· ${run.cost_usd < 0.01 ? run.cost_usd.toFixed(4) : run.cost_usd.toFixed(2)}</span>
+          <span>
+            · $
+            {run.cost_usd < 0.01
+              ? run.cost_usd.toFixed(4)
+              : run.cost_usd.toFixed(2)}
+          </span>
         ) : null}
         <ExternalLink className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
       </a>
@@ -87,11 +110,11 @@ function MasterworkRunRow({
         <button
           type="button"
           onClick={() => onFeedback(run)}
-          className="shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground opacity-0 transition-opacity hover:border-primary/40 hover:text-primary group-hover:opacity-100"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-primary sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
           title="Turn what went wrong into new rules"
+          aria-label="What did this run get wrong?"
         >
-          <MessageCircleQuestion className="mr-0.5 inline h-3 w-3" />
-          What did it get wrong?
+          <MessageCircleQuestion className="h-3.5 w-3.5" />
         </button>
       ) : null}
     </div>
@@ -116,6 +139,12 @@ export function MasterworksPage({
   rulebook: Rulebook;
 }) {
   const rulebookId = rulebook.id;
+  const searchParams = useSearchParams();
+  const requestedFilter = searchParams.get("status");
+  const activeFilter: MasterworkKpiFilter =
+    requestedFilter === "current" || requestedFilter === "released"
+      ? requestedFilter
+      : "all";
   const [masterworks, setMasterworks] = useState<Masterwork[]>([]);
   const [runsByMasterwork, setRunsByMasterwork] = useState<
     Record<string, MasterworkRun[]>
@@ -146,6 +175,20 @@ export function MasterworksPage({
   // Release / un-release in flight for one Masterwork (the Studio's lifecycle
   // action — released Masterworks appear on /masterwork/encore for Operators).
   const [releaseBusy, setReleaseBusy] = useState<string | null>(null);
+  const kpis = computeMasterworkKpis(masterworks, rulebook.version);
+  const visibleMasterworks = useMemo(
+    () =>
+      masterworks.filter((masterwork) => {
+        if (activeFilter === "current") {
+          return masterwork.rulebook_version === rulebook.version;
+        }
+        if (activeFilter === "released") {
+          return masterwork.released_at !== null;
+        }
+        return true;
+      }),
+    [activeFilter, masterworks, rulebook.version],
+  );
 
   const toggleReleased = async (masterwork: Masterwork) => {
     setReleaseBusy(masterwork.id);
@@ -217,8 +260,9 @@ export function MasterworksPage({
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
         <LoadingSpinner />
+        <span>Loading Masterworks…</span>
       </div>
     );
   }
@@ -235,16 +279,13 @@ export function MasterworksPage({
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 pb-8 sm:px-6">
-      <div className="rounded-lg border border-border bg-card p-4">
-        <h2 className="text-base font-semibold text-foreground">
-          Masterworks built from “{rulebook.name}”
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          A Masterwork is a working AI checker built from this Rulebook&apos;s
-          rules — auditors check every rule, and the expert persona gives one
-          final ruling. The Rulebook is currently at version {rulebook.version}.
-        </p>
-      </div>
+      <section className="rounded-lg border border-border bg-card p-4">
+        <MasterworkKpiStrip
+          kpis={kpis}
+          rulebookId={rulebook.id}
+          activeFilter={activeFilter}
+        />
+      </section>
 
       {masterworks.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-8 text-center">
@@ -257,9 +298,21 @@ export function MasterworksPage({
             <Link href={`/masterwork/${rulebook.id}`}>Open the Rulebook</Link>
           </Button>
         </div>
+      ) : visibleMasterworks.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            No {activeFilter === "current" ? "current" : "released"}{" "}
+            Masterworks.
+          </p>
+          <Button asChild size="sm" variant="ghost" className="mt-2">
+            <Link href={`/masterwork/${rulebook.id}/masterworks?status=all`}>
+              Show all Masterworks
+            </Link>
+          </Button>
+        </div>
       ) : (
         <div className="space-y-2">
-          {masterworks.map((masterwork) => {
+          {visibleMasterworks.map((masterwork) => {
             const drifted =
               masterwork.rulebook_version !== null &&
               masterwork.rulebook_version < rulebook.version;
@@ -268,12 +321,17 @@ export function MasterworksPage({
                 key={masterwork.id}
                 className="rounded-lg border border-border bg-card p-4"
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-foreground">
+                      <a
+                        href={`${WORKFLOWS_APP_URL}/workflows/${masterwork.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-foreground hover:text-primary hover:underline hover:underline-offset-2"
+                      >
                         {masterwork.name}
-                      </span>
+                      </a>
                       {masterwork.masterwork_kind ? (
                         <Badge
                           variant="outline"
@@ -291,7 +349,7 @@ export function MasterworksPage({
                           variant="outline"
                           className="px-1.5 py-0 text-[10px]"
                         >
-                          built from v{masterwork.rulebook_version}
+                          v{masterwork.rulebook_version}
                         </Badge>
                       ) : null}
                       {masterwork.released_at !== null ? (
@@ -306,39 +364,30 @@ export function MasterworksPage({
                           Draft
                         </Badge>
                       )}
+                      {masterwork.rule_count ? (
+                        <Badge
+                          variant="outline"
+                          className="px-1.5 py-0 text-[10px] text-muted-foreground"
+                        >
+                          {masterwork.rule_count} rules
+                        </Badge>
+                      ) : null}
                     </div>
                     {masterwork.description ? (
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                      <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                         {masterwork.description}
                       </p>
                     ) : null}
-                    {/* THE CONTRACT LINE (Arman, 2026-08-21: "We need to
-                        define inputs and output from the start"): what you
-                        give it and what it hands back, stated before any
-                        run. The run box below shows the exact fields. */}
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {masterwork.masterwork_kind === "generate"
-                        ? "You describe the job → "
-                        : "You give it something written → "}
-                      <span className="text-foreground">
-                        {/* HIS words when we have them, ours only as the
-                            fallback for systems built before the builder
-                            started stamping the deliverable (2026-08-24). */}
-                        {masterwork.deliverable ??
-                          (masterwork.masterwork_kind === "generate"
-                            ? "it hands you the finished work, checked against every rule."
-                            : "it hands it back corrected, with what changed and why.")}
-                      </span>
-                      {masterwork.rule_count
-                        ? ` · checked against ${masterwork.rule_count} of your rules`
-                        : ""}
-                    </p>
+                    {masterwork.deliverable ? (
+                      <p className="mt-1 line-clamp-1 text-xs text-foreground">
+                        <span className="text-muted-foreground">Creates: </span>
+                        {masterwork.deliverable}
+                      </p>
+                    ) : null}
                     {drifted ? (
                       <p className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-primary">
                         <AlertTriangle className="h-3.5 w-3.5" />
-                        The Rulebook has newer rules (v{rulebook.version}) than
-                        this Masterwork was built from — rebuild the Masterwork
-                        to adopt them.
+                        Needs rebuild for v{rulebook.version}.
                         <button
                           type="button"
                           onClick={() => setDriftMasterwork(masterwork)}
@@ -349,56 +398,96 @@ export function MasterworksPage({
                       </p>
                     ) : null}
                   </div>
-                  <div className="flex shrink-0 flex-wrap gap-2">
+                  <div className="flex shrink-0 items-center gap-0.5">
                     {isOwner ? (
-                      <Button
-                        size="sm"
-                        variant={
-                          masterwork.released_at === null ? "default" : "outline"
-                        }
-                        disabled={releaseBusy === masterwork.id}
-                        onClick={() => void toggleReleased(masterwork)}
-                        title={
-                          masterwork.released_at === null
-                            ? "Make it runnable by Operators on Encore"
-                            : "Take it off Encore — Operators can no longer run it"
-                        }
-                      >
-                        {releaseBusy === masterwork.id
-                          ? "Working…"
-                          : masterwork.released_at === null
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            disabled={releaseBusy === masterwork.id}
+                            onClick={() => void toggleReleased(masterwork)}
+                            aria-label={
+                              masterwork.released_at === null
+                                ? "Release Masterwork"
+                                : "Un-release Masterwork"
+                            }
+                          >
+                            {masterwork.released_at === null ? (
+                              <Rocket className="h-4 w-4" />
+                            ) : (
+                              <Undo2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {masterwork.released_at === null
                             ? "Release"
                             : "Un-release"}
-                      </Button>
+                        </TooltipContent>
+                      </Tooltip>
                     ) : null}
                     {masterwork.released_at !== null ? (
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={`/masterwork/encore/${masterwork.id}`}>
-                          <Play className="mr-1 h-4 w-4" />
-                          View in Encore
-                        </Link>
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            asChild
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                          >
+                            <Link
+                              href={`/masterwork/encore/${masterwork.id}`}
+                              aria-label="Open in Encore"
+                            >
+                              <Play className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Open in Encore</TooltipContent>
+                      </Tooltip>
                     ) : null}
-                    <Button asChild size="sm" variant="outline">
-                      <a
-                        href={`${WORKFLOWS_APP_URL}/workflows/${masterwork.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="mr-1 h-4 w-4" />
-                        Open in studio
-                      </a>
-                    </Button>
-                    <Button asChild size="sm" variant="outline">
-                      <a
-                        href={`${WORKFLOWS_APP_URL}/runs?workflow=${masterwork.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="mr-1 h-4 w-4" />
-                        Past runs
-                      </a>
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          asChild
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                        >
+                          <a
+                            href={`${WORKFLOWS_APP_URL}/workflows/${masterwork.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Open in Studio"
+                          >
+                            <SquareArrowOutUpRight className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Open in Studio</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          asChild
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                        >
+                          <a
+                            href={`${WORKFLOWS_APP_URL}/runs?workflow=${masterwork.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Past runs"
+                          >
+                            <History className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Past runs</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
                 {/* Try it right here — the Masterwork is a working checker, not
@@ -408,6 +497,11 @@ export function MasterworksPage({
                     masterworkId={masterwork.id}
                     masterworkKind={masterwork.masterwork_kind}
                     submitLabel={masterwork.submit_label}
+                    fieldLabels={
+                      masterwork.masterwork_kind === "edit"
+                        ? ["Your text", "Key facts"]
+                        : undefined
+                    }
                     onRunFinished={() => void refreshRuns()}
                     onCompare={
                       isOwner
