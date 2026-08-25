@@ -504,6 +504,8 @@ export function TopicTreeWorkbench() {
     });
 
   const topicActions: OfferingRowActions = {
+    onReparent: (target, parentId) =>
+      pinParent.mutate({ topicId: target.topic.id, parentId }),
     onPinParent: openParentPicker,
     onMakeRoot: (target) =>
       pinParent.mutate({ topicId: target.topic.id, parentId: null }),
@@ -514,7 +516,9 @@ export function TopicTreeWorkbench() {
     onDelete: openDelete,
   };
 
-  const runContextAction = (action: keyof OfferingRowActions) => {
+  const runContextAction = (
+    action: Exclude<keyof OfferingRowActions, "onReparent">,
+  ) => {
     const node = contextNodeRef.current;
     if (node) topicActions[action](node);
   };

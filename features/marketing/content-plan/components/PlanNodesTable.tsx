@@ -13,6 +13,8 @@
  * (sort, page size, hidden columns) persists via useListViewPrefs
  * ("content-plan-nodes"); search/filters/page are query state and never
  * persist.
+ * The canonical hierarchy contract adds the same reparent/root-drop behavior
+ * as the Tree view without replacing its richer visual planning mode.
  *
  * ROWS ARE SELECTABLE, and the bulk bar runs the pipeline on the selection —
  * the table's canonical `selection` config, not a bespoke checkbox column.
@@ -124,6 +126,7 @@ export interface PlanNodesTableProps {
   drift: PlanDriftModel;
   /** One editor body, hosted by both the canonical window and side panel. */
   renderNodePanel: (node: PlanNodeRow, onDeleted: () => void) => ReactNode;
+  onReparent: (id: string, parentId: string | null) => void;
 }
 
 export function PlanNodesTable({
@@ -137,6 +140,7 @@ export function PlanNodesTable({
   pipelineByNodeId,
   drift,
   renderNodePanel,
+  onReparent,
 }: PlanNodesTableProps) {
   const { prefs, setPrefs } = useListViewPrefs(
     "content-plan-nodes",
@@ -679,6 +683,13 @@ export function PlanNodesTable({
       getRowId={(row) => row.id}
       isLoading={isLoading}
       isFetching={isFetching}
+      hierarchy={{
+        rows: nodes,
+        getParentId: (row) => row.parent_id,
+        onReparent: (row, parentId) => onReparent(row.id, parentId),
+        itemLabel: (row) => row.label,
+        rootDropLabel: "Drop here to move this page to the top level",
+      }}
       selection={{
         selectedIds,
         onSelectedIdsChange: setSelectedIds,
@@ -731,9 +742,11 @@ export function PlanNodesTable({
         // so a copied row says the same thing the screen does.
         agentRow: (row) => ({
           ...planNodeKeyFields(row),
-          plan_vs_site: !drift.isPaired && !drift.hasCrawlData
-            ? "not-connected"
-            : (drift.byNodeId.get(row.id)?.verdict ?? "matches the live site"),
+          plan_vs_site:
+            !drift.isPaired && !drift.hasCrawlData
+              ? "not-connected"
+              : (drift.byNodeId.get(row.id)?.verdict ??
+                "matches the live site"),
           pipeline: pipelineByNodeId.get(row.id) ?? null,
           cms_page_id: cmsPageById?.get(row.id)?.pageId ?? null,
           // The AFTER the cell shows, so a copied row carries the same claim:

@@ -598,7 +598,6 @@ export function ContentPlanWorkbench({
     [reparent],
   );
 
-
   const openNewNode = (parentId: string | null) => {
     setNewNodeParentId(parentId);
     setNewNodeOpen(true);
@@ -929,6 +928,7 @@ export function ContentPlanWorkbench({
               measureByWebPageId={measure.byWebPageId}
               pipelineByNodeId={pipelineByNodeId}
               drift={drift.model}
+              onReparent={handleReparent}
               renderNodePanel={(node, onDeleted) => (
                 <NodePanel
                   key={node.id}

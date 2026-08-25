@@ -613,6 +613,16 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   “Demand keywords,” “Clicks placed,” and “Unplaced” so none truncates at the
   seven-card desktop width.
 
+- 2026-08-25 — Codex: **Offerings can be reorganized in the canonical table.**
+  The identity column is 450px with tighter 12px nesting and a 16px chevron
+  lane; a compact drag handle reparents onto any valid row or the root strip
+  through the existing `gsc_topic_set_parent` write. Editable worth, match,
+  quality, type, and name cells use the table's immediate-save mode; failures
+  remain retryable. Content Planning's `PlanTree` is the behavior reference,
+  while `MatrxDataTable.hierarchy` is now the shared cutover target.
+  Content Planning's existing canonical Table view consumes that same contract
+  immediately, while its richer Tree view stays intact as a complementary mode.
+
 - 2026-08-25 — Codex: **Site Media has a direct crawl door without a second
   crawler.** Its responsive header links to the canonical New Crawl workspace
   as Start crawl, switches to Open live crawl when the shared site activity

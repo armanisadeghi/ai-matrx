@@ -203,6 +203,26 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).toContain("py-1.5 align-middle lg:py-0.5");
   });
 
+  it("adds the canonical hierarchy move handle only when configured", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        hierarchy={{
+          getParentId: () => null,
+          onReparent: () => undefined,
+          itemLabel: (row) => row.name,
+        }}
+        detail={{ enabled: false }}
+      />,
+    );
+
+    expect(markup).toContain('draggable="true"');
+    expect(markup).toContain('aria-label="Move Alpha"');
+    expect(markup).toContain('title="Drag to move"');
+  });
+
   it("freezes the first (identity) column below sm by default", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable

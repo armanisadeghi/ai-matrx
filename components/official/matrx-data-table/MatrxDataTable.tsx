@@ -14,6 +14,7 @@ import Link from "next/link";
 import {
   ChevronRight,
   Eraser,
+  GripVertical,
   PanelRight,
   PanelRightOpen,
   Search,
@@ -214,6 +215,7 @@ function MatrxDataTableCore<T>({
   window: windowConfig,
   copy,
   edit,
+  hierarchy,
   selectedId: controlledSelectedId,
   onSelectedIdChange,
   windowRowId: controlledWindowRowId,
@@ -253,6 +255,8 @@ function MatrxDataTableCore<T>({
   );
 
   const [internalSearch, setInternalSearch] = useState("");
+  const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
+  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
   const toolbarSearchControlled = toolbar?.searchValue !== undefined;
   const searchValue = controlledQuery
     ? controlledQuery.state.search
@@ -625,10 +629,66 @@ function MatrxDataTableCore<T>({
   };
 
   const commitCell = (rowId: string, field: string, next: unknown) => {
+    const nextEdits = { [rowId]: { [field]: next } };
     setEdits((prev) => {
       const rowEdits = { ...(prev[rowId] ?? {}), [field]: next };
       return { ...prev, [rowId]: rowEdits };
     });
+    if (edit?.autoSave && edit.onSave) {
+      setSaving(true);
+      void Promise.resolve(edit.onSave(nextEdits, data))
+        .then(() => {
+          setEdits((previous) => {
+            const rowDraft = previous[rowId];
+            if (!rowDraft || rowDraft[field] !== next) return previous;
+            const { [field]: _saved, ...remainingFields } = rowDraft;
+            const nextDrafts = { ...previous };
+            if (Object.keys(remainingFields).length === 0) {
+              delete nextDrafts[rowId];
+            } else {
+              nextDrafts[rowId] = remainingFields;
+            }
+            return nextDrafts;
+          });
+          toast.success("Change saved");
+        })
+        .catch((error: unknown) => {
+          toast.error(
+            `Couldn't save: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        })
+        .finally(() => setSaving(false));
+    }
+  };
+
+  const hierarchyRows = hierarchy?.rows ?? data;
+  const draggedRow = draggedRowId
+    ? hierarchyRows.find((row) => getRowId(row) === draggedRowId)
+    : undefined;
+  const canDropOn = (target: T): boolean => {
+    if (!hierarchy || !draggedRow) return false;
+    if (getRowId(target) === draggedRowId) return false;
+    let cursor: T | undefined = target;
+    let guard = 0;
+    while (cursor && guard < hierarchyRows.length + 1) {
+      if (getRowId(cursor) === draggedRowId) return false;
+      const parentId = hierarchy.getParentId(cursor);
+      cursor = parentId
+        ? hierarchyRows.find((row) => getRowId(row) === parentId)
+        : undefined;
+      guard += 1;
+    }
+    return true;
+  };
+  const persistReparent = (row: T, parentId: string | null) => {
+    if (!hierarchy) return;
+    void Promise.resolve(hierarchy.onReparent(row, parentId)).catch(
+      (error: unknown) => {
+        toast.error(
+          `Couldn't move row: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      },
+    );
   };
 
   const handleSaveEdits = async () => {
@@ -1070,6 +1130,26 @@ function MatrxDataTableCore<T>({
             tableClassName,
           )}
         >
+          {hierarchy && draggedRow ? (
+            <div
+              className="sticky left-0 top-0 z-40 flex h-7 w-full items-center justify-center border-b border-primary/30 bg-primary/10 text-xs font-medium text-primary"
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragOverRowId("__root__");
+              }}
+              onDragLeave={() => setDragOverRowId(null)}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (hierarchy.getParentId(draggedRow) !== null) {
+                  persistReparent(draggedRow, null);
+                }
+                setDraggedRowId(null);
+                setDragOverRowId(null);
+              }}
+            >
+              {hierarchy.rootDropLabel ?? "Drop here to move to the top level"}
+            </div>
+          ) : null}
           {isFetching && !isLoading ? (
             <div
               role="status"
@@ -1261,6 +1341,22 @@ function MatrxDataTableCore<T>({
                       key={id}
                       data-row-id={id}
                       data-state={isSelected ? "selected" : undefined}
+                      onDragOver={(event) => {
+                        if (!canDropOn(row)) return;
+                        event.preventDefault();
+                        setDragOverRowId(id);
+                      }}
+                      onDragLeave={() => {
+                        if (dragOverRowId === id) setDragOverRowId(null);
+                      }}
+                      onDrop={(event) => {
+                        if (!hierarchy || !draggedRow || !canDropOn(row))
+                          return;
+                        event.preventDefault();
+                        persistReparent(draggedRow, id);
+                        setDraggedRowId(null);
+                        setDragOverRowId(null);
+                      }}
                       onClick={(e) => {
                         // A click that started on a real link (the D112 title
                         // anchor, an FK cell link) must not ALSO fire the
@@ -1279,6 +1375,9 @@ function MatrxDataTableCore<T>({
                           "cursor-pointer sm:hover:bg-muted/50",
                         isSelected && "bg-muted",
                         isChecked && "bg-primary/5",
+                        dragOverRowId === id &&
+                          "outline outline-2 -outline-offset-2 outline-primary/60",
+                        draggedRowId === id && "opacity-40",
                         zebra &&
                           index % 2 === 1 &&
                           !isSelected &&
@@ -1339,32 +1438,71 @@ function MatrxDataTableCore<T>({
                             )}
                             style={columnWidthVar(col.width)}
                           >
-                            {editable && col.editable ? (
-                              <EditableTableCell
-                                value={
-                                  rowEdits && field in rowEdits
-                                    ? rowEdits[field]
-                                    : getCellValue(row, col)
-                                }
-                                editType={col.editable}
-                                editOptions={col.editOptions}
-                                display={display}
-                                dirty={dirty}
-                                onCommit={(next) => commitCell(id, field, next)}
-                                href={cellHref}
-                                editTrigger={col.editTrigger}
-                              />
-                            ) : cellHref ? (
-                              <Link
-                                href={cellHref}
-                                onClick={(e) => e.stopPropagation()}
-                                className="block w-full min-w-0 rounded outline-none  focus-visible:ring-2 focus-visible:ring-ring"
-                              >
-                                {display}
-                              </Link>
-                            ) : (
-                              display
-                            )}
+                            <div
+                              className={cn(
+                                colIdx === 0 &&
+                                  hierarchy &&
+                                  "flex min-w-0 items-center",
+                              )}
+                            >
+                              {colIdx === 0 && hierarchy ? (
+                                <button
+                                  type="button"
+                                  draggable={
+                                    hierarchy.canReparent?.(row) ?? true
+                                  }
+                                  className="flex h-7 w-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground hover:text-foreground active:cursor-grabbing"
+                                  aria-label={`Move ${hierarchy.itemLabel?.(row) ?? "row"}`}
+                                  title="Drag to move"
+                                  onClick={(event) => event.stopPropagation()}
+                                  onDragStart={(event) => {
+                                    event.stopPropagation();
+                                    event.dataTransfer.effectAllowed = "move";
+                                    event.dataTransfer.setData(
+                                      "text/plain",
+                                      id,
+                                    );
+                                    setDraggedRowId(id);
+                                  }}
+                                  onDragEnd={() => {
+                                    setDraggedRowId(null);
+                                    setDragOverRowId(null);
+                                  }}
+                                >
+                                  <GripVertical className="h-3.5 w-3.5" />
+                                </button>
+                              ) : null}
+                              <div className="min-w-0 flex-1">
+                                {editable && col.editable ? (
+                                  <EditableTableCell
+                                    value={
+                                      rowEdits && field in rowEdits
+                                        ? rowEdits[field]
+                                        : getCellValue(row, col)
+                                    }
+                                    editType={col.editable}
+                                    editOptions={col.editOptions}
+                                    display={display}
+                                    dirty={dirty}
+                                    onCommit={(next) =>
+                                      commitCell(id, field, next)
+                                    }
+                                    href={cellHref}
+                                    editTrigger={col.editTrigger}
+                                  />
+                                ) : cellHref ? (
+                                  <Link
+                                    href={cellHref}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="block w-full min-w-0 rounded outline-none  focus-visible:ring-2 focus-visible:ring-ring"
+                                  >
+                                    {display}
+                                  </Link>
+                                ) : (
+                                  display
+                                )}
+                              </div>
+                            </div>
                           </td>
                         );
                       })}

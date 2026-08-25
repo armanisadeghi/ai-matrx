@@ -39,6 +39,10 @@ tables (AI Models, relationships, …) can cut over to one contract.
   copy/export, rows, headers, and empty/loading states. A processor must honor
   every active canonical query control. Set `pageSize={0}` when a hierarchy
   must remain whole; pagination is then omitted even when URL state is enabled.
+- **Hierarchy movement is table-owned and opt-in.** `hierarchy` adds a compact
+  first-cell drag handle, row/root drop targets, descendant-cycle prevention,
+  and one `onReparent(row, parentId)` write. Consumers keep their database
+  authority and fallback parent picker; they never fork the row renderer.
 - **URL state is built in and opt-in.** `urlState={{ id: "accounts" }}` stores
   table-owned search, match mode, any-of, layered/column filters, sort,
   pagination, open row, and open window under `table.accounts.*`. The stable id
@@ -90,6 +94,8 @@ tables (AI Models, relationships, …) can cut over to one contract.
   2px vertical padding at `lg` and 6px below `lg`. Consumer cells must not add
   desktop vertical padding that defeats the shared row density.
 - **Inline edits are deferred** — draft locally, persist only on floating Save pill.
+- **High-frequency edits may auto-save.** `edit.autoSave` persists each committed
+  cell immediately; a failed write stays in the dirty pill for retry or cancel.
 - **Never static-import `WindowPanel`** from a route — go through `DataRowWindow.dynamic.tsx`.
 - **No barrel `index.ts`.** Import from source files.
 
@@ -243,6 +249,10 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-25 — Added canonical hierarchy reparenting and opt-in immediate cell
+  saving. Keyword Value Offerings is the first hierarchy consumer; Content
+  Planning remains the parity reference for the next table cutover.
 
 - 2026-08-25 — Reduced canonical desktop body-cell vertical padding from 6px
   to 2px while preserving mobile spacing; pinned the responsive class in the

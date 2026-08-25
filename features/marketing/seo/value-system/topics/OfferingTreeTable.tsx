@@ -63,6 +63,7 @@ export interface OfferingTableRow {
 }
 
 export interface OfferingRowActions {
+  onReparent: (node: TopicTreeNode, parentId: string | null) => void;
   onPinParent: (node: TopicTreeNode) => void;
   onSetWorth: (node: TopicTreeNode) => void;
   onEdit: (node: TopicTreeNode) => void;
@@ -227,7 +228,9 @@ export function OfferingTreeTable({
     {
       accessorKey: "name",
       header: "Offering",
-      width: 300,
+      width: 450,
+      className: "sm:min-w-[450px]",
+      headerClassName: "sm:min-w-[450px]",
       editable: "string",
       editTrigger: "pencil",
       cell: (row) => {
@@ -235,8 +238,8 @@ export function OfferingTreeTable({
         const hasChildren = (node?.children.length ?? 0) > 0;
         return (
           <div
-            className="flex min-w-56 items-center gap-1"
-            style={{ paddingLeft: `${Math.min(row.depth, 10) * 14}px` }}
+            className="flex min-w-0 items-center"
+            style={{ paddingLeft: `${Math.min(row.depth, 10) * 12}px` }}
           >
             <button
               type="button"
@@ -247,7 +250,7 @@ export function OfferingTreeTable({
               }
               disabled={!hasChildren}
               className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted lg:h-7 lg:w-7",
+                "flex h-10 w-4 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted lg:h-7",
                 !hasChildren && "invisible",
               )}
               onClick={(event) => {
@@ -475,7 +478,17 @@ export function OfferingTreeTable({
           </Button>
         ),
       }}
-      edit={{ enabled: true, onSave: onSaveEdits }}
+      edit={{ enabled: true, autoSave: true, onSave: onSaveEdits }}
+      hierarchy={{
+        getParentId: (row) => row.parentId,
+        onReparent: (row, parentId) => {
+          const node = byId.get(row.id);
+          if (node) actions.onReparent(node, parentId);
+        },
+        canReparent: () => !busy,
+        itemLabel: (row) => row.name,
+        rootDropLabel: "Drop here to make this a root offering",
+      }}
       copy={{
         label: "Offering",
         listLabel: "Offering tree",

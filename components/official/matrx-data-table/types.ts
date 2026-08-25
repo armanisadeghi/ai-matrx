@@ -500,8 +500,21 @@ export interface MatrxDataTableEditConfig<T> {
    * Return resolved when done; throw/reject to keep the draft (with toast).
    */
   onSave: (edits: CellEditsMap, rows: T[]) => void | Promise<void>;
+  /** Persist each committed cell immediately. Failed writes remain in the
+   * dirty pill so the user can retry or cancel them. */
+  autoSave?: boolean;
   /** Optional cancel hook (draft already discarded). */
   onCancel?: () => void;
+}
+
+export interface MatrxDataTableHierarchyConfig<T> {
+  /** Complete hierarchy when `data` is only the current controlled page. */
+  rows?: T[];
+  getParentId: (row: T) => string | null;
+  onReparent: (row: T, parentId: string | null) => void | Promise<void>;
+  canReparent?: (row: T) => boolean;
+  itemLabel?: (row: T) => string;
+  rootDropLabel?: string;
 }
 
 /**
@@ -603,6 +616,8 @@ export interface MatrxDataTableProps<T> {
   copy?: MatrxDataTableCopyConfig<T>;
   /** Inline edit session with floating Save/Cancel pill. */
   edit?: MatrxDataTableEditConfig<T>;
+  /** Opt-in tree reparenting owned by the canonical row renderer. */
+  hierarchy?: MatrxDataTableHierarchyConfig<T>;
 
   /** Controlled selection (selected row id for highlight). */
   selectedId?: string | null;
