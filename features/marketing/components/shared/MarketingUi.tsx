@@ -242,8 +242,13 @@ export function InlineQueryError({
 
 export function LoadingSurface({ label = "Loading…" }: { label?: string }) {
   return (
-    <div className="flex h-full min-h-40 items-center justify-center text-muted-foreground">
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      className="flex h-full min-h-40 items-center justify-center text-muted-foreground"
+    >
+      <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
       <span className="text-sm">{label}</span>
     </div>
   );
