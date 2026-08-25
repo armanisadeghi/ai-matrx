@@ -9,6 +9,18 @@ jest.mock("next/dynamic", () => ({
     },
 }));
 
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppSelector: () => true,
+}));
+
+jest.mock("@/lib/redux/selectors/userSelectors", () => ({
+  selectIsAdmin: () => true,
+}));
+
+jest.mock("@/features/overlays/openers/convertToShapeWindow", () => ({
+  useOpenConvertToShapeWindow: () => jest.fn(),
+}));
+
 jest.mock("@/components/ui/tooltip", () => ({
   __esModule: true,
   TooltipProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -24,9 +36,22 @@ jest.mock(
     __esModule: true,
     CodeBlockWithContextAttach: ({
       headerLeftSlot,
+      extraMenuItems,
     }: {
       headerLeftSlot?: React.ReactNode;
-    }) => React.createElement("div", null, headerLeftSlot),
+      extraMenuItems?: Array<{ key: string }>;
+    }) =>
+      React.createElement(
+        "div",
+        null,
+        headerLeftSlot,
+        extraMenuItems?.map((item) =>
+          React.createElement("span", {
+            key: item.key,
+            "data-menu-item": item.key,
+          }),
+        ),
+      ),
   }),
 );
 
@@ -59,6 +84,13 @@ describe("JsonBlock canonical streaming toolbar", () => {
     );
     expect(compact).not.toBeNull();
     expect(compact?.disabled).toBe(false);
+    expect(
+      root.querySelector('[data-content-renderer="JsonBlock"]'),
+    ).not.toBeNull();
+    expect(root.textContent).toContain("JsonBlock");
+    expect(
+      root.querySelector('[data-menu-item="convert-to-shape"]'),
+    ).not.toBeNull();
   });
 
   it("keeps the same toolbar mounted while streaming JSON is incomplete", () => {
@@ -80,5 +112,8 @@ describe("JsonBlock canonical streaming toolbar", () => {
       root.querySelector<HTMLButtonElement>('[aria-label="Compact JSON"]')
         ?.disabled,
     ).toBe(true);
+    expect(
+      root.querySelector('[data-menu-item="convert-to-shape"]'),
+    ).toBeNull();
   });
 });

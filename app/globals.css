@@ -238,6 +238,18 @@
     }
   }
 
+  /* Kind loading sweep — a bar travelling left→right under a smart loader,
+     signalling "still arriving" without a spinner. Lives here because React
+     rejects a raw <style> tag inside a component. */
+  @keyframes kind-loading-sweep {
+    from {
+      transform: translateX(-120%);
+    }
+    to {
+      transform: translateX(400%);
+    }
+  }
+
   @keyframes hover-bounce {
     0%,
     100% {

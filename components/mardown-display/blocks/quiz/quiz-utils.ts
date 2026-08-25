@@ -118,7 +118,16 @@ export function appendNewQuestions(
   if (state.mode === 'retake') return state;
 
   const knownById = new Map(state.originalQuestions.map(q => [q.id, q]));
-  const answeredIds = new Set(Object.keys(state.progress.answers).map(Number));
+  // `progress.answers` is keyed by question INDEX (position in
+  // randomizedQuestions), not by question id — map those positions back to ids
+  // before deciding what the reader has already acted on. Appending keeps every
+  // existing index valid, which is exactly why growth may only ever append.
+  const answeredIds = new Set(
+    Object.keys(state.progress.answers)
+      .map(Number)
+      .map(index => state.randomizedQuestions[index]?.id)
+      .filter((id): id is number => id !== undefined)
+  );
 
   const added: OriginalQuestion[] = [];
   let changed = false;

@@ -270,6 +270,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  convertToShapeWindow: {
+    label: "Convert JSON to Shape",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   chatDebugWindow: {
     label: "Chat Debug Window",
     instanceMode: "singleton",

@@ -1443,6 +1443,17 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
+  // ── Convert JSON to Shape ─────────────────────────────────────────────────
+  {
+    slug: "convert-to-shape-window",
+    overlayId: "convertToShapeWindow",
+    kind: "window",
+    label: "Convert JSON to Shape",
+    defaultData: { initialJsonContent: "" },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+
   // ── Search Appearance (SERP / metadata analyzer) ──────────────────────────
   // The canonical MetadataAnalyzer (features/marketing/seo/serp) in a floating window:
   // meta title/description inputs, deterministic pixel/char analysis, Google

@@ -79,6 +79,7 @@ export const OVERLAY_IDS = [
   "contextItemsWindow",
   "contextSwitcherWindow",
   "credentialVaultWindow",
+  "convertToShapeWindow",
   "drillDeckContextWindow",
   "createProjectWindow",
   "creatorHub",

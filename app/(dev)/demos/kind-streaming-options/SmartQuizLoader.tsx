@@ -116,9 +116,8 @@ export default function SmartQuizLoader({ value }: { value: PartialQuizValue }) 
 
       {/* shimmer footer */}
       <div className="mt-5 h-1 overflow-hidden rounded-full bg-muted">
-        <div className="h-full w-1/3 animate-[ksl-shimmer_1.4s_ease-in-out_infinite] rounded-full bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+        <div className="h-full w-1/3 animate-[kind-loading-sweep_1.4s_ease-in-out_infinite] rounded-full bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
       </div>
-      <style>{`@keyframes ksl-shimmer { 0% { transform: translateX(-120%); } 100% { transform: translateX(400%); } }`}</style>
     </div>
   );
 }

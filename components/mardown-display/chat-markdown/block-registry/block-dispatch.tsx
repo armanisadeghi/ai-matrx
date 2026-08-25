@@ -638,6 +638,17 @@ const expectUnifiedArtifactStage: BlockRenderFn = (ctx) => {
 const renderControlTagMarkdown: BlockRenderFn = (ctx) =>
   ctx.block.content ? ctx.renderBasicMarkdown(ctx.block.content) : null;
 
+/** Canonical readable fallback for structured handlers missing serverData. */
+function renderJsonFallback(block: RenderBlock, index: number) {
+  return (
+    <BlockComponents.JsonBlock
+      key={index}
+      content={block.content}
+      className="my-3"
+    />
+  );
+}
+
 /**
  * Shared three-branch registration for the search kind family (all thirteen
  * kinds share the uniform `{ value, isComplete }` streaming bridge): bridged
@@ -653,13 +664,7 @@ const searchKindEntry =
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   };
 
 // ── Code-language sub-dispatch (its own table) ───────────────────────────────
@@ -1479,13 +1484,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (keyword_relationship_research → keyword_research): the
@@ -1504,13 +1503,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (keyword_classification_batch_v1 →
@@ -1528,13 +1521,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   keyword_serp_intent_analysis: ({ block, index }) => {
@@ -1549,13 +1536,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (seo_keyword_relationship_research_result →
@@ -1574,13 +1555,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (page_brief → page_brief): STREAMING bridge, same contract as
@@ -1597,13 +1572,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (media_chapters → media_chapters): STREAMING bridge, same
@@ -1622,13 +1591,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed media deliverables. Same contract as media_chapters:
@@ -1647,13 +1610,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   generated_video_set: ({ block, index }) => {
@@ -1668,13 +1625,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   generated_audio: ({ block, index }) => {
@@ -1689,13 +1640,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   podcast_episode: ({ block, index }) => {
@@ -1710,13 +1655,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (memory_aid → memory_aid): STREAMING bridge — mnemonics /
@@ -1733,13 +1672,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (memory_hint → memory_hint): the one-glance per-flashcard
@@ -1756,13 +1689,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (masterwork_checkup_finding): COMPLETE bridge — one gated
@@ -1780,13 +1707,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (agent_result): COMPLETE bridge — what an agent RUN produced,
@@ -1805,13 +1726,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (node_outcome / run_result): the RUNTIME WRAPPERS. COMPLETE
@@ -1829,13 +1744,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   run_result: ({ block, index }) => {
@@ -1850,13 +1759,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (episode_title_options): STREAMING bridge — each title card
@@ -1874,13 +1777,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (seo_package): STREAMING bridge — the title arrives with its
@@ -1898,13 +1795,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (Website Factory per-page pipeline): STREAMING bridges, same
@@ -1922,13 +1813,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   plan_page_outline: ({ block, index }) => {
@@ -1943,13 +1828,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   plan_page_draft: ({ block, index }) => {
@@ -1964,13 +1843,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   plan_page_review: ({ block, index }) => {
@@ -1985,13 +1858,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   cms_page_build: ({ block, index }) => {
@@ -2006,13 +1873,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (ingested_sources): STREAMING bridge — the intake regrouped
@@ -2031,13 +1892,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (study_notes): STREAMING bridge — sections appear as they
@@ -2054,13 +1909,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (lesson_script_set → lesson_scripts): STREAMING bridge —
@@ -2078,13 +1927,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed (study_pack_set → study_pack): STREAMING bridge — the pack
@@ -2103,13 +1946,7 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) {
       return <MatrxMiniLoader key={index} />;
     }
-    return (
-      <BlockComponents.CodeBlock
-        key={index}
-        code={block.content}
-        language="json"
-      />
-    );
+    return renderJsonFallback(block, index);
   },
 
   // Kind-routed search kind family (Search Kinds Pilot): STREAMING bridges —

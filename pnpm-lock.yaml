@@ -21,8 +21,8 @@ importers:
         specifier: 0.2.1
         version: 0.2.1
       '@ai-matrx/content-ir-react':
-        specifier: file:vendor/ai-matrx-content-ir-react-0.1.0.tgz
-        version: file:vendor/ai-matrx-content-ir-react-0.1.0.tgz(@ai-matrx/content-ir@0.2.1)(react@19.2.7)
+        specifier: 0.1.0
+        version: 0.1.0(@ai-matrx/content-ir@0.2.1)(react@19.2.7)
       '@ai-matrx/design-system':
         specifier: 0.1.1
         version: 0.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -784,9 +784,8 @@ packages:
     resolution: {integrity: sha512-POT0bDTDruRbduAT1vZ5ZUePX/29DQiIhvWUHPU5MfwgwBwrRgasJGU5s/q+r4ur6xbwB2+5RKkD0tQ8yFfXWg==}
     engines: {node: '>=20'}
 
-  '@ai-matrx/content-ir-react@file:vendor/ai-matrx-content-ir-react-0.1.0.tgz':
-    resolution: {integrity: sha512-iROK9oEZ9THFvjZqL6hB3ddFl7LCXl3VIpeDfoTsjEcofZuYbpFnqMpKMTYN3NjtKQS3vTwLsvv3dmqZ6IDuSw==, tarball: file:vendor/ai-matrx-content-ir-react-0.1.0.tgz}
-    version: 0.1.0
+  '@ai-matrx/content-ir-react@0.1.0':
+    resolution: {integrity: sha512-iROK9oEZ9THFvjZqL6hB3ddFl7LCXl3VIpeDfoTsjEcofZuYbpFnqMpKMTYN3NjtKQS3vTwLsvv3dmqZ6IDuSw==}
     engines: {node: '>=20'}
     peerDependencies:
       '@ai-matrx/content-ir': 0.2.0
@@ -12791,7 +12790,7 @@ snapshots:
 
   '@ai-matrx/agents@0.2.1': {}
 
-  '@ai-matrx/content-ir-react@file:vendor/ai-matrx-content-ir-react-0.1.0.tgz(@ai-matrx/content-ir@0.2.1)(react@19.2.7)':
+  '@ai-matrx/content-ir-react@0.1.0(@ai-matrx/content-ir@0.2.1)(react@19.2.7)':
     dependencies:
       '@ai-matrx/content-ir': 0.2.1
       react: 19.2.7

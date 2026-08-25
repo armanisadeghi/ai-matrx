@@ -622,6 +622,11 @@ const CharacterCounterWindow = lazyOverlay(
     import("@/features/window-panels/windows/text-counter/CharacterCounterWindow"),
   { ssr: false },
 );
+const ConvertToShapeWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/content-ir/ConvertToShapeWindow"),
+  { ssr: false },
+);
 const SerpAnalyzerWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/SerpAnalyzerWindow"),
   { ssr: false },
@@ -1327,6 +1332,9 @@ export default function OverlayController() {
     characterCounterWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "characterCounterWindow"),
     ),
+    convertToShapeWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "convertToShapeWindow"),
+    ),
     serpAnalyzerWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "serpAnalyzerWindow"),
     ),
@@ -1708,6 +1716,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     characterCounterWindow: useAppSelector((s) =>
       selectOverlayData(s, "characterCounterWindow"),
+    ) as Record<string, unknown> | null,
+    convertToShapeWindow: useAppSelector((s) =>
+      selectOverlayData(s, "convertToShapeWindow"),
     ) as Record<string, unknown> | null,
     serpAnalyzerWindow: useAppSelector((s) =>
       selectOverlayData(s, "serpAnalyzerWindow"),
@@ -4480,6 +4491,26 @@ export default function OverlayController() {
               typeof data?.initialText === "string"
                 ? data.initialText
                 : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* convertToShapeWindow */}
+      {(() => {
+        const isOpen = isOpenById.convertToShapeWindow;
+        const data = dataById.convertToShapeWindow;
+        if (!isOpen) return null;
+        return (
+          <ConvertToShapeWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "convertToShapeWindow" }))
+            }
+            initialJsonContent={
+              typeof data?.initialJsonContent === "string"
+                ? data.initialJsonContent
+                : ""
             }
           />
         );
