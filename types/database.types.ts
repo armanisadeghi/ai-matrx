@@ -24691,6 +24691,13 @@ export type Database = {
       }
       entity_read_kernel_expected: { Args: never; Returns: string }
       entity_read_kernel_fingerprint: { Args: never; Returns: string }
+      entity_read_lane_correct: {
+        Args: never
+        Returns: {
+          schemaname: string
+          tablename: string
+        }[]
+      }
       entity_read_lane_done: {
         Args: never
         Returns: {
