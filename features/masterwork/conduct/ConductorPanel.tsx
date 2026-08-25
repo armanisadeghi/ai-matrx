@@ -55,9 +55,7 @@ import {
   missingRequiredVariables,
   missingVariablesMessage,
 } from "@/features/agents/mandates/service";
-import {
-  RULEBOOK_DOCUMENT_VARIABLE,
-} from "@/features/masterwork/agent-context/rulebookDocument";
+import { RULEBOOK_DOCUMENT_VARIABLE } from "@/features/masterwork/agent-context/rulebookDocument";
 import { useRulebookDocument } from "@/features/masterwork/agent-context/useRulebookDocument";
 import {
   associateConductorWhenPersisted,
@@ -136,6 +134,12 @@ function NewConductorSession({
     // agent bindings + value mappings (skipping it silently resolves NONE).
     runtime: {
       surfaceName: MASTERWORK_RULEBOOK_SURFACE_NAME,
+      // This purpose-built agent already receives the complete Rulebook below
+      // as a required named variable. An explicit empty scope prevents the
+      // mounted Rulebook surface from also injecting the same rendered document
+      // plus 20+ projections as ad-hoc context. The surface name still resolves
+      // the Conductor binding; only automatic scope adoption is suppressed.
+      applicationScope: {},
       // NAMED VARIABLES, never prose in the human's turn (THE USER-INPUT LAW).
       //
       // 🚨 `rulebook_document` is THE CURE for disease D4. Until 2026-08-19
@@ -308,6 +312,7 @@ function ConductorColumn({
           // Attachments are wired by this panel — there is nothing here for
           // the Expert to fill in.
           variablesPanelStyle: "hidden",
+          contextRailPresentation: "overflow-only",
           placeholder:
             "Argue with it, answer its questions, or tell it to build…",
           extraRightControls: (
@@ -322,7 +327,7 @@ function ConductorColumn({
           ),
         }}
         afterMessages={
-          <div className="flex flex-wrap gap-1.5 px-1 pt-2">
+          <div className="mx-auto flex max-w-xl flex-wrap justify-center gap-1.5 px-4 pt-2">
             {CONDUCTOR_CHIPS.map((chip) => (
               <button
                 key={chip.label}
@@ -601,7 +606,10 @@ export function ConductorPanel({
         <span className="inline-flex min-w-0 items-center gap-2">
           <BrainCircuit className="h-4 w-4 text-primary" aria-hidden />
           <span className="truncate">Build it with me</span>
-          <AgentCredit mandate="masterwork.conductor" agent="masterwork_conductor" />
+          <AgentCredit
+            mandate="masterwork.conductor"
+            agent="masterwork_conductor"
+          />
         </span>
       }
       headerActions={

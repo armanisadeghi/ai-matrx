@@ -46,6 +46,7 @@ interface SmartAgentInputProps {
   surfaceKey?: string;
   disableSend?: boolean;
   variablesPanelStyle?: VariablesPanelStyle;
+  contextRailPresentation?: "default" | "overflow-only";
   extraRightControls?: React.ReactNode;
   /**
    * Show the connector reminder line under the composer. Default true — a
@@ -71,6 +72,7 @@ export function SmartAgentInput({
   surfaceKey,
   disableSend = false,
   variablesPanelStyle,
+  contextRailPresentation = "default",
   extraRightControls,
   showConnectors = true,
 }: SmartAgentInputProps) {
@@ -107,6 +109,7 @@ export function SmartAgentInput({
           surfaceKey={surfaceKey}
           disableSend={disableSend}
           variablesPanelStyle={variablesPanelStyle}
+          contextRailPresentation={contextRailPresentation}
           extraRightControls={extraRightControls}
           presentation={presentation}
         />
@@ -132,6 +135,7 @@ export function SmartAgentInput({
         surfaceKey={surfaceKey}
         disableSend={disableSend}
         variablesPanelStyle={variablesPanelStyle}
+        contextRailPresentation={contextRailPresentation}
         extraRightControls={extraRightControls}
       />
       {connectorStrip}

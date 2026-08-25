@@ -116,6 +116,8 @@ import { selectActiveScopeIdsByType } from "@/features/scopes/redux/selectors/ac
 interface ConversationContextRailProps {
   conversationId: string;
   className?: string;
+  /** Keep all context available behind one right-aligned count menu. */
+  presentation?: "default" | "overflow-only";
 }
 
 type RailTone = "default" | "primary";
@@ -153,6 +155,7 @@ function entryHasValue(e: InstanceContextEntry): boolean {
 export function ConversationContextRail({
   conversationId,
   className,
+  presentation = "default",
 }: ConversationContextRailProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -411,8 +414,7 @@ export function ConversationContextRail({
         word: "Browser",
         detail: cloudBrowserRunLive ? "Live" : undefined,
         hint: "Click: show / hide the browser in canvas",
-        active:
-          canvasOpen && currentCanvasSourceId === cloudBrowserSourceId,
+        active: canvasOpen && currentCanvasSourceId === cloudBrowserSourceId,
         onOpen: toggleCloudBrowser,
       });
     }
@@ -518,6 +520,9 @@ export function ConversationContextRail({
   // the rest into a clean "…" menu so the rail never wraps. ──────────────────
   const maxInline = isMobile ? 2 : 5;
   const { inline, overflow } = useMemo(() => {
+    if (presentation === "overflow-only") {
+      return { inline: [] as RailItem[], overflow: items };
+    }
     if (items.length <= maxInline) {
       return { inline: items, overflow: [] as RailItem[] };
     }
@@ -525,17 +530,12 @@ export function ConversationContextRail({
       inline: items.slice(0, maxInline - 1),
       overflow: items.slice(maxInline - 1),
     };
-  }, [items, maxInline]);
+  }, [items, maxInline, presentation]);
 
   // Zero footprint when there's nothing to surface — but keep any drawer that
   // is mid-open mounted so its close animation completes if the backing item
   // momentarily drops out.
-  if (
-    items.length === 0 &&
-    !showSetScopeCta &&
-    !detailOpen &&
-    !listsOpen
-  ) {
+  if (items.length === 0 && !showSetScopeCta && !detailOpen && !listsOpen) {
     return null;
   }
 

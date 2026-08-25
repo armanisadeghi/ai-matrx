@@ -47,6 +47,7 @@ interface SmartAgentInputStackedProps {
   surfaceKey?: string;
   disableSend?: boolean;
   variablesPanelStyle?: VariablesPanelStyle;
+  contextRailPresentation?: "default" | "overflow-only";
   extraRightControls?: React.ReactNode;
 }
 
@@ -64,6 +65,7 @@ export function SmartAgentInputStacked({
   surfaceKey,
   disableSend = false,
   variablesPanelStyle,
+  contextRailPresentation = "default",
   extraRightControls,
 }: SmartAgentInputStackedProps) {
   const dispatch = useAppDispatch();
@@ -161,6 +163,7 @@ export function SmartAgentInputStacked({
         <ConversationContextRail
           conversationId={conversationId}
           className="px-3 pt-2"
+          presentation={contextRailPresentation}
         />
         <SmartAgentVariables
           conversationId={conversationId}
@@ -207,7 +210,10 @@ export function SmartAgentInputStacked({
       {/* Conversation context rail — surfaces the working document, scratchpad,
           agent lists, and active context so they're openable without scrolling
           the transcript. Renders nothing when there's nothing to show. */}
-      <ConversationContextRail conversationId={conversationId} />
+      <ConversationContextRail
+        conversationId={conversationId}
+        presentation={contextRailPresentation}
+      />
 
       {/* Variable inputs — scrolls internally, never pushes textarea/toolbar off screen */}
       <SmartAgentVariables

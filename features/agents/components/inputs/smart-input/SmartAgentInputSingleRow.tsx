@@ -38,6 +38,7 @@ interface SmartAgentInputSingleRowProps {
   surfaceKey?: string;
   disableSend?: boolean;
   variablesPanelStyle?: VariablesPanelStyle;
+  contextRailPresentation?: "default" | "overflow-only";
   extraRightControls?: React.ReactNode;
 }
 
@@ -53,6 +54,7 @@ export function SmartAgentInputSingleRow({
   surfaceKey,
   disableSend = false,
   variablesPanelStyle,
+  contextRailPresentation = "default",
   extraRightControls,
 }: SmartAgentInputSingleRowProps) {
   const dispatch = useAppDispatch();
@@ -89,7 +91,10 @@ export function SmartAgentInputSingleRow({
       {/* Ambient launchers carry context through the instance but defer all
           context UI to the full conversation panel. */}
       {!isAmbient ? (
-        <ConversationContextRail conversationId={conversationId} />
+        <ConversationContextRail
+          conversationId={conversationId}
+          presentation={contextRailPresentation}
+        />
       ) : null}
 
       {/* Variable inputs (stacked above the row when present) */}

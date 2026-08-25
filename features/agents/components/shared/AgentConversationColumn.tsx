@@ -72,6 +72,8 @@ interface SmartInputForwardProps {
    * the user never sees raw ids in the composer.
    */
   variablesPanelStyle?: VariablesPanelStyle;
+  /** Collapse context pills into the right-side count menu without removing them. */
+  contextRailPresentation?: "default" | "overflow-only";
   /**
    * Disable sending (button + Enter-to-submit). Surfaces gate on this for
    * pre-visible limits — e.g. the AI Tutor blocks the composer once the
@@ -182,7 +184,9 @@ export function AgentConversationColumn({
   // so re-renders are cheap.
   const messageCount = useAppSelector(selectMessageCount(displayId));
   const hasMoreOlder = useAppSelector(selectHasMoreOlderMessages(displayId));
-  const isLoadingOlder = useAppSelector(selectIsLoadingOlderMessages(displayId));
+  const isLoadingOlder = useAppSelector(
+    selectIsLoadingOlderMessages(displayId),
+  );
   const showLanding = !!landingContent && messageCount === 0;
   const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
   const chatVisibleGroupLimit =
@@ -193,8 +197,7 @@ export function AgentConversationColumn({
     deferColdMarkdown && coldHistoryUnlockedDisplayId !== displayId;
   const isColdBottomSurface =
     deferColdMarkdown && messageCount > 0 && !showLanding;
-  const shouldPinColdScroll =
-    isColdBottomSurface && isColdHistoryRevealLocked;
+  const shouldPinColdScroll = isColdBottomSurface && isColdHistoryRevealLocked;
 
   const pinColdTranscriptToBottom = useCallback(() => {
     const scrollEl = scrollRef.current;
