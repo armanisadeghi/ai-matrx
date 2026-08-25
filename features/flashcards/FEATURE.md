@@ -157,6 +157,44 @@ own fresh conversation):
 
 ## Change log
 
+- 2026-08-25 — 🚨 **Bulk enrichment rebuilt as a LIVE CASCADE, and driven by the selection
+  that already existed.** The version shipped hours earlier was mechanically right and
+  experientially wrong, and both defects were things that already existed being ignored.
+  **(1) It was all-or-nothing.** Set detail has had full multi-select since WP3 gap 5
+  (`selectedIds` + `CardPeek`'s `selectable`/`selected`/`onToggleSelected`), and the batch
+  ignored it — a user with 83 cards who wanted 10 enriched had no way to say so. The bar is now
+  a general **"Select cards"** mode with two actions over the SAME `selectedIds` (no second
+  selection UI): `planBulkEnrich` in
+  [`components/set-detail/bulkEnrichRun.ts`](./components/set-detail/bulkEnrichRun.ts) is the
+  one place that decides the work, and the same plan writes the button
+  (`bulkEnrichActionLabel` → "Enrich selected (3)" / "Enrich all cards (5)"), so the label can
+  never promise cards the run won't touch. An **explicit pick beats the skip heuristic**: a
+  selected card that already has layers is enriched anyway and reported separately ("1 you
+  picked already had layers and got more") — never a silent second spend. F3's text-mergeable
+  restriction moved off `selectable` (every kind can be *enriched*) and onto the Merge button,
+  which now judges the selection. **(2) It showed a progress bar instead of the platform's own
+  showcase.** `card_enrichment` is an ACTIVE registered kind with a default DB component
+  (`card_enrichment_stack`); the window was rendering `LiveRunProgress` rows next to it. Now
+  each card's run publishes its own `requestId` mid-stream (new `onRequestId` seam threaded
+  through `enrichCard` → `enrichAndSaveCard` → the runner's `card_request` event), and
+  [`EnrichingCardTile`](./components/set-detail/EnrichingCardTile.tsx) subscribes to
+  `selectKindEnvelope(requestId, "card_enrichment")` — the SAME accumulator session whose
+  extracted JSON the runner persists, exactly the `LiveGenerationPreview` / `CreateFromTopic`
+  architecture, no second parse anywhere. The card's real front and back are on screen from
+  frame one and the layers materialize inside it one at a time;
+  [`data/cardEnrichmentEnvelope.ts`](./data/cardEnrichmentEnvelope.ts) is the mid-stream reader
+  (a layer with no text yet is withheld, a layer whose `kind` hasn't arrived is NOT guessed into
+  a bucket). At settle the tile switches to the persisted `fc_detail` rows and the runner
+  destroys that card's instance — `keepInstance: true` with nobody destroying was a leak the
+  headless version carried. Concurrency dropped 4 → 3: every in-flight card now owns a visible
+  tile drawing live text, and four at once on a phone is motion nobody can read. Cancel, the
+  per-card fault isolation, the truthful summary and the failure-truthfulness fix are unchanged.
+  `toBulkEnrichProgressState` is deleted with its `LiveRunProgress` dependency.
+  **Live-verified** on `/education/flashcards/<set>`: 3 of 8 cards selected → both entry points
+  read "Enrich selected (3)" → exactly those 3 ran, streaming layer text on screen while the
+  others were still writing; re-selecting an enriched card produced the "you picked this one"
+  chip and summary line; verified again at 375px (single-column feed, zero horizontal overflow).
+
 - 2026-08-25 — 🚨 **Card enrichment is finally VISIBLE, and enrichable in one click.**
   `education.enrich_card` had been writing `fc_detail` text layers
   (helper/example/detailed/hint/mnemonic/simplified) that **no surface rendered**: StudyDeck

@@ -31,7 +31,7 @@
 // reason. A failure says it failed; it never borrows "nothing to add" (the
 // truthfulness fix in data/enhanceCard.ts).
 
-import { AlertTriangle, Check, Clock, Sparkles } from "lucide-react";
+import { AlertTriangle, Check, Clock, PenLine } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -149,7 +149,7 @@ function StatusChip({
   if (card.status === "running") {
     return (
       <Chip className="border-primary/30 bg-primary/10 text-primary">
-        <Sparkles className="h-3 w-3" />
+        <PenLine className="h-3 w-3" />
         {shown > 0
           ? `Writing layer ${shown + 1}…`
           : card.reEnriched

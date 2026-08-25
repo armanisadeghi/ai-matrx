@@ -174,7 +174,16 @@ export function BulkEnrichWindow({
 }
 
 function computeViewportSize(): { width: number; height: number } {
-  if (typeof window === "undefined") return { width: 720, height: 600 };
+  // A hidden or not-yet-measured pane reports 0×0; a fraction of zero is zero,
+  // and handing WindowPanel a zero rect makes it log a degenerate-viewport
+  // error and fall back anyway. Fall back here instead.
+  if (
+    typeof window === "undefined" ||
+    window.innerWidth <= 0 ||
+    window.innerHeight <= 0
+  ) {
+    return { width: 720, height: 600 };
+  }
   return {
     // Wider than the old status list: this window now shows real card content
     // side by side, and cramming it to 55% made every layer a two-word column.
