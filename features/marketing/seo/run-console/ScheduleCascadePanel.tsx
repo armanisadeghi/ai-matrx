@@ -195,8 +195,8 @@ export function ScheduleCascadePanel({
   });
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
-      <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-1.5">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
+      <div className="flex shrink-0 items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-1.5">
         <Info className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
         <p className="text-[11px] leading-relaxed text-foreground">
           {NO_DISPATCHER_NOTICE} Saving one records what you want and nothing
@@ -205,7 +205,7 @@ export function ScheduleCascadePanel({
       </div>
 
       {/* ── The editor for THIS tier ─────────────────────────────────────── */}
-      <section className="rounded-md border border-border bg-card">
+      <section className="shrink-0 rounded-md border border-border bg-card">
         <div className="flex items-center gap-2 border-b border-border px-2.5 py-1.5">
           <CalendarClock className="h-3.5 w-3.5 text-primary" />
           <h3 className="text-xs font-semibold text-foreground">
@@ -381,8 +381,11 @@ export function ScheduleCascadePanel({
       </section>
 
       {/* ── The cascade, made visible ────────────────────────────────────── */}
-      <section className="rounded-md border border-border bg-card">
-        <div className="flex items-center gap-2 border-b border-border px-2.5 py-1.5">
+      {/* The cascade table is the ANSWER this panel exists to give, so it takes
+          the height nobody else is using instead of sitting in a 16rem box with
+          empty page beneath it. */}
+      <section className="flex min-h-0 flex-1 flex-col rounded-md border border-border bg-card">
+        <div className="flex shrink-0 items-center gap-2 border-b border-border px-2.5 py-1.5">
           <h3 className="text-xs font-semibold text-foreground">
             Which schedule governs each brand
           </h3>
@@ -390,7 +393,7 @@ export function ScheduleCascadePanel({
             Nearest wins: brand, then organization, then the system default.
           </span>
         </div>
-        <div className="max-h-64 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <table className="w-full text-left text-xs">
             <thead className="sticky top-0 bg-muted/60 text-[10px] uppercase tracking-wide text-muted-foreground">
               <tr>
