@@ -54470,6 +54470,8 @@ export type Database = {
       keyword_value_map: {
         Args: { p_keyword_ids?: string[]; p_site_id: string }
         Returns: {
+          computed_band: string
+          computed_score: number
           keyword_id: string
           reasons: Json
           value_band: string

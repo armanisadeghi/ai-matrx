@@ -11,8 +11,12 @@ import {
   selectHideReasoning,
   selectHideToolResults,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { applyIrKindRoute } from "@/features/content-ir/react/kind-route";
+import {
+  applyIrKindRoute,
+  GENERIC_STRUCTURED_COMPONENT_KEY,
+} from "@/features/content-ir/react/kind-route";
 import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
+import { useEnsureKindRenderable } from "@/features/content-ir/react/ensure-kind-renderable";
 import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
 import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
@@ -178,6 +182,13 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // envelope, while arrivals for OTHER kinds never touch this block.
   const envelopeKind = readEnvelope(rawBlock.metadata)?.root.kind || null;
   const kindRouteVersion = useContentIrKindVersion(envelopeKind);
+  // Fetch-from-render (the convergence seam): rendering a kind block IS the
+  // demand for its schema + component, on EVERY arrival path — live stream,
+  // DB reload, workflow. Before this, only the live accumulator requested
+  // them, so history blocks sat unrendered until something else warmed the
+  // registry ("works after you navigate away and come back"). Idempotent —
+  // both registries dedupe in-flight requests and remember misses.
+  useEnsureKindRenderable(envelopeKind);
 
   // Stage 1 — content-ir kind routing: a block whose metadata.__ir envelope
   // resolved a registered kind renders as that kind's component
@@ -319,6 +330,21 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     return <PendingStructuredBlock key={index} envelope={pendingEnvelope} />;
   }
 
+  // Stage 2.5 — kind identified, COMPONENT not resolvable yet. The route
+  // sent this streaming region to the generic fallback because no component
+  // answered — which mid-stream almost always means the cold fetch (fired by
+  // the seam above) hasn't landed, not that the kind has no component. Per
+  // the ONE loading sequence: show the kind's loader, never a JSON tree,
+  // while the stream is live. Bounded by the stream itself: if the component
+  // truly never comes, the block completes and the generic viewer (the
+  // sanctioned R6 floor) renders the final value below.
+  if (block.type === GENERIC_STRUCTURED_COMPONENT_KEY && !suppressLoadingGate) {
+    const genericEnvelope = readEnvelope(block.metadata);
+    if (genericEnvelope?.root.kind && genericEnvelope.root.status === "streaming") {
+      return <PendingStructuredBlock key={index} envelope={genericEnvelope} />;
+    }
+  }
+
   // Stage 3 — unified artifact renderer (Wave B): standalone materializable
   // blocks whose type has a unified renderer are rendered through the single
   // shared path (chat/canvas/artifact identical). `artifact` blocks go through
@@ -337,13 +363,6 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       // skeleton instead of the generic "Initializing Matrx" loader; once
       // complete, render immediately with isStreamActive=false even if later
       // blocks in the same message are still streaming.
-      // STREAM token-by-token for every type EXCEPT the complex ones that can't
-      // render partial content meaningfully. Those (recipe, quiz, presentation,
-      // … — exactly the types with a bespoke loading animation in
-      // ARTIFACT_LOADING_COMPONENTS) show their loader while the block is still
-      // streaming. EVERY OTHER type renders its real renderer with the live
-      // partial content + `isStreamActive`, so it builds up as tokens arrive
-      // (tables, flashcards, mermaid, svg, …) — never batched until complete.
       // (Regression guard: forcing `isStreamActive={false}` + a loader for all
       // types is what made tables/flashcards batch — see the doctrine that all
       // render blocks stream live.)
@@ -351,9 +370,27 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       // point is to REPLACE this skeleton with the real component fed the
       // provisional value.
       const loading = !suppressLoadingGate && isBlockLoading(block);
-      const Loader = ARTIFACT_LOADING_COMPONENTS[_def.canvasType];
-      if (loading && Loader) {
-        return <Loader key={index} />;
+      // ONE LOADING SEQUENCE for kind blocks (Arman, 2026-08-24): a block
+      // that came through the kind system (`metadata.__ir`) never hits the
+      // legacy type-keyed loader gate. If its bridge produced a renderable
+      // frame (serverData) mid-stream, the REAL component renders it live and
+      // fills in; if the bridge declined (value below its first renderable
+      // unit, or a wait-for-complete kind), the kind's DECLARED loader shows.
+      // The per-kind knob is the bridge itself ({provisional: true} + its
+      // own too-thin gate) — never a hardcoded type list here.
+      const kindEnvelope = loading ? readEnvelope(block.metadata) : null;
+      if (loading && kindEnvelope?.root.kind) {
+        if (block.serverData === undefined) {
+          return <PendingStructuredBlock key={index} envelope={kindEnvelope} />;
+        }
+        // Renderable frame → fall through to the real component, live.
+      } else if (loading) {
+        // Legacy blocks (no envelope — old messages, direct typed fences)
+        // keep the bespoke type-keyed skeletons unchanged.
+        const Loader = ARTIFACT_LOADING_COMPONENTS[_def.canvasType];
+        if (Loader) {
+          return <Loader key={index} />;
+        }
       }
       return (
         <ArtifactRender

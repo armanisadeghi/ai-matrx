@@ -322,7 +322,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   // Complete per-query GSC breakdown at the pane's default range (28d)
   // — same query key the Search Console pane uses at its initial range, so
   // this shares the cache instead of duplicating the fetch once mounted.
-  const queryStats = usePageQueryStats(pageId, 28);
+  const queryStats = usePageQueryStats(site.id, pageId, 28);
   const outboundLinks = usePageOutboundLinks(
     site.id,
     pageId,

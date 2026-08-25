@@ -110,7 +110,8 @@ export async function resolveKeyword(
 /**
  * The real Search Console queries already reaching one canonical page,
  * aggregated per query (clicks/impressions summed, impression-weighted
- * position), strongest first. Bounded read of the newest daily rows.
+ * position), strongest first. The canonical set-based GSC RPC aggregates at
+ * the database boundary; never pull raw daily facts into the browser.
  */
 export async function listPageTopQueries(
   siteId: string,
@@ -417,11 +418,9 @@ async function fetchGscPageStatRows(
 }
 
 /**
- * Bounded, stably-ordered read of `seo.search_performance_daily` for one
- * canonical page + the query_page GSC profile. Pages via `.range()` (newest
- * dates first, id as the unique tiebreaker — the unstable-pagination class)
- * up to `maxPages`; `truncated` is true when the cap was hit, so callers can
- * say so instead of presenting a silent undercount as the truth.
+ * Page-scoped query aggregation through the canonical `gsc_perf_breakdown`
+ * RPC. The RPC owns profile resolution, deduplication, weighted position,
+ * filtering, ordering, and pagination at the set-based database boundary.
  */
 function allTimePeriods(days: number | null = null) {
   const end = new Date().toISOString().slice(0, 10);
@@ -530,10 +529,9 @@ export interface PageQueryStatsResult {
 
 /**
  * Range-aware per-query breakdown for one canonical page: the
- * `dimension_profile='query_page'` GSC rows aggregated per query
- * (clicks/impressions summed, impression-weighted position), strongest
- * first. Same aggregation as `listPageTopQueries`, but with a selectable
- * range, the complete aggregated result, and a loud raw-read truncation flag.
+ * canonical GSC RPC, strongest first. Same aggregation as
+ * `listPageTopQueries`, but with a selectable range and a loud result-cap
+ * truncation flag.
  */
 export async function listPageQueryStats(
   siteId: string,

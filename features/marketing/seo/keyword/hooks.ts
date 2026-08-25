@@ -137,8 +137,7 @@ export function usePageSearchTotals(
   });
 }
 
-/** Complete range-aware per-query breakdown for one page; the raw fact read
- * remains bounded and carries a loud truncation flag. */
+/** Range-aware server-aggregated per-query breakdown for one page. */
 export function usePageQueryStats(
   siteId: string | null | undefined,
   pageId: string | null | undefined,
