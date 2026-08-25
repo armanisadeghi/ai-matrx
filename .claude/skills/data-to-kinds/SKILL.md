@@ -254,6 +254,23 @@ where deleted_at is null group by 1;`.
 > it, not a replacement for it.
 
 
+0. **MEASURE THE FIELD READS — a consumer list is not a breakage surface** (learned the hard
+   way, search family, 2026-08-25). `kind_consumers.py` answers **who** consumes a kind. It
+   cannot answer **which fields they read**, and field reads are the ENTIRE breakage surface of a
+   shape swap. A workflow stores `{"items": "results"}` in an edge mapping and
+   `"- {title} ({url}) [{age}]"` in a template: rename a field and it still parses, still runs,
+   still reports success — and silently renders nothing. Nothing fails. That is the worst
+   possible failure mode, because no error ever appears.
+   - Read every field reference out of the LIVE `workflow.definition` rows (all spellings of
+     every producing node), plus templates, edge mappings, accessors and agent prompts, and judge
+     each against the POST-cutover model. Verdicts are `SAFE` / `BREAK` / `UNPROVABLE` — and
+     **`UNPROVABLE` blocks the cutover exactly like `BREAK`**. There is no "probably fine", and
+     no fuzzy name matching (`description` → `snippet` is a BREAK, not a rename you can assume).
+   - Worked pattern: `aidream/scripts/check_search_cutover_safety.py`. Its first measured verdict
+     was **23 references · 7 safe · 13 BREAK · 3 unprovable across 3 ACTIVE workflows** — a
+     cutover that every consumer-level check had called ready.
+   - Ship this as a committed guard for your family, and put the verdict in the ledger. **A
+     cutover with any BREAK or UNPROVABLE row does not ship; it becomes the fix list.**
 1. **Repoint the emitters**: the graph actions / tools / services that produced the raw
    passthrough now call the ONE engine → adapter → kind (`output_kind=<slug>`), with
    `include_raw=` for projection 2 and the AI view made at the tool boundary (projection 3).
