@@ -205,15 +205,7 @@ export default function AdminSystemAppsListPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-card">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">
-              System Agent Apps
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Global-scope agent apps available to every user.
-            </p>
-          </div>
+        <div className="flex items-center justify-end gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"

@@ -188,14 +188,12 @@ export default function AdminNewSystemAppPage() {
             Back to apps
           </Button>
         </Link>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">
-            New System App
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Publishes a global-scope agent app (no owner).
-          </p>
-        </div>
+        <p
+          className="truncate text-xs text-muted-foreground"
+          title="Publishes a global-scope agent app (no owner)."
+        >
+          Publishes a global-scope agent app (no owner).
+        </p>
       </div>
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto p-4 max-w-2xl">

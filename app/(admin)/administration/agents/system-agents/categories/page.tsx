@@ -104,13 +104,7 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
-      <div className="flex-shrink-0 p-4 border-b border-border bg-card flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Categories</h1>
-          <p className="text-xs text-muted-foreground">
-            Global categories across every placement type.
-          </p>
-        </div>
+      <div className="flex-shrink-0 p-4 border-b border-border bg-card flex items-center justify-end">
         <Button
           variant="outline"
           size="sm"
