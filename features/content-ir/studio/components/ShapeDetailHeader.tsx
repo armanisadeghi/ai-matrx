@@ -80,11 +80,14 @@ export default function ShapeDetailHeader({
         ? document.getElementById(SHAPE_EDITOR_ANCHOR_ID)
         : null;
     if (node) {
-      // `behavior: "auto"`, deliberately. Smooth scrolling a NESTED container
-      // (`.shell-main`, which is what actually scrolls on a (core) route) is a
-      // silent no-op in some engines — measured live 2026-08-25. This button
-      // exists because it stopped moving once already; it does not get to
-      // depend on an optional animation path.
+      // `behavior: "auto"`, deliberately. Nesting is NOT the reason — smooth
+      // scrolling `.shell-main` (what actually scrolls on a (core) route) was
+      // re-measured on 2026-08-24 and animates correctly to its exact target.
+      // The earlier "smooth is a no-op" reading was an automation artifact: the
+      // preview browser reports `document.hidden`, so rAF is starved and the
+      // animation never ticks. A real user never sees that. This button still
+      // jumps because it is a one-shot "take me there" affordance that must
+      // land even in a rAF-starved tab, and it has no animation to lose.
       node.scrollIntoView({ behavior: "auto", block: "start" });
       return;
     }
