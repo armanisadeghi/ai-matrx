@@ -107,6 +107,18 @@ Guard: `pnpm check:one-table-law`.
 
 ## Change Log
 
+- 2026-08-25 — Claude: **the Offering column became a shared builder
+  (MSR-06).** Search Console → Queries now carries the same column (Arman: "the
+  other critical thing to put here would be the one where you map it to an
+  offering"), so its definition moved out of `buildKeywordColumns` into an
+  exported `buildKeywordOfferingColumn` that both tables call. P26 with a
+  second consumer: one column, one set of filter options, one word for an
+  unplaced keyword, one placement write. Behaviour here is unchanged except
+  for two additions both surfaces now get — an EMPTY offering catalog renders
+  the sentence plus the door to the topic tree instead of a dropdown with
+  nothing in it, and the cell stops click propagation so picking an offering
+  can never also open the row on a table whose row click drills elsewhere.
+
 - 2026-08-25 — gsc-ideas: **KI-021 — saved views moved to the shared layer.**
   `state.ts` already carried the saved-view snapshot codec (`viewStateFor` /
   `stateFromViewState` / `viewStateMatches`) and `KeywordWorkbench.tsx` already

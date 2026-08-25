@@ -757,6 +757,39 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-25 — **MSR-06 (Arman, marketing-surface-repair register): the Offering
+  column on the Queries table.** "The other critical thing to put here would be
+  the one where you map it to an offering." A query row now shows WHICH of the
+  site's offerings it maps to, picks a new one in the cell, sorts by offering
+  name and filters to a single offering — or, the workflow the column exists
+  for, to **Not placed yet**.
+  Nothing about the offering vocabulary is new here and nothing was forked: the
+  catalog is the site's topic tree (`useSiteServices`, the same query keys as
+  the tree screen), the per-row read is `gsc_keyword_topics_for` scoped to the
+  rows on screen (THE SCOPE RULE), the control is the canonical `ServiceCell` /
+  `OfferingPicker`, and the write is the ONE placement RPC
+  (`setKeywordService` → `seo.gsc_set_keyword_topic`) that the keyword
+  workbench, the ruling session and the topic tree already call. Sort and
+  filter were ALREADY server-side in `gsc_perf_breakdown` (`p_sort: 'topic'`,
+  the `topic` filter taking a topic id — that offering and everything under it
+  — or `none`), so this shipped with **no migration**: the RPC's existing
+  contract was simply reached from a second surface.
+  The column definition itself is now ONE builder shared with the keyword table
+  (`seo/keyword-table/columns.tsx::buildKeywordOfferingColumn`, P26) rather
+  than a second copy that would have drifted. Two propagations came with it:
+  `OfferingPicker`'s "Manage offerings" door no longer disappears on a route
+  with no brand id (Search Console lives at `/marketing/search-console?site=…`)
+  — it builds the flat site path, which resolves the brand itself; and an
+  EMPTY offering catalog renders the sentence plus that door instead of a dead
+  dropdown. `useSiteServices` gained an `enabled` gate so the Pages / Countries
+  / Devices tabs never pay for a catalog they do not show.
+  Placing commits on pick (the canonical offering control's behaviour
+  everywhere else), not through the table's Save pill — and it invalidates the
+  Class/Score/Level read too, because the placement is what the value resolver
+  scores from. NOT offered here: "this isn't something we offer", which is the
+  `mismatch` class and needs the written reason a one-click door cannot
+  collect — the same reason the Class cell omits it.
+
 - 2026-08-25 — **MSR-01/03/04/05/07/08 (Arman, marketing-surface-repair register):
   the Queries table's sort/filter/layout/edit/context-menu repair.**
   `seo.gsc_perf_breakdown` (`migrations/seo_gsc_breakdown_value_sort_filter.sql`)
