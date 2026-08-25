@@ -313,6 +313,13 @@ reset role;
 
 do $$
 begin
+  if not has_function_privilege(
+       'authenticated',
+       'public.get_user_file_tree(uuid,integer,integer,boolean,boolean,text)',
+       'execute'
+     ) then
+    raise exception 'authenticated role cannot execute the user file-tree RPC';
+  end if;
   if has_function_privilege(
        'anon', 'public.count_user_files(uuid,boolean,boolean)', 'execute'
      ) or has_function_privilege(
