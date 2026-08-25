@@ -18,7 +18,7 @@
  * (a client island mounted by the server `EducationHub`). The learner snapshot
  * is published to the module store in
  * `features/education/study/dashboard/studyTodaySnapshot.ts` by
- * `StudyTodayCard` — the component that already loads it — so the surface never
+ * `EducationHome` — the surface that already loads it — so the surface never
  * re-fetches the spine.
  */
 
@@ -188,7 +188,7 @@ export const educationManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitter shipped and complete for the hub's own data (discovery registries, entry points, and the Study-today snapshot published by StudyTodayCard). Not yet stamped verified: the DB sync + a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, and no agent roles are declared yet.",
+    "Manifest + emitter shipped and complete for the hub's own data (discovery registries, entry points, and the Study-today snapshot published by EducationHome). Not yet stamped verified: the DB sync + a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, and no agent roles are declared yet.",
   label: "Education Hub",
   urlPattern: "/education",
   intro: `<surface_intro>

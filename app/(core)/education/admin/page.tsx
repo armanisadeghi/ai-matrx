@@ -687,8 +687,8 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
-      name: "StudyTodayCard",
-      filePath: "features/education/study/dashboard/StudyTodayCard.tsx",
+      name: "StudyTodayBlock",
+      filePath: "features/education/home/blocks/StudyTodayBlock.tsx",
       description:
         "P5 — the authenticated 'what to study next' centerpiece on the education home (plan-of-day + due + weak + goals + streak).",
       tier: "official",

@@ -13,7 +13,9 @@ import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 
 const EDUCATION_NAV_ITEMS = [
   {
-    name: "Overview",
+    // "Home", not "Overview": this is the learner's workspace, and the label
+    // must match what `EDU_WORKSPACE_LABEL` promises everywhere else.
+    name: "Home",
     href: "/education/overview",
     icon: GraduationCap,
   },

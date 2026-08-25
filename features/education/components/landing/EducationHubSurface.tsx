@@ -12,7 +12,7 @@
 // Scope is assembled at TRIGGER time, never on mount:
 //   • the discovery registries (EDU_AXES / EDU_TOOLS) are static imports;
 //   • the learner's Study-today snapshot is read from the module store that
-//     StudyTodayCard — the component that already loads it — publishes into,
+//     `EducationHome` — the surface that already loads it — publishes into,
 //     so the hub never fetches the study spine twice.
 
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
