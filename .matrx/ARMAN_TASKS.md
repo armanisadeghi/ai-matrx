@@ -157,7 +157,44 @@ the others are genuine `context.scopes` rows.
 
 ## Pending Arman review
 
-_(none — current asks are all in Active)_
+### Restart the main Supabase database to release a signal-immune backend (P0)
+
+**Date / source:** 2026-08-25 · `supabase-postgrest` 57014 class on
+`/marketing/search-console` · exact system-error representative
+`5e784a1c-c05d-4b55-9175-c4838b1e0140` (4 class occurrences).
+
+**Impact:** `seo.gsc_ingestion_health` still times out for the large production
+site because `idx_seo_sperf_gsc_health_coverage` remains invalid. The committed
+online index repair (`7c33e08751`, split safely by `35282decdf`) cannot finish.
+
+**Verified root cause:** the live concurrent index builder is stuck in
+`waiting for old snapshots`. Its last locker is a `postgres`/Supavisor backend
+running an `_ip.row_versions` read in one transaction since
+2026-08-24 23:13:18Z. Both `pg_cancel_backend` and PostgreSQL 17's timed
+`pg_terminate_backend(pid, 5000)` were attempted; the timed termination returned
+false and the backend remained active. A temporary one-statement `pg_cron`
+drop job also hit lock timeout and was unscheduled, so no patrol job remains.
+
+**Decision / action required:** choose one external-authority recovery:
+
+1. **Recommended:** restart the main Supabase database from the project
+   dashboard during the earliest acceptable brief interruption; this releases
+   the unkillable backend deterministically.
+2. Open an urgent Supabase support case asking them to terminate the backend at
+   the host level, avoiding a full database restart but extending the outage of
+   Search Console health reads.
+3. Defer intervention; the class remains open and every large-site health read
+   can continue timing out. This is safe for stored data but not recommended.
+
+**Exactly what Arman must do:** open the main Supabase project, restart its
+database (option 1), and reply `restarted` with the completion time. Do not
+change timeouts or run SQL.
+
+**What the agent will do afterward:** verify the stale backend is gone, run the
+already-committed `DROP INDEX CONCURRENTLY` / `CREATE INDEX CONCURRENTLY`
+recovery as two separate one-statement jobs, remove those jobs, prove the index
+valid and the live RPC fast for the affected site, confirm zero post-proof
+recurrence, and return the exact IDs eligible for resolution.
 
 ## Future
 
