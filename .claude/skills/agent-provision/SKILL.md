@@ -238,6 +238,34 @@ decision-relevant signal (for a site: route + short label + role, not page conte
 *could a smart human make this call from this text alone?* If no, condense differently — do not
 just add more.
 
+**Step 3b — use the structure the data ALREADY has.** Before inventing a condensation or
+clustering scheme, ask whether the collection already carries structure that bounds the problem:
+a tree, a hierarchy, an explicit grouping, a declared parent. **Inventing a parallel scheme both
+duplicates that structure and drifts from it.**
+
+The canonical case (2026-08-25): the content planner designs a TREE, and every branch point is
+already a decision — *"this section exists and splits into these children because X."* So the
+"cluster" nobody could figure out how to compute **is just the branch**. And it solves scale for
+free: to place ONE item you walk **UP** the tree — your branch, your siblings, your ancestors'
+purposes, your aunt/uncle branches' purposes — which is tens of lines whether the collection has
+300 items or 6,000. *The structure bounds the context; you do not have to compress the world.*
+
+Before you design a grouping, spend ten minutes asking what structure already exists. If the
+answer is "a tree", stop designing.
+
+**Step 3c — capture meaning at its cheapest moment, and record MEANING, not COPIES.** The moment
+a structure is created, the agent that created it still holds the whole picture, and the
+structure is valid. That is when recording *why* costs almost nothing. Reconstructing the same
+meaning later — from leaves, after the fact — is expensive, lossy, and sometimes impossible.
+
+But record the **reason**, not a snapshot. A stored copy of a collection is stale minutes later
+as items are added and removed, and every consumer then has to guess whether it is still true. A
+reason attached to a live structural element does not go stale the same way: *"this branch exists
+to cover X, and Y belongs elsewhere"* survives a leaf being added or removed, moves with the
+branch, and dies with it. **Prefer a durable annotation on live structure over any denormalized
+copy** — and when you catch yourself proposing to save a blob "so we have it later", ask what
+will make it wrong and how anyone would know.
+
 **Step 4 — scale tiers, with a real fallback.** What works at 50 breaks at 6,000. Decide the
 threshold BEFORE shipping and decide what happens past it: compartmentalize (relevant branch +
 summary of the rest), summarize the far field into counts and clusters, or run a cheap
