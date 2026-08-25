@@ -58,6 +58,14 @@ jobs:
         # registry-freshness half runs in the `kind-registry` job below, which
         # needs credentials. KINDS_EVERYWHERE_PLAN §10g GAP 1.
         run: pnpm check:kind-type-twins
+      - name: THE KIND DIRECTIVES SHIM stays contained
+        # `directives/legacyShell.ts` translates stored 4-key ```matrx fences so
+        # old conversations keep rendering. It is the campaign's ONE legacy
+        # surface and it has exactly one importer. The moment a second module
+        # imports it, "translate what we stored" quietly becomes "accept the old
+        # shape anywhere" and the retired shell is a live protocol again.
+        # PLAN.md § THE STRICTNESS LAW clause 4.
+        run: pnpm check:legacy-shim-containment
       - name: CLAUDE.md's machine-checkable claims still hold
         # Includes the claim that THIS workflow runs the gates named in it.
         # Without it here, deleting a step from this file would silently make
@@ -151,7 +159,13 @@ jobs:
   # suites — the two feature suites that pin cross-repo contracts, so a change
   # here can break a producer in aidream (and vice versa):
   #   content-ir      the kind registry, block dispatch, the partial-kind wire
-  #                   reader whose fixture aidream generates
+  #                   reader whose fixture aidream generates, AND the Kind
+  #                   Directives grammar-parity test — the client mirror of
+  #                   aidream's directives.py asserted against the committed
+  #                   docs/protocol/kind_directive_grammar.generated.json, so
+  #                   the parity claim is measurable HERE, where there is no
+  #                   aidream checkout. (`pnpm check:directive-grammar` is the
+  #                   other half and runs where aidream exists.)
   #   workflow-runtime the run surface that renders those kinds live
   # Both run even if the other fails — a masked second failure is how two
   # regressions ship as one.
