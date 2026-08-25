@@ -411,7 +411,8 @@ export default function SurfaceContextWindow({
               <b className="text-foreground">
                 {
                   liveWriteTargets.filter(
-                    (entry) => (entry.target.applyPolicy ?? "manual") !== "manual",
+                    (entry) =>
+                      (entry.target.applyPolicy ?? "manual") !== "manual",
                   ).length
                 }
               </b>
@@ -440,11 +441,11 @@ export default function SurfaceContextWindow({
         <div className="flex h-full min-h-0 flex-col">
           <div className="shrink-0 border-b border-border p-4">
             <div className="flex flex-wrap items-start gap-2">
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 basis-full flex-1">
                 <h2 className="truncate text-base font-semibold">
                   {selected.declaration?.label ?? selected.key}
                 </h2>
-                <code className="text-xs text-muted-foreground">
+                <code className="block truncate text-xs text-muted-foreground">
                   {selected.key}
                 </code>
               </div>
@@ -486,13 +487,13 @@ export default function SurfaceContextWindow({
                   if (!found) {
                     toast.message("Not anchored on this page", {
                       description:
-                        "No element is tagged data-surface-value=\"" +
+                        'No element is tagged data-surface-value="' +
                         selected.key +
-                        "\" yet.",
+                        '" yet.',
                     });
                   }
                 }}
-                className="flex h-7 items-center gap-1 rounded px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                className="flex h-11 items-center gap-1 rounded px-3 text-xs text-muted-foreground hover:bg-accent hover:text-foreground sm:h-7 sm:px-2"
                 title="Highlight where this value appears on the page"
               >
                 <Crosshair className="h-3.5 w-3.5" />
@@ -502,7 +503,7 @@ export default function SurfaceContextWindow({
                 type="button"
                 disabled={!hasValue(selectedRaw)}
                 onClick={() => void copyText(selectedDisplay, selected.key)}
-                className="flex h-7 items-center gap-1 rounded px-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
+                className="flex h-11 items-center gap-1 rounded px-3 text-xs text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 sm:h-7 sm:px-2"
               >
                 {copied === selected.key ? (
                   <Check className="h-3.5 w-3.5 text-emerald-500" />
