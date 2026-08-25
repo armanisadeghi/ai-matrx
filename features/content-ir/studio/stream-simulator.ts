@@ -100,6 +100,95 @@ export interface StreamTickRecord {
   /** True when a STREAMING block would reach the reader as raw text carrying
    * the discriminator — the "shows the whole JSON, converts when done" flash. */
   rawKindTextVisible: boolean;
+  /**
+   * What THE KIND ROUTE did with this upsert — filled by callers that route
+   * (the Stream tab and the batch checker); absent for pure accumulator runs.
+   *
+   * This is what makes THE ONE LOADING SEQUENCE machine-checkable: the route's
+   * answer decides whether the reader sees the kind's LOADER or its REAL
+   * component on this frame, which is precisely the law's subject.
+   */
+  routed?: {
+    /** The block type after `applyIrKindRoute`. */
+    type: string;
+    /** The bridge produced a renderable frame — the real component renders. */
+    hasServerData: boolean;
+  };
+}
+
+/**
+ * Would the reader see a LOADER on this frame (rather than the real
+ * component)? Mirrors BlockRenderer's gates exactly: a streaming block whose
+ * kind is known but whose bridge declined the frame (no serverData), or which
+ * routed to the generic fallback because no component has resolved yet.
+ */
+export function frameShowsLoader(r: StreamTickRecord): boolean {
+  if (r.status !== "streaming") return false;
+  if (!r.envelope) return false;
+  if (!r.routed) return !r.envelope.kind || r.envelope.kindState === "pending_schema";
+  if (r.routed.hasServerData) return false;
+  return true;
+}
+
+/** THE ONE LOADING SEQUENCE, measured per kind. */
+export interface LoadingVerdicts {
+  /** A loader frame preceded any real-component frame (never raw JSON first). */
+  loaderShownFirst: boolean;
+  /** 1-based chunk where the REAL component first received a renderable frame. */
+  firstUnitChunk: number | null;
+  /** The real component rendered WHILE streaming (not batched to the end). */
+  realComponentWhileStreaming: boolean;
+  /**
+   * The loader never came back after the real component rendered. A false here
+   * is a flicker — the defect the first-renderable-unit latch exists to stop.
+   */
+  loaderNeverReturns: boolean;
+}
+
+/**
+ * Derive the loading-sequence verdicts. Requires records carrying `routed`
+ * (see {@link StreamTickRecord.routed}); without it the loader signal falls
+ * back to the pending-envelope window, which still catches raw-JSON-first but
+ * cannot see the bridge's first-unit gate.
+ */
+export function deriveLoadingVerdicts(
+  records: readonly StreamTickRecord[],
+  kind: string,
+): LoadingVerdicts {
+  // PER BLOCK, always. One region routinely produces several blocks (a bare
+  // JSON example yields the structured block plus trailing text), and they
+  // stream independently: block B still showing its loader while block A has
+  // already rendered is CORRECT, not a flicker. Comparing across blocks
+  // manufactured 27 phantom failures on the first full run (2026-08-25).
+  const firstUnitByBlock = new Map<string, number>();
+  const loaderBeforeUnit = new Set<string>();
+  let loaderNeverReturns = true;
+
+  for (const r of records) {
+    if (r.envelope && r.envelope.kind !== null && r.envelope.kind !== kind) continue;
+    const isLoader = frameShowsLoader(r);
+    const isReal = r.status === "streaming" && r.routed?.hasServerData === true;
+    const seenUnit = firstUnitByBlock.has(r.blockId);
+
+    if (isLoader && !seenUnit) loaderBeforeUnit.add(r.blockId);
+    if (isReal && !seenUnit) firstUnitByBlock.set(r.blockId, r.chunk);
+    // A loader frame after THIS block's real component rendered = flicker.
+    if (isLoader && seenUnit) loaderNeverReturns = false;
+  }
+
+  const firstUnitChunk =
+    firstUnitByBlock.size > 0 ? Math.min(...firstUnitByBlock.values()) : null;
+
+  return {
+    // Did the block that eventually rendered show a loader first (rather than
+    // raw content)? Measured on the blocks that reached a first unit.
+    loaderShownFirst: [...firstUnitByBlock.keys()].some((id) =>
+      loaderBeforeUnit.has(id),
+    ),
+    firstUnitChunk,
+    realComponentWhileStreaming: firstUnitChunk !== null,
+    loaderNeverReturns,
+  };
 }
 
 export function recordFromUpsert(

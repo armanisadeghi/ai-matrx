@@ -155,6 +155,7 @@
     "check:schema:refresh": "tsx scripts/schema-check/check-schema.ts --refresh --warn",
     "check:schema:snapshot": "tsx scripts/schema-check/get-current-schema.ts",
     "check:shapes": "tsx scripts/shape/check-shapes.ts",
+    "check:shapes:stream": "tsx scripts/shape/check-stream.ts",
     "check:shapes:strict": "tsx scripts/shape/check-shapes.ts --strict",
     "check:shapes:refresh": "tsx scripts/shape/check-shapes.ts --refresh",
     "check:shapes:components": "tsx scripts/shape/check-shapes.ts --gate=dangling-component-key",
