@@ -1,10 +1,26 @@
-# Matrx Envelope — frontend
+# Kind Directives — frontend (`features/matrx-envelope/`)
 
-> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/matrx-envelope/FEATURE.md` — read it before touching this feature in ANY repo.
+> 🚨 **THE SHELL AND THE GRAMMAR LIVE IN `features/content-ir/directives/`.** A directive
+> IS a kind instance — `{ "__kind": "directive_v1_<class>_<noun>", "items": [...] }` — and
+> its grammar, detector, decoder and read-only legacy shim are there, mirrored from
+> aidream's `matrx_graph/content_ir/directives.py`. What lives in THIS directory is what is
+> genuinely reference-specific: the reference noun taxonomy, the chips, the copy-shortcut
+> builders, the renderer registry, and the apply/confirm affordances.
+>
+> Plan of record: `/Users/armanisadeghi/code/common-docs/projects/kind-directives/PLAN.md`
+> (read § THE STRICTNESS LAW before changing anything here). Cross-repo SoR:
+> `/Users/armanisadeghi/code/common-docs/systems/matrx-envelope/FEATURE.md`.
 
-The client mirror of the [Matrx Envelope](../../docs/protocol/MATRX_ENVELOPE.md) standard:
-`{ matrx_version, kind, type, items: [...] }`. Recognize the outer canonical shell once,
-route internal parts through a registry, render them, fall back gracefully.
+**Detection is `__kind`, never `matrx_version`.** The retired 4-key shell
+(`{matrx_version, kind, type, items}`) is READ-ONLY: it is understood in exactly one
+module (`features/content-ir/directives/legacyShell.ts`, single importer `decode.ts`,
+enforced by `pnpm check:legacy-shim-containment`), it is emitted nowhere, and every
+decision downstream is made once, on the translated new shell. There is no
+"try the new shape, fall back to the old" branch anywhere — that is a defect the moment
+it is written.
+
+Recognize the shell once, route by SLUG (exact → class prefix rule), render, fall back
+gracefully.
 
 **Protocol mirror pact:** `docs/protocol/MATRX_ENVELOPE.md` + `MATRX_REFERENCES.md` +
 `matrx_envelope_registry.generated.json` are **byte-identical** with aidream's copies;
@@ -41,21 +57,35 @@ render through the SAME live chip renderer.
 
 ## Parts
 
-- `envelope.ts` — the contract: `isMatrxEnvelope` (detect by `matrx_version`),
-  `MatrxEnvelope`, the FLAT per-type `ReferenceItem` union + `REFERENCE_TYPES` / `ReferenceType`,
-  the `directive_apply.*` receipt events (incl. `DirectiveProposed` / `DirectiveApplyBlocked`) +
-  `isDirectiveApplyEvent` / `isDirectiveProposed`, and `buildEnvelopeOutputSchema` (mirrors
-  aidream's schema-gen).
+- `features/content-ir/directives/` (NOT here) — `grammar.ts` (the reserved prefix, the
+  CLOSED 8-class vocabulary, derived capability, `buildDirectiveSlug` / `parseDirectiveSlug`,
+  the position law as `executesAtOutputRoot` / `resolvesInContent`), `legacyShell.ts`,
+  `decode.ts` (`decodeDirective` / `tryDecodeDirective`), `nounDisplay.ts` (the auto-view's
+  catalog-derived naming). Parity with aidream is machine-checked: `pnpm sync:directive-grammar`
+  extracts the Python constants into `docs/protocol/kind_directive_grammar.generated.json`,
+  an offline jest test asserts the TS mirror against it (so CI can measure it), and
+  `pnpm check:directive-grammar` verifies the artifact against a live aidream checkout —
+  exiting 2 (UNMEASURED), never 0, when it cannot reach the source.
+- `envelope.ts` — the FLAT per-type `ReferenceItem` union + `REFERENCE_TYPES` /
+  `ReferenceType`, the `directive_apply.*` receipt events (incl. `DirectiveProposed` /
+  `DirectiveApplyBlocked`) + `isDirectiveApplyEvent` / `isDirectiveProposed`, and
+  `buildDirectiveOutputSchema` (mirrors aidream's schema-gen; pins `__kind` `const` and
+  FIRST). **Every receipt's identity field is `directive` and it carries the SLUG** — one
+  field, one name for the thing.
 - `state/proposedDirectivesSlice.ts` — the per-conversation inbox of agent-proposed actions
   (`ask` policy); `proposeDirective` / `removeProposal` + `selectProposedDirectives`.
 - `components/ProposedDirectivesZone.tsx` — the Approve/Decline card per pending proposal;
   Approve → `confirmDirective` (`features/directive-catalog/service.ts`) → `POST /directives/confirm`.
-- `registry.tsx` — the **renderer registry** (mirrors the backend shape registry):
-  `registerEnvelopeRenderer(kind, renderer, type?)` + `getEnvelopeRenderer(kind, type)`
-  (type-specific → kind-default → null). Built-in: `reference` → **live, clickable chips**
-  (`ReferenceChip`, one per item); `output_directive:create_project_with_tasks` → optimistic
-  project card + task list with DB polling (see `directives/createProjectWithTasks/`). Add
-  a renderer = one register call.
+- `registry.tsx` — the **renderer registry and THE PREFIX TIER**:
+  `registerDirectiveRenderer(class, renderer, noun?)` + `getDirectiveRenderer(directive)`
+  (exact slug → the CLASS prefix rule → null). **The prefix rule is the routing language
+  made real:** registering `reference` once renders every `directive_v1_reference_*` slug
+  the 419-noun catalog can mint, so a brand-new server noun renders with ZERO frontend
+  edits; an exact slug overrides it. Built-in: `reference` → **live, clickable chips**
+  (`ReferenceChip`, one per item); `action:create_project_with_tasks` → optimistic project
+  card + task list with DB polling; `action:plan_tree` / `action:plan_node_patch` /
+  `action:context_groom`. A noun is passed as a NOUN, never a hand-typed slug — the slug is
+  BUILT by the grammar, so an unparseable registration is unconstructable.
 - `referenceFence.ts` — the **reference-fence serializer + reader**:
   `buildReferenceFence({type,items})` / `buildPicklistItemFence(...)` emit the canonical
   ` ```matrx ` `kind:"reference"` fence with FLAT items (`{ list_id, item_id, label? }` — no
@@ -78,14 +108,16 @@ render through the SAME live chip renderer.
   `table_cell` over `udt_datasets`/`udt_dataset_fields`/`udt_dataset_rows`. `url` is registered too
   but returns the URL/label as-is (`resolveValue` is a no-op — nothing to look up). Adding a reference
   type = one entry here.
-- `MatrxEnvelopeBlock.tsx` — the ```matrx fence renderer: (1) parse + recognize the
-  outer envelope (bad JSON → raw `<pre>`, never throws); (2) `getEnvelopeRenderer` →
-  render the registered component; (3) none registered → a neutral muted card (kind/type
-  + item count). **Graceful fallback at both layers** (unparseable, and unknown shape).
+- `MatrxEnvelopeBlock.tsx` — the ```matrx fence renderer, and **the prefix-DEFAULT
+  component** for every `directive_v1_*` shape (not a parallel dispatch entry): (1) parse +
+  `decodeDirective` (bad JSON / no reserved `__kind` → raw `<pre>`, never throws; a
+  malformed reserved slug is captured to the Error Inspector, never swallowed);
+  (2) `getDirectiveRenderer` → render the registered component; (3) none registered → the
+  prefix floor card. **Graceful fallback at both layers** (unparseable, and unknown shape).
 
 - `referenceText.ts` — **prose ↔ fence** for surfaces that carry raw text and do NOT run
   the markdown pipeline (direct messages, notifications, list previews):
-  `splitMatrxFences(text)` (ordered text/envelope segments, unparseable fences stay literal
+  `splitMatrxFences(text)` (ordered text/directive segments, undecodable fences stay literal
   text), `hasMatrxFence`, `summarizeMatrxText(text)` (one line, each fence collapsed to its
   human label — a preview must NEVER show envelope JSON), and the authoring side
   `buildFencesFromAttachments(refs)` / `composeTextWithAttachments(text, refs)` (one fence
@@ -112,8 +144,11 @@ render through the SAME live chip renderer.
 renderer that bails with `null` deletes the assistant's whole message block, on
 first paint and every reload, with no error anywhere. The step-3 neutral card
 cannot save it: a renderer *was* found. **Degrade to
-`<EnvelopeFallbackCard envelope reason="…" />`** (`EnvelopeFallbackCard.tsx`),
-never to nothing.
+`<EnvelopeFallbackCard directive reason="…" />`** (`EnvelopeFallbackCard.tsx`),
+never to nothing. That card is also **THE PREFIX FLOOR**: a slug whose class nothing
+claims lands there, named from the catalog ("Create Agent · Agents"), with an Apply button
+when the class is a side effect. A shape this frontend has never heard of is still legible
+and still actionable.
 
 Cost of learning this (2026-07-26): `plan_tree` items addressed by plain-text
 `site` (instead of `site_id`) parsed to an empty list → `return null` → a 70KB
@@ -124,19 +159,28 @@ silently drops items the server would have happily applied.
 
 ## Recognition contract (the four guarantees)
 
-1. **Outer first** — `isMatrxEnvelope` recognizes `{matrx_version,kind,type,items}` before
-   anything else (`MatrxEnvelopeBlock` step 1).
-2. **Registry for internals** — internal parts route through `getEnvelopeRenderer(kind,type)`
-   (`registry.tsx`), the same key shape the backend registry uses.
+1. **Decode first** — `decodeDirective` recognizes the reserved `__kind` (translating a
+   stored 4-key shell on the way in) before anything else (`MatrxEnvelopeBlock` step 1). A
+   slug that claims the reserved namespace but does not parse is REPORTED, never treated as
+   an ordinary kind.
+2. **Registry by slug** — `getDirectiveRenderer(directive)` (`registry.tsx`): exact slug,
+   then the class prefix rule — the same shape the kind component resolver uses.
 3. **Bring to life** — a registered renderer displays the part (reference → chips; add
    richer/interactive renderers, e.g. click-to-open, by registering them).
-4. **Graceful fallback** — no renderer → neutral card; not an envelope → raw `<pre>`.
+4. **Graceful fallback** — no renderer → the prefix floor card; not a directive → raw `<pre>`.
 
 ## Consumers / wiring
 
 - `content-splitter-v2.ts` (`SPECIAL_CODE_LANGUAGES` += `matrx`) → block type `matrx`
   → `BlockRenderer` `case "matrx"` → `MatrxEnvelopeBlock`. Round-trip in
-  `assemble-cx-content-blocks.ts`.
+  `assemble-cx-content-blocks.ts`. **A ```matrx fence is a CONTAINER** — like an artifact,
+  `recoverEmbeddedKindJsonBlocks` must never explode it; since the merge its body
+  legitimately declares `__kind`, and without that guard the fence lost its `matrx`
+  identity and rendered as a JSON code viewer. A BARE directive object recovered from
+  prose is typed `matrx` too, so a directive routes the same way however it arrived.
+- **Live proof:** `/demos/kind-directives` renders one real fence per class — current
+  shell, stored 4-key shell, a write, an action, and an ordinary kind that must stay raw —
+  through the real pipeline. Run it after any change here.
 - Directive receipts: `process-stream.ts` routes `directive_apply.*` data events →
   `sonner` toasts (`isDirectiveApplyEvent`). The `directive_apply.completed`/`.failed`
   receipts toast; `directive_apply.proposed` (the `ask` apply policy) is handled below.
@@ -168,10 +212,11 @@ silently drops items the server would have happily applied.
   reference fence (FLAT items) instead of the legacy `picklist_ref` envelope. The value is a fence
   STRING (single = one item; multi = N items + any "Other" free-text lines) → persists to
   `value_text`. The FE-controlled direct/override `variables` path is live.
-- Done: **`output_directive:create_project_with_tasks` renderer.** Optimistic project +
-  task card from envelope items; polls Supabase at 0s / 2s / 5s by slug (or name); resolves
-  to clickable project (`ItemDetailWindow` + route) and tasks (`taskEditorWindow`). Bare
-  JSON envelopes (`matrx_version` root) classify as `matrx` blocks via `detectJsonBlockType`.
+- Done: **`directive_v1_action_create_project_with_tasks` renderer.** Optimistic project +
+  task card from the shell's items; polls Supabase at 0s / 2s / 5s by slug (or name);
+  resolves to clickable project (`ItemDetailWindow` + route) and tasks (`taskEditorWindow`).
+  Bare directive JSON (a reserved `__kind` first key) classifies as a `matrx` block via
+  `detectJsonBlockType`.
 - Done: **generic reference attach + prose rendering** (2026-07-25) — `AttachReferenceButton`
   (the reference-insert authoring picker) + `TextWithReferences` / `referenceText.ts`; first
   consumer is direct messaging (`features/messaging`).
@@ -180,6 +225,19 @@ silently drops items the server would have happily applied.
   composers (notes, tasks, comments).
 
 ## Change Log
+
+- 2026-08-25 — Claude (KD3/KD4/KD5b): **the Kind Directives merge, frontend half.**
+  aidream had minted the two-key `__kind` shell in production since 2026-08-23 while this
+  repo still detected `matrx_version`, so a server-minted reference fence rendered to the
+  user as RAW JSON. Detection now reads `__kind`; the grammar/decoder/legacy shim moved to
+  `features/content-ir/directives/` and are parity-checked against aidream; the renderer
+  registry is slug-keyed with a CLASS PREFIX TIER; the fallback card became the prefix
+  floor and names shapes from the catalog (`label`/`family`); every copy-shortcut builder
+  emits the new shell; the receipt wire moved to `directive` + `shell`. A second half of
+  the break — a ```matrx fence being exploded by `recoverEmbeddedKindJsonBlocks` because
+  its body now declares `__kind` — was found IN THE BROWSER, not by a test, and is now
+  pinned by one. Guards: `check:legacy-shim-containment` (per-PR CI),
+  `check:directive-grammar`, and an offline grammar-parity test.
 
 - 2026-08-23 — Directive execute/confirm consumers now translate Matrx envelopes to
   the unified API request contract (`directive` slug + items) instead of sending the
