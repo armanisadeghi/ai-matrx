@@ -15,6 +15,19 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D255 — text inputs are 14px, so iOS zooms the page on every focus (2026-08-24)
+
+`components/ui/input.tsx` renders `text-sm` (14px computed, verified live on the
+competitors surface at 375px: every input on the page, not one surface's). Safari
+auto-zooms any focused input under 16px, which shifts the layout mid-typing on
+every mobile form in the app. The `ios-mobile-first` skill states inputs ≥16px.
+
+**Fix:** raise the shared component to `text-base` on small screens
+(`text-base sm:text-sm` is the shadcn-standard remedy) — one change in
+`components/ui/input.tsx`, never a per-surface override (official components are
+not locally restyled). Needs a sweep of dense admin tables afterwards to confirm
+nothing relied on the 14px metrics.
+
 ### D253 — two pre-existing red suites seen during the content-ir 0.2.0 cutover, not content-ir's (2026-08-23)
 
 Found while running the adjacent suites for the `@ai-matrx/content-ir` 0.2.0 migration (the
