@@ -159,9 +159,20 @@ the others are genuine `context.scopes` rows.
 
 ### Restart the main Supabase database to release a signal-immune backend (P0)
 
-**Date / source:** 2026-08-25 · `supabase-postgrest` 57014 class on
-`/marketing/search-console` · exact system-error representative
-`5e784a1c-c05d-4b55-9175-c4838b1e0140` (4 class occurrences).
+**Date / source:** 2026-08-25 (rechecked 07:07Z) · `supabase-postgrest` 57014
+class on `/marketing/search-console` · 12 exact unresolved system-error IDs:
+`637011ab-d262-4362-bf1c-f4962498a1f0`,
+`d117aa73-5ec4-479b-a06a-b3941380d564`,
+`eee7383f-62fa-445b-9bea-0bc02f90d869`,
+`20089577-260c-4c7a-bd00-f1171d5703c8`,
+`0d144e10-a2e6-479c-9864-1682f9c00084`,
+`b8438297-9b4c-4b36-8b0c-19121799277a`,
+`ae905436-5580-4a05-b386-7f03ee0b0d1f`,
+`253602e9-a1b0-4a33-8df1-6358c14a60ec`,
+`5e784a1c-c05d-4b55-9175-c4838b1e0140`,
+`ea74b865-bd3f-4256-b2f6-faaae5aefccf`,
+`3424d68a-7cab-44a1-bd0a-d9e349552cd7`, and
+`c4a20f16-498f-491d-a592-5cc50faeaf80`.
 
 **Impact:** `seo.gsc_ingestion_health` still times out for the large production
 site because `idx_seo_sperf_gsc_health_coverage` remains invalid. The committed
@@ -174,6 +185,10 @@ running an `_ip.row_versions` read in one transaction since
 `pg_terminate_backend(pid, 5000)` were attempted; the timed termination returned
 false and the backend remained active. A temporary one-statement `pg_cron`
 drop job also hit lock timeout and was unscheduled, so no patrol job remains.
+The 2026-08-25 07:07Z patrol recheck found the same transaction still active,
+the index still `indisvalid=false`, and no index builder currently progressing.
+One bounded retry returned `pg_cancel_backend=true` but
+`pg_terminate_backend(pid, 5000)=false`; the backend remained active.
 
 **Decision / action required:** choose one external-authority recovery:
 
