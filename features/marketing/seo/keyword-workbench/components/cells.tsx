@@ -25,13 +25,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/styles/themes/utils";
-import type { FacetValue } from "@/features/marketing/seo/value-system/dimensions/data";
-import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
+import type {
+  FacetDimension,
+  FacetValue,
+} from "@/features/marketing/seo/value-system/dimensions/data";
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
-import {
-  DimensionValuePicker,
-  type PickedValue,
-} from "./DimensionValuePicker";
+import { DimensionValuePicker, type PickedValue } from "./DimensionValuePicker";
 
 /** Where a stamp came from, in two words a non-technical reader can act on. */
 function sourceHint(source: string | null): string | null {
@@ -83,7 +82,11 @@ export function StampCell({
         ? undefined
         : `Choose a ${dimension.label} value.`;
   return (
-    <span className="group/cell flex min-w-0 items-center gap-1" title={title}>
+    <span
+      className="group/cell flex min-w-0 items-center gap-1"
+      title={title}
+      onClick={(event) => event.stopPropagation()}
+    >
       <span className="min-w-0 flex-1">
         <DimensionValuePicker
           siteId={siteId}
@@ -149,7 +152,8 @@ export function ClassCell({
           className="h-6 max-w-full justify-start gap-1 px-1 text-[11px] font-normal"
         >
           <span className="truncate">
-            {active?.label ?? (current ? humanizeSlug(current) : "Unclassified")}
+            {active?.label ??
+              (current ? humanizeSlug(current) : "Unclassified")}
           </span>
           {hint && hint !== "you" ? (
             <span className="text-[10px] text-muted-foreground">{hint}</span>

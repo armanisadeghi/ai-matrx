@@ -202,21 +202,19 @@ export function DimensionValuePicker({
           cell
             ? "Unassigned"
             : newDimensionLabel
-            ? `First value for “${newDimensionLabel}”`
-            : newDimensionLabel === ""
-              ? "Name the dimension first"
-              : activeDimension
-                ? "Value"
-                : "Pick a dimension first"
+              ? `First value for “${newDimensionLabel}”`
+              : newDimensionLabel === ""
+                ? "Name the dimension first"
+                : activeDimension
+                  ? "Value"
+                  : "Pick a dimension first"
         }
         searchPlaceholder="Find or type a new value…"
         noun="value"
         disabled={!activeDimension && !newDimensionLabel}
         loading={loading}
         ariaLabel={
-          cell
-            ? `${activeDimension?.label ?? "Dimension"} value`
-            : "Value"
+          cell ? `${activeDimension?.label ?? "Dimension"} value` : "Value"
         }
         emptyLabel={
           newDimensionLabel !== null

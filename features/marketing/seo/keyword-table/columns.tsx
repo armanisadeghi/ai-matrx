@@ -23,12 +23,17 @@ import Link from "next/link";
 
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
-import { buildGscMetricColumns } from "@/features/marketing/search-console/lib/columns";
-import { GSC_COMPACT_COLUMN_LABELS } from "@/features/marketing/search-console/lib/columns";
+import {
+  buildGscMetricColumns,
+  GSC_COMPACT_COLUMN_LABELS,
+} from "@/features/marketing/search-console/lib/columns";
 import type { GscBreakdownRow } from "@/features/marketing/search-console/types";
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
-import { ClassCell, StampCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
+import {
+  ClassCell,
+  StampCell,
+} from "@/features/marketing/seo/keyword-workbench/components/cells";
 import { ServiceCell } from "@/features/marketing/seo/keyword-workbench/components/ServiceCell";
 import { OFFERING_UNPLACED } from "@/features/marketing/seo/keyword-workbench/components/OfferingPicker";
 import type { SiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
@@ -243,7 +248,9 @@ export function buildKeywordColumns({
       accessorFn: (row) => {
         const hit = locationFor(row);
         if (!hit) return "";
-        return hit.decided_by === "unresolved" ? "~unresolved" : hit.location_name;
+        return hit.decided_by === "unresolved"
+          ? "~unresolved"
+          : hit.location_name;
       },
       cell: (row) => (
         <LocationCell
@@ -339,7 +346,9 @@ export function buildKeywordColumns({
                 : undefined
             }
             onFilter={
-              stamp ? () => handlers.onFilterByStamp(slug, stamp.value) : undefined
+              stamp
+                ? () => handlers.onFilterByStamp(slug, stamp.value)
+                : undefined
             }
           />
         );
@@ -512,7 +521,9 @@ export function buildKeywordOfferingColumn({
       ...services.options.map((option) => ({
         value: option.topicId,
         label:
-          option.depth > 0 ? `${option.rootName} › ${option.name}` : option.name,
+          option.depth > 0
+            ? `${option.rootName} › ${option.name}`
+            : option.name,
       })),
     ],
     width,
