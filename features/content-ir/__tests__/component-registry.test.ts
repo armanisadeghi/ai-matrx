@@ -152,6 +152,14 @@ describe("compiled bootstrap (system-components)", () => {
       opening_hours: "opening_hours",
       postal_address: "postal_address",
       geo_coordinates: "geo_coordinates",
+      // Rank / SERP-landscape family (Rank Kinds Run)
+      seo_rank_serp_landscape: "seo_rank_serp_landscape",
+      serp_placement: "serp_placement",
+      seo_rank_reading: "seo_rank_reading",
+      seo_rank_target: "seo_rank_target",
+      seo_rank_portfolio: "seo_rank_portfolio",
+      seo_rank_target_removal: "seo_rank_target_removal",
+      provider_run_receipt: "provider_run_receipt",
     });
   });
 });

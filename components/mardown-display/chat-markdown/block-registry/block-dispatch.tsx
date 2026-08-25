@@ -362,6 +362,14 @@ export function isBlockLoading(block: {
  *    collection carries child-kind arrays, so results appear as their
  *    objects close; the collection component delegates every nested instance
  *    to its kind's canonical component (db overrides included).
+ *  - `seo_rank_serp_landscape` + `serp_placement` + `seo_rank_reading` +
+ *    `seo_rank_target` + `seo_rank_portfolio` + `seo_rank_target_removal` +
+ *    the primitive `provider_run_receipt` — the rank / SERP-landscape family
+ *    (Rank Kinds Run), produced ONLY by `applyIrKindRoute`'s compiled-bridge
+ *    flips (`__kind` JSON arrival only — no tag/fence surface). A CONVERGENCE
+ *    family: `serp_placement.result` is a union over the SHIPPED search item
+ *    kinds above, and its component delegates straight through the search
+ *    family's seam rather than re-drawing any of them.
  */
 export type FeSynthesizedBlockType =
   | "media_block"
@@ -406,6 +414,13 @@ export type FeSynthesizedBlockType =
   | "opening_hours"
   | "postal_address"
   | "geo_coordinates"
+  | "seo_rank_serp_landscape"
+  | "serp_placement"
+  | "seo_rank_reading"
+  | "seo_rank_target"
+  | "seo_rank_portfolio"
+  | "seo_rank_target_removal"
+  | "provider_run_receipt"
   | "web_analysis_item"
   | "flow_step_result"
   | "collection_result"
@@ -522,6 +537,13 @@ export type ShapeBlockType =
   | "opening_hours"
   | "postal_address"
   | "geo_coordinates"
+  | "seo_rank_serp_landscape"
+  | "serp_placement"
+  | "seo_rank_reading"
+  | "seo_rank_target"
+  | "seo_rank_portfolio"
+  | "seo_rank_target_removal"
+  | "provider_run_receipt"
   | "chart"
   | "map"
   | "stats"
@@ -1965,6 +1987,21 @@ const SHAPE_BLOCK_DISPATCH = {
   opening_hours: searchKindEntry(BlockComponents.OpeningHoursBlock),
   postal_address: searchKindEntry(BlockComponents.PostalAddressBlock),
   geo_coordinates: searchKindEntry(BlockComponents.GeoCoordinatesBlock),
+
+  // Kind-routed rank / SERP-landscape family (Rank Kinds Run): identical
+  // uniform `{ value, isComplete }` bridge, so the SAME three-branch entry
+  // serves it — never a second copy of this registration shape.
+  seo_rank_serp_landscape: searchKindEntry(
+    BlockComponents.SeoRankSerpLandscapeBlock,
+  ),
+  serp_placement: searchKindEntry(BlockComponents.SerpPlacementBlock),
+  seo_rank_reading: searchKindEntry(BlockComponents.SeoRankReadingBlock),
+  seo_rank_target: searchKindEntry(BlockComponents.SeoRankTargetBlock),
+  seo_rank_portfolio: searchKindEntry(BlockComponents.SeoRankPortfolioBlock),
+  seo_rank_target_removal: searchKindEntry(
+    BlockComponents.SeoRankTargetRemovalBlock,
+  ),
+  provider_run_receipt: searchKindEntry(BlockComponents.ProviderRunReceiptBlock),
 
   // NOTE: like `table` — normally consumed by the unified artifact stage
   // (TranscriptArtifact); preserved legacy path below.

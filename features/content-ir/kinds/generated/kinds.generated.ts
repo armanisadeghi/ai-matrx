@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "f1a6355cdf10";
+export const KIND_REGISTRY_FINGERPRINT = "0fdc72039820";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -9017,7 +9017,7 @@ export interface NewsSearchResults {
 }
 
 /**
- * Kind `newsjacking_expert_article` (registry v2).
+ * Kind `newsjacking_expert_article` (registry v3).
  */
 export interface NewsjackingExpertArticle {
   faqs?: ({
