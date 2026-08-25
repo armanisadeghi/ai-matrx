@@ -116,6 +116,7 @@ const RENDER_BLOCK_SOURCES = [
   "frontend:typed_render_block",
   "frontend:client_only_render_block",
   "frontend:server_only_render_block",
+  "frontend:synthesized_render_block",
 ];
 
 const renderBlockRows = crosswalk.rows.filter((row) =>
@@ -133,13 +134,11 @@ const DETECTOR_PROTOCOL_TOKENS = [
 ];
 
 /**
- * FE-synthesized types with no crosswalk row (documented in
- * block-dispatch.tsx): `media_block` (process-stream wrapper — known W1-C
- * crosswalk-inputs gap) and `generic_structured` (produced only by
- * applyIrKindRoute's R6 fallback).
+ * Resolver-only types with no crosswalk row (documented in
+ * block-dispatch.tsx). `media_block` is not here: the crosswalk now declares
+ * the frontend-synthesized render-block source explicitly.
  */
 const FE_SYNTHESIZED_TYPES = [
-  "media_block",
   "generic_structured",
   // Produced only by applyIrKindRoute's db-override flip (an active
   // source='db' kind_component row winning the resolution).

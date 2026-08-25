@@ -177,7 +177,11 @@ const SCALAR_GENERIC_ITEMS: ReadonlyMap<string, string> = new Map([
   ["audio_output", "generated-media delivery block — media primitive"],
   ["image_output", "generated-media delivery block — media primitive"],
   ["video_output", "generated-media delivery block — media primitive"],
+  ["media_block", "frontend-synthesized canonical media wrapper — media primitive"],
 ]);
+
+/** Render-visible types synthesized by frontend normalization rather than a generated union. */
+const SYNTHESIZED_RENDER_BLOCK_ITEMS = ["media_block"] as const;
 
 /** Deliberately untyped catch-alls. */
 const OPAQUE_ITEMS: ReadonlyMap<string, string> = new Map([
@@ -486,6 +490,11 @@ async function build(): Promise<BuildResult> {
   }
   for (const name of serverBlockTokens.keys()) {
     items.push({ name, source: "frontend:server_only_render_block" });
+  }
+  inputs["frontend:synthesized_render_block"] =
+    `${SYNTHESIZED_RENDER_BLOCK_ITEMS.length} type (process-stream normalization)`;
+  for (const name of SYNTHESIZED_RENDER_BLOCK_ITEMS) {
+    items.push({ name, source: "frontend:synthesized_render_block" });
   }
 
   // 4. Artifact type registry.

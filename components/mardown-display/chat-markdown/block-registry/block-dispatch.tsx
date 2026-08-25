@@ -238,10 +238,9 @@ export function isBlockLoading(block: {
 /**
  * FE-synthesized block types with NO generated-union membership:
  *  - `media_block` — synthesized by process-stream.ts from the `media_block`
- *    data event (document/youtube kinds). NOT yet a crosswalk row (the
- *    crosswalk scans the generated unions; this wrapper predates them) —
- *    known W1-C inputs gap, classified scalar_generic here to match its
- *    audio_output/image_output/video_output siblings.
+ *    data event (document/youtube kinds). The crosswalk declares it through
+ *    `frontend:synthesized_render_block` and classifies it scalar_generic,
+ *    matching its audio_output/image_output/video_output siblings.
  *  - `generic_structured` — produced ONLY by `applyIrKindRoute`'s R6 generic
  *    fallback (a KNOWN shape nothing render-trusted claims); never emitted
  *    upstream, so it has no vocabulary row. Shape-classified by construction.
