@@ -107,7 +107,11 @@ export function RulebookInputsSection({
           {/* THE RECORD — everything the Expert has ever said, one entry
               point on the whole page. Beside the Interviews it explains:
               this is where the content of those interviews lives. */}
-          <YourWordsActions rulebookId={rulebook.id} compact variant="outline" />
+          <YourWordsActions
+            rulebookId={rulebook.id}
+            compact
+            variant="outline"
+          />
           {canEdit ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -121,8 +125,8 @@ export function RulebookInputsSection({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                Every way to build this Rulebook — documents, published work,
-                AI chats, recordings, and more
+                Every way to build this Rulebook — documents, published work, AI
+                chats, recordings, and more
               </TooltipContent>
             </Tooltip>
           ) : null}
@@ -133,11 +137,9 @@ export function RulebookInputsSection({
           (Arman, 2026-08-21): "it needs to say interviews and then show that
           I have one interview. And then… right where it shows interviews,
           there could be a plus icon that I can click to add more." */}
-      <div className="mt-3">
-        <div className="flex items-center gap-1.5">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Interviews
-          </h4>
+      <div className="mt-4 overflow-hidden rounded-md border border-border/70 bg-background/40">
+        <div className="flex min-h-10 items-center gap-2 border-b border-border/70 bg-muted/30 px-3 py-2">
+          <h4 className="text-xs font-semibold text-foreground">Interviews</h4>
           {interviewCount !== null && interviewCount > 0 ? (
             <span className="rounded bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
               {interviewCount}
@@ -149,7 +151,7 @@ export function RulebookInputsSection({
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-5 w-5"
+                  className="ml-auto h-7 w-7"
                   onClick={onStartInterview}
                   aria-label="New interview"
                 >
@@ -163,41 +165,43 @@ export function RulebookInputsSection({
             </Tooltip>
           ) : null}
         </div>
-        <ConversationsSection
-          rulebookId={rulebook.id}
-          rules={rulebook.rules}
-          rulebookVersion={rulebook.version}
-          canEdit={canEdit}
-          onContinue={onContinueInterview}
-          onStartNew={onStartInterview}
-          onCount={setInterviewCount}
-        />
+        <div className="min-w-0">
+          <ConversationsSection
+            rulebookId={rulebook.id}
+            rules={rulebook.rules}
+            rulebookVersion={rulebook.version}
+            canEdit={canEdit}
+            onContinue={onContinueInterview}
+            onStartNew={onStartInterview}
+            onCount={setInterviewCount}
+          />
+        </div>
       </div>
 
       {/* ── RESOURCES — same shape: name, count, add. The pickers stay
           hidden until asked for (collapsedCapture): "not instantly at the
           beginning" — the panel is informational once things exist. */}
-      <div className="mt-3 border-t border-border/60 pt-2">
-        <div className="flex items-center gap-1.5">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Resources
-          </h4>
+      <div className="mt-3 overflow-hidden rounded-md border border-border/70 bg-background/40">
+        <div className="flex min-h-10 items-center gap-2 border-b border-border/70 bg-muted/30 px-3 py-2">
+          <h4 className="text-xs font-semibold text-foreground">Resources</h4>
           {resourceCount !== null && resourceCount > 0 ? (
             <span className="rounded bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
               {resourceCount}
             </span>
           ) : null}
         </div>
-        <RulebookSourcesPanel
-          rulebook={rulebook}
-          canEdit={canEdit}
-          autoOpen={dumpFocus}
-          variant="bare"
-          collapsedCapture
-          onCount={setResourceCount}
-          onRulebookChanged={onRulebookChanged}
-          onIngested={onIngested}
-        />
+        <div className="min-w-0 px-3 pb-3">
+          <RulebookSourcesPanel
+            rulebook={rulebook}
+            canEdit={canEdit}
+            autoOpen={dumpFocus}
+            variant="bare"
+            collapsedCapture
+            onCount={setResourceCount}
+            onRulebookChanged={onRulebookChanged}
+            onIngested={onIngested}
+          />
+        </div>
       </div>
     </section>
   );

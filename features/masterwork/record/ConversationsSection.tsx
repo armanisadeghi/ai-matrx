@@ -97,11 +97,11 @@ export function ConversationsSection({
   return (
     <div data-surface-value="conversations">
       {interviews === null ? (
-        <div className="flex justify-center py-3">
+        <div className="flex justify-center px-3 py-4">
           <LoadingSpinner size="sm" />
         </div>
       ) : interviews.length === 0 ? (
-        <p className="px-1 py-2 text-xs text-muted-foreground">
+        <p className="px-3 py-3 text-xs leading-5 text-muted-foreground">
           No interviews yet. Talk about how you work and rules get drafted as
           you speak
           {canEdit ? (
@@ -119,11 +119,11 @@ export function ConversationsSection({
           .
         </p>
       ) : (
-        <ul className="divide-y divide-border/60">
+        <ul className="divide-y divide-border/70">
           {interviews.map((interview) => (
             <li
               key={interview.conversationId}
-              className="flex items-center gap-2 px-1 py-1.5"
+              className="flex min-h-14 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/20"
             >
               <MessagesSquare
                 className="size-4 shrink-0 text-muted-foreground"
@@ -207,7 +207,12 @@ export function ConversationsSection({
                 ) : (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button asChild size="icon" variant="ghost" className="h-7 w-7">
+                      <Button
+                        asChild
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                      >
                         <Link
                           href={`/chat/${interview.conversationId}`}
                           target="_blank"
@@ -230,7 +235,7 @@ export function ConversationsSection({
       )}
 
       {hiddenCount > 0 ? (
-        <p className="px-1 pt-1 text-[11px] text-muted-foreground">
+        <p className="border-t border-border/70 px-3 py-2 text-[11px] text-muted-foreground">
           {hiddenCount === 1
             ? "1 more interview exists that isn't yours to read."
             : `${hiddenCount} more interviews exist that aren't yours to read.`}

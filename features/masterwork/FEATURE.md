@@ -33,13 +33,13 @@
      the Conductor receives `attachments` (`[{entity_token, id, name}]`) as a NAMED
      variable, and adding an attachable kind changes that list, not the component. The
      session itself is a canonical association: `conversation --(role 'conducting')-->
-     rulebook`, on the same registered pair the Scout's `interview` edge uses. **Every
+rulebook`, on the same registered pair the Scout's `interview` edge uses. **Every
      reader must filter on the role** — an interview is the Expert's own words and feeds the
      Record; a Conductor session is a build conversation ABOUT the rules and must never be
      mistaken for something the Expert said (`record/service.ts` was fixed to filter, in the
      same change).
   2. **It learns what the platform can actually do** from `workflow_catalog
-     action=list_node_types` — the LIVE registry, so the capability list is never a
+action=list_node_types` — the LIVE registry, so the capability list is never a
      hardcoded lie in a prompt.
   3. **It POKES HOLES — the heart.** For every input the method needs it says out loud where
      that input comes from, in exactly one of three buckets: **(a)** I can supply it — naming
@@ -124,12 +124,12 @@
   to get a result should be together, not put all across the fucking code."_ The render
   order is now, top to bottom, and **a new top-level section needs Arman**:
 
-  | # | Section | Owns | Never holds |
-  | --- | --- | --- | --- |
-  | 1 | **Header card** (`RulebookDetailPage`) | Identity (name, description, citation, version + status badges); the MAKE class top-right — share (icon only) · **Quick build** (template) · **Build it with me** (the Conductor); the KPI tiles + progress bar + **ONE** line; the CHECK & FINISH class under the KPIs — **What you've built** · **Check for what's missing** · **Mark as ready**; and the review actions when drafts are waiting | Any way to feed the Rulebook; any second sentence under the bar; a `More` menu (2026-08-21: actions are classed by WHEN THEY HAPPEN and every one carries a tooltip naming its agent — see `common-docs/systems/masterwork/USABILITY-VERDICT-2026-08-21.md`) |
-  | 2 | **Sources** (`RulebookInputsSection`) | EVERY input: interviews (list), attached documents/files/links/workspace things, **Your words** (the record — its ONE entry point on this page), **Add ▾** (a document · published work · AI chats), **New interview**, and **Turn this into rules** | — |
-  | 3 | **Understudy** (`UnderstudyCard`) | The system that already runs, and trying it | — |
-  | 4 | **Rules** | Search · **Add rule** · the grouped rule list (+ per-group "Add here") | Any source/import/interview button |
+  | #   | Section                                | Owns                                                                                                                                                                                                                                                                                                                                                                                               | Never holds                                                                                                                                                                                                                                                  |
+  | --- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | 1   | **Header card** (`RulebookDetailPage`) | Identity (name, description, citation, version + status badges); the MAKE class top-right — share (icon only) · **Quick build** (template) · **Build it with me** (the Conductor); the KPI tiles + progress bar + **ONE** line; the CHECK & FINISH class under the KPIs — **What you've built** · **Check for what's missing** · **Mark as ready**; and the review actions when drafts are waiting | Any way to feed the Rulebook; any second sentence under the bar; a `More` menu (2026-08-21: actions are classed by WHEN THEY HAPPEN and every one carries a tooltip naming its agent — see `common-docs/systems/masterwork/USABILITY-VERDICT-2026-08-21.md`) |
+  | 2   | **Sources** (`RulebookInputsSection`)  | EVERY input: interviews (list), attached documents/files/links/workspace things, **Your words** (the record — its ONE entry point on this page), **Add ▾** (a document · published work · AI chats), **New interview**, and **Turn this into rules**                                                                                                                                               | —                                                                                                                                                                                                                                                            |
+  | 3   | **Understudy** (`UnderstudyCard`)      | The system that already runs, and trying it                                                                                                                                                                                                                                                                                                                                                        | —                                                                                                                                                                                                                                                            |
+  | 4   | **Rules**                              | Search · **Add rule** · the grouped rule list (+ per-group "Add here")                                                                                                                                                                                                                                                                                                                             | Any source/import/interview button                                                                                                                                                                                                                           |
 
   Below the rules, ambient only: the page `AssistStrip`. **Rules of this IA:** one entry
   point per capability (a second "Your words" or "Interview me" anywhere on this page is a
@@ -244,18 +244,18 @@ What each action does to a rule's review state (`draft` / `rejected` /
 `feedback`; the ONE merge for edit-save is `applyManualRuleEdit` in
 `types.ts`):
 
-| Action | `draft` | `rejected` | `feedback` |
-|---|---|---|---|
-| **Approve** (button — row, wizard, Improve review) | cleared | cleared | cleared |
-| **Reject** (with written reason) | `true` | `true` | set to the reason |
-| **Request changes** | unchanged | unchanged | set to the note |
-| **Improve** (rewrite lands) | **`true` — always a draft, never auto-approved** | cleared (the feedback was consumed by the rewrite) | cleared |
-| **Edit + Save, content changed** | **preserved** (a draft stays a draft, approved stays approved) | cleared — the Expert's own hand supersedes the note they wrote for the Scout; the rule returns to THEIR draft queue | cleared |
-| **Edit + Save, nothing changed** | preserved | preserved | preserved |
-| **Reconsider** (rejected → my queue) | `true` | cleared | cleared |
-| **Retire / Restore** | preserved | preserved | preserved |
-| **Manual Add** (window, Manually tab) | absent — the Expert typing it IS the human-first act | — | — |
-| **Add With AI / Improve rewrite** | `true` — every AI-authored rule awaits the explicit Approve | — | — |
+| Action                                             | `draft`                                                        | `rejected`                                                                                                          | `feedback`        |
+| -------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| **Approve** (button — row, wizard, Improve review) | cleared                                                        | cleared                                                                                                             | cleared           |
+| **Reject** (with written reason)                   | `true`                                                         | `true`                                                                                                              | set to the reason |
+| **Request changes**                                | unchanged                                                      | unchanged                                                                                                           | set to the note   |
+| **Improve** (rewrite lands)                        | **`true` — always a draft, never auto-approved**               | cleared (the feedback was consumed by the rewrite)                                                                  | cleared           |
+| **Edit + Save, content changed**                   | **preserved** (a draft stays a draft, approved stays approved) | cleared — the Expert's own hand supersedes the note they wrote for the Scout; the rule returns to THEIR draft queue | cleared           |
+| **Edit + Save, nothing changed**                   | preserved                                                      | preserved                                                                                                           | preserved         |
+| **Reconsider** (rejected → my queue)               | `true`                                                         | cleared                                                                                                             | cleared           |
+| **Retire / Restore**                               | preserved                                                      | preserved                                                                                                           | preserved         |
+| **Manual Add** (window, Manually tab)              | absent — the Expert typing it IS the human-first act           | —                                                                                                                   | —                 |
+| **Add With AI / Improve rewrite**                  | `true` — every AI-authored rule awaits the explicit Approve    | —                                                                                                                   | —                 |
 
 **The Improve verb** (`agent-context/ruleImprove.ts` +
 `components/detail/ImproveRuleDialog.tsx`): the Expert speaks feedback
@@ -278,8 +278,8 @@ the duplicate `masterwork.rule_cleanup` was retired into it 2026-08-17.
 
 ### 🚨 THE FOUR VERBS ARE ONE PRIMITIVE — `features/masterwork/review/`
 
-Arman, 2026-08-18: *"whenever a change is made or an enhancement is made, that enhancement or
-change needs to be made **every single place that that code or logic exists**."* He found the
+Arman, 2026-08-18: _"whenever a change is made or an enhancement is made, that enhancement or
+change needs to be made **every single place that that code or logic exists**."_ He found the
 Final Checkup missing the Improve/Edit verbs the rule-review loop already had. The fix is
 structural, not a sweep:
 
@@ -294,7 +294,7 @@ structural, not a sweep:
   empty (improve / draft-new / tidy). **Never construct a second improve run.**
 
 Consumers: the rule rows on `RulebookDetailPage`, `RuleReviewWizard`, `ImproveRuleDialog`'s own
-before/after (its Improve verb keeps pushing on the *rewrite*), `AddRulePanel`'s "With AI" tab
+before/after (its Improve verb keeps pushing on the _rewrite_), `AddRulePanel`'s "With AI" tab
 (Improve reveals a feedback box and re-runs the same Mandate on the unsaved draft),
 `RuleEditorDialog`'s "Clean up with AI", and the Final Checkup. A surface that genuinely cannot
 offer one of the four must say why in a code comment beside the component.
@@ -319,10 +319,10 @@ human entry point on the Rulebook page routes there. `RuleEditorDialog`'s
 
 🚨 **The BUILD is a WindowPanel too — and it is the one that mattered most.**
 Arman, 2026-08-18, on finding the Build still in a `sm:max-w-lg` dialog a day
-after the Add-rule conversion: *"the beautiful, incredible, highly dynamic …
+after the Add-rule conversion: _"the beautiful, incredible, highly dynamic …
 world-changing user interface I envision for the day I build this incredible
 system — you're telling me all of it's gonna render inside of that shitty
-little fucking model that blocks the page."* Overlay `masterworkBuildWindow` →
+little fucking model that blocks the page."_ Overlay `masterworkBuildWindow` →
 `features/masterwork/build/BuildWindow.tsx`, opened only through
 `useOpenBuildWindow()`; `BuildMasterworkDialog` is **deleted**. Three rules it
 encodes:
@@ -725,10 +725,10 @@ pipeline) is what still takes code. Never hardcode an Approach list again.
 
 ### The whole catalog, three surfaces, ONE card (2026-08-20)
 
-> Arman, looking at a Rulebook: *"there were about twenty of these that I had
+> Arman, looking at a Rulebook: _"there were about twenty of these that I had
 > named. Where are those ones? I wanna see all of them here. I wanna see cards
 > for them. And if they're not available yet, then it needs to say coming
-> soon."* He was right twice over: the registry rendered only inside the
+> soon."_ He was right twice over: the registry rendered only inside the
 > CREATION funnel, and six Approaches he personally approved on 2026-08-17 had
 > no row at all — so the picker he was looking at showed the nine weakest of
 > the fifteen. The catalog with its provenance is
@@ -736,12 +736,12 @@ pipeline) is what still takes code. Never hardcode an Approach list again.
 
 **Two orthogonal flags, and they must never be conflated:**
 
-| field | question it answers |
-|---|---|
-| `enabled` | May this Approach **START** a new Rulebook? Only `/masterwork/new` and the module home filter on it (`startableApproaches()`). |
-| `metadata.availability` | Does this lane **exist in the product at all**? `available` · `partial` · `coming_soon`. |
-| `metadata.launch_href` | For a lane that is not a `/masterwork/[id]` query param, the page that IS its door (`/vision-interview/new`, `/chat`). |
-| `metadata.catalog_number` | The number Arman approved it under in § 3b. |
+| field                     | question it answers                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `enabled`                 | May this Approach **START** a new Rulebook? Only `/masterwork/new` and the module home filter on it (`startableApproaches()`). |
+| `metadata.availability`   | Does this lane **exist in the product at all**? `available` · `partial` · `coming_soon`.                                       |
+| `metadata.launch_href`    | For a lane that is not a `/masterwork/[id]` query param, the page that IS its door (`/vision-interview/new`, `/chat`).         |
+| `metadata.catalog_number` | The number Arman approved it under in § 3b.                                                                                    |
 
 `fetchDistillationApproaches()` returns the **whole** catalog — a filtered
 query is exactly how six approved Approaches went invisible. Consumers filter.
@@ -803,7 +803,7 @@ consumes the canonical `saveRules` CAS from `service.ts` (never a second write p
 re-read retry, since appending is commutative. Rule ids minted via the shared `nextRuleId`.
 `oracle_tap` **is** a `platform.approach` row as of 2026-08-20 (`availability: "partial"`,
 `launch_href: "/chat"`) — it appears on every Approach surface as "The Oracle tap", badged
-*Partly here*, because the in-app half is real and the email-in and SMS halves are not.
+_Partly here_, because the in-app half is real and the email-in and SMS halves are not.
 
 The interview-variant Approaches ride the same session: `ScoutInterviewPanel`'s
 `ELICITATION_CHIPS` now include **"Walk me through a hard case"** (#11 Hardest-Case Debrief — the
@@ -853,9 +853,9 @@ deliberately never produced.
 ### THE JOURNEY — one computation, two readers (2026-08-19)
 
 `features/masterwork/journey.ts` is the **mirror** of aidream
-`services/masterwork_assists/journey.py`, which is the system of record. It answers *where is
-this Rulebook in its life* — intake → distill → review → build → audition → release → encore →
-improve — and *what is the ONE next move*, deterministically, from facts anyone can read. The
+`services/masterwork_assists/journey.py`, which is the system of record. It answers _where is
+this Rulebook in its life_ — intake → distill → review → build → audition → release → encore →
+improve — and _what is the ONE next move_, deterministically, from facts anyone can read. The
 same computation feeds both halves of the page:
 
 - **`RulebookKpiStrip`'s next-step line IS `journey.headline`.** Before this it stopped at
@@ -924,6 +924,10 @@ same computation feeds both halves of the page:
 
 ## Change log
 
+- 2026-08-25 — The Rulebook Sources area now separates Interviews and Resources into
+  two clearly framed list sections. Each item gets a full-width, consistently padded row
+  with aligned metadata and actions; section headers, counts, hover states, and empty/loading
+  spacing now share one visual rhythm on both desktop and narrow screens.
 - 2026-08-23 — Quick Build exposes and enforces the build API's 500-character
   deliverable boundary before launch, with a shared contract helper and regression test.
 
@@ -1051,9 +1055,9 @@ same computation feeds both halves of the page:
   fields into the form, and offers Undo; source evidence and Expert
   classifications are mechanically immutable. Paid results use the shared
   persisted draft store and nothing reaches `saveRules` until the Expert clicks Save.
-  *(Superseded the same day: the Mandate was a duplicate and was retired into
+  _(Superseded the same day: the Mandate was a duplicate and was retired into
   `masterwork.rule_improver`'s tidy shape — see the retirement entry above. The
-  behavior described here is unchanged for the Expert.)*
+  behavior described here is unchanged for the Expert.)_
 - 2026-08-17 — **The Rulebook detail page is now a complete declared surface.**
   `matrx-user/masterwork-rulebook` has a verified code manifest, exact dynamic-route
   recognition, a live `SurfaceRuntimeProvider`, canonical v3 context menus on the page and

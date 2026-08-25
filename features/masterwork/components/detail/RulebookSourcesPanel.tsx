@@ -27,13 +27,7 @@
 // the server re-fetches through the policy-enforcing scraper. The scraped text
 // shown here is preview only and is never persisted or sent.
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -66,11 +60,7 @@ import type { paths } from "@/types/python-generated/api-types";
 import { cn } from "@/lib/utils";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import { writeDumpUrlSources } from "../../service";
-import {
-  dumpUrlSources,
-  type DumpUrlSource,
-  type Rulebook,
-} from "../../types";
+import { dumpUrlSources, type DumpUrlSource, type Rulebook } from "../../types";
 
 /**
  * The registered source→rulebook pairs (`platform.association_types`,
@@ -138,7 +128,9 @@ function parseDumpSummary(raw: unknown): DumpSummary | null {
     if (!item || typeof item !== "object" || Array.isArray(item)) return [];
     const rec = item as Record<string, unknown>;
     const status =
-      rec.status === "ok" || rec.status === "failed" || rec.status === "unsupported"
+      rec.status === "ok" ||
+      rec.status === "failed" ||
+      rec.status === "unsupported"
         ? rec.status
         : null;
     const kind = rec.kind === "entity" || rec.kind === "url" ? rec.kind : null;
@@ -225,7 +217,10 @@ export function RulebookSourcesPanel({
     setOpen(true);
     setCaptureVisible(true);
     const timer = window.setTimeout(() => {
-      sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      sectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }, 150);
     return () => window.clearTimeout(timer);
   }, [autoOpen]);
@@ -263,17 +258,12 @@ export function RulebookSourcesPanel({
   }, [totalSources, onCount]);
 
   const attachedKeys = useMemo(
-    () =>
-      new Set(sourceLinks.map((l) => attachedKey(l.token, l.resourceId))),
+    () => new Set(sourceLinks.map((l) => attachedKey(l.token, l.resourceId))),
     [sourceLinks],
   );
 
   const attachSource = useCallback(
-    async (
-      token: EntityTypeToken,
-      resourceId: string,
-      label?: string | null,
-    ) =>
+    async (token: EntityTypeToken, resourceId: string, label?: string | null) =>
       links.attach(token, resourceId, label ?? undefined, undefined, {
         role: DUMP_ROLE,
       }),
@@ -427,9 +417,7 @@ export function RulebookSourcesPanel({
     try {
       const res = await detachSource(info.token, resourceId);
       if (!res.ok) {
-        toast.error(
-          `Couldn't detach${res.error ? `: ${res.error}` : ""}`,
-        );
+        toast.error(`Couldn't detach${res.error ? `: ${res.error}` : ""}`);
       }
     } finally {
       setBusyKey(null);
@@ -481,24 +469,28 @@ export function RulebookSourcesPanel({
       ) : null}
 
       {open ? (
-        <div className={cn(bare ? "pt-1" : "border-t border-border px-4 pb-4 pt-3")}>
+        <div
+          className={cn(
+            bare ? "pt-1" : "border-t border-border px-4 pb-4 pt-3",
+          )}
+        >
           {!bare ? (
             <p className="text-xs text-muted-foreground">
               Pile in everything that holds your method — notes, transcripts,
               recordings, research, documents — and just as much the files that
               live OUTSIDE this platform: things exported from Google Drive or
               SharePoint, old SOPs, checklists, training decks. Upload or drop
-              them here, attach what already lives in your workspace, or paste
-              a link. Then press one button and it all becomes draft rules for
-              you to approve.
+              them here, attach what already lives in your workspace, or paste a
+              link. Then press one button and it all becomes draft rules for you
+              to approve.
             </p>
           ) : null}
 
           {/* ── capture ──────────────────────────────────────────────── */}
           {canEdit && !captureVisible ? (
-            <div className="mt-1">
+            <div className="pt-3">
               {totalSources > 0 ? (
-                <div className="rounded-md border border-border/60">
+                <div className="overflow-hidden rounded-md border border-border/70 bg-card">
                   <SourceRows
                     sourceLinks={sourceLinks}
                     stagedUrls={stagedUrls}
@@ -514,7 +506,7 @@ export function RulebookSourcesPanel({
                   />
                 </div>
               ) : null}
-              <div className="mt-2">
+              <div className="mt-3">
                 <Button
                   size="sm"
                   variant={totalSources === 0 ? "outline" : "ghost"}
@@ -522,15 +514,13 @@ export function RulebookSourcesPanel({
                   onClick={() => setCaptureVisible(true)}
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  {totalSources === 0
-                    ? "Add your first resource"
-                    : "Add more"}
+                  {totalSources === 0 ? "Add your first resource" : "Add more"}
                 </Button>
               </div>
             </div>
           ) : null}
           {canEdit && captureVisible ? (
-            <div className={cn("rounded-md border border-border/60", !bare && "mt-3")}>
+            <div className="mt-3 overflow-hidden rounded-md border border-border/70 bg-card">
               <AssociationCaptureToolbar
                 attach={captureAttach}
                 uploadFolderPath="Masterwork/Sources"
@@ -631,7 +621,7 @@ export function RulebookSourcesPanel({
             </div>
           ) : null}
           {!canEdit ? (
-            <div className="mt-3 rounded-md border border-border/60">
+            <div className="mt-3 overflow-hidden rounded-md border border-border/70 bg-card">
               <SourceRows
                 sourceLinks={sourceLinks}
                 stagedUrls={stagedUrls}
@@ -675,19 +665,15 @@ export function RulebookSourcesPanel({
                   <div className="text-xs text-destructive">
                     <p>{run.error}</p>
                     <p className="mt-1 text-muted-foreground">
-                      Your attached sources are safe — nothing was lost. Fix
-                      the problem (or try again later) and press the button
-                      again.
+                      Your attached sources are safe — nothing was lost. Fix the
+                      problem (or try again later) and press the button again.
                     </p>
                   </div>
                 </div>
               ) : null}
 
               {run.result ? (
-                <DumpOutcomes
-                  summary={run.result}
-                  onDone={() => run.reset()}
-                />
+                <DumpOutcomes summary={run.result} onDone={() => run.reset()} />
               ) : null}
 
               {!run.result ? (
@@ -703,7 +689,9 @@ export function RulebookSourcesPanel({
                     ) : (
                       <Hammer className="mr-1 h-4 w-4" />
                     )}
-                    {run.running ? "Turning it into rules…" : "Turn this into rules"}
+                    {run.running
+                      ? "Turning it into rules…"
+                      : "Turn this into rules"}
                   </Button>
                   {totalSources === 0 ? (
                     <span className="text-xs text-muted-foreground">
@@ -771,17 +759,20 @@ function SourceRows({
     );
   }
   return (
-    <ul className="divide-y divide-border/60">
+    <ul className="divide-y divide-border/70">
       {sourceLinks.map((link) => {
         const info = tryGetEntityInfo(link.token);
         const key = attachedKey(link.token, link.resourceId);
         const unsupported = UNSUPPORTED_TOKENS.has(link.token);
         return (
-          <li key={key} className="flex items-start gap-2 px-3 py-2">
+          <li
+            key={key}
+            className="flex min-h-14 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/20"
+          >
             {info ? (
-              <info.Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <info.Icon className="size-4 shrink-0 text-muted-foreground" />
             ) : (
-              <Link2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <Link2 className="size-4 shrink-0 text-muted-foreground" />
             )}
             <div className="min-w-0 flex-1">
               {/* THE DOOR LAW: the source's name opens it (registry route +
@@ -813,7 +804,7 @@ function SourceRows({
                 title="Detach this source"
                 disabled={busyKey === key}
                 onClick={() => void onDetach(link.token, link.resourceId)}
-                className="mt-0.5 shrink-0 text-muted-foreground/60 transition-colors hover:text-destructive disabled:opacity-50"
+                className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
               >
                 {busyKey === key ? (
                   <Loader2 className="size-3.5 animate-spin" />
@@ -826,8 +817,11 @@ function SourceRows({
         );
       })}
       {stagedUrls.map((staged) => (
-        <li key={staged.url} className="flex items-start gap-2 px-3 py-2">
-          <Globe className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        <li
+          key={staged.url}
+          className="flex min-h-14 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/20"
+        >
+          <Globe className="size-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0 flex-1">
             <a
               href={staged.url}
@@ -847,7 +841,7 @@ function SourceRows({
               type="button"
               title="Remove this link"
               onClick={() => onRemoveUrl(staged.url)}
-              className="mt-0.5 shrink-0 text-muted-foreground/60 transition-colors hover:text-destructive"
+              className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
             >
               <X className="size-3.5" />
             </button>
