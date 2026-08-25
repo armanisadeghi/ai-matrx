@@ -11,8 +11,9 @@ Scope: the podcast **feature image** (transcript-derived extra image + style opt
 **blog page** look, the run-page **cover-art grid**, and the platform bar Arman set — *no blocking
 spinners anywhere; results stream in real time*. Two sibling handoffs own adjacent podcast work and
 must NOT be duplicated here: generation pipeline (gates/casts/chapters/languages) →
-`docs/handoffs/podcast-system.md`; live run-page liveness + research feed →
-`docs/handoffs/podcast-run-liveness-and-research-feed.md`. Living state of the whole feature:
+`docs/handoffs/podcast-system.md`; live run-page liveness + the
+research feed → `/Users/armanisadeghi/code/common-docs/systems/knowledge/research/HANDOFF.md` § 8
+(that handoff was consolidated into the research node kit 2026-08-25). Living state of the whole feature:
 `features/podcasts/FEATURE.md` (read its top Change Log entries first).
 
 ## Vision — Arman's words
@@ -62,7 +63,8 @@ must NOT be duplicated here: generation pipeline (gates/casts/chapters/languages
 3. **The streaming bar is a standing standard, not a closed ticket.** "Need an idea?" is fixed;
    audit every remaining agent-backed action for a blocking spinner and stream it via the same
    primitive. The run-page cover-art / video cards still read as static "Queued" tiles during the
-   multi-minute image wait — owned by `docs/handoffs/podcast-run-liveness-and-research-feed.md`;
+   multi-minute image wait — **this handoff now owns that item** (inherited 2026-08-25 when
+   `podcast-run-liveness-and-research-feed.md` was consolidated into the research node kit);
    make them feel alive (per-card progress / streamed prompt already shows, but the wait is long).
 4. **Eyeball two real runs post-deploy (both live, not yet visually watched end-to-end):** (a) the
    "Need an idea?" dialog streaming options in one at a time; (b) a full generate producing the 6th

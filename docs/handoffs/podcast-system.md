@@ -13,7 +13,8 @@ system (incl. the runs/recovery/per-asset-regen subsystem) is `features/podcasts
 do not restate it here.
 
 This handoff covers the **generation pipeline** (gates, casts, chapters, languages). Siblings:
-live run page + research feed → `docs/handoffs/podcast-run-liveness-and-research-feed.md`;
+live run page + research feed →
+`/Users/armanisadeghi/code/common-docs/systems/knowledge/research/HANDOFF.md` § 8;
 feature image / blog / media polish → `docs/handoffs/podcast-media-and-streaming-polish.md`;
 voice/cast diversity + voice-selection UX → `docs/handoffs/podcast-voice-diversity.md`.
 
