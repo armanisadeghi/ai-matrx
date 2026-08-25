@@ -700,10 +700,12 @@ export function PackReview({
                       </span>
                     </div>
                     <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-                      {live.length === 0 && item.matchers.length === 0
+                      {item.matchers.length === 0
                         ? `Applies when a keyword is already detected as “${item.label}” — the pack only says what that is worth here.`
-                        : `Fires when the search ${live.map((m) => describeMatcher(m)).join(", or ")}`}
-                      {off > 0 ? (
+                        : live.length === 0
+                          ? `Carries ${off} phrase${off === 1 ? "" : "s"} for this, every one of them switched OFF — adopting will never re-label your keywords behind your back. Turn on the ones you agree with on the Dimensions screen.`
+                          : `Fires when the search ${live.map((m) => describeMatcher(m)).join(", or ")}`}
+                      {off > 0 && live.length > 0 ? (
                         <>
                           {" "}
                           <span className="text-muted-foreground/80">
