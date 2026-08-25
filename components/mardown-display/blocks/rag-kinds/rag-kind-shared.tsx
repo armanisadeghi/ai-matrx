@@ -107,7 +107,20 @@ export function citationInputForSourceRef(
     title?: string | null;
     excerpt?: string | null;
   },
-  extras?: { chunkId?: string | null; pageNumber?: number | null; query?: string | null },
+  extras?: {
+    chunkId?: string | null;
+    pageNumber?: number | null;
+    query?: string | null;
+    /**
+     * The passage the citation came from. 🚨 PASS IT WHENEVER YOU HAVE IT.
+     * Measured 2026-08-25: every `library_doc` chunk in the platform (314 of
+     * 314) has no processed document behind it, so the inspector cannot show a
+     * page — and with no snippet it opened on "No preview available for this
+     * source", which reads to a user as a window that does not work. The
+     * matched passage IS the content in that case.
+     */
+    snippet?: string | null;
+  },
 ): CitationInput | null {
   const sourceId = text(source.source_id) ?? text(source.url);
   if (!sourceId) return null;
@@ -119,7 +132,7 @@ export function citationInputForSourceRef(
     href,
     chunkId: extras?.chunkId ?? null,
     pageNumber: extras?.pageNumber ?? null,
-    snippet: text(source.excerpt),
+    snippet: text(extras?.snippet) ?? text(source.excerpt),
     fileName: text(source.title),
     query: extras?.query ?? null,
   };

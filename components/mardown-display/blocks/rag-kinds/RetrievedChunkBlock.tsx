@@ -127,6 +127,9 @@ export function RetrievedChunkBlock({
         chunkId,
         pageNumber: view.pageNumber,
         query,
+        // The passage itself — so the window that opens has the matched text
+        // even when the source has no page extraction behind it.
+        snippet: body,
       })
     : null;
 

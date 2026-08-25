@@ -197,6 +197,26 @@ const NestedCell: React.FC<{
   const [open, setOpen] = React.useState(false);
   const openWindow = useOpenStructuredValueWindow();
   const summary = structureSummary(value);
+  const isEmpty = Array.isArray(value)
+    ? value.length === 0
+    : Object.keys(value as object).length === 0;
+
+  // An empty list / empty record has nothing to expand and nothing to open —
+  // offering both controls would be two doors onto an empty room.
+  if (isEmpty) {
+    return (
+      <span
+        className="select-none text-muted-foreground/60"
+        title={
+          Array.isArray(value)
+            ? "The source stored a list with nothing in it."
+            : "The source stored a record with no fields in it."
+        }
+      >
+        {summary}
+      </span>
+    );
+  }
 
   return (
     <div className="flex min-w-0 flex-col gap-0.5">

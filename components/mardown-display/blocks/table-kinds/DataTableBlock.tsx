@@ -499,9 +499,10 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
                 ) : null}
                 {more.pending
                   ? "Getting the rest…"
-                  : totalRowCount !== null
-                    ? `Get all ${totalRowCount.toLocaleString()} rows`
-                    : "Get the rest"}
+                  : (more.moreLabel ??
+                    (totalRowCount !== null
+                      ? `Get all ${totalRowCount.toLocaleString()} rows`
+                      : "Get the rest"))}
               </button>
               {more.limitNote ? (
                 <span className="opacity-80">{more.limitNote}</span>

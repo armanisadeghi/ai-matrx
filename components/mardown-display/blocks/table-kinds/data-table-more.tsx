@@ -48,6 +48,13 @@ export interface DataTableMoreContextValue {
   pending?: boolean;
   /** Ceiling the HOST cannot exceed, in plain words. Shown, never hidden. */
   limitNote?: string | null;
+  /**
+   * What the button PROMISES, when the host can do better (or worse) than
+   * "all of them". 🚨 Only the host knows its own ceiling, so only the host may
+   * write this label: a button reading "Get all 2,955 rows" on a read that
+   * tops out at 100 is the same broken promise as a banner with no button.
+   */
+  moreLabel?: string | null;
 }
 
 const DataTableMoreContext =

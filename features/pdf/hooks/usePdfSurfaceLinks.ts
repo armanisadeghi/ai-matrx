@@ -81,7 +81,20 @@ async function resolveIds(opts: {
       .is("deleted_at", null)
       .eq("id", processedDocumentId)
       .maybeSingle();
-    if (doc?.source_kind === "cld_file" && doc.source_id) {
+    if (!doc) {
+      // 🚨 AN ID THAT RESOLVES TO NOTHING IS NOT A DOCUMENT ID.
+      // This used to echo the caller's id straight back, so every consumer's
+      // "do we have a document?" test (`Boolean(processedDocumentId)`) said YES
+      // for an id with no row behind it — and then asked the server for that
+      // document's pages and got a 404 it rendered as a red error.
+      // Measured 2026-08-25: retrieval's `library_doc` source_kind carries a
+      // `rag.library_docs` id, NOT a `docproc.processed_documents` id — all 314
+      // such chunks — so the Source Inspector opened on "The requested resource
+      // was not found" every single time (Arman: "the window panel doesn't
+      // work, which tells me someone didn't wire something correctly").
+      // Answering "no document" lets every consumer fall back honestly.
+      processedDocumentId = null;
+    } else if (doc.source_kind === "cld_file" && doc.source_id) {
       fileId = doc.source_id;
     }
   }
