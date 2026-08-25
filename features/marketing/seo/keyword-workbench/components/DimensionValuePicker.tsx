@@ -22,6 +22,7 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Eraser, PenLine } from "lucide-react";
 
 import { toast } from "@/lib/toast";
 import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
@@ -47,6 +48,9 @@ export function DimensionValuePicker({
   onPicked,
   /** Fix the dimension when the gesture already chose one (a column, a cell). */
   lockedDimensionSlug,
+  variant = "form",
+  onClear,
+  onAssignWithReason,
 }: {
   siteId: string;
   dimensions: FacetDimension[];
@@ -54,6 +58,10 @@ export function DimensionValuePicker({
   picked: PickedValue | null;
   onPicked: (next: PickedValue | null) => void;
   lockedDimensionSlug?: string;
+  /** `cell` keeps the same picker visible in assigned and empty table cells. */
+  variant?: "form" | "cell";
+  onClear?: () => void;
+  onAssignWithReason?: () => void;
 }) {
   const queryClient = useQueryClient();
   /** A dimension chosen but not yet paired with a value. */
@@ -135,8 +143,10 @@ export function DimensionValuePicker({
       ? "Naming a new dimension…"
       : "Dimension";
 
+  const cell = variant === "cell";
+
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
+    <div className={cell ? "min-w-0" : "grid gap-2 sm:grid-cols-2"}>
       {locked ? null : (
         <CreatablePicker
           value={activeDimension?.dimension_id ?? null}
@@ -189,7 +199,9 @@ export function DimensionValuePicker({
           });
         }}
         placeholder={
-          newDimensionLabel
+          cell
+            ? "Unassigned"
+            : newDimensionLabel
             ? `First value for “${newDimensionLabel}”`
             : newDimensionLabel === ""
               ? "Name the dimension first"
@@ -201,17 +213,58 @@ export function DimensionValuePicker({
         noun="value"
         disabled={!activeDimension && !newDimensionLabel}
         loading={loading}
-        ariaLabel="Value"
+        ariaLabel={
+          cell
+            ? `${activeDimension?.label ?? "Dimension"} value`
+            : "Value"
+        }
         emptyLabel={
           newDimensionLabel !== null
             ? "Type what this new dimension's first value should be."
             : "Nothing by that name yet — type it and add it."
         }
-        className={locked ? "sm:col-span-2" : undefined}
+        className={
+          cell
+            ? "h-auto min-h-6 border-0 px-1 py-0.5 shadow-none hover:bg-accent"
+            : locked
+              ? "sm:col-span-2"
+              : undefined
+        }
+        renderSelected={
+          cell && picked ? (
+            <span className="block min-w-0 truncate text-[11px] text-foreground">
+              {picked.valueLabel}
+            </span>
+          ) : undefined
+        }
+        footerActions={
+          cell
+            ? [
+                ...(picked && onClear
+                  ? [
+                      {
+                        label: "Clear this value",
+                        icon: Eraser,
+                        onSelect: onClear,
+                      },
+                    ]
+                  : []),
+                ...(onAssignWithReason
+                  ? [
+                      {
+                        label: "Assign with a reason…",
+                        icon: PenLine,
+                        onSelect: onAssignWithReason,
+                      },
+                    ]
+                  : []),
+              ]
+            : undefined
+        }
         onCreate={createValue}
       />
 
-      {newDimensionLabel !== null ? (
+      {!cell && newDimensionLabel !== null ? (
         <p className="text-[11px] leading-snug text-muted-foreground sm:col-span-2">
           {newDimensionLabel
             ? `New dimension “${newDimensionLabel}” — it becomes yours the moment you add its first value.`

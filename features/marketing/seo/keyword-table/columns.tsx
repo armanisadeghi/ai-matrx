@@ -24,6 +24,7 @@ import Link from "next/link";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
 import { buildGscMetricColumns } from "@/features/marketing/search-console/lib/columns";
+import { GSC_COMPACT_COLUMN_LABELS } from "@/features/marketing/search-console/lib/columns";
 import type { GscBreakdownRow } from "@/features/marketing/search-console/types";
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
@@ -282,12 +283,36 @@ export function buildKeywordColumns({
         if (!row.keyword_id) {
           return <span className="text-[11px] text-muted-foreground">—</span>;
         }
+        if (!dimension) {
+          return (
+            <span
+              className="block h-5 w-20 animate-pulse rounded bg-muted"
+              aria-label={`Loading ${label} choices`}
+            />
+          );
+        }
         return (
           <StampCell
-            label={stamp?.valueLabel ?? null}
+            siteId={siteId}
+            dimension={dimension}
+            dimensions={data.dimensionCatalog}
+            current={
+              stamp
+                ? {
+                    dimensionId: dimension.dimension_id,
+                    dimensionSlug: dimension.slug,
+                    dimensionLabel: dimension.label,
+                    valueId: stamp.valueId,
+                    valueLabel: stamp.valueLabel,
+                  }
+                : null
+            }
             source={stamp?.source ?? null}
             notes={stamp?.notes ?? null}
-            onAssign={() =>
+            onPick={(picked) =>
+              handlers.onQuickAssign([row.keyword_id as string], picked)
+            }
+            onAssignWithReason={() =>
               handlers.onAssign(
                 row.keyword_id as string,
                 row.key,
@@ -302,6 +327,16 @@ export function buildKeywordColumns({
                     }
                   : null,
               )
+            }
+            onClear={
+              stamp
+                ? () =>
+                    handlers.onQuickClear(
+                      [row.keyword_id as string],
+                      stamp.valueId,
+                      dimension.label,
+                    )
+                : undefined
             }
             onFilter={
               stamp ? () => handlers.onFilterByStamp(slug, stamp.value) : undefined
@@ -338,7 +373,7 @@ export function buildKeywordColumns({
   if (shown.has("value_score")) {
     columns.push({
       id: "value_score",
-      header: "Score",
+      header: GSC_COMPACT_COLUMN_LABELS.score,
       sortable: true,
       filter: false,
       align: "right",
@@ -361,7 +396,7 @@ export function buildKeywordColumns({
   if (shown.has("value_band")) {
     columns.push({
       id: "value_band",
-      header: "Level",
+      header: GSC_COMPACT_COLUMN_LABELS.level,
       sortable: true,
       // Level filters on the SERVER (`levels` → `lv=`), so the funnel on this
       // column means the whole list, not the fifty rows on screen.

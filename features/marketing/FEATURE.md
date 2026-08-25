@@ -558,6 +558,18 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-25 — Codex: **Website navigation now follows website context, not one
+  lucky pathname shape.** Marketing still has one canonical sidebar component,
+  but its selector previously recognized only the brand-first
+  `/marketing/brands/{brand}/sites/{site}` subtree. The same website therefore
+  fell back to the general Marketing pillars on its Content Plan, selected
+  Search Console and Capabilities workspaces, and while legacy site links were
+  resolving. `lib/sidebar-site-context.ts` is now the single route-boundary
+  declaration for those established shapes; `MarketingSidebarMenu` recovers an
+  unknown brand through the existing site query and renders the same grouped
+  website sections throughout. Portfolio pages and standalone shared records
+  deliberately remain in the general Marketing menu because they identify no
+  single website. A focused route matrix pins both sides of the cutoff.
 - 2026-08-24 — Codex: **The GA4 stream now proves tenant identity end to end.**
   The site organization is validated before frontend dispatch, required by the
   backend OpenAPI operation, matched against the authorized site, and preserved

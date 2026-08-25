@@ -36,6 +36,16 @@ export interface GscMetricRowShape {
   cmp_avg_position: number | null;
 }
 
+/** Compact spreadsheet headers shared by every keyword-performance table. */
+export const GSC_COMPACT_COLUMN_LABELS = {
+  clicks: "CLICK",
+  impressions: "IMPR",
+  ctr: "CTR",
+  position: "POS",
+  score: "SCORE",
+  level: "LEVEL",
+} as const;
+
 export function gscKeyCell(dimension: GscDimension, key: string): string {
   if (dimension === "country") return countryLabel(key);
   if (dimension === "device") return deviceLabel(key);
@@ -149,7 +159,7 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
     {
       id: "clicks",
       accessorKey: "clicks",
-      header: "Clicks",
+      header: GSC_COMPACT_COLUMN_LABELS.clicks,
       align: "right",
       width: 76,
       // MSR-03/04 — server-side range filter (`clicks_min`/`clicks_max`,
@@ -183,7 +193,7 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
     {
       id: "impressions",
       accessorKey: "impressions",
-      header: "Impressions",
+      header: GSC_COMPACT_COLUMN_LABELS.impressions,
       align: "right",
       width: 92,
       filter: "number",
@@ -216,7 +226,7 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
     {
       id: "ctr",
       accessorKey: "ctr",
-      header: "CTR",
+      header: GSC_COMPACT_COLUMN_LABELS.ctr,
       align: "right",
       width: 68,
       // MSR-03/04 — new server-side range (`ctr_min`/`ctr_max`, fraction
@@ -254,7 +264,7 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
     {
       id: "position",
       accessorKey: "avg_position",
-      header: "Position",
+      header: GSC_COMPACT_COLUMN_LABELS.position,
       align: "right",
       width: 76,
       // MSR-03/04 — server-side range filter (`position_min`/`position_max`,
@@ -406,7 +416,7 @@ export function buildGscValueColumns<T>(
     },
     {
       id: "value_score",
-      header: "Score",
+      header: GSC_COMPACT_COLUMN_LABELS.score,
       // MSR-03/04 — server-side sort (`p_sort: 'value_score'`) and range
       // filter (`value_score_min`/`value_score_max`).
       sortable: true,
@@ -427,7 +437,7 @@ export function buildGscValueColumns<T>(
     },
     {
       id: "value_band",
-      header: "Level",
+      header: GSC_COMPACT_COLUMN_LABELS.level,
       // MSR-03/04 — server-side sort (`p_sort: 'value_band'`) and filter
       // (rides the EXISTING `levels` RPC filter, unchanged since C6).
       sortable: true,

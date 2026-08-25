@@ -115,6 +115,7 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
+import { GSC_COMPACT_COLUMN_LABELS } from "@/features/marketing/search-console/lib/columns";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import {
   getSiteMeaningHealth,
@@ -162,7 +163,7 @@ import { BandScoreboard } from "./BandScoreboard";
 import { ValueKpiBand } from "./ValueKpiBand";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { ReasonChainDetail, ReasonChainInline } from "./ReasonChain";
+import { ReasonChainDetail } from "./ReasonChain";
 import { MeaningPanel } from "./MeaningPanel";
 import { MeaningHealth } from "./MeaningHealth";
 import { ReadyDefaultsBanner } from "../packs/ReadyDefaultsBanner";
@@ -481,7 +482,7 @@ export function ValueWorkbench() {
     ]);
   };
 
-  const quickAssignClass = async (keywordId: string, picked: PickedValue) => {
+  const quickAssignStamp = async (keywordId: string, picked: PickedValue) => {
     try {
       const result = await setKeywordStamps({
         siteId,
@@ -490,7 +491,28 @@ export function ValueWorkbench() {
       });
       await refreshAfterStamp();
       toast.success(
-        `Class: ${picked.valueLabel} — ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}.`,
+        `${picked.dimensionLabel}: ${picked.valueLabel} — ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}.`,
+      );
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    }
+  };
+
+  const quickClearStamp = async (
+    keywordId: string,
+    valueId: string,
+    dimensionLabel: string,
+  ) => {
+    try {
+      const result = await setKeywordStamps({
+        siteId,
+        keywordIds: [keywordId],
+        valueId,
+        clear: true,
+      });
+      await refreshAfterStamp();
+      toast.success(
+        `${dimensionLabel} cleared on ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`,
       );
     } catch (error) {
       toast.error(extractErrorMessage(error));
@@ -715,6 +737,47 @@ export function ValueWorkbench() {
         </span>
       ),
     },
+    {
+      // Keyword stays the frozen identity column; Class is the first editable
+      // meaning column, followed by the site's own dimensions.
+      id: "traffic_class",
+      accessorKey: "traffic_class",
+      header: "Class",
+      sortable: false,
+      filter: false,
+      mobileHidden: true,
+      width: 150,
+      cell: (row) => (
+        <ClassCell
+          current={row.traffic_class || null}
+          source={null}
+          options={classOptions}
+          disabled={!row.keyword_id || !classDimension}
+          onPick={(value) => {
+            if (!row.keyword_id || !classDimension) return;
+            void quickAssignStamp(row.keyword_id, {
+              dimensionId: classDimension.dimension_id,
+              dimensionSlug: classDimension.slug,
+              dimensionLabel: classDimension.label,
+              valueId: value.value_id,
+              valueLabel: value.label,
+            });
+          }}
+          onAssignWithReason={() =>
+            surfaces.openDimension(
+              { phrase: row.keyword, keywordId: row.keyword_id },
+              "traffic_class",
+            )
+          }
+          onMakeYourOwn={() =>
+            surfaces.openDimension({
+              phrase: row.keyword,
+              keywordId: row.keyword_id,
+            })
+          }
+        />
+      ),
+    },
     // THE QUESTIONS COME FIRST (Arman, 2026-08-25). These sat after Clicks
     // and Impressions, which put them off the right edge of the screen — so
     // the page still read as "set the level" even once the columns defaulted
@@ -745,16 +808,49 @@ export function ValueWorkbench() {
           stamps.data?.get(row.keyword_id)?.get(slug)?.valueLabel ?? "",
         cell: (row) => {
           const stamp = stamps.data?.get(row.keyword_id)?.get(slug);
+          if (!dimension) {
+            return (
+              <span
+                className="block h-5 w-20 animate-pulse rounded bg-muted"
+                aria-label={`Loading ${label} choices`}
+              />
+            );
+          }
           return (
             <StampCell
-              label={stamp?.valueLabel ?? null}
+              siteId={siteId}
+              dimension={dimension}
+              dimensions={dimensions}
+              current={
+                stamp
+                  ? {
+                      dimensionId: dimension.dimension_id,
+                      dimensionSlug: dimension.slug,
+                      dimensionLabel: dimension.label,
+                      valueId: stamp.valueId,
+                      valueLabel: stamp.valueLabel,
+                    }
+                  : null
+              }
               source={stamp?.source ?? null}
               notes={stamp?.notes ?? null}
-              onAssign={() =>
+              loading={dimensionCatalog.isLoading}
+              onPick={(picked) => void quickAssignStamp(row.keyword_id, picked)}
+              onAssignWithReason={() =>
                 surfaces.openDimension(
                   { phrase: row.keyword, keywordId: row.keyword_id },
                   slug,
                 )
+              }
+              onClear={
+                stamp
+                  ? () =>
+                      void quickClearStamp(
+                        row.keyword_id,
+                        stamp.valueId,
+                        dimension.label,
+                      )
+                  : undefined
               }
             />
           );
@@ -762,9 +858,78 @@ export function ValueWorkbench() {
       };
     }),
     {
+      id: "value_source",
+      accessorKey: "value_source",
+      header: "Decided by",
+      sortable: false,
+      filter: "select",
+      filterSingle: true,
+      filterOptions: (
+        Object.keys(SOURCE_META) as ValueSource[]
+      ).map((key) => ({ value: key, label: SOURCE_META[key].label })),
+      mobileHidden: true,
+      cell: (row) => <SourceChip source={row.value_source} />,
+    },
+    {
+      id: "clicks",
+      accessorKey: "clicks",
+      header: GSC_COMPACT_COLUMN_LABELS.clicks,
+      filter: false,
+      align: "right",
+      width: 80,
+      cell: (row) => (
+        <span className="text-xs tabular-nums">{formatCount(row.clicks)}</span>
+      ),
+    },
+    {
+      id: "impressions",
+      accessorKey: "impressions",
+      header: GSC_COMPACT_COLUMN_LABELS.impressions,
+      filter: false,
+      align: "right",
+      width: 100,
+      mobileHidden: true,
+      cell: (row) => (
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {formatCount(row.impressions)}
+        </span>
+      ),
+    },
+    {
+      id: "score",
+      header: GSC_COMPACT_COLUMN_LABELS.score,
+      accessorFn: (row) => row.value_score,
+      filter: false,
+      align: "right",
+      width: 70,
+      mobileHidden: true,
+      cell: (row) => {
+        const override = row.reasons?.find((r) => r.kind === "override");
+        const computed =
+          override && override.kind === "override"
+            ? override.computed_score
+            : null;
+        if (row.value_score == null && computed != null) {
+          return (
+            <span
+              className="text-xs tabular-nums text-muted-foreground/70"
+              title="What this works out to. Your ruling decides the level; this is the number it overruled."
+            >
+              ({formatScore(computed)})
+            </span>
+          );
+        }
+        return (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {formatScore(row.value_score)}
+          </span>
+        );
+      },
+    },
+    {
       id: "value_band",
       accessorKey: "value_band",
-      header: "Level",
+      header: GSC_COMPACT_COLUMN_LABELS.level,
       sortable: false,
       filter: "select",
       filterSingle: true,
@@ -805,131 +970,6 @@ export function ValueWorkbench() {
             })
           }
         />
-      ),
-    },
-    {
-      id: "score",
-      header: "Score",
-      accessorFn: (row) => row.value_score,
-      filter: false,
-      align: "right",
-      width: 70,
-      mobileHidden: true,
-      // KI-054 — an overridden row used to show a dash here, because the
-      // resolver did not compute a score for it at all. It does now, so the
-      // machine's number is shown in brackets: your ruling decides the level,
-      // and you can still see the working-out you overruled.
-      cell: (row) => {
-        const override = row.reasons?.find((r) => r.kind === "override");
-        const computed =
-          override && override.kind === "override" ? override.computed_score : null;
-        if (row.value_score == null && computed != null) {
-          return (
-            <span
-              className="text-xs tabular-nums text-muted-foreground/70"
-              title="What this works out to. Your ruling decides the level; this is the number it overruled."
-            >
-              ({formatScore(computed)})
-            </span>
-          );
-        }
-        return (
-          <span className="text-xs tabular-nums text-muted-foreground">
-            {formatScore(row.value_score)}
-          </span>
-        );
-      },
-    },
-    {
-      id: "why",
-      header: "Why this level",
-      sortable: false,
-      filter: false,
-      className: "min-w-[260px] max-w-[420px]",
-      cell: (row) => (
-        <ReasonChainInline reasons={row.reasons} source={row.value_source} />
-      ),
-    },
-    {
-      id: "value_source",
-      accessorKey: "value_source",
-      header: "Decided by",
-      sortable: false,
-      filter: "select",
-      filterSingle: true,
-      filterOptions: (
-        Object.keys(SOURCE_META) as ValueSource[]
-      ).map((key) => ({ value: key, label: SOURCE_META[key].label })),
-      mobileHidden: true,
-      cell: (row) => <SourceChip source={row.value_source} />,
-    },
-    {
-      // THE SAME CONTROL AS THE KEYWORD WORKBENCH — see the note beside
-      // `assignTarget` above. "Class" is the everyday word (ratified
-      // vocabulary); "Traffic class" was the internal one.
-      id: "traffic_class",
-      accessorKey: "traffic_class",
-      header: "Class",
-      sortable: false,
-      filter: false,
-      mobileHidden: true,
-      width: 150,
-      cell: (row) => (
-        <ClassCell
-          current={row.traffic_class || null}
-          source={null}
-          options={classOptions}
-          disabled={!row.keyword_id || !classDimension}
-          onPick={(value) => {
-            if (!row.keyword_id || !classDimension) return;
-            void quickAssignClass(row.keyword_id, {
-              dimensionId: classDimension.dimension_id,
-              dimensionSlug: classDimension.slug,
-              dimensionLabel: classDimension.label,
-              valueId: value.value_id,
-              valueLabel: value.label,
-            });
-          }}
-          onAssignWithReason={() =>
-            surfaces.openDimension(
-              { phrase: row.keyword, keywordId: row.keyword_id },
-              "traffic_class",
-            )
-          }
-          onMakeYourOwn={() =>
-            // No locked dimension: the picker opens on the whole catalog and
-            // will create a dimension of their own from whatever they type.
-            surfaces.openDimension({
-              phrase: row.keyword,
-              keywordId: row.keyword_id,
-            })
-          }
-        />
-      ),
-    },
-    {
-      id: "clicks",
-      accessorKey: "clicks",
-      header: "Clicks",
-      filter: false,
-      align: "right",
-      width: 80,
-      cell: (row) => (
-        <span className="text-xs tabular-nums">{formatCount(row.clicks)}</span>
-      ),
-    },
-    {
-      id: "impressions",
-      accessorKey: "impressions",
-      header: "Impressions",
-      filter: false,
-      align: "right",
-      width: 100,
-      mobileHidden: true,
-      cell: (row) => (
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {formatCount(row.impressions)}
-        </span>
       ),
     },
   ];

@@ -596,14 +596,13 @@ export function GscDimensionTable({
     levelFilterOptions,
   );
   const valueColumns = {
-    traffic_class: classCol,
+    traffic_class: { ...classCol, width: 150 },
     value_score: scoreCol,
     value_band: bandCol,
   };
 
   // MSR-06 — ONE definition, shared with the keyword table (P26). Narrower
-  // here than there (MSR-07 gave this table fixed, tight identity columns);
-  // the cell stacks the offering over its root, so 180px still reads.
+  // here than there, but wide enough to read both the offering and its root.
   const offeringCol = buildKeywordOfferingColumn({
     siteId,
     services,
@@ -625,7 +624,7 @@ export function GscDimensionTable({
     // `mismatch` class, and the server requires a written reason for it that a
     // one-click door cannot collect — the same reason the Class cell above
     // omits it.
-    width: 180,
+    width: 270,
   });
 
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [

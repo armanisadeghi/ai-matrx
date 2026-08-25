@@ -13,8 +13,13 @@
  * Two states, one component, both driven by the SAME declarations every other
  * marketing map reads — so this menu cannot drift from the hub, the landing, or
  * the global flyout:
- *   • outside a site → `MARKETING_PILLARS` (features/marketing/lib/marketing-nav.ts)
- *   • inside a site  → `listMarketingSiteModeGroups` (lib/route-sections.ts)
+ *   • outside website context → `MARKETING_PILLARS` (lib/marketing-nav.ts)
+ *   • inside website context  → `listMarketingSiteModeGroups`
+ *     (lib/route-sections.ts)
+ *
+ * Website context is resolved once in `lib/sidebar-site-context.ts`; it follows
+ * the website across brand-first pages, legacy redirects, Content Plan, Search
+ * Console, and Capabilities instead of changing menus when the URL shape does.
  *
  * `RouteMenuSlot` owns switching, collapse, the mobile presentation, and the
  * reversible Main Menu control. This component only renders registry data.
@@ -22,7 +27,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronLeft, Globe, TrendingUp } from "lucide-react";
 
 import IconResolver from "@/components/official/icons/IconResolver";
@@ -34,14 +39,11 @@ import {
 } from "@/features/shell/constants/route-menu-style";
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { resolveMarketingSidebarSiteContext } from "@/features/marketing/lib/sidebar-site-context";
 import { listMarketingSiteModeGroups } from "@/features/marketing/lib/route-sections";
 import { MARKETING_SITE_SECTION_ICONS } from "@/features/marketing/lib/site-section-icons";
 import { useSite } from "@/features/marketing/data/hooks";
 import { cn } from "@/lib/utils";
-
-/** `/marketing/brands/<brandId>/sites/<siteId>` and anything under it. */
-const SITE_PATH_PATTERN =
-  /^\/marketing\/brands\/([^/]+)\/sites\/([^/]+)(?:\/|$)/;
 
 interface MarketingSidebarMenuProps {
   expanded: boolean;
@@ -74,16 +76,22 @@ function SiteSections({
   pathname,
   expanded,
 }: {
-  brandId: string;
+  brandId: string | null;
   siteId: string;
   pathname: string;
   expanded: boolean;
 }) {
-  // Shares React Query's cache with the site layout, which has already asked
-  // for this row — the name costs no extra request.
-  // access-errors: ok — MarketingSiteLayoutClient gates web_site for this same siteId; this menu shares its query cache and only reads the name
+  // Canonical site routes share this cache with MarketingSiteLayoutClient.
+  // Context-preserving routes (Content Plan, Search Console, Capabilities and
+  // legacy links) also need the row to recover the canonical brand-first base.
+  // access-errors: ok — this is navigation enrichment only; a failed read keeps every section reachable through the legacy site base and the owning workspace surfaces its own primary read error
   const site = useSite(siteId);
-  const base = marketingRoutes.site(brandId, siteId);
+  const resolvedBrandId = brandId ?? site.data?.brand_id ?? null;
+  const base = marketingRoutes.site(resolvedBrandId, siteId);
+  const backHref = resolvedBrandId
+    ? marketingRoutes.brand(resolvedBrandId)
+    : marketingRoutes.sites();
+  const backLabel = resolvedBrandId ? "Back to brand" : "All websites";
   const groups = listMarketingSiteModeGroups(base);
   // One resolver for the whole flat list so a nested route (a page workspace, a
   // crawl detail) still lights up its parent section rather than nothing.
@@ -130,9 +138,9 @@ function SiteSections({
   return (
     <>
       <Link
-        href={marketingRoutes.brand(brandId)}
-        title="Back to brand"
-        aria-label="Back to brand"
+        href={backHref}
+        title={backLabel}
+        aria-label={backLabel}
         className={ROUTE_MENU_NAV_ITEM_CLASS}
       >
         <span className="shell-nav-icon">
@@ -141,7 +149,7 @@ function SiteSections({
             strokeWidth={ROUTE_MENU_ICON_STROKE_WIDTH}
           />
         </span>
-        <span className="shell-nav-label truncate">Back to brand</span>
+        <span className="shell-nav-label truncate">{backLabel}</span>
       </Link>
 
       <Link
@@ -280,17 +288,21 @@ export default function MarketingSidebarMenu({
   expanded,
 }: MarketingSidebarMenuProps) {
   const pathname = usePathname() ?? "/marketing";
-  const site = SITE_PATH_PATTERN.exec(pathname);
+  const searchParams = useSearchParams();
+  const site = resolveMarketingSidebarSiteContext(
+    pathname,
+    searchParams.get("site"),
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto scrollbar-thin-auto">
       {site ? (
         <SiteSections
-          brandId={site[1]}
-          siteId={site[2]}
+          brandId={site.brandId}
+          siteId={site.siteId}
           pathname={pathname}
           expanded={expanded}
-          key={`${site[1]}:${site[2]}`}
+          key={`${site.brandId ?? "unresolved"}:${site.siteId}`}
         />
       ) : (
         <MarketingPillars pathname={pathname} expanded={expanded} />

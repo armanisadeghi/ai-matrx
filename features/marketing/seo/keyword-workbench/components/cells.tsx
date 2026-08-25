@@ -13,7 +13,7 @@
  * is what a person actually wants the moment they spot a pattern.
  */
 
-import { Check, Eraser, Filter, Lock, PenLine, Plus } from "lucide-react";
+import { Check, Eraser, Filter, Lock, PenLine } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -26,7 +26,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/styles/themes/utils";
 import type { FacetValue } from "@/features/marketing/seo/value-system/dimensions/data";
+import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
+import {
+  DimensionValuePicker,
+  type PickedValue,
+} from "./DimensionValuePicker";
 
 /** Where a stamp came from, in two words a non-technical reader can act on. */
 function sourceHint(source: string | null): string | null {
@@ -44,56 +49,66 @@ function sourceHint(source: string | null): string | null {
 }
 
 export function StampCell({
-  label,
+  siteId,
+  dimension,
+  dimensions,
+  current,
   source,
   notes,
-  onAssign,
+  loading,
+  onPick,
+  onAssignWithReason,
+  onClear,
   onFilter,
 }: {
-  label: string | null;
+  siteId: string;
+  dimension: FacetDimension;
+  dimensions: FacetDimension[];
+  current: PickedValue | null;
   source: string | null;
   notes: string | null;
-  onAssign: () => void;
+  loading?: boolean;
+  onPick: (picked: PickedValue) => void;
+  onAssignWithReason: () => void;
+  onClear?: () => void;
   onFilter?: () => void;
 }) {
   const hint = sourceHint(source);
+  const label = current?.valueLabel ?? null;
+  const title = notes
+    ? `${notes}${hint ? ` — stamped by ${hint}` : ""}`
+    : hint
+      ? `Stamped by ${hint}.`
+      : label
+        ? undefined
+        : `Choose a ${dimension.label} value.`;
   return (
-    <span className="group/cell flex min-w-0 items-center gap-1">
-      {label ? (
+    <span className="group/cell flex min-w-0 items-center gap-1" title={title}>
+      <span className="min-w-0 flex-1">
+        <DimensionValuePicker
+          siteId={siteId}
+          dimensions={dimensions}
+          loading={loading}
+          picked={current}
+          onPicked={(picked) => {
+            if (picked) onPick(picked);
+          }}
+          lockedDimensionSlug={dimension.slug}
+          variant="cell"
+          onClear={onClear}
+          onAssignWithReason={onAssignWithReason}
+        />
+      </span>
+      {onFilter && label ? (
         <button
           type="button"
           onClick={onFilter}
-          disabled={!onFilter}
-          title={
-            notes
-              ? `${notes}${hint ? ` — stamped by ${hint}` : ""}`
-              : hint
-                ? `Stamped by ${hint}. Click to filter to everything like it.`
-                : "Click to filter to everything like it."
-          }
-          className={cn(
-            "min-w-0 truncate rounded px-1 py-0.5 text-[11px] text-foreground",
-            onFilter && "hover:bg-accent",
-          )}
+          aria-label={`Filter to ${dimension.label}: ${label}`}
+          title={`Filter to ${dimension.label}: ${label}`}
+          className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/cell:opacity-100"
         >
-          {label}
-          {hint && hint !== "you" ? (
-            <span className="ml-1 text-[10px] text-muted-foreground">{hint}</span>
-          ) : null}
+          <Filter className="h-3 w-3" />
         </button>
-      ) : (
-        <span className="px-1 text-[11px] text-muted-foreground">—</span>
-      )}
-      <button
-        type="button"
-        onClick={onAssign}
-        aria-label={label ? "Change this value" : "Assign a value"}
-        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/cell:opacity-100"
-      >
-        {label ? <PenLine className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-      </button>
-      {onFilter && label ? (
-        <Filter className="hidden h-3 w-3 shrink-0 text-muted-foreground/60 group-hover/cell:inline" />
       ) : null}
     </span>
   );
