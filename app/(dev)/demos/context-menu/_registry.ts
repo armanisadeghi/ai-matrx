@@ -91,6 +91,16 @@ export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
     icon: "layout-grid",
     status: "stable",
   },
+  {
+    slug: "consolidation",
+    title: "Consolidation Fixture",
+    tagline:
+      "One deterministic route for transcript, task, candidate, JSON, and processor right-click variants.",
+    description:
+      "Mounts the real production components with stable seeded content so reviewers can verify every final consolidation variant without creating a prepared chat or admin-tool state.",
+    icon: "layout-grid",
+    status: "stable",
+  },
   // ── Placeholders for the advanced tests Arman flagged ───────────────────
   // Each is hidden from the nav until the page actually exists, but stays
   // visible on the hub as a planned card so the future scope is documented.

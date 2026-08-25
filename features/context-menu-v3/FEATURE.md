@@ -345,8 +345,8 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 3. **Notes legacy shell** — `NotesSidebar.tsx` / `NoteTabs.tsx` via `AdvancedMenu`. Corrected 2026-08-14: canonical `NoteTabItem.tsx` was listed here in error — it mounts no `AdvancedMenu`. Both real holdouts are reachable only from `NotesLayout`, which itself has **zero mounters** (the notes-salvage dev page only names it in prose), so this exception is inert today and dies with the shell. Do NOT spend a v3 migration on it; see `features/notes/FEATURE.md` 2026-08-14 — retiring the shell is Arman's ruling to make.
 4. **rich-document** — `runtime/ContextMenuMount.tsx` + `variants/ContextMenu.tsx` (own cursor-anchored menu; overlaps v3's action set almost 1:1).
 5. **Code trees** — `features/code/views/explorer/FileTreeNode.tsx`, `views/library/SourceEntryNode.tsx`; **user-lists** `TreeNode.tsx`; **org** `OrgResourceDetail.tsx` local menu.
-6. **Coordinate menus** — `components/official/json-explorer/RawJsonExplorer.tsx`, `processor-extractor/ProcessorExtractor.tsx`.
-7. **Markdown block menus** — `AdvancedTranscriptViewer`, `TaskChecklist`, candidate-profile parts.
+6. ~~**Coordinate menus**~~ — DONE: `RawJsonExplorer` and `ProcessorExtractor` delegate navigation-row actions through v3.
+7. **Markdown block menus** — `AdvancedTranscriptViewer`, `TaskChecklist`, and the canonical `CandidateProfileView` use v3; the remaining candidate-profile variants still need the same pane-level delegation.
 8. **Dormant** — `PdfAnnotationLayer` region-menu plumbing (no consumer passes the handler; suppresses native menu and renders nothing — fix or delete).
 
 ---
@@ -360,6 +360,8 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 ---
 
 ## Change Log
+
+- `2026-08-25` — Added `/demos/context-menu/consolidation`, a deterministic review route that mounts the real transcript, task-checklist, candidate-profile, JSON Explorer, and Processor Extractor components; the canonical candidate profile now delegates item-scoped Copy/Agents through one v3 pane menu.
 
 - `2026-08-24` — **Assistant selections can be spoken or distilled for listening.** The universal menu now exposes Speak through the canonical speech queue and Summarize for listening through the assistant-message `spoken_summary` surface role; the latter auto-runs in `AgentRunWindow`. Assistant response-body tagging keeps message chrome out of both actions.
 
