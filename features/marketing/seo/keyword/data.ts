@@ -19,6 +19,7 @@ import type {
 import type { Json } from "@/types/database.types";
 
 import type { PageQueryStat, ResolvedKeyword } from "./types";
+import { getGscBreakdown } from "@/features/marketing/search-console/data";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -112,50 +113,19 @@ export async function resolveKeyword(
  * position), strongest first. Bounded read of the newest daily rows.
  */
 export async function listPageTopQueries(
+  siteId: string,
   pageId: string,
   limit = 12,
   signal?: AbortSignal,
 ): Promise<PageQueryStat[]> {
-  const response = await (
-    await seoDb()
-  )
-    .from("search_performance_daily")
-    .select("query, clicks, impressions, average_position, date")
-    .eq("page_id", pageId)
-    .eq("provider", "gsc")
-    .eq("dimension_profile", "query_page")
-    .order("date", { ascending: false })
-    .limit(1000)
-    .abortSignal(signal ?? new AbortController().signal);
-  if (response.error) throw response.error;
-  const byQuery = new Map<
-    string,
-    { clicks: number; impressions: number; positionWeight: number }
-  >();
-  for (const row of response.data ?? []) {
-    const query = row.query?.trim();
-    if (!query) continue;
-    const entry = byQuery.get(query) ?? {
-      clicks: 0,
-      impressions: 0,
-      positionWeight: 0,
-    };
-    entry.clicks += row.clicks ?? 0;
-    entry.impressions += row.impressions ?? 0;
-    entry.positionWeight +=
-      (row.average_position ?? 0) * (row.impressions ?? 0);
-    byQuery.set(query, entry);
-  }
-  return [...byQuery.entries()]
-    .map(([query, entry]): PageQueryStat => ({
-      query,
-      clicks: entry.clicks,
-      impressions: entry.impressions,
-      position:
-        entry.impressions > 0 ? entry.positionWeight / entry.impressions : null,
-    }))
-    .sort((a, b) => b.clicks - a.clicks || b.impressions - a.impressions)
-    .slice(0, limit);
+  const result = await getPageQueryBreakdown(
+    siteId,
+    pageId,
+    null,
+    limit,
+    signal,
+  );
+  return result.stats;
 }
 
 /**
@@ -166,6 +136,7 @@ export async function listPageTopQueries(
  * page.
  */
 export async function getPageQueryStat(
+  siteId: string,
   pageId: string,
   phrase: string,
   signal?: AbortSignal,
@@ -174,35 +145,29 @@ export async function getPageQueryStat(
 > {
   const normalized = normalizeKeywordPhrase(phrase);
   if (!normalized) return null;
-  const response = await (
-    await seoDb()
-  )
-    .from("search_performance_daily")
-    .select("query, clicks, impressions, average_position, date")
-    .eq("page_id", pageId)
-    .ilike("query", normalized)
-    .order("date", { ascending: false })
-    .limit(400)
-    .abortSignal(signal ?? new AbortController().signal);
-  if (response.error) throw response.error;
-  const rows = response.data ?? [];
-  if (rows.length === 0) return null;
-  let clicks = 0;
-  let impressions = 0;
-  let positionWeight = 0;
-  for (const row of rows) {
-    clicks += row.clicks ?? 0;
-    impressions += row.impressions ?? 0;
-    positionWeight += (row.average_position ?? 0) * (row.impressions ?? 0);
-  }
-  const dates = rows.map((row) => row.date).sort();
+  const result = await getGscBreakdown(
+    siteId,
+    allTimePeriods(),
+    { page_eq: pageId, query_eq: normalized },
+    {
+      dimension: "query",
+      search: "",
+      sort: "clicks",
+      sortDir: "desc",
+      page: 1,
+      pageSize: 1,
+    },
+    signal,
+  );
+  const row = result.rows[0];
+  if (!row) return null;
   return {
-    query: normalized,
-    clicks,
-    impressions,
-    position: impressions > 0 ? positionWeight / impressions : null,
-    firstDate: dates[0] ?? null,
-    lastDate: dates[dates.length - 1] ?? null,
+    query: row.key,
+    clicks: row.clicks,
+    impressions: row.impressions,
+    position: row.avg_position,
+    firstDate: null,
+    lastDate: null,
   };
 }
 
@@ -404,14 +369,6 @@ function gscCutoffDate(days: number | null): string | null {
 
 const GSC_FETCH_PAGE_SIZE = 1000;
 
-interface DailyPerformanceRow {
-  query: string | null;
-  clicks: number;
-  impressions: number;
-  average_position: number | null;
-  date: string;
-}
-
 interface GscPageStatRow {
   clicks: number;
   impressions: number;
@@ -466,39 +423,48 @@ async function fetchGscPageStatRows(
  * up to `maxPages`; `truncated` is true when the cap was hit, so callers can
  * say so instead of presenting a silent undercount as the truth.
  */
-async function fetchGscDailyRows(
+function allTimePeriods(days: number | null = null) {
+  const end = new Date().toISOString().slice(0, 10);
+  return {
+    current: {
+      start:
+        days === null ? "2000-01-01" : (gscCutoffDate(days) ?? "2000-01-01"),
+      end,
+    },
+    compare: null,
+  };
+}
+
+async function getPageQueryBreakdown(
+  siteId: string,
   pageId: string,
   days: number | null,
-  maxPages: number,
+  limit: number,
   signal?: AbortSignal,
-): Promise<{ rows: DailyPerformanceRow[]; truncated: boolean }> {
-  const db = await seoDb();
-  const cutoff = gscCutoffDate(days);
-  const rows: DailyPerformanceRow[] = [];
-  for (let pageIndex = 0; pageIndex < maxPages; pageIndex++) {
-    let request = db
-      .from("search_performance_daily")
-      .select("query, clicks, impressions, average_position, date")
-      .eq("page_id", pageId)
-      .eq("provider", "gsc")
-      .eq("dimension_profile", "query_page");
-    if (cutoff) request = request.gte("date", cutoff);
-    const response = await request
-      .order("date", { ascending: false })
-      .order("id", { ascending: true })
-      .range(
-        pageIndex * GSC_FETCH_PAGE_SIZE,
-        pageIndex * GSC_FETCH_PAGE_SIZE + GSC_FETCH_PAGE_SIZE - 1,
-      )
-      .abortSignal(signal ?? new AbortController().signal);
-    if (response.error) throw response.error;
-    const batch = (response.data ?? []) as DailyPerformanceRow[];
-    rows.push(...batch);
-    if (batch.length < GSC_FETCH_PAGE_SIZE) {
-      return { rows, truncated: false };
-    }
-  }
-  return { rows, truncated: true };
+): Promise<PageQueryStatsResult> {
+  const result = await getGscBreakdown(
+    siteId,
+    allTimePeriods(days),
+    { page_eq: pageId },
+    {
+      dimension: "query",
+      search: "",
+      sort: "clicks",
+      sortDir: "desc",
+      page: 1,
+      pageSize: limit,
+    },
+    signal,
+  );
+  return {
+    stats: result.rows.map((row) => ({
+      query: row.key,
+      clicks: row.clicks,
+      impressions: row.impressions,
+      position: row.avg_position,
+    })),
+    truncated: result.total > result.rows.length,
+  };
 }
 
 /** Range totals for one page from the daily page-profile GSC rows. */
@@ -570,39 +536,12 @@ export interface PageQueryStatsResult {
  * range, the complete aggregated result, and a loud raw-read truncation flag.
  */
 export async function listPageQueryStats(
+  siteId: string,
   pageId: string,
   days: number | null,
   signal?: AbortSignal,
 ): Promise<PageQueryStatsResult> {
-  const { rows, truncated } = await fetchGscDailyRows(pageId, days, 10, signal);
-  const byQuery = new Map<
-    string,
-    { clicks: number; impressions: number; positionWeight: number }
-  >();
-  for (const row of rows) {
-    const query = row.query?.trim();
-    if (!query) continue;
-    const entry = byQuery.get(query) ?? {
-      clicks: 0,
-      impressions: 0,
-      positionWeight: 0,
-    };
-    entry.clicks += row.clicks ?? 0;
-    entry.impressions += row.impressions ?? 0;
-    entry.positionWeight +=
-      (row.average_position ?? 0) * (row.impressions ?? 0);
-    byQuery.set(query, entry);
-  }
-  const stats = [...byQuery.entries()]
-    .map(([query, entry]): PageQueryStat => ({
-      query,
-      clicks: entry.clicks,
-      impressions: entry.impressions,
-      position:
-        entry.impressions > 0 ? entry.positionWeight / entry.impressions : null,
-    }))
-    .sort((a, b) => b.clicks - a.clicks || b.impressions - a.impressions);
-  return { stats, truncated };
+  return getPageQueryBreakdown(siteId, pageId, days, 500, signal);
 }
 
 /**
@@ -650,6 +589,9 @@ export async function getKeywordPhrasesByIds(
     .abortSignal(signal ?? new AbortController().signal);
   if (response.error) throw response.error;
   return new Map(
-    (response.data ?? []).map((row) => [row.id as string, row.phrase as string]),
+    (response.data ?? []).map((row) => [
+      row.id as string,
+      row.phrase as string,
+    ]),
   );
 }

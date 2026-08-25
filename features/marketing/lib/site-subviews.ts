@@ -234,7 +234,7 @@ export const MARKETING_SITE_SUBVIEWS = [
       {
         id: "topics",
         label: "Topics",
-        purpose: "Group keywords into your services, and set what each is worth.",
+        purpose: "Group keywords into your Offerings, and set what each is worth.",
       },
       {
         id: "packs",

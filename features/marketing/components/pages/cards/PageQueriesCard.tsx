@@ -34,7 +34,7 @@ import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 export function PageQueriesCard({ page }: { page: MarketingPage }) {
   const { site } = useMarketingSite();
   const { brandId } = useMarketingSiteSurfaceBase();
-  const queries = usePageTopQueries(page.id);
+  const queries = usePageTopQueries(site.id, page.id);
   const mutation = useUpdatePageIntent();
   const openKeywordWindow = useOpenKeywordWindow();
   const [adopting, setAdopting] = useState<string | null>(null);
@@ -106,14 +106,17 @@ export function PageQueriesCard({ page }: { page: MarketingPage }) {
     );
   } else if (queries.isError) {
     body = (
-      <QueryError error={queries.error} onRetry={() => void queries.refetch()} />
+      <QueryError
+        error={queries.error}
+        onRetry={() => void queries.refetch()}
+      />
     );
   } else if (rows.length === 0) {
     body = (
       <p className="flex items-center gap-2 p-4 text-xs text-muted-foreground">
         <SearchCheck className="h-4 w-4" />
-        No stored Search Console queries for this page yet — run a GSC sync
-        from site integrations to capture what it already ranks for.
+        No stored Search Console queries for this page yet — run a GSC sync from
+        site integrations to capture what it already ranks for.
       </p>
     );
   } else {

@@ -83,8 +83,20 @@ describe("convert-to-shape preflight", () => {
       ],
     });
     expect(generic.component.state).toBe("generic");
+    expect(generic.schema.state).toBe("stored");
     expect(generic.loading.state).toBe("generic");
     expect(generic.focus).toBe("build_component");
+  });
+
+  it("does not mistake a registration without a schema for a complete Shape", () => {
+    const readiness = buildShapeReadiness({
+      rootKind: "sales_summary",
+      definition: { ...DEFINITION, emittedJsonSchema: null },
+      components: [component()],
+    });
+
+    expect(readiness.schema.state).toBe("missing");
+    expect(readiness.focus).toBe("repair_schema");
   });
 
   it("recognizes complete custom output and loading assets", () => {

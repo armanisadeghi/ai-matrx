@@ -42,7 +42,10 @@ import type {
   AiAnswerEvidence,
   RankTargetEvidence,
 } from "@/features/marketing/seo/keyword/data";
-import type { PageQueryStat, ResolvedKeyword } from "@/features/marketing/seo/keyword/types";
+import type {
+  PageQueryStat,
+  ResolvedKeyword,
+} from "@/features/marketing/seo/keyword/types";
 import type { SiteKeywordPerformanceRow } from "@/features/marketing/seo/keyword-research/types";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import type { MarketingPage } from "@/features/marketing/types";
@@ -87,13 +90,7 @@ function SubHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Stat({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -130,8 +127,7 @@ function UrlMatchLine({
       </p>
     );
   }
-  const sameSite =
-    siteDomain !== null && hostnameOf(matchedUrl) === siteDomain;
+  const sameSite = siteDomain !== null && hostnameOf(matchedUrl) === siteDomain;
   return (
     <p
       className={cn(
@@ -159,7 +155,9 @@ export const pageTargetPerformanceQueryKey = (pageId: string, phrase: string) =>
 export interface PageTargetPerformanceEvidence {
   resolved: ResolvedKeyword;
   keywordId: string | null;
-  pageStat: (PageQueryStat & { firstDate: string | null; lastDate: string | null }) | null;
+  pageStat:
+    | (PageQueryStat & { firstDate: string | null; lastDate: string | null })
+    | null;
   sitePerf: SiteKeywordPerformanceRow[];
   rankTargets: RankTargetEvidence[];
   aiAnswer: AiAnswerEvidence | null;
@@ -177,7 +175,7 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
       const resolved = await resolveKeyword(phrase, signal);
       const keywordId = resolved.keyword?.id ?? null;
       const [pageStat, sitePerf, rankTargets, aiAnswer] = await Promise.all([
-        getPageQueryStat(page.id, phrase, signal),
+        getPageQueryStat(page.site_id, page.id, phrase, signal),
         keywordId
           ? listSitePerformanceForKeyword(page.site_id, keywordId, signal)
           : Promise.resolve([]),
@@ -298,11 +296,7 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
       headerExtra={headerExtra}
     >
       <div className="grid gap-3 p-3">
-        <GscClassBar
-          siteId={page.site_id}
-          pageId={page.id}
-          heading={false}
-        />
+        <GscClassBar siteId={page.site_id} pageId={page.id} heading={false} />
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-sm font-medium text-foreground">{phrase}</span>
           {data?.resolved.market ? (
@@ -339,8 +333,8 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
               <SubHeading>SERP rank</SubHeading>
               {organicTargets.length === 0 ? (
                 <p className="text-[11px] text-muted-foreground">
-                  Not rank-tracked for this site yet — open Keyword
-                  Intelligence and track it from the Rankings tab.
+                  Not rank-tracked for this site yet — open Keyword Intelligence
+                  and track it from the Rankings tab.
                 </p>
               ) : (
                 <div className="grid gap-2">
@@ -384,10 +378,7 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
                 <>
                   <div className="grid grid-cols-4 gap-2">
                     <Stat label="Clicks" value={data.pageStat.clicks} />
-                    <Stat
-                      label="Impr."
-                      value={data.pageStat.impressions}
-                    />
+                    <Stat label="Impr." value={data.pageStat.impressions} />
                     <Stat
                       label="CTR"
                       value={
@@ -410,8 +401,8 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
                 </>
               ) : (
                 <p className="text-[11px] text-muted-foreground">
-                  No Search Console impressions recorded for this exact query
-                  on this page.
+                  No Search Console impressions recorded for this exact query on
+                  this page.
                 </p>
               )}
               {gscSiteRow ? (
@@ -466,7 +457,9 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
                               }
                               className="text-[9px]"
                             >
-                              {target.aiMentioned ? "Mentioned" : "Not mentioned"}
+                              {target.aiMentioned
+                                ? "Mentioned"
+                                : "Not mentioned"}
                             </Badge>
                             <span className="text-[10px] tabular-nums text-muted-foreground">
                               {target.absoluteRank !== null &&
@@ -502,7 +495,9 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
                           {engineLabel(data.aiAnswer.engine)}
                         </span>
                         <Badge
-                          variant={siteCitations.length > 0 ? "success" : "outline"}
+                          variant={
+                            siteCitations.length > 0 ? "success" : "outline"
+                          }
                           className="text-[9px]"
                         >
                           {siteCitations.length > 0
@@ -512,7 +507,8 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
                         <span className="text-[10px] tabular-nums text-muted-foreground">
                           {data.aiAnswer.citationCount ??
                             data.aiAnswer.citations.length}{" "}
-                          citations · {formatCompactDate(data.aiAnswer.observedAt)}
+                          citations ·{" "}
+                          {formatCompactDate(data.aiAnswer.observedAt)}
                         </span>
                       </div>
                       {siteCitations[0]?.url ? (

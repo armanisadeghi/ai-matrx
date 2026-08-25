@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   CircleAlert,
   Database,
+  FileJson2,
   Loader2,
   PanelsTopLeft,
   ScanSearch,
@@ -278,6 +279,7 @@ function ReadinessMetric({
 const FOCUS_COPY: Record<ShapeReadiness["focus"], string> = {
   create_shape: "Create the complete Shape and infer its __kind.",
   register_shape: "Register this __kind and build the complete Shape.",
+  repair_schema: "Keep this registration and repair its structural schema.",
   activate_shape: "Repair the existing registration and activate it.",
   build_component: "Keep the Shape and build or activate its output view.",
   add_loading_component: "Keep the output view and add its streaming loader.",
@@ -360,7 +362,7 @@ function ShapeReadinessSummary({
         )}
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
         <ReadinessMetric
           icon={Braces}
           label="Kind key"
@@ -376,6 +378,25 @@ function ShapeReadinessSummary({
           label="Registration"
           value={registrationValue}
           detail={registrationDetail}
+          pending={loading}
+        />
+        <ReadinessMetric
+          icon={FileJson2}
+          label="Schema"
+          value={
+            readiness.schema.state === "stored"
+              ? "Stored"
+              : readiness.schema.state === "compiled"
+                ? "Bundled"
+                : "Missing"
+          }
+          detail={
+            readiness.schema.state === "stored"
+              ? "Emitted JSON schema found"
+              : readiness.schema.state === "compiled"
+                ? "Available from code"
+                : "Needs structural definition"
+          }
           pending={loading}
         />
         <ReadinessMetric

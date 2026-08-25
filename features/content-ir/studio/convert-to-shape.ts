@@ -27,17 +27,15 @@ export interface ShapeDefinitionSnapshot {
 }
 
 export type ShapeComponentState =
-  | "custom"
-  | "bundled"
-  | "generic"
-  | "inactive"
-  | "missing";
+  "custom" | "bundled" | "generic" | "inactive" | "missing";
 
 export type ShapeLoadingState = "custom" | "generic" | "unknown";
+export type ShapeSchemaState = "stored" | "compiled" | "missing";
 
 export type ShapeCreatorFocus =
   | "create_shape"
   | "register_shape"
+  | "repair_schema"
   | "activate_shape"
   | "build_component"
   | "add_loading_component"
@@ -46,6 +44,9 @@ export type ShapeCreatorFocus =
 export interface ShapeReadiness {
   rootKind: string | null;
   definition: ShapeDefinitionSnapshot | null;
+  schema: {
+    state: ShapeSchemaState;
+  };
   component: {
     state: ShapeComponentState;
     componentKey: string | null;
@@ -65,6 +66,7 @@ export interface BuildShapeReadinessInput {
   components?: readonly KindComponentProjection[];
   compiledComponentKey?: string | null;
   compiledLoadingSlug?: string | null;
+  compiledHasSchema?: boolean;
 }
 
 function realOutputRows(
@@ -146,10 +148,16 @@ export function buildShapeReadiness(
         slug: loadingSlug,
       }
     : { state: "generic", slug: null };
+  const schema: ShapeReadiness["schema"] = definition?.emittedJsonSchema
+    ? { state: "stored" }
+    : input.compiledHasSchema
+      ? { state: "compiled" }
+      : { state: "missing" };
 
   let focus: ShapeCreatorFocus;
   if (!input.rootKind) focus = "create_shape";
   else if (!definition) focus = "register_shape";
+  else if (schema.state === "missing") focus = "repair_schema";
   else if (!definition.isActive) focus = "activate_shape";
   else if (
     component.state === "missing" ||
@@ -163,6 +171,7 @@ export function buildShapeReadiness(
   return {
     rootKind: input.rootKind,
     definition,
+    schema,
     component,
     loading,
     focus,
@@ -228,6 +237,8 @@ const FOCUS_BRIEF: Record<ShapeCreatorFocus, string> = {
     "Create the complete Shape: infer its canonical __kind, register its schema and example, then add its output and loading components.",
   register_shape:
     "The sample already declares a __kind, but no live kind_definition registration exists. Register the complete Shape without minting a competing slug, then add its schema, example, output component, and loading component.",
+  repair_schema:
+    "Keep the existing Shape identity, but repair or materialize its emitted JSON schema from the real sample before changing render assets. Do not mint a duplicate Shape.",
   activate_shape:
     "The Shape registration exists but is inactive. Inspect its activation blockers and existing assets, repair only what is needed, and activate it through the canonical gate.",
   build_component:
@@ -272,6 +283,7 @@ export function buildConvertToShapeSeed(input: {
         metadata: definition.metadata,
         readiness: {
           creator_focus: focus,
+          schema: input.readiness.schema.state,
           output_component: component.state,
           loading_component: loading.state,
           loading_slug: loading.slug,

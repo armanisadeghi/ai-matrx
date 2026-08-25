@@ -75,5 +75,6 @@ export async function loadShapeReadiness(
     components,
     compiledComponentKey: compiled?.legacyBlockType ?? null,
     compiledLoadingSlug: compiled?.loadingComponent ?? null,
+    compiledHasSchema: compiled?.schema != null,
   });
 }

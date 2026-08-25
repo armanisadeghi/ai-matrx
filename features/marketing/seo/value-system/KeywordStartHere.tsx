@@ -73,7 +73,7 @@ export function KeywordStartHere({
     {
       action: "Say what a keyword IS",
       screen: "Workbench",
-      line: "Find exactly the keywords you mean and set their class, their service, or any dimension you invent — with the reason that teaches the system.",
+      line: "Find exactly the keywords you mean and set their class, their Offering, or any dimension you invent — with the reason that teaches the system.",
       href: `${keywords}?view=workbench`,
       icon: SlidersHorizontal,
     },
@@ -99,9 +99,9 @@ export function KeywordStartHere({
       icon: Tags,
     },
     {
-      action: "Group keywords into your services",
+      action: "Group keywords into your Offerings",
       screen: "Topics",
-      line: "The topic tree — what you actually sell — and what each service is worth to this site.",
+      line: "The Offering tree — what you actually sell — and what each Offering is worth to this site.",
       href: `${value}/topics`,
       icon: TreePine,
     },

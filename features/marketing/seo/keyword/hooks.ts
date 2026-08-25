@@ -110,11 +110,15 @@ export function useKeywordSitePerformance(
 }
 
 /** The real GSC queries already reaching one canonical page. */
-export function usePageTopQueries(pageId: string | null | undefined) {
+export function usePageTopQueries(
+  siteId: string | null | undefined,
+  pageId: string | null | undefined,
+) {
   return useQuery({
     queryKey: seoKeywordKeys.pageQueries(pageId ?? ""),
-    queryFn: ({ signal }) => listPageTopQueries(pageId as string, 12, signal),
-    enabled: Boolean(pageId),
+    queryFn: ({ signal }) =>
+      listPageTopQueries(siteId as string, pageId as string, 12, signal),
+    enabled: Boolean(siteId && pageId),
     staleTime: 5 * 60_000,
   });
 }
@@ -136,13 +140,15 @@ export function usePageSearchTotals(
 /** Complete range-aware per-query breakdown for one page; the raw fact read
  * remains bounded and carries a loud truncation flag. */
 export function usePageQueryStats(
+  siteId: string | null | undefined,
   pageId: string | null | undefined,
   days: number | null,
 ) {
   return useQuery({
     queryKey: seoKeywordKeys.pageQueryStats(pageId ?? "", days),
-    queryFn: ({ signal }) => listPageQueryStats(pageId as string, days, signal),
-    enabled: Boolean(pageId),
+    queryFn: ({ signal }) =>
+      listPageQueryStats(siteId as string, pageId as string, days, signal),
+    enabled: Boolean(siteId && pageId),
     staleTime: 5 * 60_000,
   });
 }

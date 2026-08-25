@@ -70,7 +70,7 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
   const [range, setRange] = useState<GscRangeKey>("28d");
   const days = gscRangeDays(range);
   const totals = usePageSearchTotals(page.id, days);
-  const queries = usePageQueryStats(page.id, days);
+  const queries = usePageQueryStats(site.id, page.id, days);
 
   const rangeLabel =
     GSC_RANGES.find((entry) => entry.key === range)?.label ?? range;
@@ -121,7 +121,11 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
     // same definition the Queries breakdown and Dig Here use, not a copy.
     ...buildGscValueColumns<PageQueryStat>(
       (row) => keywordValues.data.get(normalizeKeywordPhrase(row.query)),
-      { siteId: site.id, brandId: site.brand_id, keywordOf: (row) => row.query },
+      {
+        siteId: site.id,
+        brandId: site.brand_id,
+        keywordOf: (row) => row.query,
+      },
     ),
     {
       id: "clicks",
@@ -237,8 +241,8 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
     body = (
       <p className="flex items-center gap-2 p-4 text-xs text-muted-foreground">
         <Unplug className="h-4 w-4 shrink-0" />
-        GSC has never been synced for this site — connect and
-        run a sync from site integrations to see real search performance here.
+        GSC has never been synced for this site — connect and run a sync from
+        site integrations to see real search performance here.
       </p>
     );
   } else {

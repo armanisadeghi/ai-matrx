@@ -95,7 +95,12 @@ function mapQuestion(
   if (options.length === 0 && isTrueFalse(question.type)) {
     options = ["True", "False"];
   }
-  if (options.length === 0) return null;
+  // FIRST-RENDERABLE-UNIT gate (Arman, 2026-08-24): a question is renderable
+  // once it has real answer choices. Mid-stream (provisional frames) this
+  // holds back a question whose options are still arriving — one lone option
+  // is a lie, not a quiz — and for complete data a "quiz question" with fewer
+  // than two options is broken either way.
+  if (options.length < 2) return null;
 
   const mapped: Record<string, unknown> = {
     id: index + 1,
