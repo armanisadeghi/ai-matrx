@@ -32,6 +32,7 @@ import type {
   MatcherKind,
   WorthEffect,
 } from "@/features/marketing/seo/value-system/suggestions/proposal";
+import type { RuleImpact } from "@/features/marketing/seo/value-system/rules/types";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -742,4 +743,127 @@ export async function upsertSiteValueWorth(
   });
   const rows = assertGoverned(response.data, response.error, "save this worth");
   return rows[0] ?? null;
+}
+
+// ── KI-001 — worth expressed as POINTS, not multipliers ─────────────────────
+//
+// P18: what a keyword IS contributes points (add ±N); only a RELATIVE QUALIFIER
+// (free, cheap, DIY) scales what the keyword already earned. The migrated
+// corpus is nearly all multipliers, so the three reads below let a person SEE
+// their whole rulebook, be handed an honest points equivalent derived from this
+// site's own score distribution, and watch what it does to real keywords before
+// accepting it. P12 — nothing converts itself; the write is the ordinary
+// `upsertSiteValueWorth`.
+
+export type SiteWorthRow =
+  Database["seo"]["Functions"]["gsc_site_worth_list"]["Returns"][number];
+
+/** Every worth this site holds, with how much of its traffic wears each one. */
+export async function listSiteWorth(
+  siteId: string,
+  window: { start: string; end: string },
+  signal?: AbortSignal,
+): Promise<SiteWorthRow[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_site_worth_list", {
+      p_site_id: siteId,
+      p_start: window.start,
+      p_end: window.end,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertGoverned(response.data, response.error, "read what your answers are worth");
+}
+
+/**
+ * The arithmetic behind a proposed points equivalent — never a guess, and never
+ * shown as a conclusion. Every field here is printed on screen so the reader can
+ * follow the working: score = (baseline + adds) × factor, so dropping a factor f
+ * and keeping the score means adding T × (f − 1) points, and T varies per
+ * keyword. The proposal is the MEDIAN of that over the keywords the multiplier
+ * is actually doing arithmetic on today.
+ */
+export interface WorthConvertBasis {
+  error?: "no_worth" | "not_a_multiplier";
+  message?: string;
+  effect?: string;
+  factor?: number;
+  window_keywords?: number;
+  stamped_keywords?: number;
+  contributing_keywords?: number;
+  /** Stamped keywords with no points yet: a multiplier does nothing to them, points would. */
+  inert_keywords?: number;
+  protected_keywords?: number;
+  never_keywords?: number;
+  total_before_factor?: { p25: number | null; median: number | null; p75: number | null };
+  equivalent_add?: { p25: number | null; median: number | null; p75: number | null };
+  score_delta_now?: { median: number | null };
+  /** The median equivalent, rounded to the nearest 5 so a person can read it back. */
+  proposed_add?: number;
+  /** The ratified starter-pack formula (T pinned at 100), printed so the two can never disagree. */
+  pack_reference_add?: number;
+  basis?: "site_distribution" | "pack_formula";
+}
+
+export async function getWorthConvertBasis(
+  siteId: string,
+  valueId: string,
+  window: { start: string; end: string },
+  signal?: AbortSignal,
+): Promise<WorthConvertBasis> {
+  const response = await (await seoDb())
+    .rpc("gsc_worth_convert_basis", {
+      p_site_id: siteId,
+      p_value_id: valueId,
+      p_start: window.start,
+      p_end: window.end,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertGoverned(
+    response.data,
+    response.error,
+    "work out what this multiplier is worth in points",
+  ) as unknown as WorthConvertBasis;
+}
+
+/**
+ * What a PROPOSED worth does to this site's real keywords — the same preview
+ * family as `gsc_value_rule_preview` / `gsc_value_combo_preview`, finishing
+ * through the same `gsc_value_preview_summarize`, so a worth proposal and a
+ * combination proposal can never band a keyword differently.
+ */
+export interface WorthImpact extends RuleImpact {
+  /** Keywords whose SCORE changes, whether or not the level does. */
+  changed_score_keywords: number;
+  effect: string;
+  amount: number | null;
+}
+
+export async function previewSiteValueWorth(
+  input: {
+    siteId: string;
+    valueId: string;
+    effect: WorthEffect;
+    amount: number | null;
+    start: string;
+    end: string;
+    sample?: number;
+  },
+  signal?: AbortSignal,
+): Promise<WorthImpact> {
+  const response = await (await seoDb())
+    .rpc("gsc_value_worth_preview", {
+      p_site_id: input.siteId,
+      p_value_id: input.valueId,
+      p_effect: input.effect,
+      p_amount: input.amount ?? undefined,
+      p_start: input.start,
+      p_end: input.end,
+      p_sample: input.sample ?? 10,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertGoverned(
+    response.data,
+    response.error,
+    "measure this worth against your keywords",
+  ) as unknown as WorthImpact;
 }

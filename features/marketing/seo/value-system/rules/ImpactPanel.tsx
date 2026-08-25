@@ -66,6 +66,7 @@ export function ImpactPanel({
   incomplete,
   windowLabel,
   nothingMatchedHint,
+  matchedLabel,
 }: {
   impact: RuleImpact | undefined;
   isPending: boolean;
@@ -76,6 +77,12 @@ export function ImpactPanel({
   /** Plain-language reason there is nothing to measure yet, if any. */
   incomplete: string | null;
   windowLabel: string;
+  /**
+   * What the matched keywords have in common, in this proposal's own words. A
+   * rule STAMPS keywords; a worth change acts on keywords that already carry
+   * the value. Same panel, same numbers, honest label.
+   */
+  matchedLabel?: string;
   /**
    * What to try when nothing matched. The default advice is about spelling and
    * match kinds, which is right for a word somebody typed and wrong for a place
@@ -143,7 +150,7 @@ export function ImpactPanel({
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Figure
               value={formatCount(impact.matched_keywords)}
-              label="keywords get this stamp"
+              label={matchedLabel ?? "keywords get this stamp"}
             />
             <Figure
               value={formatCount(impact.moved_keywords)}
