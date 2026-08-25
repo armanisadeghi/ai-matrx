@@ -232,9 +232,9 @@ export const MARKETING_SITE_SUBVIEWS = [
         purpose: "What earns points and how much — matchers, worth and levels.",
       },
       {
-        id: "topics",
-        label: "Topics",
-        purpose: "Group keywords into your Offerings, and set what each is worth.",
+        id: "offerings",
+        label: "Offerings",
+        purpose: "Group keywords into your offerings, and set what each is worth.",
       },
       {
         id: "packs",

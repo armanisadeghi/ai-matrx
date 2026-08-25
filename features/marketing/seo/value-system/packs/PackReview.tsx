@@ -30,7 +30,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
@@ -113,7 +118,9 @@ function isOnSite(state: PackItemState | null): boolean {
   return state !== null && state !== "missing";
 }
 
-function chipStateFor(state: PackItemState): "pack" | "changed" | "archived" | "yours" {
+function chipStateFor(
+  state: PackItemState,
+): "pack" | "changed" | "archived" | "yours" {
   if (state === "as_adopted") return "pack";
   if (state === "changed") return "changed";
   if (state === "archived") return "archived";
@@ -150,12 +157,21 @@ function SampleKeywords({
               </span>
               {moves ? (
                 <span className="inline-flex shrink-0 items-center gap-0.5">
-                  <span className={cn("rounded px-1", from.chip)}>{from.label}</span>
-                  <ArrowRight className="h-2.5 w-2.5 text-muted-foreground" aria-hidden />
-                  <span className={cn("rounded px-1", to.chip)}>{to.label}</span>
+                  <span className={cn("rounded px-1", from.chip)}>
+                    {from.label}
+                  </span>
+                  <ArrowRight
+                    className="h-2.5 w-2.5 text-muted-foreground"
+                    aria-hidden
+                  />
+                  <span className={cn("rounded px-1", to.chip)}>
+                    {to.label}
+                  </span>
                 </span>
               ) : (
-                <span className={cn("shrink-0 rounded px-1", from.chip)}>{from.label}</span>
+                <span className={cn("shrink-0 rounded px-1", from.chip)}>
+                  {from.label}
+                </span>
               )}
             </button>
           </li>
@@ -176,13 +192,18 @@ function Rationale({ text }: { text: string | null | undefined }) {
         className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground"
       >
         <ChevronDown
-          className={cn("h-3 w-3 transition-transform", open ? "rotate-180" : "")}
+          className={cn(
+            "h-3 w-3 transition-transform",
+            open ? "rotate-180" : "",
+          )}
           aria-hidden
         />
         {open ? "Hide" : "Why the pack proposes this"}
       </button>
       {open ? (
-        <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">{text}</p>
+        <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+          {text}
+        </p>
       ) : null}
     </div>
   );
@@ -215,7 +236,9 @@ function SectionHeader({
             ({selected} of {selectable} selected)
           </span>
         </h3>
-        <p className="mt-0.5 max-w-2xl text-[11px] leading-4 text-muted-foreground">{hint}</p>
+        <p className="mt-0.5 max-w-2xl text-[11px] leading-4 text-muted-foreground">
+          {hint}
+        </p>
       </div>
       {selectable > 0 ? (
         <div className="flex shrink-0 items-center gap-1 text-[11px]">
@@ -292,7 +315,8 @@ function Numbers({
   moved?: number;
   loading: boolean;
 }) {
-  if (loading) return <Skeleton className="inline-block h-3.5 w-40 align-middle" />;
+  if (loading)
+    return <Skeleton className="inline-block h-3.5 w-40 align-middle" />;
   if (keywords === undefined) return null;
   if (keywords === 0)
     return (
@@ -302,10 +326,15 @@ function Numbers({
     );
   return (
     <span className="text-[11px] tabular-nums text-foreground">
-      <span className="font-medium">{formatCount(keywords)}</span> of your keywords ·{" "}
-      {formatCount(clicks)} clicks · {formatCount(impressions)} impr.
+      <span className="font-medium">{formatCount(keywords)}</span> of your
+      keywords · {formatCount(clicks)} clicks · {formatCount(impressions)} impr.
       {moved !== undefined ? (
-        <span className={cn("ml-1", moved > 0 ? "text-primary" : "text-muted-foreground")}>
+        <span
+          className={cn(
+            "ml-1",
+            moved > 0 ? "text-primary" : "text-muted-foreground",
+          )}
+        >
           · {moved > 0 ? `${formatCount(moved)} move band` : "no band moves"}
         </span>
       ) : null}
@@ -364,7 +393,9 @@ export function PackReview({
     selectableAreas.forEach((a) => s.add(keyOf("geo_area", a.item_id)));
     return s;
   });
-  const [seedGuidelines, setSeedGuidelines] = useState(Boolean(pack.guidelines));
+  const [seedGuidelines, setSeedGuidelines] = useState(
+    Boolean(pack.guidelines),
+  );
   const [askingPlaces, setAskingPlaces] = useState(false);
 
   const toggle = (key: ItemKey) =>
@@ -385,16 +416,22 @@ export function PackReview({
     ...selectableMeaning
       .filter((m) => ticked.has(keyOf("meaning", m.item_id)))
       .map((m) => m.item_id),
-    ...selectableTopics.filter((t) => ticked.has(keyOf("topic", t.item_id))).map((t) => t.item_id),
+    ...selectableTopics
+      .filter((t) => ticked.has(keyOf("topic", t.item_id)))
+      .map((t) => t.item_id),
     ...selectableValueBands
       .filter((b) => ticked.has(keyOf("value_band", b.item_id)))
       .map((b) => b.item_id),
     ...selectableGeoBands
       .filter((b) => ticked.has(keyOf("geo_band", b.item_id)))
       .map((b) => b.item_id),
-    ...selectableAreas.filter((a) => ticked.has(keyOf("geo_area", a.item_id))).map((a) => a.item_id),
+    ...selectableAreas
+      .filter((a) => ticked.has(keyOf("geo_area", a.item_id)))
+      .map((a) => a.item_id),
   ];
-  const tickedAreas = selectableAreas.filter((a) => ticked.has(keyOf("geo_area", a.item_id)));
+  const tickedAreas = selectableAreas.filter((a) =>
+    ticked.has(keyOf("geo_area", a.item_id)),
+  );
   const selectableTotal =
     selectableMeaning.length +
     selectableTopics.length +
@@ -416,7 +453,14 @@ export function PackReview({
       previewItemIds,
     ),
     queryFn: ({ signal }) =>
-      previewStarterPack(siteId, pack.id, window.start, window.end, previewItemIds, signal),
+      previewStarterPack(
+        siteId,
+        pack.id,
+        window.start,
+        window.end,
+        previewItemIds,
+        signal,
+      ),
     placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
   });
@@ -439,12 +483,21 @@ export function PackReview({
   const adopt = useMutation({
     mutationFn: async (places: GeoPlacesDraft) => {
       const parts: StarterPackPart[] = [];
-      if (selectableMeaning.some((m) => ticked.has(keyOf("meaning", m.item_id))))
+      if (
+        selectableMeaning.some((m) => ticked.has(keyOf("meaning", m.item_id)))
+      )
         parts.push("meaning");
-      if (selectableTopics.some((t) => ticked.has(keyOf("topic", t.item_id)))) parts.push("topics");
-      if (selectableValueBands.some((b) => ticked.has(keyOf("value_band", b.item_id))))
+      if (selectableTopics.some((t) => ticked.has(keyOf("topic", t.item_id))))
+        parts.push("topics");
+      if (
+        selectableValueBands.some((b) =>
+          ticked.has(keyOf("value_band", b.item_id)),
+        )
+      )
         parts.push("value_bands");
-      if (selectableGeoBands.some((b) => ticked.has(keyOf("geo_band", b.item_id))))
+      if (
+        selectableGeoBands.some((b) => ticked.has(keyOf("geo_band", b.item_id)))
+      )
         parts.push("geo_bands");
       if (tickedAreas.length) parts.push("geo_areas");
       const written = await adoptStarterPack(siteId, pack.id, {
@@ -521,7 +574,8 @@ export function PackReview({
       void queryClient.invalidateQueries({ queryKey: ["marketing"] });
       onAdopted();
     },
-    onError: (error) => toast.error(`Could not adopt: ${extractErrorMessage(error)}`),
+    onError: (error) =>
+      toast.error(`Could not adopt: ${extractErrorMessage(error)}`),
   });
 
   const startAdoption = () => {
@@ -531,8 +585,9 @@ export function PackReview({
   };
 
   const summary = preview.data?.summary;
-  const unvaluedDelta =
-    preview.data ? preview.data.unvalued_before - preview.data.unvalued_after : 0;
+  const unvaluedDelta = preview.data
+    ? preview.data.unvalued_before - preview.data.unvalued_after
+    : 0;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -551,22 +606,24 @@ export function PackReview({
             Review {pack.name} against {siteDomain}
           </h1>
           <Badge variant="outline" className="text-[10px]">
-            {pack.status === "ratified" ? "Expert-ratified" : humanizeSlug(pack.status)}
+            {pack.status === "ratified"
+              ? "Expert-ratified"
+              : humanizeSlug(pack.status)}
           </Badge>
           {status?.adopted ? (
             <Link
               href={rulebookSourceHref(brandId, siteId, `pack:${pack.slug}`)}
               className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
             >
-              You already adopted {status.counts.total - status.counts.missing} of{" "}
-              {status.counts.total} items — see them in the Rulebook
+              You already adopted {status.counts.total - status.counts.missing}{" "}
+              of {status.counts.total} items — see them in the Rulebook
             </Link>
           ) : null}
         </div>
         <p className="mt-0.5 max-w-3xl text-[11px] leading-4 text-muted-foreground">
-          Nothing is written until you press Adopt. Untick anything you do not want; every
-          item you take becomes yours to edit or archive afterwards, and the platform never
-          re-applies it over your changes.
+          Nothing is written until you press Adopt. Untick anything you do not
+          want; every item you take becomes yours to edit or archive afterwards,
+          and the platform never re-applies it over your changes.
         </p>
       </div>
 
@@ -588,22 +645,26 @@ export function PackReview({
               <Skeleton className="h-5 w-3/4" />
               <Skeleton className="h-4 w-1/2" />
               <p className="text-[11px] text-muted-foreground">
-                Measuring the selected items against every keyword {siteDomain} got traffic on
-                in the last 28 days…
+                Measuring the selected items against every keyword {siteDomain}{" "}
+                got traffic on in the last 28 days…
               </p>
             </div>
           ) : preview.data && summary ? (
             <div className={cn(measuring ? "opacity-70" : "")}>
               <p className="text-sm text-foreground">
                 {tickedTotal === 0 ? (
-                  <>Nothing selected — tick what you want and the numbers appear here.</>
+                  <>
+                    Nothing selected — tick what you want and the numbers appear
+                    here.
+                  </>
                 ) : summary.matched_keywords === 0 ? (
                   <>
                     What you selected touches{" "}
                     <span className="font-semibold">none</span> of the{" "}
-                    {formatCount(preview.data.window_keywords)} keywords {siteDomain} got
-                    traffic on in the last 28 days. Safe to adopt; it will only matter for
-                    searches you are not seeing yet.
+                    {formatCount(preview.data.window_keywords)} keywords{" "}
+                    {siteDomain} got traffic on in the last 28 days. Safe to
+                    adopt; it will only matter for searches you are not seeing
+                    yet.
                   </>
                 ) : (
                   <>
@@ -611,8 +672,8 @@ export function PackReview({
                     <span className="font-semibold tabular-nums">
                       {formatCount(summary.matched_keywords)}
                     </span>{" "}
-                    of your {formatCount(preview.data.window_keywords)} keywords (
-                    {formatCount(summary.matched_clicks)} clicks ·{" "}
+                    of your {formatCount(preview.data.window_keywords)} keywords
+                    ({formatCount(summary.matched_clicks)} clicks ·{" "}
                     {formatCount(summary.matched_impressions)} impressions) —{" "}
                     <span className="font-semibold tabular-nums">
                       {formatCount(summary.moved_keywords)}
@@ -620,7 +681,8 @@ export function PackReview({
                     change tier
                     {unvaluedDelta > 0 ? (
                       <>
-                        , and Unvalued shrinks {formatCount(preview.data.unvalued_before)} →{" "}
+                        , and Unvalued shrinks{" "}
+                        {formatCount(preview.data.unvalued_before)} →{" "}
                         <span className="font-semibold tabular-nums">
                           {formatCount(preview.data.unvalued_after)}
                         </span>
@@ -632,14 +694,18 @@ export function PackReview({
               </p>
               {summary.stamped_only_keywords > 0 ? (
                 <p className="mt-1 flex items-start gap-1.5 text-[11px] leading-4 text-muted-foreground">
-                  <TriangleAlert className="mt-px h-3 w-3 shrink-0 text-warning" aria-hidden />
+                  <TriangleAlert
+                    className="mt-px h-3 w-3 shrink-0 text-warning"
+                    aria-hidden
+                  />
                   <span>
-                    {formatCount(summary.stamped_only_keywords)} of those are only{" "}
-                    <em>stamped</em>: the pack answers something about them but nothing says what subject they
-                    belong to, so they stay Unvalued until a topic worth reaches them. Topic
-                    worth below, and the{" "}
+                    {formatCount(summary.stamped_only_keywords)} of those are
+                    only <em>stamped</em>: the pack answers something about them
+                    but nothing says what subject they belong to, so they stay
+                    Unvalued until a topic worth reaches them. Topic worth
+                    below, and the{" "}
                     <Link
-                      href={`/marketing/brands/${brandId ?? ""}/sites/${siteId}/value/topics`}
+                      href={`/marketing/brands/${brandId ?? ""}/sites/${siteId}/value/offerings`}
                       className="underline underline-offset-2 hover:text-foreground"
                     >
                       Topics screen
@@ -662,9 +728,16 @@ export function PackReview({
                         <span className="font-medium tabular-nums text-foreground">
                           {formatCount(m.keywords)}
                         </span>
-                        <span className={cn("rounded px-1", from.chip)}>{from.label}</span>
-                        <ArrowRight className="h-2.5 w-2.5 text-muted-foreground" aria-hidden />
-                        <span className={cn("rounded px-1", to.chip)}>{to.label}</span>
+                        <span className={cn("rounded px-1", from.chip)}>
+                          {from.label}
+                        </span>
+                        <ArrowRight
+                          className="h-2.5 w-2.5 text-muted-foreground"
+                          aria-hidden
+                        />
+                        <span className={cn("rounded px-1", to.chip)}>
+                          {to.label}
+                        </span>
                       </li>
                     );
                   })}
@@ -673,8 +746,8 @@ export function PackReview({
               {summary.protected_keywords > 0 ? (
                 <p className="mt-1 text-[10px] text-muted-foreground">
                   {formatCount(summary.protected_keywords)} keyword
-                  {summary.protected_keywords === 1 ? "" : "s"} carry your own ruling and are
-                  never moved by arithmetic.
+                  {summary.protected_keywords === 1 ? "" : "s"} carry your own
+                  ruling and are never moved by arithmetic.
                 </p>
               ) : null}
             </div>
@@ -689,17 +762,27 @@ export function PackReview({
             hint="Each line is one ANSWER this industry gives — a value on a dimension, the phrases that spot it, and what it does to a keyword's score. ±points move the score up or down from the 100 baseline; a ×factor is only for relative words like “free”. Everything that fires shows up in that keyword's why chain. A keyword carries ONE answer per dimension, so where two of these compete for the same keyword the count above is within a percent, not to the row."
             selectable={selectableMeaning.length}
             selected={
-              selectableMeaning.filter((m) => ticked.has(keyOf("meaning", m.item_id))).length
+              selectableMeaning.filter((m) =>
+                ticked.has(keyOf("meaning", m.item_id)),
+              ).length
             }
             onAll={() =>
-              setMany(selectableMeaning.map((m) => keyOf("meaning", m.item_id)), true)
+              setMany(
+                selectableMeaning.map((m) => keyOf("meaning", m.item_id)),
+                true,
+              )
             }
             onNone={() =>
-              setMany(selectableMeaning.map((m) => keyOf("meaning", m.item_id)), false)
+              setMany(
+                selectableMeaning.map((m) => keyOf("meaning", m.item_id)),
+                false,
+              )
             }
           />
           {detail.meaning.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground">This pack proposes no meaning yet.</p>
+            <p className="text-[11px] text-muted-foreground">
+              This pack proposes no meaning yet.
+            </p>
           ) : (
             <ul className="space-y-1.5">
               {detail.meaning.map((item) => {
@@ -722,21 +805,31 @@ export function PackReview({
                         {item.label}
                       </span>
                       <Badge variant="outline" className="shrink-0 text-[10px]">
-                        {item.dimension_label ?? humanizeSlug(item.dimension_slug)}
+                        {item.dimension_label ??
+                          humanizeSlug(item.dimension_slug)}
                       </Badge>
                       {onSite && state ? (
-                        <SourceChip state={chipStateFor(state)} packName={pack.name} />
+                        <SourceChip
+                          state={chipStateFor(state)}
+                          packName={pack.name}
+                        />
                       ) : null}
                       <span
                         className={cn(
                           "shrink-0 text-xs font-semibold tabular-nums",
                           item.worth_effect === null
                             ? "text-muted-foreground"
-                            : worthIsDemotion(item.worth_effect, item.worth_amount)
+                            : worthIsDemotion(
+                                  item.worth_effect,
+                                  item.worth_amount,
+                                )
                               ? "text-warning"
                               : "text-success",
                         )}
-                        title={describeWorth(item.worth_effect, item.worth_amount)}
+                        title={describeWorth(
+                          item.worth_effect,
+                          item.worth_amount,
+                        )}
                       >
                         {shortWorth(item.worth_effect, item.worth_amount)}
                       </span>
@@ -751,8 +844,9 @@ export function PackReview({
                         <>
                           {" "}
                           <span className="text-muted-foreground/80">
-                            ({off} more phrase{off === 1 ? "" : "s"} come switched off — turn them
-                            on yourself on the Dimensions screen.)
+                            ({off} more phrase{off === 1 ? "" : "s"} come
+                            switched off — turn them on yourself on the
+                            Dimensions screen.)
                           </span>
                         </>
                       ) : null}
@@ -761,7 +855,8 @@ export function PackReview({
                     <div className="mt-1">
                       {onSite ? (
                         <span className="text-[11px] text-muted-foreground">
-                          Already on this site — manage it on the Dimensions screen.
+                          Already on this site — manage it on the Dimensions
+                          screen.
                         </span>
                       ) : (
                         <Numbers
@@ -802,9 +897,23 @@ export function PackReview({
             title="Topic worth"
             hint="What each part of the shared topic tree is worth to a business like yours — the base every answer above adds to. A keyword with no topic worth above it stays Unvalued no matter how much the pack knows about it."
             selectable={selectableTopics.length}
-            selected={selectableTopics.filter((t) => ticked.has(keyOf("topic", t.item_id))).length}
-            onAll={() => setMany(selectableTopics.map((t) => keyOf("topic", t.item_id)), true)}
-            onNone={() => setMany(selectableTopics.map((t) => keyOf("topic", t.item_id)), false)}
+            selected={
+              selectableTopics.filter((t) =>
+                ticked.has(keyOf("topic", t.item_id)),
+              ).length
+            }
+            onAll={() =>
+              setMany(
+                selectableTopics.map((t) => keyOf("topic", t.item_id)),
+                true,
+              )
+            }
+            onNone={() =>
+              setMany(
+                selectableTopics.map((t) => keyOf("topic", t.item_id)),
+                false,
+              )
+            }
           />
           {detail.topics.length === 0 ? (
             <p className="text-[11px] text-muted-foreground">
@@ -817,11 +926,12 @@ export function PackReview({
                 const onSite = isOnSite(state);
                 const key = keyOf("topic", topic.item_id);
                 const stats = topicStats.get(topic.item_id);
-                const guard = topic.lead_quality === "negative_value"
-                  ? GUARD_LABELS.negative_value
-                  : topic.offering_match && GUARD_LABELS[topic.offering_match]
-                    ? GUARD_LABELS[topic.offering_match]
-                    : null;
+                const guard =
+                  topic.lead_quality === "negative_value"
+                    ? GUARD_LABELS.negative_value
+                    : topic.offering_match && GUARD_LABELS[topic.offering_match]
+                      ? GUARD_LABELS[topic.offering_match]
+                      : null;
                 return (
                   <Row
                     key={topic.item_id}
@@ -835,7 +945,10 @@ export function PackReview({
                         {topic.name}
                       </span>
                       {onSite && state ? (
-                        <SourceChip state={chipStateFor(state)} packName={pack.name} />
+                        <SourceChip
+                          state={chipStateFor(state)}
+                          packName={pack.name}
+                        />
                       ) : null}
                       <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                         weight {topic.weight ?? "—"}
@@ -861,12 +974,16 @@ export function PackReview({
                           </span>
                         ) : (
                           <span className="text-[11px] tabular-nums text-foreground">
-                            <span className="font-medium">{formatCount(stats.keywords)}</span> of
-                            your keywords sit under this · {formatCount(stats.clicks)} clicks ·{" "}
+                            <span className="font-medium">
+                              {formatCount(stats.keywords)}
+                            </span>{" "}
+                            of your keywords sit under this ·{" "}
+                            {formatCount(stats.clicks)} clicks ·{" "}
                             {formatCount(stats.impressions)} impr.
                             {stats.would_base > 0 ? (
                               <span className="ml-1 text-primary">
-                                · {formatCount(stats.would_base)} get their base from it
+                                · {formatCount(stats.would_base)} get their base
+                                from it
                               </span>
                             ) : (
                               <span className="ml-1 text-muted-foreground">
@@ -907,8 +1024,18 @@ export function PackReview({
             hint="Archetypes of where a business like yours sells — ideal radius, acceptable region, out of market. The pack never carries somebody else's cities: when you adopt, you are asked for YOUR places; an area without them matches nothing and says so."
             selectable={selectableAreas.length}
             selected={tickedAreas.length}
-            onAll={() => setMany(selectableAreas.map((a) => keyOf("geo_area", a.item_id)), true)}
-            onNone={() => setMany(selectableAreas.map((a) => keyOf("geo_area", a.item_id)), false)}
+            onAll={() =>
+              setMany(
+                selectableAreas.map((a) => keyOf("geo_area", a.item_id)),
+                true,
+              )
+            }
+            onNone={() =>
+              setMany(
+                selectableAreas.map((a) => keyOf("geo_area", a.item_id)),
+                false,
+              )
+            }
           />
           {detail.geo_areas.length === 0 ? (
             <p className="text-[11px] text-muted-foreground">
@@ -924,7 +1051,8 @@ export function PackReview({
                   (i) => i.kind === "geo_area" && i.ref === area.item_id,
                 );
                 const pending = Boolean(
-                  (siteItem?.site as { places_pending?: boolean } | null)?.places_pending,
+                  (siteItem?.site as { places_pending?: boolean } | null)
+                    ?.places_pending,
                 );
                 return (
                   <Row
@@ -939,7 +1067,10 @@ export function PackReview({
                         {area.label}
                       </span>
                       {onSite && state ? (
-                        <SourceChip state={chipStateFor(state)} packName={pack.name} />
+                        <SourceChip
+                          state={chipStateFor(state)}
+                          packName={pack.name}
+                        />
                       ) : null}
                       <span className="shrink-0 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] text-foreground">
                         {humanizeSlug(area.geo_band)}
@@ -973,14 +1104,22 @@ export function PackReview({
             hint="The names and thresholds your tiers will use, and the multiplier each geo band applies. Take them as a start — renaming or re-thresholding is one click in the Rulebook and relabels every keyword instantly."
             selectable={selectableValueBands.length + selectableGeoBands.length}
             selected={
-              selectableValueBands.filter((b) => ticked.has(keyOf("value_band", b.item_id))).length +
-              selectableGeoBands.filter((b) => ticked.has(keyOf("geo_band", b.item_id))).length
+              selectableValueBands.filter((b) =>
+                ticked.has(keyOf("value_band", b.item_id)),
+              ).length +
+              selectableGeoBands.filter((b) =>
+                ticked.has(keyOf("geo_band", b.item_id)),
+              ).length
             }
             onAll={() =>
               setMany(
                 [
-                  ...selectableValueBands.map((b) => keyOf("value_band", b.item_id)),
-                  ...selectableGeoBands.map((b) => keyOf("geo_band", b.item_id)),
+                  ...selectableValueBands.map((b) =>
+                    keyOf("value_band", b.item_id),
+                  ),
+                  ...selectableGeoBands.map((b) =>
+                    keyOf("geo_band", b.item_id),
+                  ),
                 ],
                 true,
               )
@@ -988,8 +1127,12 @@ export function PackReview({
             onNone={() =>
               setMany(
                 [
-                  ...selectableValueBands.map((b) => keyOf("value_band", b.item_id)),
-                  ...selectableGeoBands.map((b) => keyOf("geo_band", b.item_id)),
+                  ...selectableValueBands.map((b) =>
+                    keyOf("value_band", b.item_id),
+                  ),
+                  ...selectableGeoBands.map((b) =>
+                    keyOf("geo_band", b.item_id),
+                  ),
                 ],
                 false,
               )
@@ -1009,7 +1152,9 @@ export function PackReview({
               ).map(([kind, title, bands]) =>
                 bands.length === 0 ? null : (
                   <div key={kind} className="space-y-1.5">
-                    <p className="text-[11px] font-medium text-foreground">{title}</p>
+                    <p className="text-[11px] font-medium text-foreground">
+                      {title}
+                    </p>
                     <ul className="space-y-1.5">
                       {bands.map((band) => {
                         const state = stateOf(status, kind, band.item_id);
@@ -1030,7 +1175,10 @@ export function PackReview({
                                 {band.label}
                               </span>
                               {onSite && state ? (
-                                <SourceChip state={chipStateFor(state)} packName={pack.name} />
+                                <SourceChip
+                                  state={chipStateFor(state)}
+                                  packName={pack.name}
+                                />
                               ) : null}
                               <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
                                 {kind === "value_band"
@@ -1076,7 +1224,9 @@ export function PackReview({
                 onToggle={() => setSeedGuidelines((v) => !v)}
                 label="Seed the guidelines skeleton"
               >
-                <p className="text-xs font-medium text-foreground">Seed the guidelines skeleton</p>
+                <p className="text-xs font-medium text-foreground">
+                  Seed the guidelines skeleton
+                </p>
                 <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/40 p-2 text-[11px] leading-relaxed text-muted-foreground scrollbar-thin">
                   {pack.guidelines}
                 </pre>
@@ -1105,10 +1255,16 @@ export function PackReview({
               onClick={() => {
                 setMany(
                   [
-                    ...selectableMeaning.map((m) => keyOf("meaning", m.item_id)),
+                    ...selectableMeaning.map((m) =>
+                      keyOf("meaning", m.item_id),
+                    ),
                     ...selectableTopics.map((t) => keyOf("topic", t.item_id)),
-                    ...selectableValueBands.map((b) => keyOf("value_band", b.item_id)),
-                    ...selectableGeoBands.map((b) => keyOf("geo_band", b.item_id)),
+                    ...selectableValueBands.map((b) =>
+                      keyOf("value_band", b.item_id),
+                    ),
+                    ...selectableGeoBands.map((b) =>
+                      keyOf("geo_band", b.item_id),
+                    ),
                     ...selectableAreas.map((a) => keyOf("geo_area", a.item_id)),
                   ],
                   tickedTotal < selectableTotal,
@@ -1123,7 +1279,10 @@ export function PackReview({
               size="sm"
               className="h-8 gap-1 text-xs"
               onClick={startAdoption}
-              disabled={adopt.isPending || (tickedTotal === 0 && !(seedGuidelines && pack.guidelines))}
+              disabled={
+                adopt.isPending ||
+                (tickedTotal === 0 && !(seedGuidelines && pack.guidelines))
+              }
             >
               <Download className="h-3.5 w-3.5" aria-hidden />
               {adopt.isPending

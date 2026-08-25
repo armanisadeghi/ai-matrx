@@ -31,7 +31,13 @@
 
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, BrainCircuit, Check, Loader2, UserCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  BrainCircuit,
+  Check,
+  Loader2,
+  UserCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
@@ -39,7 +45,10 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import { getTopicPlacementStatus } from "./data";
@@ -65,7 +74,7 @@ const PLACEMENT_STAGES: Record<string, string> = {
   "seo.placement_refreshed": "Measuring this site's Search Console demand…",
   "seo.placement_claimed": "Claiming the highest-demand unplaced keywords…",
   "seo.assign_topics_started": "Reading the keywords…",
-  "seo.assign_topics_tree_loaded": "Reading the shared topic tree…",
+  "seo.assign_topics_tree_loaded": "Reading the shared offering tree…",
   "seo.assign_topics_agent_completed": "Placing keywords on the tree…",
   "seo.assign_topics_applied": "Saving placements…",
   "seo.placement_settled": "Settling the batch…",
@@ -162,7 +171,7 @@ export function TopicPlacementStrip({
     path: PLACEMENT_PATH,
     finalKind: "seo.placement_completed",
     stageLabels: PLACEMENT_STAGES,
-    live: { label: "Topic assigner" },
+    live: { label: "Offering assigner" },
   });
 
   // The result lands on the handle (a durable run can also arrive by REJOIN
@@ -175,16 +184,16 @@ export function TopicPlacementStrip({
       result.ceiling_reached
         ? `Daily ceiling reached — ${formatCount(result.placed_today)} of ${formatCount(result.daily_ceiling)} keywords placed today.`
         : `Placed ${formatCount(result.placed)} of ${formatCount(result.claimed)} claimed` +
-          (result.proposed > 0
-            ? ` · ${formatCount(result.proposed)} need your confirmation`
-            : "") +
-          (result.human_protected > 0
-            ? ` · ${formatCount(result.human_protected)} left alone (you placed them)`
-            : "") +
-          (result.quarantined > 0
-            ? ` · ${formatCount(result.quarantined)} quarantined`
-            : "") +
-          ".",
+            (result.proposed > 0
+              ? ` · ${formatCount(result.proposed)} need your confirmation`
+              : "") +
+            (result.human_protected > 0
+              ? ` · ${formatCount(result.human_protected)} left alone (you placed them)`
+              : "") +
+            (result.quarantined > 0
+              ? ` · ${formatCount(result.quarantined)} quarantined`
+              : "") +
+            ".",
     );
     if (result.error) toast.error(result.error);
     // Placement moves the tree, the offering split and every value the
@@ -201,7 +210,7 @@ export function TopicPlacementStrip({
       <div className="flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-1.5">
         <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
         <p className="text-xs text-foreground">
-          Could not read the topic placement status.
+          Could not read the offering placement status.
         </p>
       </div>
     );
@@ -226,7 +235,7 @@ export function TopicPlacementStrip({
         <p className="text-xs font-medium text-foreground">
           Placing keywords on the tree{" "}
           <span className="font-normal text-muted-foreground">
-            — a keyword with no topic can never resolve a value
+            — a keyword with no offering can never resolve a value
           </span>
         </p>
         {complete ? (
@@ -256,7 +265,7 @@ export function TopicPlacementStrip({
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <CopyButtons
             size="xs"
-            label="Topic placement status"
+            label="Offering placement status"
             human={() =>
               humanLines([
                 ["Search Console clicks placed", `${clicksPlaced.toFixed(1)}%`],
@@ -277,9 +286,9 @@ export function TopicPlacementStrip({
             }
             agent={() => ({
               kind: "seo-topic-placement-status",
-              location: webLocation("Topic tree"),
+              location: webLocation("Offering tree"),
               description:
-                "How much of this site's Search Console demand sits on the topic tree, measured by clicks rather than row count, plus what the placement queue still owes and what the assigner placed but is not sure about.",
+                "How much of this site's Search Console demand sits on the offering tree, measured by clicks rather than row count, plus what the placement queue still owes and what the assigner placed but is not sure about.",
               data: row,
               attributes: { site_id: siteId, min_impressions: minImpressions },
             })}
@@ -337,16 +346,17 @@ export function TopicPlacementStrip({
       <p className="text-[10px] leading-relaxed text-muted-foreground">
         {row.next_phrase && !complete ? (
           <>
-            Next up: <span className="text-foreground">{row.next_phrase}</span> —
-            the queue is ordered by the clicks and impressions a keyword actually
-            earned in the last {row.demand_window_days ?? 90} days.{" "}
+            Next up: <span className="text-foreground">{row.next_phrase}</span>{" "}
+            — the queue is ordered by the clicks and impressions a keyword
+            actually earned in the last {row.demand_window_days ?? 90}{" "}
+            days.{" "}
           </>
         ) : null}
         {row.queue_deferred > 0 ? (
           <>
-            {formatCount(row.queue_deferred)} keywords are held back by the demand
-            floor ({minImpressions} impressions), not placed and not counted as
-            done.{" "}
+            {formatCount(row.queue_deferred)} keywords are held back by the
+            demand floor ({minImpressions} impressions), not placed and not
+            counted as done.{" "}
           </>
         ) : null}
         {row.placed_by_human > 0 ? (

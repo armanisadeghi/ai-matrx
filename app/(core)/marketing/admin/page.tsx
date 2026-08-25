@@ -485,12 +485,12 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/marketing/brands/[brandId]/sites/[siteId]/value/topics",
-      label: "Keyword Value topic tree",
+      url: "/marketing/brands/[brandId]/sites/[siteId]/value/offerings",
+      label: "Keyword Value offering tree",
       description:
-        "Shared topic hierarchy with aligned sortable metrics, delegated universal context menu, impact-previewed deletion/reassignment, and filtered keyword drill-down panels.",
+        "Shared offering hierarchy in the canonical editable table, with URL-backed sort/filter/search, impact-previewed deletion, and keyword drill-down panels.",
       filePath:
-        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/topics/page.tsx",
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/value/offerings/page.tsx",
       status: "Live",
     },
     {

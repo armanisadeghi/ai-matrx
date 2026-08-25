@@ -219,7 +219,7 @@ export const MARKETING_SITE_SECTIONS = [
     // "Value" alone read as a generic word on a sidebar of 22 sections and
     // gave no clue it was the other half of Keywords (2026-08-24).
     description:
-      "Decide what your search traffic is worth: dimensions, the rulebook, service areas, topics, and the scores and levels they produce.",
+      "Decide what your search traffic is worth: dimensions, the rulebook, offerings, and the scores and levels they produce.",
     letter: "Vl",
     group: "Search & SEO",
   },

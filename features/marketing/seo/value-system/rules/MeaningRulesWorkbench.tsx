@@ -120,7 +120,11 @@ import {
   valueRulesQueryKey,
   valueSurfaceQueryKeys,
 } from "./data";
-import type { GeoAreaHealthRow, MeaningUsageRow, ValueRuleHealthRow } from "./types";
+import type {
+  GeoAreaHealthRow,
+  MeaningUsageRow,
+  ValueRuleHealthRow,
+} from "./types";
 
 /** The honest usage chip: measuring · unavailable · fires on nothing · N keywords. */
 function UsageChip({
@@ -166,7 +170,8 @@ function UsageChip({
   }
   return (
     <span className="shrink-0 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
-      {formatCount(usage.keywords)} keywords · {formatCount(usage.clicks)} clicks
+      {formatCount(usage.keywords)} keywords · {formatCount(usage.clicks)}{" "}
+      clicks
     </span>
   );
 }
@@ -197,7 +202,9 @@ function RuleStateChip({ health }: { health: ValueRuleHealthRow | undefined }) {
       warn: true,
     },
     shadowed: {
-      label: health.conflict_rule ? `“${health.conflict_rule}” wins` : "another rule wins",
+      label: health.conflict_rule
+        ? `“${health.conflict_rule}” wins`
+        : "another rule wins",
       title:
         "Another live rule already sets what this value is worth here. Two multipliers on one value is a contradiction, so the first one keeps it — edit or archive that rule to hand this one the value.",
       className: "border-warning/40 bg-warning/10 text-warning",
@@ -212,13 +219,15 @@ function RuleStateChip({ health }: { health: ValueRuleHealthRow | undefined }) {
     },
     no_hits: {
       label: "no matches yet",
-      title: "Wired up correctly — no keyword on this site has matched it so far.",
+      title:
+        "Wired up correctly — no keyword on this site has matched it so far.",
       className: "border-border bg-muted/40 text-muted-foreground",
       warn: false,
     },
     empty: {
       label: "nothing to apply",
-      title: "The row carries neither a class nor a multiplier, so there is nothing to score.",
+      title:
+        "The row carries neither a class nor a multiplier, so there is nothing to score.",
       className: "border-warning/40 bg-warning/10 text-warning",
       warn: true,
     },
@@ -253,7 +262,9 @@ function chipState(state: PackItemState): SourceChipState {
 
 function ruleSummary(v: Record<string, unknown>): string {
   return `${describeMultiplier(typeof v.value_multiplier === "number" ? v.value_multiplier : Number(v.value_multiplier))}${
-    v.pattern ? ` · ${describeRuleMatch({ pattern: String(v.pattern), match_kind: String(v.match_kind ?? "contains"), match_facet: null, match_facet_value: null })}` : ""
+    v.pattern
+      ? ` · ${describeRuleMatch({ pattern: String(v.pattern), match_kind: String(v.match_kind ?? "contains"), match_facet: null, match_facet_value: null })}`
+      : ""
   }${
     v.match_facet
       ? ` · ${describeRuleMatch({ pattern: null, match_kind: null, match_facet: String(v.match_facet), match_facet_value: String(v.match_facet_value ?? "") })}`
@@ -337,7 +348,10 @@ function BandRows({
                 platform default
               </span>
             ) : prov ? (
-              <SourceChip state={chipState(prov.state)} packName={packNameOf(prov.packSlug)} />
+              <SourceChip
+                state={chipState(prov.state)}
+                packName={packNameOf(prov.packSlug)}
+              />
             ) : (
               <SourceChip state="yours" />
             )}
@@ -373,8 +387,12 @@ export function MeaningRulesWorkbench() {
   const windowLabel = "the last 28 days";
   const basePath = marketingRoutes.site(brandId, siteId, "/value/rules");
 
-  const [editingRule, setEditingRule] = useState<ValueRule | null | undefined>(undefined);
-  const [editingArea, setEditingArea] = useState<SiteGeoArea | null | undefined>(undefined);
+  const [editingRule, setEditingRule] = useState<ValueRule | null | undefined>(
+    undefined,
+  );
+  const [editingArea, setEditingArea] = useState<
+    SiteGeoArea | null | undefined
+  >(undefined);
   /**
    * `?bands=value_band` — the door every value receipt points at when the
    * reader asks how a score becomes a LEVEL. Seeded from the URL so the link
@@ -383,7 +401,9 @@ export function MeaningRulesWorkbench() {
    */
   const bandsParam = searchParams.get("bands");
   const bandsFromUrl: VocabKind | null =
-    bandsParam === "value_band" || bandsParam === "geo_band" ? bandsParam : null;
+    bandsParam === "value_band" || bandsParam === "geo_band"
+      ? bandsParam
+      : null;
   const [editingBands, setEditingBands] = useState<VocabKind | null>(
     bandsFromUrl,
   );
@@ -397,7 +417,10 @@ export function MeaningRulesWorkbench() {
   const [reconnecting, setReconnecting] = useState(false);
   const [reconnectingRules, setReconnectingRules] = useState(false);
   const goToPlaceDetection = () => {
-    placeDetectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    placeDetectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
     setFlashPlaceDetection(true);
     globalThis.setTimeout(() => setFlashPlaceDetection(false), 1600);
   };
@@ -446,7 +469,8 @@ export function MeaningRulesWorkbench() {
   });
   const usage = useQuery({
     queryKey: meaningUsageQueryKey(siteId, window.start, window.end),
-    queryFn: ({ signal }) => getMeaningUsage(siteId, window.start, window.end, signal),
+    queryFn: ({ signal }) =>
+      getMeaningUsage(siteId, window.start, window.end, signal),
     staleTime: 60_000,
   });
   const adoptions = useQuery({
@@ -467,16 +491,22 @@ export function MeaningRulesWorkbench() {
 
   const bandMetas = buildBandMeta(bands.data ?? []);
   const usageByRule = new Map<string, MeaningUsageRow>(
-    (usage.data ?? []).filter((row) => row.kind === "rule").map((row) => [row.ref, row]),
+    (usage.data ?? [])
+      .filter((row) => row.kind === "rule")
+      .map((row) => [row.ref, row]),
   );
   const healthByArea = new Map<string, GeoAreaHealthRow>(
     (areaHealth.data ?? []).map((row) => [row.area_id, row]),
   );
-  const disconnectedAreas = (areaHealth.data ?? []).filter((row) => row.state === "disconnected");
+  const disconnectedAreas = (areaHealth.data ?? []).filter(
+    (row) => row.state === "disconnected",
+  );
   const healthByRule = new Map<string, ValueRuleHealthRow>(
     (ruleHealth.data ?? []).map((row) => [row.rule_id, row]),
   );
-  const disconnectedRules = (ruleHealth.data ?? []).filter((row) => row.state === "disconnected");
+  const disconnectedRules = (ruleHealth.data ?? []).filter(
+    (row) => row.state === "disconnected",
+  );
   const geoBandMultiplier = (value: string): number | null => {
     const band = (geoBands.data ?? []).find((b) => b.value === value);
     const raw = band?.config?.multiplier;
@@ -489,7 +519,8 @@ export function MeaningRulesWorkbench() {
     // A disconnected area's leftover stamps are about to be swept; saying
     // "matches 62" beside "changes no score" would be two truths that read as
     // a contradiction. The alarm owns that row.
-    if (!health || health.state === "disconnected" || health.stamps <= 0) return false;
+    if (!health || health.state === "disconnected" || health.stamps <= 0)
+      return false;
     if (usage.isPending || usage.isError) return false;
     const area = (areas.data ?? []).find((a) => a.id === areaId);
     if (!area) return false;
@@ -497,17 +528,26 @@ export function MeaningRulesWorkbench() {
     return (geoBandMultiplier(area.geo_band) ?? 1) === 1;
   };
   const usageByArea = new Map<string, MeaningUsageRow>(
-    (usage.data ?? []).filter((row) => row.kind === "geo_area").map((row) => [row.ref, row]),
+    (usage.data ?? [])
+      .filter((row) => row.kind === "geo_area")
+      .map((row) => [row.ref, row]),
   );
 
   // ── provenance maps ──────────────────────────────────────────────────────
   const adoptionBySlug = new Map<string, StarterPackAdoption>(
     (adoptions.data ?? []).map((a) => [a.slug, a]),
   );
-  const packNameOf = (slug: string) => adoptionBySlug.get(slug)?.name ?? humanizeSlug(slug);
+  const packNameOf = (slug: string) =>
+    adoptionBySlug.get(slug)?.name ?? humanizeSlug(slug);
   const bySiteRow = new Map<string, Provenance>();
-  const bandStateByValue = new Map<string, { state: PackItemState; packSlug: string }>();
-  const geoBandStateByValue = new Map<string, { state: PackItemState; packSlug: string }>();
+  const bandStateByValue = new Map<
+    string,
+    { state: PackItemState; packSlug: string }
+  >();
+  const geoBandStateByValue = new Map<
+    string,
+    { state: PackItemState; packSlug: string }
+  >();
   statuses.forEach((q, i) => {
     const adoption = adoptions.data?.[i];
     if (!q.data || !adoption) return;
@@ -521,27 +561,49 @@ export function MeaningRulesWorkbench() {
         });
       }
       if (item.kind === "value_band" && item.site && item.state !== "missing") {
-        bandStateByValue.set(String(item.pack.value), { state: item.state, packSlug: adoption.slug });
+        bandStateByValue.set(String(item.pack.value), {
+          state: item.state,
+          packSlug: adoption.slug,
+        });
       }
       if (item.kind === "geo_band" && item.site && item.state !== "missing") {
-        geoBandStateByValue.set(String(item.pack.value), { state: item.state, packSlug: adoption.slug });
+        geoBandStateByValue.set(String(item.pack.value), {
+          state: item.state,
+          packSlug: adoption.slug,
+        });
       }
     }
   });
 
   const chipFor = (rowId: string, meta: { adopted_from_pack?: string }) => {
     const prov = bySiteRow.get(rowId);
-    if (prov) return <SourceChip state={chipState(prov.item.state)} packName={prov.packName} />;
+    if (prov)
+      return (
+        <SourceChip
+          state={chipState(prov.item.state)}
+          packName={prov.packName}
+        />
+      );
     if (rowOrigin(meta) === "pack")
-      return <SourceChip state="pack" packName={packNameOf(meta.adopted_from_pack ?? "")} />;
+      return (
+        <SourceChip
+          state="pack"
+          packName={packNameOf(meta.adopted_from_pack ?? "")}
+        />
+      );
     return <SourceChip state="yours" />;
   };
 
-  const matchesSource = (rowId: string, meta: { adopted_from_pack?: string }): boolean => {
+  const matchesSource = (
+    rowId: string,
+    meta: { adopted_from_pack?: string },
+  ): boolean => {
     if (!sourceFilter) return true;
     if (sourceFilter === "yours") return rowOrigin(meta) === "yours";
-    if (sourceFilter === "changed") return bySiteRow.get(rowId)?.item.state === "changed";
-    if (sourceFilter.startsWith("pack:")) return meta.adopted_from_pack === sourceFilter.slice(5);
+    if (sourceFilter === "changed")
+      return bySiteRow.get(rowId)?.item.state === "changed";
+    if (sourceFilter.startsWith("pack:"))
+      return meta.adopted_from_pack === sourceFilter.slice(5);
     return true;
   };
 
@@ -590,10 +652,9 @@ export function MeaningRulesWorkbench() {
       await queryClient.invalidateQueries({ queryKey: ["seo"] });
       await queryClient.invalidateQueries({ queryKey: ["marketing"] });
     } catch (error) {
-      toast.error(
-        extractErrorMessage(error),
-        { description: "Your service areas were not changed." },
-      );
+      toast.error(extractErrorMessage(error), {
+        description: "Your service areas were not changed.",
+      });
     } finally {
       setReconnecting(false);
     }
@@ -636,7 +697,9 @@ export function MeaningRulesWorkbench() {
     router.push(qs ? `${basePath}?${qs}` : basePath);
   };
 
-  const visibleRules = (rules.data ?? []).filter((r) => matchesSource(r.id, r.metadata));
+  const visibleRules = (rules.data ?? []).filter((r) =>
+    matchesSource(r.id, r.metadata),
+  );
   /**
    * `#service-areas` — the keyword front door's "where searches come from" door
    * lands here. A bare fragment cannot do the job: the section does not exist
@@ -658,9 +721,9 @@ export function MeaningRulesWorkbench() {
   }, [areas.data]);
 
   const incompleteAreas = (areas.data ?? []).filter(areaNeedsPlaces);
-  const visibleAreas = (onlyIncompleteAreas ? incompleteAreas : (areas.data ?? [])).filter((a) =>
-    matchesSource(a.id, a.metadata),
-  );
+  const visibleAreas = (
+    onlyIncompleteAreas ? incompleteAreas : (areas.data ?? [])
+  ).filter((a) => matchesSource(a.id, a.metadata));
   const pathWithoutAreaFilter = sourceFilter
     ? `${basePath}?${RULEBOOK_SOURCE_QUERY}=${encodeURIComponent(sourceFilter)}`
     : basePath;
@@ -880,7 +943,7 @@ export function MeaningRulesWorkbench() {
             Back to the value workbench
           </Link>
           <Link
-            href={marketingRoutes.site(brandId, siteId, "/value/topics")}
+            href={marketingRoutes.site(brandId, siteId, "/value/offerings")}
             className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
             title="Rules are one half of the arithmetic; topic worth is the other — the base every rule multiplies."
           >
@@ -898,13 +961,14 @@ export function MeaningRulesWorkbench() {
         </div>
         <div>
           <h1 className="text-sm font-semibold text-foreground">
-            Your rulebook — what words, places and tiers are worth to {site.domain}
+            Your rulebook — what words, places and tiers are worth to{" "}
+            {site.domain}
           </h1>
           <p className="mt-0.5 max-w-3xl text-[11px] leading-4 text-muted-foreground">
-            Every number on the value workbench comes from here. Each row says where it came
-            from — an industry pack, or you — and once it is here it is yours: edit it, archive
-            it, or put it back to what the pack proposed. The platform never re-applies a pack
-            over your changes.
+            Every number on the value workbench comes from here. Each row says
+            where it came from — an industry pack, or you — and once it is here
+            it is yours: edit it, archive it, or put it back to what the pack
+            proposed. The platform never re-applies a pack over your changes.
           </p>
         </div>
         <ReadyDefaultsBanner />
@@ -913,7 +977,10 @@ export function MeaningRulesWorkbench() {
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
               Show
             </span>
-            <SourceFilterChip active={!sourceFilter} onClick={() => setSource(null)}>
+            <SourceFilterChip
+              active={!sourceFilter}
+              onClick={() => setSource(null)}
+            >
               All
             </SourceFilterChip>
             {(adoptions.data ?? []).map((a) => (
@@ -973,7 +1040,9 @@ export function MeaningRulesWorkbench() {
                 `Value rule: ${rule.name}`,
                 `Fires when the search ${describeRuleMatch(rule)}`,
                 `Multiplier: ×${String(rule.value_multiplier ?? 1)} — ${describeMultiplier(rule.value_multiplier)}`,
-                rule.target_class ? `Sets the class: ${humanizeSlug(rule.target_class)}` : null,
+                rule.target_class
+                  ? `Sets the class: ${humanizeSlug(rule.target_class)}`
+                  : null,
                 `State: ${health?.state ?? "unknown"}`,
                 usageRow
                   ? `Fires on ${formatCount(usageRow.keywords)} keywords · ${formatCount(usageRow.clicks)} clicks in ${windowLabel}`
@@ -1034,485 +1103,528 @@ export function MeaningRulesWorkbench() {
             : []
         }
       >
-      {/* `overscroll-contain` is load-bearing, not cosmetic: this page nests its
+        {/* `overscroll-contain` is load-bearing, not cosmetic: this page nests its
           own scroll surface inside the shell's, and without it a trackpad scroll
           with any horizontal drift reaches the browser as a BACK gesture — the
           page silently navigated to `/value` mid-edit, discarding an open "New
           geo area" dialog, which is why this bench felt unreachable. Found by
           the KI-010 geo walk, 2026-08-25. The repo convention is on 100+ other
           scroll containers; this one was the exception. */}
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-3 scrollbar-thin sm:p-4">
-        {/* ── Value rules ── */}
-        <section className="space-y-2">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <h2 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                <ListChecks className="h-3.5 w-3.5 text-primary" aria-hidden />
-                Value rules
-                {rules.data ? (
-                  <span className="font-normal text-muted-foreground">
-                    ({sourceFilter ? `${visibleRules.length} of ` : ""}
-                    {rules.data.length})
-                  </span>
-                ) : null}
-              </h2>
-              <p className="mt-0.5 max-w-2xl text-[11px] leading-4 text-muted-foreground">
-                A matched word or a detected fact multiplies the score. Under ×1 is a demotion,
-                over ×1 a promotion — and every rule that fires shows up in that keyword&apos;s
-                why chain.
-              </p>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setEditingRule(null)}
-              className="h-7 shrink-0 gap-1 text-xs"
-            >
-              <Plus className="h-3.5 w-3.5" aria-hidden />
-              New rule
-            </Button>
-          </div>
-
-          {rules.isLoading ? (
-            <div className="space-y-1.5">
-              <Skeleton className="h-12 rounded-md" />
-              <Skeleton className="h-12 rounded-md" />
-              <Skeleton className="h-12 rounded-md" />
-            </div>
-          ) : null}
-          {rules.isError ? (
-            <InlineQueryError
-              what="value rules"
-              error={rules.error}
-              onRetry={() => void rules.refetch()}
-            />
-          ) : null}
-          {rules.data && rules.data.length === 0 ? (
-            <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-[11px] text-muted-foreground">
-              No value rules yet. This is where “free” costs a keyword four fifths of its
-              worth, or a certification-seeking search triples it — the polarity that is
-              different for every business. Write one, or{" "}
-              <Link
-                href={marketingRoutes.site(brandId, siteId, "/value/packs")}
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                preview an industry pack on your keywords
-              </Link>
-              .
-            </p>
-          ) : null}
-          {rules.data && rules.data.length > 0 && visibleRules.length === 0 ? (
-            <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-3 text-[11px] text-muted-foreground">
-              No rules match this filter.{" "}
-              <button
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-3 scrollbar-thin sm:p-4">
+          {/* ── Value rules ── */}
+          <section className="space-y-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h2 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <ListChecks
+                    className="h-3.5 w-3.5 text-primary"
+                    aria-hidden
+                  />
+                  Value rules
+                  {rules.data ? (
+                    <span className="font-normal text-muted-foreground">
+                      ({sourceFilter ? `${visibleRules.length} of ` : ""}
+                      {rules.data.length})
+                    </span>
+                  ) : null}
+                </h2>
+                <p className="mt-0.5 max-w-2xl text-[11px] leading-4 text-muted-foreground">
+                  A matched word or a detected fact multiplies the score. Under
+                  ×1 is a demotion, over ×1 a promotion — and every rule that
+                  fires shows up in that keyword&apos;s why chain.
+                </p>
+              </div>
+              <Button
                 type="button"
-                onClick={() => setSource(null)}
-                className="underline underline-offset-2 hover:text-foreground"
+                size="sm"
+                onClick={() => setEditingRule(null)}
+                className="h-7 shrink-0 gap-1 text-xs"
               >
-                Show all {rules.data.length}
-              </button>
-              .
-            </p>
-          ) : null}
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                New rule
+              </Button>
+            </div>
 
-          {/* 🚨 THE LOUDEST STATE IN THIS SECTION, and the exact twin of the one
+            {rules.isLoading ? (
+              <div className="space-y-1.5">
+                <Skeleton className="h-12 rounded-md" />
+                <Skeleton className="h-12 rounded-md" />
+                <Skeleton className="h-12 rounded-md" />
+              </div>
+            ) : null}
+            {rules.isError ? (
+              <InlineQueryError
+                what="value rules"
+                error={rules.error}
+                onRetry={() => void rules.refetch()}
+              />
+            ) : null}
+            {rules.data && rules.data.length === 0 ? (
+              <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-[11px] text-muted-foreground">
+                No value rules yet. This is where “free” costs a keyword four
+                fifths of its worth, or a certification-seeking search triples
+                it — the polarity that is different for every business. Write
+                one, or{" "}
+                <Link
+                  href={marketingRoutes.site(brandId, siteId, "/value/packs")}
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  preview an industry pack on your keywords
+                </Link>
+                .
+              </p>
+            ) : null}
+            {rules.data &&
+            rules.data.length > 0 &&
+            visibleRules.length === 0 ? (
+              <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-3 text-[11px] text-muted-foreground">
+                No rules match this filter.{" "}
+                <button
+                  type="button"
+                  onClick={() => setSource(null)}
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  Show all {rules.data.length}
+                </button>
+                .
+              </p>
+            ) : null}
+
+            {/* 🚨 THE LOUDEST STATE IN THIS SECTION, and the exact twin of the one
               on service areas below. A rule whose words and multiplier are
               typed reads as finished on every screen; until 2026-08-24 that was
               all it ever was, because authoring minted no matcher and no worth
               and the resolver reads stamps. Stated plainly, fixed in one click. */}
-          {disconnectedRules.length > 0 ? (
-            <div className="flex flex-wrap items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2">
-              <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-destructive" aria-hidden />
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold text-destructive">
-                  {disconnectedRules.length} value rule
-                  {disconnectedRules.length === 1 ? "" : "s"} change
-                  {disconnectedRules.length === 1 ? "s" : ""} no score
-                </p>
-                <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-                  The words and the multipliers are typed —{" "}
-                  {disconnectedRules.map((r) => r.name).join(", ")} — but nothing connects them
-                  to your value tiers, so they count for nothing in what any keyword is worth.
-                  Reconnecting takes one click and changes nothing you typed.
-                </p>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="destructive"
-                disabled={reconnectingRules}
-                onClick={() => void runRuleReconnect()}
-                className="h-7 shrink-0 gap-1 text-xs"
-              >
-                <PlugZap className="h-3.5 w-3.5" aria-hidden />
-                {reconnectingRules ? "Reconnecting…" : "Reconnect them"}
-              </Button>
-            </div>
-          ) : null}
-
-          <ul className="space-y-1.5">
-            {visibleRules.map((rule) => (
-              <li key={rule.id} data-rule-id={rule.id}>
-                <button
-                  type="button"
-                  onClick={() => setEditingRule(rule)}
-                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-accent"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
-                      {rule.name}
-                    </span>
-                    {chipFor(rule.id, rule.metadata)}
-                    <RuleStateChip health={healthByRule.get(rule.id)} />
-                    <UsageChip
-                      usage={usageByRule.get(rule.id)}
-                      loading={usage.isPending}
-                      failed={usage.isError}
-                    />
-                    <span
-                      className={cn(
-                        "shrink-0 text-xs font-semibold tabular-nums",
-                        (rule.value_multiplier ?? 1) < 1 ? "text-warning" : "text-success",
-                      )}
-                      title={describeMultiplier(rule.value_multiplier)}
-                    >
-                      ×{rule.value_multiplier}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-                    Fires when the search {describeRuleMatch(rule)}
-                    {rule.description ? ` — ${rule.description}` : ""}
+            {disconnectedRules.length > 0 ? (
+              <div className="flex flex-wrap items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2">
+                <TriangleAlert
+                  className="mt-px h-3.5 w-3.5 shrink-0 text-destructive"
+                  aria-hidden
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold text-destructive">
+                    {disconnectedRules.length} value rule
+                    {disconnectedRules.length === 1 ? "" : "s"} change
+                    {disconnectedRules.length === 1 ? "s" : ""} no score
                   </p>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+                  <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                    The words and the multipliers are typed —{" "}
+                    {disconnectedRules.map((r) => r.name).join(", ")} — but
+                    nothing connects them to your value tiers, so they count for
+                    nothing in what any keyword is worth. Reconnecting takes one
+                    click and changes nothing you typed.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  disabled={reconnectingRules}
+                  onClick={() => void runRuleReconnect()}
+                  className="h-7 shrink-0 gap-1 text-xs"
+                >
+                  <PlugZap className="h-3.5 w-3.5" aria-hidden />
+                  {reconnectingRules ? "Reconnecting…" : "Reconnect them"}
+                </Button>
+              </div>
+            ) : null}
 
-        {/* ── Service areas ──
+            <ul className="space-y-1.5">
+              {visibleRules.map((rule) => (
+                <li key={rule.id} data-rule-id={rule.id}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingRule(rule)}
+                    className="w-full rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-accent"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+                        {rule.name}
+                      </span>
+                      {chipFor(rule.id, rule.metadata)}
+                      <RuleStateChip health={healthByRule.get(rule.id)} />
+                      <UsageChip
+                        usage={usageByRule.get(rule.id)}
+                        loading={usage.isPending}
+                        failed={usage.isError}
+                      />
+                      <span
+                        className={cn(
+                          "shrink-0 text-xs font-semibold tabular-nums",
+                          (rule.value_multiplier ?? 1) < 1
+                            ? "text-warning"
+                            : "text-success",
+                        )}
+                        title={describeMultiplier(rule.value_multiplier)}
+                      >
+                        ×{rule.value_multiplier}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+                      Fires when the search {describeRuleMatch(rule)}
+                      {rule.description ? ` — ${rule.description}` : ""}
+                    </p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* ── Service areas ──
             `id` is load-bearing: the keyword front door ("Start here") sends
             "where searches come from" straight to this section by anchor, so it
             is a real destination and not a page a person has to scan. */}
-        <section id="service-areas" className="scroll-mt-4 space-y-2">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <h2 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                <MapPinned className="h-3.5 w-3.5 text-primary" aria-hidden />
-                Service areas
-                {areas.data ? (
-                  <span className="font-normal text-muted-foreground">
-                    {onlyIncompleteAreas
-                      ? `(${incompleteAreas.length} of ${areas.data.length} — showing only the ones with no places)`
-                      : `(${sourceFilter ? `${visibleAreas.length} of ` : ""}${areas.data.length})`}
-                  </span>
-                ) : null}
-              </h2>
-              <p className="mt-0.5 max-w-2xl text-[11px] leading-4 text-muted-foreground">
-                Real place names, mapped onto your geo bands. When more than one area matches a
-                search the lowest multiplier wins, so somewhere you never serve beats somewhere
-                you love.
-              </p>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setEditingArea(null)}
-              className="h-7 shrink-0 gap-1 text-xs"
-            >
-              <Plus className="h-3.5 w-3.5" aria-hidden />
-              New area
-            </Button>
-          </div>
-
-          {/* The other half of the geo match: an area can only fire on a
-              keyword that has been read for the places it names. */}
-          <div
-            ref={placeDetectionRef}
-            className={cn(
-              "rounded-md transition-shadow",
-              flashPlaceDetection ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : null,
-            )}
-          >
-            <PlaceDetectionStrip siteId={siteId} />
-          </div>
-
-          {areas.isLoading ? (
-            <div className="space-y-1.5">
-              <Skeleton className="h-12 rounded-md" />
-              <Skeleton className="h-12 rounded-md" />
-            </div>
-          ) : null}
-          {areas.isError ? (
-            <InlineQueryError
-              what="service areas"
-              error={areas.error}
-              onRetry={() => void areas.refetch()}
-            />
-          ) : null}
-          {areas.data && areas.data.length === 0 ? (
-            <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-[11px] text-muted-foreground">
-              No service areas yet, so location plays no part in any keyword&apos;s worth. Add
-              the places you serve — and the ones you never will.
-            </p>
-          ) : null}
-
-          {/* 🚨 THE LOUDEST STATE ON THIS PAGE. An area full of places that
-              carries no matchers looks finished everywhere else and changes no
-              score at all — the silence that hid a dead geo system for months.
-              It is stated plainly, and the fix is one button. */}
-          {disconnectedAreas.length > 0 ? (
-            <div className="flex flex-wrap items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2">
-              <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-destructive" aria-hidden />
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold text-destructive">
-                  {disconnectedAreas.length} service area
-                  {disconnectedAreas.length === 1 ? "" : "s"} match
-                  {disconnectedAreas.length === 1 ? "es" : ""} nothing, so{" "}
-                  {disconnectedAreas.length === 1 ? "it changes" : "they change"} no score
-                </p>
-                <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-                  The places are named — {disconnectedAreas.map((a) => a.label).join(", ")} — but
-                  nothing connects them to your value tiers, so geography counts for nothing in
-                  what any keyword is worth. Reconnecting takes one click and changes nothing you
-                  typed.
+          <section id="service-areas" className="scroll-mt-4 space-y-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h2 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <MapPinned className="h-3.5 w-3.5 text-primary" aria-hidden />
+                  Service areas
+                  {areas.data ? (
+                    <span className="font-normal text-muted-foreground">
+                      {onlyIncompleteAreas
+                        ? `(${incompleteAreas.length} of ${areas.data.length} — showing only the ones with no places)`
+                        : `(${sourceFilter ? `${visibleAreas.length} of ` : ""}${areas.data.length})`}
+                    </span>
+                  ) : null}
+                </h2>
+                <p className="mt-0.5 max-w-2xl text-[11px] leading-4 text-muted-foreground">
+                  Real place names, mapped onto your geo bands. When more than
+                  one area matches a search the lowest multiplier wins, so
+                  somewhere you never serve beats somewhere you love.
                 </p>
               </div>
               <Button
                 type="button"
                 size="sm"
-                variant="destructive"
-                disabled={reconnecting}
-                onClick={() => void runReconnect()}
+                onClick={() => setEditingArea(null)}
                 className="h-7 shrink-0 gap-1 text-xs"
               >
-                <PlugZap className="h-3.5 w-3.5" aria-hidden />
-                {reconnecting ? "Reconnecting…" : "Reconnect them"}
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                New area
               </Button>
             </div>
-          ) : null}
 
-          {incompleteAreas.length > 0 ? (
-            <div className="flex flex-wrap items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2">
-              <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold text-warning">
-                  {incompleteAreas.length} service area
-                  {incompleteAreas.length === 1 ? " has" : "s have"} no places yet — add them
-                </p>
-                <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-                  {incompleteAreas.length === 1 ? "It was" : "They were"} created with a name
-                  and a band but nothing inside, so no search has ever matched{" "}
-                  {incompleteAreas.length === 1 ? "it" : "them"} and geography counts for
-                  nothing in your value tiers. Open{" "}
-                  {incompleteAreas.length === 1 ? "it" : "each one"} and add the towns, cities
-                  or regions it stands for.
-                </p>
-              </div>
-              {onlyIncompleteAreas ? (
-                <button
-                  type="button"
-                  onClick={() => router.push(pathWithoutAreaFilter)}
-                  className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent"
-                >
-                  <X className="h-2.5 w-2.5" aria-hidden />
-                  show all {areas.data?.length ?? 0}
-                </button>
-              ) : null}
+            {/* The other half of the geo match: an area can only fire on a
+              keyword that has been read for the places it names. */}
+            <div
+              ref={placeDetectionRef}
+              className={cn(
+                "rounded-md transition-shadow",
+                flashPlaceDetection
+                  ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                  : null,
+              )}
+            >
+              <PlaceDetectionStrip siteId={siteId} />
             </div>
-          ) : null}
 
-          {onlyIncompleteAreas &&
-          incompleteAreas.length === 0 &&
-          (areas.data?.length ?? 0) > 0 ? (
-            <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-[11px] text-muted-foreground">
-              Every service area has places in it now — nothing is left to fix here.{" "}
-              <Link
-                href={pathWithoutAreaFilter}
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                Show all {areas.data?.length ?? 0} areas
-              </Link>
-              .
-            </p>
-          ) : null}
+            {areas.isLoading ? (
+              <div className="space-y-1.5">
+                <Skeleton className="h-12 rounded-md" />
+                <Skeleton className="h-12 rounded-md" />
+              </div>
+            ) : null}
+            {areas.isError ? (
+              <InlineQueryError
+                what="service areas"
+                error={areas.error}
+                onRetry={() => void areas.refetch()}
+              />
+            ) : null}
+            {areas.data && areas.data.length === 0 ? (
+              <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-[11px] text-muted-foreground">
+                No service areas yet, so location plays no part in any
+                keyword&apos;s worth. Add the places you serve — and the ones
+                you never will.
+              </p>
+            ) : null}
 
-          <ul className="space-y-1.5">
-            {visibleAreas.map((area) => (
-              <li key={area.id} data-area-id={area.id}>
-                <button
+            {/* 🚨 THE LOUDEST STATE ON THIS PAGE. An area full of places that
+              carries no matchers looks finished everywhere else and changes no
+              score at all — the silence that hid a dead geo system for months.
+              It is stated plainly, and the fix is one button. */}
+            {disconnectedAreas.length > 0 ? (
+              <div className="flex flex-wrap items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2">
+                <TriangleAlert
+                  className="mt-px h-3.5 w-3.5 shrink-0 text-destructive"
+                  aria-hidden
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold text-destructive">
+                    {disconnectedAreas.length} service area
+                    {disconnectedAreas.length === 1 ? "" : "s"} match
+                    {disconnectedAreas.length === 1 ? "es" : ""} nothing, so{" "}
+                    {disconnectedAreas.length === 1
+                      ? "it changes"
+                      : "they change"}{" "}
+                    no score
+                  </p>
+                  <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                    The places are named —{" "}
+                    {disconnectedAreas.map((a) => a.label).join(", ")} — but
+                    nothing connects them to your value tiers, so geography
+                    counts for nothing in what any keyword is worth.
+                    Reconnecting takes one click and changes nothing you typed.
+                  </p>
+                </div>
+                <Button
                   type="button"
-                  onClick={() => setEditingArea(area)}
-                  className="w-full rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-accent"
+                  size="sm"
+                  variant="destructive"
+                  disabled={reconnecting}
+                  onClick={() => void runReconnect()}
+                  className="h-7 shrink-0 gap-1 text-xs"
                 >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
-                      {area.label}
-                    </span>
-                    {chipFor(area.id, area.metadata)}
-                    {/* "Fires on nothing" measures the RECEIPT, and a band that
+                  <PlugZap className="h-3.5 w-3.5" aria-hidden />
+                  {reconnecting ? "Reconnecting…" : "Reconnect them"}
+                </Button>
+              </div>
+            ) : null}
+
+            {incompleteAreas.length > 0 ? (
+              <div className="flex flex-wrap items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2">
+                <TriangleAlert
+                  className="mt-px h-3.5 w-3.5 shrink-0 text-warning"
+                  aria-hidden
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold text-warning">
+                    {incompleteAreas.length} service area
+                    {incompleteAreas.length === 1 ? " has" : "s have"} no places
+                    yet — add them
+                  </p>
+                  <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                    {incompleteAreas.length === 1 ? "It was" : "They were"}{" "}
+                    created with a name and a band but nothing inside, so no
+                    search has ever matched{" "}
+                    {incompleteAreas.length === 1 ? "it" : "them"} and geography
+                    counts for nothing in your value tiers. Open{" "}
+                    {incompleteAreas.length === 1 ? "it" : "each one"} and add
+                    the towns, cities or regions it stands for.
+                  </p>
+                </div>
+                {onlyIncompleteAreas ? (
+                  <button
+                    type="button"
+                    onClick={() => router.push(pathWithoutAreaFilter)}
+                    className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:bg-accent"
+                  >
+                    <X className="h-2.5 w-2.5" aria-hidden />
+                    show all {areas.data?.length ?? 0}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
+            {onlyIncompleteAreas &&
+            incompleteAreas.length === 0 &&
+            (areas.data?.length ?? 0) > 0 ? (
+              <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-[11px] text-muted-foreground">
+                Every service area has places in it now — nothing is left to fix
+                here.{" "}
+                <Link
+                  href={pathWithoutAreaFilter}
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  Show all {areas.data?.length ?? 0} areas
+                </Link>
+                .
+              </p>
+            ) : null}
+
+            <ul className="space-y-1.5">
+              {visibleAreas.map((area) => (
+                <li key={area.id} data-area-id={area.id}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingArea(area)}
+                    className="w-full rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-accent"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <MapPin
+                        className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                        aria-hidden
+                      />
+                      <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+                        {area.label}
+                      </span>
+                      {chipFor(area.id, area.metadata)}
+                      {/* "Fires on nothing" measures the RECEIPT, and a band that
                         multiplies by ×1 never reaches the receipt — so an area
                         matching 62 searches perfectly was reading "fires on
                         nothing", which is how a working thing gets deleted. Both
                         facts are stated; neither is decided here. */}
-                    {matchesButNeutral(area.id) ? (
-                      <span
-                        className="inline-flex shrink-0 items-center rounded border border-border bg-muted/30 px-1.5 py-0.5 text-[10px] text-muted-foreground"
-                        title={`This area matches ${formatCount(
-                          healthByArea.get(area.id)?.stamps ?? 0,
-                        )} searches. Its geo band multiplies value by ×${String(
-                          geoBandMultiplier(area.geo_band) ?? 1,
-                        )}, so matching it does not change what any of them is worth — the band is the neutral one. Change the band, or leave it as your baseline.`}
-                      >
-                        matches {formatCount(healthByArea.get(area.id)?.stamps ?? 0)} · band
-                        changes no score
+                      {matchesButNeutral(area.id) ? (
+                        <span
+                          className="inline-flex shrink-0 items-center rounded border border-border bg-muted/30 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                          title={`This area matches ${formatCount(
+                            healthByArea.get(area.id)?.stamps ?? 0,
+                          )} searches. Its geo band multiplies value by ×${String(
+                            geoBandMultiplier(area.geo_band) ?? 1,
+                          )}, so matching it does not change what any of them is worth — the band is the neutral one. Change the band, or leave it as your baseline.`}
+                        >
+                          matches{" "}
+                          {formatCount(healthByArea.get(area.id)?.stamps ?? 0)}{" "}
+                          · band changes no score
+                        </span>
+                      ) : (
+                        <UsageChip
+                          usage={usageByArea.get(area.label)}
+                          loading={usage.isPending}
+                          failed={usage.isError}
+                        />
+                      )}
+                      <span className="shrink-0 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] text-foreground">
+                        {humanizeSlug(area.geo_band)}
                       </span>
-                    ) : (
-                      <UsageChip
-                        usage={usageByArea.get(area.label)}
-                        loading={usage.isPending}
-                        failed={usage.isError}
-                      />
-                    )}
-                    <span className="shrink-0 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] text-foreground">
-                      {humanizeSlug(area.geo_band)}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-                    {humanizeSlug(area.area_kind)} ·{" "}
-                    {areaNeedsPlaces(area) ? (
-                      <span className="text-warning">
-                        no places yet — this area matches nothing
-                      </span>
-                    ) : healthByArea.get(area.id)?.state === "disconnected" ? (
-                      // Full of places and still inert. Said on the row itself,
-                      // because a banner above a list is not where a person
-                      // looks when they are reading one area.
-                      <span className="text-destructive">
-                        not connected to scoring — this area changes no score
-                      </span>
-                    ) : (
-                      <span>
-                        {area.place_ids.length > 0
-                          ? `${area.place_ids.length} place${
-                              area.place_ids.length === 1 ? "" : "s"
-                            } from the gazetteer`
-                          : null}
-                        {area.place_ids.length > 0 && area.match_tokens.length > 0
-                          ? " · "
-                          : null}
-                        {area.match_tokens.length > 0
-                          ? `matches: ${area.match_tokens.join(", ")}`
-                          : null}
-                      </span>
-                    )}
-                  </p>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+                    </div>
+                    <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+                      {humanizeSlug(area.area_kind)} ·{" "}
+                      {areaNeedsPlaces(area) ? (
+                        <span className="text-warning">
+                          no places yet — this area matches nothing
+                        </span>
+                      ) : healthByArea.get(area.id)?.state ===
+                        "disconnected" ? (
+                        // Full of places and still inert. Said on the row itself,
+                        // because a banner above a list is not where a person
+                        // looks when they are reading one area.
+                        <span className="text-destructive">
+                          not connected to scoring — this area changes no score
+                        </span>
+                      ) : (
+                        <span>
+                          {area.place_ids.length > 0
+                            ? `${area.place_ids.length} place${
+                                area.place_ids.length === 1 ? "" : "s"
+                              } from the gazetteer`
+                            : null}
+                          {area.place_ids.length > 0 &&
+                          area.match_tokens.length > 0
+                            ? " · "
+                            : null}
+                          {area.match_tokens.length > 0
+                            ? `matches: ${area.match_tokens.join(", ")}`
+                            : null}
+                        </span>
+                      )}
+                    </p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
 
-        {/* ── Which location (C10) ──
+          {/* ── Which location (C10) ──
             Sits directly under Service areas because binding an area to a
             location is authored one section up, and the gauge's "bind an area"
             door opens exactly that editor. */}
-        <LocationPanel
-          siteId={siteId}
-          brandId={brandId}
-          organizationId={site.organization_id}
-          window={window}
-          windowLabel={windowLabel}
-          onGoToPlaceDetection={goToPlaceDetection}
-          onBindArea={() => {
-            const unbound = (areas.data ?? []).find(
-              (area) => (area.location_ids ?? []).length === 0,
-            );
-            // No area at all yet → the editor opens on a new one, which is the
-            // same fix one step earlier. Never a door that opens onto nothing.
-            setEditingArea(unbound ?? null);
-          }}
-        />
+          <LocationPanel
+            siteId={siteId}
+            brandId={brandId}
+            organizationId={site.organization_id}
+            window={window}
+            windowLabel={windowLabel}
+            onGoToPlaceDetection={goToPlaceDetection}
+            onBindArea={() => {
+              const unbound = (areas.data ?? []).find(
+                (area) => (area.location_ids ?? []).length === 0,
+              );
+              // No area at all yet → the editor opens on a new one, which is the
+              // same fix one step earlier. Never a door that opens onto nothing.
+              setEditingArea(unbound ?? null);
+            }}
+          />
 
-        {/* ── Bands ── */}
-        <section className="space-y-2">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <h2 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                <Layers className="h-3.5 w-3.5 text-primary" aria-hidden />
-                Value tiers &amp; geo bands
-              </h2>
-              <p className="mt-0.5 max-w-2xl text-[11px] leading-4 text-muted-foreground">
-                The names every keyword lands in, and the multiplier each geo band applies.
-                Renaming a tier relabels every keyword the instant you save — that is the
-                feature. Negative and Unvalued are reserved: the honest buckets.
-              </p>
+          {/* ── Bands ── */}
+          <section className="space-y-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h2 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <Layers className="h-3.5 w-3.5 text-primary" aria-hidden />
+                  Value tiers &amp; geo bands
+                </h2>
+                <p className="mt-0.5 max-w-2xl text-[11px] leading-4 text-muted-foreground">
+                  The names every keyword lands in, and the multiplier each geo
+                  band applies. Renaming a tier relabels every keyword the
+                  instant you save — that is the feature. Negative and Unvalued
+                  are reserved: the honest buckets.
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setEditingBands("value_band")}
+                  className="h-7 gap-1 text-xs"
+                >
+                  <Pencil className="h-3 w-3" aria-hidden />
+                  {bands.data?.[0]?.is_template
+                    ? "Adopt & edit tiers"
+                    : "Edit tiers"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setEditingBands("geo_band")}
+                  className="h-7 gap-1 text-xs"
+                >
+                  <Pencil className="h-3 w-3" aria-hidden />
+                  {geoBands.data?.[0]?.is_template
+                    ? "Adopt & edit geo bands"
+                    : "Edit geo bands"}
+                </Button>
+              </div>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setEditingBands("value_band")}
-                className="h-7 gap-1 text-xs"
-              >
-                <Pencil className="h-3 w-3" aria-hidden />
-                {bands.data?.[0]?.is_template ? "Adopt & edit tiers" : "Edit tiers"}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setEditingBands("geo_band")}
-                className="h-7 gap-1 text-xs"
-              >
-                <Pencil className="h-3 w-3" aria-hidden />
-                {geoBands.data?.[0]?.is_template ? "Adopt & edit geo bands" : "Edit geo bands"}
-              </Button>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <p className="text-[11px] font-medium text-foreground">
+                  Value tiers
+                </p>
+                {bands.isPending ? (
+                  <Skeleton className="h-16 rounded-md" />
+                ) : bands.isError ? (
+                  <InlineQueryError
+                    what="value tiers"
+                    error={bands.error}
+                    onRetry={() => void bands.refetch()}
+                  />
+                ) : (
+                  <BandRows
+                    bands={bands.data ?? []}
+                    kind="value_band"
+                    stateOf={(v) => bandStateByValue.get(v) ?? null}
+                    packNameOf={packNameOf}
+                  />
+                )}
+              </div>
+              <div className="space-y-1">
+                <p className="text-[11px] font-medium text-foreground">
+                  Geo bands
+                </p>
+                {geoBands.isPending ? (
+                  <Skeleton className="h-16 rounded-md" />
+                ) : geoBands.isError ? (
+                  <InlineQueryError
+                    what="geo bands"
+                    error={geoBands.error}
+                    onRetry={() => void geoBands.refetch()}
+                  />
+                ) : (
+                  <BandRows
+                    bands={geoBands.data ?? []}
+                    kind="geo_band"
+                    stateOf={(v) => geoBandStateByValue.get(v) ?? null}
+                    packNameOf={packNameOf}
+                  />
+                )}
+              </div>
             </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium text-foreground">Value tiers</p>
-              {bands.isPending ? (
-                <Skeleton className="h-16 rounded-md" />
-              ) : bands.isError ? (
-                <InlineQueryError
-                  what="value tiers"
-                  error={bands.error}
-                  onRetry={() => void bands.refetch()}
-                />
-              ) : (
-                <BandRows
-                  bands={bands.data ?? []}
-                  kind="value_band"
-                  stateOf={(v) => bandStateByValue.get(v) ?? null}
-                  packNameOf={packNameOf}
-                />
-              )}
-            </div>
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium text-foreground">Geo bands</p>
-              {geoBands.isPending ? (
-                <Skeleton className="h-16 rounded-md" />
-              ) : geoBands.isError ? (
-                <InlineQueryError
-                  what="geo bands"
-                  error={geoBands.error}
-                  onRetry={() => void geoBands.refetch()}
-                />
-              ) : (
-                <BandRows
-                  bands={geoBands.data ?? []}
-                  kind="geo_band"
-                  stateOf={(v) => geoBandStateByValue.get(v) ?? null}
-                  packNameOf={packNameOf}
-                />
-              )}
-            </div>
-          </div>
-        </section>
-      </div>
+          </section>
+        </div>
       </NonEditableContextMenu>
 
       {editingRule !== undefined ? (
@@ -1523,7 +1635,11 @@ export function MeaningRulesWorkbench() {
           windowLabel={windowLabel}
           bandMetas={bandMetas}
           rule={editingRule}
-          provenance={editingRule ? provenanceFor(editingRule.id, "meaning", ruleSummary) : undefined}
+          provenance={
+            editingRule
+              ? provenanceFor(editingRule.id, "meaning", ruleSummary)
+              : undefined
+          }
           onClose={() => setEditingRule(undefined)}
         />
       ) : null}
@@ -1536,7 +1652,9 @@ export function MeaningRulesWorkbench() {
           bandMetas={bandMetas}
           area={editingArea}
           provenance={
-            editingArea ? provenanceFor(editingArea.id, "geo_areas", areaSummary) : undefined
+            editingArea
+              ? provenanceFor(editingArea.id, "geo_areas", areaSummary)
+              : undefined
           }
           onClose={() => setEditingArea(undefined)}
         />
@@ -1557,7 +1675,9 @@ export function MeaningRulesWorkbench() {
             }
           }}
           onSaved={() => {
-            void queryClient.invalidateQueries({ queryKey: ["marketing", "value-c"] });
+            void queryClient.invalidateQueries({
+              queryKey: ["marketing", "value-c"],
+            });
             void queryClient.invalidateQueries({ queryKey: ["seo"] });
           }}
         />

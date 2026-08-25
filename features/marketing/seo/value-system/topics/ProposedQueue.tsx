@@ -36,7 +36,7 @@ const SURFACE: KeywordTableSurface = {
   id: "seo-proposed-queue",
   label: "Proposed placement",
   listLabel: "Placements awaiting confirmation",
-  location: "Marketing — Topic tree — Proposals",
+  location: "Marketing — Offering tree — Proposals",
   prefix: "pq",
   defaultColumns: ["key", "topic", "clicks", "impressions", "value_band"],
   baseFilters: { placement: "proposed" },
@@ -91,7 +91,10 @@ export function ProposedQueue({
   brandId: string;
   onChanged: () => void;
 }) {
-  const confirm = async (keywordIds: string[], refresh: () => Promise<void>) => {
+  const confirm = async (
+    keywordIds: string[],
+    refresh: () => Promise<void>,
+  ) => {
     try {
       const results = await confirmKeywordTopics(siteId, keywordIds);
       await refresh();
@@ -180,7 +183,7 @@ export function ProposedQueue({
                 }
               >
                 <Network className="h-3.5 w-3.5" />
-                Move to another topic…
+                Move to another offering…
               </Button>
               <Button
                 variant="ghost"

@@ -58,8 +58,8 @@ export function TopicDeleteDialog({
             Delete “{topicName}”?
           </DialogTitle>
           <DialogDescription>
-            Topics are shared across every site. This preview includes the full
-            catalog impact, not only the site you are viewing.
+            Offerings are shared across every site. This preview includes the
+            full catalog impact, not only the site you are viewing.
           </DialogDescription>
         </DialogHeader>
 
@@ -89,12 +89,12 @@ export function TopicDeleteDialog({
                   <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
                   {impact.associated_keywords > 0
                     ? `${formatCount(impact.associated_keywords)} associated keyword${impact.associated_keywords === 1 ? "" : "s"} across ${formatCount(impact.affected_organizations)} organization${impact.affected_organizations === 1 ? "" : "s"} will be affected.`
-                    : "No keywords are associated with this topic."}
+                    : "No keywords are associated with this offering."}
                 </p>
                 <ul className="mt-2 space-y-1 pl-6 text-xs text-muted-foreground">
                   {impact.child_topics > 0 ? (
                     <li>
-                      {formatCount(impact.child_topics)} direct child topic
+                      {formatCount(impact.child_topics)} direct child offering
                       {impact.child_topics === 1 ? " moves" : "s move"} up one
                       level.
                     </li>
@@ -134,7 +134,7 @@ export function TopicDeleteDialog({
                       </span>
                       <span className="block text-xs text-muted-foreground">
                         Keep every association, including which placement was
-                        primary, on another topic.
+                        primary, on another offering.
                       </span>
                       {mode === "reassign" ? (
                         <Button
@@ -146,7 +146,8 @@ export function TopicDeleteDialog({
                         >
                           <ArrowRightLeft className="h-3.5 w-3.5" />
                           <span className="truncate">
-                            {replacementName ?? "Choose the replacement topic…"}
+                            {replacementName ??
+                              "Choose the replacement offering…"}
                           </span>
                         </Button>
                       ) : null}
@@ -191,7 +192,7 @@ export function TopicDeleteDialog({
             ) : (
               <Trash2 className="h-4 w-4" />
             )}
-            Delete topic
+            Delete offering
           </Button>
         </DialogFooter>
       </DialogContent>

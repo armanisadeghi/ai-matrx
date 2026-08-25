@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** shared official primitive (`components/official/`)
-**Last updated:** `2026-08-12`
+**Last updated:** `2026-08-25`
 
 ---
 
@@ -32,6 +32,13 @@ tables (AI Models, relationships, …) can cut over to one contract.
   `query={{ mode: "controlled-local", state, onStateChange }}` when the caller
   owns state but the canonical table must still filter, sort, and paginate its
   complete local dataset. Most local callers use `urlState` instead.
+- **Hierarchy-aware local processing is an explicit seam, not a second table.**
+  `processLocalRows(rows, state)` may preserve ancestors, apply sibling-only
+  sorting, or honor collapsed branches before the primitive paginates. The
+  canonical table still owns the URL state, toolbar, filters, inline editing,
+  copy/export, rows, headers, and empty/loading states. A processor must honor
+  every active canonical query control. Set `pageSize={0}` when a hierarchy
+  must remain whole; pagination is then omitted even when URL state is enabled.
 - **URL state is built in and opt-in.** `urlState={{ id: "accounts" }}` stores
   table-owned search, match mode, any-of, layered/column filters, sort,
   pagination, open row, and open window under `table.accounts.*`. The stable id
@@ -203,6 +210,7 @@ expose `aria-sort` on the `<th>` automatically.
 | `anyOf`     | OR-search across named columns                                                    |
 | Copy        | Per-row + toolbar “this view”                                                     |
 | Inline edit | `editable` on col; string in-cell; else popover; Save/Cancel pill                 |
+| Hierarchy   | `processLocalRows(rows, state)`; canonical controls/rendering stay table-owned     |
 | Window      | Sidebar View / Edit tabs; Edit = `renderEdit` ?? `detail.render`                  |
 | UUID / FK   | `MatrxUuidCell` via `cellKind` or auto-detect; `fk.onOpen` / `href` / `forbidden` |
 | Icon column | `compact: true` + `width` + `align: "center"` — tight padding, one header menu    |
@@ -227,6 +235,12 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-25 — Added `processLocalRows` for hierarchy-aware local datasets.
+  The first consumer, Keyword Value Offerings, preserves lineage, collapse, and
+  sibling-only ordering while retaining the canonical table's URL-backed
+  search/filter/sort, inline edit, copy/export, and rendering. Explicit
+  `pageSize={0}` now suppresses pagination in URL-backed local mode.
 
 - 2026-08-25 — Added the opt-in `mobileCards` presentation seam so an explicit
   product requirement can render essential phone summaries and actions without

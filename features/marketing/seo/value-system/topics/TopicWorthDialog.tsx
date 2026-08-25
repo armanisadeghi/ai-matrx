@@ -86,8 +86,8 @@ export function TopicWorthDialog({
             What “{node.topic.name}” is worth to this site
           </DialogTitle>
           <DialogDescription>
-            The topic is shared across every site. This ruling is yours alone,
-            and it flows down to every topic beneath it.
+            The offering is shared across every site. This ruling is yours
+            alone, and it flows down to every offering beneath it.
           </DialogDescription>
         </DialogHeader>
 
@@ -99,7 +99,7 @@ export function TopicWorthDialog({
           </span>
           {node.inheritedFrom ? (
             <>
-              this topic inherits{" "}
+              this offering inherits{" "}
               <span className="font-semibold text-foreground">
                 {inheritedWeight ?? DEFAULT_TOPIC_WEIGHT}
               </span>{" "}
@@ -117,7 +117,7 @@ export function TopicWorthDialog({
             </>
           ) : (
             <>
-              no parent above this topic carries a ruling either, so the
+              no parent above this offering carries a ruling either, so the
               resolver falls back to its neutral default of{" "}
               <span className="font-semibold text-foreground">
                 {DEFAULT_TOPIC_WEIGHT}
@@ -196,7 +196,12 @@ export function TopicWorthDialog({
             Remove this site&apos;s ruling
           </Button>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onCancel}
+              disabled={busy}
+            >
               Cancel
             </Button>
             <Button

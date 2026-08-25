@@ -12,7 +12,7 @@
  * editor gains it here.
  *
  * Every target screen reads the query params this file writes:
- *   /value/topics     ?topic=<id>[&worth=1]        (TopicTreeWorkbench)
+ *   /value/offerings  ?topic=<id>[&worth=1]        (TopicTreeWorkbench)
  *   /value/dimensions ?dimension=<slug>&value=<id>[&matcher=<id>]  (DimensionManager
  *                      — `matcher` opens THE MATCHER EDITOR, KI-008, straight
  *                      onto that value; any truthy value works, the matcher's
@@ -84,7 +84,7 @@ export function topicNodeHref(
   topicId: string | null | undefined,
   openWorth = false,
 ): string {
-  return valuePath(ctx, "/value/topics", {
+  return valuePath(ctx, "/value/offerings", {
     [VALUE_QUERY_KEYS.topic]: topicId ?? undefined,
     [VALUE_QUERY_KEYS.worth]: openWorth ? "1" : undefined,
   });

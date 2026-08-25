@@ -516,14 +516,24 @@ to_jsonb(NEW))` and dereference that composite so column drift still fails
 - **The Marketing surface fleet is the ONE agent-context system for this feature.** Tree: `matrx-user/marketing` (hub) · `marketing-brand` → `marketing-site` → its verticals (`site-pages`, `page`, `crawls`, `crawl`, `audit`, `analysis`, `findings`, `links`, `backlinks`, `coverage`, `sitemaps`, `discovery`, `integrations`, `site-settings`, `site-keywords`, `site-media`) · `marketing-ranks-hub` (cross-site, standalone — deliberately NOT inheriting brand/site; `marketing-batches` was retired with its route on 2026-08-11). Manifests in `features/surfaces/manifests/marketing*.manifest.ts`; snapshots/settings/access/cost routes deliberately fold into their parent surface (route→surface logic in `features/surfaces/utils/route-to-surface.ts` `resolveMarketingSurface`, unit-tested). Parent context flows as XML: `brand_context`/`site_context` built ONLY by `lib/surface-context.ts` and supplied through `lib/scopes/site-surface-base.tsx` (`useMarketingSiteSurfaceBase().getBaseValues()`) — every workspace's `SurfaceRuntimeProvider` spreads the base first, then its own manifest-declared keys, built strictly from already-loaded query data (getScope never fetches). Adding a value? Declare it in the manifest, emit it in the workspace's provider, re-sync the DB (`surface-authoring` skill) — never pass an undeclared key.
 - **Every Marketing data surface carries the Copy + Copy-for-AI pair** (agent-copy doctrine). Tables get it via the canonical `MatrxDataTable` `copy` config (toolbar whole-view pair + per-row pair, filter/sort context included by the primitive); non-table sections use `SectionCard`'s `copy` prop and page/record headers use `<CopyButtons>` directly. All payloads build through `features/marketing/lib/copy-payloads.ts` (`webCopy` / `humanLines` / `webLocation`) with stable `web-*` kinds — never a hand-rolled envelope, never a hand-picked agent field list (agent data is the full row/list).
 
-### Keyword Value topic tree
+### Keyword Value offering tree
 
-`.../value/topics` is a true hierarchy, not a flat table: collapsing a parent
-must hide its descendants and sorting must preserve every parent/child edge.
-Its row shell therefore uses aligned grid columns for Worth, Keywords, Clicks,
-and Impressions while sorting only sibling groups. Topic search and the
-keyword-presence filter retain the matching node's lineage so filtering can
-never turn a child into an apparent root.
+`.../value/offerings` is the customer-facing route and vocabulary. The stored
+catalog entity remains `seo.topic` because the hierarchy also contains
+non-offering roots such as authority and reputation; that database name is not
+customer copy. The retired `.../value/topics` URL redirects with its query
+string intact so saved links still open the same state.
+
+The surface is a true hierarchy powered by the canonical `MatrxDataTable`, not
+a hand-built grid. Its hierarchy processor honors the table's URL-backed
+search, per-column filters, layered filters, and sort while preserving matching
+lineage, collapsed branches, and sibling-only ordering. Each fact has its own
+sortable/filterable column: Offering, Type, Branch, Worth, Worth source,
+Offering match, Lead quality, Keywords here, Keywords in branch, Clicks,
+Impressions, and one column per value band. Name, type, worth, offering match,
+and lead quality edit directly in the row through the table's deferred Save
+contract. The compact traffic summary above the table does not repeat the
+catalog or consume the working viewport.
 
 The whole tree pane mounts ONE delegated universal context menu. Every row
 resolves its own `seo_topic` entity and exposes the same actions as the
@@ -532,12 +542,12 @@ delete. Keyword counts and “See keywords” open the existing multi-instance
 Search Console drill-down `WindowPanel` with the topic-subtree filter; no
 second keyword table or window system exists.
 
-Topics are shared catalog rows, so deletion is global. The preview RPC reports
-associated keywords and organizations plus child topics, site-worth rulings,
+Offerings are shared catalog rows, so deletion is global. The preview RPC reports
+associated keywords and organizations plus child offerings, site-worth rulings,
 and starter-pack references. The atomic delete RPC either merges every keyword
 association into an active replacement (preserving primary placement) or
 removes the links; children move up one level. Site-worth and starter-pack
-judgments are removed rather than silently transplanted to a different topic.
+judgments are removed rather than silently transplanted to a different offering.
 
 ## Related features
 
@@ -561,6 +571,14 @@ judgments are removed rather than silently transplanted to a different topic.
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. GA4 is in a contained `internal_test` campaign: a fresh allowlisted identity has completed the canonical authorization, property binding, bounded collection, persisted-fact, and live Site settings rendering path; normal users and scheduled collection remain blocked until Google approves the scope. YouTube now has the matching contained reviewer path in Google Connections: explicit read-only disclosure, separate incremental authorization, deliberate owned-channel selection, and an in-app channel/recent-video preview; its real fresh-identity certification still remains. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-08-25 — Codex: **Keyword Value now exposes Offerings through the
+  canonical table.** The `/value/offerings` route and site navigation use the
+  decided customer vocabulary while `/value/topics` preserves saved links by
+  redirecting. `MatrxDataTable` now owns the hierarchy's URL-backed search,
+  filters, sibling sort, inline edits, copy/export, and table rendering; every
+  formerly stacked badge is a separate high-contrast column, and the summary
+  above it is compact enough to keep rows in the initial viewport.
 
 - 2026-08-25 — Codex: **Site Media has a direct crawl door without a second
   crawler.** Its responsive header links to the canonical New Crawl workspace

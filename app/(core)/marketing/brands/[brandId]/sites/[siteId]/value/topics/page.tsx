@@ -1,17 +1,27 @@
-import { Suspense } from "react";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { TopicTreeWorkbench } from "@/features/marketing/seo/value-system/topics/TopicTreeWorkbench";
+import { redirect } from "next/navigation";
 
 /**
- * Topic Tree Builder — parent-child ancestor pinning + per-topic worth.
- * The half of the keyword value system that lets a human BUILD the tree the
- * resolver has always walked. SoR:
- * common-docs/systems/marketing/seo/seo-keywords/value-system.md
+ * Compatibility door for receipts and saved links created before the
+ * user-facing vocabulary settled on Offering. The database remains seo.topic.
  */
-export default function TopicTreePage() {
-  return (
-    <Suspense fallback={<LoadingSurface label="Loading the topic tree…" />}>
-      <TopicTreeWorkbench />
-    </Suspense>
+export default async function RetiredTopicTreePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ brandId: string; siteId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [{ brandId, siteId }, query] = await Promise.all([
+    params,
+    searchParams,
+  ]);
+  const next = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (Array.isArray(value)) value.forEach((entry) => next.append(key, entry));
+    else if (value !== undefined) next.set(key, value);
+  }
+  const suffix = next.size > 0 ? `?${next.toString()}` : "";
+  redirect(
+    `/marketing/brands/${brandId}/sites/${siteId}/value/offerings${suffix}`,
   );
 }

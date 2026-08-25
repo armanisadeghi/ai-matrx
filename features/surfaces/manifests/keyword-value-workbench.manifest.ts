@@ -16,7 +16,7 @@
  * and they need this page's own vocabulary: the LEVELS in play, the review
  * window, the filters, and the rows on screen.
  *
- * Scope only covers the `/value` LEAF. The family beside it (`/value/topics`,
+ * Scope only covers the `/value` LEAF. The family beside it (`/value/offerings`,
  * `/value/rules`, `/value/dimensions`, `/value/packs`) defines the machinery
  * rather than listing keywords; those routes stay on `matrx-user/marketing-site`
  * until each earns its own surface.

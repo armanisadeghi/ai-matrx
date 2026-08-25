@@ -102,7 +102,7 @@ export function KeywordStartHere({
       action: "Group keywords into your Offerings",
       screen: "Topics",
       line: "The Offering tree — what you actually sell — and what each Offering is worth to this site.",
-      href: `${value}/topics`,
+      href: `${value}/offerings`,
       icon: TreePine,
     },
     {
@@ -157,8 +157,8 @@ export function KeywordStartHere({
           ) : null}
         </h1>
         <p className="text-xs text-muted-foreground">
-          Six jobs, one screen each. Pick the sentence that matches what you came
-          to do — there is no order to work through.
+          Six jobs, one screen each. Pick the sentence that matches what you
+          came to do — there is no order to work through.
         </p>
       </header>
 

@@ -63,7 +63,10 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/camera", surface: "matrx-user/camera" },
   { prefix: "/reports", surface: "matrx-user/reports" },
   { prefix: "/vault", surface: "matrx-user/vault" },
-  { prefix: "/masterwork/vision-interview", surface: "matrx-user/vision-interview" },
+  {
+    prefix: "/masterwork/vision-interview",
+    surface: "matrx-user/vision-interview",
+  },
   { prefix: "/messages", surface: "matrx-user/messages" },
   { prefix: "/tasks", surface: "matrx-user/tasks" },
   // The three outreach work surfaces sit UNDER /crm and must be listed before
@@ -125,9 +128,15 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/maps", surface: "matrx-user/maps" },
   { prefix: "/canvas", surface: "matrx-user/canvas" },
   { prefix: "/knowledge/search", surface: "matrx-user/knowledge-search" },
-  { prefix: "/knowledge/library-catalog", surface: "matrx-user/knowledge-library" },
+  {
+    prefix: "/knowledge/library-catalog",
+    surface: "matrx-user/knowledge-library",
+  },
   { prefix: "/knowledge/library", surface: "matrx-user/knowledge-library" },
-  { prefix: "/knowledge/data-stores", surface: "matrx-user/knowledge-data-stores" },
+  {
+    prefix: "/knowledge/data-stores",
+    surface: "matrx-user/knowledge-data-stores",
+  },
   { prefix: "/knowledge/viewer", surface: "matrx-user/knowledge-viewer" },
   { prefix: "/knowledge", surface: "matrx-user/knowledge-library" },
   { prefix: "/research", surface: "matrx-user/research" },
@@ -369,7 +378,7 @@ function resolveMarketingSurface(stripped: string): string | null {
         return "matrx-user/marketing-crawl";
       }
       // The value LEAF is the Keyword Value Workbench; the family beside it
-      // (`value/topics`, `value/rules`, `value/dimensions`, `value/packs`)
+      // (`value/offerings`, `value/rules`, `value/dimensions`, `value/packs`)
       // defines the machinery rather than listing keywords and stays on the
       // site surface until each earns its own.
       if (vertical === "value") {

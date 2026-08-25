@@ -107,7 +107,7 @@ export function OfferingPicker({
   const manageHref = marketingRoutes.site(
     params?.brandId ?? null,
     siteId,
-    "/value/topics",
+    "/value/offerings",
   );
 
   const options: CreatableOption[] = [];
@@ -153,7 +153,9 @@ export function OfferingPicker({
           className="flex min-w-0 items-center gap-1.5"
           style={{ paddingLeft: `${Math.min(option.depth, 6) * 10}px` }}
         >
-          <span className="min-w-0 truncate text-foreground">{option.name}</span>
+          <span className="min-w-0 truncate text-foreground">
+            {option.name}
+          </span>
           {option.depth > 0 ? (
             <span className="min-w-0 shrink truncate text-[10px] text-muted-foreground">
               {option.rootName}
@@ -198,7 +200,9 @@ export function OfferingPicker({
       return topicId;
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Could not create that offering.",
+        error instanceof Error
+          ? error.message
+          : "Could not create that offering.",
       );
       return null;
     }
@@ -229,7 +233,9 @@ export function OfferingPicker({
             onClick={() => onSelect(option.topicId)}
             className="flex w-full min-w-0 items-center gap-1.5 rounded-sm px-1.5 py-1 text-left text-xs transition-colors hover:bg-accent"
           >
-            <span className="min-w-0 truncate text-foreground">{option.name}</span>
+            <span className="min-w-0 truncate text-foreground">
+              {option.name}
+            </span>
             <span className="min-w-0 shrink truncate text-[10px] text-muted-foreground">
               {option.rootName}
             </span>
@@ -277,7 +283,10 @@ export function OfferingPicker({
               setNewParentId(next === "__root__" ? "" : next)
             }
           >
-            <SelectTrigger className="h-7 text-[11px]" aria-label="Where the new offering goes">
+            <SelectTrigger
+              className="h-7 text-[11px]"
+              aria-label="Where the new offering goes"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -285,7 +294,11 @@ export function OfferingPicker({
                 Its own root — an offering you sell
               </SelectItem>
               {services.roots.map((root) => (
-                <SelectItem key={root.topicId} value={root.topicId} className="text-xs">
+                <SelectItem
+                  key={root.topicId}
+                  value={root.topicId}
+                  className="text-xs"
+                >
                   Under {root.name}
                 </SelectItem>
               ))}

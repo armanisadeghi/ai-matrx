@@ -39,7 +39,7 @@ const ASSIGN_TOPICS_PATH = "/seo/keywords/assign-topics";
 /** The server's own milestones, in the operator's words. Never invented. */
 const ASSIGN_STAGES: Record<string, string> = {
   "seo.assign_topics_started": "Selecting unassigned keywords…",
-  "seo.assign_topics_tree_loaded": "Reading the shared topic tree…",
+  "seo.assign_topics_tree_loaded": "Reading the shared offering tree…",
   "seo.assign_topics_agent_completed": "Pinning keywords to topics…",
   "seo.assign_topics_applied": "Saving assignments…",
   "seo.assign_topics_completed": "Topic assignment complete",
@@ -57,7 +57,7 @@ const SURFACE: KeywordTableSurface = {
   id: "seo-unplaced-queue",
   label: "Keyword",
   listLabel: "Keywords not placed on the tree",
-  location: "Marketing — Topic tree — Not placed",
+  location: "Marketing — Offering tree — Not placed",
   // Two keyword tables share this route, so each owns its own URL namespace and
   // Back undoes exactly one step on the one you touched.
   prefix: "u",
@@ -95,7 +95,7 @@ export function UnplacedQueue({
     path: ASSIGN_TOPICS_PATH,
     finalKind: "seo.assign_topics_completed",
     stageLabels: ASSIGN_STAGES,
-    live: { label: "Topic assigner" },
+    live: { label: "Offering assigner" },
   });
 
   useEffect(() => {
@@ -187,28 +187,28 @@ export function UnplacedQueue({
           }
           selectionActions={({ keywordIds, openServiceAssign, clear }) => (
             <div className="flex flex-wrap items-center gap-1.5">
-                <Button
-                  size="sm"
-                  className="h-7 gap-1 text-xs"
-                  disabled={keywordIds.length === 0}
-                  onClick={() =>
-                    openServiceAssign(
-                      keywordIds,
-                      `${keywordIds.length.toLocaleString()} keyword${keywordIds.length === 1 ? "" : "s"}`,
-                    )
-                  }
-                >
-                  <Network className="h-3.5 w-3.5" />
-                  Place under a topic…
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs text-muted-foreground"
-                  onClick={clear}
-                >
-                  Clear {keywordIds.length}
-                </Button>
+              <Button
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                disabled={keywordIds.length === 0}
+                onClick={() =>
+                  openServiceAssign(
+                    keywordIds,
+                    `${keywordIds.length.toLocaleString()} keyword${keywordIds.length === 1 ? "" : "s"}`,
+                  )
+                }
+              >
+                <Network className="h-3.5 w-3.5" />
+                Place under an offering…
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-muted-foreground"
+                onClick={clear}
+              >
+                Clear {keywordIds.length}
+              </Button>
             </div>
           )}
         />

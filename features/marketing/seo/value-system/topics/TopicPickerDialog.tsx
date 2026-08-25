@@ -89,7 +89,8 @@ export function TopicPickerDialog({
           row.lineage.toLowerCase().includes(needle),
       );
     rows.sort(
-      (a, b) => b.keywords - a.keywords || a.topic.name.localeCompare(b.topic.name),
+      (a, b) =>
+        b.keywords - a.keywords || a.topic.name.localeCompare(b.topic.name),
     );
     return rows.slice(0, 200);
   })();
@@ -108,7 +109,7 @@ export function TopicPickerDialog({
             autoFocus
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search topics…"
+            placeholder="Search offerings…"
             className="h-8 pl-7 text-sm"
           />
         </div>
@@ -144,15 +145,17 @@ export function TopicPickerDialog({
               )}
             >
               <Slash className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">{request.clearLabel}</span>
+              <span className="text-muted-foreground">
+                {request.clearLabel}
+              </span>
             </button>
           ) : null}
 
           {options.length === 0 ? (
             <p className="p-6 text-center text-sm text-muted-foreground">
-              No topic matches “{search}”. Close this and use{" "}
-              <span className="font-medium text-foreground">New topic</span> to
-              create one.
+              No offering matches “{search}”. Close this and use{" "}
+              <span className="font-medium text-foreground">New offering</span>{" "}
+              to create one.
             </p>
           ) : (
             options.map((row) => {

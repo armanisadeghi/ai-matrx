@@ -46,7 +46,11 @@ export function TopicEditDialog({
   draft: TopicEditDraft;
   busy: boolean;
   onCancel: () => void;
-  onSave: (values: { name: string; nodeType: string; description: string }) => void;
+  onSave: (values: {
+    name: string;
+    nodeType: string;
+    description: string;
+  }) => void;
 }) {
   const [name, setName] = useState(draft.name);
   const [nodeType, setNodeType] = useState(draft.nodeType);
@@ -61,14 +65,14 @@ export function TopicEditDialog({
       <DialogContent className="flex max-h-[85dvh] max-w-lg flex-col overflow-y-auto overscroll-contain">
         <DialogHeader>
           <DialogTitle className="text-base">
-            {creating ? "New topic" : "Edit topic"}
+            {creating ? "New offering" : "Edit offering"}
           </DialogTitle>
           <DialogDescription>
             {creating && draft.parentName
               ? `It will sit under “${draft.parentName}”.`
               : creating
                 ? "It will start as a root — the top of its own branch."
-                : "Topics are shared across every site. Only the worth you set is per-site."}
+                : "Offerings are shared across every site. Only the worth you set is per-site."}
           </DialogDescription>
         </DialogHeader>
 
@@ -154,8 +158,10 @@ export function TopicEditDialog({
             disabled={busy || !name.trim()}
             onClick={() => onSave({ name: name.trim(), nodeType, description })}
           >
-            {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-            {creating ? "Create topic" : "Save"}
+            {busy ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : null}
+            {creating ? "Create offering" : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>

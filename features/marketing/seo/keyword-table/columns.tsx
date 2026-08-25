@@ -507,7 +507,7 @@ export function buildKeywordOfferingColumn({
    * as work not done yet. The flat site path resolves the brand itself, so the
    * door is real from a surface that only knows the site id.
    */
-  const manageHref = marketingRoutes.site(null, siteId, "/value/topics");
+  const manageHref = marketingRoutes.site(null, siteId, "/value/offerings");
   const noVocabulary = !services.loading && services.options.length === 0;
 
   return {
