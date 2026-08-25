@@ -750,6 +750,14 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-24 — **Class is editable IN THE CELL** on the query dimension table (Arman's ruling:
+  "anything that's editable, I should be able to directly edit from the list… a dropdown and pick
+  the option"). `buildGscValueColumns` takes an optional `editing.keywordIdOf`; `GscDimensionTable`
+  wires `edit={{ enabled, onSave }}` → `setGscKeywordClass` (`seo.gsc_set_keyword_class`), batching
+  one RPC per ruling and invalidating the value cache. A row not mapped to the keyword library is
+  not editable and says so. `mismatch` stays out of the dropdown — the server requires a written
+  reason for it, which a select cannot collect, so it remains in the ruling surfaces that ask.
+  Verified live: cell → dropdown → Save → `seo.site_keyword_value.traffic_class` updated.
 - 2026-08-24 — Insights drilldowns (cannibalization, shifts) moved off the side drawer onto the
   canonical table-owned WindowPanel (`detail` disabled, `window.renderView`), per Arman's ruling:
   side drawers are out, the window panel is the panel primitive (SEO VISION §2.7b). Portfolio
