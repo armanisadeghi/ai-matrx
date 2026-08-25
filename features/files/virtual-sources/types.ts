@@ -24,7 +24,7 @@
  *    `version: int` instead translate internally.
  *
  * See `features/files/virtual-sources/README.md` for the full pattern doc and
- * `features/files/for_python/REQUESTS.md` for the Python parity contract.
+ * /Users/armanisadeghi/code/common-docs/systems/media/file-service/HANDOFF.md for the server parity asks.
  */
 
 import type { ComponentType } from "react";

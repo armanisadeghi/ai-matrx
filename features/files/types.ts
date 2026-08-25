@@ -108,7 +108,8 @@ export interface MediaRef {
 // these (not hand-rolled shapes) to track schema changes automatically.
 //
 // Note on table naming: The Python team's doc uses `cld_file_share_links`;
-// the actual DB table is `cld_share_links`. See for_python/REQUESTS.md.
+// the canonical DB table is `platform.share_links` (see common-docs
+// systems/media/file-service/WIRE_CONTRACT.md).
 
 // Cloud-files tables live in the dedicated `files` schema (the `cld_` prefix
 // was dropped in the 2026 DB restructure). Permissions are the exception —
@@ -380,7 +381,7 @@ export interface CloudShareLink {
 // updates the shape, only [redux/converters.ts](./redux/converters.ts) needs
 // to change.
 //
-// Open question logged in for_python/REQUESTS.md on exact schema.
+// Open question on the exact schema: common-docs systems/media/file-service/HANDOFF.md.
 
 export interface CloudTreeFileRow {
   kind: "file";

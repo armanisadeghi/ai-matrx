@@ -366,7 +366,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // variant rows now carry `parent_file_id` + `derivation_kind`, but
     // realtime payloads still arrive for new variant writes — we filter
     // at the boundary so they never appear in the user tree.
-    // See `isSystemPath` + from_python/UPDATES.md §9 (2026-05-16 entry).
+    // See `isSystemPath` + common-docs systems/media/file-service/WIRE_CONTRACT.md.
     if (isHiddenFromUserTree(newRow.file_path)) return;
     // LISTING gate (client mirror of DB `files.is_listable_for`): realtime
     // is RLS-authorized and RLS includes a `pub_read` policy, so without

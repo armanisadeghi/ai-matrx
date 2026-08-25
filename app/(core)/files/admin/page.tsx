@@ -20,8 +20,8 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
     { label: "Files handler FEATURE.md", href: "/features/files/handler/FEATURE.md" },
     { label: "Webhooks + Event Spine FEATURE.md", href: "/features/files/webhooks/FEATURE.md" },
     { label: "Files FEATURE.md", href: "/features/files/FEATURE.md" },
-    { label: "Roadmap", href: "/features/files/ROADMAP.md" },
-    { label: "Upload troubleshooting", href: "/features/files/UPLOAD_TROUBLESHOOTING.md" },
+    { label: "Roadmap", href: "https://github.com/AI-Matrix-Engine/matrx-common-docs/blob/main/systems/media/file-service/HANDOFF.md" },
+    { label: "Upload troubleshooting", href: "https://github.com/AI-Matrix-Engine/matrx-frontend/blob/main/features/files/handler/FEATURE.md" },
   ],
   routeScanPath: "app/(core)/files",
 

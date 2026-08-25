@@ -180,7 +180,7 @@ export const CloudFolders = {
   // exclude `parent_file_id IS NOT NULL` and `file_path LIKE
   // 'system-files/%'`. The FE keeps `isSystemPath` as a defensive guard
   // at every tree boundary (loadUserFileTree, loadFolderContents,
-  // realtime middleware). See from_python/UPDATES.md §9 (2026-05-16).
+  // realtime middleware). See common-docs systems/media/file-service/WIRE_CONTRACT.md.
 
   /** Root for backend-owned infrastructure files (variants, posters, etc.). */
   SYSTEM_FILES: "system-files",

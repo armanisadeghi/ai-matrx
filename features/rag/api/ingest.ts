@@ -9,7 +9,7 @@
  *
  * The cloud-files surfaces never need to think about `source_kind` —
  * a file is always `cld_file` from this codepath. If/when the Python
- * team adds `POST /files/{file_id}/ingest` (item 14b in REQUESTS.md)
+ * team adds `POST /files/{file_id}/ingest`
  * we swap the URL inside this module without disturbing call sites.
  *
  * Streaming variant returns an async iterator of progress events the

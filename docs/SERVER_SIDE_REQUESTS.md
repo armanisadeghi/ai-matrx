@@ -2,7 +2,7 @@
 
 > **Direction:** OUTBOUND (frontend → Python/DB team). This is the **app-wide
 > master** for one architectural rule and the audit that enforces it. Detailed,
-> per-feature asks live in each feature's `for_python/REQUESTS.md` — this doc is
+> per-feature asks live in each feature's own work order — this doc is
 > the rule, the cross-feature audit table, and the index. It does **not**
 > duplicate the per-feature asks.
 >
@@ -45,7 +45,7 @@ file / non-public schema) · 🟡 needs review.
 | Feature | Surface | Verdict | Notes |
 |---|---|---|---|
 | Cloud Files | `GET /files/{id}/document` | 🟢 fixed | Now a direct `processed_documents` read. |
-| Cloud Files | `GET /files`, `/files/{id}`, `/files/trash`, `/files/folders`, `/files/groups`, `/files/{id}/share-links`, `/folders/{id}/share-links` | 🔴 | RLS-readable `cld_*` tables. Migrate to direct reads; tree already uses `cld_get_user_file_tree` + `.from('cld_files')`. See files `for_python/REQUESTS.md`. |
+| Cloud Files | `GET /files`, `/files/{id}`, `/files/trash`, `/files/folders`, `/files/groups`, `/files/{id}/share-links`, `/folders/{id}/share-links` | 🔴 | RLS-readable `cld_*` tables. Migrate to direct reads; tree already uses `cld_get_user_file_tree` + `.from('cld_files')`. See `/Users/armanisadeghi/code/common-docs/systems/media/file-service/HANDOFF.md`. |
 | Cloud Files | `GET /files/usage` | 🟡 | `cld_user_storage_usage` has RLS **disabled** — needs a policy or RPC before direct read. |
 | Cloud Files | `GET /files/{id}/asset`, `/assets/*` | 🟢 | Renders variants + signs S3 URLs. |
 | Cloud Files | `GET /files/{id}/analysis`, `/files/{id}/entities` | 🟡 | Likely AI/derived — confirm before assuming proxy. |
@@ -61,7 +61,7 @@ file / non-public schema) · 🟡 needs review.
 
 ## Per-feature request docs (where the detailed asks live)
 
-- **Cloud Files** → [`features/files/for_python/REQUESTS.md`](../features/files/for_python/REQUESTS.md)
+- **Cloud Files** → `/Users/armanisadeghi/code/common-docs/systems/media/file-service/HANDOFF.md`
   — canonical; contains the concrete asks from this audit (chunk-count
   exposure, shared-file RLS on `processed_documents`, retiring the read
   proxies, storage-usage RLS).

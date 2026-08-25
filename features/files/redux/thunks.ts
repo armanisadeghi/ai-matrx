@@ -172,7 +172,7 @@ export const loadUserFileTree = createAsyncThunk<
     // `auth.uid()`, returns owner OR explicit-grant rows only (no public
     // leak), excludes `parent_file_id IS NOT NULL` + `system-files/%`
     // paths. So we can consume the response raw — no FE-side ownership
-    // or system-path filtering needed. See from_python/UPDATES.md §9
+    // or system-path filtering needed. See common-docs systems/media/file-service/WIRE_CONTRACT.md
     // (2026-05-17 "Phase 1d.5" entry).
     //
     // Pagination: server caps p_limit at 5000. We loop on `p_offset`

@@ -40,7 +40,7 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
 - **FE:** `previewKind: "office"` → `OfficePreview` (`features/files/components/core/FilePreview/
   previewers/OfficePreview.tsx`); API `features/files/api/office.ts`; actions in
   `preview-actions.ts`; "AI document" in `features/files/components/surfaces/desktop/NewMenu.tsx`.
-  Inventory: `features/files/components/surfaces/FILE_TYPE_INVENTORY.md` § OFFICE.
+  Inventory: `/Users/armanisadeghi/code/common-docs/systems/media/file-service/FILE_SURFACES.md` § OFFICE.
 - **Desktop:** `matrx-local/app/tools/tools/file_ops.py` (`tool_read`) + `media.py`
   (`tool_office_generate`).
 

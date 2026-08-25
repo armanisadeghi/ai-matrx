@@ -1,267 +1,102 @@
-# FEATURE.md — `file-handler`
-
-**Status:** `canonical`
-**Tier:** `1`
-**Last updated:** `2026-07-29`
-
----
-
-## Purpose
-
-The universal file handler. Every codepath that touches a file — owned `cld_files` row, blob from a paste, signed URL, base64, external URL, share link, just-uploaded result, mid-stream agent reference — funnels through ONE `FileSource → NormalizedFile → FileTarget` pipeline. The core logic for resolving, validating access, refreshing signed URLs, and emitting AI media blocks lives here exactly once.
-
-This feature is the **single source of resistance** for file flows: direct construction of media blocks and direct object-store SDK calls are forbidden. Metadata reads go directly to Postgres through the authenticated client; bytes, signing, and processing go through the canonical Files service.
-
-**Credential-file exception (2026-08-11):** Vault attachments are not ordinary
-cloud files and must never enter `cld_files` or expose an object-store URL.
-Their bytes stay inside the credential encryption boundary. The one sanctioned
-frontend transport is `features/files/vault/vaultAttachmentTransport.ts`, which
-posts bytes directly to aidream's Vault API and performs no-store downloads;
-the Vault feature owns only metadata and user intent. That transport requires
-the explicitly selected request organization and sends `X-Organization-Id` on
-upload, replacement, and download; it never substitutes the personal org. This
-is a specialized canonical byte boundary, not permission to hand-build another
-file flow.
-
----
-
-## Entry points
-
-**Public API** — import directly, no barrel:
-
-- `import { fileHandler } from "@/features/files/handler/handler"` — read/write/refresh
-- `import { useFile } from "@/features/files/handler/hooks/useFile"` — generic resolve
-- `import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc"` — `<img src>` URL
-- `import { useFileBlob } from "@/features/files/handler/hooks/useFileBlob"` — bytes
-- `import { useFileMediaBlock } from "@/features/files/handler/hooks/useFileMediaBlock"` — AI block
-- `import { useFileDownloadUrl } from "@/features/files/handler/hooks/useFileDownloadUrl"` — `<a download>`
-- `import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload"` — write path
-
-**Types** — `@/features/files/handler/types`
-**Errors** — `@/features/files/handler/errors`
-
-**Routes:** none. The handler is a library, not a page.
-
-**Redux:** consumes `cloudFiles` and `userAuth` and `appContext` slices. Does not own its own slice — files live in `cloudFiles`, in-flight uploads in `cloudFiles.uploads`.
-
----
-
-## Data model
-
-**Tables read:** `files.files`, `iam.permissions` (canonical grant store, `resource_type='file'`), `platform.share_links` (via the canonical share-link RPC family in `utils/permissions/shareLinks.ts` — `create_share_link` / `list_share_links` / `revoke_share_link`; never direct table writes).
-
-**Tables written:** `cld_files` (via `Files.uploadFile`).
-
-**Servers touched:** Python only (`server.app.matrxserver.com/files/*`, `/assets`, and `/share/*`). The handler never crosses through Next.js. No `/api/files/*`, no `/api/share/*`. (The legacy Next.js+Sharp route at `/api/images/upload` was deleted on 2026-05-12 — preset-variant image uploads now go directly to Python's `POST /assets`.) Telemetry lives on the Python side.
-
-**Key types** (`features/files/handler/types.ts`):
-- `FileSource` — discriminated union over every input shape (16 variants).
-- `NormalizedFile` — the one internal representation. Carries `fileId | url | base64`, `origin`, `capabilities`, `meta`, `lifecycle`, `scope`, `derivedFrom`. (No `fileUri`/`storageUri` — the native S3 location is **server-only**, eradicated from the client 2026-07-06; see [../FEATURE.md](../FEATURE.md) Invariants.)
-- `FileTarget` — discriminated union over every consumer surface (11 variants).
-- `MediaBlock` — `ImageBlock | AudioBlock | VideoBlock | DocumentBlock | YouTubeVideoBlock`.
-- `UploadOpts` — folder/visibility/scope-inheritance/share grants.
-
----
-
-## Key flows
-
-### Flow 1 — render an `<img>` for a cloud file
-
-1. Component calls `useFileSrc({ kind: "file_id", fileId })`.
-2. `normalize()` returns a partial `NormalizedFile` with `fileId` set.
-3. `resolve()` hydrates: `selectFileById(state, fileId)` → if missing, `Files.getFile(fileId)` → `apiFileRecordToCloudFile(...)`.
-4. `decideForOwnedFile` chooses `origin` and `capabilities` using owner / visibility / `iam.permissions` grants.
-5. If the file is public and has `publicUrl` (CDN), use it. Otherwise call `getOrMintSignedUrl(fileId)` — returns the cached URL if one is still valid, otherwise mints one and caches it. No background timers.
-6. Output adapter `toHtmlSrc` returns the chosen URL.
-7. `<img src>` renders. Once the bytes are in the browser's HTTP cache the URL string's expiry is irrelevant — the image stays on screen indefinitely. If a later action needs a fresh URL (download, edit, re-mount), the cache hands out the still-valid one or lazily re-mints in the same call. No re-render is forced unless the consumer explicitly remounts.
-
-### Flow 2 — submit a freshly-pasted image to the agent
-
-1. The paste/drop handler synchronously inserts a pending agent resource. Images get a bounded tracked `blob:` preview; that URL is UI-only and never becomes a ready payload.
-2. `useFileUpload().upload({ kind: "file", file }, opts)` starts immediately. The pending resource blocks send and renders a loader over the local image (or a pending file tile).
-3. `uploadInternal` coerces source → `File`, conditionally stamps `metadata.scope = { organization_id, project_id, task_id }` from `appContext` according to the visibility-aware policy below, and posts to `/files/upload`.
-4. The returned `NormalizedFile` points at the new `cld_files` row. The shared agent `useAttachResource` mapping converts it to the canonical media resource or durable `file → conversation` document association.
-5. Only after the durable attachment exists is the staging resource removed and its local object URL revoked. If the user removed the pending resource while upload was running, the completed cloud file is not re-attached.
-
-### Flow 3 — signed URL expires while user is browsing
-
-There is no background refresh. The policy is **lazy mint on demand**:
-
-1. While the file's bytes are already loaded into the `<img>` / `<video>` / `<audio>`, the URL string's expiry does not matter — the browser is not re-requesting it.
-2. The next time a private byte consumer asks for the URL (a download, an edit, or a remount), the resolver routes through `getOrMintSignedUrl(fileId)`. If the cached URL is still valid (with a 60s safety margin), it's returned as-is. If not, a fresh URL is minted in that call and cached. **Share/copy actions never use this lane**: they emit an auth-gated internal viewer URL, a durable CDN URL, or a canonical `/share/{token}` URL.
-3. Concurrent callers for the same fileId share one in-flight mint via the cache's request-dedup map — 20 components loading the same file produce 1 network call, not 20.
-4. The 403 retry path: if the browser ever does refetch a stale URL (e.g. memory-pressure cache eviction with the tab still open), an `<img onError>` handler can call `invalidateSignedUrl(fileId)` and force the consumer to remount with a fresh URL. Most consumers don't bother — a manual reload is acceptable for this rare edge case.
-5. Backend errors: on a permissions change, `mintSignedUrl` will surface `FileAccessDeniedError`; the cache won't store the failed mint, so the next call re-tries.
-
-### Flow 4 — share link viewer
-
-1. Source: `{ kind: "share_link", token }`.
-2. `normalize` sets `url = pythonShareUrl(token)` (i.e. the clean `${BACKEND}/share/{token}` byte URL), `origin = "public"`, `shareToken = token`.
-3. Resolver doesn't need to hydrate — share-link lifetime is managed by the backend.
-4. Consumer fetches; on 410 the backend returns `share_link_invalid`; the resolver translates to `ShareLinkInvalidError`.
-
----
-
-## Intelligence (the part the user emphasized)
-
-### Failure-mode taxonomy → typed errors
-
-| Cause | Error class | Retry posture |
-|---|---|---|
-| Signed URL expired but user has access | `FileExpiredError` (internal — auto-recovered) | Auto-refresh once |
-| User permanently lost access | `FileAccessDeniedError` | Reject. No retry. |
-| File deleted | `FileDeletedError` | Reject. UI surfaces "in trash". |
-| File not found | `FileNotFoundError` | Reject. |
-| Share link invalid/expired/revoked | `ShareLinkInvalidError` | Reject. |
-| External URL fetch failed | `ExternalFetchError` | Reject. |
-| Upload failed | `FileUploadError` | Caller-decided. |
-
-### Access decision
-
-`intelligence/access.ts:decideForOwnedFile` evaluates in this order:
-1. owner_id === current user → `owned` (full caps)
-2. visibility === "public" → `public` (read-only)
-3. `iam.permissions` grant row matches user (and not expired) → `shared` (level-derived caps)
-4. None → `owned` with no caps; the resolver rejects on first request
-
-### Org-scope routing
-
-Public/shared uploads inherit active scope by default: the handler reads `selectOrganizationId / selectProjectId / selectTaskId` from `appContext` and stamps them into `metadata.scope`. Personal uploads do **not** inherit active scope by default because they belong to the individual regardless of the ambient organization/project/task. The user-library namespaces `Shared Assets/**` and `Private Assets/**` also remain independent of ambient scope regardless of file visibility: those long-lived folder rows belong to the personal organization, and stamping an unrelated active organization would make the backend reject the owner+path collision as a cross-organization write. Callers may explicitly set `inheritActiveScope: true` for an intentionally scoped write, or `false` to opt any upload out. Existing metadata values take precedence whenever inheritance is enabled.
-
-**Captures deliberately combine `inheritActiveScope: true` with `personal` visibility** — this is intentional, not a violation of the "personal uploads don't inherit scope" default. `capture-uploader` files each capture under an org-namespaced folder (`Captures/<orgId>/{Photos|Videos|Audio}`) and inherits the active org so the folder+file row are owned by that org, matching the path segment. Org here is **filing, not access**: the file stays `personal` (owner-gated regardless of org), and the org id in the path is exactly what keeps the folder collision-free under the server's one-folder-path-per-user constraint. Do not read `inheritActiveScope: true` on a personal-visibility capture upload as a bug.
-
-### Lazy signed-URL cache
-
-`intelligence/signed-url-cache.ts` is an in-memory map of `fileId → { url, expiresAt }`, shared by every consumer in the app for the lifetime of the page. The policy is "mint on demand, never preemptively":
-
-- **No background timers.** Nothing runs in the background to refresh URLs. Once the browser has loaded the bytes the URL is a sunk cost.
-- **Cache hit → return.** If the cached URL is still valid (with a 60s safety margin so a download started right at the boundary still completes), it's returned as-is.
-- **Cache miss → mint + cache.** A single `mintSignedUrl` call populates the cache and resolves the caller.
-- **In-flight dedup.** Concurrent callers asking for the same `fileId` share one `Promise`. A grid of 50 thumbnails for the same file produces one `GET /files/{id}/url`, not 50.
-- **`invalidateSignedUrl(fileId)`** lets a 403-retry path force a re-mint.
-- **`clearSignedUrlCache()`** is called on sign-out so a previous user's URLs don't leak to a new session.
-
-The previous "expiry wheel" — a global timer that preemptively re-minted every URL ~30s before expiry — has been removed. It caused a runaway loop the moment a refresher failed to update its `expiresAt` (see Change Log, 2026-05-17). The lazy model is what AWS, Drive, Dropbox, and Slack do in production: it's simpler, cheaper, and structurally cannot loop.
-
-### Transport policy (buffered vs TUS)
-
-`cloudUpload` is the ONE transport-policy chokepoint (`resolveUploadTransport` in `features/files/upload/cloudUpload.ts`): files ≥ **`TUS_TRANSPORT_THRESHOLD_BYTES` (80 MB)** upload resumably via TUS (`features/files/upload/tusUpload.ts` → `${PYTHON_BACKEND}/files/upload/tus`, tus-js-client, 16 MiB chunks); smaller files use the buffered multipart POST. `UploadOpts` exposes `transport?: "buffered" | "tus"` (override) and `signal?: AbortSignal` (buffered XHR abort / TUS abort). There is NO presigned transport.
-
-TUS client contract (system of record: `common-docs/systems/media/media-capture/FEATURE.md` § TUS): FRESH Authorization per request (`onBeforeRequest`); `X-Idempotency-Key` on the creation POST only; `Upload-Metadata` carries `filename`, `filepath`, and ONE `metadata_json` key — the SAME JSON object the buffered path sends, built by the shared `buildUploadMetadataEnvelope` (parity unit-tested); final `X-Cld-File-Id` captured from response headers (incl. completed-session recovery — a lost final response resolves the file instead of re-uploading); resume URLs in the dedicated IndexedDB `mtx-tus-urls` (NEVER the recorder chunk journal); progress feeds the same `cloudFiles` upload tracking as buffered.
-
-**Status: live browser E2E is PENDING.** The server-side wire (CORS allow/expose headers, metadata parity, completed-HEAD recovery) exists in aidream locally but is NOT deployed — the client is verified by unit tests against an injected HttpStack (`features/files/upload/__tests__/transport-policy.test.ts`) only. Do not claim live TUS verification until a real browser upload (preflight, resume, lost-final-response, token refresh) passes against the deployed server.
-
-### CORS-aware transport
-
-S3 signed URLs are CORS-blocked for `fetch()`. `NormalizedFile.capabilities.transportSafeForFetch` is `false` for those; `preferFetchableUrl()` falls back to Python's authenticated download endpoint (`{BACKEND_URL}/files/{id}/download`) — never to a Next.js proxy. The browser talks to Python (or the CDN) directly.
-
----
-
-## Migration plan (the duplication clusters this replaces)
-
-The following call sites still build their own attachments. Each becomes a small change once the handler is in: replace local logic with `fileHandler.use(source).as(target)`.
-
-| Call site | Replace with | Status |
-|---|---|---|
-| `features/cx-conversation/ConversationInput.tsx` attachment lifecycle | `useFileMediaBlock` + `fileHandler.toContentPart` | pending |
-| `features/agents/redux/execution-system/instance-resources/resource-source.ts` `refineBlockType` + `resourceDataToSource` | `fileHandler.toMediaBlock` | pending |
-| `features/cx-chat/utils/buildContentBlocksForSave.ts` | `fileHandler.toContentPart` | pending |
-| `features/rag/api/ingest.ts` (file source coercion) | `fileHandler.use(source).as({ kind: "rag_ingest_source" })` | pending |
-| `features/tasks/services/taskService.ts` legacy attachments path | `fileHandler.use({ kind: "file_id", fileId })` | pending |
-| `components/ui/file-upload/useFileUploadWithStorage.ts` | `useFileUpload` from this feature | done |
-| `components/ui/file-upload/usePasteImageUpload.ts` | `useFileUpload` + `{ kind: "file", file }` | done |
-
-The previous parallel object-store path is fully removed. Compatibility readers, bucket aliases, URL reconstruction, and direct SDK access are not supported.
-
----
-
-## What this feature deliberately does NOT own
-
-- **AWS SDK on the FE.** Never. All S3 ops stay server-side.
-- **Provider-shape conversion (Anthropic/OpenAI/Google).** Stays in the Python backend. The handler emits canonical `MediaBlock` shapes, never provider-specific.
-- **Sharp / OCR / Whisper transforms.** Server-side. The handler triggers transforms via existing routes; it does not run them.
-- **IndexedDB audio safety store** (`features/audio/services/audioSafetyStore.ts`). Stays as a separate concern (crash-recovery staging); it can later adopt `FileSource` as its export type so finished recordings flow through the handler on commit.
-- **Code-editor multi-file state.** That's its own state machine; the handler is the byte-transport layer underneath.
-
----
-
-## Invariants that MUST hold
-
-1. Every consumer of files (`<img>`, AI media block, download link, OG image, persistence to `cx_message.content[]`, RAG ingest) goes through `fileHandler.use(source).as(target)`. Direct construction of media blocks is banned.
-2. `NormalizedFile.fileId` is set whenever known. Output adapters always prefer it over URLs. **`storage_uri`/`fileUri` is banned client-side** — identify by `fileId`; render via the server URL contract (`url`/`cdn_url`/`signed_url`/`download_url`); a `MediaRef`/media part carrying only a storage URI is treated as absent, never an error.
-3. The S3 bucket is touched only by the Python backend. The FE never sees an AWS SDK.
-4. Anonymous users (public chat) are authenticated to Supabase with an anonymous UUID — they use the same handler API. There is no second lane.
-5. New file flows must use the handler from day one. Direct object-store SDK calls and direct media-block construction are regressions.
-6. Scope inheritance is visibility- and namespace-aware: public/shared uploads carry active `organization_id / project_id / task_id` in `metadata.scope` when available, except under the personal-organization `Shared Assets/**` / `Private Assets/**` library namespaces; personal uploads remain independent of ambient app scope unless explicitly opted in.
-7. Signed object-store URLs are private playback/download credentials, never share links. `shareableMediaUrl` rejects both AWS SigV2 and SigV4 URLs at copy/share boundaries; owned media must use its internal viewer URL, a durable public URL, or the canonical share-link RPC flow.
-8. A successful canonical upload returns `UploadedNormalizedFile`, whose `fileId` is required at both runtime and compile time. Agent attachment flows must hand that identity to `MediaRef`; an opaque share URL is display/recovery data, never the primary locator.
-
----
-
-## Change log
-
-- **2026-08-21 — audio and video now carry `file_id` through the DB walkers, like images always did.** `features/files/blocks/adapters/from-cx-av-part.ts` (`fromCxAudioPart` / `fromCxVideoPart`) is the audio/video twin of `image/adapters/from-cx-media-part.ts`: it lifts the top-level `file_id` (falling back to `metadata.file_id`) plus the `cdn_url` / `signed_url` / `download_url` flavors out of a persisted `cx_message.content[]` media part, and forwards the stored `url` only as the save-time fallback. Both timeline walkers (`messages.selectors.ts` `mediaPartToSegment`, `normalize-content-blocks.ts` `normalizeMedia`) use it, and `assemble-cx-content-blocks.ts` now keeps `file_id` alongside `url` instead of only when the url is missing. Consequently `buildMediaSource` no longer guesses an id off any trailing `{uuid}.{ext}` URL segment — that unscoped guess hijacked durable public-bucket URLs whose last segment is a STORAGE object id and minted for a file that does not exist. The host-scoped `fileIdFromUserFilesUrl` recovery stays: aidream's fallback paths still emit `AudioOutputData.file_id = None`, and 1 of the 12 legacy url-only audio rows in the live DB depends on it. Related: `instance-resources.selectors.ts` no longer ships a `MediaRef` carrying both `file_id` and `url` (the server accepts exactly one), and prefers `file_id` over `url` per Invariant 2.
-
-- **2026-08-17 — The blob-cache service worker also carries education offline study.** It is the platform's ONLY service worker and is registered at scope `/`, so a second registration would replace it and silently kill transparent media serving. Offline study therefore lives here: network-first navigations into `/education` with a cached-shell fallback, plus cache-first `/_next/static/*`. Both are classified by pure predicates in `service-worker/src/offline-routing.ts` (unit-tested) and both are handled BEFORE the `set-config` gate, because an installed app opened with no signal has no page to push config from. Blob-cache behaviour is unchanged. Owner context: `common-docs/systems/education/` (WP1, D-WP1-4).
-- **2026-08-17 — Satellite service-worker script stays same-origin.** `proxy.ts` allows the generated `/blob-sw.js` asset on admin and demos hosts. Redirecting it to the main host makes browser registration fail because service-worker scripts may not follow a cross-origin redirect.
-- **2026-08-12 — Canvas-safe media and one canonical attachment thumbnail.** `InlineMediaRef` now routes ID-backed `crossOrigin` consumers through the existing authenticated `useFileBlob` byte cache and renders its same-origin `blob:` URL. A canvas must not use the handler's bare `/files/{id}/download` URL as `<img src>` because an element cannot attach the user's bearer token, and a display/CDN URL is not a promise of CORS-readable pixels. External cross-origin media still uses the handler's `fetchable_url` target. The new `MediaAttachmentThumbnail` composes that canonical renderer with the shared pending/error/remove/click chrome; Submit Feedback and Smart Agent resources both consume it instead of maintaining lookalike local tiles. Feedback screenshot uploads now keep their required `fileId` through thumbnail, annotation, persistence, replies, MCP, and agent-service boundaries; URLs remain a read-only fallback for historical feedback rows.
-- **2026-08-08 — matrx-files contract-drift shim DELETED (service fixed).** The live files service briefly returned `{file_id, folder_id, version}` where its published contract says `{id, parent_folder_id, current_version}`, and `/files/{id}/url` omitted `expires_in` — every cold metadata hydration lost its `fileId` and the signed-URL cache stored `expiresAt: NaN` (broken `InlineMediaRef` icons; commit bea07112c added a defensive dual-read + CONTRACT VIOLATION scream + AWS `Expires=` expiry derivation). The service now serves the canonical shapes from the ONE deserializer (`matrx-files 0.2.18`, `matrx_files/api/records.py`, pinned by its `test_file_record_wire_contract.py`), so `apiFileRecordToCloudFile` and `mintSignedUrl` read only the contract-conformant fields again. `useFileAs` keeps its loud resolution-failure logging.
-- `2026-07-29` — codex: upload identity now stays anchored to the upload endpoint's authoritative `file_id` while the follow-up file-record fetch enriches metadata. A missing/mismatched hydrated id screams in the console and is repaired from the creation acknowledgement; a completed upload can no longer collapse into a temporary/share-URL-only attachment.
-- **2026-07-29 — Uploaded agent images preserve identity and MIME end to end.** The handler classifier now consumes the existing MIME-first `getFilePreviewProfile` primitive, so an opaque `/share/{token}` URL with `image/jpeg` cannot be downgraded to a document. Successful uploads now return the stricter `UploadedNormalizedFile` and fail loudly if the hydrated row lacks `fileId`; upload and storage picker payloads share the truthful `FileResourceData.fileId` field. Agent-resource regression tests pin both the primary `file_id` path and the URL-only MIME recovery path.
-- **2026-07-24 — User-library uploads cannot inherit an unrelated active organization.** The canonical upload boundary now treats `Shared Assets/**` and `Private Assets/**` as personal-organization folder namespaces even when a file is public. This closes the feedback/app-asset regression introduced when backend folder placement validation began rejecting the same owner+path across organizations. Buffered progress/XHR failures now enter the Error Inspector through the same structured capture path as fetch-based requests, so the backend error code, detail, request id, method, and endpoint are preserved instead of leaving only a generic toast.
-- **2026-07-24 — Personal uploads are independent of ambient app scope.** The shared upload boundary now defaults `inheritActiveScope` to false for personal visibility while preserving true for public/shared uploads and explicit caller overrides. This fixes SmartAgentInput audio journal chunks and finalized recordings being rejected when their existing personal transcript folders belonged to a different organization than the UI's active organization.
-- **2026-07-23 — Agent paste/drop staging is immediate and canonical.** `useUploadAgentResources` now owns the shared stage → upload → attach lifecycle for every Smart input composer. It creates bounded local image previews and pending file tiles synchronously, uploads through `useFileUpload`, hands ready payloads to `useAttachResource`, and revokes the preview on completion/removal.
-- **2026-07-21 — Signed playback URLs can no longer escape through media actions.** All chat video inputs (`media_block`, legacy `video_output`, and markdown video links) now converge on `UnifiedVideoBlockRenderer`, preserving or recovering `file_id` before rendering actions; the two legacy video components that copied/shared raw `src` values were deleted. `shareableMediaUrl` now fails closed on both AWS signing dialects, image/video share menus no longer offer “Copy temporary link,” misclassified signed “CDN” or external URLs are rejected, and owned Copy/Open actions use the auth-gated file viewer while public sharing continues through durable CDN or canonical `/share/{token}` URLs.
-- **2026-07-21 — TUS transport landed (media-capture Phase 7).** `tusUpload.ts` + the 80 MB transport policy in `cloudUpload` (`resolveUploadTransport`); `UploadOpts` gained `signal` + `transport`; shared `buildUploadMetadataEnvelope` guarantees buffered↔TUS `metadata_json` parity. Live E2E pending aidream deploy (see § Transport policy).
-- **2026-07-20 — Ephemeral object URLs promoted to a shared browser primitive.** The bounded create/revoke registry moved from handler internals to `lib/media/object-url-registry.ts` so the file normalizer and local-only UI thumbnails share one leak-resistant object-URL lifecycle without importing private handler paths.
-- **2026-07-18 — Contextual files cannot leak into nested-folder discovery.**
-  `loadFolderContents` no longer enumerates raw file/folder tables; nested and
-  root loads both refresh through the discoverability-gated user-tree RPC.
-- **2026-07-18 — One clean public media URL.** `pythonShareUrl(token)` and every Copy-public-link/upload-and-share caller now emit `${FILES_BACKEND}/share/{token}`: a durable, inline-safe byte URL that works unchanged in Markdown image syntax, raw media tags, and a normal browser tab. Explicit downloads use `/share/{token}/download?inline=false`; the former `/share/{token}/download` URLs remain backend-compatible. Added URL-contract regression coverage. This also closes the standalone cutover hole where the FE emitted `/download` but `files.matrxserver.com` had only mounted a stale JSON resolver at the bare route.
-- **2026-07-15 (Wave F — share-link unification onto `platform.share_links`)** — The legacy file share-link lane is GONE: `features/files/api/share-links.ts` (files-schema `fn_list/create/deactivate_share_link` RPCs) deleted; thunks (`createShareLink` / `loadShareLinks` / new `revokeShareLink`) now call the CANONICAL RPC family via `utils/permissions/shareLinks.ts` (`create_share_link` — owner-gated + registry `is_link_shareable`; `list_share_links`; `revoke_share_link` by link **id**); realtime repointed to `platform.share_links` (needs the table in the realtime publication). `CloudShareLink.permissionLevel` is now canonical `viewer|editor` (was `read|write`) — every mint site updated. Landing page is `/s/{token}` everywhere (`shareUrls(...).page`, ShareLinkDialog, uploads); the old `/share/[token]` and `/files/share/[token]` routes are deleted and old `/share/...` links are dead (approved). `pythonShareResolveUrl` + `ShareUrls.resolve` + `publicGetJson`/`publicDownloadBlob` removed — Python's JSON resolver endpoint is gone; the byte endpoint `GET /share/{token}/download` remains, now validating tokens against `platform.share_links` (aidream repoint). `/s/[token]` gained `file` (metadata via registry `public_columns` + inline preview/download through the byte endpoint) and `folder` (metadata card; no anon child listing) renderers. `Api.Server.uploadAndShare` returns `directUrl` (bytes) alongside `shareUrl` (page); the agent-app favicon route persists `directUrl`. DB: `files.share_links` graveyarded, legacy RPCs + `consume_share_link` dropped (`migrations/files_share_links_legacy_retire.sql` + `share_links_enable_file_folder.sql`).
-- **2026-07-06** — **`fileUri`/`storageUri` eradicated from `NormalizedFile`, `MediaRef`, and every adapter.** The backend stopped emitting the native S3 location; the DB REVOKEs the `files.files.storage_uri` grant. Resolution keys off `file_id` first, then `url`. Older entries below mentioning `fileUri` are historical.
-- **2026-07-02 (grant converter — public grant modeled honestly + `expires_at` wired)** — `dbRowToCloudFilePermission` (`redux/converters.ts`) had collapsed a PUBLIC grant (`is_public=true`, both grantee FKs null) into `granteeType:"user"` + `granteeId:""` — a silent mislabel that fed a bogus empty "member" into avatar stacks / member counts and the by-grantee revoke path. Fix: **`GranteeType` gains `"public"`** (`types.ts`); a public grant now maps to `granteeType:"public"` and carries the row's own `id` as `granteeId` (never `""`). Member/avatar consumers (`row-data.memberCountForResource`, `ContentHeader`, `FileTable`) exclude `"public"` grants; `PermissionsDialog` renders public as "Anyone with access" (Globe) and offers no by-grantee revoke for it (public is toggled via the resource's visibility / Share dialog). The grant/revoke thunks reject `granteeType:"public"` loudly via `requireByGranteeType` (the REST `GrantPermissionRequest` / `?grantee_type=` accept only `user|group`). **First GAP below is now RESOLVED:** `iam.permissions.expires_at` (timestamptz, nullable) exists and is wired straight through to the domain's `expiresAt` (was hardcoded `null`). (The registry/`is_resource_owner` token GAP — 2nd GAP below — remains DB-owner work.) Note: the canonical grant store is `iam.permissions` (the older `public.permissions` references in this doc are the same table pre-schema-move).
-- **2026-06-25 (canonical DB cutover — cld_ → canonical, §1 of `docs/db_rebuild/03-app-agent-cutover-instructions.md`)** — File-permission grants moved off the canonical-DUPLICATE legacy cld_ file-permission table onto the canonical grant store **`public.permissions`** (`resource_type='file'`). `loadPermissions` thunk and the realtime subscription now read `public.permissions` (filtered `resource_type='file'` / `granted_to_user_id`); `dbRowToCloudFilePermission` maps the canonical row (`granted_to_user_id`/`granted_to_organization_id`, enum `viewer|editor|admin` → domain `read|write|admin`). `CloudFilePermissionRow` now points at `permissions`. Authoritative server-side check remains `iam.has_access('file', fileId, level)` / `public.has_permission(...)`. Grant **writes** still go through the Python REST surface (`features/files/api/permissions.ts`), unchanged. **Dead-scaffolding removed:** the never-wired user-group file-sharing code (`api/groups.ts`, `CloudUserGroup`/`CloudUserGroupMember` types, slice maps `groupsById`/`groupMembersByGroupId`, `upsertGroups`/`upsertGroupMembers`, group selectors, group converters) — the legacy `cld_user_groups`/`cld_user_group_members` tables had zero rows and zero live consumers. **GAP for DB owner (do not silently drop):** `public.permissions` has no `expires_at` column (the legacy cld_ table did, but 0 rows used it) — file-grant expiry is not representable on canonical; add `expires_at` if needed. **2nd GAP for DB owner:** `shareable_resource_registry` (which `public.permissions` RLS keys on via `is_resource_owner`) knows token `cld_files` but NOT `file`, while `platform.entity_types` registers `file` → `cld_files`; reconcile so owner-side grant management on `permissions` with `resource_type='file'` authorizes.
-- **2026-06-21 (codebase-wide self-heal sweep)** — Two parallel audits swept the whole repo for the same bug class after the regression fix below. Outcomes:
-  - **New primitive `handler/hooks/useRemintableSrc.ts`** — the canonical way to make a *raw URL string* self-healing (markdown `![](signed-url)`, legacy `audioUrl` props). It recognizes our-own URLs (`recognizeOurFileUrl`), recovers the `file_id`, and on `onError` invalidates + re-mints (capped attempts); a transparent passthrough for non-owned URLs. Use it only when you have a URL string and not a `file_id`/`MediaRef` (those still go through `useFileSrc`/`<InlineMediaRef>`, which mint up front).
-  - **Closed the remaining HIGH gap:** the splitter routes our-own (signed-S3) **image/video** markdown links to the legacy raw `ImageBlock`/`VideoBlock` *before* the handler-backed `matrx_file` path — those raw `<img>`/`<video>` had no `onError` and went dark on expiry. Both now consume `useRemintableSrc`. Same fix applied to the legacy raw-`<audio>` assistant surfaces (`cx-chat`, `cx-conversation`, `prompts`).
-  - **Service worker** (`features/files/cache/service-worker/src/sw.ts`) "never cache signed URLs" guard was **SigV4-only** — broadened to both dialects (mirrors `SIGNED_URL_RE`); blob-sw.js rebuilt.
-  - **`MediaVariableInput`** now hands `<InlineMediaRef>` the bare `file_id` (re-mintable) instead of the already-resolved signed URL.
-  - **Tracked as low-severity (self-recover on remount):** `FilePreview` `SvgPreview`/`AudioPreview` previewers + `MediaThumbnail` render from a signed `url`/`publicUrl` with a terminal `onError`; they re-mint from `file_id` on every mount, so only an *in-view* expiry of a long-open preview fails to recover (FOUND_DEFECTS.md → D1). Cheap fix available via `useRemintableSrc`.
-- **2026-06-21** — **`useFileUpload.uploadMany` forwards `folderPath`.** The multi-file upload primitive was building `UploadFilesArg` with only `parentFolderId`, silently dropping `folderPath` — callers like task/war-room attachments that pass `folderPath: folderForTask(...)` uploaded to root instead of the intended folder. Fixed by passing `folderPath` through to `requestUpload`.
-- **2026-06-21** — **Fixed the "owned image goes dark after ~1h" regression — re-asserting the load-bearing rule: a user's own file URL expiring is a NON-EVENT; we hold the `file_id`, so we re-mint.** Root cause (two stacked commits): (1) `6b214f5e1` (2026-05-16) introduced `blocks/image/adapters/from-image-output-data.ts` with a **SigV4-only** "is this signed?" heuristic (`/[?&]X-Amz-(Date|Signature|Expires)=/`). The image backend mints **SigV2** URLs (`AWSAccessKeyId`/`Signature`/`Expires=<epoch>`), so a private owned URL was misclassified as a **permanent CDN URL** (`finalCdnUrl`), with `signedUrlExpiresAt=null` and `visibility` defaulting to `"public"`. `useUnifiedImageUrl` then saw `public + cdnUrl` → `needsHandlerResolution=false` → **never asked the handler to mint** and served the dead URL as permanent. (2) `eba0b528c` (2026-05-17) removed the expiry-wheel/refresh-timer safety nets that had been masking it. Net: every owned image went dark ~1h after creation. **Fix (structural, not a patch):**
-  - **New canonical primitive `lib/media/signed-url.ts`** — `isSignedUrl()` + `signedUrlExpiresAtMs()` understand **both** dialects (SigV2 `Expires=<epoch>` + SigV4 `X-Amz-Date`/`X-Amz-Expires`). Every signed-URL detector now routes through it: `from-image-output-data.ts`, `helpers/parse-signed-url-expiry.ts` (now a thin re-export), `lib/media/durability.ts`, `lib/media/our-file-sources.ts`, `handler/output/target.ts` (OG image), `components/image/cloud/resolveCloudFileUrl.ts`. No more one-off `X-Amz` regexes.
-  - **`useUnifiedImageUrl` / `useUnifiedVideoUrl` invariants:** a `cdnUrl` is treated as permanent ONLY when `!isSignedUrl(cdnUrl)`; a signed URL is served pre-mint ONLY with a **proven future expiry** (unknown expiry is no longer trusted); and an owned matrx file is ALWAYS eligible to mint. Added `reportLoadError()` — the `<img>/<video> onError` now invalidates the cached URL and **re-mints from `file_id`** (loud `console.warn` recovery, capped attempts) before any terminal "Image unavailable".
-  - **`from-cx-media-part.ts`** now reads the **top-level** `part.file_id` (DB stores it there, not in `metadata`) so an owned file never loses its id and collapses to an un-re-mintable `external` block.
-- **2026-06-12** — Audio output now renders through the handler (matching images). New `components/mardown-display/blocks/audio/AudioOutputBlockRenderer.tsx` resolves a durable URL via `useFileSrc` from the block's `file_id` (recovered from any URL/URI when not explicit) before mounting the presentational `<AudioOutputBlock>`. Fixes two bugs in `BlockRenderer`'s `audio_output` case, which previously echoed the raw `data.url`: (1) streaming audio didn't play because Python now sends only a `file_id` (no minted URL); (2) the player's "Copy link" leaked a raw signed S3 URL. A resolved-but-still-expiring S3 URL is now surfaced via `reportMediaDurabilityViolation` (loud recovery) rather than silently rendered. Applies to both live-stream and DB-loaded messages (both route through the same case).
-- **2026-06-12 (media canonicalization)** — Extended the handler-resolution pattern to **all** chat media output blocks, so there is exactly one durable path per type: image → `UnifiedImageBlockRenderer`, audio → `AudioOutputBlockRenderer`, video → **new** `VideoOutputBlockRenderer`. URL resolution is now shared via `components/mardown-display/blocks/buildMediaSource.ts` (`buildMediaSource` + `fileIdFromAnyUri`), consumed by both the audio and video renderers (no duplicated resolver). `BlockRenderer`'s `video_output` case (and the markdown-link `audio` case) no longer echo the raw `data.url`/`block.src` — both route through the renderers, fixing the same streaming-doesn't-play + S3-copy-leak bugs for video and link-audio. The disruptive `reportMediaDurabilityViolation` `console.error` in `AudioOutputBlockRenderer` (which tripped the Next.js error overlay mid-stream) was replaced with a plain `console.log("[audio-block] resolved", …)`; the still-private-S3 audio is tracked as a backend defect (FOUND_DEFECTS.md → D1). Added `AudioOutputBlockSkeleton.tsx` (dimension-matched loading twin of the landscape player; zero layout shift) and wired it into the three "Generating audio…" surfaces (cx-chat, cx-conversation, prompts). Deleted the unused multi-track `AudioComponent.tsx` (zero consumers).
-- **2026-05-17** — Second consolidation pass — kill every remaining bypass of the centralized file flows beyond signed URLs. Three parallel audits (write path, read path, mutation path) plus follow-up fixes:
-  - **Fixed two state-desync bugs.** `features/code-files/service/s3Service.ts:deleteCodeFileFromS3` and `features/transcripts/service/audioStorageService.ts:deleteAudioFromStorage` both called `Files.deleteFile` directly — REST succeeded but the Redux slice waited on the realtime echo, producing a stale-row race window. Both now route through `fileHandler.remove(fileId, { hard: true })` which dispatches the canonical `deleteFile` thunk (REST + slice removal in one).
-  - **Fixed three PDF-extractor upload bypasses.** `features/pdf-extractor/components/ManipulationPanel.tsx` (1 call-site) and `features/pdf-extractor/studio/PdfStudioReader.tsx` (2 call-sites) imported raw `uploadFile` from `@/features/files/api/files` to save crop/reorder PDF derivatives — skipping optimistic Redux updates, duplicate-detection, the upload guard, progress instrumentation, and `attachChildToFolder` wiring. All three now use `fileHandler.upload({ kind: "file", file }, { folderPath })` and read `fileId` / `fileUri` from the returned `NormalizedFile`.
-  - **Killed parallel MediaRef builder.** `features/agents/redux/execution-system/instance-resources/resource-source.ts:resourceDataToSource` was constructing a `MediaRef` inline ("kept synchronous because the slice reducer needs it inline") — exact duplication of `output/target.ts:toMediaRef`. Exported `toMediaRef` from the handler's output module and from the public `@/features/files` surface; the agent slice now calls it directly. One builder, one source of truth.
-  - **Fixed handler URL-stitching bug.** `upload.ts` post-share-link URL chain used `?? ""` for the app-share-URL fallback, which produced an empty string that defeated subsequent `??` fallbacks. Rewrote to use `||` and added `pythonShareUrl(result.shareToken)` as the canonical terminal fallback — now `normalized.url` is guaranteed non-empty whenever `createShareLink: true` succeeds. Removed the consumer-side `pythonShareUrl` fallback from `features/image-studio/modes/shared/save-edited-image.ts` that existed because of this bug.
-  - **Consolidated three hand-built share URLs.** `app/(public)/share/[token]/page.tsx` (server-side resolve), `app/(public)/share/[token]/_components/PublicDownloadButton.tsx` (download fallback), and the image-studio save fallback (above) were all assembling `${BACKEND_URL}/share/{token}/...` strings inline. All three now use the canonical `pythonShareResolveUrl(token)` / `pythonShareUrl(token)` helpers from `@/features/files`.
-  - **Known exceptions documented (not fixed).** `features/podcasts/components/admin/AssetUploader.tsx` posts raw `FormData` to `/media/podcast/upload-video` — that endpoint is a server-side transcoding + frame-extraction composite, not a generic upload. The right fix is on the Python side (return a `cld_files` UUID alongside the URLs); deferred. `features/research/hooks/useResearchApi.ts` similarly uploads to a research-sources endpoint with its own pipeline. Both are explicit "separate API surface" rather than handler bypasses.
-  - **Remaining smell cluster: direct write-thunk dispatches.** ~15 surfaces (`BulkActionsBar`, `FileContextMenu`, `RowContextMenu`, `RenameDialog`, `FileVersionsList`, `PermissionsDialog`, `ShareLinkDialog`, `ImageSharePopover`, `CloudFileInlineEditor`, `CloudFileEditor`, `NewMenu`, `useImageStudio`, `useFileShortcuts`, `CloudImagesTab`, `FileList`) dispatch `deleteFile` / `renameFile` / `moveFile` / `updateFileMetadata` / `updateFolder` / `createFolder` / `createShareLink` / `deactivateShareLink` / `grantPermission` / `revokePermission` / `restoreVersion` / `uploadFiles` thunks directly from `useAppDispatch()` instead of going through `useFileMutation` / `useSharing` / `useFolderMutation`. The thunks still keep state consistent (so these are smells, not bugs), but they're the exact pattern that, when extended, produced last night's loop. Next step: add an ESLint `no-restricted-imports` rule barring `@/features/files/redux/thunks` outside the canonical wrappers, and extend `useFolderMutation` with `.create({ parentId, name })` to close the only legitimate gap (`NewMenu` / `useImageStudio` use of `createFolder` + `ensureFolderPath`).
-
-- **2026-05-17** — Consolidated every signed-URL path through the handler. `Files.getSignedUrl()` is now called from exactly one place — `intelligence/refresh.ts` — which is invoked only by the lazy cache. Concrete changes:
-  - **`features/files/redux/thunks.ts:getSignedUrl` thunk** now routes through `fileHandler.use(...).as({ kind: "html_src" })` instead of calling `Files.getSignedUrl` directly. This single edit fans out to ~13 consumers (FileContextMenu, BulkActionsBar, useFileShortcuts, useFileMutation, useFileActions, PreviewErrorBoundary, CloudImagesTab) — every download / copy-URL / open-in-new-tab action now hits the cache.
-  - **`features/image-studio/components/StudioVariantTile.tsx`** and **`features/image-studio/components/EmbeddedImageStudio.tsx`** migrated off direct `Files.getSignedUrl` calls and onto the handler.
-  - **`features/files/api/server-client.ts`** — removed the dead `getSignedUrl` server-side wrapper (no callers; was a duplicate path that could re-introduce the bypass).
-  - Net effect: a copy-URL action on a file that was just viewed in the same session is now a zero-network operation (cache hit). Multiple components asking for the same file's URL share one in-flight request via the cache's dedup map.
-- **2026-05-17** — Switched signed-URL strategy from "global expiry wheel re-mints proactively" to "lazy mint on demand, cache while valid". This is the pattern AWS / Drive / Dropbox / Slack use in production. Concrete changes:
-  - **Deleted `intelligence/expiry-wheel.ts`.** The wheel was the source of a runaway loop: once any refresher resolved without updating its entry's `expiresAt` (which the resolver's refresher never did), `reschedule()` computed `wait = 0` and `setTimeout(tick, 0)` re-fired immediately, burning ~3 requests/second per open file. A single file left open overnight produced tens of thousands of `GET /files/{id}/url` calls. The class of failure no longer exists because the timer no longer exists.
-  - **Added `intelligence/signed-url-cache.ts`.** Module-level map keyed by `fileId` storing `{ url, expiresAt }`, with in-flight request dedup so N concurrent consumers of the same file produce one network call. Exposes `getOrMintSignedUrl`, `invalidateSignedUrl` (for `<img onError>` retries), and `clearSignedUrlCache` (for sign-out).
-  - **Rewrote `resolver.ensureSignedUrl`** to route through `getOrMintSignedUrl`. No more `watchExpiry` registration. The previously known follow-up — "freshly minted URL not propagated back to React consumers" — is now obviated: there is no automatic re-mint to propagate. The next consumer that asks for the URL gets a fresh one synchronously through the same code path.
-  - **`hooks/useFile.ts`** dropped its `unwatchExpiry` cleanup effect (no longer needed).
-  - Rationale: once the browser has the bytes in its HTTP cache the URL string's expiry doesn't matter — the `<img>` keeps rendering. URLs only need to be fresh at the moment something actively asks for them (download, edit, remount), and the cache + lazy mint handles that in one synchronous code path. Net effect: zero requests when idle, one request per (fileId × hour) when active, structurally immune to loop bugs.
-- **2026-05-07** — Direct-to-Python doctrine + obliteration round.
-  - Removed the entire telemetry module and all `recordTelemetry` calls (Python owns telemetry).
-  - All output URLs now point directly at Python (`{BACKEND}/files/{id}/download`, `{BACKEND}/share/{token}`). No Next.js hops.
-  - Deleted `hooks/usePublicFileUpload.ts` and the `public-chat-uploads` deprecated bucket — public chat now uses the universal handler with the user's anonymous Supabase auth UUID. Same code path as authenticated callers.
-  - Deleted Next.js routes: `app/api/admin/feedback/images`, `app/api/share/[token]/file`, `app/api/code-files/upload`, `app/api/code-files/download`. Their callers (FeedbackDetailDialog, FeedbackTable, ShareLinkDialog, cloudUpload, code-files virtual source, s3Service) now talk to Python directly.
-  - Deleted `lib/code-files/objectStore.ts` (legacy server-side dual-mode path).
-  - Migrated `features/transcripts/service/audioStorageService.ts`, `transcriptsService.ts`, `CreateTranscriptModal.tsx` off the `private-assets` bucket. Audio recordings + uploads now land in `cld_files` under `Transcripts/Recordings` and `Transcripts/Uploads`. `audio_file_path` columns now hold cld_files UUIDs.
-  - Deleted the legacy `attachments` bucket branch in `features/tasks/services/taskService.ts`. Task attachments are cloud-files only.
-  - Rewrote `features/agents/redux/execution-system/instance-resources/resource-source.ts` to defer to handler primitives (`normalize`, `preferIdentityLocator`). The agent attachment lifecycle is now on the same single system as everything else.
-- **2026-05-07** — Phases 0–4 + 7 (partial) + 8 shipped. Handler core complete with input adapters (16), resolver (with hydration + access decision + signed-URL minting + expiry wheel + magic-byte sniffing), output adapters (11), upload path with org-scope routing, stream-event normalization, React hooks, error taxonomy, and ESLint guardrails.
+# features/files/handler — the universal file handler (local mechanics)
+
+> **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/media/file-service/STATE.md` — read it before touching this feature in ANY repo. What the handler enforces (lazy signed-URL minting, share-vs-signed, transport policy, the Vault byte boundary) is stated once in `FILE_HANDLING_LAWS.md` § 9 in that same directory.
+
+Every codepath that touches a file funnels through ONE `FileSource → NormalizedFile → FileTarget`
+pipeline. This is the single source of resistance for file flows.
+
+## Public API — import directly, no barrel
+
+```ts
+import { fileHandler }        from "@/features/files/handler/handler";
+import { useFile }            from "@/features/files/handler/hooks/useFile";
+import { useFileSrc }         from "@/features/files/handler/hooks/useFileSrc";
+import { useFileBlob }        from "@/features/files/handler/hooks/useFileBlob";
+import { useFileMediaBlock }  from "@/features/files/handler/hooks/useFileMediaBlock";
+import { useFileDownloadUrl } from "@/features/files/handler/hooks/useFileDownloadUrl";
+import { useFileUpload }      from "@/features/files/handler/hooks/useFileUpload";
+// types: @/features/files/handler/types   errors: @/features/files/handler/errors
+```
+
+`useFileSrc` returns a bare `string | null`, not an object. The handler is a library, not a page —
+it owns no slice (files live in `cloudFiles`, in-flight uploads in `cloudFiles.uploads`).
+
+## Where things are
+
+`handler.ts` (entry) · `types.ts` (16 `FileSource` variants, `NormalizedFile`, 11 `FileTarget`
+variants) · `errors.ts` · `intelligence/access.ts` (`decideForOwnedFile`) ·
+`intelligence/signed-url-cache.ts` (the lazy cache) · `intelligence/refresh.ts` (the ONLY caller of
+`Files.getSignedUrl`) · `hooks/useRemintableSrc.ts` · `../upload/cloudUpload.ts` +
+`../upload/tusUpload.ts` + `../upload/__tests__/transport-policy.test.ts` ·
+`../vault/vaultAttachmentTransport.ts`.
+
+## Invariants — do not violate
+
+1. **Every file consumer** (`<img>`, AI media block, download link, OG image, persistence to
+   `cx_message.content[]`, RAG ingest) goes through `fileHandler.use(source).as(target)`. Direct
+   media-block construction is banned.
+2. **`NormalizedFile.fileId` is set whenever known** and output adapters always prefer it over URLs.
+   `storage_uri`/`fileUri` is banned client-side; a ref carrying only a storage URI is treated as
+   absent, never an error.
+3. **The S3 bucket is touched only by the backend. Never an AWS SDK on the FE.**
+4. **The handler never crosses through Next.js.** No `/api/files/*`, no `/api/share/*`.
+   `preferFetchableUrl()` falls back to the authenticated `{BACKEND}/files/{id}/download`, never to a
+   Next.js proxy.
+5. **Anonymous users use the same handler API.** There is no second lane.
+6. **Scope inheritance is visibility- and namespace-aware.** Public/shared uploads carry the active
+   `organization_id / project_id / task_id` in `metadata.scope`; personal uploads do not, and the
+   `Shared Assets/**` / `Private Assets/**` library namespaces never inherit regardless of
+   visibility. **`capture-uploader` deliberately combines `inheritActiveScope: true` with `personal`
+   visibility** — the org id in `Captures/<orgId>/…` is *filing*, not access, and is what keeps the
+   folder collision-free under the server's one-folder-path-per-user constraint. Do not "fix" it.
+7. **Signed URLs are private playback credentials, never share links.** `shareableMediaUrl` fails
+   closed on both AWS signing dialects; share/copy actions emit an internal viewer URL, a durable
+   CDN URL, or a canonical `/share/{token}`.
+8. **A successful upload returns `UploadedNormalizedFile`**, whose `fileId` is required at runtime
+   and compile time. Agent attachment flows hand that identity to `MediaRef`; an opaque share URL is
+   display/recovery data, never the primary locator.
+9. **Vault credential attachments are not cloud files.** They must never enter `files.files` or
+   expose an object-store URL — the one sanctioned transport is `../vault/vaultAttachmentTransport.ts`
+   with the explicitly selected `X-Organization-Id`. A specialized byte boundary, not permission to
+   hand-build another flow.
+10. **Transport is decided in `resolveUploadTransport` only.** ≥ `TUS_TRANSPORT_THRESHOLD_BYTES`
+    (80 MB) → TUS, 16 MiB chunks; below → buffered multipart. **There is no presigned transport.**
+    TUS resume URLs live in IndexedDB `mtx-tus-urls` — NEVER the recorder chunk journal.
+    **Do not claim live TUS verification until a real browser upload (preflight, resume,
+    lost-final-response, token refresh) passes against the deployed server** — today it is unit-tested
+    only.
+11. **`useRemintableSrc` is for a raw URL string only.** With a `file_id`/`MediaRef`, use
+    `useFileSrc` / `<InlineMediaRef>`, which mint up front.
+12. **A canvas must not use the bare `/files/{id}/download` URL as `<img src>`** — an element cannot
+    attach the bearer token, and a display/CDN URL is not a promise of CORS-readable pixels. Route
+    `crossOrigin` consumers through `useFileBlob` and render a same-origin `blob:` URL.
+13. **The blob-cache service worker is the platform's ONLY service worker**, registered at scope `/`
+    (it also carries education offline study). A second registration would replace it and silently
+    kill transparent media serving.
+14. **Never a direct `Files.uploadFile`** outside `handler/` and `upload/`.
+
+## Deliberately not owned here
+
+Provider-shape conversion (Anthropic/OpenAI/Google) stays server-side — the handler emits canonical
+`MediaBlock` only. Sharp/OCR/Whisper transforms are server-side. The IndexedDB audio safety store
+(`features/audio/services/audioSafetyStore.ts`) is a separate crash-recovery concern. Code-editor
+multi-file state is its own state machine.
+
+Known non-handler byte paths, documented so they are not mistaken for bypasses:
+`features/podcasts/.../AssetUploader.tsx` (server-side transcode + frame extraction) and
+`features/research/hooks/useResearchApi.ts` (explicit separate API surface).
+
+## Upload failure playbook
+
+Error subclasses from `handler/errors`: `FileUploadError` (generic, wraps the backend message) ·
+`FileAccessDeniedError` (auth/RLS) · `FileExpiredError` (signed URL aged out — retry) ·
+`FileNotFoundError` · `FileDeletedError` (in trash) · `ShareLinkInvalidError` (410) ·
+`ExternalFetchError`.
+
+Message patterns: `Failed to fetch` → backend unreachable (CORS/network/down) · `HTTP 401` → JWT
+missing or expired · `HTTP 413` → over the tier's file-size cap · `HTTP 403` → RLS/permissions ·
+`cloud_sync_unavailable` → the files base URL env is not set · `File uploaded but share link
+couldn't be created` → the upload succeeded and only the post-upload share create failed.
+
+Then confirm the service is up: `curl https://files.matrxserver.com/files-service/health`, or use
+`/demos/cloud-files-debug`, which shows the active URL + JWT and fires raw fetches.
