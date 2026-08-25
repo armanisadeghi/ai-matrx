@@ -10969,47 +10969,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/agent-factory/build": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Build One
-         * @description Non-streaming build of exactly one agent. Convenience for the script /
-         *     integration tests; the streaming variant below is the FE path.
-         */
-        post: operations["build_one_agent_factory_build_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/agent-factory/build-stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Build Stream Endpoint
-         * @description Streaming build of one or more agents. Emits `BuildEvent`s to the FE.
-         */
-        post: operations["build_stream_endpoint_agent_factory_build_stream_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/admin/tools": {
         parameters: {
             query?: never;
@@ -26408,6 +26367,20 @@ export interface components {
             error?: string | null;
             /** Top Phrases */
             top_phrases?: string[];
+            /**
+             * Autonomy Mode
+             * @default
+             */
+            autonomy_mode?: string;
+            /**
+             * Autonomy Decision
+             * @default
+             */
+            autonomy_decision?: string;
+            /** Autonomy Refusal */
+            autonomy_refusal?: string | null;
+            /** Skipped */
+            skipped?: string | null;
         };
         /** BackgroundInteractionStart */
         BackgroundInteractionStart: {
@@ -28689,46 +28662,6 @@ export interface components {
              * @default 5
              */
             variant_count?: number;
-        };
-        /** BuildOnceResponse */
-        BuildOnceResponse: {
-            /** Name */
-            name: string;
-            /** Agent Id */
-            agent_id: string;
-            /** Version Id */
-            version_id: string;
-            /** Runner Path */
-            runner_path: string;
-            /** Spec Path */
-            spec_path: string;
-            /**
-             * Dry Run
-             * @default false
-             */
-            dry_run?: boolean;
-        };
-        /**
-         * BuildRequest
-         * @description Body for `POST /agent-factory/build`.
-         *
-         *     Three trigger modes (callers pick one):
-         *       * `names` — list of `internal_agents/<name>.md` specs to build
-         *       * `name` (alone) — single spec to build
-         *       * `name` + `contents` — write the spec file first, then build
-         */
-        BuildRequest: {
-            /** Names */
-            names?: string[];
-            /** Name */
-            name?: string | null;
-            /** Contents */
-            contents?: string | null;
-            /**
-             * Dry Run
-             * @default false
-             */
-            dry_run?: boolean;
         };
         /** BuiltinPromptCatalogResponse */
         BuiltinPromptCatalogResponse: {
@@ -34262,7 +34195,7 @@ export interface components {
             tools?: string[];
             /**
              * Owner User Id
-             * @description WHO this agent belongs to. Set it whenever the agent is being built FOR a user (a Masterwork's Maker/Editor/Chief, anything a customer's build produces): the agent is born agent_type='user', created_by=<this user>, in their effective org, with an internal card — exactly what a normal user-created agent gets. Leave it None ONLY for a platform builtin the PLATFORM ships to everyone (the internal_agents/*.md factory, seed scripts); a builtin is ownerless, sits in the Matrx System org, and shows in every user's browse list.
+             * @description WHO this agent belongs to. Set it whenever the agent is being built FOR a user (a Masterwork's Maker/Editor/Chief, anything a customer's build produces): the agent is born agent_type='user', created_by=<this user>, in their effective org, with an internal card — exactly what a normal user-created agent gets. Leave it None ONLY for a platform builtin the PLATFORM ships to everyone (the agent factory, seed scripts); a builtin is ownerless, sits in the Matrx System org, and shows in every user's browse list.
              */
             owner_user_id?: string | null;
             /**
@@ -47274,7 +47207,7 @@ export interface components {
             file_id?: string | null;
             /**
              * Url
-             * @description Any URL we issued (share link, /files/{id}/url, /files/{id}/download, raw S3 URL) or a truly external https://. The server recognises ours and resolves to bytes; external URLs are passed through to providers that fetch them, or downloaded as a last resort.
+             * @description Any URL we issued (share link, /files/{id}/url, /files/{id}/download, raw S3 URL) or a truly external https://. The server recognizes ours and resolves to bytes; external URLs are passed through to providers that fetch them, or downloaded as a last resort.
              */
             url?: string | null;
             /**
@@ -51535,6 +51468,25 @@ export interface components {
              * @default false
              */
             guidelines_applied?: boolean;
+            /**
+             * Autonomy Mode
+             * @default
+             */
+            autonomy_mode?: string;
+            /**
+             * Autonomy Decision
+             * @default
+             */
+            autonomy_decision?: string;
+            /** Autonomy Refusal */
+            autonomy_refusal?: string | null;
+            /**
+             * Timeout Applied
+             * @default 0
+             */
+            timeout_applied?: number;
+            /** Skipped */
+            skipped?: string | null;
             /** Error */
             error?: string | null;
             /** Top Phrases */
@@ -88234,72 +88186,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CreateTemplateResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    build_one_agent_factory_build_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BuildRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BuildOnceResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    build_stream_endpoint_agent_factory_build_stream_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BuildRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
