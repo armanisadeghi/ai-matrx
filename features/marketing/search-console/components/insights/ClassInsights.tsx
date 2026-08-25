@@ -11,7 +11,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Gem, Scale, Tags } from "lucide-react";
+import {
+  ArrowRight,
+  ExternalLink,
+  Filter,
+  Gem,
+  ListChecks,
+  PanelTop,
+  Pencil,
+  Scale,
+  Tags,
+} from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
@@ -45,6 +55,18 @@ import {
   GSC_TRAFFIC_CLASSES,
   formatCount,
 } from "@/features/marketing/search-console/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraItem,
+  type ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+} from "@/features/marketing/seo/keyword/keyword-actions";
 import { ClassChip } from "./ClassChip";
 import {
   getValueSummary,

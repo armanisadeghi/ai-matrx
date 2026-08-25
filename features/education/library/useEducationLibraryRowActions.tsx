@@ -10,14 +10,19 @@ import type {
 } from "@/lib/entity-list/config";
 import { educationLibraryHref, type EducationLibraryRow } from "./types";
 
-export function useEducationLibraryRowActions(
-  list: EntityListController<EducationLibraryRow>,
-): EntityRowActionsResult<EducationLibraryRow> {
-  const router = useRouter();
-  const [isNavigating, startTransition] = useTransition();
-  void list;
-
-  const menuFor = (row: EducationLibraryRow) => (): ItemMenuConfig => {
+/**
+ * The row menu, as a plain function of the row.
+ *
+ * Pulled out of the hook so surfaces that render library cards WITHOUT an
+ * `EntityListController` — the Education home's "Recently created" block — get
+ * the identical menu instead of forking a second one. A deck must offer the
+ * same actions wherever the learner meets it; two menus for one object is the
+ * bug this shape prevents.
+ */
+export function educationLibraryMenuFor(
+  row: EducationLibraryRow,
+): () => ItemMenuConfig {
+  return (): ItemMenuConfig => {
     const href = educationLibraryHref(row);
     return {
       sections: [
@@ -41,6 +46,16 @@ export function useEducationLibraryRowActions(
       ],
     };
   };
+}
+
+export function useEducationLibraryRowActions(
+  list: EntityListController<EducationLibraryRow>,
+): EntityRowActionsResult<EducationLibraryRow> {
+  const router = useRouter();
+  const [isNavigating, startTransition] = useTransition();
+  void list;
+
+  const menuFor = educationLibraryMenuFor;
 
   const onOpenRow = (row: EducationLibraryRow) => {
     if (isNavigating) return;
