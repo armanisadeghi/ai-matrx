@@ -1,6 +1,8 @@
 "use client";
 
 import type { EntityListConfig } from "@/lib/entity-list/config";
+import { EducationLibraryCards } from "./components/EducationLibraryCards";
+import { EducationLibraryRows } from "./components/EducationLibraryRows";
 import { EDUCATION_LIBRARY_COLUMNS } from "./columns";
 import {
   fetchEducationLibraryCounts,
@@ -29,8 +31,19 @@ export const educationLibraryListConfig: EntityListConfig<EducationLibraryRow> =
       fetchFacets: fetchEducationLibraryFacets,
     },
     columns: EDUCATION_LIBRARY_COLUMNS,
-    prefsVersion: 1,
-    prefsDefaults: { sort: "updated", direction: "desc" },
+    // v2: the student-facing columns (items / progress / due / last studied /
+    // topic / source) landed together with the card + row views. The bump
+    // re-seeds column selection so existing learners actually get them — a
+    // stored `hiddenColumns: []` predates the columns and would otherwise win.
+    prefsVersion: 2,
+    prefsDefaults: {
+      sort: "updated",
+      direction: "desc",
+      // Cards, not the table. This is a study library: a learner picking what
+      // to work on next reads shape, size, and progress far faster than a grid
+      // of text. The table is one click away and keeps every column.
+      view: "cards",
+    },
     urlState: true,
     getRowId: (row) => row.id,
     getRowName: (row) => row.title,
@@ -89,6 +102,33 @@ export const educationLibraryListConfig: EntityListConfig<EducationLibraryRow> =
       },
     ],
     noneLabels: { status: "No status" },
+    /**
+     * Three views, cards first. The library shipped table-only, which rendered
+     * eight visually distinct study formats as identical grey rows and could
+     * not show size, coverage, accuracy, or what is due — the four facts a
+     * learner decides on. `useListViewPrefs` remembers the choice per user, so
+     * the table remains one click away for anyone who wants to sort and filter.
+     */
+    views: {
+      cards: (p) => (
+        <EducationLibraryCards
+          rows={p.rows}
+          density={p.density}
+          showShared={p.showShared}
+          menuFor={p.actions.menuFor}
+          hrefFor={p.hrefFor}
+        />
+      ),
+      rows: (p) => (
+        <EducationLibraryRows
+          rows={p.rows}
+          density={p.density}
+          showShared={p.showShared}
+          menuFor={p.actions.menuFor}
+          hrefFor={p.hrefFor}
+        />
+      ),
+    },
     emptyState: {
       title: "No study items here yet",
       description:

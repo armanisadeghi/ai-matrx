@@ -96,3 +96,57 @@ export function mapPublicDeck(row: PublicDeckRow): PublicDeck {
 /** A suggest-edit row (owner inbox / contributor view). */
 export type DeckSuggestionRow =
   Database["education"]["Tables"]["deck_suggestion"]["Row"];
+
+/**
+ * The study-spine numbers a row carries, with HONEST nullability.
+ *
+ * `edu_library_list_scoped` returns these per page row, but Supabase's type
+ * generator cannot express nullability for function result columns — it types
+ * every one as non-null. Reading them raw would let `accuracy_pct` render as
+ * "0%" for an artifact that has simply never been studied, which is a lie a
+ * learner would act on. This is the ONE place that normalizes them; no surface
+ * should touch the raw fields.
+ */
+export interface LibraryRowStats {
+  /** Cards / questions in the artifact. Null for formats with no unit. */
+  itemCount: number | null;
+  /** How many of those items the learner has actually attempted. */
+  studiedCount: number;
+  /** Lifetime correct/attempts, 0–1. Null until at least one attempt. */
+  accuracy: number | null;
+  /** Items due for review right now. */
+  dueCount: number;
+  lastStudiedAt: string | null;
+  topic: string | null;
+  difficulty: string | null;
+  durationSeconds: number | null;
+  /** The material this was generated from — the kit's name. */
+  sourceTitle: string | null;
+  /** True once the learner has any attempt against this artifact. */
+  hasProgress: boolean;
+}
+
+function nz(value: number | null | undefined): number | null {
+  return value == null ? null : Number(value);
+}
+
+function sz(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+export function libraryRowStats(row: EducationLibraryRow): LibraryRowStats {
+  const studiedCount = nz(row.studied_count) ?? 0;
+  return {
+    itemCount: nz(row.item_count),
+    studiedCount,
+    accuracy: nz(row.accuracy_pct),
+    dueCount: nz(row.due_count) ?? 0,
+    lastStudiedAt: sz(row.last_studied_at),
+    topic: sz(row.topic),
+    difficulty: sz(row.difficulty),
+    durationSeconds: nz(row.duration_seconds),
+    sourceTitle: sz(row.source_title),
+    hasProgress: studiedCount > 0,
+  };
+}

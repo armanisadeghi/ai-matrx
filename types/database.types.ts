@@ -36854,18 +36854,27 @@ export type Database = {
         }
         Returns: {
           access_level: string
+          accuracy_pct: number
           created_at: string
           created_by: string
           description: string
+          difficulty: string
+          due_count: number
+          duration_seconds: number
           id: string
           is_owner: boolean
+          item_count: number
           kind: string
+          last_studied_at: string
           organization_id: string
           organization_name: string
           owner_email: string
+          source_title: string
           status: string
+          studied_count: number
           subtype: string
           title: string
+          topic: string
           total_count: number
           updated_at: string
           visibility: string
