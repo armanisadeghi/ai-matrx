@@ -26,7 +26,10 @@ import type {
   MediaChapterData,
   MediaChaptersData,
 } from "@/features/content-ir/kinds/media-chapters";
-import { readChapterList } from "@/features/content-ir/kinds/media-chapters";
+import {
+  chapterStartSeconds,
+  readChapterList,
+} from "@/features/content-ir/kinds/media-chapters";
 import { cn } from "@/lib/utils";
 
 export interface MediaChaptersBlockProps {
@@ -44,22 +47,6 @@ export interface MediaChaptersBlockProps {
   /** Hide the header row — for a host frame that already draws its own. */
   hideHeader?: boolean;
   className?: string;
-}
-
-/**
- * `MM:SS` / `HH:MM:SS` → seconds. Returns null for anything else, which is
- * what makes a malformed offset render as plain text instead of a button
- * that seeks to the wrong place.
- */
-export function chapterStartSeconds(startHint: string): number | null {
-  const parts = startHint.trim().split(":");
-  if (parts.length < 2 || parts.length > 3) return null;
-  let total = 0;
-  for (const part of parts) {
-    if (!/^\d{1,2}$/.test(part)) return null;
-    total = total * 60 + Number(part);
-  }
-  return total;
 }
 
 /**

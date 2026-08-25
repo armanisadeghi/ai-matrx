@@ -8,7 +8,7 @@
 // post-creation toolkit. A creation is never lost again.
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Plus,
   RefreshCw,
@@ -27,6 +27,7 @@ import { EpisodeChaptersPanel } from "@/features/podcasts/studio/components/Epis
 import { EpisodeTitlePanel } from "@/features/podcasts/studio/components/EpisodeTitlePanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
+import type { PodcastAudioPlayerHandle } from "@/features/podcasts/components/player/PodcastAudioPlayer";
 import { LiveAudioPlayer } from "@/features/podcasts/generator/components/LiveAudioPlayer";
 import { MetadataHero } from "@/features/podcasts/generator/components/MetadataHero";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
@@ -99,6 +100,15 @@ export function StudioRunView({ runId }: { runId: string }) {
   const [episodeChapters, setEpisodeChapters] = useState<
     PcEpisodeChapter[] | null
   >(null);
+
+  // This surface DOES own a player, so its chapter rows are seek buttons (the
+  // public episode page does the same). No-op while the run is still streaming
+  // and only LiveAudioPlayer exists — the panel itself only renders once the
+  // episode is finished.
+  const playerRef = useRef<PodcastAudioPlayerHandle>(null);
+  const seekToChapter = useCallback((seconds: number) => {
+    playerRef.current?.seek(seconds);
+  }, []);
 
   // When the canonical audio URL lands while the user is listening live, carry
   // the position (and playing state) over to the real player and silence the
@@ -352,6 +362,7 @@ export function StudioRunView({ runId }: { runId: string }) {
             {state.audioUrl ? (
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <PodcastAudioPlayer
+                  ref={playerRef}
                   audioUrl={state.audioUrl}
                   title={state.title}
                   coverImageUrl={effectiveCover ?? undefined}
@@ -401,6 +412,7 @@ export function StudioRunView({ runId }: { runId: string }) {
               <EpisodeChaptersPanel
                 episodeId={state.episodeId}
                 onChaptersChange={setEpisodeChapters}
+                onSeek={seekToChapter}
               />
             )}
           </div>

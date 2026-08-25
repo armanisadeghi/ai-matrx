@@ -98,11 +98,15 @@ export function parseChaptersWrite(value: unknown): PcEpisodeChapter[] {
 export function EpisodeChaptersPanel({
   episodeId,
   onChaptersChange,
+  onSeek,
 }: {
   episodeId: string;
   /** Lifts the loaded/saved chapter list so the run view can emit it as the
    *  `episode_chapters` READ TWIN of the write target below. */
   onChaptersChange?: (chapters: PcEpisodeChapter[] | null) => void;
+  /** Seek THIS run view's finished-episode player (seconds). Supplied by
+   *  StudioRunView, which owns the player; without it the rows stay static. */
+  onSeek?: (seconds: number) => void;
 }) {
   const [episode, setEpisode] = useState<PcEpisodeWithShow | null>(null);
   const [written, setWritten] = useState<PcEpisodeChapter[] | null>(null);
@@ -196,6 +200,7 @@ export function EpisodeChaptersPanel({
           className="mt-3"
           hideHeader
           serverData={{ chapters, isComplete: true }}
+          onSeek={onSeek ? (seconds) => onSeek(seconds) : undefined}
         />
       )}
     </div>

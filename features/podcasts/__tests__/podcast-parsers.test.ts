@@ -7,8 +7,16 @@
  */
 
 import { readEpisodeTitleOptionsValue } from "@/features/content-ir/kinds/episode-title-options";
-import { readChapterList } from "@/features/content-ir/kinds/media-chapters";
+import {
+  chapterStartSeconds,
+  readChapterList,
+} from "@/features/content-ir/kinds/media-chapters";
 import { parseChapters } from "@/features/podcasts/types";
+import {
+  buildChaptersJson,
+  chaptersJsonUrl,
+  CHAPTERS_JSON_MIME,
+} from "@/features/podcasts/chapters-json";
 import { parseChaptersWrite } from "@/features/podcasts/studio/components/EpisodeChaptersPanel";
 import { topicFromIdea } from "@/features/podcasts/generator/topic-idea";
 import {
@@ -92,6 +100,69 @@ describe("parseChapters (persistence wrapper over readChapterList)", () => {
     expect(parseChapters({ chapters: [] })).toBeNull();
     expect(parseChapters("not-an-object")).toBeNull();
     expect(parseChapters(CHAPTERS_FIXTURE)).toBeNull(); // bare array: no wrapper key
+  });
+});
+
+// ── the seek mapping (player) + the RSS chapters document ────────────────────
+
+describe("chapterStartSeconds (the ONE start_hint → seconds mapping)", () => {
+  it("maps MM:SS and HH:MM:SS to absolute seconds", () => {
+    expect(chapterStartSeconds("00:00")).toBe(0);
+    expect(chapterStartSeconds("07:42")).toBe(462);
+    expect(chapterStartSeconds("1:02:03")).toBe(3723);
+    expect(chapterStartSeconds("01:02:03")).toBe(3723);
+    expect(chapterStartSeconds(" 12:30 ")).toBe(750);
+  });
+
+  it("returns null for anything that is not a timestamp — never a wrong seek", () => {
+    // A null here is what keeps the row rendering as static text instead of a
+    // button that jumps the listener to the wrong place.
+    for (const bad of ["", "42", "1:2:3:4", "aa:bb", "-01:00", "1:005", "100:00"]) {
+      expect(chapterStartSeconds(bad)).toBeNull();
+    }
+  });
+});
+
+describe("buildChaptersJson (JSON Chapters 1.2.0 document)", () => {
+  it("emits version + {startTime,title} pairs and drops the unspec'd summary", () => {
+    expect(
+      buildChaptersJson([
+        { start_hint: "00:00", title: "Cold open", summary: "Why this matters." },
+        { start_hint: "1:00:00", title: "The turn", summary: "" },
+      ]),
+    ).toEqual({
+      version: "1.2.0",
+      chapters: [
+        { startTime: 0, title: "Cold open" },
+        { startTime: 3600, title: "The turn" },
+      ],
+    });
+  });
+
+  it("drops rows with an unparseable timestamp or a blank title", () => {
+    const doc = buildChaptersJson([
+      { start_hint: "nope", title: "Bad offset", summary: "" },
+      { start_hint: "02:00", title: "   ", summary: "" },
+      { start_hint: "03:00", title: "Good", summary: "" },
+    ]);
+    expect(doc.chapters).toEqual([{ startTime: 180, title: "Good" }]);
+  });
+
+  it("sorts by startTime and handles null/empty input", () => {
+    const doc = buildChaptersJson([
+      { start_hint: "05:00", title: "Second", summary: "" },
+      { start_hint: "00:30", title: "First", summary: "" },
+    ]);
+    expect(doc.chapters.map((c) => c.title)).toEqual(["First", "Second"]);
+    expect(buildChaptersJson(null)).toEqual({ version: "1.2.0", chapters: [] });
+    expect(buildChaptersJson([])).toEqual({ version: "1.2.0", chapters: [] });
+  });
+
+  it("declares the MIME type and URL the feed's <podcast:chapters> uses", () => {
+    expect(CHAPTERS_JSON_MIME).toBe("application/json+chapters");
+    expect(chaptersJsonUrl("https://aimatrx.com", "signals")).toBe(
+      "https://aimatrx.com/podcast/signals/chapters.json",
+    );
   });
 });
 

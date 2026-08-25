@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useImperativeHandle,
+} from "react";
 import {
   Pause,
   Play,
@@ -23,7 +29,22 @@ import {
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 
+/**
+ * The transport a surrounding surface can drive. Deliberately one verb: a
+ * chapter index (MediaChaptersBlock) needs to jump the audio and nothing else.
+ * Anything richer belongs to the player's own controls.
+ */
+export interface PodcastAudioPlayerHandle {
+  /** Jump to an absolute offset in seconds and start playing from there. */
+  seek: (seconds: number) => void;
+}
+
 interface PodcastAudioPlayerProps {
+  /**
+   * React 19 ref-as-prop — exposes {@link PodcastAudioPlayerHandle} so a
+   * chapter list rendered outside this component can seek it.
+   */
+  ref?: React.Ref<PodcastAudioPlayerHandle>;
   audioUrl: string;
   title?: string;
   coverImageUrl?: string;
@@ -90,6 +111,7 @@ function SkipFifteenIcon({ direction }: { direction: "back" | "forward" }) {
 }
 
 export function PodcastAudioPlayer({
+  ref,
   audioUrl,
   title,
   coverImageUrl,
@@ -218,6 +240,29 @@ export function PodcastAudioPlayer({
     audio.currentTime = value;
     setCurrentTime(value);
   }, []);
+
+  // The chapter-index entry point. Distinct from `handleSeek` (the scrubber)
+  // in one way that matters: it STARTS PLAYBACK. Clicking a chapter is a user
+  // gesture, so `play()` is permitted, and every podcast app in existence
+  // plays from the marker rather than silently repositioning a paused player.
+  const seekAndPlay = useCallback((seconds: number) => {
+    const audio = audioRef.current;
+    if (!audio || !Number.isFinite(seconds)) return;
+    const known = Number.isFinite(audio.duration) && audio.duration > 0;
+    // Clamp to the media when its length is known; before metadata loads the
+    // raw offset is still correct and the element clamps it itself.
+    const t = known
+      ? Math.min(Math.max(0, seconds), Math.max(0, audio.duration - 0.25))
+      : Math.max(0, seconds);
+    audio.currentTime = t;
+    setCurrentTime(t);
+    audio.play().catch(() => {
+      // Denied (no gesture credit) — the position is already correct and the
+      // user presses play. Never surface this as an audio error.
+    });
+  }, []);
+
+  useImperativeHandle(ref, () => ({ seek: seekAndPlay }), [seekAndPlay]);
 
   const handleVolumeChange = useCallback(
     (value: number) => {

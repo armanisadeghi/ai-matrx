@@ -15,6 +15,11 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { mapPcShowRow, mapPcEpisodeRow } from '@/features/podcasts/types';
+import {
+    buildChaptersJson,
+    chaptersJsonUrl,
+    CHAPTERS_JSON_MIME,
+} from '@/features/podcasts/chapters-json';
 
 export const revalidate = 3600;
 
@@ -150,6 +155,17 @@ export async function GET(
                 );
             }
             descParts.push(`    <itunes:explicit>false</itunes:explicit>`);
+            // Podcasting 2.0 chapter markers. We link the JSON Chapters
+            // document rather than inlining PSC tags — the rationale lives in
+            // `features/podcasts/chapters-json.ts`. Built here (not just
+            // length-checked) so the element is emitted only when the endpoint
+            // will actually serve rows: an episode whose stored markers all
+            // have unparseable timestamps must not advertise a 404 link.
+            if (buildChaptersJson(ep.chapters).chapters.length > 0) {
+                descParts.push(
+                    `    <podcast:chapters url="${escapeXml(chaptersJsonUrl(BASE, ep.slug))}" type="${CHAPTERS_JSON_MIME}"/>`
+                );
+            }
             if (epCover) {
                 descParts.push(`    <itunes:image href="${escapeXml(epCover)}"/>`);
             }
@@ -158,7 +174,7 @@ export async function GET(
         .join('\n');
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:podcast="https://podcastindex.org/namespace/1.0">
 <channel>
   <title>${cdata(show.title)}</title>
   <link>${escapeXml(showPageUrl)}</link>

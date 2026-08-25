@@ -136,6 +136,28 @@ export function readChapterList(value: unknown): MediaChapterData[] {
   return out;
 }
 
+/**
+ * `MM:SS` / `HH:MM:SS` → seconds. Returns null for anything else, which is
+ * what makes a malformed offset render as plain text instead of a button that
+ * seeks to the wrong place — and what keeps a bad row out of the RSS chapters
+ * document.
+ *
+ * Lives HERE, next to `readChapterList`, rather than in the renderer: the
+ * `podcast:chapters` JSON endpoint and the RSS feed are server modules and
+ * cannot import a `"use client"` component just to read a timestamp. One kind,
+ * one parser, both sides.
+ */
+export function chapterStartSeconds(startHint: string): number | null {
+  const parts = startHint.trim().split(":");
+  if (parts.length < 2 || parts.length > 3) return null;
+  let total = 0;
+  for (const part of parts) {
+    if (!/^\d{1,2}$/.test(part)) return null;
+    total = total * 60 + Number(part);
+  }
+  return total;
+}
+
 export function mediaChaptersServerDataFromEnvelope(
   envelope: CanonicalBlockIR,
 ): (MediaChaptersData & Record<string, unknown>) | undefined {
