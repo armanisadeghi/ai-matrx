@@ -871,7 +871,7 @@ export default function PdfDocumentRenderer({
 
         {numPages > 1 ? (
           <div
-            className="flex items-center gap-1.5"
+            className="flex shrink-0 items-center gap-1.5"
             aria-label={`${pageLabelTitle} pagination`}
           >
             <button
@@ -879,7 +879,7 @@ export default function PdfDocumentRenderer({
               onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
               disabled={pageNumber <= 1}
               aria-label={`Previous ${pageLabel}`}
-              className="flex h-10 w-10 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 sm:h-7 sm:w-7"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -891,7 +891,7 @@ export default function PdfDocumentRenderer({
               onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
               disabled={pageNumber >= numPages}
               aria-label={`Next ${pageLabel}`}
-              className="flex h-10 w-10 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 sm:h-7 sm:w-7"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
