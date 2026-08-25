@@ -33,11 +33,6 @@ export default function TemplatesIndexPage() {
           className="max-w-5xl mx-auto px-6 pb-6"
           style={{ paddingTop: "calc(var(--shell-header-h) + 1.5rem)" }}
         >
-          <p className="text-sm text-muted-foreground mb-6">
-            Preview each UI pattern for agent apps. Click a template to see
-            it in action with mock data.
-          </p>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {DISPLAY_MODE_OPTIONS.map((mode) => (
               <Link

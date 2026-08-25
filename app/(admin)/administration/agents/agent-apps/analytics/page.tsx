@@ -145,15 +145,6 @@ export default function AgentAppsAnalyticsPage() {
       }
     >
     <div className="flex flex-col h-full w-full bg-textured overflow-hidden">
-      <div className="p-4 border-b border-border bg-textured">
-        <h2 className="text-lg font-semibold text-foreground">
-          Analytics Dashboard
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Aggregate metrics across all agent apps
-        </p>
-      </div>
-
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

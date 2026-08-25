@@ -375,10 +375,7 @@ export function RateLimitsClient() {
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="flex-shrink-0 p-4 border-b bg-card space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl pl-2 font-bold">Rate Limits Management</h2>
-            </div>
+          <div className="flex items-center justify-end">
             <div className="flex gap-2">
               {hasActiveFilters && (
                 <Button onClick={clearAllFilters} variant="outline" size="sm">

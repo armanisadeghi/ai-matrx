@@ -18,7 +18,6 @@ import {
   Filter,
   Loader2,
   RefreshCw,
-  Search,
   ShieldCheck,
   Star,
   X,
@@ -402,11 +401,7 @@ export default function AgentAppsAdminListPage() {
     <TooltipProvider>
       <div className="flex flex-col h-full">
         <div className="flex-shrink-0 p-4 border-b bg-card space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Search className="h-5 w-5 text-muted-foreground" />
-              Agent Apps Management
-            </h2>
+          <div className="flex items-center justify-end">
             <div className="flex gap-2">
               {hasActiveFilters && (
                 <Button
