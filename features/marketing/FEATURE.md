@@ -572,6 +572,15 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-25 — Codex: **AI autonomy rows disclose their live runtime
+  assignment without expanding the panel.** Keyword classification and topic
+  placement show one compact Mandate door plus the platform-default Holder
+  resolved from `agent.mandate`; the agent name uses the canonical `EntityRef`
+  peek and an admin-safe new-tab route. Deterministic place detection and
+  matching, plus the shared meaning-suggestion proposal path, state plainly
+  that they have no dedicated mandate or agent. Stable mandate keys remain in
+  code, while agent ids and names remain database-owned.
+
 - 2026-08-25 — Codex: **Keyword Value now exposes Offerings through the
   canonical table.** The `/value/offerings` route and site navigation use the
   decided customer vocabulary while `/value/topics` preserves saved links by

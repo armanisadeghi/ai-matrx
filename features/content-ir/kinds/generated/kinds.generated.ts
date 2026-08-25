@@ -49,9 +49,11 @@ export interface AgentDefinitionSettings {
   top_p?: number | null;
   stream?: boolean;
   temperature?: number | null;
-  reasoning_effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | null;
+  reasoning_effort?:
+    "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | null;
   max_output_tokens?: number | null;
-  reasoning_summary?: "auto" | "concise" | "detailed" | "always" | "never" | null;
+  reasoning_summary?:
+    "auto" | "concise" | "detailed" | "always" | "never" | null;
   internal_web_search?: boolean | null;
   internal_url_context?: boolean | null;
 }
@@ -154,13 +156,13 @@ export interface AiExecutionResult {
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
-  content?: ({
+  content?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   messages?: AiMessage[];
   metadata?: {
     /**
@@ -177,13 +179,16 @@ export interface AiExecutionResult {
   finish_reason?: string | null;
   conversation_id: string;
   tool_calls_made?: number;
-  structured_output?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    [key: string]: JsonValue | string | undefined;
-  } | JsonValue[] | null;
+  structured_output?:
+    | {
+        /**
+         * The registered kind this payload is an instance of, when it is one.
+         */
+        __kind?: string;
+        [key: string]: JsonValue | string | undefined;
+      }
+    | JsonValue[]
+    | null;
 }
 
 /**
@@ -210,13 +215,13 @@ export interface AiMessage {
    */
   __kind?: string;
   content?: JsonValue;
-  tool_calls?: ({
+  tool_calls?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   tool_call_id?: string | null;
 }
 
@@ -547,12 +552,25 @@ export interface AssignmentItemResult {
 /**
  * * From kind `agent_assignment_batch_result`.
  */
-export type AssignmentItemStatus = "pending" | "leased" | "running" | "completed" | "retryable_failed" | "terminal_failed" | "cancelled";
+export type AssignmentItemStatus =
+  | "pending"
+  | "leased"
+  | "running"
+  | "completed"
+  | "retryable_failed"
+  | "terminal_failed"
+  | "cancelled";
 
 /**
  * * From kind `agent_assignment_batch_result`.
  */
-export type AssignmentSessionStatus = "pending" | "running" | "completed" | "partially_failed" | "failed" | "cancelled";
+export type AssignmentSessionStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "partially_failed"
+  | "failed"
+  | "cancelled";
 
 /**
  * * From kind `agent_assignment_batch_result`.
@@ -1136,7 +1154,15 @@ export interface CoreFinding {
   finding?: string;
   confidence?: number;
   importance?: "low" | "medium" | "high";
-  finding_type?: "fact" | "claim" | "statistic" | "expert_opinion" | "definition" | "trend" | "example" | "counterpoint";
+  finding_type?:
+    | "fact"
+    | "claim"
+    | "statistic"
+    | "expert_opinion"
+    | "definition"
+    | "trend"
+    | "example"
+    | "counterpoint";
   supporting_text?: string;
 }
 
@@ -1352,7 +1378,14 @@ export interface DiagramNode {
 export interface DocBlock {
   rows?: string[][];
   text?: string;
-  type: "heading" | "paragraph" | "bullet" | "numbered" | "table" | "page_break" | "quote";
+  type:
+    | "heading"
+    | "paragraph"
+    | "bullet"
+    | "numbered"
+    | "table"
+    | "page_break"
+    | "quote";
   level?: number;
   /**
    * The registered kind this payload is an instance of, when it is one.
@@ -1535,7 +1568,17 @@ export interface EvidenceReference {
   supports: string;
   source_id?: string | null;
   observed_at?: string | null;
-  source_kind: "backlink" | "referring_domain" | "competitor" | "competitor_opportunity" | "ai_citation" | "ai_claim" | "brand_fact" | "rag_chunk" | "crawl_capture" | "other";
+  source_kind:
+    | "backlink"
+    | "referring_domain"
+    | "competitor"
+    | "competitor_opportunity"
+    | "ai_citation"
+    | "ai_claim"
+    | "brand_fact"
+    | "rag_chunk"
+    | "crawl_capture"
+    | "other";
   exact_excerpt: string;
 }
 
@@ -2006,7 +2049,16 @@ export interface IntakeBusinessInference {
   __kind?: string;
   evidence: string;
   confidence: "high" | "medium" | "low";
-  business_model: "products" | "services" | "content_publisher" | "marketplace" | "local_service" | "saas" | "nonprofit" | "mixed" | "unknown";
+  business_model:
+    | "products"
+    | "services"
+    | "content_publisher"
+    | "marketplace"
+    | "local_service"
+    | "saas"
+    | "nonprofit"
+    | "mixed"
+    | "unknown";
   what_they_sell: string;
   money_definition: string;
 }
@@ -2398,7 +2450,8 @@ export interface Mnemonic {
   /**
    * Which mnemonic device family this is. Pick the one that genuinely fits the material — never force an acronym onto prose.
    */
-  technique: "acronym" | "acrostic" | "rhyme" | "sentence" | "keyword" | "chunking";
+  technique:
+    "acronym" | "acrostic" | "rhyme" | "sentence" | "keyword" | "chunking";
   /**
    * How each part of the device maps back to the material, so the learner can decode it later.
    */
@@ -2418,7 +2471,13 @@ export interface Narrative {
   narrative: string;
   prevalence: string;
   evidence_refs: EvidenceReference[];
-  verification_status: "verified" | "partially_verified" | "unverified" | "contradicted" | "opinion" | "unknown";
+  verification_status:
+    | "verified"
+    | "partially_verified"
+    | "unverified"
+    | "contradicted"
+    | "opinion"
+    | "unknown";
   recommended_handling: string;
 }
 
@@ -2523,7 +2582,16 @@ export interface OpportunityAssessment {
   opportunity_key: string;
   primary_keyword: string | null;
   target_page_url: string | null;
-  opportunity_type: "upgrade_page" | "create_page" | "create_supporting_content" | "internal_linking" | "backlink_acquisition" | "schema" | "consolidation" | "technical" | "monitor";
+  opportunity_type:
+    | "upgrade_page"
+    | "create_page"
+    | "create_supporting_content"
+    | "internal_linking"
+    | "backlink_acquisition"
+    | "schema"
+    | "consolidation"
+    | "technical"
+    | "monitor";
   competitor_domain: string;
   current_advantage: string;
   supporting_keywords: string[];
@@ -2562,7 +2630,12 @@ export interface PagePlan {
   brief?: string;
   __kind?: "page_plan_v1";
   confidence?: number;
-  content_role: "money_page" | "supporting_content" | "local_landing" | "faq_only" | "no_action";
+  content_role:
+    | "money_page"
+    | "supporting_content"
+    | "local_landing"
+    | "faq_only"
+    | "no_action";
   primary_keyword: string;
   supporting_keywords?: string[];
 }
@@ -2723,7 +2796,17 @@ export interface PlanResearchSource {
   /**
    * What kind of source this is.
    */
-  source_type?: "study" | "government" | "industry-report" | "news" | "dataset" | "book" | "video" | "internal" | string | null;
+  source_type?:
+    | "study"
+    | "government"
+    | "industry-report"
+    | "news"
+    | "dataset"
+    | "book"
+    | "video"
+    | "internal"
+    | string
+    | null;
 }
 
 /**
@@ -2808,7 +2891,13 @@ export interface PodcastSpeaker {
  */
 export interface PressSourceRequestOutcome {
   status?: string | null;
-  outcome: "created" | "duplicate" | "rescored" | "screened_out" | "evaluate_failed" | "evaluation_deferred";
+  outcome:
+    | "created"
+    | "duplicate"
+    | "rescored"
+    | "screened_out"
+    | "evaluate_failed"
+    | "evaluation_deferred";
   site_id: string;
   request_id?: string | null;
   match_score?: number | null;
@@ -2966,7 +3055,8 @@ export interface QuestionnaireOption {
 export interface QuestionnaireQuestion {
   max?: number;
   min?: number;
-  type: "input" | "text" | "radio" | "checkbox" | "dropdown" | "slider" | "toggle";
+  type:
+    "input" | "text" | "radio" | "checkbox" | "dropdown" | "slider" | "toggle";
   /**
    * The registered kind this payload is an instance of.
    */
@@ -3131,13 +3221,13 @@ export interface RagParsedDocument_RagParsedDocument {
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
   };
-  layout_blocks?: ({
+  layout_blocks?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   extraction_confidence?: number | null;
 }
 
@@ -3249,11 +3339,26 @@ export interface ReputationCase {
    */
   __kind?: string;
   summary: string;
-  verdict: "protect" | "correct" | "respond" | "request_update" | "leave_alone" | "pitch" | "strengthen" | "monitor" | "investigate";
+  verdict:
+    | "protect"
+    | "correct"
+    | "respond"
+    | "request_update"
+    | "leave_alone"
+    | "pitch"
+    | "strengthen"
+    | "monitor"
+    | "investigate";
   case_key: string;
   headline: string;
   priority: number;
-  case_type: "positive_opportunity" | "negative_risk" | "correction_needed" | "relationship_opportunity" | "citation_opportunity" | "neutral_monitoring";
+  case_type:
+    | "positive_opportunity"
+    | "negative_risk"
+    | "correction_needed"
+    | "relationship_opportunity"
+    | "citation_opportunity"
+    | "neutral_monitoring";
   sentiment: "positive" | "negative" | "neutral" | "mixed" | "unknown";
   source_id?: string | null;
   confidence: number;
@@ -3261,7 +3366,14 @@ export interface ReputationCase {
   risk_score: number;
   source_url?: string | null;
   pitch_angle?: string | null;
-  source_kind: "backlink" | "ai_citation" | "competitor_intersection" | "media_coverage" | "directory_listing" | "brand_gap" | "other";
+  source_kind:
+    | "backlink"
+    | "ai_citation"
+    | "competitor_intersection"
+    | "media_coverage"
+    | "directory_listing"
+    | "brand_gap"
+    | "other";
   source_title?: string | null;
   action_reason: string;
   evidence_refs: EvidenceReference[];
@@ -3368,7 +3480,15 @@ export interface ResourceItem {
   id?: string;
   url: string;
   tags?: string[];
-  type?: "documentation" | "tool" | "video" | "article" | "course" | "book" | "tutorial" | "other";
+  type?:
+    | "documentation"
+    | "tool"
+    | "video"
+    | "article"
+    | "course"
+    | "book"
+    | "tutorial"
+    | "other";
   title: string;
   /**
    * The registered kind this payload is an instance of.
@@ -3738,7 +3858,8 @@ export interface SeoImportEntryPlan {
    */
   __kind?: string;
   domain?: string | null;
-  verdict: "new" | "existing" | "duplicate_in_list" | "blocklisted" | "unusable";
+  verdict:
+    "new" | "existing" | "duplicate_in_list" | "blocklisted" | "unusable";
 }
 
 /**
@@ -4006,7 +4127,12 @@ export interface SeoProspectQuery {
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
-  variant: "keyword" | "advanced_operator" | "resource_page" | "listicle" | "hot_off_press";
+  variant:
+    | "keyword"
+    | "advanced_operator"
+    | "resource_page"
+    | "listicle"
+    | "hot_off_press";
   seed_keyword: string;
 }
 
@@ -4080,11 +4206,26 @@ export interface SeoReputationCase {
    */
   __kind?: string;
   summary: string;
-  verdict: "protect" | "correct" | "respond" | "request_update" | "leave_alone" | "pitch" | "strengthen" | "monitor" | "investigate";
+  verdict:
+    | "protect"
+    | "correct"
+    | "respond"
+    | "request_update"
+    | "leave_alone"
+    | "pitch"
+    | "strengthen"
+    | "monitor"
+    | "investigate";
   case_key: string;
   headline: string;
   priority: number;
-  case_type: "positive_opportunity" | "negative_risk" | "correction_needed" | "relationship_opportunity" | "citation_opportunity" | "neutral_monitoring";
+  case_type:
+    | "positive_opportunity"
+    | "negative_risk"
+    | "correction_needed"
+    | "relationship_opportunity"
+    | "citation_opportunity"
+    | "neutral_monitoring";
   sentiment: "positive" | "negative" | "neutral" | "mixed" | "unknown";
   source_id?: string | null;
   confidence: number;
@@ -4092,7 +4233,14 @@ export interface SeoReputationCase {
   risk_score: number;
   source_url?: string | null;
   pitch_angle?: string | null;
-  source_kind: "backlink" | "ai_citation" | "competitor_intersection" | "media_coverage" | "directory_listing" | "brand_gap" | "other";
+  source_kind:
+    | "backlink"
+    | "ai_citation"
+    | "competitor_intersection"
+    | "media_coverage"
+    | "directory_listing"
+    | "brand_gap"
+    | "other";
   source_title?: string | null;
   action_reason: string;
   evidence_refs: SeoReputationEvidenceRef[];
@@ -4143,7 +4291,17 @@ export interface SeoReputationEvidenceRef {
   supports: string;
   source_id?: string | null;
   observed_at?: string | null;
-  source_kind: "backlink" | "referring_domain" | "competitor" | "competitor_opportunity" | "ai_citation" | "ai_claim" | "brand_fact" | "rag_chunk" | "crawl_capture" | "other";
+  source_kind:
+    | "backlink"
+    | "referring_domain"
+    | "competitor"
+    | "competitor_opportunity"
+    | "ai_citation"
+    | "ai_claim"
+    | "brand_fact"
+    | "rag_chunk"
+    | "crawl_capture"
+    | "other";
   exact_excerpt: string;
 }
 
@@ -4162,7 +4320,13 @@ export interface SeoReputationNarrative {
   narrative: string;
   prevalence: string;
   evidence_refs: SeoReputationEvidenceRef[];
-  verification_status: "verified" | "partially_verified" | "unverified" | "contradicted" | "opinion" | "unknown";
+  verification_status:
+    | "verified"
+    | "partially_verified"
+    | "unverified"
+    | "contradicted"
+    | "opinion"
+    | "unknown";
   recommended_handling: string;
 }
 
@@ -4526,7 +4690,7 @@ export interface SeoWebAnalyticsRow {
  */
 export interface SheetSpec {
   name?: string;
-  rows?: ((string | number | boolean | null)[])[];
+  rows?: (string | number | boolean | null)[][];
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
@@ -5137,20 +5301,20 @@ export interface AgentFunctionSpec {
      * JSON Schema when output_format is json_schema.
      */
     schema?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-  };
+      /**
+       * The registered kind this payload is an instance of, when it is one.
+       */
+      __kind?: string;
+    };
     /**
      * Example or shape of the object when output_format is json_object.
      */
     structure?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-  };
+      /**
+       * The registered kind this payload is an instance of, when it is one.
+       */
+      __kind?: string;
+    };
     /**
      * Prose description of the output when output_format is text.
      */
@@ -5210,13 +5374,13 @@ export interface AgentResult {
    * The registered kind this payload is an instance of.
    */
   __kind: "agent_result";
-  content?: ({
+  content?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   messages?: AiMessage[];
   metadata?: {
     /**
@@ -5233,13 +5397,16 @@ export interface AgentResult {
   finish_reason?: string | null;
   conversation_id: string;
   tool_calls_made?: number;
-  structured_output?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    [key: string]: JsonValue | string | undefined;
-  } | JsonValue[] | null;
+  structured_output?:
+    | {
+        /**
+         * The registered kind this payload is an instance of, when it is one.
+         */
+        __kind?: string;
+        [key: string]: JsonValue | string | undefined;
+      }
+    | JsonValue[]
+    | null;
 }
 
 /**
@@ -5541,7 +5708,7 @@ export interface ArmanVideoPrompt {
    * The registered kind this payload is an instance of.
    */
   __kind: "arman_video_prompt";
-  prompts: ({
+  prompts: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -5551,7 +5718,7 @@ export interface ArmanVideoPrompt {
     clip_length: string;
     aspect_ratio: string;
     interpretation: string;
-  })[];
+  }[];
   concept_received: string;
 }
 
@@ -5559,7 +5726,7 @@ export interface ArmanVideoPrompt {
  * Kind `artisan_demo_reading_list` (registry v4).
  */
 export interface ArtisanDemoReadingList {
-  books: ({
+  books: {
     year?: number;
     pages?: number;
     title?: string;
@@ -5571,7 +5738,7 @@ export interface ArtisanDemoReadingList {
     rating?: number | null;
     status?: string;
     why_it_matters?: string;
-  })[];
+  }[];
   theme?: string;
   /**
    * The registered kind this payload is an instance of.
@@ -5627,14 +5794,14 @@ export interface AuthorityNewsjackingArticle {
   };
   excerpt?: string;
   language?: string;
-  sections?: ({
+  sections?: {
     level?: number;
     __kind: "article_section";
     heading?: string;
     purpose?: string;
     source_ids?: string[];
     content_markdown?: string;
-  })[];
+  }[];
   subtitle?: string;
   news_hook?: {
     url?: string;
@@ -5666,24 +5833,24 @@ export interface AuthorityNewsjackingArticle {
   word_count?: number;
   content_type?: string;
   body_markdown: string;
-  expert_quotes?: ({
+  expert_quotes?: {
     quote?: string;
     __kind: "article_expert_quote";
     context?: string;
     attribution?: string;
     supports_claim?: string;
     placement_section?: string;
-  })[];
+  }[];
   key_takeaways?: string[];
-  target_keywords?: ({
+  target_keywords?: {
     role?: string;
     __kind: "article_target_keyword";
     keyword?: string;
     placement?: string[];
     search_intent?: string;
     estimated_volume?: number;
-  })[];
-  contextual_links?: ({
+  }[];
+  contextual_links?: {
     url?: string;
     __kind: "article_contextual_link";
     nofollow?: boolean;
@@ -5691,9 +5858,9 @@ export interface AuthorityNewsjackingArticle {
     rationale?: string;
     anchor_text?: string;
     placement_section?: string;
-  })[];
+  }[];
   meta_description?: string;
-  research_sources?: ({
+  research_sources?: {
     url?: string;
     title?: string;
     __kind: "article_research_source";
@@ -5704,7 +5871,7 @@ export interface AuthorityNewsjackingArticle {
     published_at?: string;
     retrieved_via?: string;
     used_in_sections?: string[];
-  })[];
+  }[];
   reading_time_minutes?: number;
 }
 
@@ -5780,7 +5947,7 @@ export interface BlogPostOutline {
   /**
    * Ordered sections in logical reading order.
    */
-  sections: ({
+  sections: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -5800,8 +5967,9 @@ export interface BlogPostOutline {
     /**
      * Search intent this section serves.
      */
-    search_intent?: "informational" | "commercial" | "transactional" | "navigational";
-  })[];
+    search_intent?:
+      "informational" | "commercial" | "transactional" | "navigational";
+  }[];
   /**
    * The angle that makes the reader care - the promise of the piece.
    */
@@ -5945,11 +6113,12 @@ export interface CardEnrichment {
   /**
    * Ordered list of enrichment details for the card.
    */
-  details: ({
+  details: {
     /**
      * The enrichment type. Closed enum.
      */
-    kind: "helper" | "example" | "detailed" | "hint" | "mnemonic" | "simplified";
+    kind:
+      "helper" | "example" | "detailed" | "hint" | "mnemonic" | "simplified";
     /**
      * The detail body. Markdown-capable plain text.
      */
@@ -5958,7 +6127,7 @@ export interface CardEnrichment {
      * The registered kind this payload is an instance of.
      */
     __kind: "card_detail";
-  })[];
+  }[];
 }
 
 /**
@@ -5969,7 +6138,7 @@ export interface CardExpansion {
    * The registered kind this payload is an instance of.
    */
   __kind: "card_expansion";
-  sub_cards: ({
+  sub_cards: {
     back?: string;
     front?: string;
     /**
@@ -5977,7 +6146,7 @@ export interface CardExpansion {
      */
     __kind?: string;
     relation?: string;
-  })[];
+  }[];
 }
 
 /**
@@ -6061,7 +6230,15 @@ export interface Citation {
   /**
    * What kind of source this citation points at.
    */
-  sourceKind: "document" | "chunk" | "section" | "file" | "url" | "scope" | "transcript" | "web";
+  sourceKind:
+    | "document"
+    | "chunk"
+    | "section"
+    | "file"
+    | "url"
+    | "scope"
+    | "transcript"
+    | "web";
 }
 
 /**
@@ -6083,14 +6260,14 @@ export interface ClaimEvidence {
  */
 export interface ClientSiteAudit {
   __kind: "client_site_audit";
-  issues: ({
+  issues: {
     title?: string;
     __kind: "site_audit_issue";
     category?: string;
     severity?: string;
     description?: string;
     recommendation?: string;
-  })[];
+  }[];
   summary?: string;
   site_url: string;
   site_name?: string;
@@ -6340,10 +6517,18 @@ export interface CompetitorPageAutopsyV1 {
   topic: string;
   __kind: "competitor_page_autopsy_v1";
   verdict: string;
-  page_type: "money_page" | "supporting_content" | "local_landing" | "category" | "homepage" | "directory" | "tool" | "other";
+  page_type:
+    | "money_page"
+    | "supporting_content"
+    | "local_landing"
+    | "category"
+    | "homepage"
+    | "directory"
+    | "tool"
+    | "other";
   entity_gaps: string[];
   own_page_id: string | null;
-  why_it_wins: ({
+  why_it_wins: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -6352,8 +6537,8 @@ export interface CompetitorPageAutopsyV1 {
     impact: number;
     evidence: string;
     confidence: number;
-  })[];
-  content_gaps: ({
+  }[];
+  content_gaps: {
     gap: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -6362,11 +6547,18 @@ export interface CompetitorPageAutopsyV1 {
     action: string;
     evidence: string;
     severity: "high" | "medium" | "low";
-  })[];
+  }[];
   own_page_url: string | null;
   competitor_url: string;
   analyst_version: string;
-  recommended_move: "upgrade_existing" | "create_supporting" | "create_new" | "consolidate" | "build_links" | "monitor" | "ignore";
+  recommended_move:
+    | "upgrade_existing"
+    | "create_supporting"
+    | "create_new"
+    | "consolidate"
+    | "build_links"
+    | "monitor"
+    | "ignore";
   competitor_domain: string;
   schema_advantages: string[];
   backlink_advantage: {
@@ -6379,7 +6571,7 @@ export interface CompetitorPageAutopsyV1 {
     competitor_referring_domains: number | null;
   };
   overall_confidence: number;
-  recommended_actions: ({
+  recommended_actions: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -6388,7 +6580,7 @@ export interface CompetitorPageAutopsyV1 {
     effort: "low" | "medium" | "high";
     impact: "low" | "medium" | "high";
     rationale: string;
-  })[];
+  }[];
   internal_link_advantage: {
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -6519,13 +6711,13 @@ export interface ContentPlanFoundationChecklist {
  */
 export interface ContentPlanSiteList {
   count?: number;
-  sites?: ({
+  sites?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   /**
    * The registered kind this payload is an instance of.
    */
@@ -7349,7 +7541,11 @@ export interface FilterResult {
  * Kind `flashcard_set` (registry v10).
  */
 export interface FlashcardSet {
-  cards: (Flashcard_FlashcardSet | EnhancedFlashcard_FlashcardSet | TieredFlashcard_FlashcardSet)[];
+  cards: (
+    | Flashcard_FlashcardSet
+    | EnhancedFlashcard_FlashcardSet
+    | TieredFlashcard_FlashcardSet
+  )[];
   title: string;
   /**
    * The registered kind this payload is an instance of.
@@ -7555,13 +7751,13 @@ export interface GoogleImageSearchResults {
  *  * Kind `google_search_results` (registry v4).
  */
 export interface GoogleSearchResults {
-  ads?: ({
+  ads?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   query: string;
   /**
    * The registered kind this payload is an instance of.
@@ -7575,35 +7771,38 @@ export interface GoogleSearchResults {
     [key: string]: JsonValue | string | undefined;
   } | null;
   elapsed_ms?: number;
-  top_stories?: ({
+  top_stories?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
-  inline_images?: ({
+  }[];
+  inline_images?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
-  local_results?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    [key: string]: JsonValue | string | undefined;
-  } | JsonValue[] | null;
+  }[];
+  local_results?:
+    | {
+        /**
+         * The registered kind this payload is an instance of, when it is one.
+         */
+        __kind?: string;
+        [key: string]: JsonValue | string | undefined;
+      }
+    | JsonValue[]
+    | null;
   total_results?: number | null;
-  video_results?: ({
+  video_results?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   knowledge_graph?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -7611,27 +7810,27 @@ export interface GoogleSearchResults {
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
   } | null;
-  organic_results?: ({
+  organic_results?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
-  shopping_results?: ({
+  }[];
+  shopping_results?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
-  related_questions?: ({
+  }[];
+  related_questions?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
 }
 
 /**
@@ -7664,7 +7863,7 @@ export interface GraphqlResponse {
   /**
    * Top-level GraphQL errors from the document (empty on success).
    */
-  errors?: (Record<string, JsonValue>)[];
+  errors?: Record<string, JsonValue>[];
   /**
    * HTTP status code of the transport call.
    */
@@ -7710,7 +7909,7 @@ export interface GscOpportunities {
   summary: string;
   page_url: string;
   top_priority: string;
-  opportunities: ({
+  opportunities: {
     ctr: string;
     query: string;
     /**
@@ -7722,7 +7921,7 @@ export interface GscOpportunities {
     impressions: number;
     opportunity_type: string;
     recommended_action: string;
-  })[];
+  }[];
 }
 
 /**
@@ -8159,7 +8358,7 @@ export interface KeywordClassificationBatchV1 {
   /**
    * One result per input keyword
    */
-  results: ({
+  results: {
     /**
      * Non-null ONLY when this keyword could not be classified
      */
@@ -8180,62 +8379,73 @@ export interface KeywordClassificationBatchV1 {
     keyword_id: string;
     query_form: "question" | "phrase" | "command";
     specificity: "head" | "mid" | "long_tail";
-    funnel_stage: "problem_aware" | "solution_aware" | "vendor_evaluation" | "purchase_ready";
-    intent_class: "informational" | "commercial_investigation" | "transactional" | "navigational";
+    funnel_stage:
+      | "problem_aware"
+      | "solution_aware"
+      | "vendor_evaluation"
+      | "purchase_ready";
+    intent_class:
+      | "informational"
+      | "commercial_investigation"
+      | "transactional"
+      | "navigational";
     local_intent: "explicit_local" | "implicit_local" | "non_local";
     audience_type: "consumer" | "business" | "practitioner" | "ambiguous";
     brand_presence: "unbranded" | "branded" | "product_branded";
     fulfillment_mode: "diy" | "done_for_you" | "ambiguous";
-    comparison_intent: "brand_vs_brand" | "category_best" | "alternatives_seeking" | "none";
-    price_sensitivity: "cost_research" | "budget_seeking" | "free_seeking" | "none";
+    comparison_intent:
+      "brand_vs_brand" | "category_best" | "alternatives_seeking" | "none";
+    price_sensitivity:
+      "cost_research" | "budget_seeking" | "free_seeking" | "none";
     compliance_framing: "regulated" | "certification_seeking" | "none";
     /**
      * 0-100 confidence in the dominant interpretation
      */
     overall_confidence: number;
     per_fact_confidence: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    urgency: number;
-    query_form: number;
-    specificity: number;
-    funnel_stage: number;
-    intent_class: number;
-    local_intent: number;
-    audience_type: number;
-    brand_presence: number;
-    fulfillment_mode: number;
-    comparison_intent: number;
-    price_sensitivity: number;
-    compliance_framing: number;
-    transaction_direction: number;
-  };
-    transaction_direction: "searcher_pays" | "searcher_gets_paid" | "free_expected" | "none";
+      /**
+       * The registered kind this payload is an instance of, when it is one.
+       */
+      __kind?: string;
+      urgency: number;
+      query_form: number;
+      specificity: number;
+      funnel_stage: number;
+      intent_class: number;
+      local_intent: number;
+      audience_type: number;
+      brand_presence: number;
+      fulfillment_mode: number;
+      comparison_intent: number;
+      price_sensitivity: number;
+      compliance_framing: number;
+      transaction_direction: number;
+    };
+    transaction_direction:
+      "searcher_pays" | "searcher_gets_paid" | "free_expected" | "none";
     /**
      * Runner-up value per dimension; null where there is no real rival reading
      */
     secondary_interpretation: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    urgency?: string | null;
-    query_form?: string | null;
-    specificity?: string | null;
-    funnel_stage?: string | null;
-    intent_class?: string | null;
-    local_intent?: string | null;
-    audience_type?: string | null;
-    brand_presence?: string | null;
-    fulfillment_mode?: string | null;
-    comparison_intent?: string | null;
-    price_sensitivity?: string | null;
-    compliance_framing?: string | null;
-    transaction_direction?: string | null;
-  };
-  })[];
+      /**
+       * The registered kind this payload is an instance of, when it is one.
+       */
+      __kind?: string;
+      urgency?: string | null;
+      query_form?: string | null;
+      specificity?: string | null;
+      funnel_stage?: string | null;
+      intent_class?: string | null;
+      local_intent?: string | null;
+      audience_type?: string | null;
+      brand_presence?: string | null;
+      fulfillment_mode?: string | null;
+      comparison_intent?: string | null;
+      price_sensitivity?: string | null;
+      compliance_framing?: string | null;
+      transaction_direction?: string | null;
+    };
+  }[];
   /**
    * Echo of the classifier_version input
    */
@@ -8249,7 +8459,7 @@ export interface KeywordRelationshipMap {
   /**
    * The keyword relationship lists: Parent Keywords, Child Keywords, Natural LSIs, Related Keywords.
    */
-  lists: ({
+  lists: {
     /**
      * List name, e.g. Parent Keywords, Child Keywords, Natural LSIs, Related Keywords.
      */
@@ -8266,7 +8476,7 @@ export interface KeywordRelationshipMap {
      * One sentence telling a content writer how to deploy this list.
      */
     rationale?: string;
-  })[];
+  }[];
   /**
    * The registered kind this payload is an instance of.
    */
@@ -8310,7 +8520,7 @@ export interface KeywordSearchMetrics {
   /**
    * Close variations of the primary keyword, each with its own optional volume.
    */
-  variations?: ({
+  variations?: {
     /**
      * Optional remark about this variation.
      */
@@ -8327,7 +8537,7 @@ export interface KeywordSearchMetrics {
      * Approximate monthly search volume for this variation.
      */
     monthly_search_volume?: number;
-  })[];
+  }[];
   /**
    * Competition level, e.g. Low, Medium, High.
    */
@@ -8383,14 +8593,14 @@ export interface KeywordVariantSet {
    */
   __kind: "keyword_variant_set";
   primary_keyword: string;
-  alternate_keywords: ({
+  alternate_keywords: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     keyword: string;
     rationale: string;
-  })[];
+  }[];
 }
 
 /**
@@ -8509,32 +8719,40 @@ export interface LiveHelpAnswer {
     /**
      * Supporting citations (kind: citation).
      */
-    citations?: ({
-    /**
-     * Human-readable source title.
-     */
-    title?: string | null;
-    /**
-     * The registered kind this payload is an instance of.
-     */
-    __kind: "citation";
-    /**
-     * Short verbatim quote supporting the claim.
-     */
-    excerpt?: string | null;
-    /**
-     * Position within the source (page, timestamp, heading).
-     */
-    locator?: string | null;
-    /**
-     * Stable identifier of the cited source.
-     */
-    sourceId: string;
-    /**
-     * What kind of source this citation points at.
-     */
-    sourceKind: "document" | "chunk" | "section" | "file" | "url" | "scope" | "transcript" | "web";
-  })[];
+    citations?: {
+      /**
+       * Human-readable source title.
+       */
+      title?: string | null;
+      /**
+       * The registered kind this payload is an instance of.
+       */
+      __kind: "citation";
+      /**
+       * Short verbatim quote supporting the claim.
+       */
+      excerpt?: string | null;
+      /**
+       * Position within the source (page, timestamp, heading).
+       */
+      locator?: string | null;
+      /**
+       * Stable identifier of the cited source.
+       */
+      sourceId: string;
+      /**
+       * What kind of source this citation points at.
+       */
+      sourceKind:
+        | "document"
+        | "chunk"
+        | "section"
+        | "file"
+        | "url"
+        | "scope"
+        | "transcript"
+        | "web";
+    }[];
     /**
      * How well the answer is supported by the learner's material.
      */
@@ -8791,13 +9009,13 @@ export interface MathProblem {
  */
 export interface MedSpaReviewResponseKit {
   __kind: "med_spa_review_response_kit";
-  responses: ({
+  responses: {
     __kind: "review_response_option";
     word_count?: number;
     response_text?: string;
     tone_category?: string;
     best_used_when?: string;
-  })[];
+  }[];
   business_name: string;
   risk_analysis: {
     __kind: "review_risk_analysis";
@@ -8869,7 +9087,15 @@ export interface MemoryHint {
   /**
    * The aid family used for this one hint.
    */
-  technique: "acronym" | "acrostic" | "rhyme" | "sentence" | "keyword" | "chunking" | "analogy" | "association";
+  technique:
+    | "acronym"
+    | "acrostic"
+    | "rhyme"
+    | "sentence"
+    | "keyword"
+    | "chunking"
+    | "analogy"
+    | "association";
   /**
    * One sentence on how the aid maps to the card.
    */
@@ -8903,7 +9129,7 @@ export interface MetaTagOptions {
   /**
    * Candidate meta title and description pairs.
    */
-  options: ({
+  options: {
     /**
      * Short name for this option, e.g. Recommended, Definition-Focused.
      */
@@ -8928,7 +9154,7 @@ export interface MetaTagOptions {
      * Stated character count of the meta description.
      */
     description_characters?: number;
-  })[];
+  }[];
   /**
    * Label of the option recommended overall.
    */
@@ -8980,13 +9206,13 @@ export interface NewsSearchResults {
    */
   __kind: "news_search_results";
   status?: string;
-  articles?: ({
+  articles?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   elapsed_ms?: number;
   total_results?: number;
 }
@@ -8995,30 +9221,30 @@ export interface NewsSearchResults {
  * Kind `newsjacking_expert_article` (registry v3).
  */
 export interface NewsjackingExpertArticle {
-  faqs?: ({
+  faqs?: {
     __kind: "article_faq_item";
     answer?: string;
     question?: string;
-  })[];
+  }[];
   __kind: "newsjacking_expert_article";
   headline: string;
   meta_title?: string;
   article_body: string;
-  expert_quotes?: ({
+  expert_quotes?: {
     __kind: "newsjacking_article_expert_quote";
     speaker?: string;
     quote_text?: string;
     placement_section?: string;
-  })[];
+  }[];
   target_keywords?: string[];
   meta_description?: string;
-  research_sources?: ({
+  research_sources?: {
     url?: string;
     title?: string;
     __kind: "article_research_source";
     publisher?: string;
     key_finding?: string;
-  })[];
+  }[];
   news_hook_summary?: string;
 }
 
@@ -9270,8 +9496,8 @@ export interface PageAudio {
    * The registered kind this payload is an instance of.
    */
   __kind?: "page_audio";
-  tracks?: (Record<string, string>)[];
-  sources?: (Record<string, string>)[];
+  tracks?: Record<string, string>[];
+  sources?: Record<string, string>[];
 }
 
 /**
@@ -9303,7 +9529,16 @@ export interface PageBlock {
    * Textual content, for the text-like types.
    */
   text?: string | null;
-  type: "text" | "header" | "list" | "code" | "table" | "image" | "video" | "audio" | "quote";
+  type:
+    | "text"
+    | "header"
+    | "list"
+    | "code"
+    | "table"
+    | "image"
+    | "video"
+    | "audio"
+    | "quote";
   /**
    * Text immediately following this block.
    */
@@ -9500,8 +9735,18 @@ export interface PageKeywordAnalysisV1 {
    */
   __kind: "page_keyword_analysis_v1";
   page_url?: string;
-  content_role: "money_page" | "supporting_content" | "local_landing" | "faq_only" | "no_action";
-  funnel_position?: "problem_aware" | "solution_aware" | "vendor_evaluation" | "purchase_ready" | null;
+  content_role:
+    | "money_page"
+    | "supporting_content"
+    | "local_landing"
+    | "faq_only"
+    | "no_action";
+  funnel_position?:
+    | "problem_aware"
+    | "solution_aware"
+    | "vendor_evaluation"
+    | "purchase_ready"
+    | null;
   analyzer_version?: string;
   declared_vs_actual?: TargetAlignment | null;
   supported_keywords?: KeywordRef[];
@@ -9608,7 +9853,7 @@ export interface PageMetadata {
   /**
    * Parsed schema.org JSON-LD objects.
    */
-  json_ld?: (Record<string, unknown>)[];
+  json_ld?: Record<string, unknown>[];
   /**
    * Every meta tag, name → content. A repeated name gives a list.
    */
@@ -9704,11 +9949,11 @@ export interface PageVideo {
   /**
    * Caption/subtitle tracks.
    */
-  tracks?: (Record<string, string>)[];
+  tracks?: Record<string, string>[];
   /**
    * Alternate encodings: {src, type}.
    */
-  sources?: (Record<string, string>)[];
+  sources?: Record<string, string>[];
   /**
    * Embed provider when the source was a third-party player.
    */
@@ -9812,7 +10057,7 @@ export interface PlanEntityAttachmentSet {
   /**
    * Roster entities attached to specific planned routes in a defensible role.
    */
-  attachments: ({
+  attachments: {
     /**
      * The defensible relationship between the entity and the page.
      */
@@ -9833,11 +10078,11 @@ export interface PlanEntityAttachmentSet {
      * The roster entity's display label.
      */
     entity_label: string;
-  })[];
+  }[];
   /**
    * Gaps the roster cannot fill; returned instead of inventing entities.
    */
-  missing_entities?: ({
+  missing_entities?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -9854,7 +10099,7 @@ export interface PlanEntityAttachmentSet {
      * Proposed label for the entity the roster is missing.
      */
     suggested_label: string;
-  })[];
+  }[];
 }
 
 /**
@@ -9872,7 +10117,7 @@ export interface PlanEntityRoster {
   /**
    * The E-E-A-T entity roster proposed from the research report. Real entities only.
    */
-  entities: ({
+  entities: {
     /**
      * The entity's name exactly as it appears in the research report.
      */
@@ -9893,21 +10138,21 @@ export interface PlanEntityRoster {
      * Which class of E-E-A-T entity this is.
      */
     entity_type: "person" | "org" | "source" | "media";
-  })[];
+  }[];
 }
 
 /**
  * Kind `plan_family_names` (registry v5).
  */
 export interface PlanFamilyNames {
-  names: ({
+  names: {
     label?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     reason?: string;
-  })[];
+  }[];
   notes?: string;
   /**
    * The registered kind this payload is an instance of.
@@ -9930,7 +10175,7 @@ export interface PlanKeywordStrategy {
   /**
    * One keyword assignment per page (plan_keyword_assignment).
    */
-  assignments: ({
+  assignments: {
     /**
      * The route this assignment governs.
      */
@@ -9954,24 +10199,24 @@ export interface PlanKeywordStrategy {
     /**
      * Planned internal links (plan_planned_link shape).
      */
-    internal_links?: ({
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    /**
-     * Why this link belongs on this page.
-     */
-    reason?: string;
-    /**
-     * The route this page should link to.
-     */
-    to_route: string;
-    /**
-     * The words the link should be wrapped around.
-     */
-    anchor_text: string;
-  })[];
+    internal_links?: {
+      /**
+       * The registered kind this payload is an instance of, when it is one.
+       */
+      __kind?: string;
+      /**
+       * Why this link belongs on this page.
+       */
+      reason?: string;
+      /**
+       * The route this page should link to.
+       */
+      to_route: string;
+      /**
+       * The words the link should be wrapped around.
+       */
+      anchor_text: string;
+    }[];
     /**
      * True when the primary keyword is newly introduced by this plan.
      */
@@ -9992,7 +10237,7 @@ export interface PlanKeywordStrategy {
      * Additional queries this page may support.
      */
     secondary_keywords?: string[];
-  })[];
+  }[];
   /**
    * How keywords are distributed across the plan as a whole.
    */
@@ -10145,7 +10390,7 @@ export interface PlanReviewFindings {
   /**
    * One evidence-cited finding per problem, one finding per missing page, ordered by impact.
    */
-  findings: ({
+  findings: {
     /**
      * Short label for the finding.
      */
@@ -10170,7 +10415,7 @@ export interface PlanReviewFindings {
      * Route for a page that would resolve this finding, or null.
      */
     suggested_route?: string | null;
-  })[];
+  }[];
 }
 
 /**
@@ -10183,15 +10428,15 @@ export interface PlanShapeRecommendation {
   __kind: "plan_shape_recommendation";
   rationale: string;
   archetype_key: string;
-  concept_names?: ({
+  concept_names?: {
     name?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     concept_key?: string;
-  })[];
-  family_counts: ({
+  }[];
+  family_counts: {
     count?: number;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -10199,7 +10444,7 @@ export interface PlanShapeRecommendation {
     __kind?: string;
     reason?: string;
     family_key?: string;
-  })[];
+  }[];
 }
 
 /**
@@ -10369,7 +10614,17 @@ export interface PresentationDeck {
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
-    preset?: "classic" | "corporate" | "editorial" | "bold" | "minimal" | "midnight" | "ocean" | "sunset" | "forest" | "mono";
+    preset?:
+      | "classic"
+      | "corporate"
+      | "editorial"
+      | "bold"
+      | "minimal"
+      | "midnight"
+      | "ocean"
+      | "sunset"
+      | "forest"
+      | "mono";
     variant?: string;
     textColor?: string;
     accentColor?: string;
@@ -10454,13 +10709,13 @@ export interface PressSourceRequestIngestResult {
  */
 export interface PressStoryAngleGenerationResult {
   kept: number;
-  gates?: ({
+  gates?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   /**
    * The registered kind this payload is an instance of.
    */
@@ -10516,7 +10771,7 @@ export interface ProductResearchReport {
   /**
    * One entry per retailer or offer.
    */
-  listings: ({
+  listings: {
     url?: string;
     site: string;
     price: string;
@@ -10530,7 +10785,7 @@ export interface ProductResearchReport {
      * e.g. In Stock, Limited, Unknown
      */
     availability?: string;
-  })[];
+  }[];
   /**
    * Name of the recommended retailer/listing.
    */
@@ -11137,7 +11392,7 @@ export interface ResearchCoverageAudit {
   /**
    * The specific evidence gaps that must be closed. EMPTY when coverage is sufficient.
    */
-  gaps: ({
+  gaps: {
     __kind: "coverage_gap";
     /**
      * The specific thing the research does not hold.
@@ -11155,7 +11410,7 @@ export interface ResearchCoverageAudit {
      * One to three search queries a researcher would type to close the gap.
      */
     suggested_queries: string[];
-  })[];
+  }[];
   __kind: "research_coverage_audit";
   /**
    * Two to three sentences describing what the evidence supports and where it falls short.
@@ -11190,16 +11445,42 @@ export interface ResearchPageAnalysis {
    */
   __kind: "research_page_analysis";
   key_facts?: string[];
-  page_type?: "primary_research" | "government" | "academic" | "news" | "industry_report" | "company_blog" | "personal_blog" | "forum" | "directory" | "product_page" | "landing_page" | "ad_page" | "unknown";
+  page_type?:
+    | "primary_research"
+    | "government"
+    | "academic"
+    | "news"
+    | "industry_report"
+    | "company_blog"
+    | "personal_blog"
+    | "forum"
+    | "directory"
+    | "product_page"
+    | "landing_page"
+    | "ad_page"
+    | "unknown";
   should_use?: boolean;
   core_findings?: CoreFinding[];
   should_reject?: boolean;
   analysis_notes?: string;
   notable_claims?: NotableClaim[];
   notable_quotes?: NotableQuote[];
-  analysis_status?: "valid" | "invalid" | "inaccessible" | "irrelevant" | "thin" | "ad_heavy" | "duplicate" | "error";
+  analysis_status?:
+    | "valid"
+    | "invalid"
+    | "inaccessible"
+    | "irrelevant"
+    | "thin"
+    | "ad_heavy"
+    | "duplicate"
+    | "error";
   freshness_score?: number;
-  recommended_use?: "cite_directly" | "use_as_background" | "use_for_leads_only" | "compare_against_other_sources" | "reject";
+  recommended_use?:
+    | "cite_directly"
+    | "use_as_background"
+    | "use_for_leads_only"
+    | "compare_against_other_sources"
+    | "reject";
   evidence_signals?: EvidenceSignals;
   rejection_reason?: string;
   summary_markdown?: string;
@@ -11459,7 +11740,7 @@ export interface RuleGovernedVariantSet {
   /**
    * One entry per successfully mapped input item.
    */
-  values: ({
+  values: {
     /**
      * Governing rules for this item: an optional markdown preamble followed by one JSON rule object per line (id, severity, rule, violation_looks_like, why).
      */
@@ -11472,32 +11753,32 @@ export interface RuleGovernedVariantSet {
      * The generated payload for this item.
      */
     content: {
-    /**
-     * Variant identifier, e.g. v1.
-     */
-    id: string;
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    /**
-     * The generated body, markdown formatted.
-     */
-    content: string;
-    /**
-     * Short principle codes applied when generating this variant.
-     */
-    principles_used?: string[];
-    /**
-     * One-line label for the strategy this variant takes.
-     */
-    primary_approach?: string;
-  };
+      /**
+       * Variant identifier, e.g. v1.
+       */
+      id: string;
+      /**
+       * The registered kind this payload is an instance of, when it is one.
+       */
+      __kind?: string;
+      /**
+       * The generated body, markdown formatted.
+       */
+      content: string;
+      /**
+       * Short principle codes applied when generating this variant.
+       */
+      principles_used?: string[];
+      /**
+       * One-line label for the strategy this variant takes.
+       */
+      primary_approach?: string;
+    };
     /**
      * The task or expected outcome the mapped item was generated against.
      */
     ground_truth?: string;
-  })[];
+  }[];
   /**
    * Number of input items that were dropped and not mapped.
    */
@@ -11637,7 +11918,7 @@ export interface SchemaFixResult {
   /**
    * Generated JSON-LD schema blocks
    */
-  generated_blocks: ({
+  generated_blocks: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -11654,7 +11935,7 @@ export interface SchemaFixResult {
      * True when every value is grounded in page content
      */
     fully_grounded: boolean;
-  })[];
+  }[];
   /**
    * Fields a human must fill, e.g. LocalBusiness.telephone
    */
@@ -11786,7 +12067,7 @@ export interface SchemaQcResult {
  */
 export interface ScrapedPage {
   /**
-   * Detected CMS, when recognised.
+   * Detected CMS, when recognized.
    */
   cms?: string | null;
   url: string;
@@ -11820,7 +12101,7 @@ export interface ScrapedPage {
    */
   cleaning?: PageCleaningReport | null;
   /**
-   * Detected WAF/CDN, when recognised.
+   * Detected WAF/CDN, when recognized.
    */
   firewall?: string | null;
   markdown?: string | null;
@@ -11871,7 +12152,7 @@ export interface ScrapedPage {
   /**
    * Every reason the fetch collected, not only the primary one: [{reason_key: human_text}].
    */
-  failure_details?: (Record<string, unknown>)[];
+  failure_details?: Record<string, unknown>[];
   /**
    * The Content-Type header verbatim, charset included.
    */
@@ -12022,13 +12303,13 @@ export interface SeoCollectionReceipts {
    * The registered kind this payload is an instance of.
    */
   __kind: "seo_collection_receipts";
-  receipts?: ({
+  receipts?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
 }
 
 /**
@@ -12232,13 +12513,13 @@ export interface SeoKeywordSerpIntentAnalysis {
    */
   __kind: "seo_keyword_serp_intent_analysis";
   phrase?: string;
-  changes?: ({
+  changes?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   context?: SeoSerpIntentContext | null;
   language?: string;
   keyword_id?: string;
@@ -12247,13 +12528,13 @@ export interface SeoKeywordSerpIntentAnalysis {
   serp_consensus?: "aligned" | "mixed" | "conflicted";
   analyzer_version?: string;
   difficulty_signal?: "low" | "moderate" | "high" | "very_high";
-  provider_findings?: ({
+  provider_findings?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   content_expectations?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -12427,7 +12708,7 @@ export interface SeoMetaOptions {
    */
   __kind: "seo_meta_options";
   status: string;
-  options: ({
+  options: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -12435,7 +12716,7 @@ export interface SeoMetaOptions {
     rationale: string;
     meta_title: string;
     meta_description: string;
-  })[];
+  }[];
   page_url: string;
   target_keyword: string;
   desired_meta_title?: string;
@@ -13190,7 +13471,7 @@ export interface SerpAnalysis {
    * The searched keyword
    */
   keyword: string;
-  results: ({
+  results: {
     url: string;
     title: string;
     /**
@@ -13201,30 +13482,40 @@ export interface SerpAnalysis {
     reason?: string;
     position: number;
     opportunity?: string;
-    classification: "direct_competitor" | "indirect_competitor" | "backlink_opportunity" | "directory_listing" | "review_platform" | "social_platform" | "news_article" | "informational" | "google_property" | "your_site";
+    classification:
+      | "direct_competitor"
+      | "indirect_competitor"
+      | "backlink_opportunity"
+      | "directory_listing"
+      | "review_platform"
+      | "social_platform"
+      | "news_article"
+      | "informational"
+      | "google_property"
+      | "your_site";
     classification_label: string;
-  })[];
+  }[];
   summary: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     counts: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    your_site?: number;
-    news_article?: number;
-    informational?: number;
-    google_property?: number;
-    review_platform?: number;
-    social_platform?: number;
-    direct_competitor?: number;
-    directory_listing?: number;
-    indirect_competitor?: number;
-    backlink_opportunity?: number;
-  };
+      /**
+       * The registered kind this payload is an instance of, when it is one.
+       */
+      __kind?: string;
+      your_site?: number;
+      news_article?: number;
+      informational?: number;
+      google_property?: number;
+      review_platform?: number;
+      social_platform?: number;
+      direct_competitor?: number;
+      directory_listing?: number;
+      indirect_competitor?: number;
+      backlink_opportunity?: number;
+    };
     top_opportunities: string[];
     your_site_present: boolean;
     total_results_analyzed: number;
@@ -13233,7 +13524,8 @@ export interface SerpAnalysis {
    * The user's domain
    */
   your_site: string;
-  search_intent: "commercial" | "informational" | "navigational" | "transactional";
+  search_intent:
+    "commercial" | "informational" | "navigational" | "transactional";
   /**
    * Rank of the user's site, null if not present
    */
@@ -13259,7 +13551,16 @@ export interface SerpPlacement {
   /**
    * The result itself, as one of the shipped search kinds.
    */
-  result?: WebResult | LocalPlace | AiAnswer | EntityCard | FaqItem | DiscussionResult | NewsResult | VideoResult | null;
+  result?:
+    | WebResult
+    | LocalPlace
+    | AiAnswer
+    | EntityCard
+    | FaqItem
+    | DiscussionResult
+    | NewsResult
+    | VideoResult
+    | null;
   /**
    * Which block this position was. Vocabulary: organic, local_pack, ai_citation, ai_overview, entity_card, faq, discussion, news, video, unknown.
    */
@@ -13412,7 +13713,7 @@ export interface SourceAuthorityRankings {
   /**
    * One ranking entry per input source.
    */
-  rankings: ({
+  rankings: {
     /**
      * UUID of the source being ranked.
      */
@@ -13446,7 +13747,7 @@ export interface SourceAuthorityRankings {
      * Confidence that the source is about the intended entity, 0-100. May be absent in older payloads.
      */
     entity_match_confidence?: number | null;
-  })[];
+  }[];
 }
 
 /**
@@ -13547,7 +13848,7 @@ export interface SpokenPracticeSession {
   /**
    * Ordered list of practice prompts.
    */
-  prompts: ({
+  prompts: {
     __kind: "practice_prompt";
     /**
      * The question read aloud to the student.
@@ -13569,7 +13870,7 @@ export interface SpokenPracticeSession {
      * The grading reference answer.
      */
     reference_answer: string;
-  })[];
+  }[];
   /**
    * Title of the spoken practice session.
    */
@@ -13580,13 +13881,13 @@ export interface SpokenPracticeSession {
  * Kind `sql_query_result` (registry v6).
  */
 export interface SqlQueryResult {
-  rows?: ({
+  rows?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
-  })[];
+  }[];
   /**
    * The registered kind this payload is an instance of.
    */
@@ -13670,16 +13971,16 @@ export interface StudyAnalyticsNarrative {
   /**
    * Typed list of analytics_insight items.
    */
-  insights: ({
+  insights: {
     title: string;
     __kind: "analytics_insight";
     detail: string;
     severity: "good" | "watch" | "urgent";
-  })[];
+  }[];
   /**
    * Prioritized next actions. Plain sub-structure, not a separate kind.
    */
-  recommendations: ({
+  recommendations: {
     /**
      * Evidence-backed rationale.
      */
@@ -13695,8 +13996,9 @@ export interface StudyAnalyticsNarrative {
     /**
      * Destination activity type, or null when the action is not routable.
      */
-    target_kind: "review" | "weak_area" | "learn" | "quiz" | "practice_test" | null;
-  })[];
+    target_kind:
+      "review" | "weak_area" | "learn" | "quiz" | "practice_test" | null;
+  }[];
 }
 
 /**
@@ -13779,25 +14081,32 @@ export interface StudyPlan {
   /**
    * Ordered days of the plan.
    */
-  days: ({
+  days: {
     __kind: "study_plan_day";
-    blocks: ({
-    label: string;
-    topic?: string | null;
-    __kind: "study_plan_block";
-    method?: string | null;
-    rationale?: string | null;
-    target_kind: "review" | "learn" | "weak_area" | "quiz" | "practice_test" | "rest" | "custom";
-    estimated_items?: number | null;
-    estimated_minutes: number;
-  })[];
+    blocks: {
+      label: string;
+      topic?: string | null;
+      __kind: "study_plan_block";
+      method?: string | null;
+      rationale?: string | null;
+      target_kind:
+        | "review"
+        | "learn"
+        | "weak_area"
+        | "quiz"
+        | "practice_test"
+        | "rest"
+        | "custom";
+      estimated_items?: number | null;
+      estimated_minutes: number;
+    }[];
     /**
      * ISO calendar date (YYYY-MM-DD).
      */
     day_date: string;
     rationale: string | null;
     is_rest_day: boolean;
-  })[];
+  }[];
   __kind: "study_plan";
   /**
    * Why the plan is shaped this way overall.
@@ -13890,22 +14199,22 @@ export interface TastingNote {
   aroma?: {
     __kind: "tasting_impression";
     summary?: string;
-    descriptors?: ({
-    term?: string;
-    __kind: "tasting_descriptor";
-    intensity?: string;
-  })[];
+    descriptors?: {
+      term?: string;
+      __kind: "tasting_descriptor";
+      intensity?: string;
+    }[];
   };
   score?: number;
   __kind: "tasting_note";
   palate?: {
     __kind: "tasting_impression";
     summary?: string;
-    descriptors?: ({
-    term?: string;
-    __kind: "tasting_descriptor";
-    intensity?: string;
-  })[];
+    descriptors?: {
+      term?: string;
+      __kind: "tasting_descriptor";
+      intensity?: string;
+    }[];
   };
   vintage?: number;
   producer?: string;
@@ -14272,7 +14581,7 @@ export interface TopicAssignmentBatchV1 {
   /**
    * Proposed new tree nodes. Empty array when the existing branch can hold every keyword.
    */
-  new_topics: ({
+  new_topics: {
     name: string;
     /**
      * kebab-case
@@ -14301,11 +14610,11 @@ export interface TopicAssignmentBatchV1 {
      * The keywords in THIS batch that justify the node (never just one)
      */
     justified_by_keyword_ids: string[];
-  })[];
+  }[];
   /**
    * One assignment per assignable keyword
    */
-  assignments: ({
+  assignments: {
     /**
      * Non-null ONLY when this keyword could not be assigned
      */
@@ -14327,18 +14636,18 @@ export interface TopicAssignmentBatchV1 {
      * Genuine intersections only; usually empty
      */
     secondary_topics: string[];
-  })[];
+  }[];
   /**
    * Keywords that fit nowhere and do not justify a new node
    */
-  unassignable: ({
+  unassignable: {
     /**
      * Always unassignable_keyword_v1
      */
     __kind: string;
     reason: string;
     keyword_id: string;
-  })[];
+  }[];
   /**
    * Echo of the assigner_version input
    */
@@ -14487,7 +14796,7 @@ export interface TrustEnvelope {
   /**
    * Supporting citations.
    */
-  citations?: ({
+  citations?: {
     title?: string | null;
     /**
      * The registered kind this payload is an instance of.
@@ -14496,8 +14805,16 @@ export interface TrustEnvelope {
     excerpt?: string | null;
     locator?: string | null;
     sourceId: string;
-    sourceKind: "document" | "chunk" | "section" | "file" | "url" | "scope" | "transcript" | "web";
-  })[];
+    sourceKind:
+      | "document"
+      | "chunk"
+      | "section"
+      | "file"
+      | "url"
+      | "scope"
+      | "transcript"
+      | "web";
+  }[];
   /**
    * How well the claim is supported by the provided material.
    */
@@ -14685,7 +15002,7 @@ export interface WebA11yLabBasicsV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     audit?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -14694,7 +15011,7 @@ export interface WebA11yLabBasicsV1 {
     detail?: string;
     impact?: string;
     selector?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -14725,7 +15042,7 @@ export interface WebAnchorTextDescriptivenessV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -14733,7 +15050,7 @@ export interface WebAnchorTextDescriptivenessV1 {
     problem?: string;
     target_url?: string;
     anchor_text?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -14765,7 +15082,7 @@ export interface WebAssetDeliveryV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     audit?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -14774,7 +15091,7 @@ export interface WebAssetDeliveryV1 {
     resource?: string;
     est_savings_ms?: number;
     est_savings_bytes?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -14805,12 +15122,12 @@ export interface WebBrokenExternalLinksV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -14842,7 +15159,7 @@ export interface WebBrokenImagesV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     src?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -14850,7 +15167,7 @@ export interface WebBrokenImagesV1 {
     __kind?: string;
     context?: string;
     http_status?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -14880,7 +15197,7 @@ export interface WebBrokenInternalLinksV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     rel?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -14889,7 +15206,7 @@ export interface WebBrokenInternalLinksV1 {
     target_url?: string;
     anchor_text?: string;
     http_status?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -14919,7 +15236,7 @@ export interface WebBrokenPage4xxV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -14929,7 +15246,7 @@ export interface WebBrokenPage4xxV1 {
     http_status?: number;
     inlink_count?: number;
     sample_referrers?: string[];
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -14959,7 +15276,7 @@ export interface WebCachingPolicyV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     bytes?: number;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -14967,7 +15284,7 @@ export interface WebCachingPolicyV1 {
     __kind?: string;
     resource?: string;
     ttl_seconds?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -14999,7 +15316,7 @@ export interface WebCanonicalConflictsV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15008,7 +15325,7 @@ export interface WebCanonicalConflictsV1 {
     conflict?: string;
     canonical?: string;
     target_status?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15038,7 +15355,7 @@ export interface WebCanonicalPresenceV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15046,7 +15363,7 @@ export interface WebCanonicalPresenceV1 {
     __kind?: string;
     problem?: string;
     canonicals?: string[];
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15076,7 +15393,7 @@ export interface WebContentDepthV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15085,7 +15402,7 @@ export interface WebContentDepthV1 {
     page_type?: string;
     word_count?: number;
     expectation?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15115,7 +15432,7 @@ export interface WebContentFreshnessV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15125,7 +15442,7 @@ export interface WebContentFreshnessV1 {
     months_stale?: number;
     last_declared?: string;
     last_observed_change?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15155,7 +15472,7 @@ export interface WebContentQualityEeatV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     quote?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15164,7 +15481,7 @@ export interface WebContentQualityEeatV1 {
     dimension?: string;
     assessment?: string;
     suggestion?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15206,7 +15523,7 @@ export interface WebCrawlDepthV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     depth?: number;
     /**
@@ -15214,7 +15531,7 @@ export interface WebCrawlDepthV1 {
      */
     __kind?: string;
     sample_path?: string[];
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15245,7 +15562,7 @@ export interface WebCwvClsV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     cause?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15253,7 +15570,7 @@ export interface WebCwvClsV1 {
     __kind?: string;
     element?: string;
     shift_score?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15284,7 +15601,7 @@ export interface WebCwvInpTbtV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     task?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15292,7 +15609,7 @@ export interface WebCwvInpTbtV1 {
     __kind?: string;
     script_url?: string;
     blocking_ms?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15323,7 +15640,7 @@ export interface WebCwvLcpV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -15333,7 +15650,7 @@ export interface WebCwvLcpV1 {
     value_ms?: number;
     opportunity?: string;
     est_savings_ms?: number;
-  })[];
+  }[];
   lcp_element?: string;
   /**
    * Number of failing units
@@ -15364,7 +15681,7 @@ export interface WebDuplicateContentExactV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     urls?: string[];
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15373,7 +15690,7 @@ export interface WebDuplicateContentExactV1 {
     cluster_size?: number;
     consolidated?: boolean;
     content_hash?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15406,7 +15723,7 @@ export interface WebExcessiveOutlinksV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15415,7 +15732,7 @@ export interface WebExcessiveOutlinksV1 {
     external?: number;
     internal?: number;
     total_links?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15445,7 +15762,7 @@ export interface WebGrammarSpellingV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -15453,7 +15770,7 @@ export interface WebGrammarSpellingV1 {
     excerpt?: string;
     correction?: string;
     error_type?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15485,7 +15802,7 @@ export interface WebGscCtrOpportunityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     ctr?: number;
     query?: string;
     /**
@@ -15496,7 +15813,7 @@ export interface WebGscCtrOpportunityV1 {
     position?: number;
     impressions?: number;
     expected_ctr?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15529,7 +15846,7 @@ export interface WebGscIndexCoverageV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15538,7 +15855,7 @@ export interface WebGscIndexCoverageV1 {
     reason?: string;
     gsc_state?: string;
     crawl_indexable?: boolean;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15576,7 +15893,7 @@ export interface WebGscKeywordCannibalizationV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     urls?: string[];
     query?: string;
     /**
@@ -15585,7 +15902,7 @@ export interface WebGscKeywordCannibalizationV1 {
     __kind?: string;
     impression_split?: string[];
     combined_position?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15618,7 +15935,7 @@ export interface WebGscPerformanceDecayV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -15627,7 +15944,7 @@ export interface WebGscPerformanceDecayV1 {
     period?: string;
     delta_pct?: number;
     impressions?: number;
-  })[];
+  }[];
   clicks_prior?: number;
   /**
    * Number of failing units
@@ -15659,7 +15976,7 @@ export interface WebH1PresenceV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     count?: number;
     /**
@@ -15669,7 +15986,7 @@ export interface WebH1PresenceV1 {
     problem?: string;
     h1_values?: string[];
     duplicate_urls?: string[];
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15692,14 +16009,14 @@ export interface WebHeadingHierarchyV1 {
    * Number of units inspected (tags, links, images, pages...)
    */
   checked?: number;
-  outline?: ({
+  outline?: {
     text?: string;
     level?: number;
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
-  })[];
+  }[];
   /**
    * One-paragraph human summary of the finding
    */
@@ -15707,7 +16024,7 @@ export interface WebHeadingHierarchyV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     text?: string;
     /**
@@ -15718,7 +16035,7 @@ export interface WebHeadingHierarchyV1 {
     position?: number;
     to_level?: number;
     from_level?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15748,7 +16065,7 @@ export interface WebHostProtocolConsistencyV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -15757,7 +16074,7 @@ export interface WebHostProtocolConsistencyV1 {
     problem?: string;
     variant?: string;
     redirects_to?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15787,7 +16104,7 @@ export interface WebHreflangReciprocityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -15795,7 +16112,7 @@ export interface WebHreflangReciprocityV1 {
     returns?: boolean;
     hreflang?: string;
     target_url?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15827,7 +16144,7 @@ export interface WebHreflangValidityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     href?: string;
     /**
@@ -15836,7 +16153,7 @@ export interface WebHreflangValidityV1 {
     __kind?: string;
     problem?: string;
     hreflang?: string;
-  })[];
+  }[];
   cluster_size?: number;
   /**
    * Number of failing units
@@ -15867,7 +16184,7 @@ export interface WebHstsPolicyV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15876,7 +16193,7 @@ export interface WebHstsPolicyV1 {
     max_age?: number;
     header_value?: string;
     include_subdomains?: boolean;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15906,7 +16223,7 @@ export interface WebHtmlLangValidityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15915,7 +16232,7 @@ export interface WebHtmlLangValidityV1 {
     problem?: string;
     declared_lang?: string;
     detected_lang?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15945,7 +16262,7 @@ export interface WebHttpsEnforcementV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -15954,7 +16271,7 @@ export interface WebHttpsEnforcementV1 {
     scheme?: string;
     problem?: string;
     http_variant_status?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -15984,7 +16301,7 @@ export interface WebImageAltPresenceV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     src?: string;
     url?: string;
     /**
@@ -15992,7 +16309,7 @@ export interface WebImageAltPresenceV1 {
      */
     __kind?: string;
     context?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16024,7 +16341,7 @@ export interface WebImageAltQualityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     alt?: string;
     src?: string;
     /**
@@ -16033,7 +16350,7 @@ export interface WebImageAltQualityV1 {
     __kind?: string;
     assessment?: string;
     suggested_alt?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16063,7 +16380,7 @@ export interface WebImageDimensionAttrsV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     src?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16071,7 +16388,7 @@ export interface WebImageDimensionAttrsV1 {
     __kind?: string;
     has_width?: boolean;
     has_height?: boolean;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16103,7 +16420,7 @@ export interface WebImageLazyLoadingV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     src?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16113,7 +16430,7 @@ export interface WebImageLazyLoadingV1 {
     loading?: string;
     problem?: string;
     above_fold?: boolean;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16143,7 +16460,7 @@ export interface WebImageModernFormatV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     src?: string;
     bytes?: number;
     /**
@@ -16152,7 +16469,7 @@ export interface WebImageModernFormatV1 {
     __kind?: string;
     format?: string;
     est_savings?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16184,7 +16501,7 @@ export interface WebImageOversizedV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     src?: string;
     bytes?: number;
     /**
@@ -16194,7 +16511,7 @@ export interface WebImageOversizedV1 {
     natural?: string;
     rendered?: string;
     wasted_bytes?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16225,7 +16542,7 @@ export interface WebInternalInlinkCoverageV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16233,7 +16550,7 @@ export interface WebInternalInlinkCoverageV1 {
     __kind?: string;
     sample_sources?: string[];
     unique_inlinks?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16263,7 +16580,7 @@ export interface WebInternalLinkEquityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16273,7 +16590,7 @@ export interface WebInternalLinkEquityV1 {
     pagerank?: number;
     percentile?: number;
     prioritized?: boolean;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16304,7 +16621,7 @@ export interface WebInternalRedirectLinksV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -16313,7 +16630,7 @@ export interface WebInternalRedirectLinksV1 {
     target_url?: string;
     anchor_text?: string;
     http_status?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16345,7 +16662,7 @@ export interface WebIntrusiveInterstitialsV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -16354,7 +16671,7 @@ export interface WebIntrusiveInterstitialsV1 {
     dismissible?: boolean;
     overlay_type?: string;
     viewport_coverage_pct?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16384,7 +16701,7 @@ export interface WebKeywordTopicalCoverageV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -16393,7 +16710,7 @@ export interface WebKeywordTopicalCoverageV1 {
     assessment?: string;
     suggestion?: string;
     missing_subtopics?: string[];
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16433,7 +16750,7 @@ export interface WebLocalBusinessMarkupV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16442,7 +16759,7 @@ export interface WebLocalBusinessMarkupV1 {
     schema_type?: string;
     inconsistency?: string;
     missing_properties?: string[];
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16472,7 +16789,7 @@ export interface WebMetaDescriptionDuplicationV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16481,7 +16798,7 @@ export interface WebMetaDescriptionDuplicationV1 {
     group_size?: number;
     description?: string;
     duplicate_urls?: string[];
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16511,7 +16828,7 @@ export interface WebMetaDescriptionLengthV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     chars?: number;
     /**
@@ -16519,7 +16836,7 @@ export interface WebMetaDescriptionLengthV1 {
      */
     __kind?: string;
     description?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16549,7 +16866,7 @@ export interface WebMetaDescriptionPresenceV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     count?: number;
     /**
@@ -16558,7 +16875,7 @@ export interface WebMetaDescriptionPresenceV1 {
     __kind?: string;
     problem?: string;
     descriptions?: string[];
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16588,7 +16905,7 @@ export interface WebMetaRefreshRedirectV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16597,7 +16914,7 @@ export interface WebMetaRefreshRedirectV1 {
     target?: string;
     mechanism?: string;
     delay_seconds?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16627,7 +16944,7 @@ export interface WebMetaRobotsConflictsV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     issue?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16640,7 +16957,7 @@ export interface WebMetaRobotsConflictsV1 {
     directive?: string;
     in_sitemap?: boolean;
     inlink_count?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16670,7 +16987,7 @@ export interface WebMixedContentV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -16678,7 +16995,7 @@ export interface WebMixedContentV1 {
     active?: boolean;
     resource_url?: string;
     resource_type?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16708,7 +17025,7 @@ export interface WebMobileRenderQualityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -16716,7 +17033,7 @@ export interface WebMobileRenderQualityV1 {
     defect?: string;
     location?: string;
     assessment?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16746,7 +17063,7 @@ export interface WebMobileUsabilityLabV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     audit?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16755,7 +17072,7 @@ export interface WebMobileUsabilityLabV1 {
     detail?: string;
     passed?: boolean;
     selector?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16785,7 +17102,7 @@ export interface WebNearDuplicateContentV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     urls?: string[];
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16793,7 +17110,7 @@ export interface WebNearDuplicateContentV1 {
     __kind?: string;
     similarity?: number;
     consolidated?: boolean;
-  })[];
+  }[];
   threshold?: number;
   /**
    * Number of failing units
@@ -16826,7 +17143,7 @@ export interface WebNofollowInternalLinksV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     rel?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16834,7 +17151,7 @@ export interface WebNofollowInternalLinksV1 {
     __kind?: string;
     target_url?: string;
     anchor_text?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16864,7 +17181,7 @@ export interface WebOgImageValidityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     width?: number;
     /**
@@ -16875,7 +17192,7 @@ export interface WebOgImageValidityV1 {
     problem?: string;
     image_url?: string;
     http_status?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16905,7 +17222,7 @@ export interface WebOrphanPagesV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -16914,7 +17231,7 @@ export interface WebOrphanPagesV1 {
     in_sitemap?: boolean;
     provenance?: string;
     http_status?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -16946,7 +17263,7 @@ export interface WebPageWeightV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     bytes?: number;
     count?: number;
     /**
@@ -16954,7 +17271,7 @@ export interface WebPageWeightV1 {
      */
     __kind?: string;
     resource_type?: string;
-  })[];
+  }[];
   total_bytes?: number;
   /**
    * Number of failing units
@@ -16985,12 +17302,12 @@ export interface WebPaginationMarkupV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
-  })[];
+  }[];
   next_url?: string;
   prev_url?: string;
   /**
@@ -17023,7 +17340,7 @@ export interface WebReadabilityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     value?: number;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -17032,7 +17349,7 @@ export interface WebReadabilityV1 {
     metric?: string;
     sample?: string;
     threshold?: number;
-  })[];
+  }[];
   language?: string;
   passive_pct?: number;
   /**
@@ -17065,7 +17382,7 @@ export interface WebRedirectChainV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     hop?: number;
     url?: string;
     /**
@@ -17074,7 +17391,7 @@ export interface WebRedirectChainV1 {
     __kind?: string;
     status?: number;
     location?: string;
-  })[];
+  }[];
   final_url?: string;
   hop_count?: number;
   /**
@@ -17106,14 +17423,14 @@ export interface WebRedirectLoopV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     trace?: string[];
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17196,7 +17513,7 @@ export interface WebRobotsTxtHealthV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     line?: number;
     issue?: string;
     /**
@@ -17206,7 +17523,7 @@ export interface WebRobotsTxtHealthV1 {
     directive?: string;
     user_agent?: string;
     blocked_url_sample?: string[];
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17238,7 +17555,7 @@ export interface WebSearchIntentAlignmentV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -17246,7 +17563,7 @@ export interface WebSearchIntentAlignmentV1 {
     aspect?: string;
     assessment?: string;
     suggestion?: string;
-  })[];
+  }[];
   page_format?: string;
   /**
    * Number of failing units
@@ -17304,7 +17621,7 @@ export interface WebSecurityHeadersV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -17312,7 +17629,7 @@ export interface WebSecurityHeadersV1 {
     header?: string;
     present?: boolean;
     sample_value?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17342,7 +17659,7 @@ export interface WebSerpSnippetQualityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -17350,7 +17667,7 @@ export interface WebSerpSnippetQualityV1 {
     aspect?: string;
     assessment?: string;
     suggestion?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17382,7 +17699,7 @@ export interface WebServerError5xxV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -17391,7 +17708,7 @@ export interface WebServerError5xxV1 {
     error_class?: string;
     http_status?: number;
     sessions_failing?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17421,7 +17738,7 @@ export interface WebSitemapCoverageV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * missing_from_sitemap|sitemap_only
@@ -17431,7 +17748,7 @@ export interface WebSitemapCoverageV1 {
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17464,7 +17781,7 @@ export interface WebSitemapHealthV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -17473,7 +17790,7 @@ export interface WebSitemapHealthV1 {
     problem?: string;
     http_status?: number;
     sitemap_url?: string;
-  })[];
+  }[];
   url_count?: number;
   junk_ratio?: number;
   /**
@@ -17506,7 +17823,7 @@ export interface WebSocialMetaCompletenessV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     tag?: string;
     value?: string;
     /**
@@ -17515,7 +17832,7 @@ export interface WebSocialMetaCompletenessV1 {
     __kind?: string;
     present?: boolean;
     problem?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17546,7 +17863,7 @@ export interface WebSoft404DetectionV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -17555,7 +17872,7 @@ export interface WebSoft404DetectionV1 {
     signal?: string;
     word_count?: number;
     matched_404_template?: boolean;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17585,7 +17902,7 @@ export interface WebStructuredDataCoverageV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -17596,7 +17913,7 @@ export interface WebStructuredDataCoverageV1 {
     status?: string;
     rationale?: string;
     schema_type?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17627,7 +17944,7 @@ export interface WebStructuredDataValidityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
@@ -17637,7 +17954,7 @@ export interface WebStructuredDataValidityV1 {
     property?: string;
     severity?: string;
     block_type?: string;
-  })[];
+  }[];
   types_found?: string[];
   /**
    * Number of failing units
@@ -17668,7 +17985,7 @@ export interface WebTemporaryRedirectUsageV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -17677,7 +17994,7 @@ export interface WebTemporaryRedirectUsageV1 {
     status?: number;
     target?: string;
     sessions_observed?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17707,7 +18024,7 @@ export interface WebTextHtmlRatioV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     ratio?: number;
     /**
@@ -17716,7 +18033,7 @@ export interface WebTextHtmlRatioV1 {
     __kind?: string;
     html_bytes?: number;
     text_bytes?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17746,7 +18063,7 @@ export interface WebThinContentV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -17755,7 +18072,7 @@ export interface WebThinContentV1 {
     exempted?: boolean;
     page_type?: string;
     word_count?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17785,7 +18102,7 @@ export interface WebTitleDuplicationV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     title?: string;
     /**
@@ -17794,7 +18111,7 @@ export interface WebTitleDuplicationV1 {
     __kind?: string;
     group_size?: number;
     duplicate_urls?: string[];
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17824,7 +18141,7 @@ export interface WebTitleKeywordAlignmentV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     title?: string;
     /**
@@ -17834,7 +18151,7 @@ export interface WebTitleKeywordAlignmentV1 {
     match_type?: string;
     match_position?: number;
     target_keyword?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17864,7 +18181,7 @@ export interface WebTitleLengthV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     chars?: number;
     title?: string;
@@ -17873,7 +18190,7 @@ export interface WebTitleLengthV1 {
      */
     __kind?: string;
     est_pixels?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17903,7 +18220,7 @@ export interface WebTitlePresenceV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     count?: number;
     /**
@@ -17912,7 +18229,7 @@ export interface WebTitlePresenceV1 {
     __kind?: string;
     titles?: string[];
     problem?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17942,7 +18259,7 @@ export interface WebTlsCertificateV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     host?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -17952,7 +18269,7 @@ export interface WebTlsCertificateV1 {
     problem?: string;
     expires_at?: string;
     days_remaining?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -17983,14 +18300,14 @@ export interface WebTtfbServerResponseV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
     ttfb_ms?: number;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -18021,14 +18338,14 @@ export interface WebUrlDesignQualityV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     issue?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
      */
     __kind?: string;
-  })[];
+  }[];
   param_count?: number;
   /**
    * Number of failing units
@@ -18059,7 +18376,7 @@ export interface WebViewportMetaV1 {
   /**
    * Per-issue/-unit evidence entries
    */
-  evidence?: ({
+  evidence?: {
     url?: string;
     /**
      * The registered kind this payload is an instance of, when it is one.
@@ -18067,7 +18384,7 @@ export interface WebViewportMetaV1 {
     __kind?: string;
     problem?: string;
     viewport_content?: string;
-  })[];
+  }[];
   /**
    * Number of failing units
    */
@@ -18675,471 +18992,471 @@ export type GeneratedKindSlug =
 
 /** Slug → the complete-instance payload type for that kind. */
 export interface KindPayloadBySlug {
-  "agent_assignment_batch_result": AgentAssignmentBatchResult;
-  "agent_definition": AgentDefinition;
-  "agent_function_spec": AgentFunctionSpec;
-  "agent_input_qme_report": AgentInputQmeReport;
-  "agent_react_result": AgentReactResult;
-  "agent_result": AgentResult;
-  "aggregate_group": AggregateGroup;
-  "aggregate_result": AggregateResult;
-  "ai_answer": AiAnswer;
-  "ai_cost_summary": AiCostSummary;
-  "ai_extract_result": AiExtractResult;
-  "ai_visibility_panel": AiVisibilityPanel;
-  "ai_visibility_panel_list": AiVisibilityPanelList;
-  "ai_visibility_panel_preview": AiVisibilityPanelPreview;
-  "ai_visibility_panel_run_result": AiVisibilityPanelRunResult;
-  "ai_visibility_result": AiVisibilityResult;
-  "answer_grade": AnswerGrade;
-  "arman_video_prompt": ArmanVideoPrompt;
-  "artisan_demo_reading_list": ArtisanDemoReadingList;
-  "assertion_result": AssertionResult;
-  "authority_newsjacking_article": AuthorityNewsjackingArticle;
-  "batch_review": BatchReview;
-  "batched_list_result": BatchedListResult;
-  "blog_post_outline": BlogPostOutline;
-  "boolean": BooleanKind;
-  "branch_result": BranchResult;
-  "broken_link_prospecting_preview": BrokenLinkProspectingPreview;
-  "broken_link_prospecting_report": BrokenLinkProspectingReport;
-  "bulk_result": BulkResult;
-  "card_detail": CardDetail;
-  "card_enrichment": CardEnrichment;
-  "card_expansion": CardExpansion;
-  "card_image_judgment": CardImageJudgment;
-  "card_verification": CardVerification;
-  "citation": Citation;
-  "claim_evidence": ClaimEvidence;
-  "client_site_audit": ClientSiteAudit;
-  "cms_align_result": CmsAlignResult;
-  "cms_page_build": CmsPageBuild;
-  "cms_publish_result": CmsPublishResult;
-  "cms_reconcile_report": CmsReconcileReport;
-  "cms_starter_kit_result": CmsStarterKitResult;
-  "code_block": CodeBlock;
-  "combined_page_text": CombinedPageText;
-  "comparison_set": ComparisonSet;
-  "competitor_lookup_result": CompetitorLookupResult;
-  "competitor_opportunity_autopsy_result": CompetitorOpportunityAutopsyResult;
-  "competitor_opportunity_autopsy_v1": CompetitorOpportunityAutopsyV1;
-  "competitor_page_autopsy_v1": CompetitorPageAutopsyV1;
-  "content_fingerprint": ContentFingerprint;
-  "content_plan_archetype_instantiation": ContentPlanArchetypeInstantiation;
-  "content_plan_archetype_list": ContentPlanArchetypeList;
-  "content_plan_foundation_checklist": ContentPlanFoundationChecklist;
-  "content_plan_site_list": ContentPlanSiteList;
-  "content_plan_tree": ContentPlanTree;
-  "cooking_recipe": CookingRecipe;
-  "criteria_gate_result": CriteriaGateResult;
-  "criterion_coverage": CriterionCoverage;
-  "crm_fold_settings": CrmFoldSettings;
-  "custom_script_result": CustomScriptResult;
-  "data_table": DataTable;
-  "datetime_snapshot": DatetimeSnapshot;
-  "decision_tree": DecisionTree;
-  "diagram_spec": DiagramSpec;
-  "digital_pr_reputation_brief_v1": DigitalPrReputationBriefV1;
-  "directory_create_result": DirectoryCreateResult;
-  "directory_entry": DirectoryEntry;
-  "directory_listing": DirectoryListing;
-  "discussion_result": DiscussionResult;
-  "dispatch_result": DispatchResult;
-  "document_quad_detection": DocumentQuadDetection;
-  "domain_fold_report": DomainFoldReport;
-  "entity_card": EntityCard;
-  "entity_mention": EntityMention;
-  "episode_title_options": EpisodeTitleOptions;
-  "evidence_source": EvidenceSource;
-  "faq_item": FaqItem;
-  "field_lookup_result": FieldLookupResult;
-  "field_problem": FieldProblem;
-  "file_binary_content": FileBinaryContent;
-  "file_discovery_result": FileDiscoveryResult;
-  "file_download_result": FileDownloadResult;
-  "file_edit_applied": FileEditApplied;
-  "file_edit_failure": FileEditFailure;
-  "file_edit_result": FileEditResult;
-  "file_patch_result": FilePatchResult;
-  "file_read_result": FileReadResult;
-  "file_search_match": FileSearchMatch;
-  "file_search_results": FileSearchResults;
-  "file_text_content": FileTextContent;
-  "file_tree_result": FileTreeResult;
-  "file_upload_result": FileUploadResult;
-  "file_write_result": FileWriteResult;
-  "filter_result": FilterResult;
-  "flashcard_set": FlashcardSet;
-  "flattened_list_result": FlattenedListResult;
-  "formatted_datetime": FormattedDatetime;
-  "gather_result": GatherResult;
-  "generated_audio": GeneratedAudio;
-  "generated_image_set": GeneratedImageSet;
-  "generated_video_set": GeneratedVideoSet;
-  "geo_coordinates": GeoCoordinates;
-  "google_image_search_results": GoogleImageSearchResults;
-  "google_search_results": GoogleSearchResults;
-  "graphql_response": GraphqlResponse;
-  "growth_loop_stage_decision": GrowthLoopStageDecision;
-  "gsc_opportunities": GscOpportunities;
-  "gsc_site_intake_bundle": GscSiteIntakeBundle;
-  "gsc_site_intake_proposal": GscSiteIntakeProposal;
-  "hash_result": HashResult;
-  "http_response": HttpResponse;
-  "human_answer": HumanAnswer;
-  "human_text_answer": HumanTextAnswer;
-  "image_concepts_result": ImageConceptsResult;
-  "image_edit_result": ImageEditResult;
-  "image_metadata": ImageMetadata;
-  "image_prompts_result": ImagePromptsResult;
-  "image_qc_result": ImageQcResult;
-  "image_qc_verdict": ImageQcVerdict;
-  "ingested_sources": IngestedSources;
-  "interview_finalize_result": InterviewFinalizeResult;
-  "interview_gate_decision": InterviewGateDecision;
-  "interview_routing_decision": InterviewRoutingDecision;
-  "interview_scribe_apply_result": InterviewScribeApplyResult;
-  "interview_session_hydration": InterviewSessionHydration;
-  "interview_tracker_apply_result": InterviewTrackerApplyResult;
-  "item_presentation": ItemPresentation;
-  "items": Items;
-  "json": Json;
-  "json_path_result": JsonPathResult;
-  "keyword_classification_batch_v1": KeywordClassificationBatchV1;
-  "keyword_relationship_map": KeywordRelationshipMap;
-  "keyword_relationship_research": KeywordRelationshipResearch;
-  "keyword_search_metrics": KeywordSearchMetrics;
-  "keyword_serp_intent_analysis_v1": KeywordSerpIntentAnalysisV1;
-  "keyword_variant_set": KeywordVariantSet;
-  "kg_entity_mentions_page": KgEntityMentionsPage;
-  "kg_graph_neighborhood": KgGraphNeighborhood;
-  "kit_title": KitTitle;
-  "lesson_script_set": LessonScriptSet;
-  "link_buckets": LinkBuckets;
-  "live_help_answer": LiveHelpAnswer;
-  "local_place": LocalPlace;
-  "loop_iteration_result": LoopIterationResult;
-  "map_result": MapResult;
-  "mapped_list_result": MappedListResult;
-  "markdown": Markdown;
-  "masterwork_checkup_finding": MasterworkCheckupFinding;
-  "math_problem": MathProblem;
-  "med_spa_review_response_kit": MedSpaReviewResponseKit;
-  "media_chapters": MediaChapters;
-  "memory_aid": MemoryAid;
-  "memory_hint": MemoryHint;
-  "mermaid_diagram": MermaidDiagram;
-  "meta_tag_options": MetaTagOptions;
-  "news_result": NewsResult;
-  "news_search_results": NewsSearchResults;
-  "newsjacking_expert_article": NewsjackingExpertArticle;
-  "node_error": NodeError;
-  "node_outcome": NodeOutcome;
-  "notable_timestamp": NotableTimestamp;
-  "number": NumberKind;
-  "office_document": OfficeDocument;
-  "office_extraction_result": OfficeExtractionResult;
-  "office_file_result": OfficeFileResult;
-  "office_presentation": OfficePresentation;
-  "office_spreadsheet": OfficeSpreadsheet;
-  "opening_hours": OpeningHours;
-  "operation_result": OperationResult;
-  "page": Page;
-  "page_audio": PageAudio;
-  "page_block": PageBlock;
-  "page_brief": PageBrief;
-  "page_cleaning_report": PageCleaningReport;
-  "page_extraction_run_result": PageExtractionRunResult;
-  "page_extraction_validate_result": PageExtractionValidateResult;
-  "page_heading": PageHeading;
-  "page_image": PageImage;
-  "page_keyword_analysis_v1": PageKeywordAnalysisV1;
-  "page_keyword_map_v1": PageKeywordMapV1;
-  "page_link": PageLink;
-  "page_list": PageList;
-  "page_metadata": PageMetadata;
-  "page_removal": PageRemoval;
-  "page_section": PageSection;
-  "page_video": PageVideo;
-  "parsed_datetime": ParsedDatetime;
-  "parsed_json": ParsedJson;
-  "parsed_table": ParsedTable;
-  "pdf_table_extraction": PdfTableExtraction;
-  "pdf_text_extraction": PdfTextExtraction;
-  "plan_entity_attachment_set": PlanEntityAttachmentSet;
-  "plan_entity_roster": PlanEntityRoster;
-  "plan_family_names": PlanFamilyNames;
-  "plan_keyword_strategy": PlanKeywordStrategy;
-  "plan_page_draft": PlanPageDraft;
-  "plan_page_outline": PlanPageOutline;
-  "plan_page_research": PlanPageResearch;
-  "plan_page_review": PlanPageReview;
-  "plan_page_route_choice": PlanPageRouteChoice;
-  "plan_review_findings": PlanReviewFindings;
-  "plan_shape_recommendation": PlanShapeRecommendation;
-  "podcast_cast_preview_result": PodcastCastPreviewResult;
-  "podcast_episode": PodcastEpisode;
-  "podcast_video_compose_result": PodcastVideoComposeResult;
-  "postal_address": PostalAddress;
-  "practice_prompt": PracticePrompt;
-  "presentation_deck": PresentationDeck;
-  "presentation_slide": PresentationSlide;
-  "press_source_request_ingest_result": PressSourceRequestIngestResult;
-  "press_story_angle_generation_result": PressStoryAngleGenerationResult;
-  "press_story_angle_ruling_result": PressStoryAngleRulingResult;
-  "product_research_report": ProductResearchReport;
-  "progress_tracker": ProgressTracker;
-  "provider_run_receipt": ProviderRunReceipt;
-  "questionnaire": Questionnaire;
-  "quiz_item": QuizItem;
-  "quiz_set": QuizSet;
-  "rag_chunk_set": RagChunkSet;
-  "rag_claim_verification": RagClaimVerification;
-  "rag_classification_result": RagClassificationResult;
-  "rag_cross_doc_search_result": RagCrossDocSearchResult;
-  "rag_embedded_chunk_set": RagEmbeddedChunkSet;
-  "rag_ingestion_audit": RagIngestionAudit;
-  "rag_library_doc_result": RagLibraryDocResult;
-  "rag_library_pdf_ingestion_result": RagLibraryPdfIngestionResult;
-  "rag_parsed_document": RagParsedDocument;
-  "rag_repo_ingestion_result": RagRepoIngestionResult;
-  "rag_resolved_source": RagResolvedSource;
-  "rag_search_result": RagSearchResult;
-  "rag_source_ingestion_result": RagSourceIngestionResult;
-  "rag_synthesize_result": RagSynthesizeResult;
-  "rag_upsert_result": RagUpsertResult;
-  "random_string_result": RandomStringResult;
-  "rating": Rating;
-  "record_result": RecordResult;
-  "redirect_hop": RedirectHop;
-  "regex_extract_result": RegexExtractResult;
-  "regex_replace_result": RegexReplaceResult;
-  "rendered_text": RenderedText;
-  "research_coverage_audit": ResearchCoverageAudit;
-  "research_cross_cutting_tags": ResearchCrossCuttingTags;
-  "research_page_analysis": ResearchPageAnalysis;
-  "research_report": ResearchReport;
-  "research_setup_suggestion": ResearchSetupSuggestion;
-  "research_tag_suggestions": ResearchTagSuggestions;
-  "resource_collection": ResourceCollection;
-  "retrieved_chunk": RetrievedChunk;
-  "reviewer_result_card": ReviewerResultCard;
-  "rule_governed_variant_set": RuleGovernedVariantSet;
-  "run_result": RunResult;
-  "saved_row": SavedRow;
-  "schema_audit_result": SchemaAuditResult;
-  "schema_fix_result": SchemaFixResult;
-  "schema_handoff_result": SchemaHandoffResult;
-  "schema_proposal": SchemaProposal;
-  "schema_qc_result": SchemaQcResult;
-  "scraped_page": ScrapedPage;
-  "scraper_batch_result": ScraperBatchResult;
-  "scraper_crawl_result": ScraperCrawlResult;
-  "seo_authority_route_analysis": SeoAuthorityRouteAnalysis;
-  "seo_authority_route_result": SeoAuthorityRouteResult;
-  "seo_backlink_enrichment_result": SeoBacklinkEnrichmentResult;
-  "seo_backlink_refresh_result": SeoBacklinkRefreshResult;
-  "seo_collection_receipts": SeoCollectionReceipts;
-  "seo_competitor_classification_proposal": SeoCompetitorClassificationProposal;
-  "seo_competitor_discovery_result": SeoCompetitorDiscoveryResult;
-  "seo_finding_fix_context": SeoFindingFixContext;
-  "seo_finding_fix_proposal": SeoFindingFixProposal;
-  "seo_finding_fix_result": SeoFindingFixResult;
-  "seo_google_listing_check_result": SeoGoogleListingCheckResult;
-  "seo_gsc_search_performance_receipt": SeoGscSearchPerformanceReceipt;
-  "seo_keyword_classify_result": SeoKeywordClassifyResult;
-  "seo_keyword_relationship_research_result": SeoKeywordRelationshipResearchResult;
-  "seo_keyword_serp_intent_analysis": SeoKeywordSerpIntentAnalysis;
-  "seo_keyword_topic_assign_result": SeoKeywordTopicAssignResult;
-  "seo_keyword_volume_refresh_result": SeoKeywordVolumeRefreshResult;
-  "seo_landscape_brief": SeoLandscapeBrief;
-  "seo_landscape_brief_read_result": SeoLandscapeBriefReadResult;
-  "seo_link_gap_page_receipt": SeoLinkGapPageReceipt;
-  "seo_link_gap_site_preview": SeoLinkGapSitePreview;
-  "seo_link_gap_site_receipt": SeoLinkGapSiteReceipt;
-  "seo_meta_options": SeoMetaOptions;
-  "seo_meta_tags": SeoMetaTags;
-  "seo_package": SeoPackage;
-  "seo_page_analysis_result": SeoPageAnalysisResult;
-  "seo_page_audit_result": SeoPageAuditResult;
-  "seo_page_batch_submit_result": SeoPageBatchSubmitResult;
-  "seo_page_keyword_map_result": SeoPageKeywordMapResult;
-  "seo_page_performance": SeoPagePerformance;
-  "seo_prospect_capture_preview": SeoProspectCapturePreview;
-  "seo_prospect_capture_result": SeoProspectCaptureResult;
-  "seo_prospect_import_preview": SeoProspectImportPreview;
-  "seo_prospect_import_report": SeoProspectImportReport;
-  "seo_rank_check_result": SeoRankCheckResult;
-  "seo_rank_history": SeoRankHistory;
-  "seo_rank_portfolio": SeoRankPortfolio;
-  "seo_rank_reading": SeoRankReading;
-  "seo_rank_serp_landscape": SeoRankSerpLandscape;
-  "seo_rank_target": SeoRankTarget;
-  "seo_rank_target_removal": SeoRankTargetRemoval;
-  "seo_reputation_analysis": SeoReputationAnalysis;
-  "seo_robots_check_result": SeoRobotsCheckResult;
-  "seo_search_performance_daily": SeoSearchPerformanceDaily;
-  "seo_serp_prospecting_preview": SeoSerpProspectingPreview;
-  "seo_serp_prospecting_receipt": SeoSerpProspectingReceipt;
-  "seo_site_performance": SeoSitePerformance;
-  "seo_site_provider_freshness": SeoSiteProviderFreshness;
-  "seo_spend_summary": SeoSpendSummary;
-  "seo_structured_data_validation_result": SeoStructuredDataValidationResult;
-  "seo_web_analytics_read_result": SeoWebAnalyticsReadResult;
-  "serp_analysis": SerpAnalysis;
-  "serp_placement": SerpPlacement;
-  "shifted_datetime": ShiftedDatetime;
-  "site_intake_analysis": SiteIntakeAnalysis;
-  "site_intake_apply_result": SiteIntakeApplyResult;
-  "site_strategy_result": SiteStrategyResult;
-  "site_url_verification_result": SiteUrlVerificationResult;
-  "slug_result": SlugResult;
-  "sorted_list_result": SortedListResult;
-  "source_authority_rankings": SourceAuthorityRankings;
-  "source_ref": SourceRef;
-  "split_result": SplitResult;
-  "spoken_practice_session": SpokenPracticeSession;
-  "sql_query_result": SqlQueryResult;
-  "status_ping_debug": StatusPingDebug;
-  "string_list": StringList;
-  "structured_document": StructuredDocument;
-  "structured_info": StructuredInfo;
-  "study_analytics_narrative": StudyAnalyticsNarrative;
-  "study_notes": StudyNotes;
-  "study_pack_set": StudyPackSet;
-  "study_plan": StudyPlan;
-  "study_summary": StudySummary;
-  "study_tip": StudyTip;
-  "table_rows": TableRows;
-  "task_list": TaskList;
-  "tasting_note": TastingNote;
-  "template_render_result": TemplateRenderResult;
-  "test_card": TestCard;
-  "text": Text;
-  "text_chunk_set": TextChunkSet;
-  "text_quality_check_result": TextQualityCheckResult;
-  "text_result": TextResult;
-  "timeline": Timeline;
-  "tool_bundle_listing": ToolBundleListing;
-  "tool_call_record": ToolCallRecord;
-  "tool_trace_call_detail": ToolTraceCallDetail;
-  "tool_trace_event": ToolTraceEvent;
-  "tool_trace_event_page": ToolTraceEventPage;
-  "tool_trace_file": ToolTraceFile;
-  "tool_trace_file_listing": ToolTraceFileListing;
-  "tool_trace_file_window": ToolTraceFileWindow;
-  "tool_trace_incident": ToolTraceIncident;
-  "tool_trace_incident_filter": ToolTraceIncidentFilter;
-  "tool_trace_incident_list": ToolTraceIncidentList;
-  "tool_trace_incident_report": ToolTraceIncidentReport;
-  "topic_assignment_batch_v1": TopicAssignmentBatchV1;
-  "topic_idea": TopicIdea;
-  "topic_ideas": TopicIdeas;
-  "topic_relevance": TopicRelevance;
-  "transcript": Transcript;
-  "transcript_usage": TranscriptUsage;
-  "transcription_result": TranscriptionResult;
-  "troubleshooting_guide": TroubleshootingGuide;
-  "trust_envelope": TrustEnvelope;
-  "uploaded_asset": UploadedAsset;
-  "user_inputs": UserInputs;
-  "uuid_value": UuidValue;
-  "value": Value;
-  "video_prompt_options": VideoPromptOptions;
-  "video_result": VideoResult;
-  "video_transcript_research": VideoTranscriptResearch;
-  "visual_qc_result": VisualQcResult;
-  "web_a11y_lab_basics_v1": WebA11yLabBasicsV1;
-  "web_anchor_text_descriptiveness_v1": WebAnchorTextDescriptivenessV1;
-  "web_asset_delivery_v1": WebAssetDeliveryV1;
-  "web_broken_external_links_v1": WebBrokenExternalLinksV1;
-  "web_broken_images_v1": WebBrokenImagesV1;
-  "web_broken_internal_links_v1": WebBrokenInternalLinksV1;
-  "web_broken_page_4xx_v1": WebBrokenPage4xxV1;
-  "web_caching_policy_v1": WebCachingPolicyV1;
-  "web_canonical_conflicts_v1": WebCanonicalConflictsV1;
-  "web_canonical_presence_v1": WebCanonicalPresenceV1;
-  "web_content_depth_v1": WebContentDepthV1;
-  "web_content_freshness_v1": WebContentFreshnessV1;
-  "web_content_quality_eeat_v1": WebContentQualityEeatV1;
-  "web_crawl_depth_v1": WebCrawlDepthV1;
-  "web_cwv_cls_v1": WebCwvClsV1;
-  "web_cwv_inp_tbt_v1": WebCwvInpTbtV1;
-  "web_cwv_lcp_v1": WebCwvLcpV1;
-  "web_duplicate_content_exact_v1": WebDuplicateContentExactV1;
-  "web_excessive_outlinks_v1": WebExcessiveOutlinksV1;
-  "web_grammar_spelling_v1": WebGrammarSpellingV1;
-  "web_gsc_ctr_opportunity_v1": WebGscCtrOpportunityV1;
-  "web_gsc_index_coverage_v1": WebGscIndexCoverageV1;
-  "web_gsc_keyword_cannibalization_v1": WebGscKeywordCannibalizationV1;
-  "web_gsc_performance_decay_v1": WebGscPerformanceDecayV1;
-  "web_h1_presence_v1": WebH1PresenceV1;
-  "web_heading_hierarchy_v1": WebHeadingHierarchyV1;
-  "web_host_protocol_consistency_v1": WebHostProtocolConsistencyV1;
-  "web_hreflang_reciprocity_v1": WebHreflangReciprocityV1;
-  "web_hreflang_validity_v1": WebHreflangValidityV1;
-  "web_hsts_policy_v1": WebHstsPolicyV1;
-  "web_html_lang_validity_v1": WebHtmlLangValidityV1;
-  "web_https_enforcement_v1": WebHttpsEnforcementV1;
-  "web_image_alt_presence_v1": WebImageAltPresenceV1;
-  "web_image_alt_quality_v1": WebImageAltQualityV1;
-  "web_image_dimension_attrs_v1": WebImageDimensionAttrsV1;
-  "web_image_lazy_loading_v1": WebImageLazyLoadingV1;
-  "web_image_modern_format_v1": WebImageModernFormatV1;
-  "web_image_oversized_v1": WebImageOversizedV1;
-  "web_internal_inlink_coverage_v1": WebInternalInlinkCoverageV1;
-  "web_internal_link_equity_v1": WebInternalLinkEquityV1;
-  "web_internal_redirect_links_v1": WebInternalRedirectLinksV1;
-  "web_intrusive_interstitials_v1": WebIntrusiveInterstitialsV1;
-  "web_keyword_topical_coverage_v1": WebKeywordTopicalCoverageV1;
-  "web_local_business_markup_v1": WebLocalBusinessMarkupV1;
-  "web_meta_description_duplication_v1": WebMetaDescriptionDuplicationV1;
-  "web_meta_description_length_v1": WebMetaDescriptionLengthV1;
-  "web_meta_description_presence_v1": WebMetaDescriptionPresenceV1;
-  "web_meta_refresh_redirect_v1": WebMetaRefreshRedirectV1;
-  "web_meta_robots_conflicts_v1": WebMetaRobotsConflictsV1;
-  "web_mixed_content_v1": WebMixedContentV1;
-  "web_mobile_render_quality_v1": WebMobileRenderQualityV1;
-  "web_mobile_usability_lab_v1": WebMobileUsabilityLabV1;
-  "web_near_duplicate_content_v1": WebNearDuplicateContentV1;
-  "web_nofollow_internal_links_v1": WebNofollowInternalLinksV1;
-  "web_og_image_validity_v1": WebOgImageValidityV1;
-  "web_orphan_pages_v1": WebOrphanPagesV1;
-  "web_page_weight_v1": WebPageWeightV1;
-  "web_pagination_markup_v1": WebPaginationMarkupV1;
-  "web_readability_v1": WebReadabilityV1;
-  "web_redirect_chain_v1": WebRedirectChainV1;
-  "web_redirect_loop_v1": WebRedirectLoopV1;
-  "web_result": WebResult;
-  "web_robots_txt_health_v1": WebRobotsTxtHealthV1;
-  "web_search_intent_alignment_v1": WebSearchIntentAlignmentV1;
-  "web_search_results": WebSearchResults;
-  "web_search_urls": WebSearchUrls;
-  "web_security_headers_v1": WebSecurityHeadersV1;
-  "web_serp_snippet_quality_v1": WebSerpSnippetQualityV1;
-  "web_server_error_5xx_v1": WebServerError5xxV1;
-  "web_sitemap_coverage_v1": WebSitemapCoverageV1;
-  "web_sitemap_health_v1": WebSitemapHealthV1;
-  "web_social_meta_completeness_v1": WebSocialMetaCompletenessV1;
-  "web_soft_404_detection_v1": WebSoft404DetectionV1;
-  "web_structured_data_coverage_v1": WebStructuredDataCoverageV1;
-  "web_structured_data_validity_v1": WebStructuredDataValidityV1;
-  "web_temporary_redirect_usage_v1": WebTemporaryRedirectUsageV1;
-  "web_text_html_ratio_v1": WebTextHtmlRatioV1;
-  "web_thin_content_v1": WebThinContentV1;
-  "web_title_duplication_v1": WebTitleDuplicationV1;
-  "web_title_keyword_alignment_v1": WebTitleKeywordAlignmentV1;
-  "web_title_length_v1": WebTitleLengthV1;
-  "web_title_presence_v1": WebTitlePresenceV1;
-  "web_tls_certificate_v1": WebTlsCertificateV1;
-  "web_ttfb_server_response_v1": WebTtfbServerResponseV1;
-  "web_url_design_quality_v1": WebUrlDesignQualityV1;
-  "web_viewport_meta_v1": WebViewportMetaV1;
-  "wine_tasting": WineTasting;
-  "word_count_result": WordCountResult;
-  "work_queue_wave_result": WorkQueueWaveResult;
-  "work_seed_result": WorkSeedResult;
-  "workflow_run_result": WorkflowRunResult;
+  agent_assignment_batch_result: AgentAssignmentBatchResult;
+  agent_definition: AgentDefinition;
+  agent_function_spec: AgentFunctionSpec;
+  agent_input_qme_report: AgentInputQmeReport;
+  agent_react_result: AgentReactResult;
+  agent_result: AgentResult;
+  aggregate_group: AggregateGroup;
+  aggregate_result: AggregateResult;
+  ai_answer: AiAnswer;
+  ai_cost_summary: AiCostSummary;
+  ai_extract_result: AiExtractResult;
+  ai_visibility_panel: AiVisibilityPanel;
+  ai_visibility_panel_list: AiVisibilityPanelList;
+  ai_visibility_panel_preview: AiVisibilityPanelPreview;
+  ai_visibility_panel_run_result: AiVisibilityPanelRunResult;
+  ai_visibility_result: AiVisibilityResult;
+  answer_grade: AnswerGrade;
+  arman_video_prompt: ArmanVideoPrompt;
+  artisan_demo_reading_list: ArtisanDemoReadingList;
+  assertion_result: AssertionResult;
+  authority_newsjacking_article: AuthorityNewsjackingArticle;
+  batch_review: BatchReview;
+  batched_list_result: BatchedListResult;
+  blog_post_outline: BlogPostOutline;
+  boolean: BooleanKind;
+  branch_result: BranchResult;
+  broken_link_prospecting_preview: BrokenLinkProspectingPreview;
+  broken_link_prospecting_report: BrokenLinkProspectingReport;
+  bulk_result: BulkResult;
+  card_detail: CardDetail;
+  card_enrichment: CardEnrichment;
+  card_expansion: CardExpansion;
+  card_image_judgment: CardImageJudgment;
+  card_verification: CardVerification;
+  citation: Citation;
+  claim_evidence: ClaimEvidence;
+  client_site_audit: ClientSiteAudit;
+  cms_align_result: CmsAlignResult;
+  cms_page_build: CmsPageBuild;
+  cms_publish_result: CmsPublishResult;
+  cms_reconcile_report: CmsReconcileReport;
+  cms_starter_kit_result: CmsStarterKitResult;
+  code_block: CodeBlock;
+  combined_page_text: CombinedPageText;
+  comparison_set: ComparisonSet;
+  competitor_lookup_result: CompetitorLookupResult;
+  competitor_opportunity_autopsy_result: CompetitorOpportunityAutopsyResult;
+  competitor_opportunity_autopsy_v1: CompetitorOpportunityAutopsyV1;
+  competitor_page_autopsy_v1: CompetitorPageAutopsyV1;
+  content_fingerprint: ContentFingerprint;
+  content_plan_archetype_instantiation: ContentPlanArchetypeInstantiation;
+  content_plan_archetype_list: ContentPlanArchetypeList;
+  content_plan_foundation_checklist: ContentPlanFoundationChecklist;
+  content_plan_site_list: ContentPlanSiteList;
+  content_plan_tree: ContentPlanTree;
+  cooking_recipe: CookingRecipe;
+  criteria_gate_result: CriteriaGateResult;
+  criterion_coverage: CriterionCoverage;
+  crm_fold_settings: CrmFoldSettings;
+  custom_script_result: CustomScriptResult;
+  data_table: DataTable;
+  datetime_snapshot: DatetimeSnapshot;
+  decision_tree: DecisionTree;
+  diagram_spec: DiagramSpec;
+  digital_pr_reputation_brief_v1: DigitalPrReputationBriefV1;
+  directory_create_result: DirectoryCreateResult;
+  directory_entry: DirectoryEntry;
+  directory_listing: DirectoryListing;
+  discussion_result: DiscussionResult;
+  dispatch_result: DispatchResult;
+  document_quad_detection: DocumentQuadDetection;
+  domain_fold_report: DomainFoldReport;
+  entity_card: EntityCard;
+  entity_mention: EntityMention;
+  episode_title_options: EpisodeTitleOptions;
+  evidence_source: EvidenceSource;
+  faq_item: FaqItem;
+  field_lookup_result: FieldLookupResult;
+  field_problem: FieldProblem;
+  file_binary_content: FileBinaryContent;
+  file_discovery_result: FileDiscoveryResult;
+  file_download_result: FileDownloadResult;
+  file_edit_applied: FileEditApplied;
+  file_edit_failure: FileEditFailure;
+  file_edit_result: FileEditResult;
+  file_patch_result: FilePatchResult;
+  file_read_result: FileReadResult;
+  file_search_match: FileSearchMatch;
+  file_search_results: FileSearchResults;
+  file_text_content: FileTextContent;
+  file_tree_result: FileTreeResult;
+  file_upload_result: FileUploadResult;
+  file_write_result: FileWriteResult;
+  filter_result: FilterResult;
+  flashcard_set: FlashcardSet;
+  flattened_list_result: FlattenedListResult;
+  formatted_datetime: FormattedDatetime;
+  gather_result: GatherResult;
+  generated_audio: GeneratedAudio;
+  generated_image_set: GeneratedImageSet;
+  generated_video_set: GeneratedVideoSet;
+  geo_coordinates: GeoCoordinates;
+  google_image_search_results: GoogleImageSearchResults;
+  google_search_results: GoogleSearchResults;
+  graphql_response: GraphqlResponse;
+  growth_loop_stage_decision: GrowthLoopStageDecision;
+  gsc_opportunities: GscOpportunities;
+  gsc_site_intake_bundle: GscSiteIntakeBundle;
+  gsc_site_intake_proposal: GscSiteIntakeProposal;
+  hash_result: HashResult;
+  http_response: HttpResponse;
+  human_answer: HumanAnswer;
+  human_text_answer: HumanTextAnswer;
+  image_concepts_result: ImageConceptsResult;
+  image_edit_result: ImageEditResult;
+  image_metadata: ImageMetadata;
+  image_prompts_result: ImagePromptsResult;
+  image_qc_result: ImageQcResult;
+  image_qc_verdict: ImageQcVerdict;
+  ingested_sources: IngestedSources;
+  interview_finalize_result: InterviewFinalizeResult;
+  interview_gate_decision: InterviewGateDecision;
+  interview_routing_decision: InterviewRoutingDecision;
+  interview_scribe_apply_result: InterviewScribeApplyResult;
+  interview_session_hydration: InterviewSessionHydration;
+  interview_tracker_apply_result: InterviewTrackerApplyResult;
+  item_presentation: ItemPresentation;
+  items: Items;
+  json: Json;
+  json_path_result: JsonPathResult;
+  keyword_classification_batch_v1: KeywordClassificationBatchV1;
+  keyword_relationship_map: KeywordRelationshipMap;
+  keyword_relationship_research: KeywordRelationshipResearch;
+  keyword_search_metrics: KeywordSearchMetrics;
+  keyword_serp_intent_analysis_v1: KeywordSerpIntentAnalysisV1;
+  keyword_variant_set: KeywordVariantSet;
+  kg_entity_mentions_page: KgEntityMentionsPage;
+  kg_graph_neighborhood: KgGraphNeighborhood;
+  kit_title: KitTitle;
+  lesson_script_set: LessonScriptSet;
+  link_buckets: LinkBuckets;
+  live_help_answer: LiveHelpAnswer;
+  local_place: LocalPlace;
+  loop_iteration_result: LoopIterationResult;
+  map_result: MapResult;
+  mapped_list_result: MappedListResult;
+  markdown: Markdown;
+  masterwork_checkup_finding: MasterworkCheckupFinding;
+  math_problem: MathProblem;
+  med_spa_review_response_kit: MedSpaReviewResponseKit;
+  media_chapters: MediaChapters;
+  memory_aid: MemoryAid;
+  memory_hint: MemoryHint;
+  mermaid_diagram: MermaidDiagram;
+  meta_tag_options: MetaTagOptions;
+  news_result: NewsResult;
+  news_search_results: NewsSearchResults;
+  newsjacking_expert_article: NewsjackingExpertArticle;
+  node_error: NodeError;
+  node_outcome: NodeOutcome;
+  notable_timestamp: NotableTimestamp;
+  number: NumberKind;
+  office_document: OfficeDocument;
+  office_extraction_result: OfficeExtractionResult;
+  office_file_result: OfficeFileResult;
+  office_presentation: OfficePresentation;
+  office_spreadsheet: OfficeSpreadsheet;
+  opening_hours: OpeningHours;
+  operation_result: OperationResult;
+  page: Page;
+  page_audio: PageAudio;
+  page_block: PageBlock;
+  page_brief: PageBrief;
+  page_cleaning_report: PageCleaningReport;
+  page_extraction_run_result: PageExtractionRunResult;
+  page_extraction_validate_result: PageExtractionValidateResult;
+  page_heading: PageHeading;
+  page_image: PageImage;
+  page_keyword_analysis_v1: PageKeywordAnalysisV1;
+  page_keyword_map_v1: PageKeywordMapV1;
+  page_link: PageLink;
+  page_list: PageList;
+  page_metadata: PageMetadata;
+  page_removal: PageRemoval;
+  page_section: PageSection;
+  page_video: PageVideo;
+  parsed_datetime: ParsedDatetime;
+  parsed_json: ParsedJson;
+  parsed_table: ParsedTable;
+  pdf_table_extraction: PdfTableExtraction;
+  pdf_text_extraction: PdfTextExtraction;
+  plan_entity_attachment_set: PlanEntityAttachmentSet;
+  plan_entity_roster: PlanEntityRoster;
+  plan_family_names: PlanFamilyNames;
+  plan_keyword_strategy: PlanKeywordStrategy;
+  plan_page_draft: PlanPageDraft;
+  plan_page_outline: PlanPageOutline;
+  plan_page_research: PlanPageResearch;
+  plan_page_review: PlanPageReview;
+  plan_page_route_choice: PlanPageRouteChoice;
+  plan_review_findings: PlanReviewFindings;
+  plan_shape_recommendation: PlanShapeRecommendation;
+  podcast_cast_preview_result: PodcastCastPreviewResult;
+  podcast_episode: PodcastEpisode;
+  podcast_video_compose_result: PodcastVideoComposeResult;
+  postal_address: PostalAddress;
+  practice_prompt: PracticePrompt;
+  presentation_deck: PresentationDeck;
+  presentation_slide: PresentationSlide;
+  press_source_request_ingest_result: PressSourceRequestIngestResult;
+  press_story_angle_generation_result: PressStoryAngleGenerationResult;
+  press_story_angle_ruling_result: PressStoryAngleRulingResult;
+  product_research_report: ProductResearchReport;
+  progress_tracker: ProgressTracker;
+  provider_run_receipt: ProviderRunReceipt;
+  questionnaire: Questionnaire;
+  quiz_item: QuizItem;
+  quiz_set: QuizSet;
+  rag_chunk_set: RagChunkSet;
+  rag_claim_verification: RagClaimVerification;
+  rag_classification_result: RagClassificationResult;
+  rag_cross_doc_search_result: RagCrossDocSearchResult;
+  rag_embedded_chunk_set: RagEmbeddedChunkSet;
+  rag_ingestion_audit: RagIngestionAudit;
+  rag_library_doc_result: RagLibraryDocResult;
+  rag_library_pdf_ingestion_result: RagLibraryPdfIngestionResult;
+  rag_parsed_document: RagParsedDocument;
+  rag_repo_ingestion_result: RagRepoIngestionResult;
+  rag_resolved_source: RagResolvedSource;
+  rag_search_result: RagSearchResult;
+  rag_source_ingestion_result: RagSourceIngestionResult;
+  rag_synthesize_result: RagSynthesizeResult;
+  rag_upsert_result: RagUpsertResult;
+  random_string_result: RandomStringResult;
+  rating: Rating;
+  record_result: RecordResult;
+  redirect_hop: RedirectHop;
+  regex_extract_result: RegexExtractResult;
+  regex_replace_result: RegexReplaceResult;
+  rendered_text: RenderedText;
+  research_coverage_audit: ResearchCoverageAudit;
+  research_cross_cutting_tags: ResearchCrossCuttingTags;
+  research_page_analysis: ResearchPageAnalysis;
+  research_report: ResearchReport;
+  research_setup_suggestion: ResearchSetupSuggestion;
+  research_tag_suggestions: ResearchTagSuggestions;
+  resource_collection: ResourceCollection;
+  retrieved_chunk: RetrievedChunk;
+  reviewer_result_card: ReviewerResultCard;
+  rule_governed_variant_set: RuleGovernedVariantSet;
+  run_result: RunResult;
+  saved_row: SavedRow;
+  schema_audit_result: SchemaAuditResult;
+  schema_fix_result: SchemaFixResult;
+  schema_handoff_result: SchemaHandoffResult;
+  schema_proposal: SchemaProposal;
+  schema_qc_result: SchemaQcResult;
+  scraped_page: ScrapedPage;
+  scraper_batch_result: ScraperBatchResult;
+  scraper_crawl_result: ScraperCrawlResult;
+  seo_authority_route_analysis: SeoAuthorityRouteAnalysis;
+  seo_authority_route_result: SeoAuthorityRouteResult;
+  seo_backlink_enrichment_result: SeoBacklinkEnrichmentResult;
+  seo_backlink_refresh_result: SeoBacklinkRefreshResult;
+  seo_collection_receipts: SeoCollectionReceipts;
+  seo_competitor_classification_proposal: SeoCompetitorClassificationProposal;
+  seo_competitor_discovery_result: SeoCompetitorDiscoveryResult;
+  seo_finding_fix_context: SeoFindingFixContext;
+  seo_finding_fix_proposal: SeoFindingFixProposal;
+  seo_finding_fix_result: SeoFindingFixResult;
+  seo_google_listing_check_result: SeoGoogleListingCheckResult;
+  seo_gsc_search_performance_receipt: SeoGscSearchPerformanceReceipt;
+  seo_keyword_classify_result: SeoKeywordClassifyResult;
+  seo_keyword_relationship_research_result: SeoKeywordRelationshipResearchResult;
+  seo_keyword_serp_intent_analysis: SeoKeywordSerpIntentAnalysis;
+  seo_keyword_topic_assign_result: SeoKeywordTopicAssignResult;
+  seo_keyword_volume_refresh_result: SeoKeywordVolumeRefreshResult;
+  seo_landscape_brief: SeoLandscapeBrief;
+  seo_landscape_brief_read_result: SeoLandscapeBriefReadResult;
+  seo_link_gap_page_receipt: SeoLinkGapPageReceipt;
+  seo_link_gap_site_preview: SeoLinkGapSitePreview;
+  seo_link_gap_site_receipt: SeoLinkGapSiteReceipt;
+  seo_meta_options: SeoMetaOptions;
+  seo_meta_tags: SeoMetaTags;
+  seo_package: SeoPackage;
+  seo_page_analysis_result: SeoPageAnalysisResult;
+  seo_page_audit_result: SeoPageAuditResult;
+  seo_page_batch_submit_result: SeoPageBatchSubmitResult;
+  seo_page_keyword_map_result: SeoPageKeywordMapResult;
+  seo_page_performance: SeoPagePerformance;
+  seo_prospect_capture_preview: SeoProspectCapturePreview;
+  seo_prospect_capture_result: SeoProspectCaptureResult;
+  seo_prospect_import_preview: SeoProspectImportPreview;
+  seo_prospect_import_report: SeoProspectImportReport;
+  seo_rank_check_result: SeoRankCheckResult;
+  seo_rank_history: SeoRankHistory;
+  seo_rank_portfolio: SeoRankPortfolio;
+  seo_rank_reading: SeoRankReading;
+  seo_rank_serp_landscape: SeoRankSerpLandscape;
+  seo_rank_target: SeoRankTarget;
+  seo_rank_target_removal: SeoRankTargetRemoval;
+  seo_reputation_analysis: SeoReputationAnalysis;
+  seo_robots_check_result: SeoRobotsCheckResult;
+  seo_search_performance_daily: SeoSearchPerformanceDaily;
+  seo_serp_prospecting_preview: SeoSerpProspectingPreview;
+  seo_serp_prospecting_receipt: SeoSerpProspectingReceipt;
+  seo_site_performance: SeoSitePerformance;
+  seo_site_provider_freshness: SeoSiteProviderFreshness;
+  seo_spend_summary: SeoSpendSummary;
+  seo_structured_data_validation_result: SeoStructuredDataValidationResult;
+  seo_web_analytics_read_result: SeoWebAnalyticsReadResult;
+  serp_analysis: SerpAnalysis;
+  serp_placement: SerpPlacement;
+  shifted_datetime: ShiftedDatetime;
+  site_intake_analysis: SiteIntakeAnalysis;
+  site_intake_apply_result: SiteIntakeApplyResult;
+  site_strategy_result: SiteStrategyResult;
+  site_url_verification_result: SiteUrlVerificationResult;
+  slug_result: SlugResult;
+  sorted_list_result: SortedListResult;
+  source_authority_rankings: SourceAuthorityRankings;
+  source_ref: SourceRef;
+  split_result: SplitResult;
+  spoken_practice_session: SpokenPracticeSession;
+  sql_query_result: SqlQueryResult;
+  status_ping_debug: StatusPingDebug;
+  string_list: StringList;
+  structured_document: StructuredDocument;
+  structured_info: StructuredInfo;
+  study_analytics_narrative: StudyAnalyticsNarrative;
+  study_notes: StudyNotes;
+  study_pack_set: StudyPackSet;
+  study_plan: StudyPlan;
+  study_summary: StudySummary;
+  study_tip: StudyTip;
+  table_rows: TableRows;
+  task_list: TaskList;
+  tasting_note: TastingNote;
+  template_render_result: TemplateRenderResult;
+  test_card: TestCard;
+  text: Text;
+  text_chunk_set: TextChunkSet;
+  text_quality_check_result: TextQualityCheckResult;
+  text_result: TextResult;
+  timeline: Timeline;
+  tool_bundle_listing: ToolBundleListing;
+  tool_call_record: ToolCallRecord;
+  tool_trace_call_detail: ToolTraceCallDetail;
+  tool_trace_event: ToolTraceEvent;
+  tool_trace_event_page: ToolTraceEventPage;
+  tool_trace_file: ToolTraceFile;
+  tool_trace_file_listing: ToolTraceFileListing;
+  tool_trace_file_window: ToolTraceFileWindow;
+  tool_trace_incident: ToolTraceIncident;
+  tool_trace_incident_filter: ToolTraceIncidentFilter;
+  tool_trace_incident_list: ToolTraceIncidentList;
+  tool_trace_incident_report: ToolTraceIncidentReport;
+  topic_assignment_batch_v1: TopicAssignmentBatchV1;
+  topic_idea: TopicIdea;
+  topic_ideas: TopicIdeas;
+  topic_relevance: TopicRelevance;
+  transcript: Transcript;
+  transcript_usage: TranscriptUsage;
+  transcription_result: TranscriptionResult;
+  troubleshooting_guide: TroubleshootingGuide;
+  trust_envelope: TrustEnvelope;
+  uploaded_asset: UploadedAsset;
+  user_inputs: UserInputs;
+  uuid_value: UuidValue;
+  value: Value;
+  video_prompt_options: VideoPromptOptions;
+  video_result: VideoResult;
+  video_transcript_research: VideoTranscriptResearch;
+  visual_qc_result: VisualQcResult;
+  web_a11y_lab_basics_v1: WebA11yLabBasicsV1;
+  web_anchor_text_descriptiveness_v1: WebAnchorTextDescriptivenessV1;
+  web_asset_delivery_v1: WebAssetDeliveryV1;
+  web_broken_external_links_v1: WebBrokenExternalLinksV1;
+  web_broken_images_v1: WebBrokenImagesV1;
+  web_broken_internal_links_v1: WebBrokenInternalLinksV1;
+  web_broken_page_4xx_v1: WebBrokenPage4xxV1;
+  web_caching_policy_v1: WebCachingPolicyV1;
+  web_canonical_conflicts_v1: WebCanonicalConflictsV1;
+  web_canonical_presence_v1: WebCanonicalPresenceV1;
+  web_content_depth_v1: WebContentDepthV1;
+  web_content_freshness_v1: WebContentFreshnessV1;
+  web_content_quality_eeat_v1: WebContentQualityEeatV1;
+  web_crawl_depth_v1: WebCrawlDepthV1;
+  web_cwv_cls_v1: WebCwvClsV1;
+  web_cwv_inp_tbt_v1: WebCwvInpTbtV1;
+  web_cwv_lcp_v1: WebCwvLcpV1;
+  web_duplicate_content_exact_v1: WebDuplicateContentExactV1;
+  web_excessive_outlinks_v1: WebExcessiveOutlinksV1;
+  web_grammar_spelling_v1: WebGrammarSpellingV1;
+  web_gsc_ctr_opportunity_v1: WebGscCtrOpportunityV1;
+  web_gsc_index_coverage_v1: WebGscIndexCoverageV1;
+  web_gsc_keyword_cannibalization_v1: WebGscKeywordCannibalizationV1;
+  web_gsc_performance_decay_v1: WebGscPerformanceDecayV1;
+  web_h1_presence_v1: WebH1PresenceV1;
+  web_heading_hierarchy_v1: WebHeadingHierarchyV1;
+  web_host_protocol_consistency_v1: WebHostProtocolConsistencyV1;
+  web_hreflang_reciprocity_v1: WebHreflangReciprocityV1;
+  web_hreflang_validity_v1: WebHreflangValidityV1;
+  web_hsts_policy_v1: WebHstsPolicyV1;
+  web_html_lang_validity_v1: WebHtmlLangValidityV1;
+  web_https_enforcement_v1: WebHttpsEnforcementV1;
+  web_image_alt_presence_v1: WebImageAltPresenceV1;
+  web_image_alt_quality_v1: WebImageAltQualityV1;
+  web_image_dimension_attrs_v1: WebImageDimensionAttrsV1;
+  web_image_lazy_loading_v1: WebImageLazyLoadingV1;
+  web_image_modern_format_v1: WebImageModernFormatV1;
+  web_image_oversized_v1: WebImageOversizedV1;
+  web_internal_inlink_coverage_v1: WebInternalInlinkCoverageV1;
+  web_internal_link_equity_v1: WebInternalLinkEquityV1;
+  web_internal_redirect_links_v1: WebInternalRedirectLinksV1;
+  web_intrusive_interstitials_v1: WebIntrusiveInterstitialsV1;
+  web_keyword_topical_coverage_v1: WebKeywordTopicalCoverageV1;
+  web_local_business_markup_v1: WebLocalBusinessMarkupV1;
+  web_meta_description_duplication_v1: WebMetaDescriptionDuplicationV1;
+  web_meta_description_length_v1: WebMetaDescriptionLengthV1;
+  web_meta_description_presence_v1: WebMetaDescriptionPresenceV1;
+  web_meta_refresh_redirect_v1: WebMetaRefreshRedirectV1;
+  web_meta_robots_conflicts_v1: WebMetaRobotsConflictsV1;
+  web_mixed_content_v1: WebMixedContentV1;
+  web_mobile_render_quality_v1: WebMobileRenderQualityV1;
+  web_mobile_usability_lab_v1: WebMobileUsabilityLabV1;
+  web_near_duplicate_content_v1: WebNearDuplicateContentV1;
+  web_nofollow_internal_links_v1: WebNofollowInternalLinksV1;
+  web_og_image_validity_v1: WebOgImageValidityV1;
+  web_orphan_pages_v1: WebOrphanPagesV1;
+  web_page_weight_v1: WebPageWeightV1;
+  web_pagination_markup_v1: WebPaginationMarkupV1;
+  web_readability_v1: WebReadabilityV1;
+  web_redirect_chain_v1: WebRedirectChainV1;
+  web_redirect_loop_v1: WebRedirectLoopV1;
+  web_result: WebResult;
+  web_robots_txt_health_v1: WebRobotsTxtHealthV1;
+  web_search_intent_alignment_v1: WebSearchIntentAlignmentV1;
+  web_search_results: WebSearchResults;
+  web_search_urls: WebSearchUrls;
+  web_security_headers_v1: WebSecurityHeadersV1;
+  web_serp_snippet_quality_v1: WebSerpSnippetQualityV1;
+  web_server_error_5xx_v1: WebServerError5xxV1;
+  web_sitemap_coverage_v1: WebSitemapCoverageV1;
+  web_sitemap_health_v1: WebSitemapHealthV1;
+  web_social_meta_completeness_v1: WebSocialMetaCompletenessV1;
+  web_soft_404_detection_v1: WebSoft404DetectionV1;
+  web_structured_data_coverage_v1: WebStructuredDataCoverageV1;
+  web_structured_data_validity_v1: WebStructuredDataValidityV1;
+  web_temporary_redirect_usage_v1: WebTemporaryRedirectUsageV1;
+  web_text_html_ratio_v1: WebTextHtmlRatioV1;
+  web_thin_content_v1: WebThinContentV1;
+  web_title_duplication_v1: WebTitleDuplicationV1;
+  web_title_keyword_alignment_v1: WebTitleKeywordAlignmentV1;
+  web_title_length_v1: WebTitleLengthV1;
+  web_title_presence_v1: WebTitlePresenceV1;
+  web_tls_certificate_v1: WebTlsCertificateV1;
+  web_ttfb_server_response_v1: WebTtfbServerResponseV1;
+  web_url_design_quality_v1: WebUrlDesignQualityV1;
+  web_viewport_meta_v1: WebViewportMetaV1;
+  wine_tasting: WineTasting;
+  word_count_result: WordCountResult;
+  work_queue_wave_result: WorkQueueWaveResult;
+  work_seed_result: WorkSeedResult;
+  workflow_run_result: WorkflowRunResult;
 }
 
 /** `KindPayload<"web_result">` → `WebResult`. */
@@ -19614,9 +19931,13 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "workflow_run_result",
 ];
 
-const GENERATED_KIND_SLUG_SET: ReadonlySet<string> = new Set(GENERATED_KIND_SLUGS);
+const GENERATED_KIND_SLUG_SET: ReadonlySet<string> = new Set(
+  GENERATED_KIND_SLUGS,
+);
 
 /** Runtime guard: is `value` a slug this artifact carries a type for? */
-export function isGeneratedKindSlug(value: unknown): value is GeneratedKindSlug {
+export function isGeneratedKindSlug(
+  value: unknown,
+): value is GeneratedKindSlug {
   return typeof value === "string" && GENERATED_KIND_SLUG_SET.has(value);
 }

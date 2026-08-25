@@ -75,9 +75,7 @@
           "description": "JSON Schema describing the tool's input parameters."
         }
       },
-      "required": [
-        "name"
-      ],
+      "required": ["name"],
       "title": "CustomTool",
       "type": "object"
     },
@@ -234,9 +232,7 @@
           "title": "Source Name"
         }
       },
-      "required": [
-        "term"
-      ],
+      "required": ["term"],
       "title": "DictionaryEntry",
       "type": "object"
     },
@@ -255,10 +251,7 @@
           "type": "number"
         }
       },
-      "required": [
-        "path",
-        "scale"
-      ],
+      "required": ["path", "scale"],
       "title": "ImageLora",
       "type": "object"
     },
@@ -670,9 +663,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "type"
-      ],
+      "required": ["type"],
       "title": "ResponseFormatJsonObject",
       "type": "object"
     },
@@ -731,9 +722,7 @@
           "title": "Strict"
         }
       },
-      "required": [
-        "type"
-      ],
+      "required": ["type"],
       "title": "ResponseFormatJsonSchema",
       "type": "object"
     },
@@ -746,9 +735,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "type"
-      ],
+      "required": ["type"],
       "title": "ResponseFormatText",
       "type": "object"
     },
@@ -767,10 +754,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "text",
-        "voice_id"
-      ],
+      "required": ["text", "voice_id"],
       "title": "TtsDialogueTurn",
       "type": "object"
     },
@@ -794,10 +778,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "name",
-        "voice"
-      ],
+      "required": ["name", "voice"],
       "title": "TtsVoiceSpeaker",
       "type": "object"
     }
@@ -879,11 +860,7 @@
     "tool_choice": {
       "anyOf": [
         {
-          "enum": [
-            "none",
-            "auto",
-            "required"
-          ],
+          "enum": ["none", "auto", "required"],
           "type": "string"
         },
         {
@@ -930,13 +907,7 @@
     "reasoning_summary": {
       "anyOf": [
         {
-          "enum": [
-            "concise",
-            "detailed",
-            "never",
-            "auto",
-            "always"
-          ],
+          "enum": ["concise", "detailed", "never", "auto", "always"],
           "type": "string"
         },
         {
@@ -949,12 +920,7 @@
     "thinking_level": {
       "anyOf": [
         {
-          "enum": [
-            "minimal",
-            "low",
-            "medium",
-            "high"
-          ],
+          "enum": ["minimal", "low", "medium", "high"],
           "type": "string"
         },
         {
@@ -1114,11 +1080,7 @@
     "verbosity": {
       "anyOf": [
         {
-          "enum": [
-            "low",
-            "medium",
-            "high"
-          ],
+          "enum": ["low", "medium", "high"],
           "type": "string"
         },
         {
@@ -1227,12 +1189,7 @@
     "render_quality": {
       "anyOf": [
         {
-          "enum": [
-            "low",
-            "medium",
-            "high",
-            "auto"
-          ],
+          "enum": ["low", "medium", "high", "auto"],
           "type": "string"
         },
         {
@@ -1245,11 +1202,7 @@
     "background": {
       "anyOf": [
         {
-          "enum": [
-            "auto",
-            "opaque",
-            "transparent"
-          ],
+          "enum": ["auto", "opaque", "transparent"],
           "type": "string"
         },
         {
@@ -1274,10 +1227,7 @@
     "moderation": {
       "anyOf": [
         {
-          "enum": [
-            "auto",
-            "low"
-          ],
+          "enum": ["auto", "low"],
           "type": "string"
         },
         {
@@ -1290,10 +1240,7 @@
     "input_fidelity": {
       "anyOf": [
         {
-          "enum": [
-            "high",
-            "low"
-          ],
+          "enum": ["high", "low"],
           "type": "string"
         },
         {
@@ -1318,10 +1265,7 @@
     "style": {
       "anyOf": [
         {
-          "enum": [
-            "vivid",
-            "natural"
-          ],
+          "enum": ["vivid", "natural"],
           "type": "string"
         },
         {
@@ -1405,15 +1349,7 @@
     "resolution": {
       "anyOf": [
         {
-          "enum": [
-            "480p",
-            "720p",
-            "1080p",
-            "4k",
-            "1K",
-            "2K",
-            "4K"
-          ],
+          "enum": ["480p", "720p", "1080p", "4k", "1K", "2K", "4K"],
           "type": "string"
         },
         {
@@ -1660,11 +1596,7 @@
     "video_action": {
       "anyOf": [
         {
-          "enum": [
-            "generate",
-            "edit",
-            "extend"
-          ],
+          "enum": ["generate", "edit", "extend"],
           "type": "string"
         },
         {
@@ -1744,10 +1676,7 @@
     "tts_quality": {
       "anyOf": [
         {
-          "enum": [
-            "high_quality",
-            "fast"
-          ],
+          "enum": ["high_quality", "fast"],
           "type": "string"
         },
         {
@@ -1820,12 +1749,7 @@
     "quality": {
       "anyOf": [
         {
-          "enum": [
-            "low",
-            "medium",
-            "high",
-            "auto"
-          ],
+          "enum": ["low", "medium", "high", "auto"],
           "type": "string"
         },
         {
