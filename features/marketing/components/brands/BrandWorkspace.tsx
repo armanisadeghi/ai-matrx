@@ -27,7 +27,8 @@ import {
   Star,
   Trash2,
   Type,
-  SlidersHorizontal,} from "lucide-react";
+  SlidersHorizontal,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -35,6 +36,8 @@ import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { GovernedActionDialog } from "@/features/access-gate/components/GovernedActionDialog";
+import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActionError";
 import { BrandEditorDialog } from "@/features/marketing/components/brands/BrandEditorDialog";
 import {
   MARKETING_BRAND_SURFACE_NAME,
@@ -347,6 +350,8 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [editingSite, setEditingSite] = useState<MarketingSite | null>(null);
   const [deletingSite, setDeletingSite] = useState<MarketingSite | null>(null);
+  const [deniedSiteDelete, setDeniedSiteDelete] =
+    useState<MarketingSite | null>(null);
   const [propertyEditor, setPropertyEditor] = useState<{
     open: boolean;
     property: BrandProperty | null;
@@ -1064,7 +1069,12 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               // sources, AI generation — moved here from the site's Media
               // section on 2026-08-15. This card is the summary; that is the
               // place you work.
-              <Button asChild size="sm" variant="outline" className="h-7 gap-1.5">
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1.5"
+              >
                 <Link href={marketingRoutes.brandAssets(brandId)}>
                   <Images className="h-3.5 w-3.5" />
                   Open asset desk
@@ -1083,8 +1093,8 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                   No confirmed assets yet. Add one directly, or initialize a
                   site and confirm logos, favicons, and imagery from its
                   discovery inbox — they become the brand's asset library here.
-                  The asset desk also holds research imagery, stock sources,
-                  and AI image generation.
+                  The asset desk also holds research imagery, stock sources, and
+                  AI image generation.
                 </p>
               </div>
             ) : (
@@ -1237,12 +1247,27 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             toast.success(`Deleted ${deletingSite.name}`);
             setDeletingSite(null);
           } catch (error) {
+            if (isGovernedActionDenial(error)) {
+              setDeniedSiteDelete(deletingSite);
+              setDeletingSite(null);
+              return;
+            }
             toast.error("Could not delete site", {
               description: extractErrorMessage(error),
             });
           }
         }}
       />
+      {deniedSiteDelete ? (
+        <GovernedActionDialog
+          open
+          onOpenChange={(next) => !next && setDeniedSiteDelete(null)}
+          resourceType="web_site"
+          resourceId={deniedSiteDelete.id}
+          itemName={deniedSiteDelete.name}
+          href={marketingRoutes.site(current.id, deniedSiteDelete.id)}
+        />
+      ) : null}
       <PropertyEditorDialog
         open={propertyEditor.open}
         onOpenChange={(open) =>

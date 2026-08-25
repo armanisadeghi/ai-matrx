@@ -42,9 +42,16 @@ export type AccessRequestStatus =
   "pending" | "granted" | "declined" | "withdrawn" | "reported";
 
 /** The level a requester is asking for. Mirrors `iam.permissions.permission_level`. */
-export type RequestedLevel = "viewer" | "editor";
+export type RequestedLevel = "viewer" | "editor" | "admin";
 
-export type AccessRequestKind = "resource_access" | "setting";
+export type AccessRequestKind =
+  "resource_access" | "resource_action" | "setting";
+
+/** The executable context carried by a governed resource-action request. */
+export interface ResourceActionRequestPayload {
+  actionKey: "delete";
+  actionLabel: string;
+}
 
 /** The executable context carried by a setting request and its DM action. */
 export interface SettingRequestPayload {
@@ -162,6 +169,7 @@ export interface AccessRequestRow {
   entityTitle: string | null;
   requestKind: AccessRequestKind;
   requestKey: string;
+  resourceAction: ResourceActionRequestPayload | null;
   settingRequest: SettingRequestPayload | null;
   /** Present on the inbox side only. */
   requester: AccessDeniedOwner | null;

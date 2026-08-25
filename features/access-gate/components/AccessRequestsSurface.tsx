@@ -44,6 +44,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { UserIdentity } from "@/components/user/UserIdentity";
 import { SettingRequestActionButtons } from "@/features/access-gate/components/SettingRequestActionButtons";
+import { ResourceActionRequestButtons } from "@/features/access-gate/components/ResourceActionRequestButtons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import {
@@ -81,6 +82,12 @@ const STATUS_TONE: Record<AccessRequestStatus, string> = {
   withdrawn: "bg-muted text-muted-foreground",
   reported: "bg-destructive/10 text-destructive",
 };
+
+function statusLabel(row: AccessRequestRow): string {
+  return row.requestKind === "resource_action" && row.status === "granted"
+    ? "Completed"
+    : STATUS_LABEL[row.status];
+}
 
 function boxFromParam(value: string | null): Box {
   return value === "sent" ? "sent" : "inbox";
@@ -262,7 +269,7 @@ export function AccessRequestsSurface() {
     }
   }
 
-  function decide(row: AccessRequestRow, level: "viewer" | "editor") {
+  function decide(row: AccessRequestRow, level: "viewer" | "editor" | "admin") {
     void run(
       row.id,
       async () => {
@@ -443,11 +450,15 @@ export function AccessRequestsSurface() {
                             )}{" "}
                             {row.requestKind === "setting"
                               ? "asked for a setting change"
-                              : `asked to ${
-                                  row.requestedLevel === "editor"
-                                    ? "edit"
-                                    : "view"
-                                }`}
+                              : row.requestKind === "resource_action"
+                                ? "asked you to delete"
+                                : `asked to ${
+                                    row.requestedLevel === "admin"
+                                      ? "give full access to"
+                                      : row.requestedLevel === "editor"
+                                        ? "edit"
+                                        : "view"
+                                  }`}
                           </p>
                           <EntityCell row={row} />
                         </div>
@@ -460,7 +471,7 @@ export function AccessRequestsSurface() {
                               STATUS_TONE[row.status],
                             )}
                           >
-                            {STATUS_LABEL[row.status]}
+                            {statusLabel(row)}
                           </span>
                         )}
                         {row.createdAt && (
@@ -490,8 +501,19 @@ export function AccessRequestsSurface() {
                     )}
 
                     {box === "inbox" &&
-                    row.requestKind === "setting" &&
-                    row.settingRequest ? (
+                    row.requestKind === "resource_action" &&
+                    row.resourceAction ? (
+                      <ResourceActionRequestButtons
+                        requestId={row.id}
+                        actionKey={row.resourceAction.actionKey}
+                        itemName={
+                          row.entityTitle ?? row.entityLabel ?? "this item"
+                        }
+                        onDone={() => void refresh()}
+                      />
+                    ) : box === "inbox" &&
+                      row.requestKind === "setting" &&
+                      row.settingRequest ? (
                       <SettingRequestActionButtons
                         requestId={row.id}
                         href={row.settingRequest.href}
@@ -518,6 +540,16 @@ export function AccessRequestsSurface() {
                         >
                           <PenLine className="h-3.5 w-3.5" aria-hidden />
                           Let them edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-11 sm:h-8"
+                          disabled={busyId === row.id}
+                          onClick={() => decide(row, "admin")}
+                        >
+                          <KeyRound className="h-3.5 w-3.5" aria-hidden />
+                          Give full access
                         </Button>
                         <Button
                           size="sm"

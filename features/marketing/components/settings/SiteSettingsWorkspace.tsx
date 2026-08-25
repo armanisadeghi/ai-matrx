@@ -9,6 +9,9 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { GovernedActionDialog } from "@/features/access-gate/components/GovernedActionDialog";
+import { fetchAccessDeniedContext } from "@/features/access-gate/service/accessDeniedContext";
+import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActionError";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -59,6 +62,7 @@ export function SiteSettingsWorkspace() {
   const router = useRouter();
   const deleteMutation = useDeleteSite();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteDenied, setDeleteDenied] = useState(false);
   const queryClient = useQueryClient();
   const [name, setName] = useState(site.name);
   const [status, setStatus] = useState(site.status);
@@ -192,314 +196,351 @@ export function SiteSettingsWorkspace() {
       }
       getWriteHandlers={() => writeHandlers}
     >
-    <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
-      <div className="grid gap-3 xl:grid-cols-2">
-        <section className="rounded-lg border border-border bg-card">
-          <div className="flex h-10 items-center gap-2 border-b border-border px-3">
-            <Settings2 className="h-4 w-4 text-primary" />
-            <h1 className="text-sm font-semibold">Site identity</h1>
-            <span className="ml-auto">
-              <CopyButtons size="icon" {...settingsCopy} />
-            </span>
-          </div>
-          <div className="grid gap-3 p-3 sm:grid-cols-2">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="site-settings-name" className="text-xs">
-                Display name
-              </Label>
-              <Input
-                id="site-settings-name"
-                className="h-8"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
+      <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
+        <div className="grid gap-3 xl:grid-cols-2">
+          <section className="rounded-lg border border-border bg-card">
+            <div className="flex h-10 items-center gap-2 border-b border-border px-3">
+              <Settings2 className="h-4 w-4 text-primary" />
+              <h1 className="text-sm font-semibold">Site identity</h1>
+              <span className="ml-auto">
+                <CopyButtons size="icon" {...settingsCopy} />
+              </span>
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">Canonical root URL</Label>
-              <div className="rounded-md border border-border bg-muted/30 px-3 py-2 font-mono text-xs">
-                {site.root_url}
+            <div className="grid gap-3 p-3 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="site-settings-name" className="text-xs">
+                  Display name
+                </Label>
+                <Input
+                  id="site-settings-name"
+                  className="h-8"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Domain changes require a deliberate page-registry migration and
-                are not performed by this settings form.
-              </p>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs">Canonical root URL</Label>
+                <div className="rounded-md border border-border bg-muted/30 px-3 py-2 font-mono text-xs">
+                  {site.root_url}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Domain changes require a deliberate page-registry migration
+                  and are not performed by this settings form.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Lifecycle</Label>
+                <Select
+                  value={status}
+                  onValueChange={(value) =>
+                    setStatus(value as typeof site.status)
+                  }
+                >
+                  <SelectTrigger size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="paused">Paused</SelectItem>
+                    <SelectItem value="error">Error</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Visibility</Label>
+                <Select
+                  value={visibility}
+                  onValueChange={(value) =>
+                    setVisibility(value as typeof site.visibility)
+                  }
+                >
+                  <SelectTrigger size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="personal">Personal</SelectItem>
+                    <SelectItem value="internal">Organization</SelectItem>
+                    <SelectItem value="link">Anyone with link</SelectItem>
+                    <SelectItem value="public">Public</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Lifecycle</Label>
-              <Select
-                value={status}
-                onValueChange={(value) =>
-                  setStatus(value as typeof site.status)
-                }
-              >
-                <SelectTrigger size="sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                  <SelectItem value="error">Error</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Visibility</Label>
-              <Select
-                value={visibility}
-                onValueChange={(value) =>
-                  setVisibility(value as typeof site.visibility)
-                }
-              >
-                <SelectTrigger size="sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="personal">Personal</SelectItem>
-                  <SelectItem value="internal">Organization</SelectItem>
-                  <SelectItem value="link">Anyone with link</SelectItem>
-                  <SelectItem value="public">Public</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        {/* 🚨 ONE RECORD, TWO RENDERS — the same `web.site.settings->'crm_fold'`
+          {/* 🚨 ONE RECORD, TWO RENDERS — the same `web.site.settings->'crm_fold'`
             control also renders beside the referring-domain and reputation-case
             lists, where its consequence is visible. Never two settings. */}
-        <CrmFoldControl siteId={site.id} source="backlink" variant="full" />
+          <CrmFoldControl siteId={site.id} source="backlink" variant="full" />
 
-        <section className="rounded-lg border border-border bg-card">
-          <div className="flex h-10 items-center justify-between border-b border-border px-3">
-            <h2 className="text-sm font-semibold">Default crawl policy</h2>
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Per-run overrides allowed
-            </span>
-          </div>
-          <div className="grid gap-3 p-3 sm:grid-cols-2">
-            <ToggleRow
-              label="Respect robots.txt"
-              detail="Off by default for sites managed by their owner."
-              checked={crawl.respect_robots}
-              onCheckedChange={(checked) =>
-                setCrawl((current) => ({ ...current, respect_robots: checked }))
-              }
-            />
-            <ToggleRow
-              label="Seed from sitemap"
-              detail="Use sitemap URLs as crawl evidence."
-              checked={crawl.seed_from_sitemap}
-              onCheckedChange={(checked) =>
-                setCrawl((current) => ({
-                  ...current,
-                  seed_from_sitemap: checked,
-                }))
-              }
-            />
-            <ToggleRow
-              label="Follow subdomains"
-              detail="Include related hosts in this site's scope."
-              checked={crawl.follow_subdomains}
-              onCheckedChange={(checked) =>
-                setCrawl((current) => ({
-                  ...current,
-                  follow_subdomains: checked,
-                }))
-              }
-            />
-            <ToggleRow
-              label="Capture screenshots"
-              detail="Persist visual evidence for vision batches."
-              checked={crawl.capture_screenshots}
-              onCheckedChange={(checked) =>
-                setCrawl((current) => ({
-                  ...current,
-                  capture_screenshots: checked,
-                }))
-              }
-            />
-            <NumberSetting
-              id="crawl-max-pages"
-              label="Maximum pages"
-              value={crawl.max_pages}
-              min={1}
-              max={50_000}
-              onChange={(value) =>
-                setCrawl((current) => ({ ...current, max_pages: value }))
-              }
-            />
-            <NumberSetting
-              id="crawl-concurrency"
-              label="Concurrency"
-              value={crawl.concurrency}
-              min={1}
-              max={32}
-              onChange={(value) =>
-                setCrawl((current) => ({ ...current, concurrency: value }))
-              }
-            />
-            <NumberSetting
-              id="crawl-max-depth"
-              label="Maximum depth (0 = unlimited)"
-              value={crawl.max_depth ?? 0}
-              min={0}
-              max={100}
-              onChange={(value) =>
-                setCrawl((current) => ({
-                  ...current,
-                  max_depth: value > 0 ? value : null,
-                }))
-              }
-            />
-            <NumberSetting
-              id="crawl-host-rps"
-              label="Host rate limit (requests/sec)"
-              value={crawl.host_rps}
-              min={1}
-              max={50}
-              onChange={(value) =>
-                setCrawl((current) => ({ ...current, host_rps: value }))
-              }
-            />
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">Render mode</Label>
-              <Select
-                value={crawl.render_mode}
-                onValueChange={(value) =>
+          <section className="rounded-lg border border-border bg-card">
+            <div className="flex h-10 items-center justify-between border-b border-border px-3">
+              <h2 className="text-sm font-semibold">Default crawl policy</h2>
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Per-run overrides allowed
+              </span>
+            </div>
+            <div className="grid gap-3 p-3 sm:grid-cols-2">
+              <ToggleRow
+                label="Respect robots.txt"
+                detail="Off by default for sites managed by their owner."
+                checked={crawl.respect_robots}
+                onCheckedChange={(checked) =>
                   setCrawl((current) => ({
                     ...current,
-                    render_mode: value as CrawlStartOptions["render_mode"],
+                    respect_robots: checked,
                   }))
                 }
-              >
-                <SelectTrigger size="sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="http_only">HTTP only</SelectItem>
-                  <SelectItem value="http_first">
-                    HTTP first, browser fallback
-                  </SelectItem>
-                  <SelectItem value="browser_always">Browser always</SelectItem>
-                  <SelectItem value="browser_with_screenshot">
-                    Browser + screenshots
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              />
+              <ToggleRow
+                label="Seed from sitemap"
+                detail="Use sitemap URLs as crawl evidence."
+                checked={crawl.seed_from_sitemap}
+                onCheckedChange={(checked) =>
+                  setCrawl((current) => ({
+                    ...current,
+                    seed_from_sitemap: checked,
+                  }))
+                }
+              />
+              <ToggleRow
+                label="Follow subdomains"
+                detail="Include related hosts in this site's scope."
+                checked={crawl.follow_subdomains}
+                onCheckedChange={(checked) =>
+                  setCrawl((current) => ({
+                    ...current,
+                    follow_subdomains: checked,
+                  }))
+                }
+              />
+              <ToggleRow
+                label="Capture screenshots"
+                detail="Persist visual evidence for vision batches."
+                checked={crawl.capture_screenshots}
+                onCheckedChange={(checked) =>
+                  setCrawl((current) => ({
+                    ...current,
+                    capture_screenshots: checked,
+                  }))
+                }
+              />
+              <NumberSetting
+                id="crawl-max-pages"
+                label="Maximum pages"
+                value={crawl.max_pages}
+                min={1}
+                max={50_000}
+                onChange={(value) =>
+                  setCrawl((current) => ({ ...current, max_pages: value }))
+                }
+              />
+              <NumberSetting
+                id="crawl-concurrency"
+                label="Concurrency"
+                value={crawl.concurrency}
+                min={1}
+                max={32}
+                onChange={(value) =>
+                  setCrawl((current) => ({ ...current, concurrency: value }))
+                }
+              />
+              <NumberSetting
+                id="crawl-max-depth"
+                label="Maximum depth (0 = unlimited)"
+                value={crawl.max_depth ?? 0}
+                min={0}
+                max={100}
+                onChange={(value) =>
+                  setCrawl((current) => ({
+                    ...current,
+                    max_depth: value > 0 ? value : null,
+                  }))
+                }
+              />
+              <NumberSetting
+                id="crawl-host-rps"
+                label="Host rate limit (requests/sec)"
+                value={crawl.host_rps}
+                min={1}
+                max={50}
+                onChange={(value) =>
+                  setCrawl((current) => ({ ...current, host_rps: value }))
+                }
+              />
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs">Render mode</Label>
+                <Select
+                  value={crawl.render_mode}
+                  onValueChange={(value) =>
+                    setCrawl((current) => ({
+                      ...current,
+                      render_mode: value as CrawlStartOptions["render_mode"],
+                    }))
+                  }
+                >
+                  <SelectTrigger size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="http_only">HTTP only</SelectItem>
+                    <SelectItem value="http_first">
+                      HTTP first, browser fallback
+                    </SelectItem>
+                    <SelectItem value="browser_always">
+                      Browser always
+                    </SelectItem>
+                    <SelectItem value="browser_with_screenshot">
+                      Browser + screenshots
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <PatternSetting
+                id="crawl-include-patterns"
+                label="Include URL patterns"
+                detail="Regex vs the URL path (e.g. ^/blog/), one per line. Empty = crawl everything in scope."
+                value={includeText}
+                onChange={setIncludeText}
+                problems={patternProblems.filter(
+                  (problem) => problem.field === "include_patterns",
+                )}
+              />
+              <PatternSetting
+                id="crawl-exclude-patterns"
+                label="Exclude URL patterns"
+                detail="Regex vs the URL path, one per line. Matching URLs are never fetched."
+                value={excludeText}
+                onChange={setExcludeText}
+                problems={patternProblems.filter(
+                  (problem) => problem.field === "exclude_patterns",
+                )}
+              />
             </div>
-            <PatternSetting
-              id="crawl-include-patterns"
-              label="Include URL patterns"
-              detail="Regex vs the URL path (e.g. ^/blog/), one per line. Empty = crawl everything in scope."
-              value={includeText}
-              onChange={setIncludeText}
-              problems={patternProblems.filter(
-                (problem) => problem.field === "include_patterns",
-              )}
-            />
-            <PatternSetting
-              id="crawl-exclude-patterns"
-              label="Exclude URL patterns"
-              detail="Regex vs the URL path, one per line. Matching URLs are never fetched."
-              value={excludeText}
-              onChange={setExcludeText}
-              problems={patternProblems.filter(
-                (problem) => problem.field === "exclude_patterns",
-              )}
-            />
-          </div>
-        </section>
+          </section>
 
-        {/* A seven-column status table needs the full width — squeezing it
+          {/* A seven-column status table needs the full width — squeezing it
             into one half-column is what pushed the old panel into stacking
             badges and sentences on top of each other. */}
-        <div className="xl:col-span-2">
-          <CollectionStatusPanel site={site} sitePath={sitePath} />
+          <div className="xl:col-span-2">
+            <CollectionStatusPanel site={site} sitePath={sitePath} />
+          </div>
+
+          <SiteAnalyticsCard site={site} />
+
+          <SiteStrategyCard
+            siteId={site.id}
+            organizationId={site.organization_id}
+          />
+
+          <MoveSiteOrganizationCard site={site} />
+
+          <section className="overflow-hidden rounded-lg border border-destructive/40 bg-card">
+            <div className="flex h-10 items-center gap-2 border-b border-destructive/30 px-3">
+              <Trash2 className="h-4 w-4 text-destructive" />
+              <h1 className="text-sm font-semibold text-foreground">
+                Danger zone
+              </h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 p-3">
+              <p className="min-w-64 flex-1 text-xs text-muted-foreground">
+                Deleting this site moves it to trash and removes it from every
+                list. Its brand, crawl history, and snapshots remain in the
+                database.
+              </p>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-8 gap-1.5"
+                onClick={() => setConfirmingDelete(true)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete site
+              </Button>
+            </div>
+          </section>
         </div>
-
-        <SiteAnalyticsCard site={site} />
-
-        <SiteStrategyCard
-          siteId={site.id}
-          organizationId={site.organization_id}
-        />
-
-        <MoveSiteOrganizationCard site={site} />
-
-        <section className="overflow-hidden rounded-lg border border-destructive/40 bg-card">
-          <div className="flex h-10 items-center gap-2 border-b border-destructive/30 px-3">
-            <Trash2 className="h-4 w-4 text-destructive" />
-            <h1 className="text-sm font-semibold text-foreground">
-              Danger zone
-            </h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 p-3">
-            <p className="min-w-64 flex-1 text-xs text-muted-foreground">
-              Deleting this site moves it to trash and removes it from every
-              list. Its brand, crawl history, and snapshots remain in the
-              database.
-            </p>
-            <Button
-              size="sm"
-              variant="destructive"
-              className="h-8 gap-1.5"
-              onClick={() => setConfirmingDelete(true)}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete site
-            </Button>
-          </div>
-        </section>
-      </div>
-      <ConfirmDialog
-        open={confirmingDelete}
-        onOpenChange={setConfirmingDelete}
-        title={`Delete ${site.name}?`}
-        description="The site moves to trash and disappears from every list. This does not delete the brand."
-        variant="destructive"
-        confirmLabel="Delete site"
-        busy={deleteMutation.isPending}
-        onConfirm={async () => {
-          try {
-            // Cancel-to-terminal before hiding the site — deleting with a
-            // live crawl leaves the worker writing into an invisible session.
-            if (crawlActivity.activeCrawl) {
-              try {
-                await cancelCrawl(crawlActivity.activeCrawl.id);
-              } catch (cancelError) {
+        <ConfirmDialog
+          open={confirmingDelete}
+          onOpenChange={setConfirmingDelete}
+          title={`Delete ${site.name}?`}
+          description="The site moves to trash and disappears from every list. This does not delete the brand."
+          variant="destructive"
+          confirmLabel="Delete site"
+          busy={deleteMutation.isPending}
+          onConfirm={async () => {
+            try {
+              // Resolve authority BEFORE canceling anything. An editor may see
+              // the site and start/stop ordinary work, but a rejected delete
+              // must never cancel the owner's active crawl as a side effect.
+              const access = await fetchAccessDeniedContext(
+                "web_site",
+                site.id,
+              );
+              if (access.status !== "ok") {
+                setConfirmingDelete(false);
                 toast.error(
-                  "A crawl is running and could not be canceled — not deleting",
-                  { description: extractErrorMessage(cancelError) },
+                  "We couldn't verify deletion access. Nothing was changed.",
                 );
                 return;
               }
+              if (access.level !== "admin") {
+                setConfirmingDelete(false);
+                setDeleteDenied(true);
+                return;
+              }
+              // Cancel-to-terminal before hiding the site — deleting with a
+              // live crawl leaves the worker writing into an invisible session.
+              if (crawlActivity.activeCrawl) {
+                try {
+                  await cancelCrawl(crawlActivity.activeCrawl.id);
+                } catch (cancelError) {
+                  toast.error(
+                    "A crawl is running and could not be canceled — not deleting",
+                    { description: extractErrorMessage(cancelError) },
+                  );
+                  return;
+                }
+              }
+              await deleteMutation.mutateAsync(site.id);
+              toast.success(`Deleted ${site.name}`);
+              router.push(
+                site.brand_id
+                  ? marketingRoutes.brand(site.brand_id)
+                  : marketingRoutes.brands(),
+              );
+            } catch (error) {
+              if (isGovernedActionDenial(error)) {
+                setConfirmingDelete(false);
+                setDeleteDenied(true);
+                return;
+              }
+              toast.error("Could not delete site", {
+                description: extractErrorMessage(error),
+              });
             }
-            await deleteMutation.mutateAsync(site.id);
-            toast.success(`Deleted ${site.name}`);
-            router.push(
-              site.brand_id
-                ? marketingRoutes.brand(site.brand_id)
-                : marketingRoutes.brands(),
-            );
-          } catch (error) {
-            toast.error("Could not delete site", {
-              description: extractErrorMessage(error),
-            });
-          }
-        }}
-      />
-      <div className="sticky bottom-0 mt-3 flex justify-end border-t border-border/80 bg-background/95 py-2 backdrop-blur">
-        <Button
-          size="sm"
-          className="gap-1.5"
-          disabled={!name.trim() || update.isPending}
-          onClick={save}
-        >
-          <Save className="h-3.5 w-3.5" />
-          Save settings
-        </Button>
-      </div>
-    </main>
+          }}
+        />
+        <GovernedActionDialog
+          open={deleteDenied}
+          onOpenChange={setDeleteDenied}
+          resourceType="web_site"
+          resourceId={site.id}
+          itemName={site.name}
+          href={sitePath}
+        />
+        <div className="sticky bottom-0 mt-3 flex justify-end border-t border-border/80 bg-background/95 py-2 backdrop-blur">
+          <Button
+            size="sm"
+            className="gap-1.5"
+            disabled={!name.trim() || update.isPending}
+            onClick={save}
+          >
+            <Save className="h-3.5 w-3.5" />
+            Save settings
+          </Button>
+        </div>
+      </main>
     </SurfaceRuntimeProvider>
   );
 }

@@ -93,7 +93,12 @@ function parseRequest(raw: unknown): AccessRequestSummary | null {
     status: REQUEST_STATUSES.includes(status as AccessRequestStatus)
       ? (status as AccessRequestStatus)
       : "pending",
-    level: row?.level === "editor" ? "editor" : "viewer",
+    level:
+      row?.level === "admin"
+        ? "admin"
+        : row?.level === "editor"
+          ? "editor"
+          : "viewer",
     createdAt: str(row?.created_at),
     decisionNote: str(row?.decision_note),
   };

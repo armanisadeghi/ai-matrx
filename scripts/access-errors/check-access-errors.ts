@@ -29,7 +29,11 @@ import { execSync } from "node:child_process";
 const ROOT = process.cwd();
 const REPORT = join(ROOT, "scripts/access-errors/report.json");
 
-type Kind = "raw-supabase-message" | "claims-deleted" | "claims-denied";
+type Kind =
+  | "raw-supabase-message"
+  | "raw-governed-write"
+  | "claims-deleted"
+  | "claims-denied";
 
 interface Finding {
   file: string;
@@ -212,10 +216,38 @@ function scan(): Finding[] {
       if (!matched && file.endsWith(".tsx")) {
         const kind = jsxTextKind(trimmed);
         if (kind) {
-          findings.push({ file, line: i + 1, kind, snippet: trimmed.slice(0, 160) });
+          findings.push({
+            file,
+            line: i + 1,
+            kind,
+            snippet: trimmed.slice(0, 160),
+          });
         }
       }
     });
+
+    // A website-delete caller that catches the mutation without the shared
+    // governed-action presenter can regress straight back to the raw 42501
+    // toast. The three current doors all use `useDeleteSite`; make that set a
+    // regression gate while the reusable resource-action lane expands to
+    // other whole-item delete hooks.
+    const source = lines.join("\n");
+    if (
+      file.endsWith(".tsx") &&
+      source.includes("useDeleteSite") &&
+      /(?:delete\w*Mutation|deleteMutation)\.mutateAsync\s*\(/.test(source) &&
+      (!source.includes("isGovernedActionDenial") ||
+        !source.includes("GovernedActionDialog"))
+    ) {
+      const line =
+        lines.findIndex((text) => text.includes("useDeleteSite")) + 1;
+      findings.push({
+        file,
+        line,
+        kind: "raw-governed-write",
+        snippet: "Website deletion lacks the shared governed-action denial UI.",
+      });
+    }
   }
   return findings;
 }
@@ -258,9 +290,11 @@ function scanSwallowed(): SwallowFinding[] {
     if (!src.includes("recordUnavailable(")) continue;
     for (const m of src.matchAll(exportRe)) throwers.add(m[1] ?? m[2]);
   }
-  ["recordUnavailable", "recordUnavailableMessage", "isRecordUnavailableError"].forEach(
-    (n) => throwers.delete(n),
-  );
+  [
+    "recordUnavailable",
+    "recordUnavailableMessage",
+    "isRecordUnavailableError",
+  ].forEach((n) => throwers.delete(n));
 
   const hookDef =
     /(?:export\s+)?function\s+(use[A-Z]\w*)|(?:export\s+)?const\s+(use[A-Z]\w*)\s*=/;
@@ -303,7 +337,12 @@ function scanSwallowed(): SwallowFinding[] {
         const binding = m[1];
         if (binding.startsWith("{")) {
           if (/\b(error|isError|status)\b/.test(binding)) return;
-          findings.push({ file, line: i + 1, hook, binding: binding.slice(0, 60) });
+          findings.push({
+            file,
+            line: i + 1,
+            hook,
+            binding: binding.slice(0, 60),
+          });
         } else if (!bindingReads(src, binding)) {
           findings.push({ file, line: i + 1, hook, binding });
         }
@@ -346,6 +385,7 @@ function main() {
   );
   console.log(
     `       raw supabase message: ${byKind("raw-supabase-message")}  ` +
+      `raw governed write: ${byKind("raw-governed-write")}  ` +
       `claims deleted: ${byKind("claims-deleted")}  ` +
       `claims denied: ${byKind("claims-denied")}` +
       (suppressed > 0
@@ -395,12 +435,11 @@ function main() {
           suppressed,
           byKind: {
             "raw-supabase-message": byKind("raw-supabase-message"),
+            "raw-governed-write": byKind("raw-governed-write"),
             "claims-deleted": byKind("claims-deleted"),
             "claims-denied": byKind("claims-denied"),
           },
-          byFeature: Object.fromEntries(
-            ranked.map(([k, v]) => [k, v.length]),
-          ),
+          byFeature: Object.fromEntries(ranked.map(([k, v]) => [k, v.length])),
           findings,
           swallowed,
         },

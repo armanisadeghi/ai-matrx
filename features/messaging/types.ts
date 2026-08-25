@@ -120,7 +120,11 @@ export interface AccessRequestActionPayload {
   /** Registry entity token of the thing being asked for. */
   resource_type: string;
   resource_id: string;
-  requested_level: "viewer" | "editor";
+  requested_level: "viewer" | "editor" | "admin";
+  /** Distinguishes an access upgrade from a one-click owner action. */
+  request_kind?: "resource_access" | "resource_action";
+  action_key?: "delete" | null;
+  action_label?: string | null;
   entity_label: string | null;
   entity_title: string | null;
   /** The requester's own note, if they wrote one. */

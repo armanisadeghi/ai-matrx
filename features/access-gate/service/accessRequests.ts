@@ -22,6 +22,7 @@ import type {
   AccessRequestRow,
   AccessRequestStatus,
   RequestedLevel,
+  ResourceActionRequestPayload,
   SettingRequestPayload,
 } from "@/features/access-gate/types";
 
@@ -95,6 +96,20 @@ function parseSettingRequest(raw: unknown): SettingRequestPayload | null {
   return { settingLabel, href, actionKey, actionPayload };
 }
 
+function parseResourceActionRequest(
+  raw: unknown,
+): ResourceActionRequestPayload | null {
+  if (!isJsonObject(raw)) return null;
+  const actionKey = str(raw.action_key);
+  const actionLabel = str(raw.action_label);
+  if (actionKey !== "delete" || !actionLabel) return null;
+  return { actionKey, actionLabel };
+}
+
+function parseRequestedLevel(raw: unknown): RequestedLevel {
+  return raw === "admin" ? "admin" : raw === "editor" ? "editor" : "viewer";
+}
+
 /**
  * The RPCs raise human sentences ("You already have access to this site.") with
  * real SQLSTATEs. Surfacing `error.message` directly is therefore correct here
@@ -156,7 +171,7 @@ export async function createAccessRequest(args: {
     requestId: responseString(payload, "request_id"),
     status: parseStatus(payload.status),
     already: payload.already === true,
-    level: payload.level === "editor" ? "editor" : "viewer",
+    level: parseRequestedLevel(payload.level),
     entityLabel: str(payload.entity_label),
     entityTitle: str(payload.entity_title),
     recipients: parseRecipients(payload.recipients),
@@ -164,6 +179,46 @@ export async function createAccessRequest(args: {
 
   if (!created.already && args.currentUserId) {
     created.delivered = await notifyRecipients(created, args);
+  }
+  return created;
+}
+
+/** Ask the owner/admins to perform a governed destructive action. */
+export async function createDeleteRequest(args: {
+  resourceType: string;
+  resourceId: string;
+  message?: string;
+  currentUserId?: string | null;
+  href?: string | null;
+}): Promise<AccessRequestCreated> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("access_request_create", {
+    p_resource_type: args.resourceType,
+    p_resource_id: args.resourceId,
+    // Stable RPC signature: `delete` is the governed-action command and is
+    // stored durably as resource_action + requested_level admin.
+    p_level: "delete",
+    p_message: args.message?.trim() || undefined,
+  });
+  if (error) throw rpcError(error);
+
+  const payload = responseRecord(data);
+  const created: AccessRequestCreated = {
+    requestId: responseString(payload, "request_id"),
+    status: parseStatus(payload.status),
+    already: payload.already === true,
+    level: "admin",
+    entityLabel: str(payload.entity_label),
+    entityTitle: str(payload.entity_title),
+    recipients: parseRecipients(payload.recipients),
+  };
+  if (!created.already && args.currentUserId) {
+    created.delivered = await notifyRecipients(created, {
+      ...args,
+      requestKind: "resource_action",
+      actionKey: "delete",
+      actionLabel: `Delete ${created.entityLabel ?? "item"}`,
+    });
   }
   return created;
 }
@@ -274,14 +329,18 @@ async function notifyRecipients(
     currentUserId?: string | null;
     message?: string;
     href?: string | null;
+    requestKind?: "resource_access" | "resource_action";
+    actionKey?: "delete";
+    actionLabel?: string;
   },
 ): Promise<number> {
   const what = created.entityTitle
     ? `${created.entityLabel ?? "item"} "${created.entityTitle}"`
     : (created.entityLabel ?? "item").toLowerCase();
+  const isAction = args.requestKind === "resource_action";
   const body = args.message?.trim()
-    ? `Access requested for your ${what}: "${args.message.trim()}"`
-    : `Access requested for your ${what}.`;
+    ? `${isAction ? "Deletion" : "Access"} requested for your ${what}: "${args.message.trim()}"`
+    : `${isAction ? "Deletion" : "Access"} requested for your ${what}.`;
 
   const results = await Promise.allSettled(
     created.recipients.map((recipient) =>
@@ -297,6 +356,9 @@ async function notifyRecipients(
             resource_type: args.resourceType,
             resource_id: args.resourceId,
             requested_level: created.level,
+            request_kind: args.requestKind ?? "resource_access",
+            action_key: args.actionKey ?? null,
+            action_label: args.actionLabel ?? null,
             entity_label: created.entityLabel,
             entity_title: created.entityTitle,
             note: args.message?.trim() || null,
@@ -312,7 +374,7 @@ async function notifyRecipients(
 /** Grant or decline. Only someone who administers the target may call this. */
 export async function decideAccessRequest(args: {
   requestId: string;
-  decision: "grant" | "decline";
+  decision: "grant" | "decline" | "complete";
   level?: RequestedLevel;
   note?: string;
   /** The decider, for the "here it is" DM back to the requester. */
@@ -335,24 +397,32 @@ export async function decideAccessRequest(args: {
   // `resource_shared` card is the canonical "you now have this" message, so a
   // grant looks identical to any other share.
   const requesterId = str(payload.requester_id);
+  const requestKind = str(payload.request_kind);
   if (!already && status === "granted" && requesterId && args.currentUserId) {
     const resourceType = str(payload.resource_type);
     const resourceId = str(payload.resource_id);
     if (resourceType && resourceId) {
+      const completedAction =
+        requestKind === "resource_action" && args.decision === "complete";
       await sendDirectActionMessage({
         currentUserId: args.currentUserId,
         recipientId: requesterId,
-        content: `Access granted to ${str(payload.entity_title) ?? "the item you asked about"}.`,
-        actionData: {
-          kind: "resource_shared",
-          version: 1,
-          payload: {
-            resource_type: resourceType,
-            resource_id: resourceId,
-            resource_label: str(payload.entity_label) ?? "Item",
-            resource_title: str(payload.entity_title) ?? "",
-          },
-        },
+        content: completedAction
+          ? `${str(payload.entity_title) ?? "The item you asked about"} was deleted.`
+          : `Access granted to ${str(payload.entity_title) ?? "the item you asked about"}.`,
+        actionData: completedAction
+          ? undefined
+          : {
+              kind: "resource_shared",
+              version: 1,
+              payload: {
+                resource_type: resourceType,
+                resource_id: resourceId,
+                resource_label: str(payload.entity_label) ?? "Item",
+                resource_title: str(payload.entity_title) ?? "",
+                permission_level: args.level ?? undefined,
+              },
+            },
       }).catch(() => {
         /* The grant landed; the courtesy note is best-effort. */
       });
@@ -398,7 +468,7 @@ function parseRow(raw: unknown): AccessRequestRow | null {
   return {
     id,
     status: parseStatus(row?.status),
-    requestedLevel: row?.requested_level === "editor" ? "editor" : "viewer",
+    requestedLevel: parseRequestedLevel(row?.requested_level),
     message: str(row?.message),
     createdAt: str(row?.created_at),
     decidedAt: str(row?.decided_at),
@@ -408,8 +478,16 @@ function parseRow(raw: unknown): AccessRequestRow | null {
     entityLabel: str(row?.entity_label),
     entityTitle: str(row?.entity_title),
     requestKind:
-      row?.request_kind === "setting" ? "setting" : "resource_access",
+      row?.request_kind === "setting"
+        ? "setting"
+        : row?.request_kind === "resource_action"
+          ? "resource_action"
+          : "resource_access",
     requestKey: requestKey ? requestKey : "",
+    resourceAction:
+      row?.request_kind === "resource_action"
+        ? parseResourceActionRequest(row?.request_payload)
+        : null,
     settingRequest:
       row?.request_kind === "setting"
         ? parseSettingRequest(row?.request_payload)
@@ -426,6 +504,24 @@ function parseRow(raw: unknown): AccessRequestRow | null {
         }
       : null,
   };
+}
+
+export async function getResourceActionRequestForDecision(
+  requestId: string,
+): Promise<
+  AccessRequestRow & { resourceAction: ResourceActionRequestPayload }
+> {
+  const rows = await listAccessRequests("inbox");
+  const request = rows.find((row) => row.id === requestId);
+  if (
+    !request ||
+    request.status !== "pending" ||
+    request.requestKind !== "resource_action" ||
+    !request.resourceAction
+  ) {
+    throw new Error("This action request is no longer available.");
+  }
+  return { ...request, resourceAction: request.resourceAction };
 }
 
 /** `inbox` = asks I can answer. `sent` = asks I made. */

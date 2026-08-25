@@ -44,7 +44,15 @@ The setting-specific extension is governed by the cross-repo contract in
 
 **Pass the `token` when you throw.** `recordUnavailable({ entity, recordId, token })` carries the canonical entity token, and any renderer holding one should defer to `<AccessGate token id/>` rather than reciting both possibilities — describing the ambiguity is the best answer only while we cannot get the real one (live example: `features/marketing/components/shared/RecordUnavailableNotice.tsx`). A **proven** deletion is already the truth and needs no gate.
 
-**A failed WRITE is not this.** No record to resolve, no request to offer — raise `operationFailed(action, cause)` from [`utils/errors.ts`](../../utils/errors.ts), or bind a data module's whole set of responses once with `makeAssertData(action)` (override per call for a write). **`throw new Error(error.message)` is the defect this counts**; a private per-file `assertData` copy is how ten of them appeared in marketing alone.
+**An ordinary failed WRITE is not a read gate.** Raise
+`operationFailed(action, cause)` from [`utils/errors.ts`](../../utils/errors.ts),
+or bind a data module's responses with `makeAssertData(action)`. The one
+deliberate exception is a governed-action 42501: when the database explicitly
+says the caller's current share level excludes that operation, render
+`GovernedActionDialog`. It resolves the owner from the same access context and
+offers a durable action request or full-access request. A generic 42501 (missing
+schema/table/function grants) is still a fault and must never become an owner
+request. **`throw new Error(error.message)` remains a defect.**
 
 ## Using it
 
@@ -79,35 +87,38 @@ is the same class of lie this feature exists to kill.
 
 ## Files
 
-| Path                                                         | Role                                                                                                                                                                                                                                                                                               |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `components/AccessGate.tsx`                                  | The drop-in. Fault vs access-state decision.                                                                                                                                                                                                                                                       |
-| `components/ForbiddenSurface.tsx`                            | The SERVER face: what `forbidden.tsx` renders. Honest generic refusal — it structurally cannot name the record; the file says why.                                                                                                                                                                 |
-| `../../app/forbidden.tsx` · `../../app/(core)/forbidden.tsx` | The boundaries. Root is bare; `(core)`'s renders inside the AppShell.                                                                                                                                                                                                                              |
-| `../../utils/permissions/requireAccess.ts`                   | Server-side `requireAccess(type, id, level, { forbid: true })` → real 403 + the boundary.                                                                                                                                                                                                          |
-| `components/AccessDenied.tsx`                                | The screen (+ `AccessDeniedView` for variants).                                                                                                                                                                                                                                                    |
-| `components/AccessRequestsSurface.tsx`                       | The INBOX — both directions, at `/settings/access-requests`. Answers with the same service calls the DM chip uses; never its own copy.                                                                                                                                                             |
-| `../../app/(core)/settings/access-requests/page.tsx`         | The route. Signed-out → `ModuleSignInGate`. Reached from the settings nav (`Access requests`).                                                                                                                                                                                                     |
-| `components/RequestAccessPanel.tsx`                          | Ask → pending → answered, in place.                                                                                                                                                                                                                                                                |
-| `components/SettingAccessGate.tsx`                           | Org-admin setting composition: admins get the control; members get a contextual request.                                                                                                                                                                                                           |
-| `components/SettingRequestActionButtons.tsx`                 | One inline apply/open/decline component reused by DM bubbles and the durable inbox.                                                                                                                                                                                                                |
-| `hooks/useAccessGate.ts`                                     | `(token, id) → status + context`; reconciles a passed `RecordUnavailableError` capture before rendering.                                                                                                                                                                                           |
+| Path                                                         | Role                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `components/AccessGate.tsx`                                  | The drop-in. Fault vs access-state decision.                                                                                                                                                                                                                                                         |
+| `components/ForbiddenSurface.tsx`                            | The SERVER face: what `forbidden.tsx` renders. Honest generic refusal — it structurally cannot name the record; the file says why.                                                                                                                                                                   |
+| `../../app/forbidden.tsx` · `../../app/(core)/forbidden.tsx` | The boundaries. Root is bare; `(core)`'s renders inside the AppShell.                                                                                                                                                                                                                                |
+| `../../utils/permissions/requireAccess.ts`                   | Server-side `requireAccess(type, id, level, { forbid: true })` → real 403 + the boundary.                                                                                                                                                                                                            |
+| `components/AccessDenied.tsx`                                | The screen (+ `AccessDeniedView` for variants).                                                                                                                                                                                                                                                      |
+| `components/AccessRequestsSurface.tsx`                       | The INBOX — both directions, at `/settings/access-requests`. Answers with the same service calls the DM chip uses; never its own copy.                                                                                                                                                               |
+| `../../app/(core)/settings/access-requests/page.tsx`         | The route. Signed-out → `ModuleSignInGate`. Reached from the settings nav (`Access requests`).                                                                                                                                                                                                       |
+| `components/RequestAccessPanel.tsx`                          | Ask → pending → answered, in place.                                                                                                                                                                                                                                                                  |
+| `components/SettingAccessGate.tsx`                           | Org-admin setting composition: admins get the control; members get a contextual request.                                                                                                                                                                                                             |
+| `components/SettingRequestActionButtons.tsx`                 | One inline apply/open/decline component reused by DM bubbles and the durable inbox.                                                                                                                                                                                                                  |
+| `components/GovernedActionDialog.tsx`                        | The reusable write-denial UI: explains the required level and offers direct deletion or full-access requests.                                                                                                                                                                                        |
+| `components/ResourceActionRequestButtons.tsx`                | Owner/admin action controls shared by DMs and the durable inbox; re-resolves the ledger row before executing.                                                                                                                                                                                        |
+| `hooks/useAccessGate.ts`                                     | `(token, id) → status + context`; reconciles a passed `RecordUnavailableError` capture before rendering.                                                                                                                                                                                             |
 | `hooks/useAccessStates.ts`                                   | The LIST counterpart: `(token, ids) → Map<id, context>`. A table that joins to another table has rows whose embed came back null for the same four reasons. Module-cached by `token:id`, one RPC per distinct id, `refresh()` for the grant loop. Pass ONLY the ids that actually failed to resolve. |
-| `components/UnresolvedEntityRef.tsx`                         | The inline sibling of `EntityRef` — the door for a record you CANNOT read. Renders the resolved state in the cell ("Steven Wax — no access"), with owner, organization, `RequestAccessPanel`, sign-in, retry, and the surface's own `repairAction` one click away. Live: the CRM outreach roster.  |
-| `service/accessDeniedContext.ts`                             | Client half of `access_denied_context`.                                                                                                                                                                                                                                                            |
-| `service/accessRequests.ts`                                  | resource + setting create/list/decide/report/withdraw and DM delivery.                                                                                                                                                                                                                             |
-| —                                                            | **No variant registry.** A feature that earns a bespoke screen composes the exported `AccessDeniedView`. A token→component map consulted during render is a dynamic component boundary for an extension point with zero users — speculative abstraction, and React Compiler lint rightly flags it. |
-| `classifyDataError.ts`                                       | Access question vs real fault.                                                                                                                                                                                                                                                                     |
+| `components/UnresolvedEntityRef.tsx`                         | The inline sibling of `EntityRef` — the door for a record you CANNOT read. Renders the resolved state in the cell ("Steven Wax — no access"), with owner, organization, `RequestAccessPanel`, sign-in, retry, and the surface's own `repairAction` one click away. Live: the CRM outreach roster.    |
+| `service/accessDeniedContext.ts`                             | Client half of `access_denied_context`.                                                                                                                                                                                                                                                              |
+| `service/accessRequests.ts`                                  | resource + setting create/list/decide/report/withdraw and DM delivery.                                                                                                                                                                                                                               |
+| `lib/governedActionError.ts`                                 | Narrow classifier for platform-governed 42501s; refuses to misclassify infrastructure permission faults.                                                                                                                                                                                             |
+| —                                                            | **No variant registry.** A feature that earns a bespoke screen composes the exported `AccessDeniedView`. A token→component map consulted during render is a dynamic component boundary for an extension point with zero users — speculative abstraction, and React Compiler lint rightly flags it.   |
+| `classifyDataError.ts`                                       | Access question vs real fault.                                                                                                                                                                                                                                                                       |
 
 ## Database
 
-| Object                                                      | Notes                                                                                                                                                                     |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `public.access_denied_context(type, id)`                    | THE resolver. Returns kind, title, owner, org, nearest reachable ancestor, the caller's own request. **Never row content.**                                               |
-| `iam.access_requests`                                       | The ask ledger. Requester sees their own rows via RLS; the decider's inbox comes from the RPC (no per-row access resolution — the 2026-08-08 component-access precedent). |
-| `access_request_create / list / decide / report / withdraw` | The verb family.                                                                                                                                                          |
-| `setting_access_request_create / decide`                    | Contextual org-setting ask + completion/decline; reuses the same ledger and inbox.                                                                                        |
-| `platform.entity_types.allow_preview`                       | Per-kind disclosure switch. ONE place. `true` (default) = name+owner+org; `false` = kind only. Flip with `admin_set_entity_type_preview` (super-admin).                   |
+| Object                                                      | Notes                                                                                                                                                                       |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `public.access_denied_context(type, id)`                    | THE resolver. Returns kind, title, owner, org, nearest reachable ancestor, the caller's own request. **Never row content.**                                                 |
+| `iam.access_requests`                                       | The ask ledger. `resource_access`, `resource_action`, and `setting` share one durable inbox. Requester sees their own rows via RLS; the decider's inbox comes from the RPC. |
+| `access_request_create / list / decide / report / withdraw` | The verb family.                                                                                                                                                            |
+| `setting_access_request_create / decide`                    | Contextual org-setting ask + completion/decline; reuses the same ledger and inbox.                                                                                          |
+| `platform.entity_types.allow_preview`                       | Per-kind disclosure switch. ONE place. `true` (default) = name+owner+org; `false` = kind only. Flip with `admin_set_entity_type_preview` (super-admin).                     |
 
 ## Invariants
 
@@ -139,7 +150,13 @@ is the same class of lie this feature exists to kill.
   _(The first cut linked `/users/{id}`, a route that does not exist — browser
   verification caught it. Do not reintroduce it.)_
 - **One open request per person per record** — enforced by a partial unique
-  index, so a second click is a no-op and never a second DM.
+  index. Switching from access to an action (or raising the requested level)
+  upgrades that row and sends the materially changed ask once; an exact repeat
+  is a no-op and never a second DM.
+- **Action-message JSON is presentation, never authority.** DM and inbox buttons
+  re-resolve the pending row, then the operation re-checks current full/admin
+  access. A recipient snapshot keeps the request answerable after the requested
+  delete makes the target undiscoverable; it does not authorize the delete.
 - **Delivery never fails the ask, and delivery is never the only surface.** The
   row is the durable fact; the DM is how it gets NOTICED. A request whose DM
   lands nowhere is still answerable at `/settings/access-requests`, which reads
@@ -237,6 +254,19 @@ surface means importing them too, never reimplementing the RPC call.
   `recordUnavailable`, assert some consumer reads `.isError`/`.error`.
 
 ## Change Log
+
+- **2026-08-24** — **Governed write refusals became conversations, starting
+  with website deletion.** The exact edit-but-not-full `42501` now opens one
+  polished `GovernedActionDialog`, never a raw toast. The editor can ask the
+  owner/admins to delete the site or grant full access; the durable
+  `resource_action` row lands in Access requests and as an actionable direct
+  message, whose controls execute the deletion, grant full access, open the
+  item, decline, or report. All three site-delete entry points use the same
+  component. Site Settings resolves full access before canceling active crawl
+  work, so a refused delete has no destructive side effect. The classifier
+  requires both SQLSTATE `42501` and the governed-operation contract, keeping
+  infrastructure grant failures loud. Live rollback proof covered editor ask →
+  authorized recipient inbox → completion with no data left behind.
 
 - **2026-08-21** — **The sweep reached ZERO, and a zero finally means something.**
   363 findings drained in one campaign (education-wave patterns applied by

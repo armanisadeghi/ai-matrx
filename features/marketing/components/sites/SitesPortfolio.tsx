@@ -28,6 +28,8 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { GovernedActionDialog } from "@/features/access-gate/components/GovernedActionDialog";
+import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActionError";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -51,7 +53,6 @@ import {
   type SiteDraftPatch,
 } from "@/features/marketing/lib/site-write-targets";
 import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
-import { extractErrorMessage } from "@/utils/errors";
 import {
   QueryError,
   StatusBadge,
@@ -109,6 +110,7 @@ export function SitesPortfolio() {
   const deleteMutation = useDeleteSite();
   const [editing, setEditing] = useState<MarketingSite | null>(null);
   const [deleting, setDeleting] = useState<MarketingSite | null>(null);
+  const [deniedDelete, setDeniedDelete] = useState<MarketingSite | null>(null);
   const [peeking, setPeeking] = useState<SiteListRow | null>(null);
 
   // The open site editor's live handle (null whenever no editor is open), plus
@@ -139,9 +141,12 @@ export function SitesPortfolio() {
       toast.success(`Deleted ${deleting.name}`);
       setDeleting(null);
     } catch (error) {
-      toast.error("Could not delete site", {
-        description: extractErrorMessage(error),
-      });
+      if (isGovernedActionDenial(error)) {
+        setDeniedDelete(deleting);
+        setDeleting(null);
+        return;
+      }
+      toast.error("Could not delete site. Please try again.");
     }
   };
 
@@ -169,7 +174,11 @@ export function SitesPortfolio() {
         ["Health score", row.health_score],
         ["GSC data through", row.gsc_latest_date],
       ],
-      attributes: { site_id: row.id, brand_id: row.brand_id, status: row.status },
+      attributes: {
+        site_id: row.id,
+        brand_id: row.brand_id,
+        status: row.status,
+      },
     });
 
   const listRows = sites.data?.rows ?? [];
@@ -277,7 +286,9 @@ export function SitesPortfolio() {
       // reachable at all: the dialog is modal, so a user cannot open it and
       // THEN ask an agent — the overlay covers the header Agents button and
       // the chat composer. The user names the site; nothing is chosen for them.
-      const row = listRows.find((candidate) => candidate.id === resolved.site_id);
+      const row = listRows.find(
+        (candidate) => candidate.id === resolved.site_id,
+      );
       if (!row) {
         throw new Error(
           `${SITE_EDITOR_DRAFT_TARGET} refused — "${resolved.domain}" left the loaded sites list before the write could be applied. Nothing was staged.`,
@@ -299,14 +310,12 @@ export function SitesPortfolio() {
       ["Sites on this page", listRows.length],
       ["Total matching", sites.data?.total ?? listRows.length],
       ["Total managed", siteCount.data ?? null],
-      ...listRows.map(
-        (row): [string, string] => [
-          row.domain,
-          `${row.name} · ${row.page_count} pages · ${
-            row.gsc_clicks_28d ?? 0
-          } clicks/28d · ${row.gsc_impressions_28d ?? 0} impressions/28d`,
-        ],
-      ),
+      ...listRows.map((row): [string, string] => [
+        row.domain,
+        `${row.name} · ${row.page_count} pages · ${
+          row.gsc_clicks_28d ?? 0
+        } clicks/28d · ${row.gsc_impressions_28d ?? 0} impressions/28d`,
+      ]),
     ],
     attributes: { count: listRows.length, total: sites.data?.total ?? null },
   });
@@ -595,8 +604,8 @@ export function SitesPortfolio() {
                 Seed sites from connected data
               </p>
               <p className="truncate text-[10px] text-muted-foreground">
-                Set up GSC or organization credentials, then
-                bind a property to a managed site.
+                Set up GSC or organization credentials, then bind a property to
+                a managed site.
               </p>
             </div>
           </div>
@@ -653,7 +662,9 @@ export function SitesPortfolio() {
                 ),
               }}
               detail={{ enabled: false }}
-              onRowOpen={(row) => router.push(marketingRoutes.site(row.brand_id, row.id))}
+              onRowOpen={(row) =>
+                router.push(marketingRoutes.site(row.brand_id, row.id))
+              }
               rowActions={(row) => (
                 <span onClick={(event) => event.stopPropagation()}>
                   <ItemMenu config={() => buildRowMenu(row)} align="end">
@@ -728,6 +739,16 @@ export function SitesPortfolio() {
         busy={deleteMutation.isPending}
         onConfirm={() => void confirmDelete()}
       />
+      {deniedDelete ? (
+        <GovernedActionDialog
+          open
+          onOpenChange={(next) => !next && setDeniedDelete(null)}
+          resourceType="web_site"
+          resourceId={deniedDelete.id}
+          itemName={deniedDelete.name}
+          href={marketingRoutes.site(deniedDelete.brand_id, deniedDelete.id)}
+        />
+      ) : null}
     </SurfaceRuntimeProvider>
   );
 }

@@ -42,6 +42,7 @@ import { getResourceSharePath } from "@/utils/permissions/registry";
 import { getResourceIcon } from "@/features/sharing/resourceIcons";
 import { EntityCard } from "@/features/tool-call-visualization/renderers/_shared-entity/EntityCard";
 import { SettingRequestActionButtons } from "@/features/access-gate/components/SettingRequestActionButtons";
+import { ResourceActionRequestButtons } from "@/features/access-gate/components/ResourceActionRequestButtons";
 import { isJsonObject } from "@/types/json";
 
 interface ChipRenderContext {
@@ -238,6 +239,19 @@ function AccessRequestChips({
   const [busy, setBusy] = useState(false);
   if (!p?.request_id) return null;
 
+  if (p.request_kind === "resource_action" && p.action_key) {
+    return (
+      <ResourceActionRequestButtons
+        requestId={p.request_id}
+        actionKey={p.action_key}
+        href={p.href}
+        itemName={p.entity_title ?? p.entity_label ?? "this item"}
+        isOwn={isOwn}
+        compact
+      />
+    );
+  }
+
   // The sender sees their own ask; only the recipient can answer it.
   if (isOwn) {
     return (
@@ -250,7 +264,7 @@ function AccessRequestChips({
 
   async function decide(
     decision: "grant" | "decline",
-    level?: "viewer" | "editor",
+    level?: "viewer" | "editor" | "admin",
   ) {
     setBusy(true);
     try {
@@ -329,6 +343,15 @@ function AccessRequestChips({
       >
         <PenLine className="h-3 w-3" aria-hidden />
         Let them edit
+      </button>
+      <button
+        type="button"
+        className={chipClass(isOwn)}
+        disabled={busy}
+        onClick={() => void decide("grant", "admin")}
+      >
+        <KeyRound className="h-3 w-3" aria-hidden />
+        Give full access
       </button>
       <button
         type="button"
