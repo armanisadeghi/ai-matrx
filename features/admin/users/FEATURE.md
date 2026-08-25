@@ -1,5 +1,7 @@
 # FEATURE.md — Users & Access administration
 
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/masterwork/agent-creation-studio/STATE.md — read it before touching this feature in ANY repo.
+
 **Status:** `stable`
 **Tier:** `1`
 **Last updated:** `2026-08-24`
@@ -30,6 +32,7 @@ not own or duplicate organization or membership data.
 - `features/admin/users/components/OrganizationsAdminClient.tsx` — organization list, member list, user focus, and membership controls.
 - `features/user-search/UserSearchField.tsx` — canonical inline user query plus advanced user-search window, used by admin-level and organization-membership selectors.
 - `app/api/admin/users/route.ts` — server-only auth roster plus profile, admin-level, and organization projections.
+- `features/admin/users/lib/mcp-access.ts` — canonical `mcp.full_access` App Metadata parser/mutator; preserves every unrelated permission.
 - `app/api/admin/users/organizations/route.ts` — super-admin-only directory and membership mutation endpoint.
 - `app/api/admin/users/acquisition/route.ts` — super-admin projection joining auth users, guest-registry provenance, and the canonical usage rollup.
 - `app/api/admin/users/acquisition/[rowId]/route.ts` — per-identity owned-observability join over the HTTP ledger, runtime spine, Error Inspector/server incidents, and AI Dream logs.
@@ -46,6 +49,7 @@ not own or duplicate organization or membership data.
 - `auth.users` and `users.profiles` supply account identity and display fields.
 - `auth.users.is_anonymous` is the guest authority. A UUID-looking label is never used to infer status.
 - Supabase Auth `created_at` and `is_anonymous` flow through `mapUserData` into volatile `userAuth`; the Error Inspector derives first-seven-day capture eligibility locally with no query or stored flag.
+- Supabase Auth `raw_app_meta_data.permissions` stores independent account capabilities. `mcp.full_access` grants the complete Agent Service MCP catalog without adding an `admin.admins` row or changing organization roles.
 - `public.guest_executions` owns first-party visitor continuity, first/last execution, conversion, IP/user-agent, and `metadata.acquisition` first touch.
 - `public.record_acquisition_first_touch` atomically creates or enriches that row. It preserves the first observed request while linking the browser's guest ID and eventual account ID.
 - `chat.admin_user_usage_rollup` supplies stored all-time AI requests, last activity, cost, and — since migration `0433` — `by_origin`, that spend split by the witnessed trust axis `chat.user_request.origin_class` (`human | client_auto | api | child_agent | workflow | scheduled | system | unknown`). The classes are derived server-side from what the platform observed, never from what a caller claims about itself; the vocabulary is defined in aidream `packages/matrx-connect/matrx_connect/context/provenance.py`.
@@ -122,6 +126,13 @@ cost. The owned ledgers above remain the canonical everyday view.
 4. The database function validates the action and role, locks the organization's active memberships, protects the last owner, constrains personal-organization repair to restoring the creator or removing legacy extra members, performs canonical add/reactivate, role change, or soft removal, and writes `iam.org_admin_audit`.
 5. The client reloads both reciprocal projections after success.
 
+### Grant MCP access without changing role
+
+1. The Accounts roster reads the explicit `mcp.full_access` value from protected App Metadata and shows the effective state; admins display inherited access.
+2. A super admin uses the row action to grant or revoke full MCP access for a non-admin.
+3. `PATCH /api/admin/users` merges only that permission through the server-only Supabase admin client; unrelated App Metadata and the account's admin/organization roles are preserved.
+4. AI Dream verifies the signed token, reads the protected metadata live, and maps the permission to an MCP-only scope. No token refresh or role promotion is required.
+
 ---
 
 ## Invariants & gotchas
@@ -135,6 +146,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 - Account and organization screens link to the same Organizations tab; do not build separate per-user and per-organization membership managers.
 - **Existing-account selection uses `UserSearchField`.** Admin surfaces may request its protected full-directory mode; ordinary product surfaces must provide only candidates the caller can already see. Invitation email fields remain separate because they create an invitation rather than select an existing account.
 - **Admin email selection reads the complete protected roster.** Do not reintroduce the capped `/api/users?limit=100` path; recipient discovery uses `/api/admin/users` and filters out accounts without an email address.
+- **MCP access is one independent grant.** Never promote a user, mint an admin-shaped token, or reuse billing entitlements to confer it. The exact permission is `mcp.full_access`; all admins inherit it, and non-admin grants live only in server-managed App Metadata.
 - **A user is named through `AdminUserRef`, never a bare `<span>` or uuid.** There is still no canonical `/users/<id>` route and no `user` token in the entity registry, so `EntityRef` has nothing to resolve — `AdminUserRef` is the stand-in that declares the per-user destination set exactly once. Consume it; do not hand-roll a link list beside it. When a canonical user route exists, one edit there lights up every surface.
 - **A door is only added after reading the target route and confirming it consumes the param.** Both `?user=` destinations added on 2026-08-09 were previously broken promises: Accounts read no param at all, and the Accounts row menu advertised an "Admin level" filter that `…/users/admins` silently ignored. A link to a route that ignores its param is worse than no link, because it looks like it worked.
 - **The Accounts query has one owner.** `AccountsTableClient` uses `useTableUrlState({ tableId: "user-accounts" })` and passes its state into `MatrxDataTable` controlled-local mode; never also pass the table's `urlState` prop.
@@ -166,6 +178,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 
 ## Change log
 
+- `2026-08-24` — Added the independent Full MCP Access control to the Accounts roster. The super-admin route merges `mcp.full_access` into protected App Metadata without changing the account's platform or organization role; admins inherit access, and explicit grants are independently revocable.
 - `2026-08-24` — Replaced exact-email and compact account selectors with the canonical `UserSearchField`: inline entry remains available, while the search action opens one protected sortable/filterable account directory. Admin promotion, organization membership, and bulk-email recipient selection use it; the email surface now reads the complete protected roster instead of a 100-user cap. Existing super-admin-gated mutation/send paths are unchanged.
 - `2026-08-24` — Fixed the Accounts route crash by moving shareable table query state into the controlled query owner with `useTableUrlState`; search, filters, sort, pagination, Back/Forward, and agent-visible query context now share one state path.
 - `2026-08-20` — Moved first touch to zero-blocking Proxy capture backed by atomic `record_acquisition_first_touch`, adopted the server visitor ID for new guest AI use, linked email/OAuth accounts without requiring an AI execution, separated historical gaps from direct/withheld referrers, and excluded localhost/agent and bot rows from headline acquisition and cost totals while retaining them for diagnosis.

@@ -15,6 +15,10 @@ import { ONBOARDING_METADATA_KEY } from "@/utils/onboarding";
 import type { AdminUserRow } from "@/features/admin/users/types";
 import { loadAdminOrganizationDirectory } from "@/features/admin/users/server/organizationMembershipAdmin";
 import { isJsonObject } from "@/types/json";
+import {
+  hasMcpFullAccessPermission,
+  withMcpFullAccessPermission,
+} from "@/features/admin/users/lib/mcp-access";
 
 const PER_PAGE = 1000;
 const MAX_PAGES = 50; // hard ceiling: 50k users
@@ -151,6 +155,7 @@ export async function GET() {
           new Date((u as { banned_until: string }).banned_until) > new Date(),
       ),
       admin_level: levelByUser.get(u.id) ?? null,
+      mcp_full_access: hasMcpFullAccessPermission(appMeta),
       onboarding_completed: meta[ONBOARDING_METADATA_KEY] === true,
       created_at: u.created_at ?? null,
       last_sign_in_at: u.last_sign_in_at ?? null,
@@ -161,8 +166,8 @@ export async function GET() {
   return NextResponse.json({ users: rows });
 }
 
-// PATCH /api/admin/users — flip a user's onboarding flag.
-// Body: { userId: string, onboardingCompleted: boolean }
+// PATCH /api/admin/users — update server-managed account controls.
+// Body: { userId: string, onboardingCompleted?: boolean, mcpFullAccess?: boolean }
 export async function PATCH(request: NextRequest) {
   try {
     await requireSuperAdmin();
@@ -173,11 +178,17 @@ export async function PATCH(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as {
     userId?: string;
     onboardingCompleted?: boolean;
+    mcpFullAccess?: boolean;
   } | null;
 
-  if (!body?.userId || typeof body.onboardingCompleted !== "boolean") {
+  const onboardingSupplied = typeof body?.onboardingCompleted === "boolean";
+  const mcpAccessSupplied = typeof body?.mcpFullAccess === "boolean";
+  if (!body?.userId || (!onboardingSupplied && !mcpAccessSupplied)) {
     return NextResponse.json(
-      { error: "userId and boolean onboardingCompleted are required" },
+      {
+        error:
+          "userId and at least one boolean account control are required",
+      },
       { status: 400 },
     );
   }
@@ -194,14 +205,29 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const mergedMetadata = {
-    ...(existing.user.user_metadata ?? {}),
-    [ONBOARDING_METADATA_KEY]: body.onboardingCompleted,
-  };
+  const update: {
+    user_metadata?: Record<string, unknown>;
+    app_metadata?: Record<string, unknown>;
+  } = {};
+  if (onboardingSupplied) {
+    update.user_metadata = {
+      ...(existing.user.user_metadata ?? {}),
+      [ONBOARDING_METADATA_KEY]: body.onboardingCompleted,
+    };
+  }
+  if (mcpAccessSupplied) {
+    const appMetadata = isJsonObject(existing.user.app_metadata)
+      ? existing.user.app_metadata
+      : {};
+    update.app_metadata = withMcpFullAccessPermission(
+      appMetadata,
+      body.mcpFullAccess!,
+    );
+  }
 
   const { error: updateError } = await admin.auth.admin.updateUserById(
     body.userId,
-    { user_metadata: mergedMetadata },
+    update,
   );
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
@@ -209,6 +235,9 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({
     userId: body.userId,
-    onboarding_completed: body.onboardingCompleted,
+    ...(onboardingSupplied
+      ? { onboarding_completed: body.onboardingCompleted }
+      : {}),
+    ...(mcpAccessSupplied ? { mcp_full_access: body.mcpFullAccess } : {}),
   });
 }

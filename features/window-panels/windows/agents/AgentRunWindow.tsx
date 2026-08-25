@@ -55,6 +55,7 @@ import { DebugSessionActivator } from "@/features/agents/components/debug/DebugS
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectUserInputEntryExists } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 const SOURCE_FEATURE: SourceFeature = "agent-runner";
@@ -229,7 +230,11 @@ function AgentRunBody({
   const store = useAppStore();
 
   const surfaceKey = `${SOURCE_FEATURE}:${agentId}`;
-  const hasDraft = Boolean(initialDraftText) || Boolean(initialVariableValues && Object.keys(initialVariableValues).length > 0);
+  const hasDraft =
+    Boolean(initialDraftText) ||
+    Boolean(
+      initialVariableValues && Object.keys(initialVariableValues).length > 0,
+    );
 
   // Register as a `window` surface — fork outcomes update the window's
   // internal focus (no URL change). The conversation column already
@@ -321,14 +326,30 @@ function AgentRunBody({
   // The structured-content channel for this window: never mixed into the
   // composer text. Fires independently of the draft-text seed above (a
   // caller may pass variables with no draft, or a draft with no variables).
+  // Wait for the instance-variable entry exactly as the draft path waits for
+  // its input entry. The reducer intentionally ignores writes before that
+  // entry exists, which previously dropped every opener-supplied variable.
+  const variableEntryReady = useAppSelector((state) => {
+    if (!conversationId) return false;
+    return selectInstanceVariableDefinitions(conversationId)(state).length > 0;
+  });
   const variableSeededRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!initialVariableValues || Object.keys(initialVariableValues).length === 0) return;
-    if (!conversationId) return;
+    if (
+      !initialVariableValues ||
+      Object.keys(initialVariableValues).length === 0
+    )
+      return;
+    if (!conversationId || !variableEntryReady) return;
     if (variableSeededRef.current === conversationId) return;
     variableSeededRef.current = conversationId;
-    dispatch(setUserVariableValues({ conversationId, values: initialVariableValues }));
-  }, [initialVariableValues, conversationId, dispatch]);
+    dispatch(
+      setUserVariableValues({
+        conversationId,
+        values: initialVariableValues,
+      }),
+    );
+  }, [initialVariableValues, conversationId, variableEntryReady, dispatch]);
 
   // ── Sync selectedConversationId → load + focus (replaces URL sync) ─────────
   const lastLoadedRef = useRef<string | null>(null);

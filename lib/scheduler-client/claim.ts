@@ -16,6 +16,7 @@
 // caller whether the write actually landed.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import type { Database } from "@/types/database.types";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
 
@@ -51,27 +52,16 @@ const DEFAULT_LEASE_SECONDS = 600;
  */
 const CLAIM_PROTOCOL = 2;
 
-async function resolveOrganizationIdForUser(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<string> {
-  const { data, error } = await supabase.rpc("ensure_personal_organization", {
-    p_user_id: userId,
-  });
-  if (error || !data) {
-    throw new SchedulerClientError(
-      `Could not resolve organization for user ${userId}: ${error?.message ?? "unknown"}`,
-      error ?? undefined,
-    );
-  }
-  return data;
-}
+const OrganizationIdSchema = z.string().uuid();
 
 // ── claimTask ──────────────────────────────────────────────────────────────
 
 export interface ClaimTaskOptions {
-  /** Task being claimed. We only need id, user_id, and next_due_at. */
-  task: Pick<SchTaskRow, "id" | "user_id" | "next_due_at">;
+  /** The persisted task is the authoritative organization source for its run. */
+  task: Pick<
+    SchTaskRow,
+    "id" | "user_id" | "organization_id" | "next_due_at"
+  >;
   /** Surface of the claiming host (e.g. 'chrome-extension-chat'). */
   surface: string;
   /** Stable per-host instance id. Not written to the row today, but tracked
@@ -97,21 +87,25 @@ export async function claimTask(
   supabase: SupabaseClient,
   opts: ClaimTaskOptions,
 ): Promise<SchRunRow> {
+  const organizationId = OrganizationIdSchema.safeParse(
+    opts.task.organization_id,
+  );
+  if (!organizationId.success) {
+    throw new SchedulerClientError(
+      `Refusing to claim task ${opts.task.id}: task has no valid organization_id`,
+    );
+  }
+
   const claimToken = crypto.randomUUID();
   const now = new Date();
   const lease = opts.leaseSeconds ?? DEFAULT_LEASE_SECONDS;
   const expires = new Date(now.getTime() + lease * 1000);
 
-  const organizationId = await resolveOrganizationIdForUser(
-    supabase,
-    opts.task.user_id,
-  );
-
   const row: SchRunInsert = {
     task_id: opts.task.id,
     trigger_id: opts.triggerId ?? null,
     user_id: opts.task.user_id,
-    organization_id: organizationId,
+    organization_id: organizationId.data,
     status: "claimed" satisfies RunStatus,
     surface: opts.surface,
     queue: opts.queue ?? null,

@@ -20,6 +20,8 @@ export interface AdminUserRow {
   banned: boolean;
   /** admin_level enum value (developer|senior_admin|super_admin) or null. */
   admin_level: string | null;
+  /** Explicit non-role grant stored in protected Supabase app_metadata. */
+  mcp_full_access: boolean;
   onboarding_completed: boolean;
   created_at: string | null;
   last_sign_in_at: string | null;

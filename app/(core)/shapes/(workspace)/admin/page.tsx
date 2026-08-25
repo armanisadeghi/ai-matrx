@@ -18,7 +18,7 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
   name: "Shapes (studio)",
   slug: "shapes",
   description:
-    "User-facing Shape System studio: list your org's kinds + the platform library, preview canonical examples through the real render route, test a shape live via the canonical KindInputForm, and create new shapes with the creator agent (handoff to /chat/a/[agentId]). Registry/admin tooling lives at /administration/utilities/kind-registry.",
+    "User-facing Shape System studio: list your org's kinds + the platform library, preview canonical examples through the real render route, test a shape live via the canonical KindInputForm, and create new shapes with the creator agent in the floating run window. Registry/admin tooling lives at /administration/utilities/kind-registry.",
   docs: [
     { label: "Content-IR FEATURE.md", href: "/features/content-ir/FEATURE.md" },
     {
@@ -103,6 +103,18 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
     },
   ],
 
+  windowPanels: [
+    {
+      overlayId: "convertToShapeWindow",
+      description:
+        "JSON-to-Shape preflight; opens from a valid JsonBlock action menu because it requires the source sample.",
+      launchFrom: {
+        note: "Open from Convert to Shape in a JSON block's action menu.",
+        href: "/chat",
+      },
+    },
+  ],
+
   components: [
     {
       name: "KindExamplePreview",
@@ -136,7 +148,22 @@ const SHAPES_ADMIN_MAP: FeatureAdminMap = {
       name: "NewShapeClient",
       filePath: "features/content-ir/studio/components/NewShapeClient.tsx",
       description:
-        "Create-with-agent handoff (stashChatDraftTransfer → /chat/a/[agentId]).",
+        "Create-with-agent handoff to the mandate-backed floating agent run window.",
+      tier: "internal",
+    },
+    {
+      name: "ConvertToShapeWindow",
+      filePath:
+        "features/window-panels/windows/content-ir/ConvertToShapeWindow.tsx",
+      description:
+        "Ephemeral JSON preflight that collects the Shape name, detects a root __kind, and opens the existing creator mandate with the untouched sample as user_data_sample.",
+      tier: "internal",
+    },
+    {
+      name: "JsonBlock",
+      filePath: "components/mardown-display/blocks/json/JsonBlock.tsx",
+      description:
+        "Canonical raw-JSON renderer for streaming Markdown, including view transforms, formatting, exports, renderer identity, and Convert to Shape.",
       tier: "internal",
     },
     {

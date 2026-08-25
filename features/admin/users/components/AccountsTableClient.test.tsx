@@ -112,4 +112,48 @@ describe("AccountsTableClient", () => {
       "table.user-accounts.q=gmail",
     );
   });
+
+  it("shows MCP access as independent from the admin role", async () => {
+    await act(async () => {
+      root.render(<AccountsTableClient />);
+    });
+
+    if (!mockTableProps) throw new Error("Accounts table did not render");
+    const mcpColumn = mockTableProps.columns.find(
+      (column) => column.id === "mcp_full_access",
+    );
+    if (!mcpColumn?.accessorFn) throw new Error("MCP access column is missing");
+
+    const base: AdminUserRow = {
+      id: "00000000-0000-0000-0000-000000000001",
+      email: "member@example.com",
+      display_name: "Member",
+      full_name: "Member",
+      avatar_url: null,
+      phone: null,
+      providers: ["email"],
+      email_confirmed: true,
+      phone_confirmed: false,
+      is_anonymous: false,
+      banned: false,
+      admin_level: null,
+      mcp_full_access: true,
+      onboarding_completed: true,
+      created_at: null,
+      last_sign_in_at: null,
+      organizations: [],
+    };
+
+    expect(mcpColumn.accessorFn(base)).toBe(true);
+    expect(mcpColumn.accessorFn({ ...base, mcp_full_access: false })).toBe(
+      false,
+    );
+    expect(
+      mcpColumn.accessorFn({
+        ...base,
+        mcp_full_access: false,
+        admin_level: "developer",
+      }),
+    ).toBe(true);
+  });
 });

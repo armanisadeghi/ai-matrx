@@ -193,6 +193,32 @@ export function AccountsTableClient() {
     }
   }, []);
 
+  const toggleMcpFullAccess = useCallback(async (row: AdminUserRow) => {
+    const next = !row.mcp_full_access;
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: row.id, mcpFullAccess: next }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Failed");
+      setRows((prev) =>
+        prev.map((current) =>
+          current.id === row.id
+            ? { ...current, mcp_full_access: next }
+            : current,
+        ),
+      );
+      toast.success(
+        next
+          ? `Granted full MCP access to ${row.email ?? row.id}`
+          : `Revoked full MCP access from ${row.email ?? row.id}`,
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  }, []);
+
   // In-app DM: create/find the direct conversation with the user, then send.
   const [dmTarget, setDmTarget] = useState<AdminUserRow | null>(null);
   const [dmContent, setDmContent] = useState("");
@@ -328,6 +354,21 @@ export function AccountsTableClient() {
         header: "Admin",
         filter: "select",
         cell: (row) => levelBadge(row.admin_level),
+        width: 120,
+      },
+      {
+        id: "mcp_full_access",
+        header: "MCP access",
+        accessorFn: (row) => Boolean(row.admin_level) || row.mcp_full_access,
+        filter: "boolean",
+        cell: (row) =>
+          row.admin_level ? (
+            <Badge variant="outline">Admin</Badge>
+          ) : row.mcp_full_access ? (
+            <Badge variant="default">Granted</Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground">Off</span>
+          ),
         width: 120,
       },
       {
@@ -585,7 +626,7 @@ export function AccountsTableClient() {
                 `${r.display_name ?? "(no name)"} <${r.email ?? "no-email"}>`,
                 `id=${r.id}`,
                 r.admin_level ? `admin=${r.admin_level}` : null,
-                `providers=${r.providers.join("/") || "none"} confirmed=${r.email_confirmed} onboarded=${r.onboarding_completed}`,
+                `providers=${r.providers.join("/") || "none"} confirmed=${r.email_confirmed} onboarded=${r.onboarding_completed} mcp_full_access=${Boolean(r.admin_level) || r.mcp_full_access}`,
                 `created=${r.created_at ?? "?"} last_sign_in=${r.last_sign_in_at ?? "never"}`,
                 `organizations=${r.organizations.map((organization) => `${organization.name}:${organization.role}`).join(",") || "none"}`,
               ]
@@ -595,6 +636,8 @@ export function AccountsTableClient() {
               id: r.id,
               email: r.email,
               admin_level: r.admin_level,
+              mcp_full_access: Boolean(r.admin_level) || r.mcp_full_access,
+              mcp_full_access_grant: r.mcp_full_access,
               onboarded: r.onboarding_completed,
             }),
             // `all` is the table's DATA prop, which is the focus-filtered
@@ -691,6 +734,17 @@ export function AccountsTableClient() {
                   <ShieldCheck className="mr-2 h-4 w-4" /> Admin level
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => void toggleMcpFullAccess(row)}
+                  disabled={Boolean(row.admin_level)}
+                >
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  {row.admin_level
+                    ? "MCP access inherited from admin"
+                    : row.mcp_full_access
+                      ? "Revoke full MCP access"
+                      : "Grant full MCP access"}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => void toggleOnboarding(row)}>
                   <UserCog className="mr-2 h-4 w-4" />
                   {row.onboarding_completed
