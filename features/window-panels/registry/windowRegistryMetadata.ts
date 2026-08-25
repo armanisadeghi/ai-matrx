@@ -44,6 +44,20 @@ export type {
 // ─── Static registry ──────────────────────────────────────────────────────────
 
 const STATIC_REGISTRY: WindowStaticMetadata[] = [
+  // ── Keyword Quick Answers ─────────────────────────────────────────────────
+  // KI-051. A WINDOW on purpose: the value table stays live behind it, so the
+  // levels visibly move as you answer. A takeover would hide the consequence
+  // of the very thing it is asking you to do.
+  {
+    slug: "keyword-quick-answers-window",
+    overlayId: "keywordQuickAnswersWindow",
+    kind: "window",
+    label: "Quick Answers",
+    defaultData: { siteId: null, siteLabel: null, dimensionSlug: null },
+    mobilePresentation: "drawer",
+    instanceMode: "singleton",
+  },
+
   // ── Code Workspace ────────────────────────────────────────────────────────
   {
     slug: "code-workspace",

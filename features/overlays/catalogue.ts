@@ -180,6 +180,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  keywordQuickAnswersWindow: {
+    label: "Quick Answers",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentMemoryWindow: {
     label: "Agent Memory",
     instanceMode: "singleton",

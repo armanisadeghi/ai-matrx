@@ -62,6 +62,13 @@ import {
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
 import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+} from "@/features/marketing/seo/keyword/keyword-actions";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingRanksScope } from "@/features/surfaces/manifests/marketing-ranks.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -628,6 +635,35 @@ export function RanksWorkspace() {
     staleTime: 60_000,
   });
 
+  // KI-025 — the canonical v3 keyword menu. This table states a keyword's
+  // Class · Score · Level (above) but until 2026-08-24 answered right-click
+  // with nothing, so it named a verdict with no door to open or change it.
+  // ONE menu per pane; the right-clicked row is stashed and resolved at
+  // select time, exactly as `SiteKeywordPerformanceWorkspace` does.
+  const keywordSurfaces = useKeywordAssignSurfaces({
+    siteId: site.id,
+    onChanged: () => void keywordValues.refetch(),
+  });
+  const clickedRow = useRef<RankPortfolioItem | null>(null);
+  const keywordSection = useKeywordMenuSection({
+    siteId: site.id,
+    siteName: site.domain,
+    brandId: site.brand_id,
+    organizationId: site.organization_id,
+    surfaces: keywordSurfaces,
+    getRow: () => {
+      const item = clickedRow.current;
+      if (!item?.keyword) return null;
+      const value = keywordValues.data?.get(item.keyword_id);
+      return {
+        phrase: item.keyword,
+        keywordId: item.keyword_id ?? null,
+        currentLevel: value?.value_band ?? null,
+        levelIsRuling: value?.value_source === "override",
+      };
+    },
+  });
+
   // Live drill-in state, reported up by the open history dialog.
   const historySnapshotRef = useRef<HistorySnapshot | null>(null);
   const handleHistorySnapshot = (snapshot: HistorySnapshot) => {
@@ -937,6 +973,32 @@ export function RanksWorkspace() {
           organizationId={site.organization_id}
           onAdd={async (input) => void (await addTarget(input))}
         />
+        <NonEditableContextMenu
+          sourceFeature="marketing"
+          surfaceName="matrx-user/marketing-ranks"
+          contentSource={{ type: "raw" }}
+          contextData={{ ...getSurfaceScope(), content: "" }}
+          resolveContextOnOpen={(target) => {
+            const id = target
+              ?.closest("[data-row-id]")
+              ?.getAttribute("data-row-id");
+            const item =
+              (id && rows.find((row) => row.target_id === id)) || null;
+            clickedRow.current = item;
+            if (!item) return null;
+            return {
+              content: humanRankPortfolioItem(item),
+              keyword: item.keyword ?? "",
+              keyword_id: item.keyword_id ?? "",
+              // The RIGHT-CLICKED row owns Attach To — one menu, N rows.
+              [CONTEXT_MENU_ENTITY_KEY]: keywordEntityRef({
+                phrase: item.keyword ?? "",
+                keywordId: item.keyword_id ?? null,
+              }),
+            };
+          }}
+          extraSections={[keywordSection]}
+        >
         <div className="mt-3" data-surface-value="rank_portfolio">
           <MatrxDataTable
             urlState={{ id: "rank-portfolio" }}
@@ -1040,7 +1102,9 @@ export function RanksWorkspace() {
             }}
           />
         </div>
+        </NonEditableContextMenu>
       </SectionCard>
+      {keywordSurfaces.isOpen ? keywordSurfaces.node : null}
       {historyTarget ? (
         <HistoryDialog
           targetId={historyTarget.target_id}

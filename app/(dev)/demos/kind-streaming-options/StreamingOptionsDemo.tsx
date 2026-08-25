@@ -57,7 +57,7 @@ export interface DemoKind {
 type Mode = "progressive" | "smart" | "wait";
 
 const MODE_LABEL: Record<Mode, string> = {
-  progressive: "A · Progressive (first unit → real component)",
+  progressive: "A · Production pipeline (loader → real component at first unit)",
   smart: "B · Smart loader (data-fed animation until done)",
   wait: "C · Wait for all (skeleton the whole time)",
 };
@@ -268,6 +268,10 @@ function KindStreamCard({ demo }: { demo: DemoKind }) {
     <Loader {...earlyKeysFromValue(value, demo.kind)} />
   );
 
+  // THE PRODUCTION PIPELINE, verbatim: no suppression, no demo-side gates.
+  // BlockRenderer itself owns the ONE loading sequence (kind loader → real
+  // component from the first renderable frame), so what this card shows in
+  // posture A is exactly what chat / run pages / DB reloads show.
   const realEl = block ? (
     <BlockRenderer
       block={{
@@ -279,7 +283,6 @@ function KindStreamCard({ demo }: { demo: DemoKind }) {
       }}
       index={0}
       isStreamActive={streaming}
-      suppressLoadingGate
       replaceBlockContent={noop}
       handleOpenEditor={noop}
     />
@@ -295,7 +298,7 @@ function KindStreamCard({ demo }: { demo: DemoKind }) {
   } else if (complete) {
     body = realEl;
   } else if (mode === "progressive") {
-    body = unitReady ? realEl : loaderEl;
+    body = realEl;
   } else if (mode === "smart") {
     body =
       demo.kind === "quiz_set" ? (

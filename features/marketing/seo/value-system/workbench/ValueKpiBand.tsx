@@ -154,6 +154,7 @@ export function ValueKpiBand({
   onClearFilters,
   onShowLevels,
   onStartSession,
+  onQuickAnswers,
   sessionOpen,
 }: {
   kpis: ValueKpis | null;
@@ -166,6 +167,8 @@ export function ValueKpiBand({
   onClearFilters: () => void;
   onShowLevels: () => void;
   onStartSession: () => void;
+  /** KI-051 — opens the floating one-question-five-keywords panel. */
+  onQuickAnswers: () => void;
   sessionOpen: boolean;
 }) {
   if (isLoading || !kpis) {
@@ -238,14 +241,29 @@ export function ValueKpiBand({
         doorLabel="Opens exactly those keywords in the table below."
         action={
           queueOpen && !sessionOpen ? (
-            <button
-              type="button"
-              onClick={onStartSession}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-warning/60 bg-warning/10 px-2 py-1 text-[11px] font-semibold text-warning transition-colors hover:bg-warning/20"
-            >
-              <Gavel className="h-3 w-3" />
-              Start a ruling session
-            </button>
+            // TWO WAYS IN, and the fast one leads (KI-051). Quick answers asks
+            // ONE question of five keywords in a floating panel, so the table
+            // stays live behind it; the ruling session takes the page over and
+            // asks everything about one keyword. Most of this queue is cleared
+            // by the first, not the second.
+            <div className="flex w-full flex-col gap-1">
+              <button
+                type="button"
+                onClick={onQuickAnswers}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-warning/60 bg-warning/10 px-2 py-1 text-[11px] font-semibold text-warning transition-colors hover:bg-warning/20"
+              >
+                <BrainCircuit className="h-3 w-3" />
+                Answer five at once
+              </button>
+              <button
+                type="button"
+                onClick={onStartSession}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-warning hover:text-warning"
+              >
+                <Gavel className="h-3 w-3" />
+                Or rule one at a time
+              </button>
+            </div>
           ) : null
         }
       />

@@ -180,6 +180,12 @@ const ScopeBatchImportWindow = lazyOverlay(
     import("@/features/window-panels/windows/agents/ScopeBatchImportWindow"),
   { ssr: false },
 );
+const KeywordQuickAnswersWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/marketing/KeywordQuickAnswersWindow"
+    ),
+);
 const AgentMemoryWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentMemoryWindow"),
   { ssr: false },
@@ -1443,6 +1449,9 @@ export default function OverlayController() {
     agentMemoryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentMemoryWindow"),
     ),
+    keywordQuickAnswersWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "keywordQuickAnswersWindow"),
+    ),
   };
 
   const dataById = {
@@ -1806,6 +1815,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     scopeBatchImportWindow: useAppSelector((s) =>
       selectOverlayData(s, "scopeBatchImportWindow"),
+    ) as Record<string, unknown> | null,
+    keywordQuickAnswersWindow: useAppSelector((s) =>
+      selectOverlayData(s, "keywordQuickAnswersWindow"),
     ) as Record<string, unknown> | null,
   };
 
@@ -2315,6 +2327,29 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "scopeBatchImportWindow" }))
             }
             agentId={agentId}
+          />
+        );
+      })()}
+
+      {/* keywordQuickAnswersWindow — KI-051 */}
+      {(() => {
+        const isOpen = isOpenById.keywordQuickAnswersWindow;
+        const data = dataById.keywordQuickAnswersWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <KeywordQuickAnswersWindow
+            isOpen
+            onClose={() =>
+              dispatch(
+                closeOverlay({ overlayId: "keywordQuickAnswersWindow" }),
+              )
+            }
+            siteId={(data?.siteId as string | null) ?? null}
+            siteLabel={(data?.siteLabel as string | null) ?? null}
+            dimensionSlug={(data?.dimensionSlug as string | null) ?? null}
           />
         );
       })()}
