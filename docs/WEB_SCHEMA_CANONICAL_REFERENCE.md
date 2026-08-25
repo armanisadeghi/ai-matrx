@@ -1,6 +1,14 @@
 # `web` Schema — Implemented Contract
 
-**Project:** Matrx Main (`txzxabzwovsujtloxrus`)  
+> 🚨 **PROJECT REF CORRECTED 2026-08-25.** This document said the `web` schema lived in
+> `txzxabzwovsujtloxrus` — the **RETIRED** project, which is still writable, so an agent
+> following that line would have read and written a dead database while believing it was
+> canonical. `web` has **36 live tables** in Matrx Main. The workspace law is that the
+> database is addressed **only by URL** (`https://db.matrxserver.com`), never by project ref;
+> any instruction naming the retired ref is stale. Eleven other files under `docs/` still
+> name it — see the Website Platform gap register.
+
+**Project:** Matrx Main — address it by URL, `https://db.matrxserver.com`  
 **Schema:** `web`
 
 **Status:** Live and verified; reconciled to the implemented schema on
