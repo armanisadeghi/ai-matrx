@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 428 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 429 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "073753d472f0";
+export const KIND_REGISTRY_FINGERPRINT = "2a140b646be1";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5897,6 +5897,109 @@ export interface AssertionResult {
    * Always true when the node succeeds — a falsy predicate fails the run instead of returning false.
    */
   passed?: boolean;
+}
+
+/**
+ * Kind `authority_newsjacking_article` (registry v2).
+ */
+export interface AuthorityNewsjackingArticle {
+  slug: string;
+  angle?: string;
+  title: string;
+  __kind: "authority_newsjacking_article";
+  expert?: {
+    bio?: string;
+    name?: string;
+    title?: string;
+    __kind: "article_expert_profile";
+    company?: string;
+    credentials?: string;
+    linkedin_url?: string;
+    company_website?: string;
+    expertise_areas?: string[];
+    mention_count_target?: number;
+  };
+  excerpt?: string;
+  language?: string;
+  sections?: ({
+    level?: number;
+    __kind: "article_section";
+    heading?: string;
+    purpose?: string;
+    source_ids?: string[];
+    content_markdown?: string;
+  })[];
+  subtitle?: string;
+  news_hook?: {
+    url?: string;
+    __kind: "article_news_hook";
+    summary?: string;
+    headline?: string;
+    publisher?: string;
+    published_at?: string;
+    recency_window?: string;
+    search_query_used?: string;
+    relevance_to_expert?: string;
+    why_it_is_newsworthy?: string;
+  };
+  meta_title?: string;
+  publishing?: {
+    tags?: string[];
+    __kind: "article_publishing_meta";
+    status?: string;
+    category?: string;
+    og_title?: string;
+    publish_at?: string;
+    schema_type?: string;
+    author_byline?: string;
+    canonical_url?: string;
+    og_description?: string;
+    featured_image_alt?: string;
+    featured_image_prompt?: string;
+  };
+  word_count?: number;
+  content_type?: string;
+  body_markdown: string;
+  expert_quotes?: ({
+    quote?: string;
+    __kind: "article_expert_quote";
+    context?: string;
+    attribution?: string;
+    supports_claim?: string;
+    placement_section?: string;
+  })[];
+  key_takeaways?: string[];
+  target_keywords?: ({
+    role?: string;
+    __kind: "article_target_keyword";
+    keyword?: string;
+    placement?: string[];
+    search_intent?: string;
+    estimated_volume?: number;
+  })[];
+  contextual_links?: ({
+    url?: string;
+    __kind: "article_contextual_link";
+    nofollow?: boolean;
+    link_type?: string;
+    rationale?: string;
+    anchor_text?: string;
+    placement_section?: string;
+  })[];
+  meta_description?: string;
+  research_sources?: ({
+    url?: string;
+    title?: string;
+    __kind: "article_research_source";
+    publisher?: string;
+    source_id?: string;
+    key_finding?: string;
+    source_type?: string;
+    published_at?: string;
+    retrieved_via?: string;
+    used_in_sections?: string[];
+  })[];
+  reading_time_minutes?: number;
 }
 
 /**
@@ -17100,6 +17203,7 @@ export type GeneratedKindSlug =
   | "arman_video_prompt"
   | "artisan_demo_reading_list"
   | "assertion_result"
+  | "authority_newsjacking_article"
   | "batch_review"
   | "batched_list_result"
   | "blog_post_outline"
@@ -17531,6 +17635,7 @@ export interface KindPayloadBySlug {
   "arman_video_prompt": ArmanVideoPrompt;
   "artisan_demo_reading_list": ArtisanDemoReadingList;
   "assertion_result": AssertionResult;
+  "authority_newsjacking_article": AuthorityNewsjackingArticle;
   "batch_review": BatchReview;
   "batched_list_result": BatchedListResult;
   "blog_post_outline": BlogPostOutline;
@@ -17966,6 +18071,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "arman_video_prompt",
   "artisan_demo_reading_list",
   "assertion_result",
+  "authority_newsjacking_article",
   "batch_review",
   "batched_list_result",
   "blog_post_outline",
