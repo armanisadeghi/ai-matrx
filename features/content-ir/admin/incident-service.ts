@@ -62,10 +62,13 @@ export interface KindIncidentRecord {
   signal: string | null;
 }
 
-const COLUMNS =
+// Typed `string`, not a literal: a long column list makes PostgREST's generic
+// select-parser explode into a deep conditional type (TS2589). The honest
+// row shape is declared below and reasserted with `.returns<Row[]>()`.
+const COLUMNS: string =
   "id,kind_definition_id,kind,error_type,error_message,error_stack,platform,role," +
   "component_key,component_version,component_semver,data_snapshot,browser_info," +
-  "resolved,resolved_at,resolution_notes,created_at,metadata" as const;
+  "resolved,resolved_at,resolution_notes,created_at,metadata";
 
 type Row = Pick<
   Database["content_ir"]["Tables"]["kind_component_incident"]["Row"],
@@ -155,8 +158,10 @@ export async function listKindIncidents(
         if (scope === "resolved") query = query.eq("resolved", true);
         return query
           .order("created_at", { ascending: false })
+          // Paginated ORDER BY must end in a unique column or pages overlap.
           .order("id", { ascending: false })
-          .range(from, to);
+          .range(from, to)
+          .returns<Row[]>();
       },
       { label: `content_ir.kind_component_incident (${scope})` },
     );
