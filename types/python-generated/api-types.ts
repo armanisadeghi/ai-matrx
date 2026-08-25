@@ -47868,7 +47868,7 @@ export interface components {
          * ModelCapabilitySummary
          * @description What a model can actually do — for a capability-driven model picker. Two
          *     layers: MODEL-level (the per-model jsonb seam) + PROVIDER-level (what the
-         *     provider API accepts as input). See docs/model_capabilities/CAPABILITY_SYSTEM.md.
+         *     provider API accepts as input). See /Users/armanisadeghi/code/common-docs/systems/agents/ai-models/STATE.md.
          */
         ModelCapabilitySummary: {
             /** Input Modalities */
@@ -63861,7 +63861,7 @@ export interface components {
          *     drift engine diffs against code: a mapping of argument name → spec object,
          *     e.g. ``{"action": {"type": "string", "required": true, "enum": ["get",
          *     "set"]}}``. Changing it here is the DB-first path the doctrine prescribes
-         *     (TOOL_SOURCE_OF_TRUTH.md, Rule 7): edit the DB, then bring code into line
+         *     (common-docs/systems/agents/agent-tools/STATE.md, Rule 7): edit the DB, then bring code into line
          *     until the drift gate is quiet. Editing it bumps the row ``version``.
          */
         ToolUpdateRequest: {

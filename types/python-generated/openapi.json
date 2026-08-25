@@ -125091,7 +125091,7 @@
         },
         "type": "object",
         "title": "ModelCapabilitySummary",
-        "description": "What a model can actually do — for a capability-driven model picker. Two\nlayers: MODEL-level (the per-model jsonb seam) + PROVIDER-level (what the\nprovider API accepts as input). See docs/model_capabilities/CAPABILITY_SYSTEM.md."
+        "description": "What a model can actually do — for a capability-driven model picker. Two\nlayers: MODEL-level (the per-model jsonb seam) + PROVIDER-level (what the\nprovider API accepts as input). See /Users/armanisadeghi/code/common-docs/systems/agents/ai-models/STATE.md."
       },
       "ModelCostBreakdown": {
         "properties": {
@@ -164534,7 +164534,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ToolUpdateRequest",
-        "description": "Admin-editable tool_def settings. All optional; only provided fields change.\n\n``parameters`` is the tool's argument contract — the same flat shape the\ndrift engine diffs against code: a mapping of argument name → spec object,\ne.g. ``{\"action\": {\"type\": \"string\", \"required\": true, \"enum\": [\"get\",\n\"set\"]}}``. Changing it here is the DB-first path the doctrine prescribes\n(TOOL_SOURCE_OF_TRUTH.md, Rule 7): edit the DB, then bring code into line\nuntil the drift gate is quiet. Editing it bumps the row ``version``."
+        "description": "Admin-editable tool_def settings. All optional; only provided fields change.\n\n``parameters`` is the tool's argument contract — the same flat shape the\ndrift engine diffs against code: a mapping of argument name → spec object,\ne.g. ``{\"action\": {\"type\": \"string\", \"required\": true, \"enum\": [\"get\",\n\"set\"]}}``. Changing it here is the DB-first path the doctrine prescribes\n(common-docs/systems/agents/agent-tools/STATE.md, Rule 7): edit the DB, then bring code into line\nuntil the drift gate is quiet. Editing it bumps the row ``version``."
       },
       "TopPatternsResponse": {
         "properties": {
