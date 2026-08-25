@@ -355,17 +355,20 @@ function KindStreamCard({ demo }: { demo: DemoKind }) {
           streams — content scrolls inside; the final render persists until
           the next run. */}
       <div className="h-[26rem] overflow-y-auto p-3">{body}</div>
-      {block && (
-        <div className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
-          {streaming
+      {/* Always rendered (never conditionally mounted) — a status line that
+          appears when the first block lands would shift the card by its own
+          height mid-run, which is the shape-change this page must not do. */}
+      <div className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
+        {!block
+          ? "idle — press Play"
+          : streaming
             ? unitReady
               ? "streaming — first renderable unit ARRIVED"
               : "streaming — waiting on the first renderable unit"
             : "complete — final render"}
-          {" · loader: "}
-          {demo.loadingComponent ?? "generic (undeclared)"}
-        </div>
-      )}
+        {" · loader: "}
+        {demo.loadingComponent ?? "generic (undeclared)"}
+      </div>
     </div>
   );
 }

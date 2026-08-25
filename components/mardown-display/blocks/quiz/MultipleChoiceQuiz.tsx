@@ -516,21 +516,27 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
   // Shared quiz body content (used in both embedded and fullscreen views)
   const renderQuizBody = () => (
     <>
-      {/* Quiz Title */}
-      <div className="mb-3">
-        <h1
-          className={`font-bold text-center text-gray-800 dark:text-gray-100 ${isFullScreen ? "text-xl" : "text-lg"}`}
-        >
-          {parsedQuiz.title}
-        </h1>
-        {parsedQuiz.category && (
-          <div className="text-center mt-2">
-            <span className="text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full">
-              {parsedQuiz.category}
-            </span>
-          </div>
-        )}
-      </div>
+      {/* Quiz title — FULLSCREEN ONLY. Embedded, the collapsible wrapper's
+          header already carries the title and question count; repeating it
+          inside is the double-chrome defect (a component never renders chrome
+          its host already renders). Fullscreen has no wrapper, so it owns the
+          title itself. */}
+      {(isFullScreen || parsedQuiz.category) && (
+        <div className="mb-3">
+          {isFullScreen && (
+            <h1 className="text-xl font-bold text-center text-gray-800 dark:text-gray-100">
+              {parsedQuiz.title}
+            </h1>
+          )}
+          {parsedQuiz.category && (
+            <div className={`text-center ${isFullScreen ? "mt-2" : ""}`}>
+              <span className="text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full">
+                {parsedQuiz.category}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Upload Error */}
       {uploadError && (
@@ -1043,38 +1049,9 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
             <>
               {renderQuizBody()}
               <div className="mt-2">{renderNavButtons()}</div>
-              {/* Bottom action bar */}
-              <div className="flex justify-center items-center gap-3 pb-2 pt-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs text-muted-foreground"
-                  onClick={triggerPrint}
-                >
-                  <Printer className="h-3 w-3" />
-                  Print
-                </Button>
-                {showCanvasButton && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs bg-purple-500 dark:bg-purple-600 hover:bg-purple-600 dark:hover:bg-purple-700 text-white"
-                    onClick={handleOpenCanvas}
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Canvas
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  onClick={() => setIsFullScreen(true)}
-                >
-                  <Maximize2 className="h-3 w-3" />
-                  Focus
-                </Button>
-              </div>
+              {/* No bottom action bar: Print / Canvas / Focus all live in the
+                  wrapper header's controls. Rendering them twice was the same
+                  double-chrome waste as the repeated title. */}
             </>
           )}
         </div>
