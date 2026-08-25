@@ -46,6 +46,19 @@ below is visible in that one agent.
 Work these steps in order. Skipping ahead (especially straight to "call create") is how
 bad agents get made.
 
+### 0. Can the agent even answer? — run the manifest work FIRST
+
+🚨 **Before anything else, run [agent-manifest](/skills/agent-manifest/SKILL.md).** Every rule
+in this skill is about building the agent well; NONE of it helps if the agent is handed a
+question it cannot possibly answer. Measured 2026-08-23: a family-comparison agent built to
+this skill's full bar — pretty name, granular variables, conversational user turn, two green
+runs — was seeing **1 of 295 pages** and inventing every link it proposed. It passed every
+check here and was worthless.
+
+List the facts the question requires, trace what the call site actually sends, and measure the
+coverage ratio on real data. If a required fact is missing you build the delivery, cut the
+question down, or refuse — you never let the agent fill the gap.
+
 ### 1. Source the intent, then nail the exact task and deliverable
 
 **Where the task comes from matters as much as what it is.** If the agent is part of a
@@ -224,7 +237,10 @@ schema that can only drift.
 
 `agent_run` with your real sample data (`variables` for variable-driven agents,
 `user_message` for conversational ones). Judge the output against the deliverable from
-step 1. Refine the system prompt with `update` and run again. Two runs minimum — this
+step 1 — **and against ground truth, not just shape.** A run that returns valid JSON has
+proven nothing: check that every entity it named (route, id, keyword, quote, citation)
+actually exists in what you sent it, and count the fabrications. The passing number is zero.
+Full method: [agent-manifest](/skills/agent-manifest/SKILL.md) § Verifying. Refine the system prompt with `update` and run again. Two runs minimum — this
 also exercises the kind component twice so you catch shape problems now, not in
 production. An agent that has never been run is not created; it is a liability.
 
@@ -364,6 +380,8 @@ on the Masterwork Approach Selector and Coherence Partner (2026-08-22):
 | Kind emitted with no registered shape/component | A kind without a component is useless |
 | Invented category/tags | Reuse the live facet tree |
 | Never actually run | Two real runs minimum before "done" |
+| Agent asked a question its inputs cannot answer | The whole point of agent-manifest — it will answer anyway, and the fabrication gets STORED as evidence |
+| "Verified" meaning the response had the right shape | A response is not a result; measure input coverage and count fabricated entities |
 | Raw `agx_agent` insert / SQL | Everything goes through the MCP and the trained builder |
 | Agent authored from its call site or its existing definition | The vision/FEATURE docs are the intent source; the call site is mechanics; the old definition may BE the drift |
 | No goal / no DONE in the system prompt | An agent that hasn't been told its mission optimizes for being agreeable, not for the result |
