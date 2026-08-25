@@ -757,6 +757,12 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-25 — Search Console's main and Insights tab rails now reuse the
+  horizontal `ScrollFade` primitive: narrow viewports get a visible dynamic
+  overflow cue, single-line labels, and 44px touch targets instead of the
+  Insights rail wrapping and compressing its controls. Traffic-quality tables
+  keep their existing controlled horizontal scrollers on mobile.
+
 - 2026-08-25 — **MSR-06 (Arman, marketing-surface-repair register): the Offering
   column on the Queries table.** "The other critical thing to put here would be
   the one where you map it to an offering." A query row now shows WHICH of the

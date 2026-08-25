@@ -23,6 +23,7 @@ import { Lightbulb, PanelTop } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Input } from "@/components/ui/input";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 import { cn } from "@/styles/themes/utils";
 import {
   humanLines,
@@ -190,24 +191,29 @@ export function InsightsTab({
         onChange={onRangeChange}
         disabled={rangeDisabled}
       />
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
-          {GSC_INSIGHTS.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              className={cn(
-                "rounded px-2 py-1 text-xs transition-colors",
-                active === item.key
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-              onClick={() => onSelectInsight(item.key)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <ScrollFade
+          orientation="horizontal"
+          className="w-full min-w-0 sm:w-auto"
+        >
+          <div className="flex w-max items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
+            {GSC_INSIGHTS.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                className={cn(
+                  "min-h-11 shrink-0 whitespace-nowrap rounded px-2 py-1 text-xs transition-colors lg:min-h-0",
+                  active === item.key
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                )}
+                onClick={() => onSelectInsight(item.key)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </ScrollFade>
         {showsDimensionToggle ? (
           <div className="flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
             {(["query", "page"] as const).map((dim) => (

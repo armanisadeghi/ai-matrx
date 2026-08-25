@@ -21,6 +21,7 @@ import { describeBackendFailure } from "@/lib/api/errors";
 import Link from "next/link";
 import { Compass, History, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -743,14 +744,17 @@ export function SearchConsoleWorkspace() {
               />
             ) : null}
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <div className="w-full min-w-0 overflow-x-auto sm:w-auto">
+              <ScrollFade
+                orientation="horizontal"
+                className="w-full min-w-0 sm:w-auto"
+              >
                 <div className="flex w-max items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
                   {GSC_TABS.map((tab) => (
                     <button
                       key={tab.key}
                       type="button"
                       className={cn(
-                        "shrink-0 whitespace-nowrap rounded px-2 py-1 text-xs transition-colors",
+                        "shrink-0 whitespace-nowrap rounded px-2 py-1 text-xs transition-colors max-lg:min-h-11",
                         state.tab === tab.key
                           ? "bg-primary text-primary-foreground"
                           : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -767,7 +771,7 @@ export function SearchConsoleWorkspace() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </ScrollFade>
               {allowedFilterKeysForTab(state.tab).length > 0 ? (
                 <FilterBar
                   filters={filters}
