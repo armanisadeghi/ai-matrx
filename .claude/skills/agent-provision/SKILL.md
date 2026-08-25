@@ -72,6 +72,102 @@ different feature domains**. Co-location is what reminds the next person which v
 which job. `podcast_mandates.py` and `education_mandates.py` show the right shape; anything
 still in the catch-all should move to its own feature module as it is touched.
 
+## THE PROVISION BRIEF — the forcing function
+
+**Why this section exists.** Telling a developer or an agent to "think carefully about what
+the agent needs" does not work, and cannot work. An LLM asked to reflect produces fluent
+reflection — the identical failure mode to the agent that fabricates. **Reflection has no
+failure state, so it always succeeds.** A checklist of thoughtful-sounding questions produces
+thoughtful-sounding answers and changes nothing.
+
+Look at what actually produced insight in the session that created this skill. Not one moment
+of it came from thinking harder. Every single one came from **a check that could fail, run
+against real data**:
+
+| The check | The number | What it killed |
+|---|---|---|
+| How many pages does this agent see? | **1 of 295** | The belief that p3_family worked |
+| How many provisions serve one mandate? | **152 of 218 (70%)** | The belief that our provisions were provisions |
+| How many bindings exist? | **2 of 368 mandates** | The belief that the swap layer was real |
+| How many pages carry a planned title? | **0 of 472** | A design about to be built on titles |
+| How deep is the URL tree on a real site? | **308 of 472 at depth 1** | Clustering by URL hierarchy |
+
+So the rule is: **replace reflection with falsifiable checks.** Before authoring or changing
+any provision, produce the Brief below. **Every field carries a number or a `file:line`. A
+Brief made of prose is a rejected Brief** — by any reviewer, human or agent.
+
+### The six fields
+
+**1. THE DECISION.** One sentence in the form *"The agent must decide ___."* If the best you
+can write is "helps with" or "handles", you do not yet know the job, and no provision can be
+correct. Stop here and find out.
+
+**2. WHAT A COMPETENT HUMAN WOULD NEED.** List the facts an expert human would require to make
+that exact decision. **Write this list BEFORE reading the call site** — otherwise you will
+simply list what the code already sends and call it complete. This is the highest-leverage
+question in the method: the gap usually becomes undeniable the moment the list exists. *"To
+decide whether this page overlaps another, you need the other pages"* is not a subtle insight
+— it is invisible only while nobody writes the list.
+
+**3. WHERE EACH FACT LIVES — measured.** For every fact in field 2: the schema.table.column,
+the upstream artifact, or **NOT AVAILABLE**. Then the count on real data. Not "we have titles"
+— `0 of 472 pages have meta_title_desired`. **This is the field where designs die, and it is
+supposed to be.** A fact you assumed existed and does not is the most valuable output of the
+entire Brief.
+
+**4. COVERAGE.** The ratio the agent will actually see, measured on the **largest real
+instance** you can find, not a convenient one. `1 of 295`. If you cannot produce this number,
+you have not traced the call site and you are not ready.
+
+**5. THE FABRICATION FORECAST.** The agent will answer even when it cannot. Write down, in
+advance, the specific fabricated output it will produce given the gaps in field 3 — *"it will
+invent internal links to routes that sound plausible for a PRP site."* Then name: which
+entities it can utter (routes, ids, keywords, quotes), what the legal set is, and the query
+that counts violations. **A forecast that comes true on a real run is a passing test of the
+Brief and a failing test of the provision.**
+
+**6. THE SURPRISE.** 🚨 **At least one number in this Brief must have surprised you.** If
+nothing did, you did not investigate — you wrote your assumptions down and formatted them
+nicely. Go back to field 3 and measure something you were certain about. This field is the
+anti-ritual device: it is the one thing that cannot be satisfied by producing plausible text,
+and it is what separates a real Brief from a performed one.
+
+### The Brief decides your next move — and only one door needs Arman
+
+Field 3 leaves exactly three doors, and inventing a plausible answer is not among them:
+
+1. **Build the delivery** — the fact exists but is not offered, or exists in no usable shape.
+   Add it to the provision (in every shape a caller might want). *Do this yourself.*
+2. **Cut the question down** — the data genuinely cannot support the job as declared. Narrow
+   the mandate's declared job to what is answerable, and say so in its description. *Do this
+   yourself.*
+3. **Refuse** — raise with a named missing input rather than run. *Do this yourself.*
+
+**Only one situation needs Arman: when the fact does not exist anywhere in the platform and
+creating it is a new product capability** (a new lock flag, a new stored artifact, a crawl we
+do not run). That is a product decision. Everything else is engineering you already have the
+authority to do — and escalating it instead is how his time gets consumed by work that was
+never his.
+
+### Design from real data, never from imagined data
+
+Before proposing a structure, **look at the real rows.** The recommendation in this skill was
+nearly "cluster pages by URL hierarchy" — obvious, elegant, and wrong: 308 of 472 pages on a
+real site sit at depth 1, and the largest site has 2,961 pages with a flat slug namespace.
+Reasoning from an imagined well-structured site would have produced an architecture that fits
+nothing we own. **Ten minutes of looking beats an hour of reasoning about data you have not
+seen.**
+
+### Assume your first design is the fabricating one
+
+The posture that produces good work here is not curiosity — it is **presumed guilt**. Your
+first provision is the one derived from the agent; your first test is the one that passes;
+your first coverage number is the one you did not measure. Go find the evidence that you did
+the shallow thing, and only when you fail to find it are you allowed to believe otherwise.
+
+An agent that cannot produce a Brief with a surprise in it has not done this work — it has
+described it.
+
 ## THE FAILURE THIS SKILL EXISTS TO KILL
 
 An agent is asked a question it **cannot possibly answer** with what we send. It answers
@@ -202,6 +298,7 @@ accept.
 
 ## THE HONESTY BAR
 
+The Brief is not filed and forgotten — it is what a completion note is checked against.
 Before writing that something works, you must be able to state:
 
 1. **The question** the mandate asks, in one sentence.
