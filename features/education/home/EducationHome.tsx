@@ -19,7 +19,7 @@
 // blocks; each declares `signal(snapshot)` and returns null to render nothing.
 // Maturity therefore emerges from what the learner owns instead of being
 // branched on, which is what keeps day 0 uncluttered and day 300 dense without
-// a single `if (isNewUser)` in the tree.
+// a single account-maturity branch in the tree.
 //
 // Two rules make it feel designed rather than accumulated:
 //   1. WHATEVER THEY HAVE IS THE HERO. One kit and no history → the page is
