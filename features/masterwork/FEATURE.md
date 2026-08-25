@@ -129,7 +129,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
-- `2026-08-25` — Made every Rulebook and Masterwork KPI a door to its underlying records. Rules now have compact Approved, Waiting, interviewer, and change-request filters beside search; the Masterworks inventory has the same Built, Current, and Released KPI strip with URL-backed filters, compact metadata, and top-right icon actions.
+- `2026-08-25` — Made every Rulebook and Masterwork KPI a door to its underlying records. Rules now have compact Approved, Waiting, interviewer, and change-request filters beside search; the Masterworks inventory has the same Built, Current, and Released KPI strip with URL-backed filters, compact metadata, authoritative build-time rule counts, quiet last-updated timestamps, and top-right icon actions.
 - `2026-08-25` — The Understudy card now uses the concise title `Understudy` and describes the run as a quick test of the temporary stand-in being built in real time.
 - `2026-08-25` — The Understudy now presents its canonical two-field run intake as `Your request` and `Supporting material (optional)`. This is a display-only override: the generated field keys and run payload remain unchanged, and purpose-built Masterworks keep their own intake labels.
 

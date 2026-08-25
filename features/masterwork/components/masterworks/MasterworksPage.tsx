@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
+  Clock3,
   ExternalLink,
   History,
   MessageCircleQuestion,
@@ -26,6 +27,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
+import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 import { ScoutInterviewPanel } from "../detail/ScoutInterviewPanel";
 import { AuditionDialog } from "./AuditionDialog";
@@ -364,7 +366,7 @@ export function MasterworksPage({
                           Draft
                         </Badge>
                       )}
-                      {masterwork.rule_count ? (
+                      {masterwork.rule_count !== null ? (
                         <Badge
                           variant="outline"
                           className="px-1.5 py-0 text-[10px] text-muted-foreground"
@@ -372,6 +374,13 @@ export function MasterworksPage({
                           {masterwork.rule_count} rules
                         </Badge>
                       ) : null}
+                      <span
+                        className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"
+                        title={`Last updated ${formatAbsoluteDate(masterwork.updated_at)}`}
+                      >
+                        <Clock3 className="h-3 w-3" />
+                        Updated {formatRelativeTime(masterwork.updated_at)}
+                      </span>
                     </div>
                     {masterwork.description ? (
                       <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
