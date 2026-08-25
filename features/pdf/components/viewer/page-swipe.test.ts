@@ -31,9 +31,12 @@ describe("resolvePageSwipe", () => {
     ["short", 120, 100, 155, 102, 100, 250],
     ["vertical", 120, 100, 170, 190, 100, 250],
     ["slow", 220, 100, 120, 104, 100, 1_000],
-  ])("ignores a %s gesture", (_label, startX, startY, endX, endY, startedAt, endedAt) => {
-    expect(
-      resolvePageSwipe({ startX, startY, endX, endY, startedAt, endedAt }),
-    ).toBe(0);
-  });
+  ])(
+    "ignores a %s gesture",
+    (_label, startX, startY, endX, endY, startedAt, endedAt) => {
+      expect(
+        resolvePageSwipe({ startX, startY, endX, endY, startedAt, endedAt }),
+      ).toBe(0);
+    },
+  );
 });

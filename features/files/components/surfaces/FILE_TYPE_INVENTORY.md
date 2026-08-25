@@ -3,28 +3,29 @@
 > **Scope:** the two file-viewing surfaces and their 7 tabs (Preview, Edit, Document, Analysis, Share, Info, Versions). Treat this doc as the current capability inventory for "what do we support per file type today." Update it whenever a previewer, editor, or tab gains/loses a capability.
 >
 > **Surfaces:**
+>
 > - `PreviewPane` (`features/files/components/surfaces/PreviewPane.tsx`) — compact side panel inside `PageShell` at `/files` and `/files/<path>`.
 > - `SingleFileShell` (`features/files/components/surfaces/single-file/SingleFileShell.tsx`) — dedicated full-page viewer at `/files/f/{fileId}`. Adds a left **control rail** that drives per-tab settings (zoom/rotate/fit/transparency for images, Rendered/Source + viewport for HTML, font-size/word-wrap/minimap/tab-size for Monaco). Reuses the same 7-tab body via `<FileTabsBody/>`.
 >
 > **Type resolution:** every decision below flows from `features/files/utils/file-types.ts` (the `FILE_TYPES` registry → `previewKind` → previewer/editor). When this doc and the registry disagree, the registry wins — fix this doc.
 >
-> **Tab-by-file-type semantics:** the Preview tab should *render* the file (HTML rendered, SVG rendered, Markdown rendered, image displayed, etc.). The Edit tab is the source-of-truth editor (Monaco). When a file kind can't be rendered, the Preview tab falls back to "source view" or a metadata card — but that's a gap, not the design intent.
+> **Tab-by-file-type semantics:** the Preview tab should _render_ the file (HTML rendered, SVG rendered, Markdown rendered, image displayed, etc.). The Edit tab is the source-of-truth editor (Monaco). When a file kind can't be rendered, the Preview tab falls back to "source view" or a metadata card — but that's a gap, not the design intent.
 
 ---
 
 ## Legend
 
-| Symbol | Meaning |
-|---|---|
-| ✅ | Fully supported — production quality |
-| 🟡 | Works but has a known gap (see Notes) |
-| 🔴 | Missing — falls back to a generic / source / unhelpful state |
-| ➖ | Intentionally not applicable for this kind |
-| 🐛 | Bug: wrong tab content (e.g. Preview shows source instead of rendered output) |
+| Symbol | Meaning                                                                       |
+| ------ | ----------------------------------------------------------------------------- |
+| ✅     | Fully supported — production quality                                          |
+| 🟡     | Works but has a known gap (see Notes)                                         |
+| 🔴     | Missing — falls back to a generic / source / unhelpful state                  |
+| ➖     | Intentionally not applicable for this kind                                    |
+| 🐛     | Bug: wrong tab content (e.g. Preview shows source instead of rendered output) |
 
 The seven columns map to the seven tabs in `PreviewPane.tsx`.
 
-- **Preview** — visual render (the *result*, not the source)
+- **Preview** — visual render (the _result_, not the source)
 - **Edit** — inline Monaco editor with the right language hint, Cmd+S saves a new version
 - **Document** — RAG ingest + processed-document viewer (works for any file with `processed_documents` row)
 - **Analysis** — `useFileAnalysis` detectors (today: PDF-centric)
@@ -32,7 +33,7 @@ The seven columns map to the seven tabs in `PreviewPane.tsx`.
 - **Info** — read-only metadata
 - **Versions** — `cld_file_versions` list + Restore
 
-**Document / Share / Info / Versions** are file-type-agnostic and uniformly supported on every *real* `cld_files` row. They are marked ✅ across the board in the tables below unless there's a specific gap, and virtual-source files (Notes, Code Snippets, Agent Apps) get adapter-specific behavior — see § Virtual sources.
+**Document / Share / Info / Versions** are file-type-agnostic and uniformly supported on every _real_ `cld_files` row. They are marked ✅ across the board in the tables below unless there's a specific gap, and virtual-source files (Notes, Code Snippets, Agent Apps) get adapter-specific behavior — see § Virtual sources.
 
 ---
 
@@ -46,117 +47,117 @@ A "complete" file type touches ~55 capability slots across 9 groups. Most file t
 
 **Legend (used across this doc):**
 
-| Symbol | Meaning |
-|---|---|
-| ✅ | Implemented and production-quality |
-| 🟡 | Works with a known gap (see notes) |
-| 🔴 | Missing |
-| ➖ | Intentionally not applicable for this kind |
-| 🐛 | Wrong behaviour (e.g. preview shows source instead of rendered output) |
+| Symbol | Meaning                                                                |
+| ------ | ---------------------------------------------------------------------- |
+| ✅     | Implemented and production-quality                                     |
+| 🟡     | Works with a known gap (see notes)                                     |
+| 🔴     | Missing                                                                |
+| ➖     | Intentionally not applicable for this kind                             |
+| 🐛     | Wrong behaviour (e.g. preview shows source instead of rendered output) |
 
 When the doc and the code (`features/files/utils/file-types.ts` / `FilePreview.tsx` / `EDITABLE_KINDS` / `LANGUAGE_BY_EXT`) disagree, the code wins — fix the doc.
 
 ## Group 1 — Identity & metadata
 
-| # | Slot | Where |
-|---|---|---|
-| 1 | Extensions list | `FILE_TYPES[].extensions` |
-| 2 | MIME types (canonical + aliases) | `FILE_TYPES[].mime` (+ `mimeAliases`) |
-| 3 | Category + sub-category | `FILE_TYPES[].category` / `subCategory` |
-| 4 | Display name | `FILE_TYPES[].displayName` |
-| 5 | `previewKind` | `PreviewKind` union + `FILE_TYPES[].previewKind` |
-| 6 | Icon (Lucide) | `FILE_TYPES[].icon` |
-| 7 | Tailwind color class | `FILE_TYPES[].color` |
-| 8 | 🟡 Magic-byte / header signature | `binary-sniff.ts` (only a few types) |
-| 9 | 🔴 Sensitivity flag | Not modeled yet — `.env`/`.pem`/`.key` should default to private + warn-on-share |
+| #   | Slot                             | Where                                                                            |
+| --- | -------------------------------- | -------------------------------------------------------------------------------- |
+| 1   | Extensions list                  | `FILE_TYPES[].extensions`                                                        |
+| 2   | MIME types (canonical + aliases) | `FILE_TYPES[].mime` (+ `mimeAliases`)                                            |
+| 3   | Category + sub-category          | `FILE_TYPES[].category` / `subCategory`                                          |
+| 4   | Display name                     | `FILE_TYPES[].displayName`                                                       |
+| 5   | `previewKind`                    | `PreviewKind` union + `FILE_TYPES[].previewKind`                                 |
+| 6   | Icon (Lucide)                    | `FILE_TYPES[].icon`                                                              |
+| 7   | Tailwind color class             | `FILE_TYPES[].color`                                                             |
+| 8   | 🟡 Magic-byte / header signature | `binary-sniff.ts` (only a few types)                                             |
+| 9   | 🔴 Sensitivity flag              | Not modeled yet — `.env`/`.pem`/`.key` should default to private + warn-on-share |
 
 ## Group 2 — List + grid presentation
 
-| # | Slot | Where |
-|---|---|---|
-| 10 | Icon at standard sizes | `FileIcon` |
-| 11 | Thumbnail strategy enum (`icon \| auto \| first-frame \| …`) | `FILE_TYPES[].thumbnailStrategy` |
-| 12 | 🟡 Real thumbnail generator | `useFileAsset` variants — implemented for image; PDF/video need server-side help |
-| 13 | 🔴 Grid card preview body | Most kinds show only an icon in the grid today |
-| 14 | 🔴 Hover / spacebar quick-look | Not implemented |
-| 15 | Kind-filter chip membership | `selectKindFilter` + chips data |
-| 16 | 🟡 Default sort column per kind | Single global sort today |
+| #   | Slot                                                         | Where                                                                            |
+| --- | ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| 10  | Icon at standard sizes                                       | `FileIcon`                                                                       |
+| 11  | Thumbnail strategy enum (`icon \| auto \| first-frame \| …`) | `FILE_TYPES[].thumbnailStrategy`                                                 |
+| 12  | 🟡 Real thumbnail generator                                  | `useFileAsset` variants — implemented for image; PDF/video need server-side help |
+| 13  | 🔴 Grid card preview body                                    | Most kinds show only an icon in the grid today                                   |
+| 14  | 🔴 Hover / spacebar quick-look                               | Not implemented                                                                  |
+| 15  | Kind-filter chip membership                                  | `selectKindFilter` + chips data                                                  |
+| 16  | 🟡 Default sort column per kind                              | Single global sort today                                                         |
 
 ## Group 3 — Preview tab
 
-| # | Slot | Where |
-|---|---|---|
-| 17 | Previewer component | `core/FilePreview/previewers/<Kind>Preview.tsx` |
-| 18 | Streaming policy (signed-URL `src` vs blob fetch) | Dispatcher in `FilePreview.tsx` |
-| 19 | Size-cap override | `FILE_TYPES[].previewSizeCapOverride` + `getFilePreviewProfile` |
-| 20 | Inline toolbar fallback when no rail | Each previewer's own header strip |
-| 21 | Control-rail panel for `SingleFileShell` | `surfaces/single-file/<Mode>Controls.tsx` + rail dispatcher |
-| 22 | Error state ("unavailable" / "format unsupported") | Each previewer |
-| 23 | Loading skeleton | Each previewer |
+| #   | Slot                                               | Where                                                           |
+| --- | -------------------------------------------------- | --------------------------------------------------------------- |
+| 17  | Previewer component                                | `core/FilePreview/previewers/<Kind>Preview.tsx`                 |
+| 18  | Streaming policy (signed-URL `src` vs blob fetch)  | Dispatcher in `FilePreview.tsx`                                 |
+| 19  | Size-cap override                                  | `FILE_TYPES[].previewSizeCapOverride` + `getFilePreviewProfile` |
+| 20  | Inline toolbar fallback when no rail               | Each previewer's own header strip                               |
+| 21  | Control-rail panel for `SingleFileShell`           | `surfaces/single-file/<Mode>Controls.tsx` + rail dispatcher     |
+| 22  | Error state ("unavailable" / "format unsupported") | Each previewer                                                  |
+| 23  | Loading skeleton                                   | Each previewer                                                  |
 
 ## Group 4 — Edit tab
 
-| # | Slot | Where |
-|---|---|---|
-| 24 | Editable-kind classification | `preview-actions.ts` → `EDITABLE_KINDS` (now includes `image` + `pdf`) |
-| 25 | Monaco language id mapping | `CloudFileInlineEditor.tsx` → `LANGUAGE_BY_EXT` |
-| 26 | Save → new-version handler (text) | `CloudFileInlineEditor.handleSave` (uses `uploadFiles` thunk) |
-| 27a | ✅ Per-type non-text editor — image | `ImageEditTab.tsx` → `EditModeShell` (Filerobot 5.0.1 + AI toolbar) |
-| 27b | ✅ Per-type non-text editor — PDF | `PdfEditTab.tsx` → `AnnotatablePdfCanvas` + filtered `InspectorRail` (Pages / Doc Ops / Notes / Findings / Redact / Search) |
-| 27c | 🔴 Per-type non-text editor — CSV / spreadsheet / video / audio | Still "Coming soon" |
-| 28 | 🔴 Format-on-save / linter hook | Not implemented |
-| 29 | 🔴 Starter template for "New <type>" | Not implemented |
+| #   | Slot                                                            | Where                                                                                                                       |
+| --- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 24  | Editable-kind classification                                    | `preview-actions.ts` → `EDITABLE_KINDS` (now includes `image` + `pdf`)                                                      |
+| 25  | Monaco language id mapping                                      | `CloudFileInlineEditor.tsx` → `LANGUAGE_BY_EXT`                                                                             |
+| 26  | Save → new-version handler (text)                               | `CloudFileInlineEditor.handleSave` (uses `uploadFiles` thunk)                                                               |
+| 27a | ✅ Per-type non-text editor — image                             | `ImageEditTab.tsx` → `EditModeShell` (Filerobot 5.0.1 + AI toolbar)                                                         |
+| 27b | ✅ Per-type non-text editor — PDF                               | `PdfEditTab.tsx` → `AnnotatablePdfCanvas` + filtered `InspectorRail` (Pages / Doc Ops / Notes / Findings / Redact / Search) |
+| 27c | 🔴 Per-type non-text editor — CSV / spreadsheet / video / audio | Still "Coming soon"                                                                                                         |
+| 28  | 🔴 Format-on-save / linter hook                                 | Not implemented                                                                                                             |
+| 29  | 🔴 Starter template for "New <type>"                            | Not implemented                                                                                                             |
 
 ## Group 5 — Companion tabs
 
-| # | Slot | Where |
-|---|---|---|
-| 30 | Document (RAG) tab | Backend-driven, content-agnostic for text-extractable files |
-| 31 | 🟡 RAG ingest defaults per kind (chunk size, embedding model) | Python defaults; no per-kind override |
-| 32 | 🟡 Analysis-tab detectors | `features/file-analysis/` — exhaustive for PDF, nothing for others |
-| 33 | Info tab (uniform metadata) | `FileInfoTab.tsx` |
-| 34 | 🟡 Info-tab extra fields per kind | Image gets AI metadata; others bare |
-| 35 | Versions list | `FileVersionsList.tsx` |
-| 36 | 🔴 Per-kind diff renderer | No diff anywhere — text-diff / image-diff / metadata-diff all missing |
-| 37 | Share tab (file-type agnostic) | `FileShareTab.tsx` |
+| #   | Slot                                                          | Where                                                                 |
+| --- | ------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 30  | Document (RAG) tab                                            | Backend-driven, content-agnostic for text-extractable files           |
+| 31  | 🟡 RAG ingest defaults per kind (chunk size, embedding model) | Python defaults; no per-kind override                                 |
+| 32  | 🟡 Analysis-tab detectors                                     | `features/file-analysis/` — exhaustive for PDF, nothing for others    |
+| 33  | Info tab (uniform metadata)                                   | `FileInfoTab.tsx`                                                     |
+| 34  | 🟡 Info-tab extra fields per kind                             | Image gets AI metadata; others bare                                   |
+| 35  | Versions list                                                 | `FileVersionsList.tsx`                                                |
+| 36  | 🔴 Per-kind diff renderer                                     | No diff anywhere — text-diff / image-diff / metadata-diff all missing |
+| 37  | Share tab (file-type agnostic)                                | `FileShareTab.tsx`                                                    |
 
 ## Group 6 — Actions & integrations
 
-| # | Slot | Where |
-|---|---|---|
-| 38 | Universal actions (Download, Copy link, Rename, Move, Delete, Duplicate) | `useFileActions` |
-| 39 | Edit-handoff button (gated on `EDITABLE_KINDS`) | `preview-actions.ts` |
-| 40 | 🟡 Open-in-feature handoff | `openInRoute` in adapters; PDF → PDF Extractor exists; most others 🔴 |
-| 41 | 🔴 Per-type extra actions | (`.zip` → "Browse contents", `.docx` → "Convert to PDF", `.json` → "Format") |
-| 42 | 🔴 Convert-to dropdown | Not implemented |
-| 43 | 🟡 Print handler | `block-print-system` infra exists; per-kind printers wired for some |
+| #   | Slot                                                                     | Where                                                                        |
+| --- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| 38  | Universal actions (Download, Copy link, Rename, Move, Delete, Duplicate) | `useFileActions`                                                             |
+| 39  | Edit-handoff button (gated on `EDITABLE_KINDS`)                          | `preview-actions.ts`                                                         |
+| 40  | 🟡 Open-in-feature handoff                                               | `openInRoute` in adapters; PDF → PDF Extractor exists; most others 🔴        |
+| 41  | 🔴 Per-type extra actions                                                | (`.zip` → "Browse contents", `.docx` → "Convert to PDF", `.json` → "Format") |
+| 42  | 🔴 Convert-to dropdown                                                   | Not implemented                                                              |
+| 43  | 🟡 Print handler                                                         | `block-print-system` infra exists; per-kind printers wired for some          |
 
 ## Group 7 — Cross-feature behavior
 
-| # | Slot | Where |
-|---|---|---|
-| 44 | 🟡 Inline file-chip | `FileResourceChip` (generic) — could be richer per kind |
-| 45 | 🔴 Drag-to-slot adapter (drop a file onto an agent / data source / context policy) | Not implemented |
-| 46 | 🟡 Citation deep-links (e.g. `?tab=document&page=N&chunk=…`; `filePreviewWindow` `{ fileId, pageNumber }`) | PDF only |
-| 47 | 🔴 Embeddability policy (CDN-friendly / signed-only / never) | Not modeled |
-| 48 | 🟡 Upload-accept rules per surface | Per-uploader, no central policy |
-| 49 | 🔴 Paste-from-clipboard support per type | Not implemented |
+| #   | Slot                                                                                                       | Where                                                   |
+| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| 44  | 🟡 Inline file-chip                                                                                        | `FileResourceChip` (generic) — could be richer per kind |
+| 45  | 🔴 Drag-to-slot adapter (drop a file onto an agent / data source / context policy)                         | Not implemented                                         |
+| 46  | 🟡 Citation deep-links (e.g. `?tab=document&page=N&chunk=…`; `filePreviewWindow` `{ fileId, pageNumber }`) | PDF only                                                |
+| 47  | 🔴 Embeddability policy (CDN-friendly / signed-only / never)                                               | Not modeled                                             |
+| 48  | 🟡 Upload-accept rules per surface                                                                         | Per-uploader, no central policy                         |
+| 49  | 🔴 Paste-from-clipboard support per type                                                                   | Not implemented                                         |
 
 ## Group 8 — Creation paths
 
-| # | Slot | Where |
-|---|---|---|
-| 50 | 🔴 "New <type>" entry in New-item menu | Folder only today |
-| 51 | 🔴 Template gallery for that type | Not implemented |
-| 52 | 🟡 Virtual-source provisioning | Notes / Code Snippets / Agent Apps own this |
+| #   | Slot                                   | Where                                       |
+| --- | -------------------------------------- | ------------------------------------------- |
+| 50  | 🔴 "New <type>" entry in New-item menu | Folder only today                           |
+| 51  | 🔴 Template gallery for that type      | Not implemented                             |
+| 52  | 🟡 Virtual-source provisioning         | Notes / Code Snippets / Agent Apps own this |
 
 ## Group 9 — Bundle / ops
 
-| # | Slot | Where |
-|---|---|---|
-| 53 | Dynamic-import declaration | `FilePreview.tsx` |
-| 54 | 🟡 Bundle-weight annotation | Comment block in `FilePreview.tsx` |
-| 55 | 🟡 Browser-codec / runtime caveats | Captured per-type in this doc, not in code |
+| #   | Slot                               | Where                                      |
+| --- | ---------------------------------- | ------------------------------------------ |
+| 53  | Dynamic-import declaration         | `FilePreview.tsx`                          |
+| 54  | 🟡 Bundle-weight annotation        | Comment block in `FilePreview.tsx`         |
+| 55  | 🟡 Browser-codec / runtime caveats | Captured per-type in this doc, not in code |
 
 ---
 
@@ -169,6 +170,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 **Tier:** T2 · **Registry:** `previewKind: "image"`
 
 **Has** ✅
+
 - Registry: extensions, MIME, category, displayName, icon, color, `thumbnailStrategy: "auto"`
 - ImagePreview previewer (passive in `PreviewPane`, controlled in `SingleFileShell`)
 - ImagePreviewControls rail: zoom (10–800%), rotate ±90°, fit/100% toggle, transparency grid, reset
@@ -181,6 +183,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 - Kind chip: "Images"
 
 **Wishlist (prioritized)**
+
 1. 🔴 **Grid card preview** — show the actual thumbnail in the file grid, not the generic icon (slot #13)
 2. 🔴 **Click-and-drag pan** when zoomed past fit (wheel / trackpad pan already work via overflow scroll)
 3. 🔴 **EXIF in Info tab** — camera, lens, focal length, GPS, taken-at (slot #34)
@@ -192,6 +195,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 9. 🟡 **Re-enable AI ops on Python** — Remove BG / Upscale / AI edit / Suggest edits all 404 today (front-end gracefully surfaces "ships next wave" toasts)
 
 **Code touchpoints**
+
 - `features/files/utils/file-types.ts` (registry)
 - `features/files/components/core/FilePreview/previewers/ImagePreview.tsx`
 - `features/files/components/surfaces/single-file/ImagePreviewControls.tsx`
@@ -207,10 +211,12 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 **Tier:** T2 · **Registry:** `previewKind: "pdf"`
 
 **Has** ✅
+
 - Registry: ext `pdf`, MIME `application/pdf`, displayName, icon, color
 - PdfPreview (the best previewer in the system): zoom, fit-page, fit-width, actual-size, rotate, prev/next + counter, ResizeObserver sizing, overlay slot for annotations
 - File Preview window accepts a 1-based `pageNumber` (typed opener + `?panels=file_preview:<fileId>:p-<page>`) and remains navigable after landing
-- HTTP-range streaming via service worker — no full-file blob fetch
+- Progressive HTTP Range loading from the canonical CDN / signed-inline URL — page one paints without a cold full-file blob gate; an already-warm in-memory blob remains instant
+- Horizontal touch swipe + left/right keyboard navigation in the shared one-page renderer; navigation targets meet the mobile touch-size floor
 - **Edit tab: 3-pane workshop** via `PdfEditTab` — `ThumbnailStrip` (left, page nav with annotation-count badges) + `AnnotatablePdfCanvas` (center, draw-to-annotate with snap-bbox + label picker, three modes: View / Select / Draw) + filtered `InspectorRail` (right, action panels only: Pages / Doc Ops / Notes / Findings / Redact / Search). Annotations persist through `useAnnotations` (shared cache with Analysis tab and the standalone Studio — same Realtime channel).
 - Action bar: Download, Copy link, **Edit** (jumps to the Edit tab), **Open in PDF Extractor** (floating window for the `processed_documents`-backed extraction pipeline), Rename, Delete. Inside the Edit tab: **Open in Studio** (`/files/f/{id}/studio` for the full unfiltered inspector).
 - `EDITABLE_KINDS` includes `"pdf"`
@@ -219,6 +225,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 - Kind chip: "PDF"
 
 **Wishlist (prioritized)**
+
 1. 🔴 **In-toolbar text search (Cmd+F)** — text-layer selection works; no search UI inside `PdfDocumentRenderer` (Search lives in the Edit tab's inspector but not the canvas itself)
 2. 🔴 **Promote PDF toolbar controls into the SingleFileShell rail** (slot #21 — there is no `PdfPreviewControls.tsx` next to `ImagePreviewControls.tsx`/`HtmlPreviewControls.tsx`)
 3. 🔴 **Binary save semantics** — Doc Ops panel today downloads compressed/scrubbed/redacted blobs; future: write them back as a new version of the source `cld_files` row (the manipulation panel's `saveDerivative` exists but writes to `processed_documents`, not `cld_files`)
@@ -231,6 +238,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 10. 🟡 **Reading-order + redact-repeated-regions surfacing** — both fully built backend + tested via demos; not yet exposed in either manipulation panel
 
 **Code touchpoints**
+
 - `features/files/utils/file-types.ts`
 - `features/files/components/core/FilePreview/previewers/PdfPreview.tsx`
 - `features/files/components/surfaces/single-file/PdfEditTab.tsx` (Edit tab body)
@@ -248,6 +256,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 **Tier:** T2 · **Registry:** `previewKind: "html"`
 
 **Has** ✅
+
 - Registry: ext `html, htm`, MIME `text/html`, displayName, icon, color
 - HtmlPreview: sandboxed iframe (`sandbox="allow-scripts allow-popups allow-forms"`, no same-origin) with Rendered/Source toggle
 - HtmlPreviewControls rail: View toggle, Viewport picker (Auto / Phone / Tablet / Desktop), Reload
@@ -257,6 +266,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 - Action bar: Download, Copy link, Edit, Rename, Delete
 
 **Wishlist (prioritized)**
+
 1. 🔴 **Silent signed-URL refresh on focus** — 1-hour TTL means long-open sessions go blank
 2. 🔴 **Grid card preview** — render a tiny iframe screenshot (or server-rendered PNG) in the file grid (slot #13)
 3. 🔴 **HTML-specific Analysis detectors** — broken links, missing alt-text, document outline, script count, accessibility score (slot #32)
@@ -266,6 +276,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 7. 🟡 **Template files** (`hbs`, `twig`, `jinja`, …) "Source / Rendered with sample data" toggle
 
 **Code touchpoints**
+
 - `features/files/utils/file-types.ts`
 - `features/files/components/core/FilePreview/previewers/HtmlPreview.tsx`
 - `features/files/components/surfaces/single-file/HtmlPreviewControls.tsx`
@@ -278,6 +289,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 **Tier:** T2 (in progress) · **Registry:** `previewKind: "markdown"`
 
 **Has** ✅
+
 - Registry: ext `md, markdown, mdx`, MIME, displayName, icon, color
 - MarkdownPreview: ReactMarkdown + GFM (tables / strikethrough / task lists) + math (KaTeX) + Prism-highlighted code blocks
 - Truncation at 1 MB
@@ -286,6 +298,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 - Kind chip: "Markdown"
 
 **Wishlist (prioritized)**
+
 1. 🔴 **Outline / TOC sidebar** — auto-generated from headings
 2. 🔴 **Print mode** — clean print stylesheet (slot #43)
 3. 🔴 **Grid card preview** — render the first ~5 lines (slot #13)
@@ -294,6 +307,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 6. 🔴 **Starter template** for "New Markdown file" — frontmatter scaffold + heading (slot #51)
 
 **Code touchpoints**
+
 - `features/files/utils/file-types.ts`
 - `features/files/components/core/FilePreview/previewers/MarkdownPreview.tsx`
 
@@ -304,12 +318,14 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 **Tier:** T1 · **Registry:** `previewKind: "video"`
 
 **Has** ✅
+
 - Registry: ext `mp4, mov, webm, m4v, mkv, avi`, MIME, displayName, icon, color
 - VideoPreview: bare `<video controls>` (browser-native chrome)
 - Streamed via signed URL — no size cap
 - Action bar: Download, Copy link
 
 **Wishlist (prioritized)**
+
 1. 🔴 **Match AudioPreview's feature set** — playback rate (0.5×–2×), AB-loop, ±10s skip, click-scrub timeline with buffered bar (`AudioPreview` is the reference implementation)
 2. 🔴 **Captions / cue-track wiring** — `<track>` support, language picker
 3. 🔴 **Picture-in-picture toggle**
@@ -320,6 +336,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 8. 🔴 **Video-specific Analysis** — speech-to-text, scene boundaries, dominant colors per frame (slot #32)
 
 **Code touchpoints**
+
 - `features/files/utils/file-types.ts`
 - `features/files/components/core/FilePreview/previewers/VideoPreview.tsx`
 - `features/files/components/core/FilePreview/previewers/AudioPreview.tsx` (reference for player polish)
@@ -331,6 +348,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 **Tier:** T1 (uneven) · **Registry:** `previewKind: "code"`
 
 **Has** ✅
+
 - Registry: extensions + aliases (`Dockerfile.*`, `Makefile.*`, `Procfile`, dotfiles, …), MIME, displayName, icon, color
 - CodePreview: Prism syntax highlighting with a rich language map
 - Edit tab: Monaco — but `LANGUAGE_BY_EXT` is a SUBSET of the registry, so many languages open as `plaintext`
@@ -338,6 +356,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 - Kind chip: "Code"
 
 **Wishlist (prioritized)**
+
 1. 🔴 **Editor language-map parity** — extend `CloudFileInlineEditor.LANGUAGE_BY_EXT` to cover every `previewKind: "code"` extension (slot #25). Cheapest, highest-impact change.
 2. 🔴 **`.diff` / `.patch` viewer** — use React-Diff-Viewer (already in the codebase) for split/unified diffs (slot #17)
 3. 🔴 **Format-on-save / linter hook** — Prettier for js/ts/css, Biome / Black / Rustfmt / Gofmt for the rest (slot #28)
@@ -346,6 +365,7 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 6. 🔴 **Starter templates** for the common kinds (`new.ts`, `new.py`, `Dockerfile`) (slot #51)
 
 **Code touchpoints**
+
 - `features/files/utils/file-types.ts`
 - `features/files/components/core/FilePreview/previewers/CodePreview.tsx`
 - `features/files/components/core/FileEditor/CloudFileInlineEditor.tsx` (`LANGUAGE_BY_EXT`)
@@ -364,16 +384,17 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 
 ## IMAGE
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `jpg/jpeg, png, gif, webp, avif` | ✅* | ➖ | ✅ | 🔴 | ✅ | ✅ | ✅ | Zoom / rotate / fit / transparency grid via left rail in `SingleFileShell`. **In `PreviewPane` (side panel) it's still a passive `<img>` — the rail only mounts on `/files/f/{id}`.** |
-| `heic, heif` | 🟡 | ➖ | ✅ | 🔴 | ✅ | ✅ | ✅ | Renders only on Safari natively — Chrome/Firefox hit the error fallback. Needs a server-side conversion. |
-| `bmp, tif/tiff, ico` | 🟡 | ➖ | ✅ | 🔴 | ✅ | ✅ | ✅ | TIFF renders only on Safari. |
-| `svg` | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Rendered/Source toggle ✅. **Source view is unstyled `<pre>`, no syntax highlighting.** Monaco edits as XML. |
+| Ext                              | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                                                                                                                                 |
+| -------------------------------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jpg/jpeg, png, gif, webp, avif` | ✅*     | ➖   | ✅       | 🔴       | ✅    | ✅   | ✅       | Zoom / rotate / fit / transparency grid via left rail in `SingleFileShell`. **In `PreviewPane` (side panel) it's still a passive `<img>` — the rail only mounts on `/files/f/{id}`.** |
+| `heic, heif`                     | 🟡      | ➖   | ✅       | 🔴       | ✅    | ✅   | ✅       | Renders only on Safari natively — Chrome/Firefox hit the error fallback. Needs a server-side conversion.                                                                              |
+| `bmp, tif/tiff, ico`             | 🟡      | ➖   | ✅       | 🔴       | ✅    | ✅   | ✅       | TIFF renders only on Safari.                                                                                                                                                          |
+| `svg`                            | 🟡      | ✅   | ✅       | 🔴       | ✅    | ✅   | ✅       | Rendered/Source toggle ✅. **Source view is unstyled `<pre>`, no syntax highlighting.** Monaco edits as XML.                                                                          |
 
 \* On the dedicated `/files/f/{id}` route. Side-panel preview stays passive — promoting the rail into the side panel is a follow-up if we ever decide that surface deserves the extra column.
 
 **Gaps:**
+
 - **Side-panel image preview is still passive.** The control rail is `SingleFileShell`-only.
 - **Click-and-drag pan is not implemented.** Overflow scroll handles wheel / trackpad pan when zoomed past 100%; pointer-drag pan is a follow-up.
 - **No image analysis pipeline.** Image-specific detectors (EXIF, dominant colors, OCR, content-aware crop) are not surfaced in the Analysis tab today; that tab is PDF-centric.
@@ -382,12 +403,13 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 
 ## VIDEO
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `mp4, mov, webm, m4v` | 🟡 | ➖ | ✅ | 🔴 | ✅ | ✅ | ✅ | Bare `<video controls>`. Streamed, no cap. |
-| `mkv, avi` | 🟡 | ➖ | ✅ | 🔴 | ✅ | ✅ | ✅ | Will silently fail on Chrome — no "format unsupported" branch. |
+| Ext                   | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                          |
+| --------------------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | -------------------------------------------------------------- |
+| `mp4, mov, webm, m4v` | 🟡      | ➖   | ✅       | 🔴       | ✅    | ✅   | ✅       | Bare `<video controls>`. Streamed, no cap.                     |
+| `mkv, avi`            | 🟡      | ➖   | ✅       | 🔴       | ✅    | ✅   | ✅       | Will silently fail on Chrome — no "format unsupported" branch. |
 
 **Gaps:**
+
 - No playback-rate, AB-loop, captions/cue track wiring, PiP toggle, or scrub-thumbnail. **AudioPreview is fully featured — VideoPreview should match.**
 - No fallback message when the codec isn't browser-supported.
 
@@ -395,11 +417,12 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 
 ## AUDIO
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `mp3, wav, ogg, m4a, aac, flac, opus` | ✅ | ➖ | ✅ | 🔴 | ✅ | ✅ | ✅ | Custom player: play/pause, ±10s, loop, 0.5×–2× rate, volume, click-scrub timeline with buffered bar. |
+| Ext                                   | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                                                |
+| ------------------------------------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | ---------------------------------------------------------------------------------------------------- |
+| `mp3, wav, ogg, m4a, aac, flac, opus` | ✅      | ➖   | ✅       | 🔴       | ✅    | ✅   | ✅       | Custom player: play/pause, ±10s, loop, 0.5×–2× rate, volume, click-scrub timeline with buffered bar. |
 
 **Gaps:**
+
 - No waveform render (deliberate — bundle cost). Long-term: server-rendered waveform.
 - No transcript / chapter / cue support.
 
@@ -407,13 +430,14 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 
 ## PDF
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `pdf` | ✅ | 🔴 | ✅ | ✅ | ✅ | ✅ | ✅ | Best previewer in the system. Streamed via HTTP Range + Service Worker. |
+| Ext   | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                   |
+| ----- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | ----------------------------------------------------------------------- |
+| `pdf` | ✅      | 🔴   | ✅       | ✅       | ✅    | ✅   | ✅       | Best previewer in the system. Streamed via HTTP Range + Service Worker. |
 
 **Preview-tab features:** zoom in/out, fit-page, fit-width, actual-size, rotate, prev/next + page counter, ResizeObserver-driven sizing, overlay slot for annotations.
 
 **Gaps:**
+
 - **No Edit tab content.** Shows "Coming soon" — PDF Extractor's edit components are not wired into the Edit tab yet.
 - No in-toolbar text search (selection works via text layer, but no Cmd+F).
 - No thumbnail strip / outline panel inside the renderer (Studio adds those).
@@ -422,12 +446,13 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 
 ## MARKDOWN
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `md, markdown` | ✅ | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | ReactMarkdown + GFM + math (KaTeX) + Prism code blocks. Truncated at 1 MB. |
-| `mdx` | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Rendered as plain Markdown — **JSX components are NOT evaluated.** |
+| Ext            | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                      |
+| -------------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | -------------------------------------------------------------------------- |
+| `md, markdown` | ✅      | ✅   | ✅       | 🟡       | ✅    | ✅   | ✅       | ReactMarkdown + GFM + math (KaTeX) + Prism code blocks. Truncated at 1 MB. |
+| `mdx`          | 🟡      | ✅   | ✅       | 🟡       | ✅    | ✅   | ✅       | Rendered as plain Markdown — **JSX components are NOT evaluated.**         |
 
 **Gaps:**
+
 - MDX renders raw JSX tags in prose. Either drop MDX from `markdown` previewKind or wire a real MDX runtime.
 - No outline / TOC sidebar.
 - No print mode of its own.
@@ -436,15 +461,16 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 
 ## HTML & TEMPLATE
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `html, htm` | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Sandboxed iframe (signed-URL `src`) with Rendered / Source toggle. Viewport picker (Auto / Phone / Tablet / Desktop) + Reload in `SingleFileShell`'s rail. Source view in `PreviewPane` falls back to a local toggle in the previewer header. Monaco edits as `html`. |
-| `vue, svelte, astro` | 🟡 | 🟡 | ✅ | 🔴 | ✅ | ✅ | ✅ | Still routed through `CodePreview` (syntax-highlighted source). Rendering these would require a full SFC compiler, so source IS the right preview — but the marker is yellow because a "compiled placeholder" component view would be nice. |
-| `hbs, handlebars, mustache, ejs, liquid, twig, jinja, j2, njk` | 🟡 | 🟡 | ✅ | 🔴 | ✅ | ✅ | ✅ | Template formats — rendering requires data binding, so source view is the design choice for now. |
+| Ext                                                            | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                                                                                                                                                                                                                 |
+| -------------------------------------------------------------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `html, htm`                                                    | ✅      | ✅   | ✅       | 🔴       | ✅    | ✅   | ✅       | Sandboxed iframe (signed-URL `src`) with Rendered / Source toggle. Viewport picker (Auto / Phone / Tablet / Desktop) + Reload in `SingleFileShell`'s rail. Source view in `PreviewPane` falls back to a local toggle in the previewer header. Monaco edits as `html`. |
+| `vue, svelte, astro`                                           | 🟡      | 🟡   | ✅       | 🔴       | ✅    | ✅   | ✅       | Still routed through `CodePreview` (syntax-highlighted source). Rendering these would require a full SFC compiler, so source IS the right preview — but the marker is yellow because a "compiled placeholder" component view would be nice.                           |
+| `hbs, handlebars, mustache, ejs, liquid, twig, jinja, j2, njk` | 🟡      | 🟡   | ✅       | 🔴       | ✅    | ✅   | ✅       | Template formats — rendering requires data binding, so source view is the design choice for now.                                                                                                                                                                      |
 
 **Sandbox policy for HTML:** `<iframe sandbox="allow-scripts allow-popups allow-forms">`. Scripts run (most saved web pages need them) but the iframe is **not** same-origin — it cannot read aimatrx.com cookies, localStorage, or hit our APIs. Top-frame navigation is blocked, so a hostile page cannot bounce the user off the app.
 
 **Gaps:**
+
 - Vue/Svelte/Astro could ship a "compiled-placeholder" view but that needs a SFC compiler bundle. Open question.
 - Template files (`hbs`, `twig`, etc.) could surface a "Source / Rendered placeholder" toggle if we ever wire a tiny demo data binding.
 - HTML signed-URL has a 1-hour TTL. Long-open viewer sessions will see the iframe go blank when the URL expires; we should re-mint silently on refocus.
@@ -453,16 +479,17 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 
 ## TEXT / LOG / DOCS-AS-TEXT
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `txt, text, asc, me, log, out, err` | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Plain `<pre>` truncated at 1 MB. No syntax highlighting, no line numbers, no wrap toggle, no find. |
-| `rst, adoc, asciidoc, org` | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Rendered as plain text — **no AsciiDoc/Org-mode/reST renderer.** |
-| `srt, vtt` (subtitles) | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Rendered as plain text — no cue-timeline view. |
-| `pem, csr` (PEM-armored cert) | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Text-as-text is the right call here. |
-| `eml` (email) | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Raw RFC 822 source. **No parsed headers / HTML body / attachments view.** |
-| README / LICENSE / CHANGELOG / TODO / NOTICE / AUTHORS / etc. (aliases) | 🟡 | ✅ | ✅ | 🟡 | ✅ | ✅ | ✅ | Plain text. If the project ever needs Markdown-flavored READMEs, the alias should route to `markdown` instead. |
+| Ext                                                                     | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                                                          |
+| ----------------------------------------------------------------------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `txt, text, asc, me, log, out, err`                                     | 🟡      | ✅   | ✅       | 🟡       | ✅    | ✅   | ✅       | Plain `<pre>` truncated at 1 MB. No syntax highlighting, no line numbers, no wrap toggle, no find.             |
+| `rst, adoc, asciidoc, org`                                              | 🟡      | ✅   | ✅       | 🟡       | ✅    | ✅   | ✅       | Rendered as plain text — **no AsciiDoc/Org-mode/reST renderer.**                                               |
+| `srt, vtt` (subtitles)                                                  | 🟡      | ✅   | ✅       | 🔴       | ✅    | ✅   | ✅       | Rendered as plain text — no cue-timeline view.                                                                 |
+| `pem, csr` (PEM-armored cert)                                           | ✅      | ✅   | ✅       | 🔴       | ✅    | ✅   | ✅       | Text-as-text is the right call here.                                                                           |
+| `eml` (email)                                                           | 🟡      | ✅   | ✅       | 🔴       | ✅    | ✅   | ✅       | Raw RFC 822 source. **No parsed headers / HTML body / attachments view.**                                      |
+| README / LICENSE / CHANGELOG / TODO / NOTICE / AUTHORS / etc. (aliases) | 🟡      | ✅   | ✅       | 🟡       | ✅    | ✅   | ✅       | Plain text. If the project ever needs Markdown-flavored READMEs, the alias should route to `markdown` instead. |
 
 **Gaps:**
+
 - No syntax highlighting in `TextPreview` (CodePreview has it).
 - No encoding detection — Latin-1 / Windows-1252 / GBK render as `�`.
 - No find-in-file, no line numbers, no wrap toggle.
@@ -473,12 +500,13 @@ Compact, prioritized "what's next" for each high-impact kind. Pair each entry wi
 
 The full set: `js, mjs, cjs, jsx, ts, tsx, py, rb (+ Rakefile/Gemfile/Vagrantfile/Berksfile/Brewfile/Capfile/Guardfile/Podfile/Fastfile/Appfile/Deliverfile/Matchfile/Pluginfile/Snapfile/Scanfile/Gymfile), go, rs, java, swift, c, h, cpp, cc, cxx, hpp, cs, css, scss, less, styl, stylus, sh, bash, zsh, fish, ksh, ash (+ .bashrc/.zshrc/.profile/.env.*/etc.), sql, lua, pl, pm, r, R, rmd, dart, kt, kts, scala, sbt, clj, cljs, cljc, edn, ex, exs, erl, hrl, hs, lhs, ml, mli, fs, fsi, fsx, zig, nim, nims, jl, vue, svelte, astro, graphql, gql, graphqls, proto, sol, bat, cmd, ps1, psm1, psd1, php, phtml, phps, twig, jinja, j2, njk, hbs, handlebars, mustache, ejs, liquid, dockerfile, containerfile, mk, make, diff, patch, ini, cfg, conf, config, properties, prefs, tex, latex, ltx, sty, cls, bib, ttl, n3, nt, nq, trig, yaml, yml, toml`, plus aliases like `Dockerfile.*`, `Makefile.*`, `Procfile`, `Pipfile`, `Justfile`, `Earthfile`.
 
-| Status | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `js, ts, jsx, tsx, py, rb, go, rs, java, c, cpp, cs, sh, html, css, scss, sql, xml, yaml, yml, toml(→ini), json, md, mdx, txt, svg` | 🟡 | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Prism in Preview, Monaco with proper language in Edit. |
-| All other `code`-kind extensions above | 🟡 | 🟡 | ✅ | 🔴 | ✅ | ✅ | ✅ | Prism highlights in Preview (rich language map), but **Monaco opens them as `plaintext`** because `CloudFileInlineEditor.LANGUAGE_BY_EXT` is much smaller than the registry. |
+| Status                                                                                                                              | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                                                                                                                        |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `js, ts, jsx, tsx, py, rb, go, rs, java, c, cpp, cs, sh, html, css, scss, sql, xml, yaml, yml, toml(→ini), json, md, mdx, txt, svg` | 🟡      | ✅   | ✅       | 🔴       | ✅    | ✅   | ✅       | Prism in Preview, Monaco with proper language in Edit.                                                                                                                       |
+| All other `code`-kind extensions above                                                                                              | 🟡      | 🟡   | ✅       | 🔴       | ✅    | ✅   | ✅       | Prism highlights in Preview (rich language map), but **Monaco opens them as `plaintext`** because `CloudFileInlineEditor.LANGUAGE_BY_EXT` is much smaller than the registry. |
 
 **Gaps:**
+
 - 🟡 **Editor language gap:** `php, lua, dart, kt, swift, scala, vue, svelte, astro, graphql, proto, sol, ps1, perl, r, dockerfile, makefile, diff, ini/cfg, less, styl, hbs, twig, ex/erl/hs/ml/fs/zig/nim/jl/clj`, and every dotfile alias open in Monaco without syntax highlighting. Fix: extend `LANGUAGE_BY_EXT`.
 - 🟡 **Preview is "source only" everywhere.** `.diff/.patch` should get a split/unified diff viewer (React-Diff-Viewer exists in the codebase already). `.proto/.graphql` could get schema-aware tooling later.
 - 🐛 **HTML preview** — see the HTML & Template section above.
@@ -487,15 +515,16 @@ The full set: `js, mjs, cjs, jsx, ts, tsx, py, rb (+ Rakefile/Gemfile/Vagrantfil
 
 ## DATA
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `json, jsonc, json5, har, geojson, topojson` (+ `.babelrc/.eslintrc/.prettierrc` aliases) | 🟡 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | Tabular if array-of-objects, else pretty-print. **Edit tab is hidden** — `data` is not in `EDITABLE_KINDS`. |
-| `csv, tsv` | 🟡 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | PapaParse → sortable table + search + 25-row pagination. No inline edit. |
-| `xml` | 🟡 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | Renders as raw text — **no tree view, no pretty-print, no XSLT.** Edit hidden. |
-| `ipynb` (Jupyter) | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | **Falls into DataPreview as JSON.** No cells + outputs renderer. The registry has a `NOTEBOOK` category but no `notebook` previewKind. |
-| `sqlite, sqlite3, db` | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview` — Download only. No browsable schema/query UI. |
+| Ext                                                                                       | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                                                                                  |
+| ----------------------------------------------------------------------------------------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `json, jsonc, json5, har, geojson, topojson` (+ `.babelrc/.eslintrc/.prettierrc` aliases) | 🟡      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | Tabular if array-of-objects, else pretty-print. **Edit tab is hidden** — `data` is not in `EDITABLE_KINDS`.                            |
+| `csv, tsv`                                                                                | 🟡      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | PapaParse → sortable table + search + 25-row pagination. No inline edit.                                                               |
+| `xml`                                                                                     | 🟡      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | Renders as raw text — **no tree view, no pretty-print, no XSLT.** Edit hidden.                                                         |
+| `ipynb` (Jupyter)                                                                         | 🔴      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | **Falls into DataPreview as JSON.** No cells + outputs renderer. The registry has a `NOTEBOOK` category but no `notebook` previewKind. |
+| `sqlite, sqlite3, db`                                                                     | 🔴      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | `GenericPreview` — Download only. No browsable schema/query UI.                                                                        |
 
 **Gaps:**
+
 - **`data` and `spreadsheet` are not in `EDITABLE_KINDS`** in `preview-actions.ts:48`. The Edit button is hidden even though Monaco knows `json` and CSV is trivially editable as text. Either add them to the set, or build dedicated grid editors for CSV/XLSX.
 - **No notebook renderer** for `.ipynb`. Should ship cells + outputs (image / DataFrame HTML / matplotlib base64).
 - **No XML tree view.**
@@ -504,11 +533,12 @@ The full set: `js, mjs, cjs, jsx, ts, tsx, py, rb (+ Rakefile/Gemfile/Vagrantfil
 
 ## SPREADSHEET
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `xlsx, xls` | ✅ | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | SheetJS → multi-sheet selector + sortable table + pagination. Streamed, no cap. |
+| Ext         | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                           |
+| ----------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | ------------------------------------------------------------------------------- |
+| `xlsx, xls` | ✅      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | SheetJS → multi-sheet selector + sortable table + pagination. Streamed, no cap. |
 
 **Gaps:**
+
 - No inline edit (no grid editor). Edit tab shows "Coming soon."
 - Large XLSX files do a full SheetJS load — no streaming parse.
 
@@ -527,11 +557,11 @@ The full set: `js, mjs, cjs, jsx, ts, tsx, py, rb (+ Rakefile/Gemfile/Vagrantfil
 > Excel prompt prefill → `/chat/new`, the `office` tool generates a real file). Remaining office
 > work: [`docs/handoffs/office-documents.md`](../../../../docs/handoffs/office-documents.md).
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `doc, docx` (Word) | ✅ | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `OfficePreview` — Text (extracted markdown, default) + **Pages** visual mode (cached `pdf_conversion` derivative → `PdfPreview`). Edit tab points at AI generation. |
-| `ppt, pptx` (PowerPoint) | ✅ | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `OfficePreview` — **Slides visual mode is the DEFAULT** (full-fidelity LibreOffice→PDF derivative rendered through `PdfPreview`); Text mode keeps the slide-by-slide markdown. |
-| `epub` | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview`. Needs an EPUB reader (`epub.js`). |
+| Ext                      | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                                                                                                                          |
+| ------------------------ | ------- | ---- | -------- | -------- | ----- | ---- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `doc, docx` (Word)       | ✅      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | `OfficePreview` — Text (extracted markdown, default) + **Pages** visual mode (cached `pdf_conversion` derivative → `PdfPreview`). Edit tab points at AI generation.            |
+| `ppt, pptx` (PowerPoint) | ✅      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | `OfficePreview` — **Slides visual mode is the DEFAULT** (full-fidelity LibreOffice→PDF derivative rendered through `PdfPreview`); Text mode keeps the slide-by-slide markdown. |
+| `epub`                   | 🔴      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | `GenericPreview`. Needs an EPUB reader (`epub.js`).                                                                                                                            |
 
 **Shipped 2026-08-21 — visual fidelity:** the LibreOffice→PDF render-preview lane is live.
 `POST /office/{id}/convert` is now IDEMPOTENT server-side (cached `pdf_conversion` files
@@ -539,7 +569,15 @@ derivative per source revision, warmed automatically on upload); `OfficePreview`
 through the canonical `PdfPreview` with a Slides/Pages ↔ Text toggle. Office masters also get a
 full-res `page1_url` variant at upload (same contract as PDF).
 
+**Shipped 2026-08-24 — large-deck first paint + presentation navigation:** visual deck
+previews no longer compete with an unnecessary full-source markdown extraction, show the
+existing first-slide asset while LibreOffice finishes the cached derivative, then feed that
+derivative's canonical URL directly to PDF.js for HTTP Range loading. The shared renderer now
+supports horizontal touch swipe and keyboard arrows; PowerPoint enables translucent 48px
+floating previous/next controls over the slide canvas while retaining toolbar navigation.
+
 **Gaps:**
+
 - Existing Office files still show mime-icon thumbnails until the aidream backfill re-renders
   them (`aidream/cli/thumbnail_backfill.py --office --force-rerender` — now also emits the new
   Office `page1_url`).
@@ -548,33 +586,34 @@ full-res `page1_url` variant at upload (same contract as PDF).
 
 ## 3D / CAD — NOT PREVIEWABLE
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `glb, gltf` | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview`. Needs Three.js + `@react-three/fiber` GLTF loader. |
-| `stl, obj, fbx` | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview`. Same renderer would cover all three with format-specific loaders. |
+| Ext             | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                               |
+| --------------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | ----------------------------------------------------------------------------------- |
+| `glb, gltf`     | 🔴      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | `GenericPreview`. Needs Three.js + `@react-three/fiber` GLTF loader.                |
+| `stl, obj, fbx` | 🔴      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | `GenericPreview`. Same renderer would cover all three with format-specific loaders. |
 
 ---
 
 ## CERTIFICATES / KEYS
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `pem, csr` (PEM-armored) | ✅ | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | Treated as text — correct. |
-| `crt, cer, der, key, pub, p7b, p7c, pfx, p12` | 🔴 | 🔴 | ✅ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview` — but binary viewer's byte sniff offers "View as text" when bytes are PEM-armored. No decoded-cert summary (subject/issuer/expiry). |
+| Ext                                           | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                                                                                                |
+| --------------------------------------------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pem, csr` (PEM-armored)                      | ✅      | ✅   | ✅       | 🔴       | ✅    | ✅   | ✅       | Treated as text — correct.                                                                                                                           |
+| `crt, cer, der, key, pub, p7b, p7c, pfx, p12` | 🔴      | 🔴   | ✅       | 🔴       | ✅    | ✅   | ✅       | `GenericPreview` — but binary viewer's byte sniff offers "View as text" when bytes are PEM-armored. No decoded-cert summary (subject/issuer/expiry). |
 
 ---
 
 ## ARCHIVES
 
-| Ext | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes |
-|---|---|---|---|---|---|---|---|---|
-| `zip, rar, 7z, tar, gz, tgz` | 🔴 | 🔴 | ➖ | 🔴 | ✅ | ✅ | ✅ | `GenericPreview` — Download only. No browse-tree of contained files. |
+| Ext                          | Preview | Edit | Document | Analysis | Share | Info | Versions | Notes                                                                |
+| ---------------------------- | ------- | ---- | -------- | -------- | ----- | ---- | -------- | -------------------------------------------------------------------- |
+| `zip, rar, 7z, tar, gz, tgz` | 🔴      | 🔴   | ➖       | 🔴       | ✅    | ✅   | ✅       | `GenericPreview` — Download only. No browse-tree of contained files. |
 
 ---
 
 ## Unknown / fallback
 
 When the registry doesn't recognize a file:
+
 - **Dotfile heuristic** (`getFileTypeDetails` → `dotfileLooksLikeText`): any filename starting with `.` followed by an alphanumeric char gets `ASSUMED_TEXT_DETAILS` → opens in `TextPreview` with the Edit tab enabled. Covers anonymous configs.
 - **Everything else** → `UNKNOWN_DETAILS` → `GenericPreview` (Download only). Binary viewer's `sniffTextBytes` (UTF-8 / BOM / printability) escapes to "View as text" when the bytes are actually printable.
 
@@ -583,14 +622,17 @@ When the registry doesn't recognize a file:
 ## Cross-cutting tabs
 
 ### Document
+
 - ✅ for every real `cld_files` row regardless of file type (RAG pipeline is content-agnostic — extracts text from PDF/Word/HTML/Markdown/etc.).
 - 🔴 for virtual-source files — see § Virtual sources.
 
 ### Analysis
+
 - ✅ for PDFs — full detector grid (Overview, Outline, Text, PII, Tables, Images, Regions, Duplicates, Classify).
 - 🔴 for everything else — the underlying detectors are PDF-specific today. Status shows `not_applicable`. Image / video / audio / data detectors don't exist yet.
 
 ### Share / Info / Versions
+
 - ✅ uniform for every real file regardless of type.
 - 🟡 for virtual-source files — Share is replaced by a stub ("handled by source"), Versions shows an empty state per adapter.
 
@@ -640,20 +682,20 @@ Ordered by user impact:
 
 ## Where the registry lives — code-location quick map
 
-| Capability | File / function |
-|---|---|
+| Capability                                                                 | File / function                                                                                        |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Extensions, MIME, category, icon, color, `previewKind`, thumbnail strategy | `features/files/utils/file-types.ts` → `FILE_TYPES`, `getFilePreviewProfile()`, `listSupportedTypes()` |
-| Preview-tab dispatcher | `features/files/components/core/FilePreview/FilePreview.tsx` |
-| Previewer implementations | `features/files/components/core/FilePreview/previewers/<Kind>Preview.tsx` |
-| Edit-tab dispatcher | `features/files/components/surfaces/FileTabsBody.tsx` → `EditTabContent` |
-| Monaco language map | `features/files/components/core/FileEditor/CloudFileInlineEditor.tsx` → `LANGUAGE_BY_EXT` |
-| Action-bar buttons (Edit / Download / Open-in-feature …) | `features/files/components/core/FilePreview/preview-actions.ts` (`EDITABLE_KINDS`) |
-| `SingleFileShell` rail dispatcher | `features/files/components/surfaces/single-file/FileViewerControlRail.tsx` |
-| Rail-driven shared state | `features/files/components/surfaces/FileViewerControlsContext.tsx` |
-| Per-mode rail panels | `features/files/components/surfaces/single-file/<Mode>Controls.tsx` |
-| Side-panel viewer (compact) | `features/files/components/surfaces/PreviewPane.tsx` |
-| Dedicated full-page viewer | `features/files/components/surfaces/single-file/SingleFileShell.tsx` |
-| Inventory (this doc) + per-type wishlists | `features/files/components/surfaces/FILE_TYPE_INVENTORY.md` |
-| Workflow skill (how to enhance) | `.claude/skills/enhance-file-type/SKILL.md` |
+| Preview-tab dispatcher                                                     | `features/files/components/core/FilePreview/FilePreview.tsx`                                           |
+| Previewer implementations                                                  | `features/files/components/core/FilePreview/previewers/<Kind>Preview.tsx`                              |
+| Edit-tab dispatcher                                                        | `features/files/components/surfaces/FileTabsBody.tsx` → `EditTabContent`                               |
+| Monaco language map                                                        | `features/files/components/core/FileEditor/CloudFileInlineEditor.tsx` → `LANGUAGE_BY_EXT`              |
+| Action-bar buttons (Edit / Download / Open-in-feature …)                   | `features/files/components/core/FilePreview/preview-actions.ts` (`EDITABLE_KINDS`)                     |
+| `SingleFileShell` rail dispatcher                                          | `features/files/components/surfaces/single-file/FileViewerControlRail.tsx`                             |
+| Rail-driven shared state                                                   | `features/files/components/surfaces/FileViewerControlsContext.tsx`                                     |
+| Per-mode rail panels                                                       | `features/files/components/surfaces/single-file/<Mode>Controls.tsx`                                    |
+| Side-panel viewer (compact)                                                | `features/files/components/surfaces/PreviewPane.tsx`                                                   |
+| Dedicated full-page viewer                                                 | `features/files/components/surfaces/single-file/SingleFileShell.tsx`                                   |
+| Inventory (this doc) + per-type wishlists                                  | `features/files/components/surfaces/FILE_TYPE_INVENTORY.md`                                            |
+| Workflow skill (how to enhance)                                            | `.claude/skills/enhance-file-type/SKILL.md`                                                            |
 
 Adding support for a new file type or upgrading an existing one is **typically a 1–4 file change** (registry + previewer + maybe Edit dispatch + maybe a rail panel). Bigger changes (new tab, new cross-cutting capability) hit the slots in Groups 5–9.

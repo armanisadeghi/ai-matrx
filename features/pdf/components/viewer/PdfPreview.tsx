@@ -38,6 +38,11 @@ export interface PdfPreviewProps {
   fileId: string;
   className?: string;
   /**
+   * Already-resolved CDN / signed-inline URL. When present, PDF.js can begin
+   * range loading on the first render while the hook still owns refresh/retry.
+   */
+  remoteUrl?: string | null;
+  /**
    * Optional controlled page number. When set, the viewer renders this
    * page and emits changes via `onPageChange`. Use this to drive scroll
    * sync from a parent (e.g. the PDF Studio's text panes).
@@ -65,6 +70,7 @@ export interface PdfPreviewProps {
 export default function PdfPreview({
   fileId,
   className,
+  remoteUrl: providedRemoteUrl,
   pageNumber,
   onPageChange,
   pageLabel,
@@ -85,7 +91,7 @@ export default function PdfPreview({
     fileId ? selectFileById(s, fileId) : null,
   );
 
-  if (sourceMissing) {
+  if (sourceMissing && !providedRemoteUrl) {
     return (
       <div className={cn("relative h-full w-full", className)}>
         <PdfSourceUnavailable fileName={file?.fileName ?? null} />
@@ -96,11 +102,11 @@ export default function PdfPreview({
   return (
     <div className={cn("relative h-full w-full", className)}>
       <PdfDocumentRenderer
-        remoteUrl={remoteUrl}
+        remoteUrl={remoteUrl ?? providedRemoteUrl}
         remoteHeaders={headers}
         fileName={file?.fileName ?? null}
-        loading={sessionLoading}
-        error={sessionError}
+        loading={!providedRemoteUrl && sessionLoading}
+        error={providedRemoteUrl ? null : sessionError}
         onRetry={retry}
         bytesLoaded={bytesLoaded}
         bytesTotal={bytesTotal}

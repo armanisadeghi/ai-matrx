@@ -15,7 +15,7 @@
  * responsible for preventing.
  */
 
-import { useCallback } from "react";
+import { useEffect } from "react";
 import { getCached, invalidate } from "@/features/files/hooks/blob-cache";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 
@@ -32,7 +32,7 @@ export interface UsePdfRemoteSourceResult {
   sourceMissing: boolean;
   /** No eager byte transfer occurs on the progressive path. */
   bytesLoaded: number;
-  /** Original PDF size from the Asset envelope, when known. */
+  /** Bytes known to be locally ready (warm blobs only). */
   bytesTotal: number | null;
   /** Drop a suspect warm blob and mint a fresh direct URL. */
   retry: () => void;
@@ -59,10 +59,28 @@ export function usePdfRemoteSource(
     null;
   const sourceMissing = !!error && MISSING_RE.test(error);
 
-  const retry = useCallback(() => {
+  const retry = () => {
     if (fileId) invalidate(fileId);
     void refresh();
-  }, [fileId, refresh]);
+  };
+
+  useEffect(() => {
+    if (!fileId) return;
+    if (cached) {
+      // eslint-disable-next-line no-console
+      console.info(
+        `[pdf-load] warm blob ready — ${fileId} (${cached.bytes} bytes)`,
+      );
+    } else if (directUrl) {
+      // Never log the signed URL. Its presence proves the progressive edge is
+      // armed; the durable id is enough to correlate a failure.
+      // eslint-disable-next-line no-console
+      console.info(`[pdf-load] range source ready — ${fileId}`);
+    } else if (error) {
+      // eslint-disable-next-line no-console
+      console.warn(`[pdf-load] source failed — ${fileId}: ${error}`);
+    }
+  }, [cached, directUrl, error, fileId]);
 
   return {
     remoteUrl: cached?.url ?? directUrl,
@@ -71,8 +89,7 @@ export function usePdfRemoteSource(
     error: sourceMissing ? null : error,
     sourceMissing,
     bytesLoaded: cached?.bytes ?? 0,
-    bytesTotal:
-      cached?.bytes ?? original?.size_bytes ?? original?.file_size ?? null,
+    bytesTotal: cached?.bytes ?? null,
     retry,
   };
 }

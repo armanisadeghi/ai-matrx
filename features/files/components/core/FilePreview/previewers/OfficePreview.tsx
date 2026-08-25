@@ -504,6 +504,9 @@ export function OfficePreview({
           >
             <PdfPreview
               fileId={pdfRef.file_id}
+              remoteUrl={
+                pdfRef.cdn_url ?? pdfRef.signed_url ?? pdfRef.url ?? null
+              }
               className="flex-1 min-h-0"
               pageNumber={state.fileId === fileId ? state.page : 1}
               onPageChange={onPageChange}

@@ -272,6 +272,10 @@ export default function PdfDocumentRenderer({
   );
 
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [documentProgress, setDocumentProgress] = useState<{
+    loaded: number;
+    total: number | null;
+  } | null>(null);
   const [zoom, setZoom] = useState<ZoomMode>({ kind: "fit" });
   const [rotation, setRotation] = useState(0);
 
@@ -371,10 +375,9 @@ export default function PdfDocumentRenderer({
   // the `file` prop's identity changes, so memoise it. `remoteUrl`
   // wins when both are provided so the progressive path is the
   // forward-default.
-  // Retry support: bumping the nonce appends a query param, which gives
-  // pdfjs a NEW document identity AND a different cache key — so a retry
-  // bypasses a stale/broken service-worker cache entry instead of
-  // replaying the exact failed request.
+  // Retry support: the nonce changes this memo's object identity so react-pdf
+  // reloads without mutating the URL. Appending a cache-buster would invalidate
+  // signed S3 URLs because their full query string is part of the signature.
   const [retryNonce, setRetryNonce] = useState(0);
 
   const documentFile = useMemo(() => {
@@ -382,15 +385,8 @@ export default function PdfDocumentRenderer({
       const headers = remoteHeadersKey
         ? (JSON.parse(remoteHeadersKey) as Record<string, string>)
         : undefined;
-      // Cache-bust only http(s) URLs — a `blob:` URL is immutable and can't
-      // carry a query string (`blob:…?retry=1` is invalid and won't load).
-      const isHttp = /^https?:/i.test(remoteUrl);
-      const url =
-        retryNonce > 0 && isHttp
-          ? `${remoteUrl}${remoteUrl.includes("?") ? "&" : "?"}retry=${retryNonce}`
-          : remoteUrl;
       return {
-        url,
+        url: remoteUrl,
         httpHeaders: headers,
         withCredentials,
       };
@@ -418,6 +414,7 @@ export default function PdfDocumentRenderer({
   // case), which is naturally bound to the source URL.
   useEffect(() => {
     setLoadError(null);
+    setDocumentProgress(null);
     setPageDims(null);
     setNumPages(0);
     setInternalPage(1);
@@ -764,7 +761,7 @@ export default function PdfDocumentRenderer({
             // — the correct recovery for a blob source). Fall back to the
             // internal cache-bust nonce for legacy http(s) callers.
             if (onRetry) onRetry();
-            else setRetryNonce((n) => n + 1);
+            setRetryNonce((n) => n + 1);
           }}
           className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
         >
@@ -778,8 +775,8 @@ export default function PdfDocumentRenderer({
     return (
       <PdfLoadingState
         fileName={fileName ?? null}
-        bytesLoaded={bytesLoaded}
-        bytesTotal={bytesTotal ?? null}
+        bytesLoaded={documentProgress?.loaded ?? bytesLoaded}
+        bytesTotal={documentProgress?.total ?? bytesTotal ?? null}
         className={className}
       />
     );
@@ -921,57 +918,60 @@ export default function PdfDocumentRenderer({
           }}
           className="absolute inset-0 overflow-auto overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
         >
-        {/* Full-size loading overlay covering the pdfjs PARSE phase (bytes
-          * already in hand, document not yet rendered). Without this, pdfjs's
-          * own in-<Document> `loading` placeholder renders in a height-less
-          * flex container and collapses to a tiny box — the "loading is a
-          * tiny box in a sea of white" bug. The overlay fills the viewport
-          * until the first page is parsed (numPages > 0). */}
-        {numPages === 0 && !loadError ? (
-          <div className="absolute inset-0 z-10">
-            <PdfLoadingState
-              fileName={fileName ?? null}
-              bytesLoaded={bytesLoaded}
-              bytesTotal={bytesTotal ?? null}
-            />
-          </div>
-        ) : null}
-        <Document
-          file={documentFile}
-          onLoadSuccess={({ numPages: n }) => {
-            setNumPages(n);
-            setPageNumber((p) => Math.min(p, n));
-          }}
-          onLoadError={(err) => setLoadError(err.message)}
-          loading={null}
-          className="flex w-full flex-col items-center"
-        >
-          <div className="relative my-4 shadow-sm">
-            <Page
-              pageNumber={pageNumber}
-              renderAnnotationLayer
-              renderTextLayer
-              // Use `scale` (not `width`) so rotation composes correctly:
-              // react-pdf rotates AFTER scaling, so we don't need to swap
-              // width/height ourselves. devicePixelRatio handling stays
-              // internal to pdfjs.
-              scale={pageScale && pageScale > 0 ? pageScale : undefined}
-              rotate={rotation}
-              onLoadSuccess={handlePageLoadSuccess}
-            />
-            {/* Overlay slot — annotation rectangles, search hits, etc.
-             * Mounts absolutely-positioned on top of the rendered Page.
-             * Caller positions children inside via PdfAnnotationLayer. */}
-            {renderOverlay && pageDims
-              ? renderOverlay({
-                  pageNumber,
-                  pageWidthPt: pageDims.width,
-                  pageHeightPt: pageDims.height,
-                  rotation,
-                })
-              : null}
-          </div>
-        </Document>
+          {/* Full-size loading overlay covering the pdfjs PARSE phase (bytes
+           * already in hand, document not yet rendered). Without this, pdfjs's
+           * own in-<Document> `loading` placeholder renders in a height-less
+           * flex container and collapses to a tiny box — the "loading is a
+           * tiny box in a sea of white" bug. The overlay fills the viewport
+           * until the first page is parsed (numPages > 0). */}
+          {numPages === 0 && !loadError ? (
+            <div className="absolute inset-0 z-10">
+              <PdfLoadingState
+                fileName={fileName ?? null}
+                bytesLoaded={bytesLoaded}
+                bytesTotal={bytesTotal ?? null}
+              />
+            </div>
+          ) : null}
+          <Document
+            file={documentFile}
+            onLoadSuccess={({ numPages: n }) => {
+              setNumPages(n);
+              setPageNumber((p) => Math.min(p, n));
+            }}
+            onLoadError={(err) => setLoadError(err.message)}
+            onLoadProgress={({ loaded, total }) =>
+              setDocumentProgress({ loaded, total: total ?? null })
+            }
+            loading={null}
+            className="flex w-full flex-col items-center"
+          >
+            <div className="relative my-4 shadow-sm">
+              <Page
+                pageNumber={pageNumber}
+                renderAnnotationLayer
+                renderTextLayer
+                // Use `scale` (not `width`) so rotation composes correctly:
+                // react-pdf rotates AFTER scaling, so we don't need to swap
+                // width/height ourselves. devicePixelRatio handling stays
+                // internal to pdfjs.
+                scale={pageScale && pageScale > 0 ? pageScale : undefined}
+                rotate={rotation}
+                onLoadSuccess={handlePageLoadSuccess}
+              />
+              {/* Overlay slot — annotation rectangles, search hits, etc.
+               * Mounts absolutely-positioned on top of the rendered Page.
+               * Caller positions children inside via PdfAnnotationLayer. */}
+              {renderOverlay && pageDims
+                ? renderOverlay({
+                    pageNumber,
+                    pageWidthPt: pageDims.width,
+                    pageHeightPt: pageDims.height,
+                    rotation,
+                  })
+                : null}
+            </div>
+          </Document>
         </div>
 
         {floatingPageControls && numPages > 1 ? (

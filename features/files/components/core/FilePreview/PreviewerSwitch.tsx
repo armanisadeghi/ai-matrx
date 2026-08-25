@@ -130,7 +130,11 @@ export function PreviewerSwitch({
   switch (previewKind) {
     case "image":
       body = (
-        <ImagePreview url={mediaUrl} fileName={fileName} className={className} />
+        <ImagePreview
+          url={mediaUrl}
+          fileName={fileName}
+          className={className}
+        />
       );
       break;
     case "svg":
@@ -145,7 +149,11 @@ export function PreviewerSwitch({
           className={className}
         />
       ) : (
-        <ImagePreview url={mediaUrl} fileName={fileName} className={className} />
+        <ImagePreview
+          url={mediaUrl}
+          fileName={fileName}
+          className={className}
+        />
       );
       break;
     case "video":
@@ -172,6 +180,7 @@ export function PreviewerSwitch({
       body = fileId ? (
         <PdfPreview
           fileId={fileId}
+          remoteUrl={mediaUrl}
           pageNumber={pageNumber}
           onPageChange={onPageChange}
           className={className}
@@ -200,14 +209,22 @@ export function PreviewerSwitch({
     case "data":
     case "spreadsheet":
       body = fileId ? (
-        <DataPreview fileId={fileId} fileName={fileName} className={className} />
+        <DataPreview
+          fileId={fileId}
+          fileName={fileName}
+          className={className}
+        />
       ) : (
         genericCard
       );
       break;
     case "code":
       body = fileId ? (
-        <CodePreview fileId={fileId} fileName={fileName} className={className} />
+        <CodePreview
+          fileId={fileId}
+          fileName={fileName}
+          className={className}
+        />
       ) : (
         genericCard
       );
