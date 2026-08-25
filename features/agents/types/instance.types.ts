@@ -10,7 +10,10 @@
  * Multiple conversations for the same agent coexist with zero shared mutable state.
  */
 
-import type { AgentType } from "./agent-definition.types";
+import type {
+  AgentType,
+  VariableResourceContextConfig,
+} from "./agent-definition.types";
 import type {
   ContextObjectType,
   LLMParams,
@@ -462,7 +465,7 @@ export type ResourceBlockType =
  * agent's context. The agent reaches the other formats (raw text, per-page,
  * knowledge assets, PDF page images) on demand via the `document_content` tool.
  */
-export type DocumentRepresentation = "clean" | "raw";
+export type DocumentRepresentation = "clean" | "raw" | "pdf";
 
 export interface ResourceOptions {
   keepFresh: boolean;
@@ -472,6 +475,8 @@ export interface ResourceOptions {
   template?: "full" | "compact" | "minimal";
   /** For `processed_document` resources: the chosen primary representation. */
   representation?: DocumentRepresentation;
+  /** Per-reference file-family promotion/suppression policy. */
+  resourcePolicy?: VariableResourceContextConfig;
 }
 
 export interface ManagedResource {

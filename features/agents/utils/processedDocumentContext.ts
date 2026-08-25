@@ -62,7 +62,7 @@ export function buildProcessedDocumentSource(
   };
 }
 
-/** The default primary representation: clean when ready, else raw. */
+/** Processed-document records always have raw text; file refs add PDF fallback. */
 export function defaultRepresentation(
   source: ProcessedDocumentSource,
 ): DocumentRepresentation {
@@ -88,12 +88,18 @@ export function availableRepresentations(
       label: "Raw text",
       hint: "Original extracted / OCR text",
     },
+    {
+      value: "pdf",
+      label: "Original PDF",
+      hint: "Physical PDF pages supplied to the model",
+    },
   ];
 }
 
 const REPRESENTATION_LABEL: Record<DocumentRepresentation, string> = {
   clean: "Clean",
   raw: "Raw",
+  pdf: "PDF",
 };
 
 export function representationLabel(rep: DocumentRepresentation): string {

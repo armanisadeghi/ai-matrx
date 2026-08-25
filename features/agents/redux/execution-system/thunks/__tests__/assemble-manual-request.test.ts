@@ -37,6 +37,7 @@ import userPreferencesReducer from "@/lib/redux/preferences/userPreferencesSlice
 import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import type { RootState } from "@/lib/redux/store";
+import type { ManagedResource } from "@/features/agents/types/instance.types";
 
 // ---------------------------------------------------------------------------
 // State fixtures
@@ -68,7 +69,13 @@ function makeState(
     personalOrganizationId?: string | null;
     conversationOrganizationId?: string | null;
     cacheOnly?: boolean;
-    resourcePolicies?: Record<string, { promote?: Array<{ representation: string; max_chars?: number }>; exclude?: string[] }>;
+    resourcePolicies?: Record<
+      string,
+      {
+        promote?: Array<{ representation: string; max_chars?: number }>;
+        exclude?: string[];
+      }
+    >;
   } = {},
 ): RootState {
   const orderedIds = (partial.history ?? []).map((m) => m.id);
@@ -224,9 +231,56 @@ describe("assembleManualRequest — live read contract", () => {
     const storedRequest = assembleRequest(state, CONVERSATION_ID);
 
     expect(manualRequest?.organization_id).toBe(SELECTED_ORGANIZATION_ID);
-    expect(storedRequest?.organization_id).toBe(
-      SELECTED_ORGANIZATION_ID,
-    );
+    expect(storedRequest?.organization_id).toBe(SELECTED_ORGANIZATION_ID);
+  });
+
+  test("a stored PDF is request context, never a native media block", () => {
+    const state = makeStoredAssemblyState({
+      userInput: "Use the attached guide",
+      cacheOnly: true,
+    });
+    const storedPdf: ManagedResource = {
+      resourceId: "stored-pdf",
+      blockType: "processed_document",
+      source: {
+        kind: "file",
+        file_id: "file-123",
+        label: "Reference.pdf",
+      },
+      preview: null,
+      status: "ready",
+      errorMessage: null,
+      userEdited: false,
+      editedContent: null,
+      options: {
+        keepFresh: false,
+        editable: false,
+        convertToText: true,
+        optionalContext: false,
+      },
+      finalPayload: null,
+      sortOrder: 0,
+    };
+    (
+      state as RootState & {
+        instanceResources: {
+          byConversationId: Record<string, Record<string, ManagedResource>>;
+        };
+      }
+    ).instanceResources.byConversationId[CONVERSATION_ID] = {
+      "stored-pdf": storedPdf,
+    };
+
+    const request = assembleRequest(state, CONVERSATION_ID);
+
+    expect(request?.user_input).toBe("Use the attached guide");
+    expect(request?.context).toEqual({
+      "attached_file_file-123": {
+        __kind: "resource_ref",
+        resource_type: "file",
+        resource_id: "file-123",
+      },
+    });
   });
 
   test("missing selection is rejected even when a personal organization exists", async () => {
@@ -236,9 +290,9 @@ describe("assembleManualRequest — live read contract", () => {
       cacheOnly: true,
     });
 
-    await expect(
-      assembleManualRequest(state, CONVERSATION_ID),
-    ).rejects.toThrow("Select an organization before sending this message");
+    await expect(assembleManualRequest(state, CONVERSATION_ID)).rejects.toThrow(
+      "Select an organization before sending this message",
+    );
     expect(() => assembleRequest(state, CONVERSATION_ID)).toThrow(
       "Select an organization before sending this message",
     );
@@ -320,9 +374,9 @@ describe("assembleManualRequest — live read contract", () => {
     const state = makeState({ variableDefinitions });
     const payload = await assembleManualRequest(state, CONVERSATION_ID);
 
-    expect(
-      (payload as Record<string, unknown>).variable_definitions,
-    ).toEqual(variableDefinitions);
+    expect((payload as Record<string, unknown>).variable_definitions).toEqual(
+      variableDefinitions,
+    );
   });
 
   test("manual payload uses raw variable names for request-scoped family policy", async () => {
@@ -333,9 +387,10 @@ describe("assembleManualRequest — live read contract", () => {
       (payload as Record<string, unknown>).variable_resource_context,
     ).toEqual({ pdf_file: policy });
     expect(
-      ((payload as Record<string, unknown>).variable_resource_context as Record<string, unknown>)[
-        "Pdf File"
-      ],
+      (
+        (payload as Record<string, unknown>)
+          .variable_resource_context as Record<string, unknown>
+      )["Pdf File"],
     ).toBeUndefined();
   });
 

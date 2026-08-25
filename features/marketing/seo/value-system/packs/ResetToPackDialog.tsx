@@ -121,16 +121,13 @@ export function ResetToPackDialog({
 
   const reset = useMutation({
     mutationFn: async () => {
-      const ruleIds = candidates
-        .filter((c) => c.kind === "rule" && ticked.has(`${c.kind}:${c.ref}`))
-        .map((c) => c.ref);
       const itemIds = candidates
-        .filter((c) => c.kind !== "rule" && ticked.has(`${c.kind}:${c.ref}`))
+        .filter((c) => ticked.has(`${c.kind}:${c.ref}`))
         .map((c) => c.ref);
       // Touch only the PARTS that carry a ticked item, and inside each part
       // only the ticked identities — an unticked kind is never visited.
       const partOf: Record<string, StarterPackPart> = {
-        rule: "rules",
+        meaning: "meaning",
         value_band: "value_bands",
         geo_band: "geo_bands",
         geo_area: "geo_areas",
@@ -146,14 +143,13 @@ export function ResetToPackDialog({
       return adoptStarterPack(siteId, status.pack_id, {
         reset: true,
         parts,
-        ...(ruleIds.length ? { ruleIds } : {}),
         ...(itemIds.length ? { itemIds } : {}),
         seedGuidelines: false,
       });
     },
     onSuccess: (result) => {
       const n =
-        result.reset_rules +
+        result.reset_meaning +
         result.reset_topics +
         result.reset_value_bands +
         result.reset_geo_bands +

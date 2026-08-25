@@ -106,6 +106,7 @@ import {
 } from "../instance-context/instance-context.selectors";
 import {
   messagePartToUserInputPart,
+  selectResourceContextPayload,
   selectResourcePayloads,
   userInputPartToMessagePart,
 } from "../instance-resources/instance-resources.selectors";
@@ -323,6 +324,7 @@ export async function assembleManualRequest(
   const textInput = userInputState?.text ?? "";
   const userMessageParts = userInputState?.messageParts;
   const resourcePayloads = selectResourcePayloads(conversationId)(state);
+  const resourceContext = selectResourceContextPayload(conversationId)(state);
 
   if (textInput || userMessageParts || resourcePayloads.length > 0) {
     const parts: UserInputPart[] = [];
@@ -342,7 +344,11 @@ export async function assembleManualRequest(
   const variables = selectVariablesForRequest(conversationId)(state);
   const variableResourceContext =
     selectRuntimeVariableResourcePolicies(conversationId)(state);
-  const context = selectContextPayload(conversationId)(state);
+  const ordinaryContext = selectContextPayload(conversationId)(state);
+  const context =
+    ordinaryContext || resourceContext
+      ? { ...(ordinaryContext ?? {}), ...(resourceContext ?? {}) }
+      : undefined;
 
   // ── Tool wire shape — unified through buildToolInjection ────────────────
   // agent.tools (UUID array) becomes seed RegisteredToolSpec entries with
@@ -400,10 +406,7 @@ export async function assembleManualRequest(
 
   const { sourceApp, sourceFeature } = instance;
   const isEphemeral = instance.isEphemeral === true;
-  const organization_id = requireExecutionOrganizationId(
-    state,
-    conversationId,
-  );
+  const organization_id = requireExecutionOrganizationId(state, conversationId);
 
   // Every manual send is its own server-side conversation — multi-turn history
   // is carried entirely client-side in messages[], so the local Redux
@@ -775,7 +778,10 @@ export const executeManualInstance = createAsyncThunk<
               sandboxRef: resolveAgentSandboxRef(state, conversationId),
               sandboxAttached:
                 payload.sandbox != null ||
-                (payload.client as { state?: Record<string, unknown> } | undefined)?.state?.["sandbox-fs"] != null,
+                (
+                  payload.client as
+                    { state?: Record<string, unknown> } | undefined
+                )?.state?.["sandbox-fs"] != null,
               capabilities:
                 (payload.client as { capabilities?: string[] } | undefined)
                   ?.capabilities ?? [],
@@ -823,8 +829,9 @@ export const executeManualInstance = createAsyncThunk<
         conversationId,
         requestId,
         sandboxAttached:
-                payload.sandbox != null ||
-                (payload.client as { state?: Record<string, unknown> } | undefined)?.state?.["sandbox-fs"] != null,
+          payload.sandbox != null ||
+          (payload.client as { state?: Record<string, unknown> } | undefined)
+            ?.state?.["sandbox-fs"] != null,
       });
 
       const submitAt = performance.now();

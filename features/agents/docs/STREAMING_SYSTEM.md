@@ -2,7 +2,7 @@
 
 **Status:** `active` — app-level contract
 **Tier:** 1 (cross-cutting; anchored here because the agents system owns the implementation)
-**Last updated:** `2026-07-02`
+**Last updated:** `2026-08-24`
 
 > This is the **working contract** for streaming across the app. Chat, conversation, artifacts, tool calls, and every long-running endpoint must conform. The detailed event-type and phase-value reference lives in [`STREAM_STATUS_LIFECYCLE.md`](./STREAM_STATUS_LIFECYCLE.md) — this doc is the higher-level contract and usage guide.
 
@@ -113,9 +113,19 @@ See [`AGENTS_OVERVIEW.MD`](./AGENTS_OVERVIEW.MD) §Layer 3 for the full slice in
 
 ## Client side — where parsing happens
 
-- `lib/api/stream-parser.ts` — NDJSON parser. Reads ReadableStream, splits on newlines, JSON-parses each line.
-- `features/agents/redux/execution-system/process-stream.ts` — the dispatcher. Takes a parsed event, routes to the right action on `activeRequests`, `instanceConversationHistory`, or tool result handlers.
+- `lib/api/stream-parser.ts` — NDJSON parser. It wraps the public `@ai-matrx/agents` normalizer while preserving Matrix's reader/cancellation boundary.
+- `features/agents/redux/execution-system/thunks/process-stream.ts` — the dispatcher. Takes a parsed event, routes to the right action on `activeRequests`, `instanceConversationHistory`, or tool result handlers.
 - `features/agents/redux/execution-system/thunks/execute-instance.thunk.ts` — the convergence point. Fires fetch, pipes to parser, pipes to process-stream.
+
+The public package is not yet the replay authority for Matrix request state.
+Its `0.2.1` normalizer drops top-level `stream_seq`; the Matrix cursor therefore
+sees `0`, and replaying a chunk can duplicate answer text. Its pure projector
+also omits answer-bearing explicit render blocks from `answer` and suspends on
+normal server `tool_started` events. The golden-event parity test at
+`features/agents/redux/execution-system/thunks/__tests__/portable-request-parity.test.ts`
+locks those divergences while validating every currently matching shared field.
+Do not claim request-reducer or replay parity until a public release closes all
+three gaps.
 
 ---
 
@@ -195,6 +205,7 @@ Cross-repo system-of-record for the planned unification of this pipeline: /Users
 
 ## Change log
 
+- `2026-08-24` — codex: **Pinned the public portable runtime to `@ai-matrx/agents@0.2.1` and made its remaining parity gaps executable.** Matrix has no private agents facade/bootstrap now. Golden settled, replay, and server-tool streams compare the package's pure request projection with the real Redux stream path; the test records the exact `stream_seq`, explicit-answer-block, and server-tool suspension divergences, so the local request reducer remains authoritative until the package fixes are released.
 - `2026-07-18` — codex: **Manual-stream artifact foreign keys now follow the reserved message.** Builder streams continue mapping fresh `/ai/manual` wire conversations onto one stable local Redux key, but canvas upserts no longer forward that UI key. The RPC resolves `chat.message.conversation_id`, and materialization reuses the returned server id for adapters/discovery, eliminating the `canvas_items_conversation_id_fkey` 409/materialization-error cascade.
 - `2026-07-18` — codex: **Cross-browser stream cancellation no longer becomes a red runtime error.** Safari can reject an intentionally aborted `ReadableStreamDefaultReader.read()` as `TypeError("Load failed")` instead of `AbortError`. The shared NDJSON read loop now treats `signal.aborted` as the cross-browser cancellation source of truth while continuing to report the same failure when the signal is live. Focused parser tests cover both branches.
 - `2026-07-12` — claude: **Agent Handoff + Conversation Value Store integrated (backend patterns 1+2; contract: aidream `docs/cx_chat/FE_HANDOFF_AGENT_PATTERNS.md`), adversarially reviewed against the live server flow.** Decision core extracted to `utils/handoff-stream-state.ts` (pure, unit-tested); process-stream is the thin shell. (1) **Conversation scoping:** a child agent's loop (handoff specialist, inline agent_call) announces its OWN reservations on the parent's wire with `parent_refs.conversation_id` = the CHILD conversation — `reservationBelongsToConversation` gates ALL cx_message reservation handling (promote/reserve/turn tracking) so child rows never enter this stream's transcript or turn list. (2) **Handoff rebind:** a `record_reserved cx_message` with `metadata.handoff:true` re-keys the live bubble (`promoteMessageId`) from the loop-start placeholder to the durable synthetic row; `decideAssistantReservation` updates the tracked turn IN PLACE (never a second turn) so the end-of-stream commit writes to the durable id/position. `promoteMessageId` merges (never renames) onto an already-DB-seeded target id — no duplicate orderedIds/React keys; the stream anchor carries over. (3) **Handoff rewind:** `completion {operation:"sub_agent", status:"failed"}` fires for EVERY raising child, not only handoffs — `HandoffRewindTracker` rewinds ONLY when no matching `sub_agent` INIT was observed (handoffs run `emit_lifecycle=False`; visible children announce INIT), anchored to the OLDEST still-pending tool call's snapshot (the handoff call — its tool_error fires only AFTER the failed completion; the specialist's own inner tool events stream undisguised and must not move the anchor). Generic `rewindContentToBoundary` drops the specialist's render blocks, reasoning chunks, and CONTENT-bearing timeline entries (a stale `text_end.rawText` would resurrect the text at commit); the caller's retry streams into fresh blocks (`breakTextBlock` first). No boundary -> loud, non-destructive. (4) **Value-store events:** `data` events discriminated by `kind` (`value_store.stored` / `value_store.groomed`; typed in `stream-events.ts` — the aidream generator gap in `scripts/generate_types.py` was fixed to emit them) become stream-time-only render blocks `value_store_stored` (compact "result ready" card; the descriptor fence renders via the envelope chip renderer, never prose/code) and `context_groomed` (subtle one-line receipt) — `content` is ALWAYS null (a non-null content leaks into committed parts via assembleMessageParts Pass 2 on an outside-text-run arrival; the slot guard allowlists the types via `DATA_CARD_RENDER_BLOCK_TYPES`). `selectUnifiedSlots` emits them at their exact slot via the stamped `blockId`; never persisted (the descriptor lives on the tool_call row). Inline `output_directive:context_groom` matrx fences render via a registered envelope renderer; the `conversation_value` reference resolver live-fetches `key — description` from `chat.conversation_value`. Guards: `utils/__tests__/handoff-stream-state.test.ts`, `active-requests/__tests__/handoff-rewind.test.ts`, `messages/__tests__/promote-message-id.test.ts`. KNOWN SERVER GAPS (filed upstream): a CONTAINED child failure (loop returns failed without raising) emits NO sub_agent completion at all — the FE gets no rewind signal; reference mode mints a stored value without checking the child's failed status.

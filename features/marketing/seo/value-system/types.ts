@@ -158,7 +158,7 @@ export interface ValueReviewQuery {
 /**
  * Where a site-plane row came from. Every row `adopt_starter_pack` writes
  * carries `adopted_from_pack` (the pack slug) plus the template identity —
- * `template_rule_id` for rules, `pack_item_id` for everything else. A row the
+ * `pack_item_id` (pre-KI-030 rule copies carry `template_rule_id`). A row the
  * site authored itself carries neither. This is what the Rulebook's source
  * chip reads; nothing else is a source of provenance.
  */
@@ -328,7 +328,8 @@ export interface StarterPackSummary {
   ratified_at: string | null;
   ratification_notes: string | null;
   topic_count: number;
-  rule_count: number;
+  /** Dimension values the pack proposes (each with its matchers and its worth). */
+  meaning_count: number;
   value_band_count: number;
   geo_band_count: number;
   geo_area_count: number;
@@ -388,17 +389,41 @@ export interface StarterPackGeoAreaItem {
   sort: number;
 }
 
-export interface StarterPackRuleItem {
-  rule_id: string;
-  name: string;
+/** One text matcher a pack ships. A pack never carries place/fact/condition
+ *  matchers — those are one site's own facts. */
+export interface StarterPackMatcher {
+  kind: "exact" | "word" | "contains" | "starts_with" | "ends_with";
+  pattern: string;
+  enabled: boolean;
+}
+
+/**
+ * KI-030 — what a pack CARRIES, in the stamp system's own shape: one dimension
+ * VALUE, the matchers that stamp it, and what it is worth.
+ *
+ * `dimension_scope` decides where the value lands on adoption: `platform` names
+ * a governed registry dimension (audience_type, traffic_class — a pack may
+ * score one, never invent one), `site` names a STANDARD KEY (qualifiers, geo)
+ * that resolves to this site's own dimension.
+ *
+ * Worth follows KI-001: "what it is" values ADD ±points around the 100
+ * baseline; only relative qualifiers (free, cheap, DIY) carry a ×factor.
+ * `worth_effect: null` means the pack labels the keyword without saying what
+ * it is worth — the traffic-class items are like that.
+ */
+export interface StarterPackMeaningItem {
+  item_id: string;
+  dimension_scope: "platform" | "site";
+  dimension_slug: string;
+  dimension_label: string | null;
+  value: string;
+  label: string;
   description: string | null;
-  pattern: string | null;
-  match_kind: string | null;
-  match_facet: string | null;
-  match_facet_value: string | null;
-  target_class: string | null;
-  value_multiplier: number | null;
   notes: string | null;
+  matchers: StarterPackMatcher[];
+  worth_effect: "add" | "scale" | "never" | null;
+  worth_amount: number | null;
+  sort: number;
 }
 
 export interface StarterPackDetail {
@@ -407,7 +432,7 @@ export interface StarterPackDetail {
   value_bands: StarterPackBandItem[];
   geo_bands: StarterPackBandItem[];
   geo_areas: StarterPackGeoAreaItem[];
-  rules: StarterPackRuleItem[];
+  meaning: StarterPackMeaningItem[];
 }
 
 /** What a pack part is called on the wire — the adopt RPC's `p_include`. */
@@ -416,7 +441,7 @@ export type StarterPackPart =
   | "value_bands"
   | "geo_bands"
   | "geo_areas"
-  | "rules";
+  | "meaning";
 
 /** Counts of rows actually written. Adoption is additive and idempotent: a
  *  second adopt writes nothing new, and never overwrites a site's own ruling. */
@@ -427,14 +452,21 @@ export interface StarterPackAdoptResult {
   value_bands: number;
   geo_bands: number;
   geo_areas: number;
-  rules: number;
+  /** Dimension values this adoption touched. */
+  meaning_values: number;
+  /** Matchers written (a phrase this site did not already match on that value). */
+  matchers: number;
+  /** Worth rows written — only where the site had expressed NO worth for the value. */
+  worths: number;
+  /** Values the pack names that this platform registry does not carry. */
+  meaning_skipped: number;
   guidelines_seeded: boolean;
   /** Areas this site already had, still empty, that this adoption filled in. */
   geo_areas_filled: number;
   /** Areas on this site that STILL have no place names — they match nothing. */
   geo_areas_pending: number;
   /** Rows put back to the pack's values by a `reset` call (0 otherwise). */
-  reset_rules: number;
+  reset_meaning: number;
   reset_topics: number;
   reset_value_bands: number;
   reset_geo_bands: number;
@@ -548,8 +580,10 @@ export interface PreviewMovement {
   impressions: number;
 }
 
-export interface StarterPackPreviewRule {
-  rule_id: string;
+export interface StarterPackPreviewMeaning {
+  item_id: string;
+  /** The site already expresses a worth for this value — the current score
+   *  already contains it, so the projection does not count it twice. */
   already_adopted: boolean;
   keywords: number;
   clicks: number;
@@ -589,6 +623,6 @@ export interface StarterPackPreview {
   unvalued_after: number;
   band_counts_before: Record<string, number>;
   band_counts_after: Record<string, number>;
-  rules: StarterPackPreviewRule[];
+  meaning: StarterPackPreviewMeaning[];
   topics: StarterPackPreviewTopic[];
 }

@@ -4,7 +4,7 @@
 //
 // One pack: header (name · industry · status · version · subscribers), the
 // lifecycle actions (Propose → Ratify → Publish · New version · Retire), and the
-// segmented sections — Overview · Rules · Topics · Bands & geo · Guidelines.
+// segmented sections — Overview · Meaning · Topics · Bands & geo · Guidelines.
 // Every write is one of the seo.starter_pack_* authoring RPCs; publishing is
 // the generic LibraryPublishPanel over platform.entity_grants.
 
@@ -53,7 +53,7 @@ import {
   type PackStatus,
 } from "./data";
 import { PackOverview } from "./PackOverview";
-import { PackRulesSection } from "./PackRulesSection";
+import { PackMeaningSection } from "./PackMeaningSection";
 import { PackTopicsSection } from "./PackTopicsSection";
 import { PackBandsSection } from "./PackBandsSection";
 import { PackGuidelinesSection } from "./PackGuidelinesSection";
@@ -166,7 +166,7 @@ export function PackDetail({
             {" · "}
             <span className="inline-flex items-center gap-1">
               <ListChecks className="size-3" aria-hidden />
-              {detail.data.rules.length}
+              {detail.data.meaning.length}
             </span>
             {" "}
             <span className="inline-flex items-center gap-1">
@@ -248,8 +248,8 @@ export function PackDetail({
           <TabsTrigger value="overview" className="px-2.5 py-1.5 text-xs">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="rules" className="px-2.5 py-1.5 text-xs">
-            <ListChecks className="mr-1 size-3.5" /> Rules {detail.data.rules.length}
+          <TabsTrigger value="meaning" className="px-2.5 py-1.5 text-xs">
+            <ListChecks className="mr-1 size-3.5" /> Meaning {detail.data.meaning.length}
           </TabsTrigger>
           <TabsTrigger value="topics" className="px-2.5 py-1.5 text-xs">
             <TreePine className="mr-1 size-3.5" /> Topics {detail.data.topics.length}
@@ -264,8 +264,8 @@ export function PackDetail({
         <TabsContent value="overview" className="min-h-0 flex-1 overflow-y-auto pt-3">
           <PackOverview detail={detail.data} directory={directory} onChanged={invalidate} onSelectPack={onSelectPack} grantsBump={grantsBump} />
         </TabsContent>
-        <TabsContent value="rules" className="min-h-0 flex-1 overflow-y-auto pt-3">
-          <PackRulesSection detail={detail.data} onChanged={invalidate} />
+        <TabsContent value="meaning" className="min-h-0 flex-1 overflow-y-auto pt-3">
+          <PackMeaningSection detail={detail.data} onChanged={invalidate} />
         </TabsContent>
         <TabsContent value="topics" className="min-h-0 flex-1 overflow-y-auto pt-3">
           <PackTopicsSection detail={detail.data} onChanged={invalidate} />

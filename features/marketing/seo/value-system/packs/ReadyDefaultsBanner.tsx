@@ -86,7 +86,7 @@ export function ReadyDefaultsBanner() {
         <p className="min-w-0 flex-1 text-xs text-foreground">
           <span className="font-semibold">Your industry defaults are ready.</span>{" "}
           <span className="text-muted-foreground">
-            {ready.name} — {ready.rule_count} rules, {ready.topic_count} topic worths,{" "}
+            {ready.name} — {ready.meaning_count} answers, {ready.topic_count} topic worths,{" "}
             {ready.value_band_count + ready.geo_band_count} bands — expert-ratified for{" "}
             {ready.industry_name ?? ready.industry}. Nothing is applied until you look and
             accept; take all of it or just the parts you want.

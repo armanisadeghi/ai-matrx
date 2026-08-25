@@ -15,45 +15,68 @@ import {
 } from "@/components/ui/tooltip";
 import { resolveResourceAttachmentTileTheme } from "@/features/agents/components/messages-display/user/resourceAttachmentTile.theme";
 import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
+import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
 import { ResourceFamilyPolicyEditor } from "@/features/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
+
+export interface AttachedDocumentSettings {
+  representation?: DocumentRepresentation;
+  resourcePolicy?: VariableResourceContextConfig;
+}
 
 interface AttachedDocumentChipProps {
   title: string;
   fileId: string | null;
+  representation?: DocumentRepresentation;
   resourcePolicy?: VariableResourceContextConfig;
   onOpen: () => void;
   onRemove: () => void;
-  onPolicyChange: (policy: VariableResourceContextConfig) => Promise<boolean>;
+  onSettingsChange: (settings: AttachedDocumentSettings) => Promise<boolean>;
 }
 
-function policyLabel(policy: VariableResourceContextConfig | undefined): string {
+function policyLabel(
+  policy: VariableResourceContextConfig | undefined,
+): string {
   const promoted = policy?.promote?.length ?? 0;
   const excluded = policy?.exclude?.length ?? 0;
   if (!promoted && !excluded) return "All";
   return `${promoted} inline${excluded ? ` · ${excluded} off` : ""}`;
 }
 
+function representationLabel(
+  representation: DocumentRepresentation | undefined,
+): string {
+  if (!representation) return "Auto";
+  if (representation === "pdf") return "PDF";
+  return representation === "clean" ? "Clean" : "Raw";
+}
+
 export function AttachedDocumentChip({
   title,
   fileId,
+  representation,
   resourcePolicy,
   onOpen,
   onRemove,
-  onPolicyChange,
+  onSettingsChange,
 }: AttachedDocumentChipProps) {
   const [open, setOpen] = useState(false);
   const [draftPolicy, setDraftPolicy] = useState(resourcePolicy);
+  const [draftRepresentation, setDraftRepresentation] =
+    useState(representation);
   const [saving, setSaving] = useState(false);
   const theme = resolveResourceAttachmentTileTheme("processed_document");
 
   const commitDraft = async (): Promise<boolean> => {
     if (
-      draftPolicy &&
+      draftRepresentation !== representation ||
       JSON.stringify(draftPolicy) !== JSON.stringify(resourcePolicy)
     ) {
       setSaving(true);
       try {
-        return await onPolicyChange(draftPolicy);
+        return await onSettingsChange({
+          representation: draftRepresentation,
+          resourcePolicy: draftPolicy,
+        });
       } finally {
         setSaving(false);
       }
@@ -64,6 +87,7 @@ export function AttachedDocumentChip({
     if (saving) return;
     if (next) {
       setDraftPolicy(resourcePolicy);
+      setDraftRepresentation(representation);
     } else {
       if (!(await commitDraft())) return;
     }
@@ -120,6 +144,7 @@ export function AttachedDocumentChip({
               </div>
               <div className="font-medium text-popover-foreground">{title}</div>
               <div className="mt-0.5 text-[10px] text-muted-foreground/80">
+                {representationLabel(representation)} ·{" "}
                 {policyLabel(resourcePolicy)}
                 {fileId ? " · click the right side to configure" : ""}
               </div>
@@ -133,13 +158,16 @@ export function AttachedDocumentChip({
               onClick={stopBubble}
               onPointerDown={stopBubble}
               disabled={!fileId}
-              aria-label={`Resource family policy: ${policyLabel(resourcePolicy)}`}
+              aria-label={`Document context: ${representationLabel(representation)}, ${policyLabel(resourcePolicy)}`}
               className={cn(
                 "inline-flex shrink-0 items-center gap-0.5 px-1.5",
                 "transition-colors hover:bg-muted/60 hover:text-foreground",
               )}
             >
-              <span>{policyLabel(resourcePolicy)}</span>
+              <span>
+                {representationLabel(representation)} ·{" "}
+                {policyLabel(resourcePolicy)}
+              </span>
               <ChevronDown className="h-2.5 w-2.5 shrink-0" />
             </button>
           </PopoverTrigger>
@@ -156,6 +184,8 @@ export function AttachedDocumentChip({
             fileId={fileId}
             value={draftPolicy}
             onChange={setDraftPolicy}
+            primaryRepresentation={draftRepresentation}
+            onPrimaryRepresentationChange={setDraftRepresentation}
             disabled={saving}
             compact
           />

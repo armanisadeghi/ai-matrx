@@ -11,9 +11,9 @@
  *   1. The headline, server-measured by the ONE resolver with the selected
  *      parts of the pack swapped in (`starter_pack_preview`): how many of THEIR
  *      keywords it touches, how many move band, what happens to Unvalued — and
- *      the honest third number, "stamped only": keywords a rule would mark but
+ *      the honest third number, "stamped only": keywords the pack would mark but
  *      that stay Unvalued until a topic worth gives them a base.
- *   2. Sections — Rules · Topic worth · Service areas · Bands · Guidelines —
+ *   2. Sections — Meaning · Topic worth · Service areas · Bands · Guidelines —
  *      every item one plain sentence, YOUR numbers, the real keywords it
  *      touches (each opens the keyword window), and a checkbox. Select all /
  *      none per section and overall (Arman: "controls for individual and all,
@@ -63,12 +63,14 @@ import {
 import {
   bandMetaFor,
   buildBandMeta,
-  describeMultiplier,
-  describeRuleMatch,
+  describeMatcher,
+  describeWorth,
   humanizeSlug,
   incompleteAreasHref,
   reviewWindow,
   rulebookSourceHref,
+  shortWorth,
+  worthIsDemotion,
   type BandMeta,
 } from "../lib";
 import { SourceChip } from "../SourceChip";
@@ -77,7 +79,7 @@ import type {
   PreviewSampleKeyword,
   StarterPackDetail,
   StarterPackPart,
-  StarterPackPreviewRule,
+  StarterPackPreviewMeaning,
   StarterPackPreviewTopic,
   StarterPackSiteStatus,
 } from "../types";
@@ -336,8 +338,8 @@ export function PackReview({
   const pack = detail.pack;
 
   // ── what is selectable: only what is NOT already on the site ──────────────
-  const selectableRules = detail.rules.filter(
-    (r) => !isOnSite(stateOf(status, "rule", r.rule_id)),
+  const selectableMeaning = detail.meaning.filter(
+    (m) => !isOnSite(stateOf(status, "meaning", m.item_id)),
   );
   const selectableTopics = detail.topics.filter(
     (t) => !isOnSite(stateOf(status, "topic", t.item_id)),
@@ -354,7 +356,7 @@ export function PackReview({
 
   const [ticked, setTicked] = useState<Set<ItemKey>>(() => {
     const s = new Set<ItemKey>();
-    selectableRules.forEach((r) => s.add(keyOf("rule", r.rule_id)));
+    selectableMeaning.forEach((m) => s.add(keyOf("meaning", m.item_id)));
     selectableTopics.forEach((t) => s.add(keyOf("topic", t.item_id)));
     selectableValueBands.forEach((b) => s.add(keyOf("value_band", b.item_id)));
     selectableGeoBands.forEach((b) => s.add(keyOf("geo_band", b.item_id)));
@@ -378,10 +380,10 @@ export function PackReview({
       return next;
     });
 
-  const tickedRuleIds = selectableRules
-    .filter((r) => ticked.has(keyOf("rule", r.rule_id)))
-    .map((r) => r.rule_id);
   const tickedItemIds = [
+    ...selectableMeaning
+      .filter((m) => ticked.has(keyOf("meaning", m.item_id)))
+      .map((m) => m.item_id),
     ...selectableTopics.filter((t) => ticked.has(keyOf("topic", t.item_id))).map((t) => t.item_id),
     ...selectableValueBands
       .filter((b) => ticked.has(keyOf("value_band", b.item_id)))
@@ -393,17 +395,15 @@ export function PackReview({
   ];
   const tickedAreas = selectableAreas.filter((a) => ticked.has(keyOf("geo_area", a.item_id)));
   const selectableTotal =
-    selectableRules.length +
+    selectableMeaning.length +
     selectableTopics.length +
     selectableValueBands.length +
     selectableGeoBands.length +
     selectableAreas.length;
-  const tickedTotal = tickedRuleIds.length + tickedItemIds.length;
+  const tickedTotal = tickedItemIds.length;
 
   // ── the what-if, re-measured as the selection changes (debounced) ─────────
-  const debouncedRuleIds = useDebounce(tickedRuleIds.join("|"), 500);
   const debouncedItemIds = useDebounce(tickedItemIds.join("|"), 500);
-  const previewRuleIds = debouncedRuleIds ? debouncedRuleIds.split("|") : [];
   const previewItemIds = debouncedItemIds ? debouncedItemIds.split("|") : [];
 
   const preview = useQuery({
@@ -412,19 +412,10 @@ export function PackReview({
       pack.id,
       window.start,
       window.end,
-      previewRuleIds,
       previewItemIds,
     ),
     queryFn: ({ signal }) =>
-      previewStarterPack(
-        siteId,
-        pack.id,
-        window.start,
-        window.end,
-        previewRuleIds,
-        previewItemIds,
-        signal,
-      ),
+      previewStarterPack(siteId, pack.id, window.start, window.end, previewItemIds, signal),
     placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
   });
@@ -435,8 +426,8 @@ export function PackReview({
   });
   const metas = useMemo(() => buildBandMeta(vocab.data ?? []), [vocab.data]);
 
-  const ruleStats = new Map<string, StarterPackPreviewRule>(
-    (preview.data?.rules ?? []).map((r) => [r.rule_id, r]),
+  const meaningStats = new Map<string, StarterPackPreviewMeaning>(
+    (preview.data?.meaning ?? []).map((m) => [m.item_id, m]),
   );
   const topicStats = new Map<string, StarterPackPreviewTopic>(
     (preview.data?.topics ?? []).map((t) => [t.item_id, t]),
@@ -447,7 +438,8 @@ export function PackReview({
   const adopt = useMutation({
     mutationFn: (places: GeoPlacesDraft) => {
       const parts: StarterPackPart[] = [];
-      if (tickedRuleIds.length) parts.push("rules");
+      if (selectableMeaning.some((m) => ticked.has(keyOf("meaning", m.item_id))))
+        parts.push("meaning");
       if (selectableTopics.some((t) => ticked.has(keyOf("topic", t.item_id)))) parts.push("topics");
       if (selectableValueBands.some((b) => ticked.has(keyOf("value_band", b.item_id))))
         parts.push("value_bands");
@@ -458,7 +450,6 @@ export function PackReview({
         // An empty parts list would mean "every part"; guard with an impossible
         // part set by only calling when something is ticked (see button).
         parts,
-        ruleIds: tickedRuleIds,
         itemIds: tickedItemIds,
         geoPlaces: places.tokens,
         geoPlaceIds: places.placeIds,
@@ -467,12 +458,17 @@ export function PackReview({
     },
     onSuccess: (result) => {
       const written =
-        result.topics + result.value_bands + result.geo_bands + result.geo_areas + result.rules;
+        result.topics +
+        result.value_bands +
+        result.geo_bands +
+        result.geo_areas +
+        result.matchers +
+        result.worths;
       setAskingPlaces(false);
       toast.success(
         written === 0 && !result.guidelines_seeded
           ? "Nothing new to write — everything you ticked was already on this site."
-          : `Adopted ${written} item${written === 1 ? "" : "s"} from ${pack.name}: ${result.rules} rules, ${result.topics} topic worths, ${result.value_bands + result.geo_bands} bands, ${result.geo_areas} service areas${result.guidelines_seeded ? ", plus the guidelines skeleton" : ""}. They are yours now — edit any of them in the Rulebook.`,
+          : `Adopted ${written} item${written === 1 ? "" : "s"} from ${pack.name}: ${result.worths} worths and ${result.matchers} matchers across ${result.meaning_values} answers, ${result.topics} topic worths, ${result.value_bands + result.geo_bands} bands, ${result.geo_areas} service areas${result.guidelines_seeded ? ", plus the guidelines skeleton" : ""}. They are yours now — edit any of them on the Dimensions screen.`,
         result.geo_areas_pending > 0
           ? {
               description: `${result.geo_areas_pending} service area${result.geo_areas_pending === 1 ? "" : "s"} still ${result.geo_areas_pending === 1 ? "has" : "have"} no places, so ${result.geo_areas_pending === 1 ? "it matches" : "they match"} nothing yet.`,
@@ -597,7 +593,7 @@ export function PackReview({
                   <TriangleAlert className="mt-px h-3 w-3 shrink-0 text-warning" aria-hidden />
                   <span>
                     {formatCount(summary.stamped_only_keywords)} of those are only{" "}
-                    <em>stamped</em>: a rule fires on them but nothing says what subject they
+                    <em>stamped</em>: the pack answers something about them but nothing says what subject they
                     belong to, so they stay Unvalued until a topic worth reaches them. Topic
                     worth below, and the{" "}
                     <Link
@@ -643,58 +639,85 @@ export function PackReview({
           ) : null}
         </section>
 
-        {/* ── rules ── */}
+        {/* ── meaning: dimension values + matchers + worth (KI-030) ── */}
         <section className="space-y-2">
           <SectionHeader
             icon={ListChecks}
-            title="Value rules"
-            hint="A matched word or a detected fact multiplies a keyword's score. Under ×1 is a demotion, over ×1 a promotion — and every rule that fires shows up in that keyword's why chain."
-            selectable={selectableRules.length}
-            selected={tickedRuleIds.length}
-            onAll={() => setMany(selectableRules.map((r) => keyOf("rule", r.rule_id)), true)}
-            onNone={() => setMany(selectableRules.map((r) => keyOf("rule", r.rule_id)), false)}
+            title="What your searches mean"
+            hint="Each line is one ANSWER this industry gives — a value on a dimension, the phrases that spot it, and what it does to a keyword's score. ±points move the score up or down from the 100 baseline; a ×factor is only for relative words like “free”. Everything that fires shows up in that keyword's why chain."
+            selectable={selectableMeaning.length}
+            selected={
+              selectableMeaning.filter((m) => ticked.has(keyOf("meaning", m.item_id))).length
+            }
+            onAll={() =>
+              setMany(selectableMeaning.map((m) => keyOf("meaning", m.item_id)), true)
+            }
+            onNone={() =>
+              setMany(selectableMeaning.map((m) => keyOf("meaning", m.item_id)), false)
+            }
           />
-          {detail.rules.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground">This pack proposes no rules.</p>
+          {detail.meaning.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground">This pack proposes no meaning yet.</p>
           ) : (
             <ul className="space-y-1.5">
-              {detail.rules.map((rule) => {
-                const state = stateOf(status, "rule", rule.rule_id);
+              {detail.meaning.map((item) => {
+                const state = stateOf(status, "meaning", item.item_id);
                 const onSite = isOnSite(state);
-                const key = keyOf("rule", rule.rule_id);
-                const stats = ruleStats.get(rule.rule_id);
+                const key = keyOf("meaning", item.item_id);
+                const stats = meaningStats.get(item.item_id);
+                const live = item.matchers.filter((m) => m.enabled);
+                const off = item.matchers.length - live.length;
                 return (
                   <Row
-                    key={rule.rule_id}
+                    key={item.item_id}
                     checked={!onSite && ticked.has(key)}
                     disabled={onSite}
                     onToggle={() => toggle(key)}
-                    label={rule.name}
+                    label={item.label}
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
-                        {rule.name}
+                        {item.label}
                       </span>
+                      <Badge variant="outline" className="shrink-0 text-[10px]">
+                        {item.dimension_label ?? humanizeSlug(item.dimension_slug)}
+                      </Badge>
                       {onSite && state ? (
                         <SourceChip state={chipStateFor(state)} packName={pack.name} />
                       ) : null}
                       <span
                         className={cn(
                           "shrink-0 text-xs font-semibold tabular-nums",
-                          (rule.value_multiplier ?? 1) < 1 ? "text-warning" : "text-success",
+                          item.worth_effect === null
+                            ? "text-muted-foreground"
+                            : worthIsDemotion(item.worth_effect, item.worth_amount)
+                              ? "text-warning"
+                              : "text-success",
                         )}
+                        title={describeWorth(item.worth_effect, item.worth_amount)}
                       >
-                        {describeMultiplier(rule.value_multiplier)}
+                        {shortWorth(item.worth_effect, item.worth_amount)}
                       </span>
                     </div>
                     <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-                      Fires when the search {describeRuleMatch(rule)}
-                      {rule.description ? ` — ${rule.description}` : ""}
+                      {live.length === 0 && item.matchers.length === 0
+                        ? `Applies when a keyword is already detected as “${item.label}” — the pack only says what that is worth here.`
+                        : `Fires when the search ${live.map((m) => describeMatcher(m)).join(", or ")}`}
+                      {off > 0 ? (
+                        <>
+                          {" "}
+                          <span className="text-muted-foreground/80">
+                            ({off} more phrase{off === 1 ? "" : "s"} come switched off — turn them
+                            on yourself on the Dimensions screen.)
+                          </span>
+                        </>
+                      ) : null}
+                      {item.description ? ` — ${item.description}` : ""}
                     </p>
                     <div className="mt-1">
                       {onSite ? (
                         <span className="text-[11px] text-muted-foreground">
-                          Already on this site — manage it in the Rulebook.
+                          Already on this site — manage it on the Dimensions screen.
                         </span>
                       ) : (
                         <Numbers
@@ -720,7 +743,7 @@ export function PackReview({
                         }
                       />
                     ) : null}
-                    <Rationale text={rule.notes} />
+                    <Rationale text={item.notes} />
                   </Row>
                 );
               })}
@@ -733,7 +756,7 @@ export function PackReview({
           <SectionHeader
             icon={TreePine}
             title="Topic worth"
-            hint="What each part of the shared topic tree is worth to a business like yours — the BASE every rule multiplies. A keyword with no topic worth above it stays Unvalued no matter how many rules fire."
+            hint="What each part of the shared topic tree is worth to a business like yours — the base every answer above adds to. A keyword with no topic worth above it stays Unvalued no matter how much the pack knows about it."
             selectable={selectableTopics.length}
             selected={selectableTopics.filter((t) => ticked.has(keyOf("topic", t.item_id))).length}
             onAll={() => setMany(selectableTopics.map((t) => keyOf("topic", t.item_id)), true)}
@@ -1038,7 +1061,7 @@ export function PackReview({
               onClick={() => {
                 setMany(
                   [
-                    ...selectableRules.map((r) => keyOf("rule", r.rule_id)),
+                    ...selectableMeaning.map((m) => keyOf("meaning", m.item_id)),
                     ...selectableTopics.map((t) => keyOf("topic", t.item_id)),
                     ...selectableValueBands.map((b) => keyOf("value_band", b.item_id)),
                     ...selectableGeoBands.map((b) => keyOf("geo_band", b.item_id)),

@@ -48,6 +48,7 @@ import {
 import {
   messagePartToUserInputPart,
   selectEditorResourceXml,
+  selectResourceContextPayload,
   selectResourcePayloads,
   userInputPartToMessagePart,
 } from "../instance-resources/instance-resources.selectors";
@@ -241,7 +242,12 @@ export function assembleRequest(
   const config_overrides = selectSettingsOverridesForApi(conversationId)(state);
 
   // Context dict
-  const context = selectContextPayload(conversationId)(state);
+  const ordinaryContext = selectContextPayload(conversationId)(state);
+  const resourceContext = selectResourceContextPayload(conversationId)(state);
+  const context =
+    ordinaryContext || resourceContext
+      ? { ...(ordinaryContext ?? {}), ...(resourceContext ?? {}) }
+      : undefined;
 
   // Tool injection (`tools` + `client` envelope) is layered on by the thunk
   // body via `buildToolInjection` after this sync assembly returns. Keeping
@@ -261,10 +267,7 @@ export function assembleRequest(
   // This makes the client independently correct: a continuation carries the
   // right org even if appContextSlice has not bootstrapped yet, while a new
   // conversation fails closed until the explicit selection exists.
-  const organization_id = requireExecutionOrganizationId(
-    state,
-    conversationId,
-  );
+  const organization_id = requireExecutionOrganizationId(state, conversationId);
   const project_id = selectProjectId(state) ?? undefined;
   const task_id = selectTaskId(state) ?? undefined;
   // Active scope selections (multi-scope, keyed by scope id — any number of

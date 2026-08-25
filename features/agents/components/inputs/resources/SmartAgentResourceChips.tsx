@@ -9,9 +9,8 @@
  * Reads from instanceResources, dispatches removeResource directly.
  */
 
-import { useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Layers } from "lucide-react";
+import { FileText, Layers } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -34,6 +33,10 @@ import { parseReferenceFence } from "@/features/matrx-envelope/referenceFence";
 import { revokeTrackedObjectUrl } from "@/lib/media/object-url-registry";
 
 import { resolveContextItemDef } from "@/features/agents/components/context-items/registry";
+import {
+  AttachedDocumentChip,
+  type AttachedDocumentSettings,
+} from "@/features/agents/components/inputs/resources/AttachedDocumentChip";
 
 function getBlockTypeDisplay(blockType: ManagedResource["blockType"]) {
   const def = resolveContextItemDef(blockType);
@@ -56,6 +59,17 @@ function basename(path: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function pendingDocumentFileId(resource: ManagedResource): string | null {
+  if (
+    resource.blockType !== "processed_document" ||
+    !isRecord(resource.source)
+  ) {
+    return null;
+  }
+  const value = resource.source.file_id;
+  return typeof value === "string" && value ? value : null;
 }
 
 function getResourceLabel(resource: ManagedResource): string {
@@ -230,6 +244,37 @@ function ResourceChip({
   return wrapWithPreview(resource, tile);
 }
 
+function PendingDocumentResourceChip({
+  resource,
+  onRemove,
+  onOpen,
+  onSettingsChange,
+}: {
+  resource: ManagedResource;
+  onRemove: () => void;
+  onOpen: () => void;
+  onSettingsChange: (settings: AttachedDocumentSettings) => Promise<boolean>;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.85 }}
+      className="inline-flex"
+    >
+      <AttachedDocumentChip
+        title={getResourceLabel(resource)}
+        fileId={pendingDocumentFileId(resource)}
+        representation={resource.options.representation}
+        resourcePolicy={resource.options.resourcePolicy}
+        onOpen={onOpen}
+        onRemove={onRemove}
+        onSettingsChange={onSettingsChange}
+      />
+    </motion.div>
+  );
+}
+
 /**
  * Picks the appropriate hover preview wrapper for a fully-resolved resource.
  * For unsupported block types the chip is returned as-is.
@@ -263,41 +308,68 @@ export function SmartAgentResourceChips({
   // Only real attachments/resources render here now. Working document, the
   // scratchpad, and active scope context are no longer intrusive composer chips
   // — their on/off state shows as a single dot on the ContextDocsMenu icon.
-  const drawerItems: ContextDrawerItem[] = resources.flatMap((r) =>
-    normalizeResource(r, conversationId),
-  );
-
-  const openDrawerForResource = useCallback(
-    (resourceId: string) => {
-      const idx = drawerItems.findIndex((it) => it.resourceId === resourceId);
-      drawer.openAt(drawerItems, idx < 0 ? 0 : idx);
-    },
-    [drawerItems, drawer],
-  );
-
-  const handleRemove = useCallback(
-    (resourceId: string) => {
-      const resource = resources.find(
-        (candidate) => candidate.resourceId === resourceId,
-      );
-      revokeTrackedObjectUrl(getImageRef(resource?.source));
-      dispatch(removeResource({ conversationId, resourceId }));
-    },
-    [conversationId, dispatch, resources],
-  );
-
-  const handleToggleEditable = useCallback(
-    (resourceId: string, current: boolean) => {
-      dispatch(
-        updateResourceOptions({
+  const drawerItems: ContextDrawerItem[] = resources.flatMap((resource) => {
+    const fileId = pendingDocumentFileId(resource);
+    if (fileId) {
+      return [
+        {
+          id: `${resource.resourceId}:file`,
+          blockType: "document",
+          typeLabel: "File",
+          title: getResourceLabel(resource),
+          icon: FileText,
+          themeKey: "document",
+          origin: "resource",
           conversationId,
-          resourceId,
-          options: { editable: !current },
-        }),
-      );
-    },
-    [conversationId, dispatch],
-  );
+          editable: false,
+          refs: { fileId },
+          raw: resource.source,
+          resourceId: resource.resourceId,
+        },
+      ];
+    }
+    return normalizeResource(resource, conversationId);
+  });
+
+  const openDrawerForResource = (resourceId: string) => {
+    const idx = drawerItems.findIndex((it) => it.resourceId === resourceId);
+    drawer.openAt(drawerItems, idx < 0 ? 0 : idx);
+  };
+
+  const handleRemove = (resourceId: string) => {
+    const resource = resources.find(
+      (candidate) => candidate.resourceId === resourceId,
+    );
+    revokeTrackedObjectUrl(getImageRef(resource?.source));
+    dispatch(removeResource({ conversationId, resourceId }));
+  };
+
+  const handleToggleEditable = (resourceId: string, current: boolean) => {
+    dispatch(
+      updateResourceOptions({
+        conversationId,
+        resourceId,
+        options: { editable: !current },
+      }),
+    );
+  };
+
+  const handleDocumentSettings = async (
+    resourceId: string,
+    settings: AttachedDocumentSettings,
+  ): Promise<boolean> => {
+    dispatch(
+      updateResourceOptions({
+        conversationId,
+        resourceId,
+        options: {
+          representation: settings.representation,
+          resourcePolicy: settings.resourcePolicy,
+        },
+      }),
+    );
+    return true;
+  };
 
   if (!showAttachments) return null;
   // Mirror the textarea: while a submit is in flight the attachments have
@@ -310,20 +382,32 @@ export function SmartAgentResourceChips({
   return (
     <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0">
       <AnimatePresence mode="popLayout">
-        {resources.map((resource) => (
-          <ResourceChip
-            key={resource.resourceId}
-            resource={resource}
-            onRemove={() => handleRemove(resource.resourceId)}
-            onToggleEditable={() =>
-              handleToggleEditable(
-                resource.resourceId,
-                resource.options.editable,
-              )
-            }
-            onOpen={() => openDrawerForResource(resource.resourceId)}
-          />
-        ))}
+        {resources.map((resource) =>
+          resource.blockType === "processed_document" ? (
+            <PendingDocumentResourceChip
+              key={resource.resourceId}
+              resource={resource}
+              onRemove={() => handleRemove(resource.resourceId)}
+              onOpen={() => openDrawerForResource(resource.resourceId)}
+              onSettingsChange={(settings) =>
+                handleDocumentSettings(resource.resourceId, settings)
+              }
+            />
+          ) : (
+            <ResourceChip
+              key={resource.resourceId}
+              resource={resource}
+              onRemove={() => handleRemove(resource.resourceId)}
+              onToggleEditable={() =>
+                handleToggleEditable(
+                  resource.resourceId,
+                  resource.options.editable,
+                )
+              }
+              onOpen={() => openDrawerForResource(resource.resourceId)}
+            />
+          ),
+        )}
       </AnimatePresence>
       <ContextItemDrawer controller={drawer} />
     </div>

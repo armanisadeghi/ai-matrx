@@ -99,6 +99,67 @@ export function initializeQuizState(
 }
 
 /**
+ * Grow an EXISTING quiz state as more questions stream in — without touching
+ * the user's progress, the current position, or the order/shuffle of any
+ * question already dealt.
+ *
+ * The streaming partial-kinds law says a value may GROW but never change, so:
+ *  - questions the state already holds are kept as-is (answered ones are
+ *    immutable; an unanswered one whose source text/options grew is
+ *    re-randomized in place — nothing the user acted on moves);
+ *  - genuinely new questions are randomized and APPENDED.
+ *
+ * Retake mode is a fixed question subset — growth never applies there.
+ */
+export function appendNewQuestions(
+  state: QuizState,
+  questions: OriginalQuestion[]
+): QuizState {
+  if (state.mode === 'retake') return state;
+
+  const knownById = new Map(state.originalQuestions.map(q => [q.id, q]));
+  const answeredIds = new Set(Object.keys(state.progress.answers).map(Number));
+
+  const added: OriginalQuestion[] = [];
+  let changed = false;
+
+  const nextOriginal = [...state.originalQuestions];
+  const nextRandomized = [...state.randomizedQuestions];
+
+  for (const incoming of questions) {
+    const existing = knownById.get(incoming.id);
+    if (!existing) {
+      added.push(incoming);
+      continue;
+    }
+    // An unanswered question whose source grew (streamed text/options
+    // extending) is refreshed in place; an answered one is never touched.
+    if (
+      !answeredIds.has(incoming.id) &&
+      (existing.question !== incoming.question ||
+        existing.options.length !== incoming.options.length ||
+        existing.options.some((o, i) => o !== incoming.options[i]))
+    ) {
+      const at = nextOriginal.findIndex(q => q.id === incoming.id);
+      if (at >= 0) {
+        nextOriginal[at] = incoming;
+        const randomizedAt = nextRandomized.findIndex(q => q.id === incoming.id);
+        if (randomizedAt >= 0) nextRandomized[randomizedAt] = randomizeQuestion(incoming);
+        changed = true;
+      }
+    }
+  }
+
+  if (added.length === 0 && !changed) return state;
+
+  return {
+    ...state,
+    originalQuestions: [...nextOriginal, ...added],
+    randomizedQuestions: [...nextRandomized, ...randomizeQuestions(added)],
+  };
+}
+
+/**
  * Calculate quiz results from progress
  */
 export function calculateResults(

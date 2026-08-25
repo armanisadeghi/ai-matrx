@@ -283,7 +283,15 @@ const instanceResourcesSlice = createSlice({
       const submitted = state.submittedIds[conversationId];
       if (resources && submitted) {
         for (const id of submitted) {
-          delete resources[id];
+          // A stored file attached before the conversation materializes is
+          // durable context intent, not a one-turn message block. Keep it for
+          // Builder/manual rounds (whose local conversation id never maps to a
+          // server row) and for retries. The durable chip inventory removes it
+          // only after the canonical association edge is actually readable;
+          // record reservation alone is not proof of persistence.
+          if (resources[id]?.blockType !== "processed_document") {
+            delete resources[id];
+          }
         }
       }
       state.submittedIds[conversationId] = [];

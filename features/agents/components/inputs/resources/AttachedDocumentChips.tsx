@@ -8,17 +8,19 @@
  * `file → conversation`). Reads the conversation's INCOMING edges via
  * `useContainerLinks` (NOT the ephemeral `instanceResources` slice), so an
  * attached document PERSISTS across turns and reloads. The backend reads the
- * same edges at call time and injects the context itself — the FE ships nothing
- * in `request.context` for these.
+ * same edges at call time. A provisional first-turn file reference may briefly
+ * overlap; this component removes it only after this durable inventory proves
+ * the canonical edge is readable.
  *
  * Each chip is a single unified pill: truncated name (opens canvas) + the
  * complete dynamic family policy + remove. Only the USER removes an attachment.
  */
 
+import { useEffect } from "react";
 import { AlertTriangle, FileText, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "@/lib/toast";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useConversationMaterialized } from "@/features/agents/hooks/useConversationMaterialized";
 import {
@@ -28,23 +30,44 @@ import {
 import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
 import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
 import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
-import { AttachedDocumentChip } from "@/features/agents/components/inputs/resources/AttachedDocumentChip";
+import {
+  AttachedDocumentChip,
+  type AttachedDocumentSettings,
+} from "@/features/agents/components/inputs/resources/AttachedDocumentChip";
 import {
   cleanDocumentLabel,
   parseAttachedDocumentMetadata,
   useAttachedDocumentDisplayName,
   type AttachedDocumentMetadata,
 } from "@/features/agents/components/inputs/resources/attached-documents";
-import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
 import type { Json } from "@/types/database.types";
+import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { removeResource } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 
 function metaAsJson(
+  existing: Json,
   fileId: string | null,
-  resourcePolicy?: VariableResourceContextConfig,
+  settings: AttachedDocumentSettings,
 ): Json {
+  const previous =
+    existing && typeof existing === "object" && !Array.isArray(existing)
+      ? (existing as Record<string, Json>)
+      : {};
+  const {
+    representation: _previousRepresentation,
+    resource_policy: _previousResourcePolicy,
+    file_id: _previousFileId,
+    ...retained
+  } = previous;
   const m: AttachedDocumentMetadata = {
+    ...retained,
     file_id: fileId,
-    ...(resourcePolicy ? { resource_policy: resourcePolicy } : {}),
+    ...(settings.representation
+      ? { representation: settings.representation }
+      : {}),
+    ...(settings.resourcePolicy
+      ? { resource_policy: settings.resourcePolicy }
+      : {}),
   };
   return m as Json;
 }
@@ -145,12 +168,12 @@ interface DocumentChipRowProps {
   visibleFiles: ContainerLink[];
   onOpenDrawer: (drawerItems: ContextDrawerItem[], id: string) => void;
   onDetach: () => void;
-  onPolicyChange: (
+  onSettingsChange: (
     link: ContainerLink,
     edgeKind: "processed_document" | "file",
     fileId: string | null,
     displayTitle: string,
-    policy: VariableResourceContextConfig,
+    settings: AttachedDocumentSettings,
   ) => Promise<boolean>;
 }
 
@@ -162,7 +185,7 @@ function DocumentChipRow({
   visibleFiles,
   onOpenDrawer,
   onDetach,
-  onPolicyChange,
+  onSettingsChange,
 }: DocumentChipRowProps) {
   const meta = parseAttachedDocumentMetadata(link.metadata);
   const fileId = edgeKind === "file" ? link.resourceId : (meta.file_id ?? null);
@@ -195,11 +218,12 @@ function DocumentChipRow({
       <AttachedDocumentChip
         title={title}
         fileId={fileId}
+        representation={meta.representation}
         resourcePolicy={meta.resource_policy}
         onOpen={openCanvas}
         onRemove={onDetach}
-        onPolicyChange={(policy) =>
-          onPolicyChange(link, edgeKind, fileId, title, policy)
+        onSettingsChange={(settings) =>
+          onSettingsChange(link, edgeKind, fileId, title, settings)
         }
       />
     </motion.div>
@@ -213,7 +237,11 @@ interface AttachedDocumentChipsProps {
 export function AttachedDocumentChips({
   conversationId,
 }: AttachedDocumentChipsProps) {
+  const dispatch = useAppDispatch();
   const isMaterialized = useConversationMaterialized(conversationId);
+  const provisionalResources = useAppSelector(
+    selectInstanceResources(conversationId),
+  );
   const convOrgId = useAppSelector(
     (s) => s.conversations.byConversationId[conversationId]?.organizationId,
   );
@@ -240,11 +268,37 @@ export function AttachedDocumentChips({
   );
   const visibleFiles = files.filter((l) => !processedFileIds.has(l.resourceId));
 
-  if (
-    processedDocs.length === 0 &&
-    visibleFiles.length === 0 &&
-    !links.error
-  ) {
+  useEffect(() => {
+    const durableFileIds = new Set([
+      ...files.map((link) => link.resourceId),
+      ...processedDocs
+        .map((link) => parseAttachedDocumentMetadata(link.metadata).file_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ]);
+    if (durableFileIds.size === 0) return;
+
+    for (const resource of provisionalResources) {
+      if (
+        resource.blockType !== "processed_document" ||
+        !resource.source ||
+        typeof resource.source !== "object" ||
+        Array.isArray(resource.source)
+      ) {
+        continue;
+      }
+      const fileId = (resource.source as Record<string, unknown>).file_id;
+      if (typeof fileId === "string" && durableFileIds.has(fileId)) {
+        dispatch(
+          removeResource({
+            conversationId,
+            resourceId: resource.resourceId,
+          }),
+        );
+      }
+    }
+  }, [conversationId, dispatch, files, processedDocs, provisionalResources]);
+
+  if (processedDocs.length === 0 && visibleFiles.length === 0 && !links.error) {
     return null;
   }
 
@@ -266,12 +320,12 @@ export function AttachedDocumentChips({
     });
   };
 
-  const changePolicy = async (
+  const changeSettings = async (
     link: ContainerLink,
     edgeKind: "processed_document" | "file",
     fileId: string | null,
     displayTitle: string,
-    policy: VariableResourceContextConfig,
+    settings: AttachedDocumentSettings,
   ) => {
     if (!fileId) {
       toast.error("This legacy document attachment has no source file ID");
@@ -281,11 +335,11 @@ export function AttachedDocumentChips({
       "file",
       fileId,
       displayTitle,
-      metaAsJson(fileId, policy),
+      metaAsJson(link.metadata, fileId, settings),
       { replaceMetadata: true },
     );
     if (!attachResult.ok) {
-      console.error("[attached-document] family policy change failed", {
+      console.error("[attached-document] context settings change failed", {
         conversationId,
         resourceId: link.resourceId,
         error: attachResult.error,
@@ -312,19 +366,22 @@ export function AttachedDocumentChips({
         // disagree with the still-visible legacy chip.
         const rollbackResult = priorFileEdge
           ? await links.attach(
-            "file",
-            fileId,
-            priorFileEdge.label ?? displayTitle,
-            priorFileEdge.metadata,
-            { replaceMetadata: true },
-          )
+              "file",
+              fileId,
+              priorFileEdge.label ?? displayTitle,
+              priorFileEdge.metadata,
+              { replaceMetadata: true },
+            )
           : await links.detach("file", fileId);
         if (!rollbackResult.ok) {
-          console.error("[attached-document] legacy conversion rollback failed", {
-            conversationId,
-            fileId,
-            error: rollbackResult.error,
-          });
+          console.error(
+            "[attached-document] legacy conversion rollback failed",
+            {
+              conversationId,
+              fileId,
+              error: rollbackResult.error,
+            },
+          );
           toast.error(
             `Document context may be inconsistent; refresh before sending: ${rollbackResult.error}`,
           );
@@ -364,7 +421,7 @@ export function AttachedDocumentChips({
             visibleFiles={visibleFiles}
             onOpenDrawer={openDrawer}
             onDetach={() => detach("processed_document", link.resourceId)}
-            onPolicyChange={changePolicy}
+            onSettingsChange={changeSettings}
           />
         ))}
         {visibleFiles.map((link) => (
@@ -377,7 +434,7 @@ export function AttachedDocumentChips({
             visibleFiles={visibleFiles}
             onOpenDrawer={openDrawer}
             onDetach={() => detach("file", link.resourceId)}
-            onPolicyChange={changePolicy}
+            onSettingsChange={changeSettings}
           />
         ))}
       </AnimatePresence>

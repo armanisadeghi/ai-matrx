@@ -34,6 +34,21 @@ describe("agent resource reference", () => {
     });
   });
 
+  it("carries an explicit primary representation independently of family policy", () => {
+    expect(
+      createResourceReference("file", "file-1", {
+        representation: "pdf",
+        exclude: ["rag"],
+      }),
+    ).toEqual({
+      __kind: "resource_ref",
+      resource_type: "file",
+      resource_id: "file-1",
+      representation: "pdf",
+      exclude: ["rag"],
+    });
+  });
+
   it("preserves media-variable promotion and suppression config", () => {
     const component = buildCustomComponent({
       type: "document",

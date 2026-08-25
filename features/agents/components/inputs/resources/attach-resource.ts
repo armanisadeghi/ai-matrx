@@ -12,10 +12,12 @@
  *    backend reads the conversation's edges at call time and injects the context.
  *    The chip renders from the edge list (see `AttachedDocumentChips`), NOT the
  *    ephemeral `instanceResources` slice.
+ *  - Before the conversation row exists, the same stored FILE identity is held
+ *    as a `processed_document` instance resource and emitted in request.context.
+ *    It is never downgraded to a provider-native PDF block.
  *  - Everything else (media bytes, notes, tasks, webpages, …) → the per-turn
- *    `instanceResources` block, UNCHANGED (the binary `document` bytes path is
- *    left untouched — a file with no file identity, or a media block, still rides
- *    content[]).
+ *    `instanceResources` block. A document with no durable file identity still
+ *    rides content[] as binary media.
  */
 
 import type { Dispatch } from "@reduxjs/toolkit";
@@ -161,6 +163,44 @@ function attachBinary(
   return resourceId;
 }
 
+function pendingFileId(source: unknown): string | null {
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return null;
+  }
+  const value = (source as Record<string, unknown>).file_id;
+  return typeof value === "string" && value ? value : null;
+}
+
+/** Hold a stored-file attachment by identity until the server persists its edge. */
+function attachPendingFileReference(
+  dispatch: Dispatch,
+  state: RootState,
+  conversationId: string,
+  fileId: string,
+  label: string,
+): string {
+  const existing = Object.values(
+    state.instanceResources.byConversationId[conversationId] ?? {},
+  ).find(
+    (resource) =>
+      resource.blockType === "processed_document" &&
+      pendingFileId(resource.source) === fileId,
+  );
+  if (existing) return existing.resourceId;
+
+  const resourceId = newResourceId();
+  dispatch(
+    addResource({
+      conversationId,
+      blockType: "processed_document",
+      source: { kind: "file", file_id: fileId, label },
+      resourceId,
+    }),
+  );
+  dispatch(setResourcePreview({ conversationId, resourceId, preview: label }));
+  return resourceId;
+}
+
 // ─── Document association edges (durable, persist across turns/reloads) ──────
 
 function edgeMetadata(fileId: string | null, existing?: Json): Json {
@@ -228,14 +268,16 @@ export function useAttachResource(
       if (fileId) {
         // Durable edges require a real chat.conversation row. New saved-agent
         // chats are provisional until turn 1, while Builder/manual mode uses a
-        // local Redux id that never becomes its server-minted wire id. In both
-        // cases the existing per-turn resource path is the truthful boundary.
+        // local Redux id distinct from its server-minted wire id. Keep the
+        // canonical FILE identity in request.context; turning it into a binary
+        // document here bypasses clean/raw extraction and is the regression
+        // that sent large stored PDFs directly to providers.
         if (selectIsCacheOnly(conversationId)(getState())) {
-          attachBinary(
+          attachPendingFileReference(
             dispatch,
+            getState(),
             conversationId,
-            blockType,
-            resource.data,
+            fileId,
             resourcePreviewLabel,
           );
           return true;

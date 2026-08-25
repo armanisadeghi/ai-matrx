@@ -7,9 +7,18 @@ import type { UserInputPart } from "@/features/agents/types/request.types";
 import { isMessagePart } from "@/types/python-generated/stream-events";
 import {
   messagePartToUserInputPart,
+  selectResourceContextPayload,
   selectResourcePayloads,
   userInputPartToMessagePart,
 } from "../instance-resources.selectors";
+import instanceResourcesReducer, {
+  addResource,
+  clearSubmittedResources,
+  initInstanceResources,
+  markResourcesSubmitted,
+  removeResource,
+  setResourceStatus,
+} from "../instance-resources.slice";
 
 const CONVERSATION_ID = "conversation-projection-test";
 
@@ -148,6 +157,61 @@ describe("request/message attachment projection", () => {
   });
 });
 
+describe("stored-file attachment lifecycle", () => {
+  it("keeps the file reference through submission until durable inventory removes it", () => {
+    let state = instanceResourcesReducer(
+      undefined,
+      initInstanceResources({ conversationId: CONVERSATION_ID }),
+    );
+    state = instanceResourcesReducer(
+      state,
+      addResource({
+        conversationId: CONVERSATION_ID,
+        resourceId: "stored-pdf",
+        blockType: "processed_document",
+        source: {
+          kind: "file",
+          file_id: "file-123",
+          label: "Reference.pdf",
+        },
+      }),
+    );
+    state = instanceResourcesReducer(
+      state,
+      setResourceStatus({
+        conversationId: CONVERSATION_ID,
+        resourceId: "stored-pdf",
+        status: "ready",
+      }),
+    );
+    state = instanceResourcesReducer(
+      state,
+      markResourcesSubmitted(CONVERSATION_ID),
+    );
+    state = instanceResourcesReducer(
+      state,
+      clearSubmittedResources(CONVERSATION_ID),
+    );
+
+    expect(
+      state.byConversationId[CONVERSATION_ID]?.["stored-pdf"],
+    ).toBeDefined();
+
+    state = instanceResourcesReducer(
+      state,
+      removeResource({
+        conversationId: CONVERSATION_ID,
+        resourceId: "stored-pdf",
+      }),
+    );
+
+    expect(
+      state.byConversationId[CONVERSATION_ID]?.["stored-pdf"],
+    ).toBeUndefined();
+    expect(state.submittedIds[CONVERSATION_ID]).toEqual([]);
+  });
+});
+
 describe("outbound attachment validation", () => {
   const payloadSelector = selectResourcePayloads(CONVERSATION_ID);
 
@@ -267,5 +331,56 @@ describe("outbound attachment validation", () => {
     expect(payloadSelector.resultFunc({ [data.resourceId]: data })).toEqual([
       expect.not.objectContaining({ editable: expect.anything() }),
     ]);
+  });
+});
+
+describe("stored-file reference projection", () => {
+  const contextSelector = selectResourceContextPayload(CONVERSATION_ID);
+
+  it("keeps the automatic primary minimal so the server applies Clean -> Raw -> PDF", () => {
+    const resource = readyResource("processed_document", {
+      kind: "file",
+      file_id: "7f385f0f-86b0-4d46-b927-f24806b217f7",
+      label: "large.pdf",
+    });
+
+    expect(
+      contextSelector.resultFunc({ [resource.resourceId]: resource }),
+    ).toEqual({
+      "attached_file_7f385f0f-86b0-4d46-b927-f24806b217f7": {
+        __kind: "resource_ref",
+        resource_type: "file",
+        resource_id: "7f385f0f-86b0-4d46-b927-f24806b217f7",
+      },
+    });
+  });
+
+  it("keeps the primary override independent from inline/exclusion policy", () => {
+    const resource = readyResource("processed_document", {
+      kind: "file",
+      file_id: "7f385f0f-86b0-4d46-b927-f24806b217f7",
+    });
+    resource.options.representation = "raw";
+    resource.options.resourcePolicy = {
+      promote: [{ representation: "clean", max_chars: 2000 }],
+      exclude: ["rag"],
+    };
+
+    expect(
+      contextSelector.resultFunc({ [resource.resourceId]: resource }),
+    ).toEqual({
+      "attached_file_7f385f0f-86b0-4d46-b927-f24806b217f7": {
+        __kind: "resource_ref",
+        resource_type: "file",
+        resource_id: "7f385f0f-86b0-4d46-b927-f24806b217f7",
+        representation: "raw",
+        promote: [{ representation: "clean", max_chars: 2000 }],
+        exclude: ["rag"],
+      },
+    });
+  });
+
+  it("stops shipping after durable inventory removes the provisional resource", () => {
+    expect(contextSelector.resultFunc({})).toBeUndefined();
   });
 });

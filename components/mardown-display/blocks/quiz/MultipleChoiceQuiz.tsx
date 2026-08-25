@@ -37,6 +37,7 @@ import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatColl
 import { Button } from "@/components/ui/button";
 import type { OriginalQuestion, QuizState } from "./quiz-types";
 import {
+  appendNewQuestions,
   initializeQuizState,
   updateProgress,
   calculateResults,
@@ -240,12 +241,18 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
   );
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Initialize state when quiz is parsed
+  // Initialize state when quiz is parsed — and GROW it as more questions
+  // stream in (streaming partial kinds: the value only ever grows, so new
+  // questions append without resetting the user's progress or reshuffling
+  // anything already dealt; see appendNewQuestions).
   useEffect(() => {
-    if (parsedQuiz && !quizState) {
-      setQuizState(initializeQuizState(parsedQuiz.questions));
-    }
-  }, [parsedQuiz, quizState]);
+    if (!parsedQuiz) return;
+    setQuizState((prev) =>
+      prev
+        ? appendNewQuestions(prev, parsedQuiz.questions)
+        : initializeQuizState(parsedQuiz.questions),
+    );
+  }, [parsedQuiz]);
 
   // Database persistence (always call hooks)
   const {

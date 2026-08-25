@@ -9039,6 +9039,15 @@
               ],
               "title": "Organization Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -9070,6 +9079,17 @@
         ],
         "summary": "Create Item",
         "operationId": "create_item_vault_items_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -9111,15 +9131,26 @@
         ],
         "summary": "Import Env",
         "operationId": "import_env_vault_items_import_env_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/VaultImportEnvRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -9161,6 +9192,15 @@
               "type": "string",
               "title": "Item Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -9200,6 +9240,15 @@
             "schema": {
               "type": "string",
               "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -9251,6 +9300,15 @@
               "type": "string",
               "title": "Item Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -9285,6 +9343,15 @@
             "schema": {
               "type": "string",
               "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -9348,6 +9415,15 @@
               "type": "string",
               "title": "Field Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "requestBody": {
@@ -9407,6 +9483,15 @@
               "type": "string",
               "title": "Field Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -9450,6 +9535,15 @@
             "schema": {
               "type": "string",
               "title": "Field Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -9502,6 +9596,15 @@
             "schema": {
               "type": "string",
               "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -9564,6 +9667,15 @@
               "type": "string",
               "title": "Attachment Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "requestBody": {
@@ -9623,6 +9735,15 @@
               "type": "string",
               "title": "Attachment Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -9666,6 +9787,15 @@
             "schema": {
               "type": "string",
               "title": "Attachment Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -9728,6 +9858,15 @@
               "type": "string",
               "title": "Attachment Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -9763,6 +9902,15 @@
             "schema": {
               "type": "string",
               "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -9816,6 +9964,15 @@
               "type": "string",
               "title": "Item Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "requestBody": {
@@ -9860,15 +10017,26 @@
         "summary": "Resolve",
         "description": "Browser-facing resolution by stable reference, handling-aware:\n`visible` at can_use; `revealable` at can_reveal + recent auth;\n`sealed` never crosses this boundary — trusted executors resolve\nin-process via the battery.",
         "operationId": "resolve_vault_resolve_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/VaultResolveRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -9918,6 +10086,15 @@
               ],
               "title": "Organization Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -9959,6 +10136,15 @@
             "schema": {
               "type": "string",
               "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -10013,6 +10199,15 @@
               "type": "string",
               "title": "Item Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -10053,6 +10248,15 @@
             "schema": {
               "type": "string",
               "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -10115,6 +10319,15 @@
               "type": "string",
               "title": "Grant Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "requestBody": {
@@ -10175,6 +10388,15 @@
               "type": "string",
               "title": "Grant Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -10202,6 +10424,17 @@
         "summary": "Shared With Me",
         "description": "Items other people shared TO the actor.",
         "operationId": "shared_with_me_vault_shared_with_me_get",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -10209,6 +10442,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VaultItemListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -10224,15 +10467,26 @@
         "summary": "Assign To Recipient",
         "description": "**Create for someone.** The item is born owned by the recipient. With\n`generate_field_key` the server generates that value and NEVER returns it\n— the creator gets identity and confirmation only.",
         "operationId": "assign_to_recipient_vault_items_assign_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/VaultAssignRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -10274,6 +10528,15 @@
             "schema": {
               "type": "string",
               "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -10327,15 +10590,26 @@
         "summary": "Check Destination",
         "description": "Normalize and header-check a public login destination. No body is read.",
         "operationId": "check_destination_vault_destination_check_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/VaultDestinationCheckRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -10369,15 +10643,26 @@
         "summary": "Browser Login Matches",
         "description": "Safe candidates for the tab the extension is ACTUALLY on. Item ids and\ntitles only — nothing is decrypted. Requires a real user JWT.",
         "operationId": "browser_login_matches_vault_browser_login_matches_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BrowserLoginMatchesRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -10411,6 +10696,17 @@
         "summary": "Browser Login Inventory",
         "description": "Every saved login the actor may use, destination-independent — metadata\nonly, never a value. Backs `credential_login action='list'` for BOTH\nexecutors so `no_matching_login` is always diagnosable.",
         "operationId": "browser_login_inventory_vault_browser_login_inventory_get",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -10418,6 +10714,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BrowserLoginInventoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -10433,15 +10739,26 @@
         "summary": "Browser Login Report",
         "description": "Submit a credential-login problem through the platform feedback system.\n\nThe request has no value-bearing field and rejects unknown keys, so a\ncredential cannot accidentally ride this reporting path.",
         "operationId": "browser_login_report_vault_browser_login_report_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BrowserLoginReportRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -10483,6 +10800,15 @@
             "schema": {
               "type": "string",
               "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -10545,6 +10871,15 @@
               "type": "string",
               "title": "Item Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "requestBody": {
@@ -10598,6 +10933,15 @@
               "type": "string",
               "title": "Item Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "requestBody": {
@@ -10635,15 +10979,26 @@
         "summary": "Browser Capture Context",
         "description": "The known/unknown branch for a login we have NO credential for. Decrypts\nnothing. Origin is derived server-side from the executor's real page URL.",
         "operationId": "browser_capture_context_vault_browser_login_capture_context_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BrowserCaptureContextRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -10675,15 +11030,26 @@
         "summary": "Browser Capture",
         "description": "Write a user-typed credential as a NEW vault item, stamped with the agent's\nmetadata. ``field_values`` (the user-typed plaintext) lives in this request's\nmemory only and is written straight to the vault — never echoed or logged.\n`no-store`.",
         "operationId": "browser_capture_vault_browser_login_capture_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BrowserCaptureRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -10717,15 +11083,26 @@
         "summary": "Browser Recipe Proposal",
         "description": "Document an UNKNOWN login as a PROPOSED recipe (human-provenance; a human\nactivates it). Selectors + signal descriptors only — never a value.",
         "operationId": "browser_recipe_proposal_vault_browser_login_recipe_proposal_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BrowserRecipeProposalRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -10766,6 +11143,15 @@
             "schema": {
               "type": "string",
               "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -10831,6 +11217,15 @@
               "default": 100,
               "title": "Limit"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -10865,6 +11260,17 @@
         "summary": "List Authenticators",
         "description": "Every account the actor holds an authenticator for — metadata only\n(issuer / account / label / enabled). Never a seed, never a code.",
         "operationId": "list_authenticators_authenticator_get",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -10872,6 +11278,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AuthenticatorListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -10894,6 +11310,15 @@
             "schema": {
               "type": "string",
               "title": "Credential Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -10936,6 +11361,15 @@
               "type": "string",
               "title": "Credential Item Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -10972,6 +11406,15 @@
               "type": "string",
               "title": "Credential Item Id"
             }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
           }
         ],
         "responses": {
@@ -11006,15 +11449,26 @@
         "summary": "Enroll",
         "description": "Route 1/2 (paste): store the setup key or otpauth URI as a sealed seed.\n\nEnrolling a seed mints every future code for the account, so it is the most\nprivileged act in the system — D-15 item 1 gates it on a fresh sign-in.\n``enforce_recent_auth_max_age`` is the NEVER-permissive primitive (the\nlaunch-cap wrapper ``enforce_recent_auth`` returns immediately while its env\nvar is unset, which is how this gate was inert in production). The service\nasserts the same window again from the ambient context — two independent\nlayers, neither of them a caller-supplied flag.",
         "operationId": "enroll_authenticator_enroll_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/aidream__api__schemas__authenticator__EnrollRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -11056,6 +11510,15 @@
             "schema": {
               "type": "string",
               "title": "Credential Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -11109,6 +11572,15 @@
             "schema": {
               "type": "string",
               "title": "Credential Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
             }
           }
         ],
@@ -12652,6 +13124,59 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CompetitorDiscoveryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/competitors/discover-local": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Discover Local Site Competitors",
+        "description": "Search Google's local pack for a keyword in a geographic area and turn\nthe businesses it returns into competitor proposals.\n\nThe primary discovery path for LOCAL businesses (the map-pack rivals for\n\"keyword near place\"), distinct from the keyword-overlap rivals\n`/competitors/discover` finds. An ambiguous place name returns 400 with\nthe catalogue's suggestions. Every proposal waits for a human ruling.",
+        "operationId": "discover_local_site_competitors_seo_sites__site_id__competitors_discover_local_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocalCompetitorSearchBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalCompetitorSearchResponse"
                 }
               }
             }
@@ -118659,6 +119184,124 @@
         ],
         "title": "LivenessResponse"
       },
+      "LocalBusinessOut": {
+        "properties": {
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "reviews": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviews"
+          },
+          "is_own": {
+            "type": "boolean",
+            "title": "Is Own",
+            "default": false
+          },
+          "competitor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Competitor Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "LocalBusinessOut"
+      },
       "LocalClusterResponse": {
         "properties": {
           "id": {
@@ -118795,6 +119438,131 @@
           "id"
         ],
         "title": "LocalClusterResponse"
+      },
+      "LocalCompetitorSearchBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "keyword": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Keyword"
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Location"
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country",
+            "default": "US"
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Language",
+            "default": "en"
+          },
+          "max_competitors": {
+            "type": "integer",
+            "maximum": 25,
+            "minimum": 1,
+            "title": "Max Competitors",
+            "default": 12
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "keyword",
+          "location"
+        ],
+        "title": "LocalCompetitorSearchBody"
+      },
+      "LocalCompetitorSearchResponse": {
+        "properties": {
+          "keyword": {
+            "type": "string",
+            "title": "Keyword"
+          },
+          "canonical_location": {
+            "type": "string",
+            "title": "Canonical Location"
+          },
+          "businesses": {
+            "items": {
+              "$ref": "#/components/schemas/LocalBusinessOut"
+            },
+            "type": "array",
+            "title": "Businesses"
+          },
+          "competitor_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Competitor Ids"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "keyword",
+          "canonical_location",
+          "businesses",
+          "competitor_ids",
+          "count"
+        ],
+        "title": "LocalCompetitorSearchResponse"
       },
       "LocalCourtResponse": {
         "properties": {

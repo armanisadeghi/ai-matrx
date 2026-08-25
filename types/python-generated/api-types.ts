@@ -5056,6 +5056,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/competitors/discover-local": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discover Local Site Competitors
+         * @description Search Google's local pack for a keyword in a geographic area and turn
+         *     the businesses it returns into competitor proposals.
+         *
+         *     The primary discovery path for LOCAL businesses (the map-pack rivals for
+         *     "keyword near place"), distinct from the keyword-overlap rivals
+         *     `/competitors/discover` finds. An ambiguous place name returns 400 with
+         *     the catalogue's suggestions. Every proposal waits for a human ruling.
+         */
+        post: operations["discover_local_site_competitors_seo_sites__site_id__competitors_discover_local_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/landscape-brief": {
         parameters: {
             query?: never;
@@ -45570,6 +45596,34 @@ export interface components {
             /** Uptime Seconds */
             uptime_seconds: number;
         };
+        /** LocalBusinessOut */
+        LocalBusinessOut: {
+            /** Position */
+            position?: number | null;
+            /** Name */
+            name: string;
+            /** Domain */
+            domain?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Rating */
+            rating?: number | null;
+            /** Reviews */
+            reviews?: number | null;
+            /**
+             * Is Own
+             * @default false
+             */
+            is_own?: boolean;
+            /** Competitor Id */
+            competitor_id?: string | null;
+        };
         /** LocalClusterResponse */
         LocalClusterResponse: {
             /** Id */
@@ -45597,6 +45651,61 @@ export interface components {
             /** Docket Id */
             docket_id?: number | null;
             judges?: components["schemas"]["JsonValue"];
+        };
+        /** LocalCompetitorSearchBody */
+        LocalCompetitorSearchBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Keyword */
+            keyword: string;
+            /** Location */
+            location: string;
+            /**
+             * Country
+             * @default US
+             */
+            country?: string;
+            /**
+             * Language
+             * @default en
+             */
+            language?: string;
+            /**
+             * Max Competitors
+             * @default 12
+             */
+            max_competitors?: number;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+        };
+        /** LocalCompetitorSearchResponse */
+        LocalCompetitorSearchResponse: {
+            /** Keyword */
+            keyword: string;
+            /** Canonical Location */
+            canonical_location: string;
+            /** Businesses */
+            businesses: components["schemas"]["LocalBusinessOut"][];
+            /** Competitor Ids */
+            competitor_ids: string[];
+            /** Count */
+            count: number;
         };
         /** LocalCourtResponse */
         LocalCourtResponse: {
@@ -75087,7 +75196,9 @@ export interface operations {
                 principal_type?: string;
                 organization_id?: string | null;
             };
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -75116,7 +75227,9 @@ export interface operations {
     create_item_vault_items_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -75149,7 +75262,9 @@ export interface operations {
     import_env_vault_items_import_env_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -75182,7 +75297,9 @@ export interface operations {
     get_item_vault_items__item_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -75213,7 +75330,9 @@ export interface operations {
     delete_item_vault_items__item_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -75242,7 +75361,9 @@ export interface operations {
     update_item_vault_items__item_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -75277,7 +75398,9 @@ export interface operations {
     add_field_vault_items__item_id__fields_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -75312,7 +75435,9 @@ export interface operations {
     delete_field_vault_items__item_id__fields__field_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
                 field_id: string;
@@ -75342,7 +75467,9 @@ export interface operations {
     update_field_metadata_vault_items__item_id__fields__field_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
                 field_id: string;
@@ -75378,7 +75505,9 @@ export interface operations {
     update_field_value_vault_items__item_id__fields__field_id__value_put: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
                 field_id: string;
@@ -75414,7 +75543,9 @@ export interface operations {
     add_attachment_vault_items__item_id__attachments_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -75449,7 +75580,9 @@ export interface operations {
     delete_attachment_vault_items__item_id__attachments__attachment_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
                 attachment_id: string;
@@ -75479,7 +75612,9 @@ export interface operations {
     update_attachment_vault_items__item_id__attachments__attachment_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
                 attachment_id: string;
@@ -75515,7 +75650,9 @@ export interface operations {
     replace_attachment_vault_items__item_id__attachments__attachment_id__file_put: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
                 attachment_id: string;
@@ -75551,7 +75688,9 @@ export interface operations {
     download_attachment_vault_items__item_id__attachments__attachment_id__download_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
                 attachment_id: string;
@@ -75581,7 +75720,9 @@ export interface operations {
     reveal_vault_items__item_id__reveal_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -75616,7 +75757,9 @@ export interface operations {
     rotate_vault_items__item_id__rotate_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -75651,7 +75794,9 @@ export interface operations {
     resolve_vault_resolve_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -75686,7 +75831,9 @@ export interface operations {
             query?: {
                 organization_id?: string | null;
             };
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -75715,7 +75862,9 @@ export interface operations {
     share_vault_items__item_id__share_put: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -75750,7 +75899,9 @@ export interface operations {
     list_grants_vault_items__item_id__grants_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -75781,7 +75932,9 @@ export interface operations {
     add_grant_vault_items__item_id__grants_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -75816,7 +75969,9 @@ export interface operations {
     remove_grant_vault_items__item_id__grants__grant_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
                 grant_id: string;
@@ -75846,7 +76001,9 @@ export interface operations {
     update_grant_vault_items__item_id__grants__grant_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
                 grant_id: string;
@@ -75882,7 +76039,9 @@ export interface operations {
     shared_with_me_vault_shared_with_me_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -75897,12 +76056,23 @@ export interface operations {
                     "application/json": components["schemas"]["VaultItemListResponse"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     assign_to_recipient_vault_items_assign_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -75935,7 +76105,9 @@ export interface operations {
     transfer_vault_items__item_id__transfer_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -75970,7 +76142,9 @@ export interface operations {
     check_destination_vault_destination_check_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -76003,7 +76177,9 @@ export interface operations {
     browser_login_matches_vault_browser_login_matches_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -76036,7 +76212,9 @@ export interface operations {
     browser_login_inventory_vault_browser_login_inventory_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -76051,12 +76229,23 @@ export interface operations {
                     "application/json": components["schemas"]["BrowserLoginInventoryResponse"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     browser_login_report_vault_browser_login_report_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -76089,7 +76278,9 @@ export interface operations {
     browser_login_materialize_vault_browser_login__item_id__materialize_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -76124,7 +76315,9 @@ export interface operations {
     browser_authenticator_materialize_vault_browser_login__item_id__authenticator_materialize_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -76159,7 +76352,9 @@ export interface operations {
     browser_login_result_vault_browser_login__item_id__result_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -76192,7 +76387,9 @@ export interface operations {
     browser_capture_context_vault_browser_login_capture_context_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -76225,7 +76422,9 @@ export interface operations {
     browser_capture_vault_browser_login_capture_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -76258,7 +76457,9 @@ export interface operations {
     browser_recipe_proposal_vault_browser_login_recipe_proposal_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -76291,7 +76492,9 @@ export interface operations {
     fork_vault_items__item_id__fork_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -76328,7 +76531,9 @@ export interface operations {
             query?: {
                 limit?: number;
             };
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 item_id: string;
             };
@@ -76359,7 +76564,9 @@ export interface operations {
     list_authenticators_authenticator_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -76374,12 +76581,23 @@ export interface operations {
                     "application/json": components["schemas"]["AuthenticatorListResponse"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     get_authenticator_authenticator__credential_item_id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 credential_item_id: string;
             };
@@ -76410,7 +76628,9 @@ export interface operations {
     delete_authenticator_authenticator__credential_item_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 credential_item_id: string;
             };
@@ -76439,7 +76659,9 @@ export interface operations {
     get_authenticator_code_authenticator__credential_item_id__code_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 credential_item_id: string;
             };
@@ -76470,7 +76692,9 @@ export interface operations {
     enroll_authenticator_enroll_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -76505,7 +76729,9 @@ export interface operations {
             query: {
                 credential_item_id: string;
             };
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -76538,7 +76764,9 @@ export interface operations {
     set_enabled_authenticator__credential_item_id__enabled_put: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 credential_item_id: string;
             };
@@ -77655,6 +77883,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompetitorDiscoveryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discover_local_site_competitors_seo_sites__site_id__competitors_discover_local_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocalCompetitorSearchBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocalCompetitorSearchResponse"];
                 };
             };
             /** @description Validation Error */

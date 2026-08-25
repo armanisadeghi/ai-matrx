@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { VariableResourceContextConfig } from "@/features/agents/types/agent-definition.types";
+import type { DocumentRepresentation } from "@/features/agents/types/instance.types";
 import { useFileResourceFamily } from "@/features/files/hooks/useFileResourceFamily";
 import { cn } from "@/lib/utils";
 import {
@@ -31,6 +32,10 @@ interface ResourceFamilyPolicyEditorProps {
   compact?: boolean;
   className?: string;
   disabled?: boolean;
+  primaryRepresentation?: DocumentRepresentation;
+  onPrimaryRepresentationChange?: (
+    value: DocumentRepresentation | undefined,
+  ) => void;
 }
 
 export function ResourceFamilyPolicyEditor({
@@ -40,32 +45,92 @@ export function ResourceFamilyPolicyEditor({
   compact = false,
   className,
   disabled = false,
+  primaryRepresentation,
+  onPrimaryRepresentationChange,
 }: ResourceFamilyPolicyEditorProps) {
   const family = useFileResourceFamily(fileId);
   const policy = normalizeResourceFamilyPolicy(value);
   const readonly = disabled || !onChange;
   const promotions = policy.promote ?? [];
-  const promotable = family.data?.representations.filter((item) => item.promotable) ?? [];
+  const promotable =
+    family.data?.representations.filter((item) => item.promotable) ?? [];
   const nextPromotion = promotable.find(
-    (item) => !promotions.some((promotion) => promotion.representation === item.key),
+    (item) =>
+      !promotions.some((promotion) => promotion.representation === item.key),
   );
   const unavailableExclusions = (policy.exclude ?? []).filter(
     (key) => !family.data?.representations.some((item) => item.key === key),
   );
 
   const emit = (next: VariableResourceContextConfig) => onChange?.(next);
+  const primaryAvailable = (key: DocumentRepresentation) =>
+    !family.data ||
+    family.data.representations.some(
+      (item) => item.key === key && item.count > 0,
+    );
 
   if (!fileId) return null;
 
   return (
     <div className={cn("space-y-2", className)}>
+      <div className="space-y-1">
+        <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Primary content
+        </Label>
+        <Select
+          value={primaryRepresentation ?? "auto"}
+          disabled={disabled || !onPrimaryRepresentationChange}
+          onValueChange={(value) => {
+            if (value === "auto") {
+              onPrimaryRepresentationChange?.(undefined);
+            } else if (
+              value === "clean" ||
+              value === "raw" ||
+              value === "pdf"
+            ) {
+              if ((policy.exclude ?? []).includes(value)) {
+                emit(setFamilyRepresentationEnabled(policy, value, true));
+              }
+              onPrimaryRepresentationChange?.(value);
+            }
+          }}
+        >
+          <SelectTrigger
+            className="h-8 text-xs"
+            aria-label="Primary document content"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="auto">
+              Auto · Clean → Raw → original PDF
+            </SelectItem>
+            <SelectItem value="clean" disabled={!primaryAvailable("clean")}>
+              Clean text
+            </SelectItem>
+            <SelectItem value="raw" disabled={!primaryAvailable("raw")}>
+              Raw extracted text
+            </SelectItem>
+            <SelectItem value="pdf" disabled={!primaryAvailable("pdf")}>
+              Original PDF
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          Auto always prefers clean text, then raw extraction, then the original
+          PDF.
+        </p>
+      </div>
+
+      <div className="border-t border-border/60" />
       <div>
         <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Resource family
         </Label>
         <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
           Every existing derivative is available on demand by default. Inline
-          previews and exclusions affect context only; they never generate content.
+          previews and exclusions affect context only; they never generate
+          content.
         </p>
       </div>
 
@@ -75,18 +140,25 @@ export function ResourceFamilyPolicyEditor({
           Loading family inventory…
         </div>
       ) : null}
-      {family.error ? <p className="text-xs text-destructive">{family.error}</p> : null}
+      {family.error ? (
+        <p className="text-xs text-destructive">{family.error}</p>
+      ) : null}
 
       {family.data ? (
         <>
           <div className="grid gap-1.5 rounded-md border border-border/60 p-2 sm:grid-cols-2">
             {family.data.representations.map((item) => {
-              const enabled = !(policy.exclude ?? []).includes(item.key);
+              const isPrimary = item.key === primaryRepresentation;
+              const enabled =
+                isPrimary || !(policy.exclude ?? []).includes(item.key);
               return (
-                <label key={item.key} className="flex items-start gap-2 text-xs">
+                <label
+                  key={item.key}
+                  className="flex items-start gap-2 text-xs"
+                >
                   <Checkbox
                     checked={enabled}
-                    disabled={readonly}
+                    disabled={readonly || isPrimary}
                     onCheckedChange={(checked) =>
                       emit(
                         setFamilyRepresentationEnabled(
@@ -136,13 +208,17 @@ export function ResourceFamilyPolicyEditor({
               <Label className="text-xs text-muted-foreground">
                 Inline previews ({promotions.length}/{MAX_RESOURCE_PROMOTIONS})
               </Label>
-              {!readonly && nextPromotion && promotions.length < MAX_RESOURCE_PROMOTIONS ? (
+              {!readonly &&
+              nextPromotion &&
+              promotions.length < MAX_RESOURCE_PROMOTIONS ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   className="h-6 px-2 text-xs"
-                  onClick={() => emit(addFamilyPromotion(policy, nextPromotion.key))}
+                  onClick={() =>
+                    emit(addFamilyPromotion(policy, nextPromotion.key))
+                  }
                 >
                   <Plus className="mr-1 h-3 w-3" /> Add
                 </Button>
@@ -158,14 +234,20 @@ export function ResourceFamilyPolicyEditor({
                   key={`${promotion.representation}:${index}`}
                   className={cn(
                     "grid items-center gap-1.5",
-                    compact ? "grid-cols-[1fr_5.5rem_auto]" : "grid-cols-[1fr_7rem_auto]",
+                    compact
+                      ? "grid-cols-[1fr_5.5rem_auto]"
+                      : "grid-cols-[1fr_7rem_auto]",
                   )}
                 >
                   <Select
                     value={promotion.representation}
                     disabled={readonly}
                     onValueChange={(representation) =>
-                      emit(updateFamilyPromotion(policy, index, { representation }))
+                      emit(
+                        updateFamilyPromotion(policy, index, {
+                          representation,
+                        }),
+                      )
                     }
                   >
                     <SelectTrigger className="h-8 text-xs">
@@ -183,9 +265,9 @@ export function ResourceFamilyPolicyEditor({
                             ),
                         )
                         .map((item) => (
-                        <SelectItem key={item.key} value={item.key}>
-                          {item.label} ({item.count})
-                        </SelectItem>
+                          <SelectItem key={item.key} value={item.key}>
+                            {item.label} ({item.count})
+                          </SelectItem>
                         ))}
                       {!promotable.some(
                         (item) => item.key === promotion.representation,

@@ -52528,6 +52528,15 @@ export type Database = {
         Args: { p_dimension_slug: string; p_label: string; p_value: string }
         Returns: boolean
       }
+      _pack_site_value_id: {
+        Args: {
+          p_dimension_slug: string
+          p_scope: string
+          p_site_id: string
+          p_value: string
+        }
+        Returns: string
+      }
       _pack_touch: { Args: { p_pack_id: string }; Returns: undefined }
       _rule_claim_matcher: {
         Args: {
@@ -52594,7 +52603,6 @@ export type Database = {
           p_item_ids?: string[]
           p_pack_id: string
           p_reset?: boolean
-          p_rule_ids?: string[]
           p_seed_guidelines?: boolean
           p_site_id: string
           p_topic_ids?: string[]
@@ -54652,13 +54660,13 @@ export type Database = {
           industry_id: string
           industry_name: string
           industry_slug: string
+          meaning_count: number
           name: string
           org_match: boolean
           pack_version: number
           proposed_at: string
           ratification_notes: string
           ratified_at: string
-          rule_count: number
           slug: string
           source_corpus: Json
           source_notes: string
@@ -54700,18 +54708,12 @@ export type Database = {
           p_end: string
           p_item_ids?: string[]
           p_pack_id: string
-          p_rule_ids?: string[]
           p_sample?: number
           p_site_id: string
           p_start: string
         }
         Returns: Json
       }
-      starter_pack_rule_delete: {
-        Args: { p_rule_id: string }
-        Returns: undefined
-      }
-      starter_pack_rule_save: { Args: { p_rule: Json }; Returns: Json }
       starter_pack_save: { Args: { p_pack: Json }; Returns: Json }
       starter_pack_set_status: {
         Args: { p_notes?: string; p_pack_id: string; p_status: string }

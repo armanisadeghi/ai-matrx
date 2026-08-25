@@ -203,7 +203,7 @@ function PackCard({
         {pack.industry_name ?? pack.industry}
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <Stat icon={ListChecks} count={pack.rule_count} label="rules" />
+        <Stat icon={ListChecks} count={pack.meaning_count} label="answers" />
         <Stat icon={TreePine} count={pack.topic_count} label="topics" />
         <Stat icon={Layers} count={pack.value_band_count + pack.geo_band_count} label="bands" />
         <Stat icon={MapPinned} count={pack.geo_area_count} label="areas" />
@@ -363,7 +363,7 @@ function PackSummaryPanel({
         <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(
             [
-              [ListChecks, pack.rule_count, "value rules", "words and facts that raise or lower a keyword's worth"],
+              [ListChecks, pack.meaning_count, "answers", "what this industry's searches mean, and what each meaning is worth"],
               [TreePine, pack.topic_count, "topic worths", "what each subject is worth — the base every rule multiplies"],
               [Layers, pack.value_band_count + pack.geo_band_count, "bands", "tier names and thresholds, geo band multipliers"],
               [MapPinned, pack.geo_area_count, "service areas", "archetypes you fill with your own places"],

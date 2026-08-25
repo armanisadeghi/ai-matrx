@@ -25,6 +25,7 @@ import {
   serializeEditorResourcesAsXml,
 } from "@/features/agents/utils/editor-resource-xml";
 import { isEditableCapableBlockType } from "./editable-resource-types";
+import { createResourceReference } from "@/features/agents/agent-context/resource-reference";
 
 const EMPTY_RESOURCES: ManagedResource[] = [];
 const EMPTY_EDITOR_RESOURCES: ManagedResource[] = [];
@@ -51,6 +52,12 @@ function invalidResource(resource: ManagedResource, reason: string): never {
   throw new TypeError(
     `Cannot send ${resource.blockType} attachment ${resource.resourceId}: ${reason}`,
   );
+}
+
+function pendingFileId(resource: ManagedResource): string | null {
+  if (!isRecord(resource.source)) return null;
+  const value = resource.source.file_id ?? resource.source.fileId;
+  return typeof value === "string" && value ? value : null;
 }
 
 function resourceMetadata(
@@ -614,7 +621,11 @@ export const selectHasUnsentResources =
     if (ids.length === 0) return false;
     const submitted =
       state.instanceResources.submittedIds[conversationId] ?? [];
-    return ids.some((id) => !submitted.includes(id));
+    return ids.some(
+      (id) =>
+        resources[id]?.blockType !== "processed_document" &&
+        !submitted.includes(id),
+    );
   };
 
 /**
@@ -700,6 +711,46 @@ export const selectResourcePayloads = (conversationId: string) =>
         .filter((part): part is UserInputPart => part !== null);
 
       return arr.length === 0 ? EMPTY_PAYLOADS : arr;
+    },
+  );
+
+/**
+ * Stored files travel as canonical file references in request.context — never
+ * as provider-native PDF bytes — until the association inventory proves their
+ * durable file -> conversation edge is readable. The durable-chip component
+ * then removes the provisional resource. A brief overlap is intentional and
+ * idempotent; it protects retries when reservation precedes edge persistence.
+ */
+export const selectResourceContextPayload = (conversationId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.instanceResources.byConversationId[conversationId],
+    (resources): Record<string, unknown> | undefined => {
+      if (!resources) return undefined;
+      const payload: Record<string, unknown> = {};
+      for (const resource of Object.values(resources)) {
+        if (
+          resource.blockType !== "processed_document" ||
+          resource.status !== "ready"
+        ) {
+          continue;
+        }
+        const fileId = pendingFileId(resource);
+        if (!fileId) {
+          invalidResource(resource, "stored file reference is missing file_id");
+        }
+        const policy = resource.options.resourcePolicy;
+        payload[`attached_file_${fileId}`] = createResourceReference(
+          "file",
+          fileId,
+          {
+            representation: resource.options.representation,
+            promote: policy?.promote,
+            exclude: policy?.exclude,
+          },
+        );
+      }
+      return Object.keys(payload).length ? payload : undefined;
     },
   );
 

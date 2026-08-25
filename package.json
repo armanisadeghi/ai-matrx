@@ -240,7 +240,7 @@
     "lab:run": "bash scripts/build-lab/run.sh"
   },
   "dependencies": {
-    "@ai-matrx/agents": "0.1.0",
+    "@ai-matrx/agents": "0.2.1",
     "@ai-matrx/content-ir": "0.2.1",
     "@ai-matrx/content-ir-react": "file:vendor/ai-matrx-content-ir-react-0.1.0.tgz",
     "@ai-matrx/design-system": "0.1.1",
@@ -258,7 +258,6 @@
     "@emotion/is-prop-valid": "^1.4.0",
     "@hello-pangea/dnd": "latest",
     "@hookform/resolvers": "latest",
-    "@matrx/agents": "workspace:*",
     "@mermaid-js/layout-elk": "^0.2.2",
     "@modelcontextprotocol/sdk": "1.29.0",
     "@monaco-editor/react": "^4.7.0",

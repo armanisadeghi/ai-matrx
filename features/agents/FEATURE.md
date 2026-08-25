@@ -49,6 +49,35 @@ Agents are autonomous AI specialists. The AI Matrx Harness turns a raw model int
 
 ---
 
+## Portable client runtime
+
+Matrix consumes the public `@ai-matrx/agents` package directly; there is no
+repo-private agents facade or host bootstrap. Version `0.2.1` owns the portable
+NDJSON normalization, presentation projection, and first request-state
+projector. Matrix's live parser boundary is `lib/api/stream-parser.ts`; host
+effects and the richer Redux request model remain local.
+
+The golden-event parity harness lives in
+`redux/execution-system/thunks/__tests__/portable-request-parity.test.ts`, with
+shared fixtures and the pure Matrix projection under `runtime/`. It feeds the
+same event arrays to the package projector and Matrix's real `processStream`
+path. The harness currently proves the shared fields that agree and pins three
+known divergences, so they cannot be mistaken for completed parity:
+
+- the package normalizer drops top-level `stream_seq`, so Matrix cannot advance
+  its replay cursor and a replayed chunk can duplicate answer text;
+- the package answer projection omits answer-bearing explicit render blocks
+  that Matrix includes in its canonical answer;
+- the package suspends on every `tool_started`, while Matrix suspends only for
+  delegated client tools.
+
+Those divergences must be fixed and released in the public package before the
+Matrix request reducer can be replaced. See the cross-repo execution-runtime
+source of truth in
+`../../../common-docs/systems/agents/execution-runtime/FEATURE.md`.
+
+---
+
 ## The mental model in one page
 
 The system runs in three stages with three consumer surfaces:
@@ -139,6 +168,16 @@ neither prompt blocks nor run inputs: a canonical
 - Use a **document message block** only when the file must be sent in that exact
   authored message. Owned files persist as `file_id`; MIME is resolved by the
   server and is never an authoring requirement.
+- A stored PDF attached to a conversation is a durable file reference, not a
+  native PDF message block. Its automatic primary representation is always
+  **Clean → Raw → Original PDF**. The user may override that primary to Clean,
+  Raw, or Original PDF independently of the existing family policy that
+  promotes inline representations or excludes family members.
+- A fresh/cache-only conversation carries that same file reference in
+  `request.context` for its first turn. The server persists the canonical
+  `file → conversation` edge before execution; after server confirmation the
+  edge becomes the sole owner. Stored file bytes never enter `user_input`
+  merely because the conversation has not materialized yet.
 - Files enter the backend Document Evidence System: processed text is primary,
   while RAG, raw/clean representations, selected physical PDF pages, and
   verification tools are auto-injected.
@@ -357,6 +396,8 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-24` — **Converged the portable agents client onto the public package without claiming reducer parity.** `@ai-matrx/agents` is pinned to `0.2.1`; the zero-caller repo-private `@matrx/agents` facade and `configureAgentsForHost` bootstrap were deleted with their workspace/alias/audit references. A golden-event harness now drives identical settled, replayed, and server-tool streams through the package's pure request projector and Matrix's real `processStream` path. It proves the matching shared fields and locks three exact blockers: normalized events lose `stream_seq`, package answer text omits answer-bearing explicit render blocks, and normal server tools are incorrectly projected as `awaiting-tools`. Matrix therefore retains its local reducer/effects until a public package release closes those gaps.
+- `2026-08-24` — **Restored the canonical stored-PDF attachment contract end to end.** Stored files now remain file-ID `resource_ref` context on a fresh/cache-only first turn instead of degrading into provider-native PDF bytes; the server persists the canonical `file → conversation` edge from that explicit reference before execution, then the client drops its provisional reference when durable ownership is confirmed. Automatic primary selection is exactly Clean → Raw → Original PDF, while the restored primary chooser is independent of the existing inline-promotion/exclusion family controls. Policy edits preserve primary metadata, explicit overrides flow through the request and durable edge, unavailable/empty representations cannot win fallback, and Original PDF materializes as the canonical stored document reference. Focused request, reducer-lifecycle, resolver, and durable-association tests pin the contract.
 - `2026-08-22` — **Orchestrator → Conductor, annihilated across the Orchestras stack (vocabulary Law 4/4a).** The retired product word is gone from `features/agents/orchestras/`, `features/agents/redux/orchestras/`, and the route: `orchestras/orchestrator/` → `orchestras/conductor/`, `orchestratorService` → `conductorService`, `useCreateOrchestrator` → `useCreateConductor`, `GenerateOrchestratorDialog` → `GenerateConductorDialog`, `OrchestratorInspector` → `ConductorInspector`, `useOrchestratorPromptStatus` → `useConductorPromptStatus`, `orchestratorId` → `conductorId` throughout, and `app/(core)/agents/orchestras/[orchestratorId]/` → `[conductorId]/` (a param-name change only — **no URL changes**). The legacy "agent set" wire name went with it: the `orchestra_list()` RPC's `set_label` is read as `label`. The RPC rename shipped in `migrations/orchestra_list_conductor_rename.sql`, **applied and verified live 2026-08-22**; it returns the legacy `orchestrator_id`/`set_label` alongside the new names for one release cycle (vocabulary Law 4c — a DB rename must never outrun the deploy), and dropping those two is tracked as FOUND_DEFECTS **D250**. Sense-3 "orchestrator" (matrx-sandbox fleet, the matrx-ai run loop, content-processing) was classified and deliberately left alone.
 - `2026-08-22` — **Full agent-catalogue loads deduplicate in flight.** `fetchAgentsListFull` shares one session-local promise so simultaneous chat, bootstrap, and picker mounts collapse onto one `agx_get_list_full` RPC while every caller still awaits the real result.
 - `2026-08-21` — **Runtime input capabilities are now one frontend-only system from authoring through Chat.** `ui_gates` no longer flatten into `instanceModelOverrides` and no API selector silently strips them; the independent `instanceInputCapabilities` slice owns the agent/version snapshot, conversation delta, attachment selector, builder live-sync, shortcut hydration, cold-load hydration, and conflict-safe `metadata.input_capabilities` persistence. Builder and Chat reuse one editor and always show Image URLs, File URLs, and YouTube Videos without selected-model suppression; provider compatibility/conversion stays server-owned. Provider-native `internal_web_search`, `internal_url_context`, and `output_format` are no longer misclassified as UI-only and now reach Python. `FeLlmParams` and Redux `AgentSettings` are direct aliases of generated `LLMParams`; model selection uses its canonical `model` key and tools remain in agent-definition state. Generated-contract drift is guarded by `pnpm check:generated-contracts`, which scans the repository, ratchets existing debt, and refuses every new handwritten OpenAPI mirror.
@@ -535,7 +576,7 @@ model overrides.
   client tools—between initialized instances without overwriting target model
   overrides. `/agents/battle/model` now consumes this primitive instead of a
   text-only parallel input.
-- `2026-07-23` — **Provisional and Builder conversations no longer call durable attachment RPCs.** `AttachedDocumentChips` keeps the association inventory idle while the execution instance is `cacheOnly`, because that UUID has no authorized `chat.conversation` row (and Builder/manual mode intentionally keeps a local Redux ID distinct from every server-minted wire conversation). Picking a stored document in that state now reuses the existing per-turn `instanceResources` path; server-confirmed conversations still use durable `file → conversation` edges and the viewer-aware `conversation_files` inventory.
+- `2026-07-23` — **Historical, superseded 2026-08-24:** provisional and Builder conversations avoided durable attachment RPCs, but the provisional path incorrectly converted a stored PDF to a native document block. The corrected path keeps the file ID as structured context and lets the server persist the edge when a durable wire conversation exists.
 - `2026-07-23` — **Invalid agent tools became non-fatal at every write boundary.** The manual starter no longer pins a retired tool UUID; shared frontend conversion strips malformed UUID syntax before PostgREST casts `uuid[]`; and the live `agent.definition` trigger now removes missing, inactive, or deleted tool references with a loud warning instead of raising `23503`. The sanitizer runs before version snapshots, covering manual creation, imports, saves, templates, duplicates, promotions, and server/admin writers. Also retired the focused table's forbidden project/task association-mirror triggers and project FK after confirming/backfilling canonical edges.
 - `2026-07-23` — **Durable document chips now use viewer-aware attachment reads and explicit policy replacement.** Cross-org viewers of an explicitly shared conversation receive its canonical file attachments through `conversation_files`, while legacy processed-document edges remain visible through the general association inventory. Re-attaching a file no longer erases a concurrent `resource_policy`; only the policy editor and its rollback path opt into full metadata replacement. Transient inventory failures keep last-known chips visible and render an explicit retry control, so active server context never disappears silently from the composer.
 - `2026-07-22` — **Two-tier server-side agent search (`agx_search`).** Paginated data REQUIRES a server search: filtering only what the client happened to load answers "no results" for agents that were merely never fetched — a wrong answer, not a missing feature. One RPC, two tiers: **tier 1** (default) matches name / description / category / tags / model / type / id / shared-by email; **tier 2** (`p_deep`, opt-in via the "Prompts" toggle) adds the agent's own `messages` prompt content. Tier 2 is a strict superset and a prompt hit scores **50** — below every tier-1 field — so deep results can only ever append BELOW the obvious matches, never bury a name match. SQL weights **mirror `features/agents/search/score.ts`; change one, change both** or the list reshuffles when the server responds. Results merge **additively** through the same `mergeAgentListRows` path as a list fetch (`searchAgentsServer` thunk) — nothing is replaced or evicted, local matches keep rendering throughout. Wired into `useAgentConsumer`, so **every** agent surface gets it, not just the gallery. Because the local scorer cannot see prompt content, `serverMatchedIds` on the consumer lets a server hit survive the local filter — without it the server would return tier-2 matches and the UI would filter them straight back out. `ORDER BY` ends in `id` (total order) so paging search results cannot drop rows either. Verified live: exact UUID → the agent; "mitochondria" → 0 tier-1, 2 tier-2, ids matching the DB exactly. `migrations/agx_search_two_tier.sql`.

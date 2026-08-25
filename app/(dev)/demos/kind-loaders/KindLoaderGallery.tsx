@@ -27,14 +27,25 @@ const FULL_KEYS: KindLoadingProps = {
   count: 5,
 };
 
-/** The staged arrival a real stream produces (ms offsets from play). */
+/** The staged arrival a real stream produces (ms offsets from play) — the
+ * message changes as work progresses and the count STEPS UP as items land,
+ * so each loader's reaction to live keys is visible. */
 const ARRIVAL: Array<{ at: number; patch: Partial<KindLoadingProps> }> = [
   { at: 0, patch: {} },
-  { at: 700, patch: { title: FULL_KEYS.title } },
-  { at: 1500, patch: { loadingMessage: FULL_KEYS.loadingMessage } },
-  { at: 2300, patch: { loadingSubtext: FULL_KEYS.loadingSubtext } },
-  { at: 3100, patch: { description: FULL_KEYS.description } },
-  { at: 3900, patch: { count: FULL_KEYS.count } },
+  { at: 600, patch: { title: FULL_KEYS.title } },
+  { at: 1200, patch: { loadingMessage: "Reading the source material…" } },
+  { at: 1900, patch: { count: 1 } },
+  {
+    at: 2600,
+    patch: {
+      loadingMessage: FULL_KEYS.loadingMessage,
+      loadingSubtext: FULL_KEYS.loadingSubtext,
+    },
+  },
+  { at: 3200, patch: { count: 2 } },
+  { at: 3800, patch: { count: 3, description: FULL_KEYS.description } },
+  { at: 4400, patch: { count: 4 } },
+  { at: 5000, patch: { count: 5, loadingMessage: "Almost there…" } },
 ];
 
 export default function KindLoaderGallery() {

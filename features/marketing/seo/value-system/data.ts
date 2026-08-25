@@ -436,7 +436,6 @@ export const starterPackPreviewQueryKey = (
   packId: string,
   start: string,
   end: string,
-  ruleIds: string[] | null,
   itemIds: string[] | null,
 ) =>
   [
@@ -446,7 +445,6 @@ export const starterPackPreviewQueryKey = (
     packId,
     start,
     end,
-    ruleIds ? [...ruleIds].sort().join("|") : "*",
     itemIds ? [...itemIds].sort().join("|") : "*",
   ] as const;
 
@@ -476,14 +474,14 @@ export async function getStarterPackSiteStatus(
 /**
  * What adopting the SELECTED parts of a pack would do to this site's keywords
  * in the review window — server-measured by the one resolver, never estimated
- * here. `ruleIds` / `itemIds` null = the whole pack.
+ * here. `itemIds` null = the whole pack (KI-030: a pack's meaning is items, so
+ * item ids select every part of it).
  */
 export async function previewStarterPack(
   siteId: string,
   packId: string,
   start: string,
   end: string,
-  ruleIds: string[] | null,
   itemIds: string[] | null,
   signal?: AbortSignal,
 ): Promise<StarterPackPreview> {
@@ -493,7 +491,6 @@ export async function previewStarterPack(
       p_pack_id: packId,
       p_start: start,
       p_end: end,
-      ...(ruleIds ? { p_rule_ids: ruleIds } : {}),
       ...(itemIds ? { p_item_ids: itemIds } : {}),
       p_sample: 3,
     })
@@ -534,17 +531,15 @@ export interface AdoptStarterPackOptions {
   geoPlaces?: Record<string, string[]>;
   /** Pack geo-area item id → gazetteer place ids (preferred). */
   geoPlaceIds?: Record<string, string[]>;
-  /** Starter-pack item ids to adopt (topics, bands, geo bands, areas). undefined = all. */
+  /** Starter-pack item ids to adopt (meaning, topics, bands, geo bands, areas). undefined = all. */
   itemIds?: string[];
-  /** Template rule ids to adopt. undefined = all. */
-  ruleIds?: string[];
   /** Seed the pack's guidelines when the site has none (default true). */
   seedGuidelines?: boolean;
   /**
    * RESET mode (P13's "re-apply is a button"): rows that still carry this
    * pack's provenance are put back to the pack's values, archived ones revived.
    * Rows the site authored are never touched; places are never reset. Combine
-   * with `itemIds` / `ruleIds` to reset only what the person ticked.
+   * with `itemIds` to reset only what the person ticked.
    */
   reset?: boolean;
 }
@@ -554,7 +549,7 @@ export async function adoptStarterPack(
   packId: string,
   options: AdoptStarterPackOptions = {},
 ): Promise<StarterPackAdoptResult> {
-  const { parts, geoPlaces, geoPlaceIds, itemIds, ruleIds, seedGuidelines, reset } = options;
+  const { parts, geoPlaces, geoPlaceIds, itemIds, seedGuidelines, reset } = options;
   // SUBSCRIBE IS ADOPT (D2, 2026-08-22): the ONE Library write. The RPC records the
   // org subscription on platform.entity_grants (the site's org is derived from the
   // site), checks entitlement (industry opt-in / global / pilot grant), then runs the
@@ -569,7 +564,6 @@ export async function adoptStarterPack(
       ? { geo_place_ids: geoPlaceIds }
       : {}),
     ...(itemIds ? { item_ids: itemIds } : {}),
-    ...(ruleIds ? { rule_ids: ruleIds } : {}),
     ...(seedGuidelines === false ? { seed_guidelines: false } : {}),
     ...(reset ? { reset: true } : {}),
   };

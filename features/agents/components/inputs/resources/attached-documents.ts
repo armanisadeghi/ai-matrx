@@ -40,7 +40,7 @@ export type AttachedDocumentToken = (typeof ATTACHED_DOCUMENT_TOKENS)[number];
  * object.
  */
 export interface AttachedDocumentMetadata {
-  /** Chosen PRIMARY text representation (processed_document edges only). */
+  /** Explicit primary override. Omitted = Clean -> Raw -> original PDF. */
   representation?: DocumentRepresentation;
   /** The origin binary file id — lets the chip offer "attach as raw file". */
   file_id?: string | null;
@@ -57,7 +57,9 @@ export function parseAttachedDocumentMetadata(
   }
   const m = metadata as Record<string, unknown>;
   const representation =
-    m.representation === "clean" || m.representation === "raw"
+    m.representation === "clean" ||
+    m.representation === "raw" ||
+    m.representation === "pdf"
       ? m.representation
       : undefined;
   const fileId =

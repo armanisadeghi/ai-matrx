@@ -412,6 +412,71 @@ export function describeRuleMatch(rule: {
   return `${readable} “${rule.pattern}”`;
 }
 
+// ── Plain English for a PACK's meaning (KI-030) ─────────────────────────────
+// A pack item is a dimension value carrying its matchers and its worth. These
+// two builders are the only place those are turned into a sentence.
+
+/** "contains “data destruction”" / "the whole word “crt”". */
+export function describeMatcher(matcher: { kind: string; pattern: string }): string {
+  const readable =
+    matcher.kind === "word"
+      ? "the whole word"
+      : matcher.kind === "exact"
+        ? "exactly"
+        : matcher.kind === "starts_with"
+          ? "starts with"
+          : matcher.kind === "ends_with"
+            ? "ends with"
+            : "contains";
+  return `${readable} “${matcher.pattern}”`;
+}
+
+/**
+ * "+120 points" / "−90 points" / "×0.2 — worth one fifth" / "never".
+ *
+ * KI-001: "what it is" values add ±points around the 100 baseline; only the
+ * relative qualifiers (free, cheap, DIY) scale. `null` means the pack labels
+ * the keyword without saying what it is worth.
+ */
+export function describeWorth(
+  effect: "add" | "scale" | "never" | null | undefined,
+  amount: number | null | undefined,
+): string {
+  if (effect === "never") return "never — this is not business you want";
+  if (effect === "add") {
+    const n = Number(amount ?? 0);
+    if (n === 0) return "no change";
+    return `${n > 0 ? "+" : "−"}${Math.abs(n)} points`;
+  }
+  if (effect === "scale") return describeMultiplier(Number(amount));
+  return "labels it, changes nothing";
+}
+
+/** The short form for a chip: "+120", "−90", "×0.2", "never". */
+export function shortWorth(
+  effect: "add" | "scale" | "never" | null | undefined,
+  amount: number | null | undefined,
+): string {
+  if (effect === "never") return "never";
+  if (effect === "add") {
+    const n = Number(amount ?? 0);
+    return `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n)}`;
+  }
+  if (effect === "scale") return `×${Number(amount)}`;
+  return "label";
+}
+
+/** True when this worth makes a keyword worth LESS than it was. */
+export function worthIsDemotion(
+  effect: "add" | "scale" | "never" | null | undefined,
+  amount: number | null | undefined,
+): boolean {
+  if (effect === "never") return true;
+  if (effect === "add") return Number(amount ?? 0) < 0;
+  if (effect === "scale") return Number(amount ?? 1) < 1;
+  return false;
+}
+
 /** "×0.2 — worth one fifth" / "×2.5 — worth two and a half times". */
 export function describeMultiplier(multiplier: number | null | undefined): string {
   if (multiplier === null || multiplier === undefined) return "no change";

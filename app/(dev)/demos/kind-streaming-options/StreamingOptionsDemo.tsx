@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Play, RotateCcw } from "lucide-react";
+import { Play, RotateCcw, Zap } from "lucide-react";
 import {
   IR_ENVELOPE_KEY,
   isCanonicalBlockIR,
@@ -173,11 +173,33 @@ function envelopeOf(block: RenderBlockPayload | null): CanonicalBlockIR | null {
   return isCanonicalBlockIR(candidate) ? candidate : null;
 }
 
+/**
+ * Pick the block the card renders. Real chat keeps blocks in a MAP keyed by
+ * blockId (the stream ends with a trailing empty text block — replacing the
+ * structured block with it was the "goes blank at the end" bug). The card
+ * mirrors that: keep every block, render the structured one.
+ */
+function pickStructuredBlock(
+  blocks: Map<string, RenderBlockPayload>,
+): RenderBlockPayload | null {
+  let best: RenderBlockPayload | null = null;
+  for (const b of blocks.values()) {
+    if (envelopeOf(b)) return b;
+    if ((b.content ?? "").length > (best?.content ?? "").length) best = b;
+  }
+  return best;
+}
+
 function KindStreamCard({ demo }: { demo: DemoKind }) {
   const [mode, setMode] = useState<Mode>("progressive");
   const [running, setRunning] = useState(false);
   const [block, setBlock] = useState<RenderBlockPayload | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const blocksRef = useRef(new Map<string, RenderBlockPayload>());
+  // First-renderable-unit LATCH: once the unit has arrived it never un-arrives
+  // (the value only grows) — the latch guarantees the real component can never
+  // flicker back to the loader on an odd intermediate frame.
+  const unitReadyRef = useRef(false);
 
   useEffect(
     () => () => {
@@ -186,41 +208,60 @@ function KindStreamCard({ demo }: { demo: DemoKind }) {
     [],
   );
 
-  const play = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setBlock(null);
-    setRunning(true);
-    // Bare structured-output wire: ONE region, the provider shape.
-    const wire = buildWireText(demo.example, demo.kind, "bare");
-    const chunks = chunkWireText(wire, CHARS_PER_TICK);
-    let i = 0;
-    const accumulator = new StreamBlockAccumulator(
-      `stream-options-${demo.kind}`,
-      (payload) => {
-        setBlock(payload.block as RenderBlockPayload);
-        return payload;
-      },
-    );
-    const dispatch = (action: unknown) => action;
-    timerRef.current = setInterval(() => {
-      const next = chunks[i];
-      i += 1;
-      if (next !== undefined) {
-        accumulator.ingest(next, dispatch);
+  const run = useCallback(
+    (instant: boolean) => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      blocksRef.current = new Map();
+      unitReadyRef.current = false;
+      setBlock(null);
+      setRunning(!instant);
+      // Bare structured-output wire: ONE region, the provider shape.
+      const wire = buildWireText(demo.example, demo.kind, "bare");
+      const accumulator = new StreamBlockAccumulator(
+        `stream-options-${demo.kind}`,
+        (payload) => {
+          const b = payload.block as RenderBlockPayload;
+          blocksRef.current.set(b.blockId, b);
+          setBlock(pickStructuredBlock(blocksRef.current));
+          return payload;
+        },
+      );
+      const dispatch = (action: unknown) => action;
+      if (instant) {
+        // The DB-load equivalent: same pipeline, whole document at once —
+        // the final render MUST be identical to the streamed one.
+        accumulator.ingest(wire, dispatch);
+        accumulator.finalize(dispatch);
         return;
       }
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = null;
-      accumulator.finalize(dispatch);
-      setRunning(false);
-    }, TICK_MS);
-  }, [demo]);
+      const chunks = chunkWireText(wire, CHARS_PER_TICK);
+      let i = 0;
+      timerRef.current = setInterval(() => {
+        const next = chunks[i];
+        i += 1;
+        if (next !== undefined) {
+          accumulator.ingest(next, dispatch);
+          return;
+        }
+        if (timerRef.current) clearInterval(timerRef.current);
+        timerRef.current = null;
+        accumulator.finalize(dispatch);
+        setRunning(false);
+      }, TICK_MS);
+    },
+    [demo],
+  );
+
+  const play = useCallback(() => run(false), [run]);
 
   const envelope = envelopeOf(block);
   const value = (envelope?.root.value ?? {}) as Record<string, unknown>;
   const streaming = block?.status === "streaming";
   const complete = block?.status === "complete";
-  const unitReady = firstUnitReady(demo.kind, value);
+  if (!unitReadyRef.current && firstUnitReady(demo.kind, value)) {
+    unitReadyRef.current = true;
+  }
+  const unitReady = unitReadyRef.current;
 
   const Loader = resolveKindLoadingComponent(demo.loadingComponent);
   const loaderEl = (
@@ -299,8 +340,21 @@ function KindStreamCard({ demo }: { demo: DemoKind }) {
           )}
           {complete ? "Replay" : "Play"}
         </button>
+        <button
+          type="button"
+          onClick={() => run(true)}
+          disabled={running}
+          title="Skip the stream — render the complete value at once (the DB-load path); must look identical to the streamed end state"
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-50"
+        >
+          <Zap className="h-3 w-3" />
+          Instant
+        </button>
       </div>
-      <div className="p-3">{body}</div>
+      {/* Fixed-height stage: the card NEVER changes shape while content
+          streams — content scrolls inside; the final render persists until
+          the next run. */}
+      <div className="h-[26rem] overflow-y-auto p-3">{body}</div>
       {block && (
         <div className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
           {streaming

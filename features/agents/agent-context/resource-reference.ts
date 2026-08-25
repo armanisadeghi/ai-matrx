@@ -17,11 +17,14 @@ export interface AgentResourceReference {
   __kind: "resource_ref";
   resource_type: string;
   resource_id: string;
+  /** Omitted means the server's canonical Clean -> Raw -> original fallback. */
+  representation?: string;
   promote?: ResourcePromotion | ResourcePromotion[];
   exclude?: string[];
 }
 
 export interface ResourceReferenceOptions {
+  representation?: string;
   promote?: ResourcePromotion | ResourcePromotion[];
   exclude?: string[];
 }
@@ -42,6 +45,9 @@ export function createResourceReference(
     __kind: "resource_ref",
     resource_type: resourceType,
     resource_id: resourceId,
+    ...(options.representation
+      ? { representation: options.representation }
+      : {}),
     ...(options.promote ? { promote: options.promote } : {}),
     ...(exclude.length ? { exclude } : {}),
   };
@@ -70,9 +76,13 @@ export function suppressResourceRepresentations(
   reference: AgentResourceReference,
   ...representations: string[]
 ): AgentResourceReference {
-  return createResourceReference(reference.resource_type, reference.resource_id, {
-    promote: reference.promote,
-    exclude: [...(reference.exclude ?? []), ...representations],
-  });
+  return createResourceReference(
+    reference.resource_type,
+    reference.resource_id,
+    {
+      representation: reference.representation,
+      promote: reference.promote,
+      exclude: [...(reference.exclude ?? []), ...representations],
+    },
+  );
 }
-

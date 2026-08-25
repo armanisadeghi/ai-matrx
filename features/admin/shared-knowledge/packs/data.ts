@@ -22,6 +22,7 @@ import {
 } from "@/features/marketing/seo/value-system/data";
 import type {
   StarterPackDetail,
+  StarterPackMatcher,
   StarterPackSummary,
 } from "@/features/marketing/seo/value-system/types";
 
@@ -127,8 +128,10 @@ export async function newPackVersion(packId: string, slug?: string): Promise<Adm
   return assertData(response.data, response.error, "clone the pack") as unknown as AdminPackRecord;
 }
 
-// ── Items (topic worth · value band · geo band · geo archetype) ──────────────
-export type PackItemKind = "topic" | "value_band" | "geo_band" | "geo_area";
+// ── Items (meaning · topic worth · value band · geo band · geo archetype) ────
+// KI-030: `meaning` is a pack's whole value layer — a dimension value with its
+// matchers and its worth. There is no template-rule shape behind a pack any more.
+export type PackItemKind = "meaning" | "topic" | "value_band" | "geo_band" | "geo_area";
 
 export interface PackItemPatch {
   id?: string;
@@ -147,6 +150,13 @@ export interface PackItemPatch {
   geo_band?: string | null;
   sort?: number;
   notes?: string | null;
+  /** meaning items — see StarterPackMeaningItem. */
+  dimension_scope?: "platform" | "site";
+  dimension_slug?: string;
+  dimension_label?: string | null;
+  worth_effect?: string | null;
+  worth_amount?: number | null;
+  matchers?: StarterPackMatcher[];
 }
 
 export async function savePackItem(item: PackItemPatch): Promise<Record<string, unknown>> {
@@ -159,33 +169,6 @@ export async function savePackItem(item: PackItemPatch): Promise<Record<string, 
 export async function deletePackItem(itemId: string): Promise<void> {
   const response = await (await seoDb()).rpc("starter_pack_item_delete", { p_item_id: itemId });
   if (response.error) assertData(null, response.error, "remove the pack item");
-}
-
-// ── Template rules (THE ONE rules engine, is_template + pack_id) ─────────────
-export interface PackRulePatch {
-  id?: string;
-  pack_id: string;
-  name?: string;
-  description?: string | null;
-  pattern?: string | null;
-  match_kind?: string | null;
-  match_facet?: string | null;
-  match_facet_value?: string | null;
-  target_class?: string | null;
-  value_multiplier?: number | null;
-  notes?: string | null;
-}
-
-export async function savePackRule(rule: PackRulePatch): Promise<Record<string, unknown>> {
-  const response = await (await seoDb()).rpc("starter_pack_rule_save", {
-    p_rule: rule,
-  });
-  return assertData(response.data, response.error, "save the rule") as Record<string, unknown>;
-}
-
-export async function deletePackRule(ruleId: string): Promise<void> {
-  const response = await (await seoDb()).rpc("starter_pack_rule_delete", { p_rule_id: ruleId });
-  if (response.error) assertData(null, response.error, "remove the rule");
 }
 
 // ── Proposing from sample sites ──────────────────────────────────────────────

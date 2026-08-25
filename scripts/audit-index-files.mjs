@@ -62,11 +62,6 @@ const indexEntries = indexAbs.map((abs) => {
 const aliasToIndex = new Map();
 for (const e of indexEntries) {
   if (e.dir !== '.') aliasToIndex.set(`@/${e.dir}`, e.rel);
-  if (e.rel.startsWith('packages/matrx-agents/src/index.')) aliasToIndex.set('@matrx/agents', e.rel);
-  const sub = e.rel.replace(/^packages\/matrx-agents\/src\//, '').replace(/\/index\.(tsx?)$/, '');
-  if (e.rel.startsWith('packages/matrx-agents/src/') && sub !== 'index.ts') {
-    aliasToIndex.set(`@matrx/agents/${sub}`, e.rel);
-  }
 }
 
 // 3) Single rg: all static import specifiers with file + line
@@ -128,11 +123,6 @@ for (const line of rgOut.split('\n')) {
       }
     }
     if (bestIdx) addImporter(bestIdx, fileRel);
-  }
-
-  if (spec === '@matrx/agents' || spec.startsWith('@matrx/agents/')) {
-    const hit = aliasToIndex.get(spec) ?? aliasToIndex.get('@matrx/agents');
-    if (hit) addImporter(hit, fileRel);
   }
 
   // relative
