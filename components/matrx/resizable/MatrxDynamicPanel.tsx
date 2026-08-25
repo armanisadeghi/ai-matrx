@@ -69,7 +69,7 @@ const PositionControl: React.FC<PositionControlProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2"
+              className="h-6 w-8 p-0"
               aria-label="Change panel position"
             >
               <GripVertical className="h-3 w-3 text-muted-foreground" />
@@ -399,7 +399,7 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
             {header}
           </div>
           <TooltipProvider delayDuration={200}>
-            <div className="flex flex-shrink-0">
+            <div className="flex h-6 flex-shrink-0 items-center">
               {!isMobile && (
                 <>
                   <PositionControl
@@ -413,7 +413,7 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
                         variant="ghost"
                         size="sm"
                         onClick={handleFullScreenToggle}
-                        className="h-6 px-2"
+                        className="h-6 w-8 p-0"
                         aria-label={
                           isFullScreen
                             ? "Exit panel full screen"
@@ -439,7 +439,7 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={handleToggle}
-                    className="h-6 px-2"
+                    className="h-6 w-8 p-0"
                     aria-label="Collapse panel"
                   >
                     <ChevronIcon className="h-3 w-3" />

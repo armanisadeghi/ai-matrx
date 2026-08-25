@@ -36,7 +36,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AgentCredit } from "../components/AgentCredit";
-import { BrainCircuit, ExternalLink, Plus, Workflow } from "lucide-react";
+import {
+  BookOpen,
+  BrainCircuit,
+  ExternalLink,
+  Plus,
+  Workflow,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
@@ -313,6 +319,22 @@ function ConductorColumn({
           // the Expert to fill in.
           variablesPanelStyle: "hidden",
           contextRailPresentation: "overflow-only",
+          contextRailAttachedItems: [
+            {
+              id: rulebookId,
+              icon: BookOpen,
+              label: rulebookName,
+              word: "Rulebook",
+              detail: "Included",
+              hint: "The complete Rulebook is included with every turn.",
+              onOpen: () =>
+                window.open(
+                  `/masterwork/${rulebookId}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                ),
+            },
+          ],
           placeholder:
             "Argue with it, answer its questions, or tell it to build…",
           extraRightControls: (
@@ -620,7 +642,7 @@ export function ConductorPanel({
               ? `?conversation=${initialConversationId}`
               : ""
           }`}
-          className="text-xs text-muted-foreground hover:text-foreground"
+          className="inline-flex h-6 items-center text-xs leading-none text-muted-foreground hover:text-foreground"
         >
           Full page
         </Link>

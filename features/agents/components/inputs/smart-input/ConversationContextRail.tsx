@@ -118,6 +118,18 @@ interface ConversationContextRailProps {
   className?: string;
   /** Keep all context available behind one right-aligned count menu. */
   presentation?: "default" | "overflow-only";
+  /** Display-only mirrors of real agent inputs delivered outside instanceContext. */
+  attachedItems?: readonly AttachedContextRailItem[];
+}
+
+export interface AttachedContextRailItem {
+  id: string;
+  icon: LucideIcon;
+  label: string;
+  word: string;
+  detail?: string;
+  hint?: string;
+  onOpen: () => void;
 }
 
 type RailTone = "default" | "primary";
@@ -156,6 +168,7 @@ export function ConversationContextRail({
   conversationId,
   className,
   presentation = "default",
+  attachedItems = [],
 }: ConversationContextRailProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -335,7 +348,14 @@ export function ConversationContextRail({
 
   // ── Working context (Scopes) lives in PlusAttachMenu's ContextLensBar row.
   const items = useMemo<RailItem[]>(() => {
-    const out: RailItem[] = [];
+    // These items mirror inputs already delivered through another canonical
+    // channel (usually required named variables). They make delivery visible;
+    // they never add a second copy to the execution payload.
+    const out: RailItem[] = attachedItems.map((item) => ({
+      ...item,
+      id: `attached:${item.id}`,
+      tone: "primary",
+    }));
     const valued = entries.filter(entryHasValue);
 
     if (workingDocEnabled) {
@@ -502,6 +522,7 @@ export function ConversationContextRail({
     scratchTitle,
     scratchSaving,
     attachedScratchIds.length,
+    attachedItems,
     detailOpen,
     activeEntry?.key,
     listsOpen,

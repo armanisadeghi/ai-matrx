@@ -19,6 +19,7 @@ import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVari
 import { AgentTextarea } from "./AgentTextarea";
 import { SingleRowActionButtons } from "./SingleRowActionButtons";
 import { ConversationContextRail } from "./ConversationContextRail";
+import type { AttachedContextRailItem } from "./ConversationContextRail";
 import { UninitializedShell } from "./UninitializedShell";
 import { SmartInputFileDropTarget } from "./SmartInputFileDropTarget";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
@@ -39,6 +40,7 @@ interface SmartAgentInputSingleRowProps {
   disableSend?: boolean;
   variablesPanelStyle?: VariablesPanelStyle;
   contextRailPresentation?: "default" | "overflow-only";
+  contextRailAttachedItems?: readonly AttachedContextRailItem[];
   extraRightControls?: React.ReactNode;
 }
 
@@ -55,6 +57,7 @@ export function SmartAgentInputSingleRow({
   disableSend = false,
   variablesPanelStyle,
   contextRailPresentation = "default",
+  contextRailAttachedItems,
   extraRightControls,
 }: SmartAgentInputSingleRowProps) {
   const dispatch = useAppDispatch();
@@ -94,6 +97,7 @@ export function SmartAgentInputSingleRow({
         <ConversationContextRail
           conversationId={conversationId}
           presentation={contextRailPresentation}
+          attachedItems={contextRailAttachedItems}
         />
       ) : null}
 

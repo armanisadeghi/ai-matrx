@@ -22,6 +22,7 @@ import { SmartAgentInputSingleRow } from "./SmartAgentInputSingleRow";
 import { InboxQueueStrip } from "./InboxQueueStrip";
 import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
+import type { AttachedContextRailItem } from "./ConversationContextRail";
 
 interface SmartAgentInputProps {
   conversationId: string | null | undefined;
@@ -47,6 +48,7 @@ interface SmartAgentInputProps {
   disableSend?: boolean;
   variablesPanelStyle?: VariablesPanelStyle;
   contextRailPresentation?: "default" | "overflow-only";
+  contextRailAttachedItems?: readonly AttachedContextRailItem[];
   extraRightControls?: React.ReactNode;
   /**
    * Show the connector reminder line under the composer. Default true — a
@@ -73,6 +75,7 @@ export function SmartAgentInput({
   disableSend = false,
   variablesPanelStyle,
   contextRailPresentation = "default",
+  contextRailAttachedItems,
   extraRightControls,
   showConnectors = true,
 }: SmartAgentInputProps) {
@@ -110,6 +113,7 @@ export function SmartAgentInput({
           disableSend={disableSend}
           variablesPanelStyle={variablesPanelStyle}
           contextRailPresentation={contextRailPresentation}
+          contextRailAttachedItems={contextRailAttachedItems}
           extraRightControls={extraRightControls}
           presentation={presentation}
         />
@@ -136,6 +140,7 @@ export function SmartAgentInput({
         disableSend={disableSend}
         variablesPanelStyle={variablesPanelStyle}
         contextRailPresentation={contextRailPresentation}
+        contextRailAttachedItems={contextRailAttachedItems}
         extraRightControls={extraRightControls}
       />
       {connectorStrip}

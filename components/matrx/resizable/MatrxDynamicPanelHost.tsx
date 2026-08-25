@@ -89,9 +89,7 @@ export function MatrxDynamicPanelHost({
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
-      setPortalTarget(
-        document.getElementById("glass-layer") ?? document.body,
-      );
+      setPortalTarget(document.getElementById("glass-layer") ?? document.body);
     });
     return () => cancelAnimationFrame(frame);
   }, []);
@@ -163,7 +161,9 @@ export function MatrxDynamicPanelHost({
       if (retryFrame != null) cancelAnimationFrame(retryFrame);
       if (retryTimer != null) window.clearTimeout(retryTimer);
       if (returnFocusTo?.isConnected) {
-        requestAnimationFrame(() => returnFocusTo.focus({ preventScroll: true }));
+        requestAnimationFrame(() =>
+          returnFocusTo.focus({ preventScroll: true }),
+        );
       }
     };
   }, [initialFocus, open, portalTarget]);
@@ -195,7 +195,7 @@ export function MatrxDynamicPanelHost({
         className={cn(className)}
         expandButtonProps={{ label: collapsedLabel }}
         header={
-          <div className="flex min-w-0 items-start gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <div className="min-w-0 flex-1">
               <h2
                 id={titleId}
@@ -212,7 +212,11 @@ export function MatrxDynamicPanelHost({
                 </p>
               ) : null}
             </div>
-            {headerActions}
+            {headerActions ? (
+              <div className="flex h-6 shrink-0 items-center">
+                {headerActions}
+              </div>
+            ) : null}
           </div>
         }
       >

@@ -12,6 +12,7 @@ import { ArrowDown } from "lucide-react";
 import { motion } from "motion/react";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
+import type { AttachedContextRailItem } from "../inputs/smart-input/ConversationContextRail";
 import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
@@ -74,6 +75,8 @@ interface SmartInputForwardProps {
   variablesPanelStyle?: VariablesPanelStyle;
   /** Collapse context pills into the right-side count menu without removing them. */
   contextRailPresentation?: "default" | "overflow-only";
+  /** Display-only mirrors for inputs delivered outside instanceContext. */
+  contextRailAttachedItems?: readonly AttachedContextRailItem[];
   /**
    * Disable sending (button + Enter-to-submit). Surfaces gate on this for
    * pre-visible limits — e.g. the AI Tutor blocks the composer once the

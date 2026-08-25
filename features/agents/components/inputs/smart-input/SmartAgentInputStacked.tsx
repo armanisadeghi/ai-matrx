@@ -20,6 +20,7 @@ import { AgentTextarea } from "./AgentTextarea";
 import { InputActionButtons } from "./InputActionButtons";
 import { SingleRowActionButtons } from "./SingleRowActionButtons";
 import { ConversationContextRail } from "./ConversationContextRail";
+import type { AttachedContextRailItem } from "./ConversationContextRail";
 import { UninitializedShell } from "./UninitializedShell";
 import { SmartInputFileDropTarget } from "./SmartInputFileDropTarget";
 import {
@@ -48,6 +49,7 @@ interface SmartAgentInputStackedProps {
   disableSend?: boolean;
   variablesPanelStyle?: VariablesPanelStyle;
   contextRailPresentation?: "default" | "overflow-only";
+  contextRailAttachedItems?: readonly AttachedContextRailItem[];
   extraRightControls?: React.ReactNode;
 }
 
@@ -66,6 +68,7 @@ export function SmartAgentInputStacked({
   disableSend = false,
   variablesPanelStyle,
   contextRailPresentation = "default",
+  contextRailAttachedItems,
   extraRightControls,
 }: SmartAgentInputStackedProps) {
   const dispatch = useAppDispatch();
@@ -164,6 +167,7 @@ export function SmartAgentInputStacked({
           conversationId={conversationId}
           className="px-3 pt-2"
           presentation={contextRailPresentation}
+          attachedItems={contextRailAttachedItems}
         />
         <SmartAgentVariables
           conversationId={conversationId}
@@ -213,6 +217,7 @@ export function SmartAgentInputStacked({
       <ConversationContextRail
         conversationId={conversationId}
         presentation={contextRailPresentation}
+        attachedItems={contextRailAttachedItems}
       />
 
       {/* Variable inputs — scrolls internally, never pushes textarea/toolbar off screen */}
