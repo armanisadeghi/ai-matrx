@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Hammer, PenLine, RotateCcw } from "lucide-react";
+import { CheckCircle2, Hammer, PenLine, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -229,22 +229,61 @@ function BuildWindowInner({
       return (
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           <div className="mx-auto w-full max-w-3xl space-y-4">
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-base font-medium text-foreground">
-                “{result.name}” is ready.
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Built from your {approvedCount} approved{" "}
-                {approvedCount === 1 ? "rule" : "rules"} in {rulebook.name}
-                {result.agentCount > 0
-                  ? `, as ${result.agentCount} working ${result.agentCount === 1 ? "part" : "parts"}`
-                  : ""}
-                . It does{" "}
-                {result.masterworkKind === "generate"
-                  ? "the work for you"
-                  : "the reviewing and fixing"}
-                , every time, the way you said.
-              </p>
+            {/* THIS IS A RESULT, NOT THE FORM AGAIN (Arman, 2026-08-24).
+                The previous panel came back in the same window, in the same
+                type, under the same heading, with a big textarea asking a
+                question that read like the setup question: "it came right back
+                to something that looks almost identical to the same garbage I
+                was already looking at… nothing that tells me I've now created
+                a workflow for keywords." So the result now announces itself —
+                a success mark, the system's own name, what IT MAKES in the
+                Expert's own words, and the three things it does on every run. */}
+            <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-4">
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-500" />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-500">
+                    Built and running
+                  </p>
+                  <p className="mt-0.5 text-base font-semibold text-foreground">
+                    {result.name}
+                  </p>
+                  {deliverable.trim() ? (
+                    <p className="mt-2 text-sm text-foreground">
+                      <span className="text-muted-foreground">It makes: </span>
+                      {deliverable.trim()}
+                    </p>
+                  ) : null}
+                  <ol className="mt-3 space-y-1 text-sm text-muted-foreground">
+                    {result.masterworkKind === "generate" ? (
+                      <>
+                        <li>1. You describe one real job.</li>
+                        <li>
+                          2. It writes several versions, then checks every one
+                          against all {approvedCount} of your rules, rule by
+                          rule.
+                        </li>
+                        <li>
+                          3. It hands you the version that holds up — and shows
+                          which rules it was judged on.
+                        </li>
+                      </>
+                    ) : (
+                      <>
+                        <li>1. You give it something already written.</li>
+                        <li>
+                          2. It checks that text against all {approvedCount} of
+                          your rules, rule by rule.
+                        </li>
+                        <li>
+                          3. It hands it back corrected, with what changed and
+                          why.
+                        </li>
+                      </>
+                    )}
+                  </ol>
+                </div>
+              </div>
             </div>
 
             {/* ONE next step (Arman, 2026-08-21, on the old three peer
@@ -254,14 +293,19 @@ function BuildWindowInner({
                 so the run box IS the next step — the same canonical box the
                 Masterworks page and Encore use, never a second run surface.
                 Everything else is one quiet text link below the fold. */}
-            <div>
-              <p className="mb-2 text-sm font-medium text-foreground">
-                Try it on something real
+            <div className="rounded-lg border border-border bg-card p-4">
+              <p className="text-sm font-semibold text-foreground">
+                Now use it
+              </p>
+              <p className="mb-3 mt-0.5 text-xs text-muted-foreground">
+                This is no longer setup — you are running the finished system.
+                Give it one real job and see what comes back.
               </p>
               <TryMasterworkBox
                 masterworkId={result.workflowId}
                 masterworkKind={result.masterworkKind}
                 whatItRuns={`“${result.name}”`}
+                makes={deliverable.trim() || null}
                 onRunFinished={() => undefined}
               />
             </div>

@@ -318,8 +318,20 @@ export function MasterworksPage({
                         run. The run box below shows the exact fields. */}
                     <p className="mt-1 text-xs text-muted-foreground">
                       {masterwork.masterwork_kind === "generate"
-                        ? "You describe the job → it hands you the finished work, checked against every rule."
-                        : "You give it something written → it hands it back corrected, with what changed and why."}
+                        ? "You describe the job → "
+                        : "You give it something written → "}
+                      <span className="text-foreground">
+                        {/* HIS words when we have them, ours only as the
+                            fallback for systems built before the builder
+                            started stamping the deliverable (2026-08-24). */}
+                        {masterwork.deliverable ??
+                          (masterwork.masterwork_kind === "generate"
+                            ? "it hands you the finished work, checked against every rule."
+                            : "it hands it back corrected, with what changed and why.")}
+                      </span>
+                      {masterwork.rule_count
+                        ? ` · checked against ${masterwork.rule_count} of your rules`
+                        : ""}
                     </p>
                     {drifted ? (
                       <p className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-primary">
@@ -395,6 +407,7 @@ export function MasterworksPage({
                   <TryMasterworkBox
                     masterworkId={masterwork.id}
                     masterworkKind={masterwork.masterwork_kind}
+                    makes={masterwork.deliverable}
                     onRunFinished={() => void refreshRuns()}
                     onCompare={
                       isOwner

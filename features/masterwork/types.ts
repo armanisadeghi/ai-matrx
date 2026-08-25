@@ -305,6 +305,19 @@ export interface Masterwork {
   masterwork_kind: string | null;
   built_from_rulebook: string | null;
   rulebook_version: number | null;
+  /**
+   * WHAT THIS SYSTEM MAKES, in the Expert's own words — the answer they typed
+   * into "What does it hand you when it's done?" at build time, stamped onto
+   * the definition by the builder. Arman, 2026-08-24, staring at a freshly
+   * built system: "no custom inputs, nothing that tells me I've now created a
+   * workflow for keywords." The builder knew and threw it away; now every
+   * surface that shows a Masterwork can say what it makes.
+   */
+  deliverable: string | null;
+  /** Approved rules it was built from — the "checked against N rules" line. */
+  rule_count: number | null;
+  /** generate only: how many drafts it writes before picking a winner. */
+  variant_count: number | null;
   /** When the Expert released it to Operators; null = draft (Studio-only). */
   released_at: string | null;
   /**

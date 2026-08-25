@@ -566,6 +566,13 @@ export function parseMasterworkRow(row: MasterworkDefinitionRow): Masterwork {
         : null,
     rulebook_version:
       typeof meta.rulebook_version === "number" ? meta.rulebook_version : null,
+    deliverable:
+      typeof meta.deliverable === "string" && meta.deliverable.trim()
+        ? meta.deliverable.trim()
+        : null,
+    rule_count: typeof meta.rule_count === "number" ? meta.rule_count : null,
+    variant_count:
+      typeof meta.variant_count === "number" ? meta.variant_count : null,
     released_at:
       typeof meta.released_at === "string" ? meta.released_at : null,
     understudy: meta.understudy === true,

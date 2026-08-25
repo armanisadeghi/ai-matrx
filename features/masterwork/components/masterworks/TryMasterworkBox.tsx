@@ -142,6 +142,7 @@ export function TryMasterworkBox({
   masterworkId,
   masterworkKind,
   whatItRuns = "Your Masterwork",
+  makes = null,
   onRunFinished,
   onCompare,
 }: {
@@ -154,6 +155,13 @@ export function TryMasterworkBox({
    * a stopped run always says WHAT stopped — never a bare red line.
    */
   whatItRuns?: string;
+  /**
+   * What this system MAKES, in the Expert's own words (definition metadata
+   * `deliverable`). Rendered above the fields so the box can never be mistaken
+   * for the build form that produced it — Arman, 2026-08-24: "I genuinely do
+   * not know what the fuck this thing wants from me."
+   */
+  makes?: string | null;
   /** Fired when a run reaches a terminal state (refresh Past runs). */
   onRunFinished: () => void;
   /**
@@ -486,7 +494,12 @@ export function TryMasterworkBox({
 
   return (
     <div className="space-y-2">
-      {askSpec?.description ? (
+      {makes && makes.trim() ? (
+        <p className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5 text-xs text-foreground">
+          <span className="text-muted-foreground">You get back: </span>
+          {makes.trim()}
+        </p>
+      ) : askSpec?.description ? (
         <p className="text-xs text-muted-foreground">{askSpec.description}</p>
       ) : null}
       {fields.map((f, i) => (
