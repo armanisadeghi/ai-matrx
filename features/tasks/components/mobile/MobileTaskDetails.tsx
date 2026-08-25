@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   ChevronLeft,
   Calendar,
@@ -9,6 +9,9 @@ import {
   X,
   Loader2,
   MoreVertical,
+  CircleDot,
+  CalendarArrowUp,
+  Repeat as RepeatIcon,
 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
@@ -41,6 +44,10 @@ import { TaskContextPicker } from "../TaskContextSection";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import type { TaskWithProject } from "@/features/tasks/types";
+import { TaskStatusPicker } from "../TaskStatusPicker";
+import { TaskRecurrencePicker } from "../TaskRecurrencePicker";
+import { TaskProvenanceChip } from "../TaskProvenanceChip";
+import { TaskSnoozeButton } from "../TaskSnoozeButton";
 
 interface MobileTaskDetailsProps {
   task: TaskWithProject;
@@ -70,6 +77,11 @@ export default function MobileTaskDetails({
   const [title, setTitle] = useState(task.title || "");
   const [description, setDescription] = useState(task.description || "");
   const [dueDate, setDueDate] = useState(task.dueDate || "");
+  const [startDate, setStartDate] = useState(task.startDate || "");
+  const [status, setStatus] = useState(task.status);
+  const [recurrenceRule, setRecurrenceRule] = useState(
+    task.recurrenceRule ?? null,
+  );
   const [priority, setPriority] = useState<"low" | "medium" | "high" | null>(
     task.priority || null,
   );
@@ -80,15 +92,6 @@ export default function MobileTaskDetails({
   const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
     useRefocusInputAfterAsync(isAddingSubtask);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // Update local state when task changes
-  useEffect(() => {
-    setTitle(task.title || "");
-    setDescription(task.description || "");
-    setDueDate(task.dueDate || "");
-    setPriority(task.priority || null);
-    setIsDirty(false);
-  }, [task.id, task.title, task.description, task.dueDate, task.priority]);
 
   const handleSave = async () => {
     if (!isDirty || isSaving) return;
@@ -110,6 +113,27 @@ export default function MobileTaskDetails({
           updateTaskFieldThunk({
             taskId: task.id,
             patch: { due_date: dueDate || null },
+          }),
+        );
+      }
+      if (startDate !== (task.startDate || "")) {
+        await dispatch(
+          updateTaskFieldThunk({
+            taskId: task.id,
+            patch: { start_date: startDate || null },
+          }),
+        );
+      }
+      if (status !== task.status) {
+        await dispatch(
+          updateTaskFieldThunk({ taskId: task.id, patch: { status } }),
+        );
+      }
+      if (recurrenceRule !== (task.recurrenceRule ?? null)) {
+        await dispatch(
+          updateTaskFieldThunk({
+            taskId: task.id,
+            patch: { recurrence_rule: recurrenceRule },
           }),
         );
       }
@@ -206,7 +230,8 @@ export default function MobileTaskDetails({
               variant="ghost"
               size="icon"
               onClick={onBack}
-              className="flex-shrink-0 h-7 w-7 rounded-full"
+              aria-label="Back to tasks"
+              className="flex-shrink-0 h-11 w-11 rounded-full"
             >
               <ChevronLeft size={18} />
             </Button>
@@ -234,13 +259,15 @@ export default function MobileTaskDetails({
               label={task.title}
               toastLabel={task.title || "Task"}
               size="sm"
+              className="h-11 w-11"
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="flex-shrink-0 h-7 w-7 rounded-full"
+                  aria-label="Task actions"
+                  className="flex-shrink-0 h-11 w-11 rounded-full"
                 >
                   <MoreVertical size={16} />
                 </Button>
@@ -287,6 +314,20 @@ export default function MobileTaskDetails({
       {/* Content */}
       <div className="flex-1 overflow-y-auto overscroll-contain">
         <div className="p-4 space-y-5 pb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <TaskProvenanceChip
+              origin={task.origin ?? null}
+              sourceType={task.sourceType ?? null}
+              sourceUrl={task.sourceUrl ?? null}
+              sourceLabel={task.sourceLabel ?? null}
+              className="min-h-11 px-3 text-sm"
+            />
+            <TaskSnoozeButton
+              taskId={task.id}
+              className="min-h-11 px-3 text-sm"
+            />
+          </div>
+
           {/* Title */}
           <div>
             <label className="text-sm font-medium text-muted-foreground mb-2 block">
@@ -306,7 +347,7 @@ export default function MobileTaskDetails({
                   });
                 }, 300);
               }}
-              className="text-base"
+              className="text-base min-h-11"
             />
           </div>
 
@@ -344,8 +385,55 @@ export default function MobileTaskDetails({
                 setDueDate(e.target.value);
                 setIsDirty(true);
               }}
-              className="text-base"
+              className="text-base min-h-11"
               style={{ fontSize: "16px" }}
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+              <CircleDot size={16} />
+              Status
+            </label>
+            <TaskStatusPicker
+              value={status}
+              onChange={(value) => {
+                setStatus(value);
+                setIsDirty(true);
+              }}
+              className="min-h-11 px-3 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+              <CalendarArrowUp size={16} />
+              Start date
+            </label>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setIsDirty(true);
+              }}
+              className="text-base min-h-11"
+              style={{ fontSize: "16px" }}
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+              <RepeatIcon size={16} />
+              Repeat
+            </label>
+            <TaskRecurrencePicker
+              value={recurrenceRule}
+              onChange={(value) => {
+                setRecurrenceRule(value);
+                setIsDirty(true);
+              }}
+              className="min-h-11 px-3 text-sm"
             />
           </div>
 

@@ -39,6 +39,7 @@ import MobileProjectSelector from "./MobileProjectSelector";
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
 import { ActiveScopeFilterChips } from "../TaskScopeFilter";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { formatDateOnly } from "@/utils/dateOnly";
 
 interface MobileTasksListProps {
   onTaskSelect: (taskId: string) => void;
@@ -110,7 +111,8 @@ export default function MobileTasksList({
               variant="ghost"
               size="icon"
               onClick={() => setShowQuickAdd(!showQuickAdd)}
-              className="h-7 w-7 rounded-full"
+              aria-label="Add task"
+              className="h-11 w-11 rounded-full"
             >
               <Plus size={16} />
             </Button>
@@ -290,7 +292,7 @@ export default function MobileTasksList({
                             isPastDue ? "text-destructive font-medium" : ""
                           }
                         >
-                          {new Date(task.dueDate).toLocaleDateString("en-US", {
+                          {formatDateOnly(task.dueDate, {
                             month: "short",
                             day: "numeric",
                           })}

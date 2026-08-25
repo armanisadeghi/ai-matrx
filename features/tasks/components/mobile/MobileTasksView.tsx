@@ -2,18 +2,18 @@
 
 import React, { useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectFilteredTasks } from "@/features/tasks/redux/selectors";
+import { selectAllTasksFlat } from "@/features/tasks/redux/selectors";
 import MobileTasksList from "./MobileTasksList";
 import MobileTaskDetails from "./MobileTaskDetails";
 
 type MobileView = "tasks" | "details";
 
 export default function MobileTasksView() {
-  const filteredTasks = useAppSelector(selectFilteredTasks);
+  const allTasks = useAppSelector(selectAllTasksFlat);
   const [currentView, setCurrentView] = useState<MobileView>("tasks");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const selectedTask = selectedTaskId
-    ? filteredTasks.find((t) => t.id === selectedTaskId)
+    ? allTasks.find((t) => t.id === selectedTaskId)
     : null;
 
   const handleTaskSelect = (taskId: string) => {
@@ -44,7 +44,11 @@ export default function MobileTasksView() {
         }`}
       >
         {selectedTask && (
-          <MobileTaskDetails task={selectedTask} onBack={handleBack} />
+          <MobileTaskDetails
+            key={selectedTask.id}
+            task={selectedTask}
+            onBack={handleBack}
+          />
         )}
       </div>
     </div>

@@ -3,9 +3,6 @@
 import React from "react";
 import {
   MoreVertical,
-  Inbox,
-  CheckCircle,
-  AlertCircle,
   Layers,
   ArrowUpDown,
   Eye,
@@ -14,22 +11,23 @@ import {
 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
-  selectTaskFilter,
   selectShowCompleted,
   selectSortBy,
   selectSortOrder,
-  selectShowAllProjects,
   selectActiveProject,
   selectFilterScopeIds,
+  selectSmartView,
   setFilter,
+  setSmartView,
   setShowCompleted,
   setSortBy,
   setSortOrder,
   setShowAllProjects,
   setActiveProject,
 } from "@/features/tasks/redux/taskUiSlice";
-import { TaskFilterType } from "@/features/tasks/types";
 import type { TaskSortField, TaskSortDirection } from "@/features/tasks/types/sort";
+import { selectSmartViewCounts } from "@/features/tasks/redux/selectors";
+import { SMART_VIEWS } from "@/features/tasks/constants/smartViews";
 import { Button } from "@/components/ui/ButtonMine";
 import {
   DropdownMenu,
@@ -65,42 +63,18 @@ const SORT_MENU_OPTIONS: SortMenuOption[] = [
   { field: "title", direction: "desc", label: "Title (Z-A)" },
 ];
 
-const Circle = ({ size }: { size: number }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <circle cx="12" cy="12" r="10" />
-  </svg>
-);
-
 export default function MobileFilterMenu() {
   const dispatch = useAppDispatch();
-  const filter = useAppSelector(selectTaskFilter);
+  const smartView = useAppSelector(selectSmartView);
+  const smartViewCounts = useAppSelector(selectSmartViewCounts);
   const showCompleted = useAppSelector(selectShowCompleted);
   const sortBy = useAppSelector(selectSortBy);
   const sortOrder = useAppSelector(selectSortOrder);
-  const showAllProjects = useAppSelector(selectShowAllProjects);
   const activeProject = useAppSelector(selectActiveProject);
 
   const [showProjectSheet, setShowProjectSheet] = React.useState(false);
   const [showScopeSheet, setShowScopeSheet] = React.useState(false);
   const activeScopeCount = useAppSelector(selectFilterScopeIds).length;
-
-  const getFilterIcon = (filterType: TaskFilterType) => {
-    switch (filterType) {
-      case "all":
-        return <Inbox size={18} />;
-      case "incomplete":
-        return <Circle size={18} />;
-      case "overdue":
-        return <AlertCircle size={18} />;
-    }
-  };
 
   const getSortLabel = (field: TaskSortField, direction: TaskSortDirection) => {
     const match = SORT_MENU_OPTIONS.find(
@@ -109,42 +83,60 @@ export default function MobileFilterMenu() {
     return match?.label ?? field;
   };
 
-  const handleFilterSelect = (filterType: TaskFilterType) => {
-    dispatch(setFilter(filterType));
-    if (filterType !== "all" && !showAllProjects && !activeProject) {
-      dispatch(setShowAllProjects(true));
-    }
-  };
-
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Task views and filters"
+            className="h-11 w-11 rounded-full"
+          >
             <MoreVertical size={16} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          {/* View/Filter Section */}
-          <DropdownMenuLabel>View</DropdownMenuLabel>
+          <DropdownMenuLabel>Views</DropdownMenuLabel>
+          {SMART_VIEWS.map((view) => {
+            const Icon = view.icon;
+            return (
+              <DropdownMenuItem
+                key={view.key}
+                onClick={() => {
+                  dispatch(setSmartView(view.key));
+                  if (view.key === "all") {
+                    dispatch(setShowAllProjects(true));
+                    dispatch(setActiveProject(null));
+                    dispatch(setFilter("all"));
+                  }
+                }}
+                className={`min-h-11 ${smartView === view.key ? "bg-primary/10" : ""}`}
+              >
+                <Icon size={18} className="mr-2" />
+                <span className="flex-1">{view.label}</span>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {smartViewCounts[view.key]}
+                </span>
+              </DropdownMenuItem>
+            );
+          })}
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuLabel>Scope</DropdownMenuLabel>
           <DropdownMenuItem
-            onClick={() => {
-              dispatch(setShowAllProjects(true));
-              dispatch(setFilter("all"));
-            }}
-            className={
-              showAllProjects && filter === "all" ? "bg-primary/10" : ""
-            }
+            onClick={() => setShowProjectSheet(true)}
+            className="min-h-11"
           >
-            <Layers size={18} className="mr-2" />
-            All Tasks
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowProjectSheet(true)}>
             <Layers size={18} className="mr-2" />
             Select Project
             <ChevronRight size={16} className="ml-auto" />
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowScopeSheet(true)}>
+          <DropdownMenuItem
+            onClick={() => setShowScopeSheet(true)}
+            className="min-h-11"
+          >
             <FilterIcon size={18} className="mr-2" />
             Filter by Scope
             {activeScopeCount > 0 && (
@@ -156,27 +148,10 @@ export default function MobileFilterMenu() {
 
           <DropdownMenuSeparator />
 
-          {/* Filter Section */}
-          <DropdownMenuLabel>Filter</DropdownMenuLabel>
-          {(["all", "incomplete", "overdue"] as TaskFilterType[]).map(
-            (filterType) => (
-              <DropdownMenuItem
-                key={filterType}
-                onClick={() => handleFilterSelect(filterType)}
-                className={filter === filterType ? "bg-primary/10" : ""}
-              >
-                {getFilterIcon(filterType)}
-                <span className="ml-2 capitalize">{filterType}</span>
-              </DropdownMenuItem>
-            ),
-          )}
-
-          <DropdownMenuSeparator />
-
           {/* Sort Section */}
           <DropdownMenuLabel>Sort By</DropdownMenuLabel>
           <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
+          <DropdownMenuSubTrigger className="min-h-11">
               <ArrowUpDown size={18} className="mr-2" />
               {getSortLabel(sortBy, sortOrder)}
             </DropdownMenuSubTrigger>
@@ -184,15 +159,15 @@ export default function MobileFilterMenu() {
               {SORT_MENU_OPTIONS.map((opt) => (
                 <DropdownMenuItem
                   key={`${opt.field}-${opt.direction}`}
+                  className={`min-h-11 ${
+                    sortBy === opt.field && sortOrder === opt.direction
+                      ? "bg-primary/10"
+                      : ""
+                  }`}
                   onClick={() => {
                     dispatch(setSortBy(opt.field));
                     dispatch(setSortOrder(opt.direction));
                   }}
-                  className={
-                    sortBy === opt.field && sortOrder === opt.direction
-                      ? "bg-primary/10"
-                      : ""
-                  }
                 >
                   {opt.label}
                 </DropdownMenuItem>
@@ -205,6 +180,7 @@ export default function MobileFilterMenu() {
           {/* Display Options */}
           <DropdownMenuLabel>Display</DropdownMenuLabel>
           <DropdownMenuItem
+            className="min-h-11"
             onClick={() => dispatch(setShowCompleted(!showCompleted))}
           >
             {showCompleted ? (
