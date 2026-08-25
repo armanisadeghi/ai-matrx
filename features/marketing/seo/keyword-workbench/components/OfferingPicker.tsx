@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { saveTopic } from "@/features/marketing/seo/value-system/topics/data";
 import { rootTypeMeta } from "@/features/marketing/seo/value-system/topics/types";
 import type { SiteServices } from "../hooks/useSiteServices";
@@ -94,10 +95,20 @@ export function OfferingPicker({
   /** Where an offering the person is inventing should hang. "" = its own root. */
   const [newParentId, setNewParentId] = useState("");
 
-  /** The screen that governs this vocabulary — the tree, in a new tab. */
-  const manageHref = params?.brandId
-    ? `/marketing/brands/${params.brandId}/sites/${siteId}/value/topics`
-    : null;
+  /**
+   * The screen that governs this vocabulary — the tree, in a new tab.
+   *
+   * MSR-06: the door used to disappear on any surface whose route carries no
+   * brand id (Search Console lives at `/marketing/search-console?site=…`), and
+   * a picker that cannot say where its own list comes from is exactly the dead
+   * end the platform forbids. The flat site path resolves the brand itself, so
+   * a site id is enough everywhere.
+   */
+  const manageHref = marketingRoutes.site(
+    params?.brandId ?? null,
+    siteId,
+    "/value/topics",
+  );
 
   const options: CreatableOption[] = [];
   if (unplacedLabel) {
@@ -219,11 +230,7 @@ export function OfferingPicker({
             ]
           : undefined
       }
-      manageAction={
-        manageHref
-          ? { label: "Manage offerings", href: manageHref }
-          : undefined
-      }
+      manageAction={{ label: "Manage offerings", href: manageHref }}
       createExtra={
         <Select
           value={newParentId || "__root__"}

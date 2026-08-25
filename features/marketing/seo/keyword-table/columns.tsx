@@ -19,6 +19,8 @@
  * browser never fetched is exactly the quiet lie this system exists to stop.
  */
 
+import Link from "next/link";
+
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
 import { buildGscMetricColumns } from "@/features/marketing/search-console/lib/columns";
@@ -28,6 +30,9 @@ import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/Wh
 import { ClassCell, StampCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
 import { ServiceCell } from "@/features/marketing/seo/keyword-workbench/components/ServiceCell";
 import { OFFERING_UNPLACED } from "@/features/marketing/seo/keyword-workbench/components/OfferingPicker";
+import type { SiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
+import type { KeywordServicePlacement } from "@/features/marketing/seo/keyword-workbench/data";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
 import { LocationCell } from "@/features/marketing/seo/value-system/locations/LocationCell";
 import type { KeywordCoreColumnId } from "./state";
@@ -127,60 +132,29 @@ export function buildKeywordColumns({
   }
 
   if (shown.has("topic")) {
-    columns.push({
-      /**
-       * THE OFFERING COLUMN — "the first thing I wanna know is what service
-       * they map to". It sits next to the keyword because that is the order a
-       * person reads: the phrase, then what it is FOR, then how we classify
-       * it, then the dimensions, then the numbers.
-       */
-      id: "topic",
-      header: "Offering",
-      sortable: true,
-      filter: "select",
-      filterSingle: true,
-      filterOptions: [
-        { value: OFFERING_UNPLACED, label: "Not placed yet" },
-        ...services.options.map((option) => ({
-          value: option.topicId,
-          label:
-            option.depth > 0 ? `${option.rootName} › ${option.name}` : option.name,
-        })),
-      ],
-      width: 300,
-      accessorFn: (row) => serviceFor(row)?.topicName ?? "",
-      cell: (row) => {
-        if (!row.keyword_id) {
-          return <span className="text-[11px] text-muted-foreground">—</span>;
-        }
-        return (
-          <ServiceCell
-            siteId={siteId}
-            services={services}
-            placement={serviceFor(row)}
-            onPlace={(topicId) =>
-              handlers.onPlaceService(row.keyword_id as string, topicId, row.key)
-            }
-            onFilter={(topicId) => handlers.onFilterByService(topicId)}
-            onNotOffered={
-              // The SAME write the Class column makes — one path, one ruling.
-              mismatchClass && classDimension
-                ? () => {
-                    if (!row.keyword_id || !classDimension) return;
-                    handlers.onQuickAssign([row.keyword_id], {
-                      dimensionId: classDimension.dimension_id,
-                      dimensionSlug: classDimension.slug,
-                      dimensionLabel: classDimension.label,
-                      valueId: mismatchClass.value_id,
-                      valueLabel: mismatchClass.label,
-                    });
-                  }
-                : undefined
-            }
-          />
-        );
-      },
-    });
+    columns.push(
+      buildKeywordOfferingColumn({
+        siteId,
+        services,
+        serviceFor,
+        onPlace: handlers.onPlaceService,
+        onFilter: handlers.onFilterByService,
+        onNotOffered:
+          // The SAME write the Class column makes — one path, one ruling.
+          mismatchClass && classDimension
+            ? (row) => {
+                if (!row.keyword_id) return;
+                handlers.onQuickAssign([row.keyword_id], {
+                  dimensionId: classDimension.dimension_id,
+                  dimensionSlug: classDimension.slug,
+                  dimensionLabel: classDimension.label,
+                  valueId: mismatchClass.value_id,
+                  valueLabel: mismatchClass.label,
+                });
+              }
+            : undefined,
+      }),
+    );
   }
 
   if (shown.has("traffic_class")) {
@@ -435,4 +409,114 @@ export function buildKeywordColumns({
   }
 
   return columns;
+}
+
+/**
+ * THE OFFERING COLUMN — "the first thing I wanna know is what service they map
+ * to" (Arman, 2026-08-24), and "the other critical thing to put here would be
+ * the one where you map it to an offering" (2026-08-25, MSR-06, said of the
+ * Search Console → Queries table).
+ *
+ * It lives here rather than inside `buildKeywordColumns` because TWO tables now
+ * carry it — the keyword table and the Search Console dimension table — and a
+ * second definition is how the two would quietly stop agreeing about what
+ * sorts, what filters, and what an unplaced keyword says. Both read the SAME
+ * per-site offering catalog (`useSiteServices` over the topic tree) and write
+ * through the SAME one placement RPC (`setKeywordService`); this module only
+ * owns how the column looks and what it offers.
+ *
+ * Sort and filter are both SERVER-side (`gsc_perf_breakdown`: `p_sort: 'topic'`
+ * and the `topic` filter, which takes a topic id — meaning that topic and
+ * everything under it — or `none` for "nobody has placed this yet"). Filtering
+ * to `none` is the whole point of the column: it is how a person finds the
+ * keywords still waiting to be mapped.
+ */
+export function buildKeywordOfferingColumn({
+  siteId,
+  services,
+  serviceFor,
+  onPlace,
+  onFilter,
+  onNotOffered,
+  width = 300,
+}: {
+  siteId: string;
+  services: SiteServices;
+  serviceFor: (row: GscBreakdownRow) => KeywordServicePlacement | undefined;
+  /** Place one keyword on an offering, or take it off the tree with `null`. */
+  onPlace: (keywordId: string, topicId: string | null, keyword: string) => void;
+  /** Show every keyword that maps to this offering — the pattern-spotting door. */
+  onFilter?: (topicId: string) => void;
+  /**
+   * "This isn't something we offer" — a traffic CLASS, not an offering. Pass it
+   * only where the caller owns a class write that can carry the reason the
+   * server demands for `mismatch`; the door disappears otherwise rather than
+   * opening onto a rejected write.
+   */
+  onNotOffered?: (row: GscBreakdownRow) => void;
+  width?: number;
+}): MatrxColumnDef<GscBreakdownRow> {
+  /**
+   * EMPTY IS A REAL ANSWER. A site whose offering catalog is empty gets the
+   * sentence and the door to the screen that owns the vocabulary — never a
+   * dropdown with nothing in it, which reads as a broken control rather than
+   * as work not done yet. The flat site path resolves the brand itself, so the
+   * door is real from a surface that only knows the site id.
+   */
+  const manageHref = marketingRoutes.site(null, siteId, "/value/topics");
+  const noVocabulary = !services.loading && services.options.length === 0;
+
+  return {
+    id: "topic",
+    header: "Offering",
+    sortable: true,
+    filter: "select",
+    filterSingle: true,
+    filterOptions: [
+      { value: OFFERING_UNPLACED, label: "Not placed yet" },
+      ...services.options.map((option) => ({
+        value: option.topicId,
+        label:
+          option.depth > 0 ? `${option.rootName} › ${option.name}` : option.name,
+      })),
+    ],
+    width,
+    accessorFn: (row) => serviceFor(row)?.topicName ?? "",
+    cell: (row) => {
+      if (!row.keyword_id) {
+        return <span className="text-[11px] text-muted-foreground">—</span>;
+      }
+      if (noVocabulary) {
+        return (
+          <Link
+            href={manageHref}
+            onClick={(event) => event.stopPropagation()}
+            className="text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+          >
+            No offerings defined yet — define them
+          </Link>
+        );
+      }
+      return (
+        // The cell IS a control, and on a table whose row click drills
+        // somewhere else (Search Console) picking an offering must not also
+        // open the row — one gesture, one meaning.
+        <span
+          className="flex min-w-0"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <ServiceCell
+            siteId={siteId}
+            services={services}
+            placement={serviceFor(row)}
+            onPlace={(topicId) =>
+              onPlace(row.keyword_id as string, topicId, row.key)
+            }
+            {...(onFilter ? { onFilter } : {})}
+            {...(onNotOffered ? { onNotOffered: () => onNotOffered(row) } : {})}
+          />
+        </span>
+      );
+    },
+  };
 }

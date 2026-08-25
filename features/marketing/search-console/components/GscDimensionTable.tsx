@@ -58,6 +58,12 @@ import {
 } from "@/features/marketing/search-console/lib/columns";
 import { useGscBreakdown } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
+import {
+  getKeywordServices,
+  setKeywordService,
+} from "@/features/marketing/seo/keyword-workbench/data";
+import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
+import { buildKeywordOfferingColumn } from "@/features/marketing/seo/keyword-table/columns";
 import { getValueVocabulary } from "@/features/marketing/seo/value-system/data";
 import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
@@ -100,6 +106,10 @@ const SORTABLE: ReadonlySet<string> = new Set([
   "ctr",
   "position",
   "delta_clicks",
+  // MSR-06 — the Offering column sorts by topic name in the RPC
+  // (`p_sort: 'topic'`), query dimension only. Sorting the fifty rows the
+  // browser is holding would be a lie about 112,681 keywords.
+  "topic",
   // MSR-03/04 — server-side sort added to `gsc_perf_breakdown`
   // (`seo_gsc_breakdown_value_sort_filter.sql`), query dimension only.
   "traffic_class",
@@ -220,6 +230,11 @@ export function GscDimensionTable({
       if (position.max !== undefined) out.position_max = String(position.max);
     }
     if (dimension === "query") {
+      // MSR-06 — the Offering filter: a topic id (that offering and everything
+      // under it) or `none` for the keywords nobody has mapped yet, which is
+      // the workflow the column exists for.
+      const offering = selectFilterValues(cf.topic)[0];
+      if (offering) out.topic = offering;
       const classValues = selectFilterValues(cf.traffic_class);
       if (classValues.length > 0)
         out.traffic_classes = classValues.join("|");
@@ -263,7 +278,69 @@ export function GscDimensionTable({
   const valueFor = (row: GscBreakdownRow) =>
     row.keyword_id ? keywordValues.data?.get(row.keyword_id) : undefined;
 
+  /**
+   * MSR-06 — WHICH OFFERING each query maps to. Arman, 2026-08-25: "the other
+   * critical thing to put here would be the one where you map it to an
+   * offering."
+   *
+   * Both halves are the keyword system's own, never a second copy: the site's
+   * offering catalog is the topic tree (`useSiteServices`, same query keys as
+   * the tree screen) and the per-row placement comes from
+   * `gsc_keyword_topics_for` scoped to the rows on screen — THE SCOPE RULE,
+   * exactly like the Class/Score/Level read above it.
+   */
+  const services = useSiteServices(
+    siteId,
+    periods.current.start,
+    periods.current.end,
+    dimension === "query",
+  );
+  const placements = useQuery({
+    queryKey: ["marketing", "seo", "keyword-services", siteId, rowKeywordIds],
+    queryFn: ({ signal }) => getKeywordServices(siteId, rowKeywordIds, signal),
+    enabled: dimension === "query" && rowKeywordIds.length > 0,
+    staleTime: 60_000,
+  });
+  const serviceFor = (row: GscBreakdownRow) =>
+    row.keyword_id ? placements.data?.get(row.keyword_id) : undefined;
+
   const queryClient = useQueryClient();
+
+  /**
+   * THE ONE PLACEMENT WRITE (`setKeywordService` → `seo.gsc_set_keyword_topic`),
+   * the same call the keyword workbench, the ruling session and the topic tree
+   * make. Unlike the Class cell — whose draft rides the table's Save pill —
+   * placing an offering commits on pick, because that is how the canonical
+   * offering control behaves on every other surface, and two gestures for one
+   * ruling would be the drift.
+   */
+  const placeService = async (
+    keywordId: string,
+    topicId: string | null,
+    keyword: string,
+  ) => {
+    try {
+      await setKeywordService({ siteId, keywordIds: [keywordId], topicId });
+      await queryClient.invalidateQueries({
+        queryKey: ["marketing", "seo", "keyword-services", siteId],
+      });
+      // The placement is what the value resolver scores from, so Level and
+      // Score are stale the moment it changes.
+      await queryClient.invalidateQueries({
+        queryKey: ["marketing", "gsc", "keyword-value-for", siteId],
+      });
+      const name = topicId ? services.byId.get(topicId)?.name : null;
+      toast.success(
+        name
+          ? `“${keyword}” maps to ${name}.`
+          : `“${keyword}” is off the tree — it maps to no offering now.`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not place that.",
+      );
+    }
+  };
 
   /**
    * Save the inline Class edits — one RPC per ruling, batched by class so
@@ -524,6 +601,33 @@ export function GscDimensionTable({
     value_band: bandCol,
   };
 
+  // MSR-06 — ONE definition, shared with the keyword table (P26). Narrower
+  // here than there (MSR-07 gave this table fixed, tight identity columns);
+  // the cell stacks the offering over its root, so 180px still reads.
+  const offeringCol = buildKeywordOfferingColumn({
+    siteId,
+    services,
+    serviceFor,
+    onPlace: (keywordId, topicId, keyword) =>
+      void placeService(keywordId, topicId, keyword),
+    // "Show me everything that maps to this offering" — the same server-side
+    // filter the column header offers, reached from the row you are reading.
+    onFilter: (topicId) =>
+      setQuery((prev) => ({
+        ...prev,
+        page: 1,
+        columnFilters: {
+          ...prev.columnFilters,
+          topic: { kind: "select", value: topicId },
+        },
+      })),
+    // No "this isn't something we offer" door here: that ruling is the
+    // `mismatch` class, and the server requires a written reason for it that a
+    // one-click door cannot collect — the same reason the Class cell above
+    // omits it.
+    width: 180,
+  });
+
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [
     ...(watchable
       ? [
@@ -557,7 +661,10 @@ export function GscDimensionTable({
     // over the same metrics window, so they move to the END with Clicks /
     // Impressions / CTR / Position (which are also narrower there — see
     // `buildGscMetricColumns`), freeing the middle of the table.
-    ...(dimension === "query" ? [valueColumns.traffic_class] : []),
+    // MSR-06 — Offering sits between the query and its class, because that is
+    // the order a person reads: the phrase, then what it is FOR, then how we
+    // classify it. Same placement as the keyword table.
+    ...(dimension === "query" ? [offeringCol, valueColumns.traffic_class] : []),
     ...buildGscMetricColumns<GscBreakdownRow>(hasCompare, "clicks-only"),
     ...(dimension === "query"
       ? [valueColumns.value_score, valueColumns.value_band]

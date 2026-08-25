@@ -72,20 +72,30 @@ export function useSiteServices(
   siteId: string,
   start: string,
   end: string,
+  /**
+   * MSR-06: a surface that shows the Offering column only on ONE of its tabs
+   * (the Search Console dimension table shows it for queries, never for pages
+   * or countries) turns the three catalog reads off on the others. Hook order
+   * stays fixed; the reads simply do not run.
+   */
+  enabled = true,
 ): SiteServices {
   const catalog = useQuery({
     queryKey: ["seo", "topics", "catalog"],
     queryFn: () => listAllTopics(),
+    enabled,
     staleTime: 5 * 60_000,
   });
   const worth = useQuery({
     queryKey: ["seo", "topics", "worth", siteId],
     queryFn: () => listTopicWorth(siteId),
+    enabled,
     staleTime: 5 * 60_000,
   });
   const stats = useQuery({
     queryKey: ["seo", "topics", "stats", siteId, start, end],
     queryFn: ({ signal }) => getTopicStats(siteId, start, end, signal),
+    enabled,
     staleTime: 5 * 60_000,
   });
 
@@ -152,7 +162,10 @@ export function useSiteServices(
     options,
     byId: new Map(options.map((option) => [option.topicId, option])),
     roots: options.filter((option) => option.depth === 0),
-    loading: catalog.isLoading || worth.isLoading || stats.isLoading,
+    // A disabled query reports `isLoading` forever in react-query v5 — which
+    // would leave the picker spinning on a tab that never asked for it.
+    loading:
+      enabled && (catalog.isLoading || worth.isLoading || stats.isLoading),
     error: catalog.error ?? worth.error ?? stats.error,
   };
 }
