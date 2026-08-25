@@ -218,8 +218,11 @@ hostile at 2,000.
   preferences to the existing manifest and validates the shared
   `catalog_filters` contract before applying query/view changes. This repairs
   the production state where route naming showed "Agents Hub" but Run received
-  0/27 values and no write tool. Independent post-deployment Browser
-  verification remains required before the manifest can return to `verified`.
+  0/27 values and no write tool. Search/category/tag filter values are optional
+  in the manifest because their empty string/array states are the valid default;
+  marking those defaults required makes the Context window falsely report three
+  missing values. Independent post-deployment Browser verification remains
+  required before the manifest can return to `verified`.
 
 - **2026-08-09 (doors)** — THE DOOR LAW moved into the shell: the config now
   declares `door: { token: "agent" }` and `lib/entity-list` anchors the Name

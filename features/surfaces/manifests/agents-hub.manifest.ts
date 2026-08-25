@@ -137,7 +137,9 @@ const surfaceSpecific: SurfaceValue[] = [
     description:
       "The user's current search text in the gallery search bar. Empty string when not searching.",
     valueType: "string",
-    alwaysAvailable: true,
+    // Empty is the valid default, and Surface Context treats empty strings as
+    // absent. Requiring this would call an untouched gallery broken.
+    alwaysAvailable: false,
     typicalCharCount: 20,
     sortOrder: 300,
     group: "filters",
@@ -181,7 +183,8 @@ const surfaceSpecific: SurfaceValue[] = [
     description:
       "Categories the user is filtering to. Empty array when no category filter is active.",
     valueType: "array",
-    alwaysAvailable: true,
+    // Empty is the valid unfiltered state; hasValue([]) is deliberately false.
+    alwaysAvailable: false,
     typicalCharCount: 60,
     sortOrder: 340,
     group: "filters",
@@ -192,7 +195,8 @@ const surfaceSpecific: SurfaceValue[] = [
     description:
       "Tags the user is filtering to. Empty array when no tag filter is active.",
     valueType: "array",
-    alwaysAvailable: true,
+    // Empty is the valid unfiltered state; hasValue([]) is deliberately false.
+    alwaysAvailable: false,
     typicalCharCount: 60,
     sortOrder: 350,
     group: "filters",
@@ -406,12 +410,14 @@ export function createAgentsHubScope(values: {
   shared_agent_count: number;
   shared_agents_total: number;
   list_loading: boolean;
-  search_query: string;
+  // alwaysAvailable: false because empty is the valid default
+  search_query?: string;
   deep_search: boolean;
   ownership_tab: "mine" | "orgs" | "shared" | "public" | "all" | "system";
   sort_by: string;
-  included_categories: string[];
-  included_tags: string[];
+  // alwaysAvailable: false because empty arrays are the valid default
+  included_categories?: string[];
+  included_tags?: string[];
   favorites_filter: "all" | "yes" | "no";
   archived_filter: "active" | "archived" | "both";
   favorites_first: boolean;
