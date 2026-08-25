@@ -151,7 +151,10 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
       accessorKey: "clicks",
       header: "Clicks",
       align: "right",
-      filter: false,
+      width: 76,
+      // MSR-03/04 — server-side range filter (`clicks_min`/`clicks_max`,
+      // already live in `gsc_perf_breakdown`).
+      filter: "number",
       cell: (row) => (
         <span className="text-xs font-semibold tabular-nums">
           {formatCount(row.clicks)}
@@ -164,6 +167,7 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
             id: "delta_clicks",
             header: "Δ Clicks",
             align: "right",
+            width: 70,
             filter: false,
             accessorFn: (row) => row.clicks - (row.cmp_clicks ?? 0),
             cell: (row) => (
@@ -181,7 +185,8 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
       accessorKey: "impressions",
       header: "Impressions",
       align: "right",
-      filter: false,
+      width: 92,
+      filter: "number",
       cell: (row) => (
         <span className="text-xs tabular-nums">
           {formatCount(row.impressions)}
@@ -194,6 +199,7 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
             id: "delta_impressions",
             header: "Δ Impr.",
             align: "right",
+            width: 76,
             sortable: deltaSortable,
             filter: false,
             accessorFn: (row) => row.impressions - (row.cmp_impressions ?? 0),
@@ -212,7 +218,10 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
       accessorKey: "ctr",
       header: "CTR",
       align: "right",
-      filter: false,
+      width: 68,
+      // MSR-03/04 — new server-side range (`ctr_min`/`ctr_max`, fraction
+      // 0..1 like the underlying value: type 0.02 for "2%").
+      filter: "number",
       cell: (row) => (
         <span className="text-xs tabular-nums">{formatCtr(row.ctr)}</span>
       ),
@@ -223,6 +232,7 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
             id: "delta_ctr",
             header: "Δ CTR",
             align: "right",
+            width: 68,
             sortable: deltaSortable,
             filter: false,
             accessorFn: (row) =>
@@ -246,7 +256,10 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
       accessorKey: "avg_position",
       header: "Position",
       align: "right",
-      filter: false,
+      width: 76,
+      // MSR-03/04 — server-side range filter (`position_min`/`position_max`,
+      // already live).
+      filter: "number",
       cell: (row) => (
         <span className="text-xs tabular-nums">
           {formatPosition(row.avg_position)}
@@ -259,6 +272,7 @@ export function buildGscMetricColumns<T extends GscMetricRowShape>(
             id: "delta_position",
             header: "Δ Pos.",
             align: "right",
+            width: 70,
             sortable: deltaSortable,
             filter: false,
             accessorFn: (row) =>
@@ -342,14 +356,33 @@ export function buildGscValueColumns<T>(
    * surfaces that ask for the reason.
    */
   editing?: { keywordIdOf: (row: T) => string | null },
+  /**
+   * MSR-03/04 — the Level column's filter options, i.e. this SITE's own
+   * value-band vocabulary (bands are per-site — there is no fixed enum).
+   * Omit to fall back to the two reserved bands every site always has
+   * (`unvalued`, `negative`); a caller with the vocabulary loaded should
+   * always pass it.
+   */
+  levelFilterOptions?: Array<{ value: string; label: string }>,
 ): MatrxColumnDef<T>[] {
   return [
     {
       id: "traffic_class",
       header: "Class",
-      sortable: false,
-      filter: false,
-      width: 110,
+      // MSR-03/04 — server-side sort (`gsc_perf_breakdown` `p_sort:
+      // 'traffic_class'`) and filter (`traffic_classes`, OR-of-selected via
+      // the shared class map — resolved for THIS site's window, never the
+      // global corpus).
+      sortable: true,
+      filter: "select",
+      filterOptions: [
+        { value: "money", label: "Money" },
+        { value: "educational", label: "Educational" },
+        { value: "brand", label: "Brand" },
+        { value: "mismatch", label: "Mismatch" },
+        { value: "unclassified", label: "Unclassified" },
+      ],
+      width: 100,
       accessorFn: (row) => valueFor(row)?.traffic_class ?? "",
       ...(editing
         ? {
@@ -374,10 +407,12 @@ export function buildGscValueColumns<T>(
     {
       id: "value_score",
       header: "Score",
-      sortable: false,
-      filter: false,
+      // MSR-03/04 — server-side sort (`p_sort: 'value_score'`) and range
+      // filter (`value_score_min`/`value_score_max`).
+      sortable: true,
+      filter: "number",
       align: "right",
-      width: 80,
+      width: 72,
       accessorFn: (row) => valueFor(row)?.value_score ?? null,
       cell: (row) => {
         const v = valueFor(row);
@@ -393,9 +428,15 @@ export function buildGscValueColumns<T>(
     {
       id: "value_band",
       header: "Level",
-      sortable: false,
-      filter: false,
-      width: 110,
+      // MSR-03/04 — server-side sort (`p_sort: 'value_band'`) and filter
+      // (rides the EXISTING `levels` RPC filter, unchanged since C6).
+      sortable: true,
+      filter: "select",
+      filterOptions: levelFilterOptions ?? [
+        { value: "unvalued", label: "Unvalued" },
+        { value: "negative", label: "Negative" },
+      ],
+      width: 100,
       accessorFn: (row) => valueFor(row)?.value_band ?? "",
       cell: (row) => {
         const v = valueFor(row);

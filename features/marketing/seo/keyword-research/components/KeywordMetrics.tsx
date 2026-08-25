@@ -58,15 +58,23 @@ export function monthlySearchTrend(
  * 12-month volume sparkline — one series, so no legend; the caller's label
  * names it. Bars carry a native tooltip with the exact month + volume, so the
  * numbers are never color-alone.
+ *
+ * Generalized beyond keyword volume (2026-08-25, MSR-13): any series of
+ * `{year, month, search_volume}` points renders — a caller plotting
+ * something else (e.g. daily GSC clicks) passes `tooltipLabel` to describe
+ * each bar honestly instead of the default "YYYY-MM: volume" reading, which
+ * would misname a day as a month.
  */
 export function KeywordTrendSparkline({
   points,
   className,
   barClassName,
+  tooltipLabel,
 }: {
   points: MonthlySearchPoint[];
   className?: string;
   barClassName?: string;
+  tooltipLabel?: (point: MonthlySearchPoint, index: number) => string;
 }) {
   if (points.length < 2) {
     return <span className="text-xs text-muted-foreground">—</span>;
@@ -81,7 +89,11 @@ export function KeywordTrendSparkline({
           style={{
             height: `${Math.max(8, (point.search_volume / max) * 100)}%`,
           }}
-          title={`${point.year}-${String(point.month).padStart(2, "0")}: ${point.search_volume.toLocaleString()}`}
+          title={
+            tooltipLabel
+              ? tooltipLabel(point, index)
+              : `${point.year}-${String(point.month).padStart(2, "0")}: ${point.search_volume.toLocaleString()}`
+          }
         />
       ))}
     </div>

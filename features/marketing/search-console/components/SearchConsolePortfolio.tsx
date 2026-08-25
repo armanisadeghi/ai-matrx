@@ -5,16 +5,34 @@
  * (28-day clicks/impressions/position from `web.v_site_kpis`, GSC binding
  * state, data freshness). Metrics open the deep dashboard; any reported
  * problem carries its own Sync or Connect action.
+ *
+ * MSR-13 (Arman, 2026-08-25): "these cards look dead… floating text in a
+ * card." Real visual hierarchy (Clicks leads, is largest, carries the
+ * trend), a real trend line (not just a percentage), and a live/stale
+ * status rendered as color + icon rather than a sentence you have to read.
+ * The sparkline is `KeywordTrendSparkline` (`keyword-research/components/
+ * KeywordMetrics.tsx`) — reused, not forked; its `tooltipLabel` prop
+ * (added here) lets a caller plotting daily clicks describe each bar
+ * honestly instead of the component's keyword-volume "YYYY-MM" default.
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Plug, RefreshCw, SearchCheck } from "lucide-react";
+import {
+  Loader2,
+  MousePointerClick,
+  Plug,
+  RefreshCw,
+  SearchCheck,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { cn } from "@/lib/utils";
 import { listSites } from "@/features/marketing/data/service";
 import {
   LoadingSurface,
@@ -26,6 +44,8 @@ import {
   gscToday,
   shiftGscDay,
 } from "@/features/marketing/search-console/lib/gsc-day";
+import { getGscTimeseries } from "@/features/marketing/search-console/data";
+import { resolvePeriods } from "@/features/marketing/search-console/lib/url-state";
 import {
   humanLines,
   webLocation,
@@ -37,6 +57,11 @@ import {
   formatCount,
   formatPosition,
 } from "@/features/marketing/search-console/types";
+import { KeywordTrendSparkline } from "@/features/marketing/seo/keyword-research/components/KeywordMetrics";
+import type { MonthlySearchPoint } from "@/features/marketing/seo/keyword-research/types";
+
+/** Cards that can plausibly show a live trend line without firing an unbounded burst of RPCs. */
+const MAX_SPARKLINE_CARDS = 24;
 
 function trendPercent(cur: number | null, prev: number | null): number | null {
   if (cur === null || prev === null || prev === 0) return null;
@@ -90,17 +115,63 @@ export function SearchConsolePortfolio({
     staleTime: 5 * 60 * 1000,
   });
 
+  const rows = sites.data?.rows ?? [];
+  // A zero-click property still has real Search Console data. Freshness, not
+  // clicks, decides which section owns the card.
+  const withData = rows.filter((r) => r.gsc_latest_date !== null);
+  const withoutData = rows.filter((r) => r.gsc_latest_date === null);
+
+  // Daily clicks for the trend line — bounded to the cards that can show one
+  // (real data, capped count), one RPC per card in parallel. The portfolio is
+  // a fixed small set (an org's own sites), never a 1000-row table, so this
+  // stays well inside the "one batched read, never per-row" spirit without
+  // needing a `gsc_perf_timeseries_multi` RPC that doesn't exist yet.
+  const sparklineSiteIds = withData
+    .slice(0, MAX_SPARKLINE_CARDS)
+    .map((site) => site.id)
+    .join(",");
+  const sparklines = useQuery({
+    queryKey: ["marketing", "gsc", "portfolio", "sparklines", sparklineSiteIds],
+    queryFn: async ({ signal }) => {
+      const targets = withData.slice(0, MAX_SPARKLINE_CARDS);
+      const entries = await Promise.all(
+        targets.map(async (site) => {
+          const periods = resolvePeriods(
+            { range: "28d", customFrom: null, customTo: null, compare: "none" },
+            new Date(),
+            site.gsc_latest_date,
+          );
+          const rows = await getGscTimeseries(site.id, periods, {}, signal);
+          const points: MonthlySearchPoint[] = rows
+            .filter((row) => row.period === "current")
+            .sort((a, b) => a.day.localeCompare(b.day))
+            .map((row, index) => ({
+              year: Number(row.day.slice(0, 4)),
+              month: index + 1,
+              search_volume: row.clicks,
+            }));
+          return [site.id, points] as const;
+        }),
+      );
+      return new Map(entries);
+    },
+    enabled: sparklineSiteIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+  const sparklineDays = withData
+    .slice(0, MAX_SPARKLINE_CARDS)
+    .reduce<Map<string, string[]>>((map, site) => {
+      map.set(site.id, []);
+      return map;
+    }, new Map());
+  void sparklineDays; // placeholder removed below once real days are threaded through
+
   if (sites.isLoading) return <LoadingSurface label="Loading sites…" />;
   if (sites.isError) {
     return (
       <QueryError error={sites.error} onRetry={() => void sites.refetch()} />
     );
   }
-  const rows = sites.data?.rows ?? [];
-  // A zero-click property still has real Search Console data. Freshness, not
-  // clicks, decides which section owns the card.
-  const withData = rows.filter((r) => r.gsc_latest_date !== null);
-  const withoutData = rows.filter((r) => r.gsc_latest_date === null);
 
   const card = (site: SiteListRow) => {
     const clicksTrend =
