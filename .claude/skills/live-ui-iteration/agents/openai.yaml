@@ -1,0 +1,4 @@
+interface:
+  display_name: "Live UI Iteration"
+  short_description: "Continuously repair and certify a live UI surface"
+  default_prompt: "Use $live-ui-iteration to make my requested UI changes first, keep improving the focused localhost surface, and hand it back only after full desktop and mobile certification."

@@ -62,3 +62,7 @@ Server Components by default, Client only where interaction requires. No layout 
 ## 8. Verify before you claim done
 
 Run it. See it work against **real** data, including its error and empty paths. Do not report "done" or "verified" from a mock, a passing type-check, or a screenshot you didn't actually scrutinize. If a state is still unhandled, say so plainly — a known gap named is worth more than a false "it works."
+
+## 9. Application routes are not articles
+
+Read [`application-ui-copy-and-hierarchy.md`](./application-ui-copy-and-hierarchy.md). App surfaces have one title authority, no duplicated body hero, no generic introductory prose, and meaningful work above the fold. Preserve consequential guidance; remove or relocate narration that does not help the user decide or act.

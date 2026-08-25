@@ -60,7 +60,7 @@ this means agents see stale flags (e.g. `has_draft="false"` right after a draft 
 
 ## Wiring a new mount point (menu + Pro inputs)
 
-Follow `surface-pro-rollout` + `context-menu-v3` skills for the mechanics. CMS-specific notes:
+Follow `surface-authoring` (existing-surface runtime rollout) + `context-menu-v3` for the mechanics. CMS-specific notes:
 
 - Use **v3** (`EditableContextMenu`/`NonEditableContextMenu` from `features/context-menu-v3/`) — the only context menu (v2 was deleted 2026-07-19).
 - `getApplicationScope` is a plain function (no `useCallback`) that calls `buildApplicationScopeFromMenuContext` with a live `createXxxScope(...)` built from current component state + `useSiteContext()`.

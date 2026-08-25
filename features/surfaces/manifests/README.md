@@ -4,7 +4,7 @@ Code-first declarations of each UI surface's full contract: registered label, va
 
 This directory **owns the declarations**. The DB is a synced reflection. Admin UI for surface values is read-only — to change what a surface offers, you change the manifest here.
 
-**Full authoring rules → invoke the `surface-authoring` skill. End-to-end registration → `surface-registration` skill.**
+**Invoke `surface-authoring` for the full lifecycle:** manifest contract, registration, runtime rollout, canonical menu, Pro inputs, bindings, DB sync, and verification.
 
 ## The two laws
 

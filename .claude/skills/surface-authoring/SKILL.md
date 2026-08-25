@@ -1,11 +1,25 @@
 ---
 name: surface-authoring
-description: Authoritative workflow for adding a new UI surface to the matrx-admin Surface Values system. Covers the code-first SurfaceManifest declaration (required canonical label, value groups, baseline-vs-specific values), THE NAMING LAW and THE COMPLETENESS LAW, the `<client>/<surface>` naming contract, ui_client / ui_surface DB rows, the type-safe `createXxxScope` helper that enforces "a UI cannot lie", the runtime scope-builder module pattern, manifest sync, the runtime `surfaceName` handoff to `launchAgentExecution`, and the manifest drift check. Use whenever the task touches `features/surfaces/manifests/**`, creates a new manifest file, adds a row to `ui_surface` / `ui_client`, wires a page or overlay to launch agents through `runtime.surfaceName`, or whenever the user mentions "surface", "SurfaceValue", "SurfaceManifest", "surface label", "surface groups", "ui_surface", "surface manifest", "register a new surface", or "expose surface runtime values". ALSO the end-to-end layered registration recipe (absorbed the former `surface-registration` skill) — agent roles, config namespaces, registry + check:surface-drift, DB sync (ui_surface / ui_surface_value / ui_surface_agent_role), runtime buildScope emitter, and live verification including the Matrx-vs-matrix context test; use for "register a surface", "bind agents to this page", or "add an agent role / config namespace to a surface". NOT for the binding services / merge engine / inheritance internals — those are features/surfaces/FEATURE.md territory.
+description: >-
+  Create, register, complete, or repair an AI Matrx agent-aware UI surface end
+  to end: manifest identity, values, groups, inheritance, write targets, roles,
+  DB mirror, live scope, canonical v3 context menus, Pro inputs, bindings, and
+  verification. Use for new surfaces and for existing surfaces that are partial,
+  stubbed, unregistered, missing runtime context, missing canonical menus, or not
+  fully agent-wired. NOT for context-menu primitive internals or binding-service
+  internals.
 ---
 
 # Surface authoring
 
-This is the ONE surface skill (it absorbed `surface-registration` in the Wave 4 consolidation): it owns the manifest itself — fields, values, groups, labels, scope builders — AND the end-to-end layered registration process (roles, config namespaces, DB sync, emitter, live verification), in the "End-to-end layered registration" section near the bottom. Reference consumer for every registration layer: **`features/transcription-cleanup/`** (`/transcripts/cleanup`).
+This is the ONE surface lifecycle skill. It owns the manifest contract, layered registration, runtime emission, canonical-menu rollout, Pro inputs, bindings, DB sync, and verification. Reference consumer for every registration layer: **`features/transcription-cleanup/`** (`/transcripts/cleanup`).
+
+## Choose the path
+
+- **New or structurally changed surface:** follow this file from identity through layered registration.
+- **Existing surface that needs completion or repair:** read [`references/runtime-rollout.md`](./references/runtime-rollout.md), then close every applicable contract here.
+- **Context-menu wiring or repair:** invoke `context-menu-v3`; its skill owns wrapper choice, per-row delegation, `contentSource`, `entity`, and no-fake-menu proof. This skill owns making that canonical menu part of a complete surface.
+- **Full certification:** invoke `surface-check`; it drives the S1–S18 checklist and ledger.
 
 Adding a surface is **code-first, DB-mirror**. Code is the single source of truth — the DB is a synced reflection. Get the manifest right and everything downstream (binding UIs, chrome labels, drift report, RLS-gated agent + tool bindings, the runtime resolver) just works.
 
@@ -92,7 +106,7 @@ These are short — read them when the task is non-trivial:
 
 **`intro` — the surface's self-introduction.** A single XML-ish block (`<surface_intro>…`) telling the agent what this surface IS, what the user does here, and how to read its values. Written from a close understanding of the surface's PURPOSE — this is the first surface-context item the agent sees. Mirrored to `ui_surface.intro`. Every Tier-1 surface should have one. It describes the SURFACE and the user — never the model: no "You are the agent for…" / "Your job is…" framing (the bound agent's identity and rules live in the DB agent; `pnpm check:hardcoded-prompts` flags intros that assign the model a role — say "You are on…" / "The work here is…").
 
-For `agentRoles`, `configNamespaces`, `evidenceSources`, and `skipBaselineValues` — **invoke the `surface-registration` skill**.
+For `agentRoles`, `configNamespaces`, `evidenceSources`, and `skipBaselineValues`, follow **End-to-end layered registration** below.
 
 ## Value groups — canonical sections
 
@@ -247,7 +261,7 @@ What this surface IS, what the user does here, how to read its values.
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
-  agentRoles: [ /* see surface-registration skill */ ],
+  agentRoles: [ /* see End-to-end layered registration below */ ],
 };
 ```
 
@@ -476,7 +490,7 @@ If anything in the checklist is unclear, re-read the relevant section above inst
 
 ---
 
-# End-to-end layered registration (absorbed from `surface-registration`)
+# End-to-end layered registration
 
 Registering a surface is a LAYERED recipe — each layer is independently shippable, and a manifest with no emitter is still useful (bindings work; live values land later). Layer 1 (the manifest) is everything above. **Read first:** `features/surfaces/FEATURE.md` (binding model, inheritance, roles/config) · `features/surfaces/manifests/README.md`.
 

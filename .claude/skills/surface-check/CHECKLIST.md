@@ -104,7 +104,7 @@ stores which version a surface passed).
 - MUST: THE LOSSLESS LAW — nothing the core menu offers is hidden/renamed by the surface (`placementMode` only for genuinely meaningless placements, e.g. content blocks on read-only output).
 - Evidence: regions wrapped, console clean on open, download proof.
 
-## S7 · Text inputs — `components/official/ProTextarea.tsx` docstring + `surface-pro-rollout` step 5
+## S7 · Text inputs — `components/official/ProTextarea.tsx` docstring + `surface-authoring` runtime rollout
 
 - MUST: every textarea that holds user text is `ProTextarea` (Tier 2 default); bare shadcn `Textarea` only for raw admin/debug cases — and then say why in a comment. Voice (`enableVoice`) stays on unless the field is a code/JSON editor.
 - MUST: `surfaceName` + `getApplicationScope` passed so the "…" agent menu lists the same agents as the context menu.
@@ -153,9 +153,10 @@ stores which version a surface passed).
 - Check: `pnpm check:dead-ends` · `pnpm check:unwired` (scoreboards `/administration/reporting/dead-ends`, `/unwired`).
 - Evidence: dead ends found → fixed (registry, not callsite).
 
-## S13 · UI standards — CLAUDE.md "UI / UX standards" + `ui-sharp`/`ui-dense` + `compact-nav-menus` + `no-emojis-in-ui` + `copy-everywhere` (P5)
+## S13 · UI standards — CLAUDE.md "UI / UX standards" + shared application UI hierarchy + `ui-sharp`/`ui-dense` + `compact-nav-menus` + `no-emojis-in-ui` + `copy-everywhere` (P5)
 
 - MUST: Lucide only, no emojis, no Sparkles-for-AI (→ `BrainCircuit`); semantic tokens; no wrapper-on-wrapper chrome; browser dialogs banned (`confirm()`/`toast` from `@/lib/toast`); `router.back()` for back; `useTransition` for nav with loading on the active element.
+- MUST: read `.claude/ui-skills/shared/application-ui-copy-and-hierarchy.md`; app routes have one title authority, no duplicated body hero, no generic introductory prose, and meaningful work above the fold.
 - MUST: sidebars/list panels follow `compact-nav-menus` sizes; lists use `EntityListPage` + `useListViewPrefs`; tables = `MatrxDataTable` with sort+filter on every column and the canonical Copy / Copy-for-AI.
 - DECIDE: the surface's density posture (`ui-sharp` default; `ui-dense` for all-day power surfaces) — name the real product benchmarked.
 - Check: `pnpm check:ui-primitives` · `pnpm check:copy-everywhere` · the emoji `rg` in `no-emojis-in-ui`.

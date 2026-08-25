@@ -150,7 +150,7 @@ export function TranscriptViewer() {
   // Presentational region: the user reads the rendered transcript. The browser
   // text selection is captured live at click time (DOM selection, no editable
   // element), and the surface scope flows in as `contextData`. Stable per the
-  // surface-pro-rollout recipe (the one sanctioned manual callback).
+  // surface-authoring runtime-rollout recipe (the one sanctioned manual callback).
   const getViewerApplicationScope = useCallback(
     () =>
       buildApplicationScopeFromMenuContext({

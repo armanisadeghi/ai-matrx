@@ -100,7 +100,7 @@ build plan this feature is part of (project P5).
 ## Agent surfaces (Surface Values)
 
 Five `ui_surface` rows under `matrx-user/` give every CMS/HTML-page route a canonical v3 right-click
-context menu with live agent context — see the `surface-authoring` and `surface-pro-rollout` skills
+context menu with live agent context — see `surface-authoring` and its runtime-rollout reference, plus `context-menu-v3`
 for the general contract this section instantiates.
 
 | Surface                    | Route(s)                                        | Menu                                                                                                      | Notes                                                                                                                                                                                                        |
@@ -519,6 +519,7 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- **2026-08-25:** Updated CMS agent-surface guidance to the consolidated `surface-authoring` lifecycle and the separately owned `context-menu-v3` contract.
 - `2026-08-24` — `/cms/[siteId]/settings` now has a visible semantic Settings
   heading, a mobile section jump rail, explicit General/Global CSS versus
   per-card save scope, and unique accessible names for every theme-token field
