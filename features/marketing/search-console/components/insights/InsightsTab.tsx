@@ -19,7 +19,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, PanelTop } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Input } from "@/components/ui/input";
@@ -668,6 +668,7 @@ function CannibalizationTable({
   const query = useGscCannibalization(siteId, periods, minImpressions);
   const total = query.data?.total ?? 0;
   const rowWatch = useRowWatch("query");
+  const openDrilldown = useOpenGscDrilldownWindow();
   const rows = useMemo(
     () =>
       (query.data?.rows ?? []).map((row) => ({
@@ -714,14 +715,23 @@ function CannibalizationTable({
     },
     buildGscKeyColumn<Row>("query", "Query"),
     {
-      id: "competing_pages",
-      accessorKey: "competing_pages",
+      // THE COUNT IS THE TOTAL, NOT THE SIGNAL. `competing_pages` counts only
+      // the pages holding >= the share threshold — capped at 5 by arithmetic
+      // and almost always 2 — so this column read "2" for a query whose
+      // impressions are actually spread across 80 pages. It now shows the real
+      // number of pages taking impressions, with the meaningful-share count as
+      // the secondary fact that made the row appear at all.
+      id: "total_pages",
+      accessorKey: "total_pages",
       header: "Pages",
       align: "right",
-      filter: false,
       cell: (row) => (
-        <span className="text-xs font-semibold tabular-nums text-warning">
-          {row.competing_pages}
+        <span
+          className="text-xs tabular-nums"
+          title={`${row.total_pages} pages take impressions for this query; ${row.competing_pages} of them hold a meaningful share`}
+        >
+          <span className="font-semibold text-warning">{row.total_pages}</span>
+          <span className="text-muted-foreground"> · {row.competing_pages} major</span>
         </span>
       ),
     },
@@ -833,45 +843,31 @@ function CannibalizationTable({
           }),
         }}
         detail={{ enabled: false }}
-        window={{
-          enabled: true,
-          title: (row) => row.query,
-          renderEdit: false,
-          // The window opener falls back to `onRowOpen` when this is absent —
-          // which would drill to the Pages tab and unmount the window that was
-          // just asked for. A no-op keeps the two doors independent: the row
-          // drills, the panel icon opens the window.
-          onOpen: () => {},
-          renderView: (row) => (
-            <div className="space-y-2 p-3">
-              <p className="text-xs text-muted-foreground">
-                {row.competing_pages} pages compete for this query. Click the
-                row to open the Pages tab filtered to it.
-              </p>
-              {Array.isArray(row.pages)
-                ? (row.pages as unknown as CannibalPageEntry[]).map((page) => (
-                    <div
-                      key={page.url}
-                      className="rounded-md border border-border bg-card p-2"
-                    >
-                      <p
-                        className="truncate text-xs font-medium text-foreground"
-                        title={page.url}
-                      >
-                        {page.url}
-                      </p>
-                      <p className="text-xs tabular-nums text-muted-foreground">
-                        {formatCount(page.impressions)} impressions (
-                        {pct(page.impression_share, 0)}) ·{" "}
-                        {formatCount(page.clicks)} clicks · pos{" "}
-                        {page.position ?? "—"}
-                      </p>
-                    </div>
-                  ))
-                : null}
-            </div>
-          ),
-        }}
+        // THE PANEL WRAPS THE CANONICAL COMPONENT, never a hand-rolled copy.
+        // The old inline body re-rendered a truncated 5-page list of its own —
+        // which both lied about the page count and duplicated a view we
+        // already own. `GscDrilldownWindow` IS this page filtered to one
+        // query: KPI band, chart, and the real paginated Pages table.
+        window={{ enabled: false }}
+        rowActions={(row) => (
+          <button
+            type="button"
+            title={`Open the ${row.total_pages} pages for “${row.query}” in a window`}
+            className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            onClick={(event) => {
+              event.stopPropagation();
+              openDrilldown({
+                siteId,
+                siteName,
+                dimension: "page",
+                filters: { query_eq: row.query },
+                title: `Pages for “${row.query}”`,
+              });
+            }}
+          >
+            <PanelTop className="size-3.5" />
+          </button>
+        )}
         onRowOpen={(row) => onDrill("query", row.query)}
         pageSize={50}
         emptyState={{

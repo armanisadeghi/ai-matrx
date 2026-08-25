@@ -1,0 +1,19 @@
+-- APPLIED LIVE 2026-08-25 via Supabase MCP (project brsgrqvjdzwihsvnfqkf).
+-- This file is the RECORD of that change, not the mechanism.
+--
+-- Cannibalization reported a COUNT it never counted. `competing_pages` is
+-- COUNT(*) FILTER (imp_share >= p_min_share); with the default 20% share that
+-- is mathematically capped at 5 and is almost always 2 — so a query whose
+-- impressions are genuinely spread over 83 pages rendered as "2 pages".
+-- Verified on All Green / "hard drive shredding" before the fix: 80+ pages
+-- take impressions, 2 hold >= 20% share, the UI showed 2.
+--
+-- The function now returns BOTH:
+--   total_pages     — every page taking impressions for the query (the COUNT)
+--   competing_pages — how many hold a meaningful share (the SIGNAL; the
+--                     HAVING clause that admits the row is unchanged)
+--
+-- Full body: see seo.gsc_perf_cannibalization in the live database; this
+-- change added `total_pages integer` to the RETURNS TABLE and
+-- `COUNT(*)::int AS total_pages` to the `flagged` CTE. Return-type change
+-- required DROP + CREATE (CREATE OR REPLACE cannot widen a RETURNS TABLE).

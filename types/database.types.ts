@@ -53673,6 +53673,7 @@ export type Database = {
           query: string
           top_share: number
           total_count: number
+          total_pages: number
         }[]
       }
       gsc_perf_class_movers: {

@@ -11,7 +11,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Gem, Scale, Tags } from "lucide-react";
+import { ArrowRight, Gem, PanelTop, Scale, Tags } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
@@ -954,6 +954,7 @@ export function ShiftsView({
   const query = useGscShifts(siteId, periods, minClicks);
   const rows = query.data?.rows ?? [];
   const total = query.data?.total ?? rows.length;
+  const openDrilldown = useOpenGscDrilldownWindow();
   // ONE menu for the pane; every shifted query is a keyword, so the whole
   // section comes from the platform's shared keyword actions (KI-025).
   const [contextRow, setContextRow] = useState<GscShiftRow | null>(null);
@@ -1133,51 +1134,28 @@ export function ShiftsView({
           }),
         }}
         detail={{ enabled: false }}
-        window={{
-          enabled: true,
-          title: (row) => row.query,
-          renderEdit: false,
-          // Without this the opener falls back to `onRowOpen` and drills to the
-          // Pages tab, unmounting the window it was asked to open.
-          onOpen: () => {},
-          renderView: (row) => (
-            <div className="space-y-2 p-3">
-              <p className="text-xs text-muted-foreground">
-                Page mix, compare period vs current. Click the row to open the
-                Pages tab filtered to this query.
-              </p>
-              {Array.isArray(row.pages)
-                ? (
-                    row.pages as unknown as Array<{
-                      url: string;
-                      clicks: number;
-                      cmp_clicks: number;
-                      share: number;
-                      cmp_share: number;
-                    }>
-                  ).map((page) => (
-                    <div
-                      key={page.url}
-                      className="rounded-md border border-border bg-card p-2"
-                    >
-                      <p
-                        className="truncate text-xs font-medium text-foreground"
-                        title={page.url}
-                      >
-                        {page.url}
-                      </p>
-                      <p className="text-xs tabular-nums text-muted-foreground">
-                        share {(page.cmp_share * 100).toFixed(0)}% →{" "}
-                        {(page.share * 100).toFixed(0)}% · clicks{" "}
-                        {formatCount(page.cmp_clicks)} →{" "}
-                        {formatCount(page.clicks)}
-                      </p>
-                    </div>
-                  ))
-                : null}
-            </div>
-          ),
-        }}
+        // Same law as cannibalization: the panel WRAPS the canonical component
+        // instead of re-rendering a partial page list of its own.
+        window={{ enabled: false }}
+        rowActions={(row) => (
+          <button
+            type="button"
+            title={`Open the pages for “${row.query}” in a window`}
+            className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            onClick={(event) => {
+              event.stopPropagation();
+              openDrilldown({
+                siteId,
+                siteName,
+                dimension: "page",
+                filters: { query_eq: row.query },
+                title: `Pages for “${row.query}”`,
+              });
+            }}
+          >
+            <PanelTop className="size-3.5" />
+          </button>
+        )}
         onRowOpen={(row) => onDrill("query", row.query)}
         pageSize={25}
         emptyState={{
