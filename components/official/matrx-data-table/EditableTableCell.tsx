@@ -8,7 +8,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Pencil, X } from "lucide-react";
+import { Check, ChevronDown, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -151,13 +151,23 @@ export function EditableTableCell({
             type="button"
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "w-full rounded px-0.5 text-left hover:bg-muted/60",
+              "group/cell-select flex w-full items-center gap-1 rounded px-0.5 text-left hover:bg-muted/60",
               dirty && "ring-1 ring-primary/40 bg-primary/5",
               className,
             )}
             title="Edit"
           >
-            {display}
+            <span className="min-w-0 flex-1 overflow-hidden">{display}</span>
+            {/*
+             * MSR-08: a typed cell that opens a picker must LOOK pickable —
+             * a bare chip with no chevron reads as inert text, not an
+             * editable field (Arman: "a dropdown and pick the option"). The
+             * chevron stays dim until hover/focus so it doesn't compete with
+             * the value, but it is always PRESENT, never opacity-0.
+             */}
+            {editType === "select" ? (
+              <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground/70 transition-colors group-hover/cell-select:text-foreground" />
+            ) : null}
           </button>
         </PopoverTrigger>
       )}
