@@ -45,11 +45,11 @@ The desktop renderer is model-driven (2026-08-22): `useContextMenuActions` →
 density). Behaviour never changes between layouts; a layout is a pure function
 over the model, never a second renderer.
 
-| `menuLayout`  | What the user sees |
-| ------------- | ------------------ |
-| `classic`     | The historical flat column — every section top-level (~30 rows on a full note). |
-| `tiered`      | Compact one-line header (hover shows the text) + icon strip (Copy · Cut · Paste · Undo · Redo · Find). **Every other Classic row stays, by its own name:** Copy as / JSON / Select All · AI Actions / Agents / Content Blocks / My Items / Org Items · the surface's section folded under the surface's label (notes → "Note") · **History** (Undo / Redo / View History / Compare — the ONE approved grouping) · Export / Convert / Attach To / Share · Chat / Quick Actions · Save / Delete · Admin Tools. Greyed when unavailable exactly like Classic — never hidden. |
-| `command`     | Tiered + a type-to-filter box. Typing flattens EVERY leaf in the model (nested agents, shortcuts, content blocks, note ops, export formats…) into one ranked list with its breadcrumb; ↵ runs the first match. Printable keys typed while an item has focus are routed back into the box. |
+| `menuLayout` | What the user sees                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `classic`    | The historical flat column — every section top-level (~30 rows on a full note).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `tiered`     | Compact one-line header (hover shows the text) + icon strip (Copy · Cut · Paste · Undo · Redo · Find). **Every other Classic row stays, by its own name:** Copy as / JSON / Select All · AI Actions / Agents / Content Blocks / My Items / Org Items · the surface's section folded under the surface's label (notes → "Note") · **History** (Undo / Redo / View History / Compare — the ONE approved grouping) · Export / Convert / Attach To / Share · Chat / Quick Actions · Save / Delete · Admin Tools. Greyed when unavailable exactly like Classic — never hidden. |
+| `command`    | Tiered + a type-to-filter box. Typing flattens EVERY leaf in the model (nested agents, shortcuts, content blocks, note ops, export formats…) into one ranked list with its breadcrumb; ↵ runs the first match. Printable keys typed while an item has focus are routed back into the box.                                                                                                                                                                                                                                                                                 |
 
 **Platform default is `command`** (Arman, 2026-08-22 — chosen on `/demos/context-menu/layouts`). `menuDensity` = `comfortable` (default) | `compact` (tighter rows / icons /
 labels). Both knobs are props on the wrappers (`ContextMenuV3CoreProps`); the
@@ -57,7 +57,7 @@ defaults are CAPS constants in `types.ts` — flipping the platform default is a
 one-line change, and a per-user preference (settings-system) is the natural
 next step once a layout is chosen.
 
-🚨 **THE LOSSLESS LAW (Arman, 2026-08-22):** no layout may hide, rename, drop, or fold a Classic row under a coined heading. A new arrangement may only *group* rows Arman has explicitly approved (today: History). Disabled = greyed, like Classic. Verify any new layout by diffing its leaf set against Classic's — it must be identical.
+🚨 **THE LOSSLESS LAW (Arman, 2026-08-22):** no layout may hide, rename, drop, or fold a Classic row under a coined heading. A new arrangement may only _group_ rows Arman has explicitly approved (today: History). Disabled = greyed, like Classic. Verify any new layout by diffing its leaf set against Classic's — it must be identical.
 
 **Surface sections stay "minor local changes":** in tiered/command a section
 with ≤ `INLINE_SURFACE_MAX` (3) rows renders inline; a longer one folds into
@@ -94,6 +94,10 @@ A menu that opens but Copy does nothing and the selection bar is empty is a **bu
 
 1. **Self-resolving content (zero wiring).** When the user right-clicks read-only content with no manual selection, the shell captures the subtree's text (`extractElementText`) as a `content` fallback. `resolveActionText` makes Copy / AI act on selection-or-content, so Copy always works. Actions are **source-gated** — an action that can't act never renders.
 2. **Loud dev guard.** `reportMenuDiagnostics` SCREAMS (console.error) when a menu opens inert (no selection, no content, no surface items) or when a surface declared an `alwaysAvailable` value it failed to emit. A recovery firing means a real defect got past the surface — never silent.
+
+### Selection-aware listening actions
+
+Read-only content with actionable text exposes **Speak** and **Summarize for listening**. Speak sends the current selection (or resolved content when nothing is selected) through the canonical speech queue. Summarize for listening resolves the surface's `spoken_summary` agent role and auto-runs it in `AgentRunWindow` with `content` plus `style = "Extremely Concise Summary"`; a surface without a bound role keeps that row disabled. Assistant messages tag their rendered response body with `data-message-content`, so no-selection actions exclude action-bar labels and other message chrome.
 
 ---
 
@@ -233,12 +237,12 @@ resolveContextOnOpen={(target) => {
 }}
 ```
 
-| resolved value | effect |
-|---|---|
-| key ABSENT | the menu-level `entity` prop stands — every existing caller unchanged |
-| a `ContextMenuEntityRef` | that row's entity wins for this open |
-| `null` | this target has no entity — Attach/Share HIDE rather than target the wrong record |
-| malformed (no string `type` + `id`) | falls back to the prop and SCREAMS in dev |
+| resolved value                      | effect                                                                            |
+| ----------------------------------- | --------------------------------------------------------------------------------- |
+| key ABSENT                          | the menu-level `entity` prop stands — every existing caller unchanged             |
+| a `ContextMenuEntityRef`            | that row's entity wins for this open                                              |
+| `null`                              | this target has no entity — Attach/Share HIDE rather than target the wrong record |
+| malformed (no string `type` + `id`) | falls back to the prop and SCREAMS in dev                                         |
 
 The key never reaches the `ApplicationScope` (`SKIP_MERGE_KEYS`): it is not a
 value. Resolution lives in `utils/per-row-entity.ts` — kept out of
@@ -356,6 +360,8 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 ---
 
 ## Change Log
+
+- `2026-08-24` — **Assistant selections can be spoken or distilled for listening.** The universal menu now exposes Speak through the canonical speech queue and Summarize for listening through the assistant-message `spoken_summary` surface role; the latter auto-runs in `AgentRunWindow`. Assistant response-body tagging keeps message chrome out of both actions.
 
 - `2026-08-24` — **Rollout: the three window/shell panes that had no menu of their own (worklist rows 7, 9, 11).**
   - **Table Viewer window** (`features/window-panels/windows/TableViewerWindow.tsx`) — the platform's generic "look at this data" window. ONE menu over the body, delegating per row through the renderer's existing `data-cell-row` attributes (the renderer was not touched): right-click a row → `content` is that row as `Header: value` lines; right-click anywhere else → the whole markdown table, so Export → Download as Markdown saves the real table. Its own section adds the two shapes a table has that plain text does not — Copy row as JSON / Copy table as JSON / Copy table as CSV — parsed by the ONE `parseMarkdownTable`, never a second regex. No `entity`: a markdown table is not a record, so Attach To / Share correctly stay hidden.

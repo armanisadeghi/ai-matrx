@@ -38,6 +38,20 @@ export interface MarkdownMenuContext extends Record<string, unknown> {
   artifact_id?: string;
 }
 
+function readVisibleText(element: HTMLElement): string {
+  // `textContent` includes CSS emitted by the markdown renderer's inline
+  // <style> nodes. Browsers expose the user-visible result through innerText;
+  // the clone fallback keeps DOM-only test environments equivalent.
+  const visibleText = element.innerText?.trim();
+  if (visibleText) return visibleText;
+
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone
+    .querySelectorAll("style, script, template, noscript")
+    .forEach((node) => node.remove());
+  return clone.textContent?.trim() ?? "";
+}
+
 export function resolveMarkdownContext(
   target: HTMLElement | null,
   conversationId: string,
@@ -47,7 +61,10 @@ export function resolveMarkdownContext(
   // read snake_case, while the camelCase keys below feed the menu's own action
   // handlers (e.g. messageActionRegistry reads `ctx.messageId`). Emitting both
   // keeps internal wiring and agent bindings truthful. Keep the two in sync.
-  const ctx: MarkdownMenuContext = { conversationId, conversation_id: conversationId };
+  const ctx: MarkdownMenuContext = {
+    conversationId,
+    conversation_id: conversationId,
+  };
   if (!target) return ctx;
 
   const messageEl = target.closest<HTMLElement>("[data-message-id]");
@@ -86,7 +103,7 @@ export function resolveMarkdownContext(
       ctx.diagram_source = d.blockSource;
       ctx.content = d.blockSource;
     } else {
-      const text = blockEl.textContent?.trim();
+      const text = readVisibleText(blockEl);
       if (text) ctx.content = text;
     }
   } else if (messageEl) {
@@ -96,7 +113,7 @@ export function resolveMarkdownContext(
     const contentEl =
       messageEl.querySelector<HTMLElement>("[data-message-content]") ??
       messageEl;
-    const text = contentEl.textContent?.trim();
+    const text = readVisibleText(contentEl);
     if (text) ctx.content = text;
   }
 
