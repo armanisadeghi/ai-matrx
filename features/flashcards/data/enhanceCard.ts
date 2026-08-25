@@ -304,7 +304,14 @@ export function enrichCard(args: {
           });
         },
       });
-      return coerceDetails(result.data);
+      const details = coerceDetails(result.data);
+      // A FAILED run is not an agent that "had nothing to add". Without this,
+      // a launch/timeout/stream error came back as an empty array and every
+      // caller reported it to the learner as a polite "nothing new" — and the
+      // bulk summary counted it in the wrong bucket. Partial data from a
+      // soft-failed stream is still honoured.
+      if (!result.success && details.length === 0) return null;
+      return details;
     } catch (err) {
       console.error("[flashcards.enrichCard] failed:", err);
       return null;
@@ -362,7 +369,10 @@ export function expandCard(args: {
           });
         },
       });
-      return coerceSubCards(result.data);
+      const subCards = coerceSubCards(result.data);
+      // Same rule as enrichCard: a failed run is a failure, not an empty answer.
+      if (!result.success && subCards.length === 0) return null;
+      return subCards;
     } catch (err) {
       console.error("[flashcards.expandCard] failed:", err);
       return null;
