@@ -87,6 +87,14 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
+- 2026-08-25 — **`structuredValueWindow` — the canonical panel for ONE structured value.**
+  Any surface with a structure too big to read in place (`useOpenStructuredValueWindow({ value,
+  title, subtitle })`) gets a movable, multi-instance, ephemeral window that WRAPS
+  `components/official/structured-value/StructuredValueView` — THE FLOOR of the platform's
+  structured rendering — and draws no field list of its own, per the law above. First consumer:
+  `data_table` cells, where structure previously had exactly one treatment (a `JSON.stringify`
+  `<pre>` inside an already-padded cell, in the ~200px a column gets).
+
 - 2026-08-22 — **Smart Code Editor tiles carry a MANDATE KEY, never an agent id.** `tools-grid/toolsGridTiles.ts` deleted `SMART_CODE_EDITOR_DEFAULT_AGENT_ID` (a personal "Code Editor" clone — forbidden as a default): `tile.smart-code-editor` seeds `agents: [GENERIC_CODE_EDITOR_AGENT]` + `defaultPickerMandateKey` (the window's real contract — its stale `agentId`/`variables` seed was being silently dropped), and `tile.smart-multi-file` seeds `mandateKey: "code_editor.code_edit"`; `MultiFileSmartCodeEditorWindow` / `useOpenMultiFileSmartCodeEditorWindow` / the OverlayController wiring took `mandateKey` in place of `agentId` and launch via `launchAgentExecution({ mandateKey })`.
 - 2026-08-21 — **Completed conversation-backed live runs expose the canonical
   assistant actions.** `LiveRunDisplay` now hands a request-backed assistant
