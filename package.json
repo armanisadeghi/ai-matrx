@@ -176,6 +176,8 @@
     "shape:types": "tsx scripts/shape/generate-kind-types.ts",
     "check:kind-types": "tsx scripts/shape/generate-kind-types.ts --check",
     "check:kind-type-twins": "tsx scripts/shape/check-kind-type-twins.ts",
+    "check:loading-slug-twin": "tsx scripts/check-loading-slug-twin.ts",
+    "check:loading-slug-twin:strict": "tsx scripts/check-loading-slug-twin.ts --strict",
     "core-check": "pnpm check:ui-primitives && pnpm check:dead-relations",
     "check:migrations:strict": "tsx scripts/check-migrations.ts --strict",
     "check:data-integrity": "tsx scripts/check-data-integrity.ts",

@@ -132,6 +132,11 @@ if $STRICT; then
         # advisory carve-out. (db-rules FEATURE.md §6d-1.)
         "Component ownership law (no created_by)|pnpm check:component-created-by:strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts --strict"
+        # The kind loading-component slug list lives in the frontend (compiled
+        # in, so the skeleton paints with zero latency) and is mirrored by
+        # aidream's kind_create. A slug on one side only is invisible until a
+        # built kind renders the generic skeleton forever.
+        "Kind loading-slug twin (aidream)|pnpm exec tsx scripts/check-loading-slug-twin.ts --strict"
         # CONTENT IR / KINDS — the two halves of the kinds program's frontend
         # gate (KINDS_EVERYWHERE_PLAN.md §6.4). The surface export regenerates
         # the compiled detector table from live content_ir.kind_surface and
@@ -304,6 +309,7 @@ else
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
         "Component ownership law (no created_by)|pnpm check:component-created-by"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
+        "Kind loading-slug twin (aidream)|pnpm exec tsx scripts/check-loading-slug-twin.ts"
         # CONTENT IR / KINDS — the two halves of the kinds program's frontend
         # gate (KINDS_EVERYWHERE_PLAN.md §6.4). The surface export regenerates
         # the compiled detector table from live content_ir.kind_surface and
