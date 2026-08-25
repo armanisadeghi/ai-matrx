@@ -22,14 +22,15 @@ it is written.
 Recognize the shell once, route by SLUG (exact → class prefix rule), render, fall back
 gracefully.
 
-**Protocol mirror pact:** `docs/protocol/MATRX_ENVELOPE.md` + `MATRX_REFERENCES.md` +
-`matrx_envelope_registry.generated.json` are **byte-identical** with aidream's copies;
-aidream is canonical (registry emitted by its `scripts/generate_envelope_registry.py` —
-never edit the JSON by hand, and doc edits land in aidream FIRST). Guarded by
-`pnpm check:protocol-sync` (in `check:release-gates`; `release.sh` auto-syncs + commits
-on drift). `MATRX_DIRECTIVES.md` + `matrx_directives_catalog.generated.json` are deliberately
-NOT mirrored — pointer-only (`features/agents/types/matrx-directives.types.ts` names the
-aidream doc as canonical); mirror them only if the FE gains a catalog consumer.
+**Protocol mirror pact:** `docs/protocol/KIND_DIRECTIVES.md` (the ONE doc the merge
+collapsed `MATRX_ENVELOPE.md` + `MATRX_DIRECTIVES.md` + `MATRX_REFERENCES.md` into) +
+`kind_directive_registry.generated.json` + `kind_directives_catalog.generated.json` are
+**byte-identical** with aidream's copies; aidream is canonical (registries emitted by its
+`scripts/generate_kind_directive_registry.py` — never edit the JSON by hand, and doc edits
+land in aidream FIRST). Guarded by `pnpm check:protocol-sync` (in `check:release-gates`;
+`release.sh` auto-syncs + commits on drift). The catalog is mirrored because the FE has a
+real consumer: `pnpm gen:directive-nouns` derives `catalog-nouns.generated.ts` from it.
+The retired three-file mirror set is DELETED, not kept beside the new one.
 
 ## The canonical reference item — FLAT identity (the load-bearing invariant)
 
@@ -37,7 +38,7 @@ A reference item is **pure flat identity ids + optional, non-authoritative displ
 hints. NOTHING else.** There is no `purpose` / `slot` / `ref` / `display` nesting —
 intent is decided by the item's **position** (in-content fence = resolve in place;
 variable binding = the variable-map key IS the slot), never a field on the item.
-(Mirrors [`docs/protocol/MATRX_REFERENCES.md`](../../docs/protocol/MATRX_REFERENCES.md).)
+(Mirrors [`docs/protocol/KIND_DIRECTIVES.md`](../../docs/protocol/KIND_DIRECTIVES.md).)
 
 **8-type taxonomy** (`REFERENCE_TYPES`): `picklist`, `picklist_group`, `picklist_item`,
 `table`, `table_column`, `table_row`, `table_cell` (+ `dataset_cell` as a registered
@@ -245,7 +246,7 @@ silently drops items the server would have happily applied.
 
 - 2026-07-26 — Claude: **The FE derives nouns from the server catalog — zero edits for a
   new action.** `catalog-nouns.generated.ts` (from the mirrored
-  `matrx_directives_catalog.generated.json`, via `pnpm gen:directive-nouns`, auto-run by
+  `kind_directives_catalog.generated.json`, via `pnpm gen:directive-nouns`, auto-run by
   `check-protocol-sync --fix`) feeds a catalog-derived generic reference resolver:
   `getReferenceResolver` = bespoke `RESOLVERS` overlay → derived
   (schema.table + title_column + identity_fields) → graceful chip. Aliases are the

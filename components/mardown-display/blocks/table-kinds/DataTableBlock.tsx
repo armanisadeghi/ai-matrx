@@ -89,6 +89,7 @@ import {
   Bot,
   Copy,
   Download,
+  Loader2,
   Maximize2,
   Scissors,
   Search,
@@ -126,6 +127,7 @@ import {
   cellToText,
   isNumericColumn,
 } from "./data-table-cells";
+import { useDataTableMore } from "./data-table-more";
 
 export interface DataTableBlockProps {
   serverData?: unknown;
@@ -174,6 +176,9 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
   const { value, isComplete } = readSearchKindValue<"data_table">(serverData);
   const { copyText } = useClipboard();
   const openTableWindow = useOpenTableViewerWindow();
+  // THE FETCH-MORE SEAM (LAW 3). Null when the host cannot re-read — the
+  // banner then says so rather than offering a button that does nothing.
+  const more = useDataTableMore();
 
   const [showAll, setShowAll] = React.useState(false);
   const [sortIndex, setSortIndex] = React.useState<number | null>(null);
@@ -450,39 +455,64 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
         </div>
       </div>
 
-      {/* ── 2. TRUNCATION — the fact four producers used to hide ─────────── */}
+      {/* ── 2. TRUNCATION — the fact four producers used to hide, AND the
+             control that gets the rest (LAW 3: a banner with no control is a
+             dead end wearing a disclosure's clothes). ──────────────────────── */}
       {truncated && (
-        <div className="flex items-start gap-2 border-b border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-400">
-          <Scissors className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>
-            <span className="font-medium">
-              {totalRowCount !== null ? (
-                <>
-                  Showing{" "}
-                  <span className="tabular-nums">{rowCount.toLocaleString()}</span> of{" "}
-                  <span className="tabular-nums">{totalRowCount.toLocaleString()}</span>{" "}
-                  rows.
-                </>
-              ) : (
-                <>
-                  Truncated — this is not the whole table
-                  {truncatedAt !== null ? (
-                    <>
-                      {" "}
-                      (cut at{" "}
-                      <span className="tabular-nums">{truncatedAt.toLocaleString()}</span>)
-                    </>
-                  ) : null}
-                  .
-                </>
-              )}
-            </span>{" "}
-            <span className="opacity-80">
-              {totalRowCount !== null
-                ? "The rest were left at the source."
-                : "The source did not say how many rows exist."}
-            </span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-400">
+          <Scissors className="h-3.5 w-3.5 shrink-0" />
+          <span className="font-medium">
+            {totalRowCount !== null ? (
+              <>
+                You are seeing{" "}
+                <span className="tabular-nums">{rowCount.toLocaleString()}</span> of{" "}
+                <span className="tabular-nums">{totalRowCount.toLocaleString()}</span>{" "}
+                rows.
+              </>
+            ) : (
+              <>
+                This is not the whole table
+                {truncatedAt !== null ? (
+                  <>
+                    {" "}
+                    (it was cut at{" "}
+                    <span className="tabular-nums">{truncatedAt.toLocaleString()}</span>)
+                  </>
+                ) : null}
+                .
+              </>
+            )}
           </span>
+          {more ? (
+            <>
+              <button
+                type="button"
+                disabled={more.pending}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void more.onRequestMore({ have: rowCount, total: totalRowCount });
+                }}
+                className="inline-flex items-center gap-1 rounded border border-amber-500/50 bg-background/60 px-1.5 py-0.5 font-medium text-amber-800 transition-colors hover:bg-background disabled:opacity-60 dark:text-amber-300"
+              >
+                {more.pending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : null}
+                {more.pending
+                  ? "Getting the rest…"
+                  : totalRowCount !== null
+                    ? `Get all ${totalRowCount.toLocaleString()} rows`
+                    : "Get the rest"}
+              </button>
+              {more.limitNote ? (
+                <span className="opacity-80">{more.limitNote}</span>
+              ) : null}
+            </>
+          ) : (
+            <span className="opacity-80">
+              The rest were left at the source, and this view cannot ask for
+              them — re-run the query that produced this table to get them.
+            </span>
+          )}
         </div>
       )}
 
@@ -656,6 +686,12 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
                         value={row[column.index]}
                         type={column.type}
                         missing={column.index >= row.length}
+                        label={column.name}
+                        origin={
+                          sourceLine
+                            ? `Row ${rowIndex + 1} · ${sourceLine}`
+                            : `Row ${rowIndex + 1}${title ? ` · ${title}` : ""}`
+                        }
                       />
                     </td>
                   ))}

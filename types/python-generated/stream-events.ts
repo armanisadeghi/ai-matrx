@@ -1896,7 +1896,6 @@ export interface KeywordResearchIngestSummary {
   edges_written?: number;
   edges_skipped_rejected?: number;
   edges_skipped_self?: number;
-  site_keyword_values_created?: number;
 }
 
 export interface KeywordResearchList {
@@ -1937,7 +1936,6 @@ export interface KeywordVolumeRejectedPhrase {
 export interface KeywordResearchResult {
   result_kind?: "keywords.relationship_research";
   primary_keyword: string;
-  site_id: string;
   research_doc_id: string;
   artifact: KeywordResearchArtifact;
   ingest: KeywordResearchIngestSummary;

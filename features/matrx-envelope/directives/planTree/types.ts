@@ -1,9 +1,10 @@
 /**
- * Items for the `plan_tree` and `plan_node_patch` output_directive envelopes
+ * Items for the `directive_v1_action_plan_tree` / `directive_v1_action_plan_node_patch`
+ * Kind Directives
  * (Content Planning — cross-repo SoR common-docs/systems/marketing/content-planning/
  * FEATURE.md). Mirrors aidream's PlanTreeItem / PlanNodePatchItem
  * (services/content_plan/directives.py; the generated manifest in
- * docs/protocol/matrx_envelope_registry.generated.json is canonical).
+ * docs/protocol/kind_directive_registry.generated.json is canonical).
  * Derived plan.node cache fields (route/depth/pillar/cluster labels) are
  * deliberately absent — the DB trigger owns them.
  */

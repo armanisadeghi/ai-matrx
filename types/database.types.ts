@@ -1162,6 +1162,75 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_remediation: {
+        Row: {
+          agent_id: string
+          agent_name: string | null
+          backlog_reason: string | null
+          batch_id: string | null
+          consumer_manifest: Json | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          impact_rank: number | null
+          metadata: Json
+          organization_id: string
+          remediation_notes: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          verified_at: string | null
+          verified_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          agent_id: string
+          agent_name?: string | null
+          backlog_reason?: string | null
+          batch_id?: string | null
+          consumer_manifest?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          impact_rank?: number | null
+          metadata?: Json
+          organization_id: string
+          remediation_notes?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          agent_id?: string
+          agent_name?: string | null
+          backlog_reason?: string | null
+          batch_id?: string | null
+          consumer_manifest?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          impact_rank?: number | null
+          metadata?: Json
+          organization_id?: string
+          remediation_notes?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       provision: {
         Row: {
           code_path: string | null
