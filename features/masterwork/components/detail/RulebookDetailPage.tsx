@@ -96,7 +96,12 @@ import {
 import { ImproveRuleDialog } from "./ImproveRuleDialog";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import { RuleReviewWizard } from "./RuleReviewWizard";
-import { computeKpis, RulebookKpiStrip } from "./RulebookKpiStrip";
+import {
+  computeKpis,
+  computeMasterworkKpis,
+  MasterworkKpiStrip,
+  RulebookKpiStrip,
+} from "./RulebookKpiStrip";
 import {
   computeJourney,
   journeyFactsFromRulebook,
@@ -613,7 +618,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // bare detail page — the mechanical cause of exemplar's zero rules.
   const ingestParam = searchParams.get("ingest");
   const ingestLane =
-    ingestParam === "source" || ingestParam === "exemplar" || ingestParam === "file"
+    ingestParam === "source" ||
+    ingestParam === "exemplar" ||
+    ingestParam === "file"
       ? ingestParam
       : null;
   useEffect(() => {
@@ -635,7 +642,6 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   /** The dump lane is focused by the deep link OR by the in-page picker. */
   const dumpFocus = dumpParam || dumpRequested;
   const router = useRouter();
-
 
   // The body_of_work Approach ("Everything you've published") lands here with
   // ?body_of_work=1 — the corpus dialog IS the next step.
@@ -670,7 +676,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         setInterviewOpen(true);
         return;
       }
-      if (q.ingest === "source" || q.ingest === "exemplar" || q.ingest === "file") {
+      if (
+        q.ingest === "source" ||
+        q.ingest === "exemplar" ||
+        q.ingest === "file"
+      ) {
         setRequestedIngestLane(q.ingest);
         setIngestOpen(true);
         return;
@@ -752,7 +762,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             .then((rows) => {
               if (cancelled) return;
               const hit = rows.find((a) => a.key === launch.approachKey);
-              if (hit && hit.availability !== "coming_soon") launchApproach(hit);
+              if (hit && hit.availability !== "coming_soon")
+                launchApproach(hit);
               else setApproachPickerOpen(true);
             })
             .catch(() => {
@@ -808,7 +819,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         if (!cancelled) setLibraryOrgId(id);
       })
       .catch((e) => {
-        console.error("[RulebookDetailPage] could not resolve the Library org:", e);
+        console.error(
+          "[RulebookDetailPage] could not resolve the Library org:",
+          e,
+        );
       });
     return () => {
       cancelled = true;
@@ -854,7 +868,6 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       onWindowClose: () => setBuildOpen(false),
     });
   }, [openBuild, rulebookId, reloadMasterworks]);
-
 
   useEffect(() => {
     let cancelled = false;
@@ -1364,6 +1377,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // never counted among the built Masterworks.
   const understudy = masterworks.find((m) => m.understudy) ?? null;
   const builtCount = masterworks.filter((m) => !m.understudy).length;
+  const masterworkKpis = computeMasterworkKpis(masterworks, rulebook.version);
+  const showMasterworksSection = builtCount > 0 || approvedCount > 0;
 
   return (
     <SurfaceRuntimeProvider
@@ -1404,26 +1419,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   </h2>
                 </div>
               </div>
-              {/* THE ACTION CLASSES (Arman, 2026-08-21). His verdict on the
-                  previous row — one primary plus a `More` menu — was that
-                  hiding actions under `More` was an agent's fix for "ugly",
-                  which is a styling problem, applied to findability, which is
-                  not: "These are primary actions. They need to be out, but they
-                  just can't be big and ugly." And: "we have all these different
-                  actions, and they're different classes of actions… yet we've
-                  stuffed them all together."
-
-                  So the actions are split by WHEN THEY HAPPEN, not by how much
-                  room they need:
-                    • MAKE (here, top-right) — the two ways to turn rules into a
-                      working system, named so the difference is legible without
-                      opening anything.
-                    • CHECK & FINISH (the strip under the KPIs) — what you do
-                      once something exists.
-                  Every control carries a tooltip that says what it does AND
-                  which agent it invokes, because he cannot debug an agent he
-                  cannot name (USABILITY-VERDICT-2026-08-21 §7). Menus get
-                  tooltips too — the old `More` menu had none. */}
+              {/* Rulebook-level utilities only. Rule actions live with the
+                  rule KPIs below; Masterwork actions live in their own section. */}
               <div className="flex shrink-0 items-center gap-1.5">
                 {/* CANONICAL SHARING, NEVER A BESPOKE ONE (Arman, 2026-08-20):
                     a Rulebook is a registered shareable resource
@@ -1481,62 +1478,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     />
                   </>
                 ) : null}
-                {/* THE ONE CANONICAL MASTERWORK SYSTEM (Arman, 2026-08-18):
-                    "the only thing that ever makes a Masterwork is our one
-                    single canonical Masterwork system." The Conductor is the
-                    NEW path; the template Build is the OLD one and says so on
-                    its face rather than hiding in a menu. */}
-                {approvedCount > 0 ? (
-                  <>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8"
-                          onClick={openBuildWindow}
-                        >
-                          <Hammer className="h-4 w-4" />
-                          Quick build
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>
-                          Builds a system straight from your{" "}
-                          {approvedCount} approved rules, no questions asked.
-                          Fast, and it can only make the two shapes we ship.
-                        </p>
-                        <p className="mt-1 text-[11px] opacity-70">
-                          Agents: masterwork_template_maker ·
-                          masterwork_rulebook_auditor ·
-                          masterwork_template_chief_generate
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          className="h-8"
-                          onClick={() => setConductorOpen(true)}
-                        >
-                          <BrainCircuit className="h-4 w-4" />
-                          Build it with me
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>
-                          A conversation. It reads your {approvedCount} approved
-                          rules, asks about what is still missing, then builds
-                          the system with you. Slower, and it can make anything.
-                        </p>
-                        <p className="mt-1 text-[11px] opacity-70">
-                          Agent: masterwork_conductor
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </>
-                ) : null}
+                <WhatsWhatDialog
+                  triggerLabel="Guide"
+                  triggerClassName="h-8 px-2 text-xs"
+                />
               </div>
             </div>
             {rulebook.description ? (
@@ -1556,9 +1501,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
               {rulebook.source.author ? (
                 <span>
-                  {rulebook.source.title
-                    ? `“${rulebook.source.title}” — `
-                    : ""}
+                  {rulebook.source.title ? `“${rulebook.source.title}” — ` : ""}
                   {rulebook.source.author}
                   {rulebook.source.year ? `, ${rulebook.source.year}` : ""}
                 </span>
@@ -1596,38 +1539,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 live={understudy !== null}
               />
             </div>
-            {/* CHECK & FINISH — the second action class (Arman, 2026-08-21).
-                These are what you do once something EXISTS, so they sit under
-                the KPIs rather than beside the build actions. Every one of them
-                used to be a row inside `More`, where none of them had a tooltip
-                and none of them said what it was. */}
+            {/* Rules-only actions. Masterwork creation and inventory have a
+                separate section so these controls never imply mixed scope. */}
             <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    asChild
-                    size="sm"
-                    variant="outline"
-                    className="h-8 w-full min-w-0 justify-center px-2 text-xs"
-                  >
-                    <Link href={`/masterwork/${rulebook.id}/masterworks`}>
-                      <Workflow className="h-3.5 w-3.5" />
-                      Built
-                      {builtCount > 0 ? (
-                        <span className="text-xs text-muted-foreground">
-                          {builtCount}
-                        </span>
-                      ) : null}
-                    </Link>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p>
-                    Every system built from this Rulebook — try one on real
-                    work, judge it against your own, or release it.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
               {canEdit && approvedCount > 0 ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1677,10 +1591,6 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   </TooltipContent>
                 </Tooltip>
               ) : null}
-              <WhatsWhatDialog
-                triggerLabel="Guide"
-                triggerClassName="h-8 w-full min-w-0 justify-center px-2 text-xs"
-              />
               {draftCount > 0 && canEdit ? (
                 <>
                   <Button
@@ -1710,6 +1620,105 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             ) : null}
           </div>
 
+          {showMasterworksSection ? (
+            <div className="space-y-3" data-surface-value="masterworks_summary">
+              <section className="rounded-lg border border-border bg-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Workflow className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-foreground">
+                        Masterworks
+                      </h3>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Working systems built from your approved rules.
+                    </p>
+                  </div>
+                  {builtCount > 0 ? (
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 shrink-0 px-2 text-xs"
+                    >
+                      <Link href={`/masterwork/${rulebook.id}/masterworks`}>
+                        View all
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
+
+                <div className="mt-4">
+                  <MasterworkKpiStrip kpis={masterworkKpis} />
+                </div>
+
+                {canEdit && approvedCount > 0 ? (
+                  <div className="mt-3 grid grid-cols-2 gap-1.5">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                          onClick={openBuildWindow}
+                        >
+                          <Hammer className="h-3.5 w-3.5" />
+                          Quick build
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>
+                          Builds a system straight from your {approvedCount}
+                          approved rules, no questions asked.
+                        </p>
+                        <p className="mt-1 text-[11px] opacity-70">
+                          Agents: masterwork_template_maker ·
+                          masterwork_rulebook_auditor ·
+                          masterwork_template_chief_generate
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                          onClick={() => setConductorOpen(true)}
+                        >
+                          <BrainCircuit className="h-3.5 w-3.5" />
+                          Build with me
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>
+                          Reads your approved rules, asks what is missing, and
+                          builds the system with you.
+                        </p>
+                        <p className="mt-1 text-[11px] opacity-70">
+                          Agent: masterwork_conductor
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                ) : null}
+              </section>
+
+              {understudy ? (
+                <div data-surface-value="understudy">
+                  <UnderstudyCard
+                    rulebookId={rulebook.id}
+                    understudy={understudy}
+                    approvedCount={approvedCount}
+                    canEdit={canEdit}
+                    onCreated={reloadMasterworks}
+                  />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {/* THE ONE INPUTS SECTION — interviews, documents, published work,
           AI chats and the record, together. Arman, 2026-08-18: "all of the
           things I'm putting in to get a result should be together, not put
@@ -1736,15 +1745,17 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           13). One crude agent does the whole job now; every rules save
           rebuilds it for free, so the Expert watches it get better instead
           of filling in a form and waiting for value. */}
-          <div data-surface-value="understudy">
-            <UnderstudyCard
-              rulebookId={rulebook.id}
-              understudy={understudy}
-              approvedCount={approvedCount}
-              canEdit={canEdit}
-              onCreated={reloadMasterworks}
-            />
-          </div>
+          {!showMasterworksSection ? (
+            <div data-surface-value="understudy">
+              <UnderstudyCard
+                rulebookId={rulebook.id}
+                understudy={understudy}
+                approvedCount={approvedCount}
+                canEdit={canEdit}
+                onCreated={reloadMasterworks}
+              />
+            </div>
+          ) : null}
 
           {/* THE COHERENCE PARTNER (D11 · UNPARTNERED CAPTURE) — the questions
           only the Expert can settle, sitting directly above the rules they are

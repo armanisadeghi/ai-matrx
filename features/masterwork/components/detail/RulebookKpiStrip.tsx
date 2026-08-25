@@ -13,10 +13,13 @@ import {
   CircleDashed,
   ListChecks,
   MessageSquareWarning,
+  Rocket,
   Trophy,
+  Workflow,
   XCircle,
 } from "lucide-react";
-import type { Rulebook } from "../../types";
+import { cn } from "@/lib/utils";
+import type { Masterwork, Rulebook } from "../../types";
 import { ruleState } from "../../types";
 import type { Journey } from "../../journey";
 
@@ -29,6 +32,34 @@ export interface RulebookKpis {
   retired: number;
   /** 0-100, share of live rules the Expert has approved. */
   progressPct: number;
+}
+
+export interface MasterworkKpis {
+  built: number;
+  current: number;
+  released: number;
+  currentPct: number;
+}
+
+export function computeMasterworkKpis(
+  masterworks: Masterwork[],
+  rulebookVersion: number,
+): MasterworkKpis {
+  const built = masterworks.filter((masterwork) => !masterwork.understudy);
+  const current = built.filter(
+    (masterwork) => masterwork.rulebook_version === rulebookVersion,
+  ).length;
+  const released = built.filter(
+    (masterwork) => masterwork.released_at !== null,
+  ).length;
+
+  return {
+    built: built.length,
+    current,
+    released,
+    currentPct:
+      built.length === 0 ? 0 : Math.round((current / built.length) * 100),
+  };
 }
 
 export function computeKpis(rulebook: Pick<Rulebook, "rules">): RulebookKpis {
@@ -119,7 +150,9 @@ function Tile({
         <div className={`text-base font-semibold tabular-nums ${valueCls}`}>
           {value}
         </div>
-        <div className="truncate text-[10px] text-muted-foreground">{label}</div>
+        <div className="truncate text-[10px] text-muted-foreground">
+          {label}
+        </div>
       </div>
     </div>
   );
@@ -217,6 +250,62 @@ export function RulebookKpiStrip({
               done ? "bg-emerald-500" : "bg-primary"
             }`}
             style={{ width: `${Math.max(kpis.progressPct, 2)}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function MasterworkKpiStrip({ kpis }: { kpis: MasterworkKpis }) {
+  const allCurrent = kpis.built > 0 && kpis.current === kpis.built;
+  const freshnessLine =
+    kpis.built === 0
+      ? "No Masterworks built yet."
+      : allCurrent
+        ? "Every Masterwork is using the current rules."
+        : `${kpis.built - kpis.current} ${kpis.built - kpis.current === 1 ? "Masterwork needs" : "Masterworks need"} rebuilding.`;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        <Tile
+          icon={<Workflow className="h-4 w-4" />}
+          value={kpis.built}
+          label="Built"
+        />
+        <Tile
+          icon={<BadgeCheck className="h-4 w-4" />}
+          value={kpis.current}
+          label="Current"
+          tone={allCurrent ? "positive" : "attention"}
+        />
+        <Tile
+          icon={<Rocket className="h-4 w-4" />}
+          value={kpis.released}
+          label="Released"
+          tone={kpis.released > 0 ? "positive" : "muted"}
+        />
+      </div>
+      <div>
+        <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+          <span className="truncate">{freshnessLine}</span>
+          <span className="shrink-0 tabular-nums">{kpis.currentPct}%</span>
+        </div>
+        <div
+          className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuenow={kpis.currentPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Masterworks using the current rules"
+        >
+          <div
+            className={cn(
+              "h-full rounded-full transition-all duration-500",
+              allCurrent ? "bg-emerald-500" : "bg-primary",
+            )}
+            style={{ width: `${Math.max(kpis.currentPct, 2)}%` }}
           />
         </div>
       </div>
