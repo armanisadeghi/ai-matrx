@@ -15,13 +15,17 @@
  * Shared by the admin console (`EnrollmentDetailPanel`) and the product
  * improvement workspace (`EnrollmentSidebar`) — one honesty surface, not two.
  */
-import { useQuery } from "@tanstack/react-query";
-import { Clock, Eye } from "lucide-react";
-
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Clock, Eye, Repeat2 } from "lucide-react";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { toast } from "@/lib/toast";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
+import { describeBackendFailure } from "@/lib/api/errors";
 
-import { getPendingExamples } from "../api";
+import { getPendingExamples, triggerReplay } from "../api";
 import { exampleDoor, type DoorAudience } from "../subject-doors";
 import type { PendingExample, SubjectKind } from "../types";
 import { DoorLink } from "./DoorLink";
@@ -34,6 +38,21 @@ import { fmtDate } from "./tokens";
  * conversations, but focusing one is still refused.
  */
 const FOCUSABLE_SUBJECT_KINDS: SubjectKind[] = ["agent", "orchestra", "workflow"];
+
+/**
+ * Which example kinds the replay endpoint can actually re-run. `ReplayRequest`
+ * accepts a conversation OR a workflow run and nothing else — a
+ * `wf_node_outcome` is a step INSIDE a run, not a re-issuable call, so it gets
+ * no button rather than a button that 422s.
+ */
+const REPLAYABLE_EXAMPLE_KINDS = new Set(["conversation", "wf_run"]);
+
+/** The kind-shaped source the server demands: exactly one of the two. */
+function replaySourceFor(kind: string, id: string) {
+  return kind === "wf_run"
+    ? { source_wf_run_id: id }
+    : { source_conversation_id: id };
+}
 
 export function PendingExamplesPanel({
   enrollmentId,
@@ -51,12 +70,40 @@ export function PendingExamplesPanel({
   reviewRunning: boolean;
   className?: string;
 }) {
+  const isAdmin = useAppSelector(selectIsAdmin);
+  const queryClient = useQueryClient();
   const pending = useQuery({
     queryKey: ["hindsight", "pending-examples", enrollmentId],
     queryFn: () => getPendingExamples(enrollmentId),
     // "What's pending" tolerates a minute of staleness; the query does real
     // DB scans server-side and this panel mounts on every enrollment view.
     staleTime: 60_000,
+  });
+
+  // Replay re-runs a REAL recorded call and pays for it. Nothing in the UI
+  // could start one before this — `triggerReplay` existed in the API client
+  // with zero callers, so the replay judge was only ever reachable from
+  // server-side queues.
+  const replay = useMutation({
+    mutationFn: ({ kind, id }: { kind: string; id: string }) =>
+      triggerReplay(enrollmentId, replaySourceFor(kind, id)),
+    onSuccess: (result) => {
+      if (result.status === "failed") {
+        toast.error(
+          `Replay did not run: ${result.reason ?? "no reason given"}`,
+        );
+      } else if (result.verdict) {
+        toast.success(`Replay judged: ${result.verdict}`);
+      } else {
+        toast.success("Replay queued.");
+      }
+      // The verdict lands on the enrollment's replay tables and its spend
+      // counters — both are on the detail query, not this one.
+      queryClient.invalidateQueries({ queryKey: ["hindsight", "enrollment"] });
+      queryClient.invalidateQueries({ queryKey: ["hindsight", "costs"] });
+    },
+    onError: (err: Error) =>
+      toast.error(describeBackendFailure(err).headline),
   });
 
   // A fetch failure must NOT render as "nothing pending, all settled" — that
@@ -131,6 +178,37 @@ export function PendingExamplesPanel({
                   >
                     <Eye className="mr-1 h-3 w-3" />
                     Review just this
+                  </Button>
+                )}
+                {isAdmin && REPLAYABLE_EXAMPLE_KINDS.has(ex.kind) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 max-w-full px-2 text-[11px]"
+                    disabled={replay.isPending}
+                    data-testid="hindsight-replay-example"
+                    title="Re-run this exact call against the candidate change and rank the result against what really happened. Spends real money."
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: "Replay this recorded call?",
+                        description:
+                          "It re-runs the original request on a private fork and pays for the run. The judge then ranks the result against what really happened.",
+                        confirmLabel: "Replay",
+                      });
+                      if (ok) replay.mutate({ kind: ex.kind, id: ex.id });
+                    }}
+                  >
+                    <Repeat2
+                      className={cn(
+                        "mr-1 h-3 w-3",
+                        replay.isPending &&
+                          replay.variables?.id === ex.id &&
+                          "animate-spin",
+                      )}
+                    />
+                    {replay.isPending && replay.variables?.id === ex.id
+                      ? "Replaying…"
+                      : "Replay"}
                   </Button>
                 )}
               </div>

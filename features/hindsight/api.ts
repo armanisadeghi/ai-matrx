@@ -192,10 +192,24 @@ export async function rejectFinding(id: string): Promise<FindingDecision> {
   return data;
 }
 
+/**
+ * Re-run ONE recorded call against a candidate change and let the replay judge
+ * rank it against what really happened.
+ *
+ * The source is kind-shaped, exactly as the server models it
+ * (`ReplayRequest`, aidream/api/routers/hindsight.py): an AGENT replay carries
+ * `source_conversation_id`, a WORKFLOW replay carries `source_wf_run_id`, and
+ * the service plus a DB CHECK enforce that exactly one is present. This used
+ * to accept only the conversation half, which silently made every workflow
+ * enrollment unreplayable from the UI.
+ *
+ * Admin-only and it SPENDS REAL MONEY on every call — confirm before invoking.
+ */
 export async function triggerReplay(
   enrollmentId: string,
   body: {
-    source_conversation_id: string;
+    source_conversation_id?: string | null;
+    source_wf_run_id?: string | null;
     overrides?: Record<string, unknown>;
     finding_id?: string | null;
     variant?: string;
