@@ -2,25 +2,23 @@
  * check-protocol-sync.ts — the Matrx protocol mirror set must be byte-identical
  * to aidream's copy.
  *
- * MATRX_ENVELOPE.md declares itself and the generated registry "kept
- * byte-identical in aidream and matrx-frontend"; its change log extends the
- * mandate to MATRX_REFERENCES.md. aidream is the canonical side: the registry
- * JSON is emitted by aidream's scripts/generate_envelope_registry.py, and doc
- * edits land in aidream FIRST, then copy here. aidream's
- * validate_envelope_registry.py checks the same pact from its side; this script
- * is the FE half, so drift screams no matter which repo ships first.
+ * KIND_DIRECTIVES.md (the ONE protocol doc the 2026-08-23 merge collapsed
+ * MATRX_ENVELOPE.md + MATRX_DIRECTIVES.md + MATRX_REFERENCES.md into) and the
+ * two generated registries are kept byte-identical in aidream and
+ * matrx-frontend. aidream is the canonical side: the registry JSON is emitted
+ * by its generate_kind_directive_registry.py, and doc edits land in aidream
+ * FIRST, then copy here. aidream's validate_kind_directive_registry.py checks
+ * the same pact from its side; this script is the FE half, so drift screams no
+ * matter which repo ships first.
  *
  * How it rotted before this existed: the FE registry sat at 11 shapes while
  * aidream grew to 87 (plan_tree, plan_node_patch, context_groom, ~74 reference
  * types missing), and MATRX_REFERENCES.md was a 6KB ancestor of aidream's 18KB
  * current doc — both discovered by hand on 2026-07-25.
  *
- * Deliberately NOT mirrored: MATRX_DIRECTIVES.md + matrx_directives_catalog.generated.json.
- * Neither declares a byte-identical mandate, the FE has no consumer of the
- * catalog (features/agents/types/matrx-directives.types.ts points at the aidream
- * doc as canonical), and per house rules a cross-repo pointer beats a second
- * copy that needs its own sync. Add them to MIRROR_FILES only if the docs gain
- * the mandate and the FE gains a consumer.
+ * The catalog IS mirrored now (it was not before): the FE has a real consumer —
+ * scripts/gen-directive-nouns.mjs derives catalog-nouns.generated.ts from it,
+ * which is what gives every enrolled noun a resolver and a display name.
  *
  * Modes:
  *   default   — advisory: loud report, exit 0
@@ -51,10 +49,9 @@ const RESET = "\x1b[0m";
 const AIDREAM_DIR = process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream");
 
 const MIRROR_FILES = [
-  "docs/protocol/MATRX_ENVELOPE.md",
-  "docs/protocol/MATRX_REFERENCES.md",
-  "docs/protocol/matrx_envelope_registry.generated.json",
-  "docs/protocol/matrx_directives_catalog.generated.json",
+  "docs/protocol/KIND_DIRECTIVES.md",
+  "docs/protocol/kind_directive_registry.generated.json",
+  "docs/protocol/kind_directives_catalog.generated.json",
 ];
 
 if (!existsSync(join(AIDREAM_DIR, "docs", "protocol"))) {
@@ -125,6 +122,19 @@ for (const unavailable of unavailableCanonical) {
 
 if (diverged.length === 0) {
   const compared = MIRROR_FILES.length - unavailableCanonical.length;
+  // "0 of 4 compared" printed [OK] for weeks after the Kind Directives merge
+  // renamed every file on the canonical side: a green tick naming a pact it did
+  // not test. A run that compared NOTHING is UNMEASURED, never a pass
+  // (THE STRICTNESS LAW clause 7).
+  if (compared === 0) {
+    console.error(
+      `${RED}${BOLD}[UNMEASURED]${RESET} Protocol mirror set compared 0/${MIRROR_FILES.length} files — every canonical\n` +
+        `             source is missing from ${AIDREAM_DIR}. Either the checkout is stale or the\n` +
+        `             mirror set has been renamed on the aidream side; MIRROR_FILES in this\n` +
+        `             script is the list to fix.`,
+    );
+    process.exit(2);
+  }
   console.log(`${GREEN}[OK]${RESET} Protocol mirror set matches every available aidream source (${compared}/${MIRROR_FILES.length} files compared).`);
   process.exit(0);
 }

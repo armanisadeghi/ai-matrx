@@ -11103,6 +11103,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -20522,6 +20546,88 @@ export interface paths {
         get: operations["list_providers_admin_ops_providers_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/kind-incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Kind Incidents
+         * @description Triage-weight page of Shape render incidents, most-recently-seen first.
+         */
+        get: operations["list_kind_incidents_admin_kind_incidents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/kind-incidents/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Kind Incident Metrics
+         * @description The shape of the queue: how much is open, of what type, worst Shapes first.
+         */
+        get: operations["kind_incident_metrics_admin_kind_incidents_metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/kind-incidents/{incident_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Kind Incident
+         * @description One incident with its diagnostic payload — every field capped and the
+         *     cuts named in ``truncated_fields``.
+         */
+        get: operations["get_kind_incident_admin_kind_incidents__incident_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/kind-incidents/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Kind Incidents
+         * @description Close incidents. Ids already closed (or absent) come back in
+         *     ``skipped_ids`` rather than counting as success.
+         */
+        post: operations["resolve_kind_incidents_admin_kind_incidents_resolve_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -32471,6 +32577,10 @@ export interface components {
              * @default false
              */
             force_refresh?: boolean;
+            /** Local Keyword */
+            local_keyword?: string | null;
+            /** Local Location */
+            local_location?: string | null;
         };
         /** CompetitorAutopsyResult */
         CompetitorAutopsyResult: {
@@ -36154,6 +36264,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -44035,6 +44172,8 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
+            /** Site Id */
+            site_id: string;
             /** Primary Keyword */
             primary_keyword: string;
             /**
@@ -44097,6 +44236,11 @@ export interface components {
              * @default 0
              */
             edges_skipped_self?: number;
+            /**
+             * Site Keyword Values Created
+             * @default 0
+             */
+            site_keyword_values_created?: number;
         };
         /**
          * KeywordResearchList
@@ -44130,6 +44274,8 @@ export interface components {
             result_kind: "keywords.relationship_research";
             /** Primary Keyword */
             primary_keyword: string;
+            /** Site Id */
+            site_id: string;
             /** Research Doc Id */
             research_doc_id: string;
             artifact: components["schemas"]["KeywordResearchArtifact"];
@@ -44534,6 +44680,147 @@ export interface components {
             is_canonical: boolean;
             /** Validation Status */
             validation_status: string;
+        };
+        /**
+         * KindIncidentDetail
+         * @description One incident with the diagnostic payload — each field capped.
+         */
+        KindIncidentDetail: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Kind Definition Id */
+            kind_definition_id: string;
+            /** Error Type */
+            error_type: string;
+            /** Message */
+            message: string;
+            /** Platform */
+            platform: string | null;
+            /** Role */
+            role: string | null;
+            /** Component Key */
+            component_key: string | null;
+            /** Component Version */
+            component_version: number | null;
+            /** Occurrences */
+            occurrences: number;
+            /** First Seen At */
+            first_seen_at: string | null;
+            /** Last Seen At */
+            last_seen_at: string | null;
+            /** Routes */
+            routes: string[];
+            /** Signal */
+            signal: string | null;
+            /** Resolved */
+            resolved: boolean;
+            /** Resolved At */
+            resolved_at: string | null;
+            /** Resolution Notes */
+            resolution_notes: string | null;
+            /** Full Message */
+            full_message: string;
+            /** Stack */
+            stack: string | null;
+            data_shape: components["schemas"]["JsonValue"] | null;
+            browser: components["schemas"]["JsonValue"] | null;
+            /** Truncated Fields */
+            truncated_fields?: string[];
+        };
+        /** KindIncidentKindStat */
+        KindIncidentKindStat: {
+            /** Kind */
+            kind: string;
+            /** Open Incidents */
+            open_incidents: number;
+            /** Observations */
+            observations: number;
+            /** Last Seen At */
+            last_seen_at: string | null;
+        };
+        /** KindIncidentListResponse */
+        KindIncidentListResponse: {
+            /** Rows */
+            rows: components["schemas"]["KindIncidentSummary"][];
+            /** Returned */
+            returned: number;
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * KindIncidentMetrics
+         * @description The shape of the queue — what to fix first, in one object.
+         */
+        KindIncidentMetrics: {
+            /** Open Incidents */
+            open_incidents: number;
+            /** Resolved Incidents */
+            resolved_incidents: number;
+            /** Open Observations */
+            open_observations: number;
+            /** By Error Type */
+            by_error_type: {
+                [key: string]: number;
+            };
+            /** Worst Kinds */
+            worst_kinds: components["schemas"]["KindIncidentKindStat"][];
+            /** Kinds Affected */
+            kinds_affected: number;
+        };
+        /** KindIncidentResolveResponse */
+        KindIncidentResolveResponse: {
+            /** Resolved Ids */
+            resolved_ids: string[];
+            /** Requested */
+            requested: number;
+            /** Skipped Ids */
+            skipped_ids: string[];
+        };
+        /**
+         * KindIncidentSummary
+         * @description One incident, at triage weight.
+         */
+        KindIncidentSummary: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Kind Definition Id */
+            kind_definition_id: string;
+            /** Error Type */
+            error_type: string;
+            /** Message */
+            message: string;
+            /** Platform */
+            platform: string | null;
+            /** Role */
+            role: string | null;
+            /** Component Key */
+            component_key: string | null;
+            /** Component Version */
+            component_version: number | null;
+            /** Occurrences */
+            occurrences: number;
+            /** First Seen At */
+            first_seen_at: string | null;
+            /** Last Seen At */
+            last_seen_at: string | null;
+            /** Routes */
+            routes: string[];
+            /** Signal */
+            signal: string | null;
+            /** Resolved */
+            resolved: boolean;
+            /** Resolved At */
+            resolved_at: string | null;
+            /** Resolution Notes */
+            resolution_notes: string | null;
         };
         /**
          * KindPickerEntry
@@ -55739,6 +56026,13 @@ export interface components {
              * Format: date-time
              */
             resolved_at: string;
+        };
+        /** ResolveKindIncidentsRequest */
+        ResolveKindIncidentsRequest: {
+            /** Ids */
+            ids: string[];
+            /** Resolution Notes */
+            resolution_notes: string;
         };
         /** ResolvePartyBatchRequest */
         ResolvePartyBatchRequest: {
@@ -87902,6 +88196,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -104712,6 +105041,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": string[];
+                };
+            };
+        };
+    };
+    list_kind_incidents_admin_kind_incidents_get: {
+        parameters: {
+            query?: {
+                scope?: "open" | "resolved" | "any";
+                kind?: string | null;
+                error_type?: string | null;
+                platform?: string | null;
+                since?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KindIncidentListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    kind_incident_metrics_admin_kind_incidents_metrics_get: {
+        parameters: {
+            query?: {
+                since?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KindIncidentMetrics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_kind_incident_admin_kind_incidents__incident_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KindIncidentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_kind_incidents_admin_kind_incidents_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveKindIncidentsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KindIncidentResolveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

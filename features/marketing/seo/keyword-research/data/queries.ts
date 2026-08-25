@@ -578,7 +578,7 @@ export async function copySiteKeywords(input: {
   const response = await (await seoDb()).rpc("site_keyword_value_copy", {
     p_from_site: input.fromSiteId,
     p_to_site: input.toSiteId,
-    p_keyword_ids: input.keywordIds ?? null,
+    p_keyword_ids: input.keywordIds,
     p_dry_run: input.dryRun,
   });
   if (response.error) throw response.error;

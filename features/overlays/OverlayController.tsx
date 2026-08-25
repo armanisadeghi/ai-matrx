@@ -628,6 +628,13 @@ const CharacterCounterWindow = lazyOverlay(
     import("@/features/window-panels/windows/text-counter/CharacterCounterWindow"),
   { ssr: false },
 );
+const StructuredValueWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/structured-value/StructuredValueWindow"
+    ),
+  { ssr: false },
+);
 const ConvertToShapeWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/content-ir/ConvertToShapeWindow"),
@@ -1896,6 +1903,9 @@ export default function OverlayController() {
     ),
     siteCommandRunWindow: useAppSelector((s) =>
       selectOpenInstances(s, "siteCommandRunWindow"),
+    ),
+    structuredValueWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "structuredValueWindow"),
     ),
     extractionCellEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "extractionCellEditorWindow"),
@@ -5019,6 +5029,34 @@ export default function OverlayController() {
             mode={modeRaw}
             target={typeof data?.target === "string" ? data.target : null}
             sitePath={typeof data?.sitePath === "string" ? data.sitePath : null}
+          />
+        );
+      })}
+
+      {/* structuredValueWindow — multi-instance (compare two structures) */}
+      {instancesById.structuredValueWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <StructuredValueWindow
+            key={inst.instanceId}
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : inst.instanceId
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "structuredValueWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            value={data?.value}
+            title={typeof data?.title === "string" ? data.title : null}
+            subtitle={
+              typeof data?.subtitle === "string" ? data.subtitle : null
+            }
           />
         );
       })}

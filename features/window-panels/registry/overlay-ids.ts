@@ -140,6 +140,7 @@ export const OVERLAY_IDS = [
   "pdfExtractorWindow",
   "pdfBatchExtractDebugWindow",
   "structuredListManagerV1Window",
+  "structuredValueWindow",
   "structuredListManagerV2Window",
   "projectsWindow",
   "contextPreviewPanel",

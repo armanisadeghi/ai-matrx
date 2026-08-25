@@ -1457,6 +1457,20 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
+  // ── Details (one structured value, through the canonical renderer) ────────
+  // Ephemeral on purpose: the window shows a value a surface handed it, and a
+  // restored frame with no value behind it would be an empty box claiming to
+  // be a record.
+  {
+    slug: "structured-value-window",
+    overlayId: "structuredValueWindow",
+    kind: "window",
+    label: "Details",
+    defaultData: { value: null, title: null, subtitle: null },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+
   // ── Convert JSON to Shape ─────────────────────────────────────────────────
   {
     slug: "convert-to-shape-window",

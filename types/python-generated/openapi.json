@@ -27905,6 +27905,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -53743,6 +53803,287 @@
                   },
                   "type": "array",
                   "title": "Response List Providers Admin Ops Providers Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/kind-incidents": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin Shape Incidents"
+        ],
+        "summary": "List Kind Incidents",
+        "description": "Triage-weight page of Shape render incidents, most-recently-seen first.",
+        "operationId": "list_kind_incidents_admin_kind_incidents_get",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "open",
+                "resolved",
+                "any"
+              ],
+              "type": "string",
+              "default": "open",
+              "title": "Scope"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "error_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error Type"
+            }
+          },
+          {
+            "name": "platform",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Platform"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KindIncidentListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/kind-incidents/metrics": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin Shape Incidents"
+        ],
+        "summary": "Kind Incident Metrics",
+        "description": "The shape of the queue: how much is open, of what type, worst Shapes first.",
+        "operationId": "kind_incident_metrics_admin_kind_incidents_metrics_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KindIncidentMetrics"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/kind-incidents/{incident_id}": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin Shape Incidents"
+        ],
+        "summary": "Get Kind Incident",
+        "description": "One incident with its diagnostic payload — every field capped and the\ncuts named in ``truncated_fields``.",
+        "operationId": "get_kind_incident_admin_kind_incidents__incident_id__get",
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KindIncidentDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/kind-incidents/resolve": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin Shape Incidents"
+        ],
+        "summary": "Resolve Kind Incidents",
+        "description": "Close incidents. Ids already closed (or absent) come back in\n``skipped_ids`` rather than counting as success.",
+        "operationId": "resolve_kind_incidents_admin_kind_incidents_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveKindIncidentsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KindIncidentResolveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -84921,6 +85262,30 @@
             "type": "boolean",
             "title": "Force Refresh",
             "default": false
+          },
+          "local_keyword": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Keyword"
+          },
+          "local_location": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Location"
           }
         },
         "additionalProperties": false,
@@ -94513,6 +94878,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -114560,6 +114980,11 @@
             "title": "Task Id",
             "description": "Optional associated task selected by the caller."
           },
+          "site_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Site Id"
+          },
           "primary_keyword": {
             "type": "string",
             "minLength": 1,
@@ -114599,6 +115024,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "site_id",
           "primary_keyword"
         ],
         "title": "KeywordResearchBody"
@@ -114635,6 +115061,11 @@
           "edges_skipped_self": {
             "type": "integer",
             "title": "Edges Skipped Self",
+            "default": 0
+          },
+          "site_keyword_values_created": {
+            "type": "integer",
+            "title": "Site Keyword Values Created",
             "default": 0
           }
         },
@@ -114686,6 +115117,10 @@
             "type": "string",
             "title": "Primary Keyword"
           },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
           "research_doc_id": {
             "type": "string",
             "title": "Research Doc Id"
@@ -114721,6 +115156,7 @@
         "type": "object",
         "required": [
           "primary_keyword",
+          "site_id",
           "research_doc_id",
           "artifact",
           "ingest"
@@ -115563,6 +115999,530 @@
         ],
         "title": "KindExampleDescriptor",
         "description": "One kind_example row — a validated sample value for the kind.\n\nServed ONLY on the by-slug endpoint (``load_kind``); the full-catalog\nresponse stays lean (Content-IR spec §6 P3 — \"extend /workflow/kinds/\n{slug} to include examples\"). Canonical-first, so ``examples[0]`` is the\nright prefill for authoring surfaces (test-node dialog)."
+      },
+      "KindIncidentDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "kind_definition_id": {
+            "type": "string",
+            "title": "Kind Definition Id"
+          },
+          "error_type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "component_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Component Key"
+          },
+          "component_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Component Version"
+          },
+          "occurrences": {
+            "type": "integer",
+            "title": "Occurrences"
+          },
+          "first_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen At"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "routes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Routes"
+          },
+          "signal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal"
+          },
+          "resolved": {
+            "type": "boolean",
+            "title": "Resolved"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolution_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Notes"
+          },
+          "full_message": {
+            "type": "string",
+            "title": "Full Message"
+          },
+          "stack": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stack"
+          },
+          "data_shape": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "browser": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truncated_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Truncated Fields"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "kind_definition_id",
+          "error_type",
+          "message",
+          "platform",
+          "role",
+          "component_key",
+          "component_version",
+          "occurrences",
+          "first_seen_at",
+          "last_seen_at",
+          "routes",
+          "signal",
+          "resolved",
+          "resolved_at",
+          "resolution_notes",
+          "full_message",
+          "stack",
+          "data_shape",
+          "browser"
+        ],
+        "title": "KindIncidentDetail",
+        "description": "One incident with the diagnostic payload — each field capped."
+      },
+      "KindIncidentKindStat": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "open_incidents": {
+            "type": "integer",
+            "title": "Open Incidents"
+          },
+          "observations": {
+            "type": "integer",
+            "title": "Observations"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "open_incidents",
+          "observations",
+          "last_seen_at"
+        ],
+        "title": "KindIncidentKindStat"
+      },
+      "KindIncidentListResponse": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/KindIncidentSummary"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "returned": {
+            "type": "integer",
+            "title": "Returned"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rows",
+          "returned",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "KindIncidentListResponse"
+      },
+      "KindIncidentMetrics": {
+        "properties": {
+          "open_incidents": {
+            "type": "integer",
+            "title": "Open Incidents"
+          },
+          "resolved_incidents": {
+            "type": "integer",
+            "title": "Resolved Incidents"
+          },
+          "open_observations": {
+            "type": "integer",
+            "title": "Open Observations"
+          },
+          "by_error_type": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Error Type"
+          },
+          "worst_kinds": {
+            "items": {
+              "$ref": "#/components/schemas/KindIncidentKindStat"
+            },
+            "type": "array",
+            "title": "Worst Kinds"
+          },
+          "kinds_affected": {
+            "type": "integer",
+            "title": "Kinds Affected"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "open_incidents",
+          "resolved_incidents",
+          "open_observations",
+          "by_error_type",
+          "worst_kinds",
+          "kinds_affected"
+        ],
+        "title": "KindIncidentMetrics",
+        "description": "The shape of the queue — what to fix first, in one object."
+      },
+      "KindIncidentResolveResponse": {
+        "properties": {
+          "resolved_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Resolved Ids"
+          },
+          "requested": {
+            "type": "integer",
+            "title": "Requested"
+          },
+          "skipped_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skipped Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "resolved_ids",
+          "requested",
+          "skipped_ids"
+        ],
+        "title": "KindIncidentResolveResponse"
+      },
+      "KindIncidentSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "kind_definition_id": {
+            "type": "string",
+            "title": "Kind Definition Id"
+          },
+          "error_type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "component_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Component Key"
+          },
+          "component_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Component Version"
+          },
+          "occurrences": {
+            "type": "integer",
+            "title": "Occurrences"
+          },
+          "first_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen At"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "routes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Routes"
+          },
+          "signal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signal"
+          },
+          "resolved": {
+            "type": "boolean",
+            "title": "Resolved"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolution_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "kind_definition_id",
+          "error_type",
+          "message",
+          "platform",
+          "role",
+          "component_key",
+          "component_version",
+          "occurrences",
+          "first_seen_at",
+          "last_seen_at",
+          "routes",
+          "signal",
+          "resolved",
+          "resolved_at",
+          "resolution_notes"
+        ],
+        "title": "KindIncidentSummary",
+        "description": "One incident, at triage weight."
       },
       "KindPickerEntry": {
         "properties": {
@@ -144044,6 +145004,32 @@
           "resolved_at"
         ],
         "title": "ResolveErrorResponse"
+      },
+      "ResolveKindIncidentsRequest": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Ids"
+          },
+          "resolution_notes": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Resolution Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ids",
+          "resolution_notes"
+        ],
+        "title": "ResolveKindIncidentsRequest"
       },
       "ResolvePartyBatchRequest": {
         "properties": {

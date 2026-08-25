@@ -63894,6 +63894,1065 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
+   "label": "Notification",
+   "noun": "notification",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "attempt_count": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": 0,
+       "title": "Attempt Count"
+      },
+      "body": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Body"
+      },
+      "channel": {
+       "title": "Channel",
+       "type": "string"
+      },
+      "claimed_by": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Claimed By"
+      },
+      "dedupe_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Dedupe Key"
+      },
+      "error_code": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Error Code"
+      },
+      "error_message": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Error Message"
+      },
+      "event_key": {
+       "title": "Event Key",
+       "type": "string"
+      },
+      "lease_expires_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Lease Expires At"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "next_attempt_at": {
+       "format": "date-time",
+       "title": "Next Attempt At",
+       "type": "string"
+      },
+      "payload": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "provider": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Provider"
+      },
+      "provider_message_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Provider Message Id"
+      },
+      "recipient_user_id": {
+       "title": "Recipient User Id",
+       "type": "string"
+      },
+      "sent_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Sent At"
+      },
+      "status": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "pending",
+       "title": "Status"
+      },
+      "subject": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject"
+      },
+      "to_address": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "To Address"
+      }
+     },
+     "required": [
+      "event_key",
+      "recipient_user_id",
+      "channel",
+      "next_attempt_at"
+     ],
+     "title": "CreateNotificationItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteNotificationItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "attempt_count": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Attempt Count"
+      },
+      "body": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Body"
+      },
+      "channel": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Channel"
+      },
+      "claimed_by": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Claimed By"
+      },
+      "dedupe_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Dedupe Key"
+      },
+      "error_code": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Error Code"
+      },
+      "error_message": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Error Message"
+      },
+      "event_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Event Key"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "lease_expires_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Lease Expires At"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "next_attempt_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Next Attempt At"
+      },
+      "payload": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "provider": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Provider"
+      },
+      "provider_message_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Provider Message Id"
+      },
+      "recipient_user_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Recipient User Id"
+      },
+      "sent_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Sent At"
+      },
+      "status": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Status"
+      },
+      "subject": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject"
+      },
+      "to_address": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "To Address"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateNotificationItem",
+     "type": "object"
+    }
+   },
+   "table": "communication.notification",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Notification Event Type",
+   "noun": "notification_event_type",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "config": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "default_channels": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "description": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Description"
+      },
+      "enabled": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": true,
+       "title": "Enabled"
+      },
+      "event_key": {
+       "title": "Event Key",
+       "type": "string"
+      },
+      "label": {
+       "title": "Label",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      }
+     },
+     "required": [
+      "event_key",
+      "label"
+     ],
+     "title": "CreateNotificationEventTypeItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteNotificationEventTypeItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "config": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "default_channels": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "description": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Description"
+      },
+      "enabled": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Enabled"
+      },
+      "event_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Event Key"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "label": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Label"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateNotificationEventTypeItem",
+     "type": "object"
+    }
+   },
+   "table": "communication.notification_event_type",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Notification Preference",
+   "noun": "notification_preference",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "channel": {
+       "title": "Channel",
+       "type": "string"
+      },
+      "enabled": {
+       "title": "Enabled",
+       "type": "boolean"
+      },
+      "event_key": {
+       "title": "Event Key",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      }
+     },
+     "required": [
+      "event_key",
+      "channel",
+      "enabled"
+     ],
+     "title": "CreateNotificationPreferenceItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteNotificationPreferenceItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "channel": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Channel"
+      },
+      "enabled": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Enabled"
+      },
+      "event_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Event Key"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateNotificationPreferenceItem",
+     "type": "object"
+    }
+   },
+   "table": "communication.notification_preference",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
    "label": "Ops Issue Event",
    "noun": "ops_issue_event",
    "reference": "no",
@@ -79157,6 +80216,367 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
+   "label": "SEO Engine Schedule",
+   "noun": "seo_engine_schedule",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "cadence": {
+       "title": "Cadence",
+       "type": "string"
+      },
+      "day_of_week": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Day Of Week"
+      },
+      "enabled": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": false,
+       "title": "Enabled"
+      },
+      "engine_slug": {
+       "title": "Engine Slug",
+       "type": "string"
+      },
+      "max_keywords_per_run": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": 50,
+       "title": "Max Keywords Per Run"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "notes": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Notes"
+      },
+      "run_at_utc": {
+       "anyOf": [
+        {
+         "format": "time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Run At Utc"
+      },
+      "scope_organization_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Scope Organization Id"
+      },
+      "scope_tier": {
+       "title": "Scope Tier",
+       "type": "string"
+      },
+      "site_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Site Id"
+      },
+      "sites_per_run": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": 3,
+       "title": "Sites Per Run"
+      }
+     },
+     "required": [
+      "engine_slug",
+      "scope_tier",
+      "cadence"
+     ],
+     "title": "CreateSeoEngineScheduleItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteSeoEngineScheduleItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "cadence": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Cadence"
+      },
+      "day_of_week": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Day Of Week"
+      },
+      "enabled": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Enabled"
+      },
+      "engine_slug": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Engine Slug"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "max_keywords_per_run": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Max Keywords Per Run"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "notes": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Notes"
+      },
+      "run_at_utc": {
+       "anyOf": [
+        {
+         "format": "time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Run At Utc"
+      },
+      "scope_organization_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Scope Organization Id"
+      },
+      "scope_tier": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Scope Tier"
+      },
+      "site_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Site Id"
+      },
+      "sites_per_run": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Sites Per Run"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateSeoEngineScheduleItem",
+     "type": "object"
+    }
+   },
+   "table": "seo.engine_schedule",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
    "label": "Geo Place",
    "noun": "seo_geo_place",
    "reference": "no",
@@ -81881,11 +83301,7 @@
        "default": null,
        "title": "Notes"
       },
-      "pack_id": {
-       "title": "Pack Id",
-       "type": "string"
-      },
-      "service_match": {
+      "offering_match": {
        "anyOf": [
         {
          "type": "string"
@@ -81895,7 +83311,11 @@
         }
        ],
        "default": null,
-       "title": "Service Match"
+       "title": "Offering Match"
+      },
+      "pack_id": {
+       "title": "Pack Id",
+       "type": "string"
       },
       "sort": {
        "anyOf": [
@@ -82158,6 +83578,18 @@
        "default": null,
        "title": "Notes"
       },
+      "offering_match": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Offering Match"
+      },
       "pack_id": {
        "anyOf": [
         {
@@ -82169,18 +83601,6 @@
        ],
        "default": null,
        "title": "Pack Id"
-      },
-      "service_match": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Service Match"
       },
       "sort": {
        "anyOf": [
