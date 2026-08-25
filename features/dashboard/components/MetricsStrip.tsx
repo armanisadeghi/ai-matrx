@@ -71,7 +71,7 @@ function SecondaryPill({
   return (
     <Link
       href={cfg.href}
-      className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-accent/50"
+      className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-accent/50"
     >
       <span className={cn("flex h-5 w-5 items-center justify-center rounded-md", chipClass(cfg.color))}>
         <ShellIcon name={cfg.iconName} size={12} strokeWidth={2} />

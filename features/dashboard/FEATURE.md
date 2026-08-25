@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-17`
+**Last updated:** `2026-08-24`
 
 ---
 
@@ -107,6 +107,7 @@
 
 ## Change log
 
+- `2026-08-24` — Codex: Reworded the Pinned empty state so the star control is named in text, and raised every secondary metric pill to a 44 px minimum touch target.
 - `2026-08-17` — Codex: Made the dashboard greeting timezone-safe: SSR and hydration now share a deterministic `Welcome back` snapshot, then the browser applies the local time-aware greeting. Added a regression that hydrates across conflicting server/browser clocks without React errors.
 - `2026-07-21` — Claude: Fixed the `/dashboard` hydration mismatch in `PinnedSection` — favorites live only in the client Redux store (synced after boot), so SSR always renders the empty state while the client's first render could show pinned items. Now gated on `useIsMounted()` (existing `hooks/use-is-mounted.ts` primitive): renders empty until mounted so SSR and the client first render match. Verified in browser — no hydration warnings; pinned grid appears post-mount.
 - `2026-07-14` — Claude: Header-conformance fix. `/dashboard` had no injected shell header (empty center zone); added `<PageHeader><HeaderIconTitle icon="LayoutDashboard" title="Dashboard" /></PageHeader>` in `page.tsx` (the exact pattern documented in `features/shell/components/header/variants/USAGE.md`). `DashboardClient`'s root wrapper now uses `h-full overflow-y-auto` (was unconstrained `overflow-y-auto`) with `pt-[calc(var(--shell-header-h)+1.5rem)]` clearance on the inner content column so the greeting/metrics/quick-actions don't render behind the glass header on first paint. Verified desktop + mobile (375×812) via browser.

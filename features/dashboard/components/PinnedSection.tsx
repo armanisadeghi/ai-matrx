@@ -39,12 +39,8 @@ export function PinnedSection({
         <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-card/50 p-4 text-sm text-muted-foreground">
           <Star size={18} className="shrink-0 text-muted-foreground/70" />
           <span>
-            Click the{" "}
-            <Star
-              size={12}
-              className="inline -mt-0.5 fill-amber-500 text-amber-500"
-            />{" "}
-            on any card below to pin it here — and to your sidebar Favorites.
+            Use the star button on any card below to add it here and to your
+            sidebar Favorites.
           </span>
         </div>
       ) : (
