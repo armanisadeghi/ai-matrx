@@ -190,7 +190,7 @@ export function WorthConvertDialog({
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
           {/* ── The proposal, with its working ── */}
-          <div className="min-h-0 space-y-3 overflow-y-auto border-border p-4 scrollbar-thin md:border-r">
+          <div className="min-h-0 space-y-3 overflow-y-auto overscroll-contain border-border p-4 scrollbar-thin md:border-r">
             {row.relative_qualifier ? (
               <p className="rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2 text-[11px] leading-4 text-warning">
                 This one reads like a <strong>relative qualifier</strong> — the
@@ -323,7 +323,7 @@ export function WorthConvertDialog({
           </div>
 
           {/* ── What it does, before anything is saved ── */}
-          <div className="min-h-0 overflow-y-auto p-4 scrollbar-thin">
+          <div className="min-h-0 overflow-y-auto overscroll-contain p-4 scrollbar-thin">
             <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[11px]">
               <span className="rounded border border-border bg-card px-1.5 py-0.5 font-medium tabular-nums text-muted-foreground">
                 ×{factor}

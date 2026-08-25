@@ -466,7 +466,7 @@ export function TopicTreeWorkbench() {
     }));
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-textured p-3">
+    <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain bg-textured p-3">
       {split.isPending ? (
         <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
           Measuring where this site&apos;s traffic leads…

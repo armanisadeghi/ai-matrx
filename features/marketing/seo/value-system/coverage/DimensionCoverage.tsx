@@ -61,9 +61,16 @@ function share(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
 }
 
-/** One decimal only where it changes the reading — 60% beats 60.0%. */
+/**
+ * One decimal only where it changes the reading — 60% beats 60.0%. A share
+ * that is small but NOT zero never prints as 0.0%: one keyword out of eight
+ * thousand is not none, and a gauge about honesty cannot round it away.
+ */
 function pctLabel(value: number): string {
-  return `${value >= 10 || value === 0 ? Math.round(value) : value.toFixed(1)}%`;
+  if (value === 0) return "0%";
+  if (value >= 10) return `${Math.round(value)}%`;
+  if (value < 0.1) return "<0.1%";
+  return `${value.toFixed(1)}%`;
 }
 
 /** What a reader is told this dimension IS, in three words at most. */
@@ -124,63 +131,53 @@ function CoverageRow({
     <li>
       <Link
         href={href}
-        className={cn(
-          "group flex items-center gap-3 rounded-md border border-transparent px-2 py-1.5 transition-colors",
-          "hover:border-border hover:bg-accent",
-        )}
+        className="group flex items-center gap-2 rounded px-2 py-1 transition-colors hover:bg-accent"
         title={`Open the ${formatCount(row.blankKeywords)} keyword${row.blankKeywords === 1 ? "" : "s"} “${row.dimension_label}” has no answer for, with its column showing`}
       >
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1.5 text-[11px]">
-            <span className="min-w-0 truncate font-medium text-foreground">
-              {row.dimension_label}
-            </span>
-            {note ? (
-              <span className="shrink-0 rounded border border-border bg-muted/40 px-1 py-px text-[10px] text-muted-foreground">
-                {note}
-              </span>
-            ) : null}
-            {row.thin ? (
-              <TriangleAlert
-                className="h-3 w-3 shrink-0 text-warning"
-                aria-label="Too thin to filter on"
-              />
-            ) : null}
-          </p>
-          <div className="mt-1 flex h-[3px] w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className={cn(
-                "h-full",
-                row.thin ? "bg-warning/70" : "bg-primary",
-              )}
-              style={{ width: `${Math.min(row.clickShare, 100)}%` }}
+        <span className="flex min-w-0 flex-1 items-center gap-1.5">
+          {row.thin ? (
+            <TriangleAlert
+              className="h-3 w-3 shrink-0 text-warning"
+              aria-label="Too thin to filter on"
             />
-            {row.unclearShare > 0 ? (
-              // Looked at and declined. Present, measured, and visibly not the
-              // same thing as answered.
-              <div
-                className="h-full bg-muted-foreground/25"
-                style={{
-                  width: `${Math.min(row.unclearShare, 100 - row.clickShare)}%`,
-                }}
-                title="Looked at, could not tell"
-              />
-            ) : null}
-          </div>
-        </div>
-        <div className="shrink-0 text-right">
-          <p
-            className={cn(
-              "text-sm font-semibold leading-none tabular-nums",
-              row.thin ? "text-warning" : "text-foreground",
-            )}
-          >
-            {pctLabel(row.clickShare)}
-          </p>
-          <p className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">
-            {pctLabel(row.keywordShare)} of keywords
-          </p>
-        </div>
+          ) : null}
+          <span className="min-w-0 truncate text-[11px] font-medium text-foreground">
+            {row.dimension_label}
+          </span>
+          {note ? (
+            <span className="shrink-0 rounded border border-border bg-muted/40 px-1 py-px text-[10px] text-muted-foreground">
+              {note}
+            </span>
+          ) : null}
+        </span>
+        <span className="flex h-[3px] w-20 shrink-0 overflow-hidden rounded-full bg-muted sm:w-36">
+          <span
+            className={cn("h-full", row.thin ? "bg-warning/70" : "bg-primary")}
+            style={{ width: `${Math.min(row.clickShare, 100)}%` }}
+          />
+          {row.unclearShare > 0 ? (
+            // Looked at and declined. Present, measured, and visibly not the
+            // same thing as answered.
+            <span
+              className="h-full bg-muted-foreground/25"
+              style={{
+                width: `${Math.min(row.unclearShare, 100 - row.clickShare)}%`,
+              }}
+              title="Looked at, could not tell"
+            />
+          ) : null}
+        </span>
+        <span
+          className={cn(
+            "w-12 shrink-0 text-right text-[12px] font-semibold tabular-nums",
+            row.thin ? "text-warning" : "text-foreground",
+          )}
+        >
+          {pctLabel(row.clickShare)}
+        </span>
+        <span className="w-14 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
+          {pctLabel(row.keywordShare)} kw
+        </span>
         <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
       </Link>
     </li>
@@ -316,7 +313,7 @@ export function DimensionCoverage({
           {thin.slice(0, 6).map((row) => (
             <li key={row.dimension}>
               <Link
-                href={dimensionBlanksHref(ctx, row.dimension)}
+                href={dimensionBlanksHref(ctx, row.dimension, window)}
                 className="inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:border-warning/50 hover:text-foreground"
                 title={`Open the ${formatCount(row.blankKeywords)} keyword${row.blankKeywords === 1 ? "" : "s"} “${row.dimension_label}” has no answer for`}
               >
@@ -407,12 +404,12 @@ export function DimensionCoverage({
         </p>
       ) : (
         <>
-          <ul className="space-y-0.5 p-1.5">
+          <ul className="p-1.5">
             {measured.map((row) => (
               <CoverageRow
                 key={row.dimension}
                 row={row}
-                href={dimensionBlanksHref(ctx, row.dimension)}
+                href={dimensionBlanksHref(ctx, row.dimension, window)}
               />
             ))}
           </ul>

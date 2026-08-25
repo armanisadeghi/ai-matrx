@@ -303,7 +303,7 @@ export function MatcherReviewBody({
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-thin">
         {review.isPending ? <TableSkeleton /> : null}
 
         {review.isError ? (

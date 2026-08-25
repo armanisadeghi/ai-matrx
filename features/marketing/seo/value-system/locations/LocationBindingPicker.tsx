@@ -129,7 +129,7 @@ export function LocationBindingPicker({
             </div>
           ) : null}
 
-          <ul className="max-h-44 divide-y divide-border overflow-y-auto rounded-md border border-border scrollbar-thin">
+          <ul className="max-h-44 divide-y divide-border overflow-y-auto overscroll-contain rounded-md border border-border scrollbar-thin">
             {visible.map((location) => {
               const on = selected.has(location.id);
               return (

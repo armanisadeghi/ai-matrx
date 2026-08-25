@@ -466,6 +466,27 @@ export function shortWorth(
   return "label";
 }
 
+/**
+ * KI-001 — is this value a RELATIVE QUALIFIER (free, cheap, DIY), the only kind
+ * P18 says may multiply? Everything else describes what a keyword IS and pays
+ * points.
+ *
+ * 🚨 DELIBERATE TWIN of `seo._pack_is_relative_value`, kept character-identical.
+ * The DB owns the answer everywhere it can — `gsc_site_worth_list` returns it
+ * per row, and the pack converter uses the function directly. This copy exists
+ * for ONE case the DB cannot serve: an author typing a brand-new value into the
+ * pack editor, where there is no row to ask about yet. Change one, change both.
+ */
+const RELATIVE_QUALIFIER =
+  /(free|cheap|diy|discount|coupon|budget|lowest price)/;
+
+export function isRelativeQualifier(
+  value: string | null | undefined,
+  label: string | null | undefined,
+): boolean {
+  return RELATIVE_QUALIFIER.test(`${value ?? ""} ${label ?? ""}`.toLowerCase());
+}
+
 /** True when this worth makes a keyword worth LESS than it was. */
 export function worthIsDemotion(
   effect: "add" | "scale" | "never" | null | undefined,

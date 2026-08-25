@@ -214,7 +214,7 @@ export function KwGuidelinesPanel({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pt-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pt-2">
       <p className="text-xs leading-snug text-muted-foreground">
         What the AI must know about{" "}
         <span className="font-medium text-foreground">this business</span>{" "}

@@ -398,7 +398,7 @@ export function BandVocabularyEditor({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto px-4 pb-1 scrollbar-thin lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto overscroll-contain px-4 pb-1 scrollbar-thin lg:grid-cols-[minmax(0,1fr)_20rem]">
           {/* Rows */}
           <div className="space-y-2">
             {vocab.isError ? (

@@ -570,7 +570,7 @@ export function PackReview({
         </p>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-3 scrollbar-thin sm:p-4">
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-3 scrollbar-thin sm:p-4">
         {/* ── the headline ── */}
         <section
           className="rounded-lg border border-border bg-card p-3"

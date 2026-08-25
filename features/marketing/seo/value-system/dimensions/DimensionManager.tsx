@@ -189,7 +189,7 @@ export function DimensionManager() {
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-thin">
         <div className="mx-auto w-full max-w-4xl space-y-4 px-3 py-3 sm:px-4">
           {/* Keyed so the "nobody has authored one yet" case opens the
               explainer the moment the catalogue answers — a default read on

@@ -58,7 +58,7 @@ export function TopicEditDialog({
 
   return (
     <Dialog open onOpenChange={(open) => (!open ? onCancel() : undefined)}>
-      <DialogContent className="flex max-h-[85dvh] max-w-lg flex-col overflow-y-auto">
+      <DialogContent className="flex max-h-[85dvh] max-w-lg flex-col overflow-y-auto overscroll-contain">
         <DialogHeader>
           <DialogTitle className="text-base">
             {creating ? "New topic" : "Edit topic"}

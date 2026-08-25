@@ -110,7 +110,7 @@ export function GeoPlacePicker({
             place name below instead; that still works exactly as it always did.
           </p>
         ) : (
-          <ul className="max-h-44 divide-y divide-border overflow-y-auto rounded-md border border-border scrollbar-thin">
+          <ul className="max-h-44 divide-y divide-border overflow-y-auto overscroll-contain rounded-md border border-border scrollbar-thin">
             {results.data.map((place) => {
               const already = chosen.has(place.id);
               return (

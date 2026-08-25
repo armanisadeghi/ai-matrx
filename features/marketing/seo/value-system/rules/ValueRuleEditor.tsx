@@ -340,7 +340,7 @@ export function ValueRuleEditor({
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
           {/* ── The rule ── */}
-          <div className="min-h-0 space-y-3 overflow-y-auto border-border p-4 scrollbar-thin md:border-r">
+          <div className="min-h-0 space-y-3 overflow-y-auto overscroll-contain border-border p-4 scrollbar-thin md:border-r">
             <Field label="Name" hint="What you will call this rule in the ledger.">
               <Input
                 value={form.name}
@@ -537,7 +537,7 @@ export function ValueRuleEditor({
           </div>
 
           {/* ── What it does ── */}
-          <div className="min-h-0 space-y-2 overflow-y-auto bg-muted/20 p-4 scrollbar-thin">
+          <div className="min-h-0 space-y-2 overflow-y-auto overscroll-contain bg-muted/20 p-4 scrollbar-thin">
             <p className="text-xs font-semibold text-foreground">
               What this does to your keywords
             </p>

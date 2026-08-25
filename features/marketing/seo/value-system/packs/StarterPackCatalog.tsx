@@ -293,7 +293,7 @@ function PackSummaryPanel({
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 scrollbar-thin">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 scrollbar-thin">
         {adoption ? (
           <section className="rounded-lg border border-info/40 bg-info/5 p-3">
             <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
@@ -546,7 +546,7 @@ export function StarterPackCatalog() {
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="min-h-0 space-y-2 overflow-y-auto border-b border-border p-3 scrollbar-thin lg:border-b-0 lg:border-r">
+        <div className="min-h-0 space-y-2 overflow-y-auto overscroll-contain border-b border-border p-3 scrollbar-thin lg:border-b-0 lg:border-r">
           {catalog.isPending ? (
             <>
               <Skeleton className="h-24 w-full" />

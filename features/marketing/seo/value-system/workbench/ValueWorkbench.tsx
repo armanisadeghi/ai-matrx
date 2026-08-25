@@ -1027,7 +1027,7 @@ export function ValueWorkbench() {
       One scroll surface, at natural height, is what the rest of this family
       does (topics, rules, packs) and what a 50-row page wants.
     */}
-      <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto bg-textured p-3 sm:p-4">
+      <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-textured p-3 sm:p-4">
         {/* HEADER — one line. The window used to be spelled out in a
           sentence under the title; it is a fact, so it is a chip. */}
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 pr-14">

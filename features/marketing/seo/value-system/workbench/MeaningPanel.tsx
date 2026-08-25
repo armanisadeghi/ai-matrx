@@ -251,7 +251,7 @@ export function MeaningPanel({
       storageKey="value-workbench-meaning-panel"
       defaultWidth={480}
     >
-      <div className="space-y-5 overflow-y-auto p-3 scrollbar-thin">
+      <div className="space-y-5 overflow-y-auto overscroll-contain p-3 scrollbar-thin">
         {/* THE DOOR to industry starter packs. This panel is where the expert
             discovers the site has no meaning of its own; the pack catalogue is
             where a day-one answer comes from, so the link belongs here. */}
@@ -332,7 +332,7 @@ export function MeaningPanel({
           ) : null}
           {guidelines.data?.guidelines ? (
             <div className="rounded-md border border-border bg-card px-2.5 py-2">
-              <p className="max-h-56 overflow-y-auto whitespace-pre-wrap text-[11px] leading-4 text-muted-foreground scrollbar-thin">
+              <p className="max-h-56 overflow-y-auto overscroll-contain whitespace-pre-wrap text-[11px] leading-4 text-muted-foreground scrollbar-thin">
                 {guidelines.data.guidelines}
               </p>
               <p className="mt-1.5 border-t border-border pt-1 text-[10px] text-muted-foreground/80">

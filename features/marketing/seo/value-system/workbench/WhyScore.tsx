@@ -169,7 +169,7 @@ export function WhyScoreHint({
         align="start"
         // A receipt can run to a dozen steps — it scrolls inside the popover
         // rather than running off the bottom of the window.
-        className="max-h-[60vh] w-[22rem] max-w-[90vw] overflow-y-auto p-3"
+        className="max-h-[60vh] w-[22rem] max-w-[90vw] overflow-y-auto overscroll-contain p-3"
         onClick={(event) => event.stopPropagation()}
       >
         <WhyScoreBody subject={subject} context={context} />

@@ -198,7 +198,7 @@ export function ResetToPackDialog({
                 {ticked.size} of {candidates.length}
               </span>
             </div>
-            <ul className="max-h-[50dvh] space-y-1 overflow-y-auto scrollbar-thin">
+            <ul className="max-h-[50dvh] space-y-1 overflow-y-auto overscroll-contain scrollbar-thin">
               {candidates.map((item) => {
                 const key = `${item.kind}:${item.ref}`;
                 const on = ticked.has(key);

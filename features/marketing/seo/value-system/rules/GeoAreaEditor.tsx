@@ -338,7 +338,7 @@ export function GeoAreaEditor({
         ) : null}
 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-          <div className="min-h-0 space-y-3 overflow-y-auto border-border p-4 scrollbar-thin md:border-r">
+          <div className="min-h-0 space-y-3 overflow-y-auto overscroll-contain border-border p-4 scrollbar-thin md:border-r">
             <Field label="Name" hint="How this area reads in the ledger.">
               <Input
                 value={form.label}
@@ -462,7 +462,7 @@ export function GeoAreaEditor({
             ) : null}
           </div>
 
-          <div className="min-h-0 space-y-2 overflow-y-auto bg-muted/20 p-4 scrollbar-thin">
+          <div className="min-h-0 space-y-2 overflow-y-auto overscroll-contain bg-muted/20 p-4 scrollbar-thin">
             <p className="text-xs font-semibold text-foreground">
               Which keywords this catches
             </p>

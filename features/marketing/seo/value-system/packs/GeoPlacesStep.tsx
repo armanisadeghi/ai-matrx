@@ -280,7 +280,7 @@ export function GeoPlacesStep({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-thin">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 scrollbar-thin">
           {brandId && locations.isLoading ? (
             <Skeleton className="mb-3 h-10 rounded-md" />
           ) : null}

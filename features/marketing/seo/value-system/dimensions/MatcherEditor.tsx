@@ -618,7 +618,7 @@ export function MatcherEditor({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85dvh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[85dvh] max-w-lg overflow-y-auto overscroll-contain">
         <DialogHeader>
           <DialogTitle className="text-sm">
             Matchers for “{value.label}”

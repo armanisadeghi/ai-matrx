@@ -1034,7 +1034,14 @@ export function MeaningRulesWorkbench() {
             : []
         }
       >
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-3 scrollbar-thin sm:p-4">
+      {/* `overscroll-contain` is load-bearing, not cosmetic: this page nests its
+          own scroll surface inside the shell's, and without it a trackpad scroll
+          with any horizontal drift reaches the browser as a BACK gesture — the
+          page silently navigated to `/value` mid-edit, discarding an open "New
+          geo area" dialog, which is why this bench felt unreachable. Found by
+          the KI-010 geo walk, 2026-08-25. The repo convention is on 100+ other
+          scroll containers; this one was the exception. */}
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-3 scrollbar-thin sm:p-4">
         {/* ── Value rules ── */}
         <section className="space-y-2">
           <div className="flex flex-wrap items-start justify-between gap-2">

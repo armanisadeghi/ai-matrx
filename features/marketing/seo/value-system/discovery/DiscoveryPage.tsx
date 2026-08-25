@@ -10,7 +10,7 @@ import { DiscoveryLadder } from "./DiscoveryLadder";
 export function DiscoveryPage() {
   const { site, brandId } = useMarketingSite();
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-3">
+    <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto overscroll-contain p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
           Let AI read <span className="font-medium text-foreground">{site.domain}</span>{" "}

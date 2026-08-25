@@ -212,7 +212,7 @@ export function KeywordMeaningSuggestions({
             This makes {batch.length === 1 ? "this change" : "these changes"} to
             how your keywords are read:
           </span>
-          <span className="block max-h-56 space-y-1.5 overflow-y-auto rounded-md border border-border bg-muted/40 p-2">
+          <span className="block max-h-56 space-y-1.5 overflow-y-auto overscroll-contain rounded-md border border-border bg-muted/40 p-2">
             {batch.map((row) => (
               <span key={row.assist.id} className="block text-xs">
                 <span className="font-medium text-foreground">

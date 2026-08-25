@@ -21,9 +21,9 @@
  *   /value            ?kw=<keyword>               (ValueWorkbench)
  *   /value/dimensions ?combo=<id>                 (the combinations panel —
  *                      C7 combinations are authored where their values live)
- *   /keywords         ?st=<dimension>:<value>|…&cols=…  (the keyword list,
- *                      filtered; `__none` selects the keywords a dimension has
- *                      no answer for — KI-022)
+ *   /keywords         ?view=workbench&st=<dimension>:<value>|…&cols=…  (the
+ *                      keyword workbench, filtered; `__none` selects the
+ *                      keywords a dimension has no answer for — KI-022)
  */
 
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -108,16 +108,34 @@ export function dimensionValueHref(
  * THE KEYWORD LIST, opened on a set of stamps (all-of). `cols` brings those
  * dimensions' own columns with it, so the reader arrives somewhere they can
  * ACT rather than somewhere they must first configure.
+ *
+ * `view=workbench` is REQUIRED, not decoration: the bare `…/keywords` URL is
+ * the "Start here" map (site-subviews.ts), so a filtered link without it drops
+ * the reader on a menu with their filter silently ignored — which is a dead
+ * end wearing a working link's clothes.
  */
 export function stampMatchHref(
   ctx: ReasonLinkContext,
   pairs: ReadonlyArray<{ dimension: string; value: string }>,
+  /**
+   * The window the CALLER measured over. Passed whenever the link carries a
+   * count with it: a door that says "3,412 keywords" and lands on a list of
+   * 900 because the destination defaults to 28 days has lied, however
+   * accidentally.
+   */
+  window?: { start: string; end: string },
 ): string {
   const base = marketingRoutes.site(ctx.brandId, ctx.siteId, "/keywords");
   const search = new URLSearchParams({
+    view: "workbench",
     st: encodeStampFilter(pairs),
     cols: [...new Set(pairs.map((pair) => pair.dimension))].join(","),
   });
+  if (window) {
+    search.set("range", "custom");
+    search.set("from", window.start);
+    search.set("to", window.end);
+  }
   return `${base}?${search.toString()}`;
 }
 
@@ -130,10 +148,9 @@ export function stampMatchHref(
 export function dimensionBlanksHref(
   ctx: ReasonLinkContext,
   dimension: string,
+  window?: { start: string; end: string },
 ): string {
-  return stampMatchHref(ctx, [
-    { dimension, value: STAMP_BLANK_VALUE },
-  ]);
+  return stampMatchHref(ctx, [{ dimension, value: STAMP_BLANK_VALUE }], window);
 }
 
 /**

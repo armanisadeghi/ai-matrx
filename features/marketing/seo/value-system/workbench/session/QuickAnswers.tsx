@@ -204,7 +204,7 @@ export function QuickAnswers({
       </div>
 
       {/* ── the five ── */}
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 scrollbar-thin">
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-3 scrollbar-thin">
         {batch.isLoading ? (
           <CardLoading />
         ) : keywords.length === 0 ? (

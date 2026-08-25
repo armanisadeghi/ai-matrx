@@ -132,7 +132,7 @@ export function TopicPickerDialog({
           </div>
         ) : null}
 
-        <div className="min-h-0 flex-1 overflow-y-auto rounded border border-border">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded border border-border">
           {request.clearLabel ? (
             <button
               type="button"

@@ -387,7 +387,7 @@ export function FacetRegistryAdmin() {
       </div>
       <p className="shrink-0 text-[11px] text-muted-foreground">{active.blurb}</p>
 
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 scrollbar-thin">
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1 scrollbar-thin">
         {registry.isError ? (
           <InlineQueryError
             what="the vocabulary registry"
