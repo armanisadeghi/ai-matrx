@@ -18,6 +18,7 @@ import type {
 import type { KeywordResearchArtifact } from "@/types/python-generated/stream-events";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import { parseKeywordResearchArtifact } from "./artifact";
+import { isJsonObject } from "@/types/json";
 
 /**
  * The `content_ir_kind_instance` source ids attached (via
@@ -517,4 +518,69 @@ export async function listKeywordEdges(
       partner_phrase: phraseById.get(partnerId) ?? "(unknown keyword)",
     } satisfies KeywordEdgeView;
   });
+}
+
+// ── Copying keywords to a sibling site (MSR-26) ─────────────────────────────
+// The site<->keyword association (`seo.site_keyword_value`) belongs to the
+// site, same as its meaning — copying is additive and on demand, following
+// the `seo.site_meaning_copy` precedent exactly (dry-run and the write are
+// the identical server call with one flag, so a preview can never disagree
+// with what pressing "Copy" actually does).
+
+export interface KeywordCopyResult {
+  dry_run: boolean;
+  from: { id: string; label: string };
+  to: { id: string; label: string };
+  copied: number;
+  skipped_existing: number;
+}
+
+function parseKeywordCopyResult(value: unknown): KeywordCopyResult {
+  if (!isJsonObject(value) || !isJsonObject(value.from) || !isJsonObject(value.to)) {
+    throw new Error("Keyword copy returned an invalid result.");
+  }
+  const { dry_run: dryRun, copied, skipped_existing: skippedExisting } = value;
+  const fromId = value.from.id;
+  const fromLabel = value.from.label;
+  const toId = value.to.id;
+  const toLabel = value.to.label;
+  if (
+    typeof dryRun !== "boolean" ||
+    typeof copied !== "number" ||
+    typeof skippedExisting !== "number" ||
+    typeof fromId !== "string" ||
+    typeof fromLabel !== "string" ||
+    typeof toId !== "string" ||
+    typeof toLabel !== "string"
+  ) {
+    throw new Error("Keyword copy returned an invalid result.");
+  }
+  return {
+    dry_run: dryRun,
+    from: { id: fromId, label: fromLabel },
+    to: { id: toId, label: toLabel },
+    copied,
+    skipped_existing: skippedExisting,
+  };
+}
+
+/**
+ * `dryRun` walks the identical server path (`seo.site_keyword_value_copy`)
+ * and rolls back, so the preview can never disagree with the write.
+ * `keywordIds` omitted copies every keyword the source site tracks.
+ */
+export async function copySiteKeywords(input: {
+  fromSiteId: string;
+  toSiteId: string;
+  keywordIds?: string[];
+  dryRun: boolean;
+}): Promise<KeywordCopyResult> {
+  const response = await (await seoDb()).rpc("site_keyword_value_copy", {
+    p_from_site: input.fromSiteId,
+    p_to_site: input.toSiteId,
+    p_keyword_ids: input.keywordIds ?? null,
+    p_dry_run: input.dryRun,
+  });
+  if (response.error) throw response.error;
+  return parseKeywordCopyResult(response.data);
 }
