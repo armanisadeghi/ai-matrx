@@ -946,6 +946,94 @@ export function MeaningRulesWorkbench() {
         ) : null}
       </div>
 
+      <NonEditableContextMenu
+        sourceFeature="marketing"
+        menuVersion={1}
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(target) => {
+          const ruleId = target
+            ?.closest("[data-rule-id]")
+            ?.getAttribute("data-rule-id");
+          const rule = ruleId
+            ? ((rules.data ?? []).find((r) => r.id === ruleId) ?? null)
+            : null;
+          if (rule) {
+            setContextRow({ kind: "rule", rule });
+            const health = healthByRule.get(rule.id);
+            const usageRow = usageByRule.get(rule.id);
+            return {
+              // The RIGHT-CLICKED row owns Attach To — one menu, N rows.
+              [CONTEXT_MENU_ENTITY_KEY]: {
+                type: "seo_keyword_class_rule",
+                id: rule.id,
+                title: rule.name,
+              },
+              content: [
+                `Value rule: ${rule.name}`,
+                `Fires when the search ${describeRuleMatch(rule)}`,
+                `Multiplier: ×${String(rule.value_multiplier ?? 1)} — ${describeMultiplier(rule.value_multiplier)}`,
+                rule.target_class ? `Sets the class: ${humanizeSlug(rule.target_class)}` : null,
+                `State: ${health?.state ?? "unknown"}`,
+                usageRow
+                  ? `Fires on ${formatCount(usageRow.keywords)} keywords · ${formatCount(usageRow.clicks)} clicks in ${windowLabel}`
+                  : "Fires on nothing measured in this window",
+                rule.description ?? null,
+              ]
+                .filter(Boolean)
+                .join("\n"),
+              rule_id: rule.id,
+              rule_name: rule.name,
+              value_multiplier: rule.value_multiplier,
+            };
+          }
+          const areaId = target
+            ?.closest("[data-area-id]")
+            ?.getAttribute("data-area-id");
+          const area = areaId
+            ? ((areas.data ?? []).find((a) => a.id === areaId) ?? null)
+            : null;
+          if (area) {
+            setContextRow({ kind: "area", area });
+            const health = healthByArea.get(area.id);
+            return {
+              [CONTEXT_MENU_ENTITY_KEY]: {
+                type: "seo_site_geo_area",
+                id: area.id,
+                title: area.label,
+              },
+              content: [
+                `Service area: ${area.label}`,
+                `Geo band: ${humanizeSlug(area.geo_band)} · ${humanizeSlug(area.area_kind)}`,
+                `${area.place_ids.length} places from the gazetteer`,
+                area.match_tokens.length > 0
+                  ? `Matches: ${area.match_tokens.join(", ")}`
+                  : null,
+                `State: ${health?.state ?? "unknown"}`,
+              ]
+                .filter(Boolean)
+                .join("\n"),
+              area_id: area.id,
+              area_label: area.label,
+              geo_band: area.geo_band,
+            };
+          }
+          setContextRow(null);
+          return null;
+        }}
+        extraSections={
+          contextRow
+            ? [
+                {
+                  id: "rulebook-row-actions",
+                  label: contextRow.kind === "rule" ? "Rule" : "Service area",
+                  icon: contextRow.kind === "rule" ? ListChecks : MapPinned,
+                  items: menuItems(),
+                },
+              ]
+            : []
+        }
+      >
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-3 scrollbar-thin sm:p-4">
         {/* ── Value rules ── */}
         <section className="space-y-2">
@@ -1057,7 +1145,7 @@ export function MeaningRulesWorkbench() {
 
           <ul className="space-y-1.5">
             {visibleRules.map((rule) => (
-              <li key={rule.id}>
+              <li key={rule.id} data-rule-id={rule.id}>
                 <button
                   type="button"
                   onClick={() => setEditingRule(rule)}
@@ -1243,7 +1331,7 @@ export function MeaningRulesWorkbench() {
 
           <ul className="space-y-1.5">
             {visibleAreas.map((area) => (
-              <li key={area.id}>
+              <li key={area.id} data-area-id={area.id}>
                 <button
                   type="button"
                   onClick={() => setEditingArea(area)}
@@ -1418,6 +1506,7 @@ export function MeaningRulesWorkbench() {
           </div>
         </section>
       </div>
+      </NonEditableContextMenu>
 
       {editingRule !== undefined ? (
         <ValueRuleEditor

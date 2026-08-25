@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import {
   artifactCount,
   artifactDuration,
+  artifactTile,
   artifactVisual,
 } from "../artifactVisuals";
 import { libraryRowStats, type EducationLibraryRow } from "../types";
@@ -82,7 +83,7 @@ export function EducationLibraryCards({
               <span
                 className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-                  visual.tile,
+                  artifactTile(visual),
                 )}
               >
                 <Icon className="h-5 w-5" />
@@ -104,7 +105,7 @@ export function EducationLibraryCards({
                   </span>
                 )}
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-muted-foreground">
-                  <span className={cn("font-medium", visual.accent)}>
+                  <span className={cn("font-medium", visual.fg)}>
                     {visual.label}
                   </span>
                   {count && <span>· {count}</span>}
@@ -167,7 +168,7 @@ export function EducationLibraryCards({
                       href={href}
                       className={cn(
                         "rounded-md px-2 py-1 text-xs font-semibold transition-colors",
-                        visual.tile,
+                        artifactTile(visual),
                         "hover:brightness-110",
                       )}
                     >

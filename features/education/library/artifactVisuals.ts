@@ -1,140 +1,83 @@
 // features/education/library/artifactVisuals.ts
 //
-// ONE visual vocabulary for a study artifact — icon, colour, verb, and the
-// human name for what it is made of. Shared by the library's card view, row
-// view, and table, and by the Education home's blocks, so a flashcard deck
-// looks and reads the same everywhere the learner meets it.
+// The library's ADAPTER onto the canonical education presentation table.
 //
-// Why colour at all: the library is a mixed list of eight artifact formats. In
-// one neutral colour a learner scans it linearly and reads every title; with a
-// per-format colour they find "my audio one" in a glance. This is the cheapest
-// legibility win on the surface, and it is why the list may never go back to a
-// single grey icon column.
+// `convert/targetPresentation.ts` already owns the icon, colour, name, unit and
+// verb for every study format, and its header explicitly reserves this seat:
+// "every surface that lists study-kit targets (the ingest hero, the convert
+// dialog, a future library filter) reads it here — the icon map used to be
+// re-declared per surface, and the second copy is always the one that goes
+// stale." This file is that library filter, and it does NOT redeclare any of
+// it. All it does is bridge the two vocabularies:
 //
-// Tokens only — each entry names Tailwind classes that already resolve in both
-// themes. Never a raw hex, never an inline style.
+//   library `subtype`  (how the artifact is STORED:  flashcards, quiz, …)
+//        ↕
+//   converter `TargetKind` (how it was PRODUCED:     deck,       quiz, …)
+//
+// Add a format → add it to `TARGET_PRESENTATION` and to `SUBTYPE_TO_TARGET`
+// below. Never add a colour here.
 
+import { BookOpen } from "lucide-react";
 import {
-  BookOpen,
-  Brain,
-  FileCheck2,
-  FileText,
-  Headphones,
-  Layers,
-  ListChecks,
-  Network,
-  NotebookPen,
-  type LucideIcon,
-} from "lucide-react";
-
-export interface ArtifactVisual {
-  /** Human name for the format ("Flashcards", "Practice test"). */
-  label: string;
-  icon: LucideIcon;
-  /** Icon tile classes (background + foreground), light and dark. */
-  tile: string;
-  /** Accent text colour for counts and small emphasis. */
-  accent: string;
-  /** Border tint used on hover so a card lights up in its own colour. */
-  hoverBorder: string;
-  /** What ONE unit of this artifact is called: "12 cards", "6 questions". */
-  unit: { one: string; many: string } | null;
-  /** The verb on the primary action — a student reads "Study", never "Open". */
-  verb: string;
-}
-
-const FALLBACK: ArtifactVisual = {
-  label: "Study item",
-  icon: BookOpen,
-  tile: "bg-slate-500/10 text-slate-600 dark:text-slate-300",
-  accent: "text-slate-600 dark:text-slate-300",
-  hoverBorder: "hover:border-slate-500/40",
-  unit: null,
-  verb: "Open",
-};
+  TARGET_PRESENTATION,
+  type TargetPresentation,
+} from "../convert/targetPresentation";
+import type { TargetKind } from "../convert/types";
 
 /**
- * Keyed by the library's `subtype`, which is the format the learner actually
- * distinguishes ("quiz" vs "practice test"), not the storage `kind`.
+ * The two vocabularies are 1:1 today; only `flashcards`/`deck` differ in
+ * spelling. Anything unmapped falls back rather than throwing — an unknown
+ * subtype is a new format we have not wired yet, not a reason to blank the row.
  */
-const BY_SUBTYPE: Record<string, ArtifactVisual> = {
-  flashcards: {
-    label: "Flashcards",
-    icon: Layers,
-    tile: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
-    accent: "text-sky-600 dark:text-sky-400",
-    hoverBorder: "hover:border-sky-500/40",
-    unit: { one: "card", many: "cards" },
-    verb: "Study",
-  },
-  quiz: {
-    label: "Quiz",
-    icon: ListChecks,
-    tile: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    accent: "text-amber-600 dark:text-amber-400",
-    hoverBorder: "hover:border-amber-500/40",
-    unit: { one: "question", many: "questions" },
-    verb: "Take quiz",
-  },
-  practice_test: {
-    label: "Practice test",
-    icon: FileCheck2,
-    tile: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-    accent: "text-violet-600 dark:text-violet-400",
-    hoverBorder: "hover:border-violet-500/40",
-    unit: { one: "question", many: "questions" },
-    verb: "Take test",
-  },
-  audio: {
-    label: "Audio study",
-    icon: Headphones,
-    tile: "bg-pink-500/10 text-pink-600 dark:text-pink-400",
-    accent: "text-pink-600 dark:text-pink-400",
-    hoverBorder: "hover:border-pink-500/40",
-    unit: null,
-    verb: "Listen",
-  },
-  summary: {
-    label: "Summary",
-    icon: FileText,
-    tile: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    accent: "text-emerald-600 dark:text-emerald-400",
-    hoverBorder: "hover:border-emerald-500/40",
-    unit: null,
-    verb: "Read",
-  },
-  mind_map: {
-    label: "Mind map",
-    icon: Network,
-    tile: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
-    accent: "text-indigo-600 dark:text-indigo-400",
-    hoverBorder: "hover:border-indigo-500/40",
-    unit: null,
-    verb: "Explore",
-  },
-  memory_aid: {
-    label: "Memory aid",
-    icon: Brain,
-    tile: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-    accent: "text-rose-600 dark:text-rose-400",
-    hoverBorder: "hover:border-rose-500/40",
-    unit: null,
-    verb: "Review",
-  },
-  notes: {
-    label: "Note",
-    icon: NotebookPen,
-    tile: "bg-teal-500/10 text-teal-600 dark:text-teal-400",
-    accent: "text-teal-600 dark:text-teal-400",
-    hoverBorder: "hover:border-teal-500/40",
-    unit: null,
-    verb: "Open",
-  },
+const SUBTYPE_TO_TARGET: Record<string, TargetKind> = {
+  flashcards: "deck",
+  quiz: "quiz",
+  practice_test: "practice_test",
+  audio: "audio",
+  summary: "summary",
+  mind_map: "mind_map",
+  memory_aid: "memory_aid",
+  notes: "notes",
 };
 
-export function artifactVisual(subtype: string | null): ArtifactVisual {
-  if (!subtype) return FALLBACK;
-  return BY_SUBTYPE[subtype] ?? FALLBACK;
+/** Neutral presentation for a format that is not in the converter's table. */
+const FALLBACK: TargetPresentation = {
+  label: "Study item",
+  unit: null,
+  verb: "Open",
+  icon: BookOpen,
+  fg: "text-slate-600 dark:text-slate-300",
+  chip: "bg-slate-500/10",
+  activeBorder: "border-slate-500/40",
+  hoverBorder: "hover:border-slate-500/40",
+  bar: "bg-slate-500",
+  runningVerb: "Working on it",
+};
+
+/** The converter target a library subtype corresponds to (null if unmapped). */
+export function targetKindForSubtype(subtype: string | null): TargetKind | null {
+  if (!subtype) return null;
+  return SUBTYPE_TO_TARGET[subtype] ?? null;
+}
+
+/** Canonical presentation for a library row's `subtype`. */
+export function artifactVisual(subtype: string | null): TargetPresentation {
+  const target = targetKindForSubtype(subtype);
+  return target ? TARGET_PRESENTATION[target] : FALLBACK;
+}
+
+/** Canonical presentation for a converter `TargetKind`. */
+export function targetVisual(kind: TargetKind | string | null): TargetPresentation {
+  if (!kind) return FALLBACK;
+  return TARGET_PRESENTATION[kind as TargetKind] ?? FALLBACK;
+}
+
+/**
+ * The icon tile classes for a format — `chip` (background) and `fg`
+ * (foreground) composed, since every surface that renders a tile wants both.
+ */
+export function artifactTile(presentation: TargetPresentation): string {
+  return `${presentation.chip} ${presentation.fg}`;
 }
 
 /** "12 cards" / "1 question" / null when the format has no countable unit. */
@@ -142,14 +85,13 @@ export function artifactCount(
   subtype: string | null,
   count: number | null,
 ): string | null {
-  const v = artifactVisual(subtype);
-  if (!v.unit || count == null) return null;
-  return `${count} ${count === 1 ? v.unit.one : v.unit.many}`;
+  const { unit } = artifactVisual(subtype);
+  if (!unit || count == null) return null;
+  return `${count} ${count === 1 ? unit.one : unit.many}`;
 }
 
 /** "12 min" from a duration in seconds. Null below a minute or when absent. */
 export function artifactDuration(seconds: number | null): string | null {
   if (!seconds || seconds < 60) return null;
-  const mins = Math.round(seconds / 60);
-  return `${mins} min`;
+  return `${Math.round(seconds / 60)} min`;
 }

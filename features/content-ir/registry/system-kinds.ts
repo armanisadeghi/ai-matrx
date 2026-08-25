@@ -95,6 +95,7 @@ import { STUDY_PACK_KIND_DEFINITIONS } from "../kinds/study-pack";
 import { SEARCH_RESULTS_KIND_DEFINITIONS } from "../kinds/search-results";
 import { RANK_KINDS_KIND_DEFINITIONS } from "../kinds/rank-kinds";
 import { RAG_KINDS_KIND_DEFINITIONS } from "../kinds/rag-kinds";
+import { TABLE_KINDS_KIND_DEFINITIONS } from "../kinds/table-kinds";
 import { TRUST_ENVELOPE_KIND_DEFINITIONS } from "../kinds/trust-envelope";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
@@ -173,6 +174,15 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // the module header. Python-owned models:
   // aidream/aidream/services/rag_kinds/models.py.
   ...RAG_KINDS_KIND_DEFINITIONS,
+  // Tabular family (Table Kinds Run, 2026-08-25). `data_table` is a SYSTEM-WIDE
+  // PRIMITIVE: a SQL result, a user data-table lookup, a parsed CSV and a table
+  // lifted out of a PDF are one rows-and-columns shape that was wearing five
+  // names and agreeing on no field. Everything that returns rows nests this
+  // rather than minting its own. `sql_query_result` / `table_rows` /
+  // `pdf_table_extraction` gain an optional `table` projection of it at
+  // cutover and are deliberately not mirrored yet — see the module header.
+  // Python-owned models: aidream/aidream/services/table_kinds/models.py.
+  ...TABLE_KINDS_KIND_DEFINITIONS,
   // Compiled MIRROR of the already-registered python-owned `trust_envelope` +
   // `citation` kinds (their DB rows carry a NULL `data[]`, so nothing else can
   // resolve them). Registered here so every kind that carries grounding

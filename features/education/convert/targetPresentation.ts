@@ -51,6 +51,13 @@ export interface TargetPresentation {
   chip: string;
   /** Border tint for the row while it is active. */
   activeBorder: string;
+  /**
+   * Hover border tint, written out in full rather than composed from
+   * `activeBorder` at runtime. Tailwind only generates classes it can find as
+   * literal strings in the source, so `hover:${activeBorder}` would compile to
+   * a class that does not exist in the stylesheet.
+   */
+  hoverBorder: string;
   /** Progress-bar fill while this target is running. */
   bar: string;
   /** What the system is DOING, in the student's words, while it runs. */
@@ -66,6 +73,7 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     fg: "text-sky-600 dark:text-sky-400",
     chip: "bg-sky-500/10",
     activeBorder: "border-sky-500/40",
+    hoverBorder: "hover:border-sky-500/40",
     bar: "bg-sky-500",
     runningVerb: "Writing your flashcards",
   },
@@ -77,6 +85,7 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     fg: "text-emerald-600 dark:text-emerald-400",
     chip: "bg-emerald-500/10",
     activeBorder: "border-emerald-500/40",
+    hoverBorder: "hover:border-emerald-500/40",
     bar: "bg-emerald-500",
     runningVerb: "Writing your summary",
   },
@@ -88,6 +97,7 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     fg: "text-violet-600 dark:text-violet-400",
     chip: "bg-violet-500/10",
     activeBorder: "border-violet-500/40",
+    hoverBorder: "hover:border-violet-500/40",
     bar: "bg-violet-500",
     runningVerb: "Mapping the ideas",
   },
@@ -99,6 +109,7 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     fg: "text-amber-600 dark:text-amber-400",
     chip: "bg-amber-500/10",
     activeBorder: "border-amber-500/40",
+    hoverBorder: "hover:border-amber-500/40",
     bar: "bg-amber-500",
     runningVerb: "Recording your audio overview",
   },
@@ -110,6 +121,7 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     fg: "text-fuchsia-600 dark:text-fuchsia-400",
     chip: "bg-fuchsia-500/10",
     activeBorder: "border-fuchsia-500/40",
+    hoverBorder: "hover:border-fuchsia-500/40",
     bar: "bg-fuchsia-500",
     runningVerb: "Inventing memory tricks",
   },
@@ -121,6 +133,7 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     fg: "text-rose-600 dark:text-rose-400",
     chip: "bg-rose-500/10",
     activeBorder: "border-rose-500/40",
+    hoverBorder: "hover:border-rose-500/40",
     bar: "bg-rose-500",
     runningVerb: "Writing your quiz questions",
   },
@@ -132,6 +145,7 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     fg: "text-indigo-600 dark:text-indigo-400",
     chip: "bg-indigo-500/10",
     activeBorder: "border-indigo-500/40",
+    hoverBorder: "hover:border-indigo-500/40",
     bar: "bg-indigo-500",
     runningVerb: "Building your practice test",
   },
@@ -143,6 +157,7 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     fg: "text-teal-600 dark:text-teal-400",
     chip: "bg-teal-500/10",
     activeBorder: "border-teal-500/40",
+    hoverBorder: "hover:border-teal-500/40",
     bar: "bg-teal-500",
     runningVerb: "Taking your study notes",
   },
