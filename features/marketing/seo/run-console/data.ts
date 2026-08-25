@@ -19,7 +19,10 @@ import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { makeAssertData, extractErrorMessage } from "@/utils/errors";
 import { readAllRows } from "@/lib/supabase/readAllRows";
 import type { Database } from "@/types/database.types";
-import { evaluateConditionMatchers } from "@/features/marketing/search-console/data-dig";
+import {
+  evaluateConditionMatchers,
+  parseAutonomyVerdict,
+} from "@/features/marketing/search-console/data-dig";
 import type {
   ConsoleSiteRow,
   EngineScheduleRow,
@@ -164,8 +167,6 @@ export interface ScheduleDraft {
    */
   organizationId: string;
 }
-
-
 
 export async function saveEngineSchedule(
   draft: ScheduleDraft,
@@ -345,23 +346,26 @@ export async function getSituationalRefreshStatus(
     response.data,
     response.error,
     "read this brand's situational segments",
-  ) as unknown as SituationalRefreshStatus[];
-  const row = Array.isArray(rows) ? rows[0] : (rows as unknown as SituationalRefreshStatus);
+  );
+  const row = rows[0];
   // A brand with no condition matchers returns no row at all — that is a real
   // and common state (most brands have never written a Dig Here rule), so it
   // renders as zeroes, never as an error.
-  return (
-    row ?? {
-      site_id: siteId,
-      matchers: 0,
-      stale_matchers: 0,
-      oldest_evaluated_at: null,
-      newest_evaluated_at: null,
-      stamps: 0,
-      stale_after_hours: 0,
-      autonomy: null,
-    }
-  );
+  return row
+    ? {
+        ...row,
+        autonomy: parseAutonomyVerdict(row.autonomy),
+      }
+    : {
+        site_id: siteId,
+        matchers: 0,
+        stale_matchers: 0,
+        oldest_evaluated_at: null,
+        newest_evaluated_at: null,
+        stamps: 0,
+        stale_after_hours: 0,
+        autonomy: null,
+      };
 }
 
 /** One refresh pass over one brand, through the ONE engine wrapper. */
@@ -398,7 +402,10 @@ export async function runSituationalRefresh(
       passes: result.passes ?? 1,
       refusal: result.autonomy?.refusal ?? null,
       autonomyMode: result.autonomy?.mode ?? null,
-      proposals: segments.reduce((sum, row) => sum + (row.proposed > 0 ? 1 : 0), 0),
+      proposals: segments.reduce(
+        (sum, row) => sum + (row.proposed > 0 ? 1 : 0),
+        0,
+      ),
       timeoutApplied: result.timeout_pass?.applied ?? 0,
       error: null,
       segments,

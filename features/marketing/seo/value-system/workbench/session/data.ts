@@ -19,8 +19,12 @@ import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage, makeAssertData } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
+import { isJsonObject } from "@/types/json";
 import type { KeywordMeaningProposal } from "@/features/marketing/seo/value-system/suggestions/proposal";
-import type { AutonomyVerdict } from "@/features/marketing/search-console/data-dig";
+import {
+  parseAutonomyVerdict,
+  type AutonomyVerdict,
+} from "@/features/marketing/search-console/data-dig";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -84,7 +88,9 @@ export async function getRulingSessionQueue(
   exclude: string[],
   signal?: AbortSignal,
 ): Promise<SessionQueue> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_ruling_session_queue", {
       p_site_id: siteId,
       p_start: start,
@@ -139,7 +145,9 @@ export async function probeSiteMatchers(
 ): Promise<Map<string, MatcherProbeHit[]>> {
   const map = new Map<string, MatcherProbeHit[]>();
   if (keywordIds.length === 0) return map;
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_ruling_session_matcher_probe", {
       p_site_id: siteId,
       p_keyword_ids: keywordIds,
@@ -213,7 +221,9 @@ export async function previewMatcherReach(
   },
   signal?: AbortSignal,
 ): Promise<MatcherReach> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_matcher_reach_preview", {
       p_site_id: input.siteId,
       p_start: input.start,
@@ -239,9 +249,13 @@ export async function previewMatcherReach(
     alreadyValued: num(raw, "already_valued"),
     newlyValued: num(raw, "newly_valued"),
     sample: sample.flatMap((entry) => {
-      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+      if (!entry || typeof entry !== "object" || Array.isArray(entry))
+        return [];
       const row = entry as Record<string, Json>;
-      if (typeof row.keyword_id !== "string" || typeof row.keyword !== "string") {
+      if (
+        typeof row.keyword_id !== "string" ||
+        typeof row.keyword !== "string"
+      ) {
         return [];
       }
       return [
@@ -295,7 +309,9 @@ export async function runSiteMatchers(
   siteId: string,
   keywordIds?: string[],
 ): Promise<MatcherRunResult> {
-  const response = await (await seoDb()).rpc("fn_evaluate_matchers", {
+  const response = await (
+    await seoDb()
+  ).rpc("fn_evaluate_matchers", {
     p_site_id: siteId,
     ...(keywordIds?.length ? { p_keyword_ids: keywordIds } : {}),
   });
@@ -303,19 +319,22 @@ export async function runSiteMatchers(
     response.data,
     response.error,
     "run your rules over the keywords",
-  ) as unknown as Record<string, Json>;
+  );
+  if (!isJsonObject(raw)) {
+    throw new Error("The matcher run receipt was not an object.");
+  }
   const proposals = Array.isArray(raw.proposals) ? raw.proposals : [];
-  const timeout = raw.timeout_pass as { applied?: number } | undefined;
+  const timeout = isJsonObject(raw.timeout_pass) ? raw.timeout_pass : null;
   return {
     scopeKeywords: num(raw, "scope_keywords"),
     matchers: num(raw, "matchers"),
     stamped: num(raw, "stamped"),
     removed: num(raw, "removed"),
     conflicts: num(raw, "single_cardinality_conflicts"),
-    autonomy: (raw.autonomy as unknown as AutonomyVerdict) ?? null,
+    autonomy: parseAutonomyVerdict(raw.autonomy),
     skipped: typeof raw.skipped === "string" ? raw.skipped : null,
     proposals: proposals.length,
-    timeoutApplied: Number(timeout?.applied ?? 0),
+    timeoutApplied: typeof timeout?.applied === "number" ? timeout.applied : 0,
   };
 }
 
@@ -332,7 +351,9 @@ export function describeMatcherRun(result: MatcherRunResult): {
 } {
   if (result.skipped || result.autonomy?.decision === "off") {
     return {
-      headline: result.autonomy?.refusal ?? "Your rules are turned off, so nothing ran.",
+      headline:
+        result.autonomy?.refusal ??
+        "Your rules are turned off, so nothing ran.",
       detail: null,
       waiting: true,
     };
@@ -367,7 +388,8 @@ export function describeMatcherRun(result: MatcherRunResult): {
 
 /* ------------------------------------------------------- the C9 proposal */
 
-export type SuggestionStatus = "created" | "already_pending" | "already_decided";
+export type SuggestionStatus =
+  "created" | "already_pending" | "already_decided";
 
 export interface SuggestionReceipt {
   assistId: string;
@@ -401,16 +423,16 @@ export async function proposeKeywordMeaning(input: {
   confidence?: number | null;
   provenance?: Record<string, string>;
 }): Promise<SuggestionReceipt> {
-  const response = await (await seoDb()).rpc("keyword_meaning_suggest", {
+  const response = await (
+    await seoDb()
+  ).rpc("keyword_meaning_suggest", {
     p_site_id: input.siteId,
     p_proposal: input.proposal,
     p_title: input.title,
     ...(input.body ? { p_body: input.body } : {}),
     ...(input.reasoning ? { p_reasoning: input.reasoning } : {}),
     ...(input.confidence != null ? { p_confidence: input.confidence } : {}),
-    ...(input.provenance
-      ? { p_provenance: input.provenance }
-      : {}),
+    ...(input.provenance ? { p_provenance: input.provenance } : {}),
   });
   const rows = assertGoverned(
     response.data,
@@ -459,7 +481,9 @@ export async function listHumanRulings(input: {
   end: string;
   limit?: number;
 }): Promise<HumanRulingRow[]> {
-  const response = await (await seoDb()).rpc("gsc_human_rulings", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_human_rulings", {
     p_site_id: input.siteId,
     p_dimension_slug: input.dimensionSlug,
     p_start: input.start,

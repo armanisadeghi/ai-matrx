@@ -20,6 +20,7 @@ import { serializeDigConditions } from "@/features/marketing/search-console/lib/
 import { makeAssertData } from "@/utils/errors";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
+import { isJsonObject } from "@/types/json";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -53,7 +54,9 @@ export async function listDigRules(
   // siteId comes straight from ?site= — validate before splicing it into
   // the PostgREST .or() filter DSL (a stray comma/paren would rewrite it).
   if (!UUID_RE.test(siteId)) throw new Error("Invalid site id");
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .from("gsc_dig_rule")
     .select("*")
     .is("deleted_at", null)
@@ -130,7 +133,9 @@ export async function updateDigRule(
 
 /** Soft delete (RLS: owner only; templates are not deletable). */
 export async function deleteDigRule(ruleId: string): Promise<void> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .from("gsc_dig_rule")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", ruleId);
@@ -181,7 +186,9 @@ export async function runGscDig(
   content: GscDigRuleContent,
   signal?: AbortSignal,
 ): Promise<GscDigResult> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_perf_dig", {
       p_site_id: siteId,
       p_dimension: content.dimension,
@@ -247,7 +254,9 @@ export async function listDigRuleStamps(
   ruleId?: string | null,
   signal?: AbortSignal,
 ): Promise<DigRuleStamp[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_dig_rule_stamps", {
       p_site_id: siteId,
       ...(ruleId ? { p_rule_id: ruleId } : {}),
@@ -266,7 +275,9 @@ export async function saveDigRuleStamp(
   ruleId: string,
   valueId: string,
 ): Promise<string> {
-  const response = await (await seoDb()).rpc("gsc_dig_rule_stamp_upsert", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_dig_rule_stamp_upsert", {
     p_site_id: siteId,
     p_rule_id: ruleId,
     p_value_id: valueId,
@@ -283,7 +294,9 @@ export async function removeDigRuleStamp(
   siteId: string,
   matcherId: string,
 ): Promise<{ stamps_removed: number }> {
-  const response = await (await seoDb()).rpc("gsc_dig_rule_stamp_remove", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_dig_rule_stamp_remove", {
     p_site_id: siteId,
     p_matcher_id: matcherId,
   });
@@ -321,11 +334,7 @@ export interface AutonomyVerdict {
   capability: string;
   label: string;
   mode:
-    | "auto_platform"
-    | "auto_org"
-    | "review_timeout"
-    | "review_required"
-    | "off";
+    "auto_platform" | "auto_org" | "review_timeout" | "review_required" | "off";
   decision: "apply" | "propose" | "propose_only" | "off";
   source: string;
   scope: string;
@@ -335,8 +344,70 @@ export interface AutonomyVerdict {
   refusal: string | null;
 }
 
+function isAutonomyMode(value: unknown): value is AutonomyVerdict["mode"] {
+  return (
+    value === "auto_platform" ||
+    value === "auto_org" ||
+    value === "review_timeout" ||
+    value === "review_required" ||
+    value === "off"
+  );
+}
+
+function isAutonomyDecision(
+  value: unknown,
+): value is AutonomyVerdict["decision"] {
+  return (
+    value === "apply" ||
+    value === "propose" ||
+    value === "propose_only" ||
+    value === "off"
+  );
+}
+
+/** Validate the autonomy receipt at the JSON boundary before UI code trusts it. */
+export function parseAutonomyVerdict(value: unknown): AutonomyVerdict | null {
+  if (value === null || value === undefined) return null;
+  if (!isJsonObject(value)) {
+    throw new Error("The autonomy receipt was not an object.");
+  }
+
+  const mode = value.mode;
+  const decision = value.decision;
+  if (
+    typeof value.capability !== "string" ||
+    typeof value.label !== "string" ||
+    !isAutonomyMode(mode) ||
+    !isAutonomyDecision(decision) ||
+    typeof value.source !== "string" ||
+    typeof value.scope !== "string" ||
+    (value.timeout_hours !== null && typeof value.timeout_hours !== "number") ||
+    typeof value.enforced !== "boolean" ||
+    (value.refusal !== null && typeof value.refusal !== "string")
+  ) {
+    throw new Error("The autonomy receipt did not match the live contract.");
+  }
+
+  return {
+    capability: value.capability,
+    label: value.label,
+    mode,
+    decision,
+    source: value.source,
+    scope: value.scope,
+    timeout_hours: value.timeout_hours,
+    enforced: value.enforced,
+    refusal: value.refusal,
+  };
+}
+
 export interface ConditionEvaluation {
-  window: { start: string; end: string; compare_start: string; compare_end: string };
+  window: {
+    start: string;
+    end: string;
+    compare_start: string;
+    compare_end: string;
+  };
   matchers: number;
   stamped: number;
   removed: number;
@@ -389,7 +460,9 @@ async function evaluateOnce(
   siteId: string,
   scope: { matcherId?: string; dimensionId?: string },
 ): Promise<ConditionEvaluation> {
-  const response = await (await seoDb()).rpc("fn_evaluate_condition_matchers", {
+  const response = await (
+    await seoDb()
+  ).rpc("fn_evaluate_condition_matchers", {
     p_site_id: siteId,
     ...(scope.matcherId ? { p_matcher_ids: [scope.matcherId] } : {}),
     ...(scope.dimensionId ? { p_dimension_id: scope.dimensionId } : {}),
@@ -412,7 +485,10 @@ export async function evaluateConditionMatchers(
     // AUTONOMY (KI-044). `off` never ran; a review mode wrote proposals and
     // stamped nothing. Neither has anything left to fill, so looping would be
     // one wasted round-trip per pass and a "remaining: 0" that means nothing.
-    if (current.skipped || (current.autonomy && current.autonomy.decision !== "apply")) {
+    if (
+      current.skipped ||
+      (current.autonomy && current.autonomy.decision !== "apply")
+    ) {
       return { ...current, passes: pass };
     }
     total = total
@@ -423,7 +499,9 @@ export async function evaluateConditionMatchers(
           stamped: total.stamped + current.stamped,
           removed: total.removed + current.removed,
           results: current.results.map((row) => {
-            const prior = total?.results.find((r) => r.matcher_id === row.matcher_id);
+            const prior = total?.results.find(
+              (r) => r.matcher_id === row.matcher_id,
+            );
             return {
               ...row,
               stamped: (prior?.stamped ?? 0) + (row.stamped ?? 0),

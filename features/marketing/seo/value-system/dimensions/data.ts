@@ -28,11 +28,11 @@ import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage, makeAssertData } from "@/utils/errors";
 import type { Database, Json } from "@/types/database.types";
+import { z } from "zod";
 import type {
   MatcherKind,
   WorthEffect,
 } from "@/features/marketing/seo/value-system/suggestions/proposal";
-import type { RuleImpact } from "@/features/marketing/seo/value-system/rules/types";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -190,7 +190,9 @@ export async function getFacetDimensionCatalog(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<FacetDimension[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("facet_dimension_catalog", { p_site_id: siteId })
     .abortSignal(signal ?? new AbortController().signal);
   const rows = assertGoverned(
@@ -243,7 +245,9 @@ export interface DimensionDraft {
 export async function upsertFacetDimension(
   draft: DimensionDraft,
 ): Promise<string> {
-  const response = await (await seoDb()).rpc("facet_dimension_upsert", {
+  const response = await (
+    await seoDb()
+  ).rpc("facet_dimension_upsert", {
     p_slug: draft.slug,
     p_label: draft.label,
     p_description: draft.description ?? undefined,
@@ -271,7 +275,9 @@ export interface FacetValueDraft {
 export async function upsertFacetValue(
   draft: FacetValueDraft,
 ): Promise<string> {
-  const response = await (await seoDb()).rpc("facet_value_upsert", {
+  const response = await (
+    await seoDb()
+  ).rpc("facet_value_upsert", {
     p_dimension: draft.dimension,
     p_value: draft.value,
     p_label: draft.label,
@@ -341,7 +347,9 @@ export type DimensionMatcherRow =
 export async function upsertDimensionMatcher(
   draft: MatcherDraft,
 ): Promise<DimensionMatcherRow> {
-  const response = await (await seoDb()).rpc("dimension_matcher_upsert", {
+  const response = await (
+    await seoDb()
+  ).rpc("dimension_matcher_upsert", {
     p_site_id: draft.siteId,
     p_value_id: draft.valueId,
     p_kind: draft.kind,
@@ -392,7 +400,9 @@ export interface MatcherDeleteResult {
 export async function deleteDimensionMatcher(
   matcherId: string,
 ): Promise<MatcherDeleteResult> {
-  const response = await (await seoDb()).rpc("dimension_matcher_delete", {
+  const response = await (
+    await seoDb()
+  ).rpc("dimension_matcher_delete", {
     p_matcher_id: matcherId,
   });
   const raw = assertGoverned(
@@ -448,7 +458,9 @@ export async function getMatcherReview(
   limit = 300,
   signal?: AbortSignal,
 ): Promise<MatcherReview> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("matcher_match_review", {
       p_site_id: siteId,
       p_matcher_id: matcherId,
@@ -503,7 +515,9 @@ export async function archiveFacetValue(input: {
   /** Move the answers here instead of dropping them. */
   reassignToKey?: string | null;
 }): Promise<ValueArchiveResult> {
-  const response = await (await seoDb()).rpc("facet_value_archive", {
+  const response = await (
+    await seoDb()
+  ).rpc("facet_value_archive", {
     p_dimension: input.dimensionSlug,
     p_value: input.valueKey,
     p_reassign_to: input.reassignToKey ?? undefined,
@@ -539,7 +553,9 @@ export async function archiveFacetDimension(input: {
   dimensionSlug: string;
   siteId: string;
 }): Promise<DimensionArchiveResult> {
-  const response = await (await seoDb()).rpc("facet_dimension_archive", {
+  const response = await (
+    await seoDb()
+  ).rpc("facet_dimension_archive", {
     p_dimension: input.dimensionSlug,
     p_drop_facts: true,
     p_site_id: input.siteId,
@@ -628,7 +644,9 @@ export async function getValueMatchers(
   valueId: string,
   signal?: AbortSignal,
 ): Promise<ValueMatcher[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .from("dimension_value_matcher")
     .select(
       "id, site_id, value_id, kind, pattern, place_id, fact_value_id, condition_rule_id, enabled, origin, notes, match_count, last_evaluated_at, created_at",
@@ -668,7 +686,9 @@ export async function getSiteMatchers(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<ValueMatcher[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .from("dimension_value_matcher")
     .select(
       "id, site_id, value_id, kind, pattern, place_id, fact_value_id, condition_rule_id, enabled, origin, notes, match_count, last_evaluated_at, created_at",
@@ -697,7 +717,9 @@ export async function getMatcherCounts(
 ): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
   if (valueIds.length === 0) return counts;
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .from("dimension_value_matcher")
     .select("value_id")
     .eq("site_id", siteId)
@@ -733,7 +755,9 @@ export type SiteValueWorthRow =
 export async function upsertSiteValueWorth(
   draft: WorthDraft,
 ): Promise<SiteValueWorthRow | null> {
-  const response = await (await seoDb()).rpc("site_value_worth_upsert", {
+  const response = await (
+    await seoDb()
+  ).rpc("site_value_worth_upsert", {
     p_site_id: draft.siteId,
     p_value_id: draft.valueId,
     p_effect: draft.effect,
@@ -764,14 +788,20 @@ export async function listSiteWorth(
   window: { start: string; end: string },
   signal?: AbortSignal,
 ): Promise<SiteWorthRow[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_site_worth_list", {
       p_site_id: siteId,
       p_start: window.start,
       p_end: window.end,
     })
     .abortSignal(signal ?? new AbortController().signal);
-  return assertGoverned(response.data, response.error, "read what your answers are worth");
+  return assertGoverned(
+    response.data,
+    response.error,
+    "read what your answers are worth",
+  );
 }
 
 /**
@@ -782,27 +812,35 @@ export async function listSiteWorth(
  * keyword. The proposal is the MEDIAN of that over the keywords the multiplier
  * is actually doing arithmetic on today.
  */
-export interface WorthConvertBasis {
-  error?: "no_worth" | "not_a_multiplier";
-  message?: string;
-  effect?: string;
-  factor?: number;
-  window_keywords?: number;
-  stamped_keywords?: number;
-  contributing_keywords?: number;
+const quartilesSchema = z.object({
+  p25: z.number().nullable(),
+  median: z.number().nullable(),
+  p75: z.number().nullable(),
+});
+
+const worthConvertBasisSchema = z.object({
+  error: z.enum(["no_worth", "not_a_multiplier"]).optional(),
+  message: z.string().optional(),
+  effect: z.string().optional(),
+  factor: z.number().optional(),
+  window_keywords: z.number().optional(),
+  stamped_keywords: z.number().optional(),
+  contributing_keywords: z.number().optional(),
   /** Stamped keywords with no points yet: a multiplier does nothing to them, points would. */
-  inert_keywords?: number;
-  protected_keywords?: number;
-  never_keywords?: number;
-  total_before_factor?: { p25: number | null; median: number | null; p75: number | null };
-  equivalent_add?: { p25: number | null; median: number | null; p75: number | null };
-  score_delta_now?: { median: number | null };
+  inert_keywords: z.number().optional(),
+  protected_keywords: z.number().optional(),
+  never_keywords: z.number().optional(),
+  total_before_factor: quartilesSchema.optional(),
+  equivalent_add: quartilesSchema.optional(),
+  score_delta_now: z.object({ median: z.number().nullable() }).optional(),
   /** The median equivalent, rounded to the nearest 5 so a person can read it back. */
-  proposed_add?: number;
+  proposed_add: z.number().optional(),
   /** The ratified starter-pack formula (T pinned at 100), printed so the two can never disagree. */
-  pack_reference_add?: number;
-  basis?: "site_distribution" | "pack_formula";
-}
+  pack_reference_add: z.number().optional(),
+  basis: z.enum(["site_distribution", "pack_formula"]).optional(),
+});
+
+export type WorthConvertBasis = z.infer<typeof worthConvertBasisSchema>;
 
 export async function getWorthConvertBasis(
   siteId: string,
@@ -810,7 +848,9 @@ export async function getWorthConvertBasis(
   window: { start: string; end: string },
   signal?: AbortSignal,
 ): Promise<WorthConvertBasis> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_worth_convert_basis", {
       p_site_id: siteId,
       p_value_id: valueId,
@@ -818,11 +858,13 @@ export async function getWorthConvertBasis(
       p_end: window.end,
     })
     .abortSignal(signal ?? new AbortController().signal);
-  return assertGoverned(
-    response.data,
-    response.error,
-    "work out what this multiplier is worth in points",
-  ) as unknown as WorthConvertBasis;
+  return worthConvertBasisSchema.parse(
+    assertGoverned(
+      response.data,
+      response.error,
+      "work out what this multiplier is worth in points",
+    ),
+  );
 }
 
 /**
@@ -831,12 +873,43 @@ export async function getWorthConvertBasis(
  * through the same `gsc_value_preview_summarize`, so a worth proposal and a
  * combination proposal can never band a keyword differently.
  */
-export interface WorthImpact extends RuleImpact {
+const worthImpactSchema = z.object({
+  window_keywords: z.number(),
+  matched_keywords: z.number(),
+  matched_clicks: z.number(),
+  matched_impressions: z.number(),
+  moved_keywords: z.number(),
+  stamped_only_keywords: z.number(),
+  protected_keywords: z.number(),
+  movements: z.array(
+    z.object({
+      from_band: z.string(),
+      to_band: z.string(),
+      keywords: z.number(),
+      clicks: z.number(),
+      impressions: z.number(),
+    }),
+  ),
+  samples: z.array(
+    z.object({
+      keyword_id: z.string(),
+      keyword: z.string(),
+      clicks: z.number(),
+      impressions: z.number(),
+      from_band: z.string(),
+      to_band: z.string(),
+      from_score: z.number().nullable(),
+      to_score: z.number().nullable(),
+      source: z.string(),
+    }),
+  ),
   /** Keywords whose SCORE changes, whether or not the level does. */
-  changed_score_keywords: number;
-  effect: string;
-  amount: number | null;
-}
+  changed_score_keywords: z.number(),
+  effect: z.string(),
+  amount: z.number().nullable(),
+});
+
+export type WorthImpact = z.infer<typeof worthImpactSchema>;
 
 export async function previewSiteValueWorth(
   input: {
@@ -850,7 +923,9 @@ export async function previewSiteValueWorth(
   },
   signal?: AbortSignal,
 ): Promise<WorthImpact> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_value_worth_preview", {
       p_site_id: input.siteId,
       p_value_id: input.valueId,
@@ -861,9 +936,11 @@ export async function previewSiteValueWorth(
       p_sample: input.sample ?? 10,
     })
     .abortSignal(signal ?? new AbortController().signal);
-  return assertGoverned(
-    response.data,
-    response.error,
-    "measure this worth against your keywords",
-  ) as unknown as WorthImpact;
+  return worthImpactSchema.parse(
+    assertGoverned(
+      response.data,
+      response.error,
+      "measure this worth against your keywords",
+    ),
+  );
 }
