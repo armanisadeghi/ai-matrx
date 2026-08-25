@@ -35,6 +35,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Archive,
   ArrowLeft,
   Boxes,
   Layers,
@@ -42,19 +43,30 @@ import {
   ListTree,
   MapPin,
   MapPinned,
+  PanelTop,
   Pencil,
   PlugZap,
   Plus,
+  RotateCcw,
   TriangleAlert,
   X,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraItem,
+} from "@/features/context-menu-v3/types";
+import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
+import { archiveRule } from "@/features/marketing/search-console/data-class-rules";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { formatCount } from "@/features/marketing/search-console/types";
+import type { GscFilters } from "@/features/marketing/search-console/types";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
@@ -95,6 +107,7 @@ import { GeoAreaEditor } from "./GeoAreaEditor";
 import { PlaceDetectionStrip } from "./PlaceDetectionStrip";
 import { LocationPanel } from "../locations/LocationPanel";
 import {
+  archiveGeoArea,
   geoAreaHealthQueryKey,
   valueRuleHealthQueryKey,
   geoAreasQueryKey,
@@ -105,6 +118,7 @@ import {
   listValueRuleHealth,
   reconnectValueRules,
   valueRulesQueryKey,
+  valueSurfaceQueryKeys,
 } from "./data";
 import type { GeoAreaHealthRow, MeaningUsageRow, ValueRuleHealthRow } from "./types";
 
@@ -653,6 +667,206 @@ export function MeaningRulesWorkbench() {
   const changedCount = Array.from(bySiteRow.values()).filter(
     (p) => p.item.state === "changed",
   ).length;
+
+  /**
+   * 🚨 THE MISSING MENU ON THE RULEBOOK, closed 2026-08-24 (KI-025). Right-
+   * clicking the two things this whole page exists to author — a value rule and
+   * a service area — opened nothing at all, so everything the ledger can do was
+   * reachable only by finding the right button.
+   *
+   * ONE menu for the whole ledger, never one per row: `resolveContextOnOpen`
+   * reads the clicked row off `data-rule-id` / `data-area-id` and every item
+   * delegates to a handler that already exists here, so the menu can never
+   * drift from the buttons beside it. `contextRow` is state, not a ref, because
+   * the items themselves differ by row TYPE and the lazy menu builds them
+   * during the render that opens it.
+   */
+  const openDrilldown = useOpenGscDrilldownWindow();
+  const [contextRow, setContextRow] = useState<
+    | { kind: "rule"; rule: ValueRule }
+    | { kind: "area"; area: SiteGeoArea }
+    | null
+  >(null);
+
+  const invalidateValueSurfaces = () => {
+    for (const key of valueSurfaceQueryKeys(siteId)) {
+      void queryClient.invalidateQueries({ queryKey: key });
+    }
+  };
+
+  /**
+   * WHAT A RULE FIRES ON, expressed as a filter the keyword panel already
+   * understands. A fact rule matched a dimension stamp, so it drills by
+   * `stamps`; a phrase rule matched the words themselves, so it drills by the
+   * query text. A rule carrying neither has no honest door, and the item says
+   * that instead of opening an unfiltered panel that looks like an answer.
+   */
+  const ruleDrilldownFilters = (rule: ValueRule): GscFilters | null => {
+    if (rule.match_facet && rule.match_facet_value)
+      return { stamps: `${rule.match_facet}:${rule.match_facet_value}` };
+    if (rule.pattern)
+      return rule.match_kind === "exact"
+        ? { query_eq: rule.pattern }
+        : { query_contains: rule.pattern };
+    return null;
+  };
+
+  const archiveTheRule = async (rule: ValueRule) => {
+    const ok = await confirm({
+      title: `Archive “${rule.name}”?`,
+      description:
+        "Keywords it was scoring re-resolve immediately without it — some will change band. Your explicit keyword rulings are untouched.",
+      confirmLabel: "Archive rule",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await archiveRule(rule.id);
+      toast.success("Rule archived", {
+        description: "Every keyword it was scoring re-resolves without it.",
+      });
+      invalidateValueSurfaces();
+    } catch (error) {
+      toast.error(extractErrorMessage(error), {
+        description: "Your value rules were not changed.",
+      });
+    }
+  };
+
+  const archiveTheArea = async (area: SiteGeoArea) => {
+    const ok = await confirm({
+      title: `Archive “${area.label}”?`,
+      description:
+        "Keywords it was placing re-resolve immediately without it — some will change band. The places themselves are untouched.",
+      confirmLabel: "Archive area",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await archiveGeoArea(area.id);
+      toast.success("Area archived", {
+        description: "Every keyword it was placing re-resolves without it.",
+      });
+      invalidateValueSurfaces();
+    } catch (error) {
+      toast.error(extractErrorMessage(error), {
+        description: "Your service areas were not changed.",
+      });
+    }
+  };
+
+  /** Revert goes through the ONE adoption RPC the editors already use — this
+   *  is the same `onRevert` the provenance strip runs, not a second path. */
+  const revertToPack = async (
+    prov: EditorProvenance,
+    what: string,
+  ): Promise<void> => {
+    try {
+      await prov.onRevert();
+      toast.success(`“${what}” is back to what ${prov.packName} proposed`);
+    } catch (error) {
+      toast.error(extractErrorMessage(error), {
+        description: "Nothing was changed.",
+      });
+    }
+  };
+
+  const menuItems = (): ContextMenuExtraItem[] => {
+    if (!contextRow) return [];
+    if (contextRow.kind === "rule") {
+      const rule = contextRow.rule;
+      const filters = ruleDrilldownFilters(rule);
+      const prov = provenanceFor(rule.id, "meaning", ruleSummary);
+      return [
+        {
+          kind: "item",
+          id: "rule-see-fires-on",
+          label: "See what this rule fires on",
+          icon: PanelTop,
+          description: filters
+            ? `The keywords it matches, in a floating panel — ${describeRuleMatch(rule)}`
+            : "This rule records no match condition, so there is nothing to show",
+          disabled: !filters,
+          onSelect: () => {
+            if (!filters) return;
+            openDrilldown({
+              siteId,
+              siteName: site.domain,
+              dimension: "query",
+              filters,
+              title: `Fires on: ${rule.name}`,
+            });
+          },
+        },
+        {
+          kind: "item",
+          id: "rule-edit",
+          label: "Edit this rule…",
+          icon: Pencil,
+          description: "Its words, its multiplier and the tier it targets",
+          onSelect: () => setEditingRule(rule),
+        },
+        ...(prov
+          ? ([
+              {
+                kind: "item",
+                id: "rule-revert",
+                label: `Put it back to ${prov.packName}’s version`,
+                icon: RotateCcw,
+                description: `Pack says: ${prov.packSummary}`,
+                disabled: prov.state !== "changed",
+                onSelect: () => void revertToPack(prov, rule.name),
+              },
+            ] satisfies ContextMenuExtraItem[])
+          : []),
+        { kind: "separator", id: "rule-separator" },
+        {
+          kind: "item",
+          id: "rule-archive",
+          label: "Archive this rule…",
+          icon: Archive,
+          destructive: true,
+          description: "Everything it was scoring re-resolves without it",
+          onSelect: () => void archiveTheRule(rule),
+        },
+      ];
+    }
+    const area = contextRow.area;
+    const prov = provenanceFor(area.id, "geo_areas", areaSummary);
+    return [
+      {
+        kind: "item",
+        id: "area-edit",
+        label: "Edit this service area…",
+        icon: Pencil,
+        description: "The places it stands for, and the band it carries",
+        onSelect: () => setEditingArea(area),
+      },
+      ...(prov
+        ? ([
+            {
+              kind: "item",
+              id: "area-revert",
+              label: `Put it back to ${prov.packName}’s version`,
+              icon: RotateCcw,
+              description: `Pack says: ${prov.packSummary}`,
+              disabled: prov.state !== "changed",
+              onSelect: () => void revertToPack(prov, area.label),
+            },
+          ] satisfies ContextMenuExtraItem[])
+        : []),
+      { kind: "separator", id: "area-separator" },
+      {
+        kind: "item",
+        id: "area-archive",
+        label: "Archive this service area…",
+        icon: Archive,
+        destructive: true,
+        description: "Everything it was placing re-resolves without it",
+        onSelect: () => void archiveTheArea(area),
+      },
+    ];
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-textured">
