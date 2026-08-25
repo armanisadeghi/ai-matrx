@@ -332,6 +332,33 @@ system actually knew, or merely sounded like it did. These are cheap to build on
 listed the failure modes honestly — which is why step 1 is the work and everything else is
 arrangement.
 
+### DENOMINATOR DISCIPLINE — the wrong population produces a real-looking lie
+
+A measurement is only as honest as the population it counts. **State the denominator and defend
+it before you trust the ratio.**
+
+Measured case (2026-08-25): "keywords exist on ~12 of 11,000+ pages" was a real number that
+badly misdiagnosed the system — it counted CRAWLED pages, most of which were never planned. The
+correct population was PLAN NODES, and against that, persistence was **100% on established
+sites** (341/341, 219/219, 22/22). The actual defect was narrow and invisible in the wrong
+framing: brand-new sites lose **100%** of their keywords. A wrong denominator can make a
+localized, fixable bug look like a systemic drought — or hide a total failure inside a
+comfortable average.
+
+Ask: *what is the population this claim is about, and is that the population I counted?*
+
+### SILENT SUCCESS IS THE WORST FAILURE MODE
+
+The same case: the apply path lost **8 of 8** keywords and reported `created=9, failed=0,
+errors=[], keywords_filled=0` — a completely clean result while losing everything. The one
+function that knew (`assign_primary_keyword`) returned `None` on failure and **the caller
+discarded the return value**. Downstream, a later gate blamed the USER for the missing keyword
+("assign one in Setup").
+
+When you write a step that can partially fail, the failure must reach the result. **A return
+value that can mean "I did nothing" and is not checked is a silent-loss bug waiting to happen**,
+and it will be reported to the user as their fault.
+
 🚨 **Never design a test you know you will pass.** A test built from data you hand-picked to
 suit the agent proves nothing and manufactures false confidence. **Real data is what wins** —
 and when two designs are both plausible, build both and let real data pick, rather than
