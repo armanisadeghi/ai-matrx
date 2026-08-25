@@ -93,7 +93,7 @@ if $STRICT; then
         # block. Missing OR disabled both fail: the escape hatch is DISABLE and
         # re-ENABLE inside ONE transaction, so a guard left disabled at rest is a
         # mistake, not a state. (aidream/scripts/release.sh asserts the same.)
-        "DB guard liveness (pg_event_trigger)|pnpm check:db-guards:strict"
+        "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards:strict"
         # PARTITION RUNWAY stays ADVISORY even in strict mode. It is the only
         # gate whose subject is the CALENDAR, not the code: a release that has
         # nothing to do with history.row_versions must not be blocked because a
@@ -274,7 +274,7 @@ else
         # without --strict, because the fix is a rebuild + a filed defect,
         # not a blocked release.
         "Reachability standing guards|pnpm check:reachability-guards"
-        "DB guard liveness (pg_event_trigger)|pnpm check:db-guards"
+        "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards"
         # Time-bounded DDL that can expire on the calendar — partition runway,
         # catch-all partitions that started receiving rows, stalled pg_cron
         # jobs. Loud, never blocking (D122).
