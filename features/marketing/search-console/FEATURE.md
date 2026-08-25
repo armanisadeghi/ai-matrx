@@ -757,6 +757,46 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-25 — **MSR-01/03/04/05/07/08 (Arman, marketing-surface-repair register):
+  the Queries table's sort/filter/layout/edit/context-menu repair.**
+  `seo.gsc_perf_breakdown` (`migrations/seo_gsc_breakdown_value_sort_filter.sql`)
+  gained server-side sort for `traffic_class`/`value_score`/`value_band` and
+  filters for `traffic_classes` (array), `ctr_min`/`ctr_max`,
+  `value_score_min`/`value_score_max` — resolved via ONE `kw_facts` CTE
+  (`gsc_keyword_class_map` FULL JOIN `keyword_value_map`, THE JOIN-SHAPE RULE),
+  scoped to the site's WINDOW keyword ids and only computed when a caller
+  actually needs class/score/level (`v_need_value`), never the 197k global
+  corpus. `clicks_min/max`/`impressions_min/max`/`position_min/max` and the
+  `key`/`clicks`/`impressions`/`ctr`/`position`/`delta_clicks`/`topic` sorts
+  were already live and unchanged. Class/Score/Level raise
+  `gsc_filter_combination_unsupported` outside the query dimension, mirroring
+  `topic`/`stamps`/`levels`.
+  `lib/columns.tsx::buildGscValueColumns` now sets Class/Score/Level
+  `sortable: true` with real filters (`select`/`select`/`number`); Level's
+  filter options come from the site's own value-band vocabulary
+  (`getValueVocabulary`), never a fixed enum. `GscDimensionTable` translates
+  every column-header filter into the RPC's filter bag (`columnDerivedFilters`,
+  merged over the surface's FilterBar filters) and the Key column's filter
+  drives the SAME server-side search the toolbar box does.
+  Layout (MSR-07): Query → Class → Clicks(76px)/Impressions(92px)/CTR(68px)/
+  Position(76px) → Score(72px) → Level(100px) → Actions — metrics narrower and
+  at the end, Class stays with identity since it's what the bulk workflow acts
+  on. Bulk assign (MSR-05): `selection` prop (query dimension only) adds a
+  checkbox column + bulk bar ("Set class: Money/Educational/Brand/
+  Unclassified"), writing through the SAME `setGscKeywordClass` RPC as the
+  single-cell edit. Edit affordance (MSR-08): `EditableTableCell` (official
+  component, `components/official/matrx-data-table/`) now renders a permanent
+  `ChevronDown` beside a `"select"`-type cell's value — every `editable:
+  "select"` column app-wide, not forked per-surface. Context menu (MSR-01):
+  `resolveContextOnOpen` returns `CONTEXT_MENU_ENTITY_KEY` (a `seo_keyword`/
+  `web_page` entity per row) and the shared `useKeywordAssignSurfaces` /
+  `useKeywordMenuSection` (`features/marketing/seo/keyword/keyword-actions.tsx`)
+  is spread into `extraSections` — "This keyword" now offers the same
+  Set-class/Which-offering/Answer-a-dimension/Pin-a-level/Why-this-score/
+  See-pages/Open-Keyword-Intelligence menu every other keyword surface has.
+  All verified live against All Green Recycling's 27,439-row Queries table.
+  Full register: `../../../../common-docs/projects/marketing-surface-repair/REGISTER.md`.
+
 - 2026-08-25 — **MSR-13 (Arman): the portfolio cards "look dead… floating text
   in a card."** `SearchConsolePortfolio` cards now lead with Clicks (largest
   number, its own row) and a real 28-day trend line underneath it — the
