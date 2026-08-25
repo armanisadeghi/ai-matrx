@@ -132,3 +132,6 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 - 2026-08-25 — Standardized Rulebook, Masterworks, Understudy, and Sources card padding, header
   rhythm, footer button height, and single-action alignment; rule groups now use a clear 24/8/4
   spacing hierarchy.
+- 2026-08-25 — Reframed Quick build around explicit Masterwork language: a compact approved-rule
+  summary, concise review-versus-create choices, an explicit Masterwork name, and no ambiguous
+  "it" or recommendation paragraph in the setup.

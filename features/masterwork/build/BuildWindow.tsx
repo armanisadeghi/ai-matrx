@@ -72,7 +72,8 @@ function liveRuleCount(rulebook: Rulebook): number {
  */
 function recommendKind(rulebook: Rulebook): MasterworkKind {
   const goal = String(
-    (rulebook.metadata as { intake?: { goal?: unknown } } | null)?.intake?.goal ??
+    (rulebook.metadata as { intake?: { goal?: unknown } } | null)?.intake
+      ?.goal ??
       rulebook.description ??
       "",
   ).toLowerCase();
@@ -153,7 +154,9 @@ function BuildWindowInner({
 
   const recommended = rulebook ? recommendKind(rulebook) : "edit";
   const chosenKind: MasterworkKind = kind ?? recommended;
-  const fallbackName = rulebook ? `${rulebook.name} Masterwork` : "Your Masterwork";
+  const fallbackName = rulebook
+    ? `${rulebook.name} Masterwork`
+    : "Your Masterwork";
   const runLabel = name.trim() || fallbackName;
 
   const run = useBuildRun(rulebookId, runLabel);
@@ -197,7 +200,9 @@ function BuildWindowInner({
         masterwork_kind: chosenKind,
         name: name.trim() || undefined,
         deliverable:
-          chosenKind === "generate" ? buildDeliverableValue(deliverable) : undefined,
+          chosenKind === "generate"
+            ? buildDeliverableValue(deliverable)
+            : undefined,
       },
       runLabel,
     );
@@ -269,34 +274,36 @@ function BuildWindowInner({
                   </p>
                   {deliverable.trim() ? (
                     <p className="mt-2 text-sm text-foreground">
-                      <span className="text-muted-foreground">It makes: </span>
+                      <span className="text-muted-foreground">
+                        This Masterwork creates:{" "}
+                      </span>
                       {deliverable.trim()}
                     </p>
                   ) : null}
                   <ol className="mt-3 space-y-1 text-sm text-muted-foreground">
                     {result.masterworkKind === "generate" ? (
                       <>
-                        <li>1. You describe one real job.</li>
+                        <li>1. Describe the job and the result you need.</li>
                         <li>
-                          2. It writes several versions, then checks every one
-                          against all {approvedCount} of your rules, rule by
-                          rule.
+                          2. The Masterwork creates several versions and checks
+                          each one against all {approvedCount} rules.
                         </li>
                         <li>
-                          3. It hands you the version that holds up — and shows
-                          which rules it was judged on.
+                          3. You receive the strongest version and its rule
+                          check.
                         </li>
                       </>
                     ) : (
                       <>
-                        <li>1. You give it something already written.</li>
+                        <li>1. Provide something already written.</li>
                         <li>
-                          2. It checks that text against all {approvedCount} of
-                          your rules, rule by rule.
+                          2. The Masterwork checks the work against all{" "}
+                          {approvedCount}
+                          rules and fixes violations.
                         </li>
                         <li>
-                          3. It hands it back corrected, with what changed and
-                          why.
+                          3. You receive the revision with each change
+                          explained.
                         </li>
                       </>
                     )}
@@ -323,7 +330,7 @@ function BuildWindowInner({
             </div>
 
             <p className="text-xs text-muted-foreground">
-              It also lives with everything else you have built —{" "}
+              This Masterwork is saved with everything else you have built —{" "}
               <Link
                 href={`/masterwork/${rulebook.id}/masterworks`}
                 className="underline underline-offset-2 hover:text-foreground"
@@ -358,45 +365,49 @@ function BuildWindowInner({
     return (
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <div className="mx-auto w-full max-w-3xl space-y-4">
-          <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
-            <p className="text-sm text-muted-foreground">
-              Building from{" "}
-              <span className="font-medium text-foreground">
-                {approvedCount} approved {approvedCount === 1 ? "rule" : "rules"}
-              </span>{" "}
-              in {rulebook.name}. Every one of them is applied and checked, every
-              time it runs.
-            </p>
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-semibold tabular-nums text-foreground">
+                  {approvedCount}
+                </span>
+                <span className="text-sm font-medium text-foreground">
+                  approved {approvedCount === 1 ? "rule" : "rules"}
+                </span>
+              </div>
+              <div className="truncate text-xs text-muted-foreground">
+                {rulebook.name}
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label>What should it do for you?</Label>
+            <Label>What will this Masterwork do?</Label>
             <div className="grid gap-3 sm:grid-cols-2">
               <KindCard
-                icon={<PenLine className="mb-1 h-4 w-4 text-muted-foreground" />}
-                title="Review work and fix it"
-                body="You give it something already written. It finds everything that breaks your rules, fixes it, and shows you what it changed and why."
+                icon={<PenLine className="h-4 w-4 text-muted-foreground" />}
+                title="Review and revise"
+                body="Checks existing work, fixes rule violations, and explains each change."
                 selected={chosenKind === "edit"}
                 recommended={recommended === "edit"}
                 onSelect={() => setKind("edit")}
               />
               <KindCard
-                icon={<Hammer className="mb-1 h-4 w-4 text-muted-foreground" />}
-                title="Do the work for you"
-                body="You tell it the job. It does the work following your rules, checks its own work against them, and hands you the version that holds up."
+                icon={<Hammer className="h-4 w-4 text-muted-foreground" />}
+                title="Create new work"
+                body="Creates a new result from your instructions and checks the result against every rule."
                 selected={chosenKind === "generate"}
                 recommended={recommended === "generate"}
                 onSelect={() => setKind("generate")}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Recommended from what you told us at the start. Change it any time
-              — you can build the other one too.
-            </p>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="masterwork-name">Give it a name (optional)</Label>
+            <Label htmlFor="masterwork-name">Masterwork name (optional)</Label>
             <Input
               id="masterwork-name"
               value={name}
@@ -408,12 +419,11 @@ function BuildWindowInner({
           {chosenKind === "generate" ? (
             <div className="space-y-1.5">
               <Label htmlFor="masterwork-deliverable">
-                What does it hand you when it&apos;s done?
+                What will this Masterwork create?
               </Label>
               <p className="text-xs text-muted-foreground">
-                Name the finished thing in your own words — the way you&apos;d
-                describe it to a client. This becomes what it makes every time
-                you run it.
+                Describe the finished result in the words you would use with a
+                client.
               </p>
               <ProTextarea
                 id="masterwork-deliverable"
@@ -438,10 +448,10 @@ function BuildWindowInner({
     <div className="flex w-full min-w-0 flex-wrap items-center gap-2 px-2 py-1.5">
       <span className="min-w-0 truncate text-xs text-muted-foreground">
         {result
-          ? "Built. It is saved and yours — this window can go."
+          ? "Built and saved — this window can close."
           : running
             ? run.rejoining
-              ? "Picking this Build back up — it kept running while you were away."
+              ? "Picking this Build back up — the build continued while you were away."
               : "Building. You can keep working; this keeps going without you."
             : `Turns ${approvedCount} approved ${approvedCount === 1 ? "rule" : "rules"} into a working system.`}
       </span>
@@ -507,9 +517,7 @@ function BuildWindowInner({
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       onClose={onClose}
     >
-      <div className="flex min-h-0 flex-1 flex-col">
-        {body}
-      </div>
+      <div className="flex min-h-0 flex-1 flex-col">{body}</div>
     </WindowPanel>
   );
 }
@@ -535,11 +543,13 @@ function KindCard({
       onClick={onSelect}
       className={cn(
         "rounded-md border p-3 text-left transition-colors",
-        selected ? "border-primary bg-accent" : "border-border bg-card hover:bg-accent/40",
+        selected
+          ? "border-primary bg-accent"
+          : "border-border bg-card hover:bg-accent/40",
       )}
     >
-      {icon}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-2">
+        {icon}
         <span className="text-sm font-medium text-foreground">{title}</span>
         {recommended ? (
           <span className="rounded border border-primary/40 px-1 py-0 text-[10px] text-primary">
@@ -547,7 +557,9 @@ function KindCard({
           </span>
         ) : null}
       </div>
-      <div className="mt-0.5 text-xs text-muted-foreground">{body}</div>
+      <div className="mt-1.5 text-xs leading-4 text-muted-foreground">
+        {body}
+      </div>
     </button>
   );
 }
