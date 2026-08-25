@@ -21320,6 +21320,51 @@ export type Database = {
   }
   graveyard: {
     Tables: {
+      iam_canonical_sweep: {
+        Row: {
+          claimed_at: string | null
+          claimed_by: string | null
+          fails: string | null
+          notes: string | null
+          schema_name: string
+          status: string
+          table_name: string
+          token: string
+          updated_at: string
+          variant: string
+          verified_ok: boolean | null
+          warns: string | null
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          fails?: string | null
+          notes?: string | null
+          schema_name: string
+          status?: string
+          table_name: string
+          token: string
+          updated_at?: string
+          variant?: string
+          verified_ok?: boolean | null
+          warns?: string | null
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          fails?: string | null
+          notes?: string | null
+          schema_name?: string
+          status?: string
+          table_name?: string
+          token?: string
+          updated_at?: string
+          variant?: string
+          verified_ok?: boolean | null
+          warns?: string | null
+        }
+        Relationships: []
+      }
       user_flashcard_reviews: {
         Row: {
           card_index: number
@@ -23687,51 +23732,6 @@ export type Database = {
           },
         ]
       }
-      canonical_sweep: {
-        Row: {
-          claimed_at: string | null
-          claimed_by: string | null
-          fails: string | null
-          notes: string | null
-          schema_name: string
-          status: string
-          table_name: string
-          token: string
-          updated_at: string
-          variant: string
-          verified_ok: boolean | null
-          warns: string | null
-        }
-        Insert: {
-          claimed_at?: string | null
-          claimed_by?: string | null
-          fails?: string | null
-          notes?: string | null
-          schema_name: string
-          status?: string
-          table_name: string
-          token: string
-          updated_at?: string
-          variant?: string
-          verified_ok?: boolean | null
-          warns?: string | null
-        }
-        Update: {
-          claimed_at?: string | null
-          claimed_by?: string | null
-          fails?: string | null
-          notes?: string | null
-          schema_name?: string
-          status?: string
-          table_name?: string
-          token?: string
-          updated_at?: string
-          variant?: string
-          verified_ok?: boolean | null
-          warns?: string | null
-        }
-        Relationships: []
-      }
       industries: {
         Row: {
           created_at: string
@@ -24825,22 +24825,6 @@ export type Database = {
       starter_pack_ids_curated_by: {
         Args: { p_uid: string }
         Returns: string[]
-      }
-      sweep_claim: {
-        Args: { p_agent: string; p_schema: string; p_table: string }
-        Returns: boolean
-      }
-      sweep_record: {
-        Args: { p_schema: string; p_table: string }
-        Returns: boolean
-      }
-      sweep_refresh: {
-        Args: never
-        Returns: {
-          done: number
-          todo: number
-          total: number
-        }[]
       }
       unnest_uuids: { Args: { p_ids: string[] }; Returns: string[] }
       verify_canonical: {
