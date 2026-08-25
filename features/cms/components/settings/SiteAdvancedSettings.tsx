@@ -136,6 +136,7 @@ function requireLinkRows(value: unknown, what: string): LinkRow[] {
 }
 
 function SectionCard({
+  sectionId,
   title,
   hint,
   dirty,
@@ -145,6 +146,7 @@ function SectionCard({
   aiLabel,
   children,
 }: {
+  sectionId: string;
   title: string;
   hint: string;
   dirty: boolean;
@@ -158,7 +160,10 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+    <section
+      id={sectionId}
+      className="scroll-mt-24 rounded-lg border border-border bg-card p-5 space-y-3"
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
@@ -177,6 +182,7 @@ function SectionCard({
           variant={dirty ? "default" : "outline"}
           disabled={!dirty || saving}
           onClick={onSave}
+          aria-label={`Save ${title}`}
           className="gap-1.5 text-xs shrink-0"
         >
           {saving ? (
@@ -188,7 +194,7 @@ function SectionCard({
         </Button>
       </div>
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -400,6 +406,7 @@ function ThemeSection({ site, onSaved }: SectionProps) {
 
   return (
     <SectionCard
+      sectionId="theme-tokens"
       title="Theme Tokens"
       aiRole="theme_designer"
       aiLabel="Design with AI"
@@ -412,6 +419,7 @@ function ThemeSection({ site, onSaved }: SectionProps) {
         {rows.map((row, i) => (
           <div key={i} className="flex items-center gap-1.5">
             <Input
+              aria-label={`Theme token ${i + 1} group`}
               value={row.group}
               onChange={(e) =>
                 setRows(
@@ -424,6 +432,7 @@ function ThemeSection({ site, onSaved }: SectionProps) {
               className="text-sm h-8 w-32 font-mono"
             />
             <Input
+              aria-label={`Theme token ${i + 1} key`}
               value={row.key}
               onChange={(e) =>
                 setRows(
@@ -437,6 +446,7 @@ function ThemeSection({ site, onSaved }: SectionProps) {
             />
             <div className="relative flex-1">
               <Input
+                aria-label={`Theme token ${i + 1} value`}
                 value={row.value}
                 onChange={(e) =>
                   setRows(
@@ -450,6 +460,7 @@ function ThemeSection({ site, onSaved }: SectionProps) {
               />
               {COLOR_VALUE.test(row.value.trim()) && (
                 <span
+                  aria-hidden="true"
                   className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 rounded border border-border"
                   style={{ backgroundColor: row.value.trim() }}
                 />
@@ -463,7 +474,7 @@ function ThemeSection({ site, onSaved }: SectionProps) {
               size="icon"
               className="h-8 w-7 shrink-0 text-muted-foreground hover:text-destructive"
               onClick={() => setRows(rows.filter((_, j) => j !== i))}
-              aria-label="Remove token"
+              aria-label={`Remove theme token ${i + 1}`}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -528,6 +539,7 @@ function NavigationSection({ site, onSaved }: SectionProps) {
 
   return (
     <SectionCard
+      sectionId="navigation"
       title="Navigation"
       aiRole="site_editor"
       aiLabel="Build with AI"
@@ -715,6 +727,7 @@ function FooterSection({ site, onSaved }: SectionProps) {
 
   return (
     <SectionCard
+      sectionId="footer"
       title="Footer"
       aiRole="site_editor"
       aiLabel="Build with AI"
@@ -894,6 +907,7 @@ function ContactSection({ site, onSaved }: SectionProps) {
 
   return (
     <SectionCard
+      sectionId="contact-info"
       title="Contact Info"
       aiRole="site_editor"
       aiLabel="Fill with AI"
@@ -1030,6 +1044,7 @@ function SocialSection({ site, onSaved }: SectionProps) {
 
   return (
     <SectionCard
+      sectionId="social-links"
       title="Social Links"
       aiRole="site_editor"
       aiLabel="Fill with AI"
@@ -1113,12 +1128,14 @@ export function SiteAdvancedSettings({ site, onSaved }: SectionProps) {
   });
   return (
     <div className="space-y-6" key={key}>
-      <ResearchLineagePanel
-        adapter={researchLineage.adapter}
-        entries={researchLineage.entries}
-        canPromoteScratch={researchLineage.canPromoteScratch}
-        promoteScratch={researchLineage.promoteScratch}
-      />
+      <section id="research-lineage" className="scroll-mt-24">
+        <ResearchLineagePanel
+          adapter={researchLineage.adapter}
+          entries={researchLineage.entries}
+          canPromoteScratch={researchLineage.canPromoteScratch}
+          promoteScratch={researchLineage.promoteScratch}
+        />
+      </section>
       <ThemeSection site={site} onSaved={onSaved} />
       <NavigationSection site={site} onSaved={onSaved} />
       <FooterSection site={site} onSaved={onSaved} />

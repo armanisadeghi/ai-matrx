@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-18` (site-structure caches now wait for a successful site access read)
+**Last updated:** `2026-08-24` (seeded Settings review accessibility and mobile navigation repair)
 
 ---
 
@@ -212,7 +212,7 @@ Supabase MCP at the wrong project for this feature.
 
 **Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/website-platform/cms/STATE.md` § Ownership and access — read it before touching this in ANY repo.**
 
-Arman, 2026-08-15: *"of course they should be ORG scoped and shareable."* Before
+Arman, 2026-08-15: _"of course they should be ORG scoped and shareable."_ Before
 that, `client_sites` had `owner_user_id` and nothing else — which is exactly why a
 MAIN `web.site` could carry a valid `settings.cms.site_id` and `resolveCmsLink`
 would still refuse it for a teammate. The pointer was never dangling; the reader
@@ -519,6 +519,12 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-24` — `/cms/[siteId]/settings` now has a visible semantic Settings
+  heading, a mobile section jump rail, explicit General/Global CSS versus
+  per-card save scope, and unique accessible names for every theme-token field
+  and section Save. The Agent Review row now points directly at the seeded Dev
+  Website Settings route instead of the CMS list.
+
 - `2026-08-18` — `SiteLayoutClient` now establishes site access before loading
   its page/component `site_structure` caches, so an expected missing/denied site
   reaches Access Gate without emitting two dependent red console errors.
@@ -582,7 +588,7 @@ UI-complete here but only take effect once P1's service layer reads them.
   idempotent `aidream/db/backfill_cms_site_orgs.py`, each from a real source —
   the backfill must hold BOTH connections, because the CMS database cannot see
   `iam.organizations`. Live-proved as a second user: `admin@admin.com`, a plain
-  *member* of Titanium, now lists and opens Arman's `titaniummarketing-com` and
+  _member_ of Titanium, now lists and opens Arman's `titaniummarketing-com` and
   `pbwlaw-com` (`access=organization`), is 403'd on a site in an org they do not
   belong to, and is 403'd on `delete`. See § Ownership; cross-repo SoR:
   `common-docs/systems/website-platform/cms/STATE.md`. **Open:** aidream's
@@ -863,7 +869,7 @@ UI-complete here but only take effect once P1's service layer reads them.
   components route finally mounts its own surface runtime.** The manifest
   declares 2 ask-policy draft targets — `component_html_content` and
   `component_css_content`, both `{ html|css: string, mode?: 'replace' |
-  'append' }` — with handlers on a `<SurfaceRuntimeProvider>` in
+'append' }` — with handlers on a `<SurfaceRuntimeProvider>` in
   `app/(core)/cms/[siteId]/components/page.tsx` that stage into the SAME
   `editHtml` / `editCss` `useState` the user's typing drives and throw on a
   bad shape (including when no row is expanded for edit — there is no buffer

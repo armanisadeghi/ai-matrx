@@ -33,6 +33,21 @@ import {
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 
+const SETTINGS_SECTIONS = [
+  ["general", "General"],
+  ["domain-connection", "Domain"],
+  ["global-css", "CSS"],
+  ["content-plan", "Content plan"],
+  ["site-shell", "Site shell"],
+  ["research-lineage", "Research"],
+  ["theme-tokens", "Theme"],
+  ["navigation", "Navigation"],
+  ["footer", "Footer"],
+  ["contact-info", "Contact"],
+  ["social-links", "Social"],
+  ["danger-zone", "Danger zone"],
+] as const;
+
 export default function SiteSettingsPage() {
   const { siteId } = useParams() as { siteId: string };
   const router = useRouter();
@@ -77,9 +92,7 @@ export default function SiteSettingsPage() {
       if (err instanceof StarterKitNotEmptyError && !options.force) {
         setKitForceState({ message: err.message });
       } else {
-        toast.error(
-          err instanceof Error ? err.message : "Starter kit failed",
-        );
+        toast.error(err instanceof Error ? err.message : "Starter kit failed");
       }
     } finally {
       setKitBusy(false);
@@ -220,290 +233,352 @@ export default function SiteSettingsPage() {
       getScope={buildSurfaceScope}
       getWriteHandlers={buildWriteHandlers}
     >
-    <div className="h-full overflow-auto">
-      <div className="px-4 sm:px-6 py-6 space-y-6">
-        <div className="flex items-center justify-end">
-          <div className="flex items-center gap-2">
-            {saved && (
-              <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                <Check className="size-3" aria-hidden="true" /> Saved
-              </span>
-            )}
-            {error && <span className="text-xs text-destructive">{error}</span>}
-            <Button
-              onClick={handleSave}
-              disabled={isSaving || !name || !slug}
-              className="gap-1.5 text-sm"
-            >
-              {isSaving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              Save Changes
-            </Button>
-          </div>
-        </div>
-
-        {/* General */}
-        <div className="rounded-lg border border-border bg-card p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-foreground">General</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium block mb-1.5">
-                Site Name
-              </label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5">Slug</label>
-              <Input
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                className="text-sm font-mono"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium block mb-1.5">Domain</label>
-              <Input
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
-                onBlur={(e) => setDomain(normalizeDomainInput(e.target.value))}
-                placeholder="www.example.com"
-                className="text-sm"
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Desired serving host (lowercase). Saving it does not redirect
-                traffic; use the connection check below after DNS is ready.
+      <div className="h-full overflow-auto">
+        <div className="px-4 sm:px-6 py-6 space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                Settings
+              </h1>
+              <p className="max-w-2xl text-sm text-muted-foreground">
+                Manage site-wide identity, styling, navigation, and shell
+                behavior for {site.name}.
               </p>
             </div>
-            <div>
-              <label className="text-sm font-medium block mb-1.5">
-                Favicon URL
+            <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
+              <div className="flex items-center gap-2">
+                {saved && (
+                  <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                    <Check className="size-3" aria-hidden="true" /> Saved
+                  </span>
+                )}
+                {error && (
+                  <span className="text-xs text-destructive">{error}</span>
+                )}
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving || !name || !slug}
+                  aria-describedby="general-save-scope"
+                  className="min-h-11 flex-1 gap-1.5 text-sm sm:min-h-9 sm:flex-none"
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  Save Changes
+                </Button>
+              </div>
+              <p
+                id="general-save-scope"
+                className="max-w-md text-xs text-muted-foreground sm:text-right"
+              >
+                Saves General and Global CSS only. Every other editor has its
+                own Save.
+              </p>
+            </div>
+          </div>
+
+          <nav
+            aria-label="Settings sections"
+            className="-mx-4 overflow-x-auto px-4 pb-1 lg:hidden"
+          >
+            <div className="flex w-max gap-2">
+              {SETTINGS_SECTIONS.map(([id, label]) => (
+                <a
+                  key={id}
+                  href={`#${id}`}
+                  className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground"
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
+          </nav>
+
+          {/* General */}
+          <section
+            id="general"
+            className="scroll-mt-24 rounded-lg border border-border bg-card p-5 space-y-4"
+          >
+            <h3 className="text-sm font-semibold text-foreground">General</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium block mb-1.5">
+                  Site Name
+                </label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">Slug</label>
+                <Input
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  className="text-sm font-mono"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium block mb-1.5">
+                  Domain
+                </label>
+                <Input
+                  value={domain}
+                  onChange={(e) => setDomain(e.target.value)}
+                  onBlur={(e) =>
+                    setDomain(normalizeDomainInput(e.target.value))
+                  }
+                  placeholder="www.example.com"
+                  className="text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Desired serving host (lowercase). Saving it does not redirect
+                  traffic; use the connection check below after DNS is ready.
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1.5">
+                  Favicon URL
+                </label>
+                <Input
+                  value={favicon}
+                  onChange={(e) => setFavicon(e.target.value)}
+                  placeholder="https://..."
+                  className="text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={isActive}
+                  onCheckedChange={(v) => setIsActive(v === true)}
+                  className="shrink-0"
+                />
+                Site is active
               </label>
-              <Input
-                value={favicon}
-                onChange={(e) => setFavicon(e.target.value)}
-                placeholder="https://..."
-                className="text-sm"
-              />
+              <Badge
+                variant={isActive ? "default" : "secondary"}
+                className="text-[10px]"
+              >
+                {isActive ? "Active" : "Inactive"}
+              </Badge>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <Checkbox
-                checked={isActive}
-                onCheckedChange={(v) => setIsActive(v === true)}
-                className="shrink-0"
-              />
-              Site is active
-            </label>
-            <Badge
-              variant={isActive ? "default" : "secondary"}
-              className="text-[10px]"
+          </section>
+
+          <section id="domain-connection" className="scroll-mt-24">
+            <SiteDomainSettings site={site} onRefresh={refreshSite} />
+          </section>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Global CSS */}
+            <section
+              id="global-css"
+              className="scroll-mt-24 rounded-lg border border-border bg-card p-5 space-y-3"
             >
-              {isActive ? "Active" : "Inactive"}
-            </Badge>
-          </div>
-        </div>
-
-        <SiteDomainSettings site={site} onRefresh={refreshSite} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {/* Global CSS */}
-          <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="text-sm font-semibold text-foreground">
-                Global CSS
-              </h3>
-              <SurfaceRoleAgentButton
-                surfaceName="matrx-user/cms-site"
-                roleName="site_editor"
-                label="Write with AI"
-                className="shrink-0"
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Global CSS
+                </h3>
+                <SurfaceRoleAgentButton
+                  surfaceName="matrx-user/cms-site"
+                  roleName="site_editor"
+                  label="Write with AI"
+                  className="shrink-0"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                CSS applied to all pages. Use this for base styles, typography,
+                and layout.
+              </p>
+              <Textarea
+                value={globalCss}
+                onChange={(e) => setGlobalCss(e.target.value)}
+                placeholder="/* Global styles for all pages */\n\nbody {\n  font-family: system-ui, sans-serif;\n}"
+                className="font-mono text-sm min-h-[200px]"
               />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              CSS applied to all pages. Use this for base styles, typography,
-              and layout.
-            </p>
-            <Textarea
-              value={globalCss}
-              onChange={(e) => setGlobalCss(e.target.value)}
-              placeholder="/* Global styles for all pages */\n\nbody {\n  font-family: system-ui, sans-serif;\n}"
-              className="font-mono text-sm min-h-[200px]"
-            />
-          </div>
+            </section>
 
-          <div className="space-y-6">
-            {/* Plan pairing (WF-12): the web.site this CMS site realizes. */}
-            <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-              <h3 className="text-sm font-semibold text-foreground">
-                Content Plan
-              </h3>
-              {site.web_site_id ? (
-                <>
+            <div className="space-y-6">
+              {/* Plan pairing (WF-12): the web.site this CMS site realizes. */}
+              <section
+                id="content-plan"
+                className="scroll-mt-24 rounded-lg border border-border bg-card p-5 space-y-3"
+              >
+                <h3 className="text-sm font-semibold text-foreground">
+                  Content Plan
+                </h3>
+                {site.web_site_id ? (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      This site is paired with a content plan — pages realized
+                      from the plan carry their node link, and publishing flows
+                      back into plan statuses.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs"
+                      onClick={() =>
+                        window.open(
+                          `/marketing/content-plan/${site.web_site_id}`,
+                          "_blank",
+                        )
+                      }
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Open content plan
+                    </Button>
+                  </>
+                ) : (
                   <p className="text-xs text-muted-foreground">
-                    This site is paired with a content plan — pages realized
-                    from the plan carry their node link, and publishing flows
-                    back into plan statuses.
+                    Not paired with a content plan. Pair from the plan
+                    workspace&apos;s Setup view (Make it real → create/link CMS
+                    site) — the first reconcile records the pairing.
                   </p>
+                )}
+              </section>
+
+              {/* Starter kit (WF-7) */}
+              <section
+                id="site-shell"
+                className="scroll-mt-24 rounded-lg border border-border bg-card p-5 space-y-3"
+              >
+                <h3 className="text-sm font-semibold text-foreground">
+                  Site Shell
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  The starter kit seeds a working shell: base CSS (reset,
+                  layout, nav/header/footer rules), a header and footer
+                  component, and navigation from your show-in-nav pages. Theme
+                  tokens stay live data — edit them in Theme Tokens below any
+                  time.
+                </p>
+                {kitPreview ? (
+                  <div className="rounded-md border border-border/60 bg-muted/20 p-3 space-y-1 text-xs text-foreground">
+                    <p className="font-medium">
+                      Dry run — nothing written yet:
+                    </p>
+                    <p>
+                      {kitPreview.globalCssChars.toLocaleString()} chars of
+                      shell CSS
+                      {kitPreview.globalCssReplacedChars > 0
+                        ? ` (replacing ${kitPreview.globalCssReplacedChars.toLocaleString()} existing)`
+                        : ""}
+                      , header + footer components,{" "}
+                      {kitPreview.navigationSeeded
+                        ? "navigation seeded from pages"
+                        : "navigation left as is"}
+                      .
+                    </p>
+                    {kitPreview.notes.map((note, i) => (
+                      <p key={i} className="text-muted-foreground">
+                        {note}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     className="gap-1.5 text-xs"
-                    onClick={() =>
-                      window.open(
-                        `/marketing/content-plan/${site.web_site_id}`,
-                        "_blank",
-                      )
-                    }
+                    disabled={kitBusy}
+                    onClick={() => runKit({ dryRun: true })}
                   >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Open content plan
+                    {kitBusy ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : null}
+                    Preview (dry run)
                   </Button>
-                </>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Not paired with a content plan. Pair from the plan
-                  workspace&apos;s Setup view (Make it real → create/link CMS
-                  site) — the first reconcile records the pairing.
-                </p>
-              )}
-            </div>
-
-            {/* Starter kit (WF-7) */}
-            <div className="rounded-lg border border-border bg-card p-5 space-y-3">
-              <h3 className="text-sm font-semibold text-foreground">
-                Site Shell
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                The starter kit seeds a working shell: base CSS (reset, layout,
-                nav/header/footer rules), a header and footer component, and
-                navigation from your show-in-nav pages. Theme tokens stay live
-                data — edit them in Theme Tokens below any time.
-              </p>
-              {kitPreview ? (
-                <div className="rounded-md border border-border/60 bg-muted/20 p-3 space-y-1 text-xs text-foreground">
-                  <p className="font-medium">Dry run — nothing written yet:</p>
-                  <p>
-                    {kitPreview.globalCssChars.toLocaleString()} chars of shell
-                    CSS
-                    {kitPreview.globalCssReplacedChars > 0
-                      ? ` (replacing ${kitPreview.globalCssReplacedChars.toLocaleString()} existing)`
-                      : ""}
-                    , header + footer components,{" "}
-                    {kitPreview.navigationSeeded
-                      ? "navigation seeded from pages"
-                      : "navigation left as is"}
-                    .
-                  </p>
-                  {kitPreview.notes.map((note, i) => (
-                    <p key={i} className="text-muted-foreground">
-                      {note}
-                    </p>
-                  ))}
+                  <Button
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    disabled={kitBusy}
+                    onClick={() => runKit({})}
+                  >
+                    {kitBusy ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : null}
+                    Install starter kit
+                  </Button>
                 </div>
-              ) : null}
-              <div className="flex items-center gap-2">
+              </section>
+
+              {/* Danger zone */}
+              <section
+                id="danger-zone"
+                className="scroll-mt-24 rounded-lg border border-destructive/30 bg-destructive/5 p-5 space-y-3"
+              >
+                <h3 className="text-sm font-semibold text-destructive">
+                  Danger Zone
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Permanently deletes this site and everything under it — pages,
+                  components, versions, and activity history. This cannot be
+                  undone.
+                </p>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 text-xs"
-                  disabled={kitBusy}
-                  onClick={() => runKit({ dryRun: true })}
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="gap-1.5 text-xs text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
                 >
-                  {kitBusy ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : null}
-                  Preview (dry run)
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete Site
                 </Button>
-                <Button
-                  size="sm"
-                  className="gap-1.5 text-xs"
-                  disabled={kitBusy}
-                  onClick={() => runKit({})}
-                >
-                  {kitBusy ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : null}
-                  Install starter kit
-                </Button>
-              </div>
-            </div>
-
-            {/* Danger zone */}
-            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 space-y-3">
-              <h3 className="text-sm font-semibold text-destructive">
-                Danger Zone
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Permanently deletes this site and everything under it — pages,
-                components, versions, and activity history. This cannot be
-                undone.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDeleteDialogOpen(true)}
-                className="gap-1.5 text-xs text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete Site
-              </Button>
+              </section>
             </div>
           </div>
+
+          {/* Theme / navigation / footer / contact / social — each saves its own
+            field through the ONE /api/cms/sites update path. */}
+          <SiteAdvancedSettings site={site} onSaved={refreshSite} />
         </div>
 
-        {/* Theme / navigation / footer / contact / social — each saves its own
-            field through the ONE /api/cms/sites update path. */}
-        <SiteAdvancedSettings site={site} onSaved={refreshSite} />
+        <TextInputDialog
+          open={deleteDialogOpen}
+          onOpenChange={(open) => !isDeleting && setDeleteDialogOpen(open)}
+          title={`Delete "${site.name}"?`}
+          description={`Type the site slug "${site.slug}" to confirm. This permanently deletes the site and all its pages, components, and history.`}
+          placeholder={site.slug}
+          confirmLabel="Delete Site"
+          busy={isDeleting}
+          validate={(value) =>
+            value !== site.slug ? "Slug does not match" : null
+          }
+          onConfirm={() => runDelete(false)}
+        />
+
+        <ConfirmDialog
+          open={!!kitForceState}
+          onOpenChange={(open) => !kitBusy && !open && setKitForceState(null)}
+          title="Replace this site's existing shell?"
+          description={`${kitForceState?.message ?? ""} Re-running the kit replaces the global CSS and the header/footer components (all versioned — restorable from History).`}
+          confirmLabel="Replace shell"
+          variant="destructive"
+          busy={kitBusy}
+          onConfirm={() => runKit({ force: true })}
+        />
+
+        <ConfirmDialog
+          open={!!forceDeleteState}
+          onOpenChange={(open) =>
+            !isDeleting && !open && setForceDeleteState(null)
+          }
+          title={`Site "${site.name}" is not empty`}
+          description={`This site has ${forceDeleteState?.pageCount ?? 0} page(s). Force-deleting removes the site and every page, component, and version under it. This cannot be undone.`}
+          confirmLabel="Force Delete"
+          variant="destructive"
+          busy={isDeleting}
+          onConfirm={() => runDelete(true)}
+        />
       </div>
-
-      <TextInputDialog
-        open={deleteDialogOpen}
-        onOpenChange={(open) => !isDeleting && setDeleteDialogOpen(open)}
-        title={`Delete "${site.name}"?`}
-        description={`Type the site slug "${site.slug}" to confirm. This permanently deletes the site and all its pages, components, and history.`}
-        placeholder={site.slug}
-        confirmLabel="Delete Site"
-        busy={isDeleting}
-        validate={(value) =>
-          value !== site.slug ? "Slug does not match" : null
-        }
-        onConfirm={() => runDelete(false)}
-      />
-
-      <ConfirmDialog
-        open={!!kitForceState}
-        onOpenChange={(open) => !kitBusy && !open && setKitForceState(null)}
-        title="Replace this site's existing shell?"
-        description={`${kitForceState?.message ?? ""} Re-running the kit replaces the global CSS and the header/footer components (all versioned — restorable from History).`}
-        confirmLabel="Replace shell"
-        variant="destructive"
-        busy={kitBusy}
-        onConfirm={() => runKit({ force: true })}
-      />
-
-      <ConfirmDialog
-        open={!!forceDeleteState}
-        onOpenChange={(open) =>
-          !isDeleting && !open && setForceDeleteState(null)
-        }
-        title={`Site "${site.name}" is not empty`}
-        description={`This site has ${forceDeleteState?.pageCount ?? 0} page(s). Force-deleting removes the site and every page, component, and version under it. This cannot be undone.`}
-        confirmLabel="Force Delete"
-        variant="destructive"
-        busy={isDeleting}
-        onConfirm={() => runDelete(true)}
-      />
-    </div>
     </SurfaceRuntimeProvider>
   );
 }
