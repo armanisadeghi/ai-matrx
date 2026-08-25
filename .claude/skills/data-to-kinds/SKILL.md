@@ -261,7 +261,14 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
 
 ## Standing rules (all stages)
 
-- **Every keep/drop/merge/require decision is Arman's.** Propose with tables; never decide.
+- **Every keep/drop/merge/require decision is Arman's — but you arrive with the answer.**
+  *"if I was gonna fucking do it myself, what do I need you guys for?"* (2026-08-23). A table of
+  bare verdicts is a menu, and a menu is a defect. **Every row carries your recommendation and its
+  one-line reason; he confirms or corrects.** Two mechanics that follow: *"it depends"* is a
+  first-class answer — capture the CONDITION he then names verbatim, because it is usually the most
+  valuable sentence of the session, and it becomes a rule on the kind. And **plumbing never enters
+  his table** — a missing credential, a codegen failure, a 403 endpoint goes in a developer list at
+  the bottom of your report. Routing agent-doable work to him is itself a defect.
 - **Content IR alignment binds you** (`systems/content-ir-system/UNIFICATION.md`): one system;
   XML/markdown/fence arrival surfaces stay first-class; frozen block-type values never change;
   kinds-as-JSON is the internal form, never a forced wire format. Names per `NOMENCLATURE.md` +
@@ -297,6 +304,40 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
 - **Embedded HTML is judged by what's inside.** Pre-rendered UI with no unique data → discard.
   Unique data wearing HTML → convert to structure (text + extracted links); never store raw HTML.
 - **One copy of everything.** Kinds reference canonical entities rather than duplicating them.
+
+## Arman's rulings from the Kind Directives session (2026-08-23/25 — standing law)
+
+- **THE STRICTNESS LAW — no escape hatches, ever.** *"everywhere we leave a little bit of
+  breathing room for exceptions of a very specific type, coding agents abuse it and suddenly make
+  it their default route… if something comes down to making things strict or not, you need to make
+  them strict."* You may not ship a same-line opt-out comment, a new baseline entry (baselines
+  shrink only), a grandfather set, a dual registration, or a "try the new shape, fall back to the
+  old" branch. **A fallback branch is a defect the moment it is written.** Strict for anything an
+  author or an agent controls; loud-and-recorded ONLY where a genuine platform outage would
+  otherwise punish a user — and that path must be unreachable by writing bad code. Full text:
+  [`/projects/kind-directives/PLAN.md`](/projects/kind-directives/PLAN.md) § THE STRICTNESS LAW.
+- **Enrichment is an optional field, not a variant.** When a kind will later be enriched by
+  another system (a search result gaining the scraped page behind it), declare it now as an
+  OPTIONAL nested kind on the existing shape — *"That's how schemas work."* Do not mint a second
+  "enriched" kind and do not flatten the enrichment in.
+- **Heavy nested content renders collapsed, with a window-panel escape.** The enriched/nested kind
+  is a collapsible section, expandable IN PLACE, plus an icon that opens the full nested kind in a
+  **window panel** — our movable, non-blocking, minimize/maximize panels, *not* a modal. State this
+  in the component's brief so Stage B does not invent a third pattern.
+- **A schema always yields a form — and that is only the default.** The generic auto-form built
+  from a kind's schema is an acceptable input surface and should exist for everything (ideally from
+  a reusable package installable in any JS environment). **The moment a kind is used as a DECLARED
+  input anywhere we recognize — a workflow node, a manifest, a mandate — the rule flips and a
+  custom input component becomes REQUIRED.** Auto-form is the floor, never the finish.
+- **The kind NAME is a routing language.** Reserved prefixes resolve to a generic component when no
+  custom one exists, so an enrolled family gets a view for free and a custom component overrides it.
+  Resolution order is exact (kind, platform, role) → db override → compiled → **prefix rule** →
+  generic floor. Never hand-register N near-identical components where one prefix rule serves them.
+- **A final live check is required before anything is called done.** Ruled 2026-08-23 (*"Yes! I
+  agree with you that a final live check is required to consider it done"*) — Stage V is not a
+  someday sweep, it is the last step of every run. Nothing reaches G5 without it.
+- **Naming is the agent's call, judged by what a coding agent understands naturally** — bring the
+  proposal, not the question, and prefer short and specific over ceremonious.
 
 ## THE MERGE + TRANSLATION LAW (Arman, 2026-08-20 — platform-level, unbreakable)
 
