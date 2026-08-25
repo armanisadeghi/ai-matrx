@@ -34,6 +34,7 @@ import {
   Gauge,
   Map as MapIcon,
   Plus,
+  Globe,
 } from "lucide-react";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -319,7 +320,25 @@ export default function SiteLayoutClient({
           error={error}
           onRetry={() => void fetchSite()}
           fallbackHref="/cms"
-          fallbackLabel="All Sites"
+          fallbackLabel="All websites"
+          // A dead website link is one of the most common ways a person lands
+          // here — a shared URL, a bookmark from another account, a site that
+          // moved orgs. Send them somewhere they can actually work instead of
+          // making them re-navigate.
+          suggestions={[
+            {
+              title: "Your websites",
+              description: "Every website you or your team can open.",
+              href: "/cms",
+              icon: Globe,
+            },
+            {
+              title: "Start a new website",
+              description: "Build one from a plan, or from scratch.",
+              href: "/cms?new=1",
+              icon: Plus,
+            },
+          ]}
         />
       </>
     );

@@ -14,7 +14,10 @@
  * difference, which is the whole reason they kept getting it wrong.
  */
 
-import { AccessDenied } from "@/features/access-gate/components/AccessDenied";
+import {
+  AccessDenied,
+  type AccessDeniedSuggestion,
+} from "@/features/access-gate/components/AccessDenied";
 import { classifyDataError } from "@/features/access-gate/classifyDataError";
 import { useAccessGate } from "@/features/access-gate/hooks/useAccessGate";
 
@@ -45,6 +48,12 @@ export interface AccessGateProps {
    * honest "something went wrong on our side" + retry.
    */
   renderFault?: (error: unknown) => React.ReactNode;
+  /**
+   * Two or three concrete things to do instead, in THIS feature — "your
+   * websites", "create one". Without them the gate is honest and still a dead
+   * end: it says what went wrong and leaves the user to re-navigate.
+   */
+  suggestions?: AccessDeniedSuggestion[];
 }
 
 export function AccessGate({
@@ -56,6 +65,7 @@ export function AccessGate({
   fallbackLabel,
   relatedReads = [],
   renderFault,
+  suggestions,
 }: AccessGateProps) {
   // A hard fault (network, timeout, malformed query) is not an access story.
   // Surfaces with a good error component keep using it; everyone else gets the
@@ -81,6 +91,7 @@ export function AccessGate({
         onRetry={onRetry}
         fallbackHref={fallbackHref}
         fallbackLabel={fallbackLabel}
+        suggestions={suggestions}
       />
     </>
   );

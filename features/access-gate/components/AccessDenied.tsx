@@ -14,6 +14,11 @@
  *    PostgREST code. The kind is a pretty label from the entity registry.
  *  - A real next step, always: request access, sign in, or a door to something
  *    the user CAN open. Never a Retry button that cannot succeed.
+ *  - A LANDING, not a cul-de-sac. A surface may hand it `suggestions` — the
+ *    two or three things a person in this feature actually wants when the
+ *    thing they clicked isn't there ("your websites", "create one"). Without
+ *    them the screen is technically honest and practically a dead end: it says
+ *    what went wrong and leaves you to find your own way back.
  *  - Every identity it names is a door (THE DOOR LAW) — the owner, the
  *    organization, and the nearest reachable ancestor are all reachable.
  *
@@ -41,6 +46,21 @@ import { useAccessGate } from "@/features/access-gate/hooks/useAccessGate";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import type { AccessDeniedContext } from "@/features/access-gate/types";
 
+/**
+ * One concrete way forward, offered by the surface that knows the feature.
+ * The gate cannot invent these — only the CMS knows that "create a website" is
+ * the useful thing to offer someone whose website link went nowhere.
+ */
+export interface AccessDeniedSuggestion {
+  /** Short imperative label — "Your websites", "Create a website". */
+  title: string;
+  /** One line on what they will get. Optional. */
+  description?: string;
+  /** Where it goes. Must be a route this viewer can actually open (THE DOOR LAW). */
+  href: string;
+  icon?: React.ComponentType<{ className?: string }>;
+}
+
 export interface AccessDeniedProps {
   /** Canonical entity token of the thing the user tried to open. */
   token: string;
@@ -56,6 +76,8 @@ export interface AccessDeniedProps {
   fallbackLabel?: string;
   /** Retry the surface's own read, offered only where retrying can work. */
   onRetry?: () => void;
+  /** Concrete next steps in THIS feature. See AccessDeniedSuggestion. */
+  suggestions?: AccessDeniedSuggestion[];
 }
 
 function initials(name: string | null): string {
@@ -118,7 +140,7 @@ function explanation(context: AccessDeniedContext): string {
 }
 
 function StatusIcon({ status }: { status: AccessDeniedContext["status"] }) {
-  const className = "h-6 w-6 text-muted-foreground";
+  const className = "h-7 w-7 text-muted-foreground";
   if (status === "denied") return <Lock className={className} aria-hidden />;
   if (status === "deleted") return <Trash2 className={className} aria-hidden />;
   if (status === "missing")
@@ -183,6 +205,7 @@ export function AccessDeniedView({
   fallbackLabel,
   onRetry,
   onChanged,
+  suggestions = [],
 }: {
   context: AccessDeniedContext;
   id: string;
@@ -190,6 +213,7 @@ export function AccessDeniedView({
   fallbackLabel?: string;
   onRetry?: () => void;
   onChanged: () => void;
+  suggestions?: AccessDeniedSuggestion[];
 }) {
   const router = useRouter();
   const signInHref = useLoginHref();
@@ -205,13 +229,13 @@ export function AccessDeniedView({
 
   return (
     <div className="flex h-full min-h-64 w-full items-center justify-center p-6">
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-xl">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-muted">
             <StatusIcon status={context.status} />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-semibold text-foreground">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
               {headline(context)}
             </h1>
 
@@ -293,6 +317,40 @@ export function AccessDeniedView({
           </div>
         ) : null}
 
+        {/* WHERE TO GO INSTEAD. The buttons below get you OUT; these get you
+            somewhere useful. A screen that only says "back" makes the user
+            re-navigate from scratch to do the thing they came to do. */}
+        {suggestions.length > 0 ? (
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            {suggestions.map((s) => {
+              const Icon = s.icon;
+              return (
+                <Link
+                  key={s.href + s.title}
+                  href={s.href}
+                  className="group flex items-start gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-foreground/20 hover:bg-accent"
+                >
+                  {Icon ? (
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground group-hover:text-foreground">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                  ) : null}
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-foreground">
+                      {s.title}
+                    </span>
+                    {s.description ? (
+                      <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
+                        {s.description}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
+
         {/* Always a real way forward. */}
         <div className="mt-5 flex flex-wrap items-center gap-2">
           {context.status === "anonymous" ? (
@@ -355,6 +413,7 @@ export function AccessDenied({
   fallbackHref,
   fallbackLabel,
   onRetry,
+  suggestions,
 }: AccessDeniedProps) {
   const { context, isLoading, refresh } = useAccessGate(token, id, {
     readError,
@@ -378,6 +437,7 @@ export function AccessDenied({
       fallbackLabel={fallbackLabel}
       onRetry={onRetry}
       onChanged={refresh}
+      suggestions={suggestions}
     />
   );
 }

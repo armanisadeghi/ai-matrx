@@ -332,9 +332,11 @@ async function createRequest(
     throw orgError ?? new Error("Personal organization missing");
 
   const href = `/organizations/${organizationId}/settings#members`;
+  // Human words, not the internal token — this string is read by the person
+  // who has to approve the request. Nobody calls their website a "CMS site".
   const settingLabel = target.site.name
-    ? `Access to CMS site “${target.site.name}”`
-    : "Access to a CMS site";
+    ? `Access to the website “${target.site.name}”`
+    : "Access to a website";
   const actionPayload = {
     organization_id: organizationId,
     user_id: userId,

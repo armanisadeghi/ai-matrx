@@ -25,6 +25,20 @@ export function isCmsAccessGateToken(
   return CMS_ACCESS_GATE_TOKENS.some((token) => token === value);
 }
 
+/**
+ * What to CALL this thing when a person is reading.
+ *
+ * These labels go straight into the sentences the Access Gate shows — "We
+ * couldn't find this ___". They were the internal tokens dressed up ("CMS
+ * site", which rendered as "we couldn't find this cms site"), which is the
+ * exact thing this feature's own law forbids: a user must never be shown a
+ * schema name or a token. Nobody outside this codebase has ever called their
+ * website a "CMS site".
+ *
+ * Arman's vocabulary ruling (2026-08-20): what we build here is a WEBSITE
+ * PLATFORM — a Shopify/WordPress replacement. So a `client_site` is a
+ * **website** and a `client_page` is a **page**.
+ */
 export function cmsAccessGateLabel(token: CmsAccessGateToken): string {
-  return token === "client_site" ? "CMS site" : "CMS page";
+  return token === "client_site" ? "website" : "page";
 }
