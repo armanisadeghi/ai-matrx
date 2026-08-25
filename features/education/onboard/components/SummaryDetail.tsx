@@ -30,6 +30,9 @@ import { downloadTextFile } from "../export/download";
 interface SummaryEnvelope {
   __kind?: string;
   title?: string;
+  /** Registered `study_summary` kind field (2026-08-25 on). */
+  summary_markdown?: string;
+  /** Pre-registration fabricated-envelope spelling — old rows only. */
   markdown?: string;
   key_points?: string[];
 }
@@ -86,7 +89,7 @@ export function SummaryDetail({ id }: { id: string }) {
   }
 
   const env = (row.ir_envelope ?? {}) as SummaryEnvelope;
-  const markdown = env.markdown ?? "";
+  const markdown = env.summary_markdown ?? env.markdown ?? "";
   const keyPoints = Array.isArray(env.key_points) ? env.key_points : [];
   const trust = coerceTrustEnvelope(row.trust);
 

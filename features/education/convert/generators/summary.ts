@@ -27,12 +27,21 @@ import type {
   ConvertResult,
 } from "../types";
 
-/** The persisted summary envelope (rides study_media.ir_envelope). */
+/**
+ * The persisted summary envelope (rides study_media.ir_envelope).
+ *
+ * Since 2026-08-25 `study_summary` is a REGISTERED platform kind (system org,
+ * public) whose shape is the summarize agent's real contract —
+ * `summary_markdown`, not the fabricated `markdown` spelling this file used
+ * to invent client-side. Old rows persisted the fabricated spelling;
+ * SummaryDetail reads `summary_markdown ?? markdown`.
+ */
 export interface StudySummaryEnvelope {
   __kind: "study_summary";
   title: string;
-  markdown: string;
+  summary_markdown: string;
   key_points: string[];
+  trust?: TrustEnvelope | null;
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -146,14 +155,15 @@ async function run(
     ? agentTitle || source.title || "Study summary"
     : source.title || agentTitle || "Study summary";
 
+  const trust = mergeTrustEnvelopes(covered.items.map((p) => p.trust));
+
   const envelope: StudySummaryEnvelope = {
     __kind: "study_summary",
     title: finalTitle,
-    markdown,
+    summary_markdown: markdown,
     key_points: keyPoints,
+    trust,
   };
-
-  const trust = mergeTrustEnvelopes(covered.items.map((p) => p.trust));
 
   const media = await studyMediaService.create({
     mediaKind: "summary",

@@ -15,6 +15,7 @@ import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 export const CONVERT_MANDATES = {
   /**
    * source_content, title, focus → { title, summary_markdown, key_points[], trust }
+   * — the registered `study_summary` kind (trust is the shared trust_envelope).
    * Grounded study-summary generator (same TrustEnvelope contract as the
    * flashcard/mindmap generators).
    */

@@ -11,7 +11,8 @@ export const STUDY_MANDATES = {
    * Study Planner — anti-burnout day-by-day schedule.
    * Variables: goal_title, start_date, exam_date, daily_minutes, rest_days
    * (comma-separated weekday NAMES — see `restDaysToNames`), study_snapshot.
-   * Output: { overall_rationale, days:[{day_date,is_rest_day,rationale,blocks:[…]}] }.
+   * Output: { overall_rationale, days:[{day_date,is_rest_day,rationale,blocks:[…]}] }
+   * — the registered `study_plan` kind (nests study_plan_day / study_plan_block).
    */
   planner: "education.plan_generate",
   /**
@@ -19,7 +20,8 @@ export const STUDY_MANDATES = {
    * Variables: item_label, accuracy_pct, mastered_count, learning_count,
    * struggling_count, due_count, accuracy_trend (JSON), topic_breakdown (JSON),
    * total_minutes, current_streak.
-   * Output: { headline, insights:[{title,detail,severity}], recommendations:[…] }.
+   * Output: { headline, insights:[{title,detail,severity}], recommendations:[…] }
+   * — the registered `study_analytics_narrative` kind (nests analytics_insight).
    */
   narrator: "education.analytics_narrate",
 } as const;
