@@ -30,13 +30,18 @@ import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow"
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildKeywordResearchScope } from "@/features/marketing/lib/scopes/keyword-research-scope";
 import { extractErrorMessage } from "@/utils/errors";
+import { cn } from "@/lib/utils";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 import { useKeywordResearch } from "../useKeywordResearch";
 import {
   archiveKeywords,
   fetchResearchDiscoveredKeywordIds,
+  getKeywordDossierCompleteness,
   restoreKeywords,
+  type KeywordDossierCompleteness,
 } from "../data/queries";
 import KeywordResearchLauncher from "./KeywordResearchLauncher";
 import { useSavedKeywordResearch } from "../useSavedKeywordResearch";
@@ -98,6 +103,60 @@ function TrajectoryBadge({ value }: { value: string | null }) {
       ) : null}
       {label}
     </span>
+  );
+}
+
+/**
+ * MSR-15 (Arman): the keyword row opens a six-tab dossier, "and some of
+ * those tabs are completed, and some of them are not, yet our table doesn't
+ * know that." One letter per tab that can genuinely be empty (Overview
+ * always has the row itself, so it isn't included); green = that tab has
+ * real data, dim = it doesn't yet. `null` completeness (still loading /
+ * lookup failed) reads as dim rather than a false negative flash.
+ */
+const DOSSIER_TABS: {
+  key: "pipeline" | "relationships" | "classification" | "site" | "visibility";
+  short: string;
+  label: string;
+}[] = [
+  { key: "pipeline", short: "P", label: "Pipeline" },
+  { key: "relationships", short: "K", label: "Keywords" },
+  { key: "classification", short: "C", label: "Classification" },
+  { key: "site", short: "S", label: "Site performance" },
+  { key: "visibility", short: "V", label: "Search visibility" },
+];
+
+function DossierCompletenessCell({
+  completeness,
+  hasClassification,
+}: {
+  completeness: KeywordDossierCompleteness | null | undefined;
+  hasClassification: boolean;
+}) {
+  const flags: Record<(typeof DOSSIER_TABS)[number]["key"], boolean> = {
+    pipeline: completeness?.pipeline ?? false,
+    relationships: completeness?.relationships ?? false,
+    classification: hasClassification,
+    site: completeness?.site ?? false,
+    visibility: completeness?.visibility ?? false,
+  };
+  return (
+    <div className="flex items-center gap-0.5">
+      {DOSSIER_TABS.map(({ key, short, label }) => (
+        <span
+          key={key}
+          title={`${label}: ${flags[key] ? "has data" : "no data yet"}`}
+          className={cn(
+            "flex h-4 w-4 items-center justify-center rounded-[3px] text-[9px] font-semibold",
+            flags[key]
+              ? "bg-success/15 text-success"
+              : "bg-muted text-muted-foreground/40",
+          )}
+        >
+          {short}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -229,6 +288,48 @@ export default function KeywordResearchWorkbench() {
       });
     return () => controller.abort();
   }, [visibleIdsKey]);
+
+  // MSR-15: per-tab dossier completeness for the same visible id set, ONE
+  // batched read (4 tables, never per-row) regardless of how many rows are
+  // showing. Classification isn't looked up here — it's the row's own
+  // `intent_class` column, already in `sorted`.
+  const effectiveOrganizationId = useAppSelector(selectEffectiveOrganizationId);
+  const [completeness, setCompleteness] = useState<Map<
+    string,
+    KeywordDossierCompleteness
+  > | null>(null);
+  useEffect(() => {
+    const ids = visibleIdsKey ? visibleIdsKey.split(",") : [];
+    if (ids.length === 0) {
+      setCompleteness(null);
+      return;
+    }
+    const idSet = new Set(ids);
+    const rowsForLookup = sorted
+      .filter((row) => idSet.has(row.id))
+      .map((row) => ({ id: row.id, phrase: row.phrase }));
+    const controller = new AbortController();
+    getKeywordDossierCompleteness(
+      rowsForLookup,
+      effectiveOrganizationId ?? null,
+      controller.signal,
+    )
+      .then((result) => {
+        if (!controller.signal.aborted) setCompleteness(result);
+      })
+      .catch((error) => {
+        // Same rule as provenance above: decoration, must not fail the
+        // table, but never a silent swallow.
+        if (!controller.signal.aborted) {
+          console.error("Keyword dossier completeness lookup failed:", error);
+          setCompleteness(null);
+        }
+      });
+    return () => controller.abort();
+    // `sorted` is memoized off `[keywords, clusterPhrases]`, the same inputs
+    // `visibleIdsKey` derives from, so this only re-runs when the id set
+    // actually changes.
+  }, [visibleIdsKey, effectiveOrganizationId, sorted]);
 
   /** Archive library rows (bulk or single) with confirm + undo. */
   const archiveRows = useCallback(
@@ -469,6 +570,28 @@ export default function KeywordResearchWorkbench() {
       header: "Intent",
       filter: "select",
       cell: (row) => <KeywordIntentChip intentClass={row.intent_class} />,
+    },
+    {
+      id: "dossier",
+      accessorFn: (row) => {
+        const entry = completeness?.get(row.id);
+        const flags = [
+          entry?.pipeline,
+          entry?.relationships,
+          Boolean(row.intent_class),
+          entry?.site,
+          entry?.visibility,
+        ];
+        return flags.filter(Boolean).length;
+      },
+      header: "Dossier",
+      filter: "number",
+      cell: (row) => (
+        <DossierCompletenessCell
+          completeness={completeness?.get(row.id) ?? null}
+          hasClassification={Boolean(row.intent_class)}
+        />
+      ),
     },
   ];
   const toolbar = {

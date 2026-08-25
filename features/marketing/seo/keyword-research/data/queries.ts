@@ -457,27 +457,28 @@ export async function getKeywordDossierCompleteness(
     const contentDb = await contentIrDb();
     const definitionId = await keywordResearchDefinitionId(contentDb);
     if (definitionId) {
-      const normalizedPhrases = Array.from(
-        new Set(rows.map((row) => row.phrase.trim()).filter(Boolean)),
+      const wanted = new Set(
+        rows.map((row) => row.phrase.trim()).filter(Boolean),
       );
-      await Promise.all(
-        chunk(normalizedPhrases, CHUNK).map(async (phraseChunk) => {
-          const response = await contentDb
-            .from("kind_instance")
-            .select("data")
-            .eq("organization_id", organizationId)
-            .eq("kind_definition_id", definitionId)
-            .is("deleted_at", null)
-            .abortSignal(abortSignal);
-          if (response.error) throw response.error;
-          const wanted = new Set(phraseChunk);
-          for (const row of response.data ?? []) {
-            const artifact = parseKeywordResearchArtifact(row.data);
-            const primary = artifact?.primary_keyword?.trim();
-            if (primary && wanted.has(primary)) pipelinePhrases.add(primary);
-          }
-        }),
-      );
+      // One bounded read of the org's saved primary keywords — filtering by
+      // membership client-side avoids PostgREST's `->>` operator on `.in()`,
+      // which the generated Supabase types cannot express without exploding
+      // into an unresolvable generic instantiation.
+      const response = await contentDb
+        .from("kind_instance")
+        .select("data")
+        .eq("organization_id", organizationId)
+        .eq("kind_definition_id", definitionId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(500)
+        .abortSignal(abortSignal);
+      if (response.error) throw response.error;
+      for (const row of response.data ?? []) {
+        const artifact = parseKeywordResearchArtifact(row.data);
+        const primary = artifact?.primary_keyword?.trim();
+        if (primary && wanted.has(primary)) pipelinePhrases.add(primary);
+      }
     }
   }
 
