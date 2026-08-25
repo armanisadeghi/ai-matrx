@@ -1,6 +1,6 @@
 # Handoff — Access, Scope-Context & Security-Philosophy Campaign
 
-**Owner:** Arman. **State: 2026-07-21, all work committed + pushed to main in ai-matrx, aidream, matrx-common-docs.** Read the three source-of-truth docs before touching anything access- or scope-related: `common-docs/systems/platform/db-rules/FEATURE.md` §6 (rules + THE SECURITY PHILOSOPHY), `common-docs/systems/platform/access/FEATURE.md` (live-verified mechanics), `common-docs/systems/scopes-context/FEATURE.md` (the scope/context model, in the owner's own words).
+**Owner:** Arman. **State: 2026-07-21, all work committed + pushed to main in ai-matrx, aidream, matrx-common-docs.** Read the three source-of-truth docs before touching anything access- or scope-related: `common-docs/systems/platform/db-rules/FEATURE.md` §6 (rules + THE SECURITY PHILOSOPHY), `common-docs/systems/platform/access/FEATURE.md` (live-verified mechanics), `common-docs/systems/scopes-context/STATE.md` (the scope/context model, in the owner's own words).
 
 ## Rules of engagement (unchanged, non-negotiable)
 

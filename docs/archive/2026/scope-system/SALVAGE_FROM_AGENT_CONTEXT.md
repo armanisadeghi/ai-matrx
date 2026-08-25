@@ -1,4 +1,4 @@
-> ARCHIVED 2026-07-26 — superseded by `common-docs/systems/scopes-context/FEATURE.md` (the canonical model) + `features/scopes/FEATURE.md` (the FE implementation). Historical record of the pre-`features/scopes` scope-system UI effort.
+> ARCHIVED 2026-07-26 — superseded by `common-docs/systems/scopes-context/STATE.md` (the canonical model) + `features/scopes/FEATURE.md` (the FE implementation). Historical record of the pre-`features/scopes` scope-system UI effort.
 
 # Salvage notes — legacy `(core)/agent-context` UI → canonical scope-system
 

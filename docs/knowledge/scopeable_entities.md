@@ -1,6 +1,6 @@
 # Scopeable Entities — Working List
 
-> The entity catalogue for Plane 1. Scope model → [`scope-model.md`](scope-model.md); roles/trust → [`knowledge_provenance_model.md`](knowledge_provenance_model.md); architecture → [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md).
+> The entity catalogue for Plane 1. Scope model → [`/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md); roles/trust → [`knowledge_provenance_model.md`](knowledge_provenance_model.md); architecture → [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md).
 
 Unit = the **concept we track**, not the table. Modern table first; legacy tables
 are candidates to merge/drop later. Ordered by likelihood of inclusion.

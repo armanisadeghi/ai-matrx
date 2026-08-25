@@ -1,17 +1,9 @@
 # FEATURE.md — System Context admin console
 
-**Status:** `active`
-**Last updated:** `2026-08-08`
+> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md — read it before touching this feature in ANY repo.
 
----
-
-## Purpose
-
-Super-admin control plane for platform-wide **System Context resources** — the
-context items that resolve for EVERY user with no scope selection (their scope
-types carry `is_system=true` in the member-less "Matrx System" org). A resource
-is a **definition + a feed**: the value is the feed's output, not the authored
-thing. "Preview agent context" shows the live resolver output end-to-end.
+**Status:** `active`. The System Context model (definition + feed, the `is_system`
+tier, the feed types and what is still unbuilt) lives in the node kit, not here.
 
 ## Entry points
 
@@ -44,8 +36,10 @@ thing. "Preview agent context" shows the live resolver output end-to-end.
 - `scope` and `data_store` reference types are excluded for system items —
   see the rationale in `shared.tsx`.
 
-## Change Log
-
-- `2026-08-08` — Extracted from the 1,640-line route page; list views rebuilt
-  on canonical MatrxDataTable (sort/filter/search/copy/panel). Data services
-  and write paths unchanged.
+- **The `is_system` flip must use the CALLER'S authenticated client**, not the
+  service client: the DB trigger gates on `is_super_admin()` against the live
+  JWT and the service role's `auth.uid()` is null. Every other write uses the
+  service client.
+- **`set_value` and preview still trust a client-supplied `scopeId`/user id.**
+  Super-admin-gated today; re-derive `scope_id` server-side from the item's
+  scope type before this surface widens.

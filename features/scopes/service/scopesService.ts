@@ -21,7 +21,7 @@
 // round-trip for N entities, target-filtered to 'scope' in the DB) — see
 // `bulkEntityScopeIds`. Reverse (scope→members) reads use `assoc_for_targets`.
 //
-// Spec: features/scopes/docs/RPC_CONTRACTS.md — when the Python team ships
+// Spec of record: /Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md — when the Python team ships
 // the proposed RPC family (get_user_scope_tree_with_projects, resolve_*,
 // apply_template, etc.), the implementation of each method below swaps to
 // a single supabase.rpc(...) call. Method signatures and return shapes
@@ -1137,6 +1137,6 @@ function notYetImplemented(name: string) {
   return async (..._args: unknown[]): Promise<ScopesRpcResult<never>> =>
     err(
       "internal",
-      `scopesService.${name} is not yet implemented — waiting on the Python RPC. See features/scopes/docs/RPC_CONTRACTS.md.`,
+      `scopesService.${name} is not yet implemented — waiting on the Python RPC. See /Users/armanisadeghi/code/common-docs/systems/scopes-context/HANDOFF.md.`,
     );
 }

@@ -2,7 +2,7 @@
 
 > **What this is.** When fresh content enters the system, a **Helpful Agent** (a real AGX agent definition) tries to MATCH it against the user's **known** scopes and scope items, and proposes links the user can confirm. It is *matching against known things*, nothing more.
 >
-> **Companion docs:** scope model → [`scope-model.md`](scope-model.md) · scopeable entities → [`scopeable_entities.md`](scopeable_entities.md) · pipeline context (Phase 6, Stage 4) → [`01_KNOWLEDGE_OVERVIEW.md`](01_KNOWLEDGE_OVERVIEW.md).
+> **Companion docs:** scope model → [`/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md) · scopeable entities → [`scopeable_entities.md`](scopeable_entities.md) · pipeline context (Phase 6, Stage 4) → [`01_KNOWLEDGE_OVERVIEW.md`](01_KNOWLEDGE_OVERVIEW.md).
 
 ---
 
@@ -33,7 +33,7 @@ new source ──► STAGE A: which known scope is this about?  ──► STAGE 
               (entity → scope assignment)                    (scope item → value)
 ```
 
-These map exactly to the two attach points in [`scope-model.md`](scope-model.md#two-ways-something-relates-to-a-scope): **A = the M2M assignment** (`ctx_scope_assignments`); **B = the item/value cell** (`ctx_context_item_values`).
+These map exactly to the two attach points in [`/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md): **A = the M2M assignment** (`ctx_scope_assignments`); **B = the item/value cell** (`ctx_context_item_values`).
 
 > **They may be one agent in a JSON round-trip (preferred, more powerful):** Stage A returns a scope guess; the system replies with that scope-type's item keys + current values; the same agent then (a) *revises or retracts* its scope guess ("on second look this isn't a Kid at all"), (b) *raises/lowers* its match confidence with new evidence (e.g. the doc's date-of-birth matches Ava's → 0.85 → 0.99), and (c) returns item suggestions. Or implement as two separate agents. Document whichever you build; the conversational form is the target.
 

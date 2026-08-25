@@ -67,7 +67,7 @@ fiddly (the default chat agent won't always ctx_patch the working doc).
 ## OPEN #2 — "What the agent sees" → moved to its own handoff
 
 The context lens + server-truth preview arc now lives in
-`docs/handoffs/context-preview-system.md` (endpoint deployed, panel shipped,
+`/Users/armanisadeghi/code/common-docs/systems/scopes-context/context-delivery/STATE.md` §8 (endpoint deployed, panel shipped,
 remaining verification + Attached-tab work tracked there). Nothing of it
 remains in this doc.
 
@@ -85,7 +85,7 @@ remains in this doc.
    `ManagedWriteViolation: cx_conversation managed_writes='strict'` (filed feedback
    `ce7e53a3`; fix = wrap the meta-agent/run cx_conversation write in `async with Session()`).
    The app's own agent-run path works — only the MCP path is broken.
-(Panel actionability moved to `docs/handoffs/context-preview-system.md`.)
+(Panel actionability moved to `/Users/armanisadeghi/code/common-docs/systems/scopes-context/context-delivery/STATE.md` §8 + `/Users/armanisadeghi/code/common-docs/systems/scopes-context/HANDOFF.md`.)
 
 ## Blockers needing Arman
 

@@ -103,7 +103,7 @@ Each phase lists its goal, the concrete inventory, and the **Agents** hook — w
 
 ## 4 · Scopes & structured data
 
-> Full detail: [`scope-model.md`](scope-model.md) · entity catalogue: [`scopeable_entities.md`](scopeable_entities.md).
+> Full detail: [`/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md) · entity catalogue: [`scopeable_entities.md`](scopeable_entities.md).
 
 User-defined dimensions — never hardcoded like Salesforce.
 

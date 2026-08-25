@@ -3,7 +3,7 @@
 > **What this is:** the detailed zoom-in on **Phase 6 (Structure & Associate)** of the 7-phase lifecycle in [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md). The "5 stages" below are Phase 6's *internal* steps — **not** the whole system pipeline.
 > **Audience:** humans orienting to the module *and* coding agents working on any part of it.
 > **Status:** settled. Scoring & seeding are now DEFINED in [`04_matrx_quality_model.md`](04_matrx_quality_model.md) (§9 covers what's pipeline-specific). What's left there is *rollout*, not design.
-> **Parent / detail docs:** architecture & the 9 STOP rules → [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) · scopes → [`scope-model.md`](scope-model.md) · scopeable entities → [`scopeable_entities.md`](scopeable_entities.md) · trust → [`knowledge_provenance_model.md`](knowledge_provenance_model.md)
+> **Parent / detail docs:** architecture & the 9 STOP rules → [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) · scopes → [`/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md) · scopeable entities → [`scopeable_entities.md`](scopeable_entities.md) · trust → [`knowledge_provenance_model.md`](knowledge_provenance_model.md)
 
 ---
 
@@ -84,7 +84,7 @@ RAG is the storage-and-search substrate the other three pillars enrich.
 
 ## 5. Scopes — what Stage 4 links to
 
-> Summary: [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) §4 · full detail: [`scope-model.md`](scope-model.md). Below is only what Stage 4 needs.
+> Summary: [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) §4 · full detail: [`/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md). Below is only what Stage 4 needs.
 
 The org defines its **own** dimensions. We never hardcode "Customer"/"Case"/"Product" the way Salesforce does.
 
@@ -104,7 +104,7 @@ Entities tag to a **scope**, never to a scope *type*. One entity → many scopes
 
 **Scope values are ground truth** — curated, authoritative facts, each stamped with `source_type` (`user_input` / `ai_generated` / `imported` / `system`). Values are **versioned**: many rows per cell, the live one is `is_current = true`.
 
-**Tables:** `ctx_scope_types` · `ctx_scopes` · `ctx_context_items` · `ctx_context_item_values` (versioned, `is_current`) · `ctx_scope_assignments` (M2M). Columns: read the DB / `scope-model.md`.
+**Tables:** `ctx_scope_types` · `ctx_scopes` · `ctx_context_items` · `ctx_context_item_values` (versioned, `is_current`) · `ctx_scope_assignments` (M2M). Columns: read the DB / `/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md`.
 
 Projects and tasks are a **separate system**, optionally M2M-associated to scopes — not part of the scope hierarchy.
 
@@ -150,7 +150,7 @@ A periodic **per-org / per-user theme pass** (human-reviewed) surfaces recurring
 
 **When planning new code, look here first:**
 - Extraction/resolution/importance → §2, §3.
-- Anything touching scopes → §5 + `scope-model.md` + the `ctx_*` tables.
+- Anything touching scopes → §5 + `/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md` + the `ctx_*` tables.
 - Anything touching scoring/quality/trust/authority → [`04_matrx_quality_model.md`](04_matrx_quality_model.md) (canonical) + §6 + `knowledge_provenance_model.md`.
 - Retrieval/indexing → §4.
 

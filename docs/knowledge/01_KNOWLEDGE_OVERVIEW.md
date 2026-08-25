@@ -22,14 +22,14 @@ This overview is the entry point. From here:
 | **What's left to build** → [`00_MASTER_TASKLIST.md`](00_MASTER_TASKLIST.md) | The prioritized tracker — every task (big & small) on the road to making this real |
 | Architecture detail → [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) | Master architecture, Agent Fabric, STOP rules |
 | Phase 6 (NER) detail → [`03_KNOWLEDGE_MODULE.md`](03_KNOWLEDGE_MODULE.md) | The 5-stage NER pipeline |
-| Scopes → [`scope-model.md`](scope-model.md) · [`scopeable_entities.md`](scopeable_entities.md) | The scope chain + what can be tagged |
+| Scopes → [`/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md) · [`scopeable_entities.md`](scopeable_entities.md) | The scope chain + what can be tagged |
 | Auto-scoping → [`scope-association-pipeline.md`](scope-association-pipeline.md) | How new content is matched to scopes + scope items (the agent, suggestions, match confidence) |
 | **Agent access → knowledge** → [`agent-knowledge-access.md`](agent-knowledge-access.md) | How an agent reaches RAG/NER — bounded agentic search (mirrors the tool hierarchy), the hit contract + condensed entity map, hint injection |
 | **Quality / scoring** → [`04_matrx_quality_model.md`](04_matrx_quality_model.md) | **Single source of truth for all scoring** — Quality Vector, log-odds propagation, utility profiles, composite, seeding |
 | Trust / lineage → [`knowledge_provenance_model.md`](knowledge_provenance_model.md) | Provenance, content roles, lineage (scoring math lives in `04`) |
-| **What the code actually does today** → [`../rag_and_ner/`](../rag_and_ner/README.md) | Reality docs + the truth-checked backlog (`00_CLEANUP.md` §2.0 bucket index) |
+| **What the code actually does today** → [`/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/`](/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/README.md) | Reality docs + the truth-checked backlog (`00_CLEANUP.md` §2.0 bucket index) |
 
-> **Vision lives here** (`docs/knowledge/`). **Code truth + backlog** live in [`docs/rag_and_ner/`](../rag_and_ner/README.md). The tasklist is the bridge.
+> **Vision lives here** (`docs/knowledge/`). **Code truth + backlog** live in [`/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/`](/Users/armanisadeghi/code/common-docs/projects/knowledge-system/reality/README.md). The tasklist is the bridge.
 
 ---
 
@@ -55,7 +55,7 @@ The scope system is flexible: scope types and items are defined per tenant, stor
 
 # Scopes — What They Are
 
-> Full detail: [`scope-model.md`](scope-model.md)
+> Full detail: [`/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md`](/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md)
 
 **The problem:** We can't hardcode dimensions like Salesforce does ("Client", "Order", "Product"). Not every org has those. A law firm has clients, cases, and practice areas; a marketing team has clients and departments; a parent has kids. So the user defines their own dimensions.
 

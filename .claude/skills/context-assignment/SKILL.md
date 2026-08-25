@@ -19,7 +19,7 @@ description: Use whenever a task touches context selection, scope tagging, or th
    dimension — it is part of a selection only when explicitly checked.
    Display follows the same rule (`ContextSummaryChips` enforces it).
 4. **Three runtime layers — NEVER conflate them** (full table:
-   `docs/knowledge/scope-model.md` → "Runtime context — three layers"):
+   `/Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md` → "Runtime context — three layers"):
    - **Layer A — Active (working/passive) context** = "what I'm doing right
      now"; ephemeral; lives in `appContextSlice`; feeds every agent run
      automatically (execute-instance stamps it). MULTI-scope (keyed by scope id

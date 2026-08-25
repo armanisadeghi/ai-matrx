@@ -7,7 +7,7 @@
  * UI matches Variables row: compact chips (key only) + Dialog/Drawer editor.
  *
  * Persists the full `ContextPolicy` shape per the server contract
- * (see `api/context_objects_FE_GUIDE.md`):
+ * (see `/Users/armanisadeghi/code/common-docs/systems/scopes-context/context-delivery/STATE.md`):
  *   key, type, label, description, max_inline_chars, summary_agent_id,
  *   mutable, persist, source.
  */

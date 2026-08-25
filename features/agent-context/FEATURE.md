@@ -1,251 +1,39 @@
-# FEATURE.md — `agent-context`
-
-**Status:** `migrating` (being narrowed; scope CRUD has moved to [`features/scopes/`](../scopes/FEATURE.md))
-**Tier:** `1` — foundational for every agent invocation.
-**Last updated:** `2026-08-11`
-
-> **`features/brokers/` is DELETED (2026-08-11) — there is no broker layer.** This doc previously described brokers as a production SQL-backed resolver sitting in the invocation path. That was never true in code and is now false in the database too: aidream dropped all nine broker-value RPC overloads on 2026-08-09, every `broker*` table lives in `graveyard`, and `graveyard.broker_values` holds **0 rows** — the value store had never been written to. The frontend feature had zero importers outside itself and was never wired to an agent run. See § Removal record. **Real resolution is server-side via the `resolve_full_context` RPC**; the hierarchy below is that resolver's conceptual model, not a client-side chain.
-
-> **agent-context** is the thin consumer that auto-fills declared context policies on an agent at invocation time. It does **not** own scope as a data concept — that lives in [`features/scopes/`](../scopes/FEATURE.md). Read that first; this doc covers the resolution mechanics that *consume* scope.
-
----
-
-## Purpose
-
-- **Agent context** (`features/agent-context/`): the thin consumer that, at invocation time, builds the agent's context payload by:
-  1. Calling the scope resolver in [`features/scopes/`](../scopes/FEATURE.md) for the request's resolved scope bundle (active scopes, entity tags, project, task — already merged into `ResolvedContext`).
-  2. Walking the agent's declared **variables** (required) and **context policies** (optional auto-fills).
-  3. Filling each slot from the resolved scope bundle + ambient sources (user profile, conversation history, selection). Resolution itself runs server-side in `resolve_full_context`.
-  4. Never blocking on missing slots.
-
-Scope CRUD, scope pickers, scope assignment to entities, the active-context sidebar — **all of those moved to [`features/scopes/`](../scopes/FEATURE.md).** This module is now just resolution + slot fill at the invocation boundary.
-
----
-
-## The core distinction — variables vs context policies
-
-> **Variables would leave the agent confused if missing. Context policies are things the agent can use to do an even better job.**
-
-- **Variables** — named, declared inputs the agent **requires**. Each has a default UI component + help text (defined in Builder). Bound by name from `invocation.inputs.variables`. Block invocation when missing.
-- **Context policies** — named, declared inputs **auto-filled** from ambient sources. Absence is graceful — the agent proceeds without them.
-- **Everything else** — ambient data the agent hasn't declared a slot for — is reachable via **tool call**, not injection. The agent pulls what it needs.
-
----
-
-## The resolution hierarchy
-
-```
-Global
-  └─ User
-       └─ Organization
-             └─ Scope               (the user-defined dimensions — see features/scopes)
-                   └─ Project
-                         └─ Task
-                               └─ AI Run
-                                     └─ AI Task
-```
-
-| Level | Resolves from | Example key |
-|---|---|---|
-| Global | platform defaults | `default_model`, platform flags |
-| User | `users` row + preferences | preferred model, language, display name |
-| Organization | `organizations` row | safety policies, default tools |
-| Scope | active scopes + entity scope tags (via `features/scopes`) | brand voice, client tone, custom dictionary, the "50 datapoints per Client" |
-| Project | `projects` row | domain glossary |
-| Task | `tasks` row | task constraints |
-| AI Run | `cx_conversation` row | per-conversation overrides |
-| AI Task | per-turn record | per-turn overrides |
-
-**Resolution rule:** nearest match wins. Falling through returns the next level up. Unresolved at all levels → `undefined`.
-
-The **Scope** level is where the bulk of org-specific signal lives, and it's the level users actually author by hand. See [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) for the data model, contradiction rules, and resolution algorithm that produces the scope-level inputs.
-
----
-
-## Removal record — `features/brokers/` (2026-08-11)
-
-Deleted outright rather than repaired. The evidence, all live-verified against Matrx Main before deleting:
-
-- **Zero broker functions exist in any schema.** `upsert_broker_value`, `bulk_upsert_broker_values`, `get_broker_values_for_context`, `get_complete_broker_data_for_context`, and `get_missing_broker_ids` returned no rows from `pg_proc`. aidream dropped all nine overloads on 2026-08-09 after proving the tables were graveyard-only with zero call statistics.
-- **Every `broker*` table is in `graveyard`** — `data_broker` (974 stale definition rows), `broker_values` (**0 rows**), plus five older peers. No live schema has one.
-- **Zero importers.** Nothing outside `features/brokers/` referenced its service, hooks, or types. No route, no component, no Redux slice. `features/agent-context/` contained no broker code at all — the "broker chain" this doc described was never in the invocation path.
-
-So there was nothing to repoint to and nothing worth restoring: restoring would have meant recreating dropped RPCs over an empty graveyard table to serve code nothing called. Deleting the island also cleared the 10 `pnpm type-check` errors tracked as **D148**, which had been masking the type gate for every other task on `main`. `data_broker` / `broker_values` were removed from `utils/supabase/deprecated-tables.ts` in the same change — brokers was their only consumer.
-
-**If a hierarchical variable resolver is wanted again, it is a new design against live tables — do not resurrect this one.**
-
----
-
-## Entry points
-
-### Agent context (`features/agent-context/`) — narrowed surface
-
-- Variable/context resolution is server-side via the `resolve_full_context` RPC — the FE does not own a `contextVariableService`/`useContextVariables` (those were planned, never built). Callers: the launch flow (`features/agents/redux/execution-system/thunks/execute-instance.thunk.ts`) and scope→conversation sync (`features/scopes/redux/thunks/syncConversationScopes.ts`).
-- `utils/scope-mapping.ts` (in `features/agents/`) — `ApplicationScope` type + resolver used by the launch flow
-- *(post-Phase-5)* the rest of `features/agent-context/` — slices, services, components, scope-related hooks — is **deleted**. Code remaining here is only the broker-consumer + slot-fill surface.
-
-### App context plumbing
-
-- `lib/redux/slices/appContextSlice.ts` — global client state (`organization_id`, `scope_selections`, `project_id`, `task_id`, `conversation_id`). Moved here from `features/agent-context/redux/` during Phase 1 of the scopes rebuild. Injected into every API call by `assembleRequest()`.
-
----
-
-## Data model
-
-### `ApplicationScope` (UI-surface context handoff)
-
-```ts
-interface ApplicationScope {
-  selection?: string;
-  content?: string;
-  context?: Record<string, unknown>;
-  [key: string]: unknown;
-}
-```
-
-A surface (notes, code editor, flashcard) builds an `ApplicationScope` object describing what the user is acting on. A Shortcut's `scopeMappings` translates those keys into the agent's variable / slot names. Lives at [`features/agents/utils/scope-mapping.ts`](../agents/utils/scope-mapping.ts).
-
-### `appContext` (global)
-
-`organization_id`, `scope_selections`, `project_id`, `task_id`, `conversation_id`. Injected into every API call by `assembleRequest()`. The server persists conversation organization/task identity; optional project membership lives only as canonical `conversation → project` associations and is restored from those edges. **Owned by `lib/redux/slices/appContextSlice.ts`** — defined and written there; this feature only reads it.
-
-### Variable vs slot definitions on an agent
-
-Declared in the Builder, returned to clients on agent-load (no system prompt included). Variables are required; slots are optional auto-fills.
-
-### `ResolvedContext` (from `features/scopes`)
-
-```ts
-interface ResolvedContext {
-  values: Record<string, ItemValue>;            // context-item key → value, merged
-  sourcePerKey: Record<string, ContextSource>;  // which scope/level provided each key
-  contradictions: Array<{
-    scopeTypeId: string;
-    globalScopeId: string;
-    localScopeId: string;
-  }>;
-  activeScopes: ContextSource[];
-  organizationId: string | null;
-  userId: string;
-}
-```
-
-Returned by `selectResolvedContext()` (client) and `resolve_local_context()` / `resolve_active_context()` (server). This is the *primary input* to slot fill. See [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) §"The resolution algorithm".
-
----
-
-## Key flows
-
-### Flow 1 — Slot fill at invocation
-
-1. Agent declares a context policy `org_brand_voice`.
-2. Client builds the invocation payload. For each declared slot:
-   - Look up the key in `ResolvedContext.values` (from `features/scopes`). Hit → use it.
-   - Miss → server-side `resolve_full_context` walks the hierarchy: AI task → AI run → task → project → scope → org → user → global. First non-null wins.
-   - Still miss → leave the slot `undefined`. Don't block.
-3. Invocation proceeds.
-
-### Flow 2 — Scope-mapping resolution (UI surface → agent)
-
-1. A surface (code editor, notes, flashcard) builds an `ApplicationScope` with keys like `selection`, `content`, `vsc_active_file_content`.
-2. A Shortcut's `scopeMappings` maps those UI keys to the agent's variable / slot names.
-3. The resolver:
-   - Key matches a declared variable → fills the variable.
-   - Key matches a declared slot → fills the slot.
-   - Key matches nothing → surfaces as ad-hoc context the agent can reach via tool call.
-
-### Flow 3 — Active scope change (UI)
-
-1. User picks a scope in `<ActiveScopePicker />` (in [`features/scopes`](../scopes/FEATURE.md)). `appContextSlice` updates.
-2. Next agent invocation carries the new scope chain. Server stamps the new scope on the conversation.
-3. Context lookups for this conversation resolve from the new chain.
-
-### Flow 4 — Locally-triggered action (entity-bound)
-
-1. User triggers an agent from inside a tagged note (see `features/scopes` Flow 4).
-2. Caller fetches `selectResolvedContext({ entityType: 'note', entityId })` — closest-wins merge of entity tags over global active.
-3. Slot fill consumes the merged bundle. Contradictions are passed through in `ResolvedContext.contradictions` so multi-scope-aware agents can react.
-
-### Flow 5 — Graceful missing slot
-
-1. Slot `user_profile_summary` declared by an agent.
-2. Caller has no profile loaded; no hit at any level; not in `ResolvedContext.values`.
-3. Slot resolves to `undefined`. Invocation proceeds.
-4. Agent works with what it has (or fetches via tool call if it really needs it).
-
----
-
-## Invariants & gotchas
-
-- **Variables block; context policies don't.** Never gate invocation on a missing slot.
-- **Nearest scope wins** in resolution. Declare a value at the correct level — wrong-level declarations are silently misleading.
-- **Context values are read, not mutated, during invocation.** Writes happen through dedicated RPC paths.
-- **`appContext` is the top-level client truth.** Keep it narrow — it rides on every API call.
-- **Scope CRUD does not live here.** Pickers, taggers, slices, services for scope are in [`features/scopes/`](../scopes/FEATURE.md). The single most repeated bug in the old code was a "context picker" that secretly mutated `appContextSlice`; that's structurally impossible in the new module because Surface B never touches it.
-- **Durable cross-entity relationships do not live here either.** Any "this entity is linked to that entity" edge lives in the unified `platform.associations` table via [`features/scopes/`](../scopes/FEATURE.md) (`useAssociations` / `assoc_*` RPCs) — not in a slot or `appContextSlice`. Resolution still consumes scope *data*; it does not own entity relationships.
-- **Anything not declared as variable or slot** is reachable via tool call only, never injection.
-- **Server stamps scope on the conversation** at first-turn time. Subsequent turns inherit.
-- **Do not create per-feature scope state.** Use `appContextSlice` + `resolve_full_context` + `selectResolvedContext` — scattered scope state breaks the mental model.
-- **ResolvedContext is the authoritative scope input.** When filling slots, prefer `ResolvedContext.values` over re-implementing your own scope walk. If a slot needs something `ResolvedContext` doesn't carry, that's a signal to extend the scope module, not bypass it.
-
-### Personal organization
-
-Personal context uses the user's real `organizations.is_personal = true` row. There is no frontend personal-org sentinel: `appContextSlice.organization_id`, nav-tree org ids, project rows, RAG filters, and backend API scope all carry the real organization id. When a project-create path receives no organization id, it resolves the user's personal organization with `ensure_personal_organization` and writes that id.
-
----
-
-## Related features
-
-- **Owns the scope data this module consumes:** [`features/scopes/FEATURE.md`](../scopes/FEATURE.md). Read first.
-- **Foundational for:** [`features/agents/`](../agents/FEATURE.md) (every invocation uses this), [`features/agent-shortcuts/`](../agent-shortcuts/FEATURE.md) (scope mappings), [`features/agent-apps/`](../agent-apps/FEATURE.md).
-- **Cross-links:** [`features/agents/agent-system-mental-model.md`](../agents/agent-system-mental-model.md) §2.
-
----
-
-## Doctrine compliance
-
-> Required by [PRINCIPLES.md](../../PRINCIPLES.md). The artifact is disposable; the platform is the product.
-
-**Primitives reused**
-
-- Types: `ResolvedContext`, `ContextSource`, scope/scope-type types — all imported from `features/scopes/types.ts`. Broker types from `features/brokers/types/`.
-- Components: none directly — this module is invocation-time logic, not UI.
-- Redux slices / selectors: `appContextSlice` (`lib/redux/slices/`), `selectResolvedContext` / `selectActiveContext` / `selectContradictions` (`features/scopes/`).
-- Hooks: `useAppSelector`, `useAppDispatch`. `useActiveContext` / `useResolvedContext` from `features/scopes/hooks/`.
-
-**Primitives introduced** *(post-narrow)*
-
-- None. Variable/context resolution stayed server-side in the `resolve_full_context` RPC — no dedicated FE service or hook was added. (A `contextVariableService` / `useContextVariables` pair was once planned for blocking-vs-non-blocking variable hydration; it was never built and the RPC covers the need.)
-
-If this list grows, re-read PRINCIPLES.md before merging.
-
----
-
-## Current work / migration state
-
-**Mid-narrow.** This module is shrinking. The scope CRUD that historically lived here has moved or is moving to [`features/scopes/`](../scopes/FEATURE.md). Watch the [scopes plan](../scopes/FEATURE.md#current-work--migration-state) for the phase-by-phase retirement schedule. Phase 5 of that plan removes everything in this folder *except* the thin broker-consumer + slot-fill code that remains (variable resolution itself is the `resolve_full_context` RPC, not FE code here).
-
-Until Phase 5 lands:
-
-- The legacy slices in `redux/scope/`, `hierarchySlice.ts`, `organizationsSlice.ts`, `projectsSlice.ts`, `tasksSlice.ts` are still wired in `rootReducer`.
-- The legacy components in `components/` still ship (and contain known bugs — chiefly the silent global-state mutation pattern documented in `features/scopes/FEATURE.md`).
-- The legacy services `contextService.ts` and `hierarchyService.ts` still own `ctx_*` queries.
-- `features/agent-context/hooks/useContextItems.ts` is **known stale** (see file-level TypeScript errors). Do not extend; consumers will be migrated to `features/scopes/hooks/useScopeValues.ts` in Phase 5.
-
----
-
-## Change log
-
-- `2026-07-27` — codex: removed the forbidden physical conversation→project FK from the client contract. Conversation project context is now association-derived; load/fork hydration no longer expects a `chat.conversation.project_id` field.
-- `2026-07-15` — codex: legacy `hierarchyService.createOrganization` now delegates to the canonical atomic `org_create` RPC; it can no longer leave an ownerless organization if the second client transaction fails.
-- `2026-07-12` — claude: **Legacy hierarchy-selection family converted to MULTI-SCOPE; dead variants deleted.** `features/agent-context/components/hierarchy-selection/*`: `useHierarchySelection` now keys `scopeSelections` by SCOPE ID (value === key, matching `appContextSlice`) with additive `toggleScope`/`clearScopeType` (replacing type-keyed radio `setScopeValue`); `HierarchyCascade`/`HierarchyTree`/`HierarchyPills` use checkbox semantics with faithful multi display ("first +N"); `useReduxBridge` diffs scope ids into surgical `addActiveScope`/`removeActiveScope` dispatches (no wholesale `setScopeSelections`); `AgentAppHierarchyCascade` maps every assigned scope id straight into the selection (first-wins trimming deleted). Dead code deleted outright per no-legacy-code: `HierarchyBreadcrumb`, `HierarchyHoverMenu`, `HierarchyCommand` (demo-only) and `features/shell/components/sidebar/SidebarContextSelector.tsx` (rendered on no route); `/demos/selection-demo` trimmed to the live variants.
-- `2026-07-07` — claude: D12 closed — `selectContextPayload` (execution-system `instance-context.selectors.ts`) now wraps PRIMITIVE entry values in the backend rich form `{content, type, label}` so authored labels/types reach the manifest; `max_inline_chars` is deliberately omitted (backend default/slot ceiling unchanged → inline-vs-deferred byte-identical), rich/raw dict values pass through untouched. Also restored live `resolve_full_context` `cell_values`/system-cells/dataset-pointers (lost in a schema-move rebase — `migrations/ctx_resolve_full_context_restore_cells_after_schema_move.sql`), un-breaking UUID scope bindings (D10).
-- `2026-06-26` — claude: corrected stale entry points — `service/contextVariableService.ts` and `hooks/useContextVariables.ts` never existed (planned, never built); variable/context resolution is the server-side `resolve_full_context` RPC, called from the launch thunk + scope→conversation sync. Updated the Primitives-introduced block and the Phase-5 "except" clause to match.
-- `2026-06-26` — codex: removed the frontend Personal pseudo-org sentinel (`PERSONAL_PSEUDO_ORG_ID` / `isPersonalPseudoOrgId`). Personal projects now carry the real personal organization id through nav-tree consumers, project creation, War Room, RAG search context, and `callApi` scope injection.
-- `2026-06-24` — claude: pointer added — durable cross-entity relationships now live in the unified `platform.associations` edge via [`features/scopes/`](../scopes/FEATURE.md) (`useAssociations` / `assoc_*` RPCs), not in brokers, slots, or `appContextSlice`. One invariant line; full model in the scopes doc.
-- `2026-05-16` — composer: narrowed scope of this doc. All scope CRUD content moved to [`features/scopes/FEATURE.md`](../scopes/FEATURE.md). Updated cross-links. Updated `appContextSlice` location (lib). Updated broker hierarchy table to use "Scope" as the level name (was "Workspace"). Added explicit deprecation pointers for everything to be deleted in Phase 5 of the scopes rebuild.
-- `2026-04-22` — claude: initial combined FEATURE.md for agent-context + brokers.
-
----
-
-> **Keep-docs-live:** changes to slot fill semantics, variable resolution, the `ApplicationScope` shape, the broker chain, or `appContextSlice` must update this doc. Changes to scope data, picker behaviour, contradiction rules, or anything in `ctx_*` tables update [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) instead.
+# FEATURE.md — `features/agent-context` (LOCAL MECHANICS ONLY)
+
+> Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/scopes-context/STATE.md — read it before touching this feature in ANY repo.
+
+**Status:** legacy, mid-teardown. Scope CRUD, pickers, tagging and the active-context sidebar all
+live in [`features/scopes/`](../scopes/FEATURE.md). The model, the resolution contract, the
+variables-vs-Context-Policies rules and the teardown plan were centralized into the
+`scopes-context` node kit on 2026-08-25 (`STATE.md`, `DECISIONS.md`, `HANDOFF.md`,
+`context-delivery/STATE.md`). Only directory-local rules remain here.
+
+## 🚨 Rules an agent editing this directory must obey
+
+1. **Do not build a client-side resolver.** Variable and Context Policy resolution is server-side
+   in the `resolve_full_context` RPC. `contextVariableService` / `useContextVariables` were
+   planned and never built — do not create them.
+2. **Never gate an invocation on a missing Context Policy.** Variables block; policies do not.
+3. **Do not resurrect `features/brokers/`** (deleted 2026-08-11 — every RPC dropped, every table
+   in `graveyard`, `broker_values` had 0 rows, zero importers). A hierarchical variable resolver,
+   if ever wanted again, is a NEW design against live tables.
+4. **Do not create per-feature scope state.** Use `appContextSlice` + `resolve_full_context` +
+   `selectResolvedContext`.
+5. **Personal organization is a real org row** (`organizations.is_personal = true`) — there is no
+   frontend personal-org sentinel and none may be reintroduced.
+6. **`hooks/useContextItems.ts` is known stale** (file-level TS errors). Do not extend it;
+   consumers migrate to `features/scopes/hooks/useContextValues.ts`.
+7. **The legacy slices here are still wired in `rootReducer`** (`redux/scope/`, `hierarchySlice`,
+   `organizationsSlice`, `projectsSlice`, `tasksSlice`) and the legacy components still ship with
+   the silent-global-mutation bug. Migrate a consumer off them rather than patching them.
+
+## File map
+
+- `redux/scope/`, `redux/hierarchySlice.ts`, `redux/hierarchyThunks.ts`,
+  `redux/{organizations,projects,tasks}Slice.ts` — legacy state, still mounted.
+- `service/contextService.ts`, `service/hierarchyService.ts` — legacy direct table access.
+- `components/**` — legacy pickers/hubs, superseded by `features/scopes/components/`.
+- `features/agents/utils/scope-mapping.ts` — the `ApplicationScope` surface→agent key mapper (a
+  Shortcut's `scopeMappings` translates surface keys into variable / policy names).
+- `lib/redux/slices/appContextSlice.ts` — the global active-context slice (owned there, only
+  read here).
