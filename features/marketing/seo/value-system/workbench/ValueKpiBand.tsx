@@ -29,7 +29,14 @@
  * you cannot check.
  */
 
-import { ArrowDownRight, ArrowUpRight, Gavel, Minus, Sparkle } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  BrainCircuit,
+  Gavel,
+  Minus,
+  Sparkle,
+} from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCount } from "@/features/marketing/search-console/types";

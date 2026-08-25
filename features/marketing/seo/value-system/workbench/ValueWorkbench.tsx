@@ -160,6 +160,8 @@ import { KeywordMeaningSuggestions } from "@/features/marketing/seo/value-system
 import { ValueDoors } from "../ValueDoors";
 import { BandScoreboard } from "./BandScoreboard";
 import { ValueKpiBand } from "./ValueKpiBand";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ReasonChainDetail, ReasonChainInline } from "./ReasonChain";
 import { MeaningPanel } from "./MeaningPanel";
 import { MeaningHealth } from "./MeaningHealth";
@@ -316,6 +318,7 @@ export function ValueWorkbench() {
   // whole marketing family, never hand-assembled here.
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
   const openKeywordWindow = useOpenKeywordWindow();
   const [window] = useState(reviewWindow);
   const table = useMarketingTableState({
@@ -1040,6 +1043,18 @@ export function ValueWorkbench() {
             });
           }}
           onStartSession={() => setSessionOpen(true)}
+          onQuickAnswers={() =>
+            dispatch(
+              openOverlay({
+                overlayId: "keywordQuickAnswersWindow",
+                data: {
+                  siteId,
+                  siteLabel: site.name ?? site.domain,
+                  dimensionSlug: dimensionColumns[0] ?? null,
+                },
+              }),
+            )
+          }
           sessionOpen={sessionOpen}
         />
       )}
