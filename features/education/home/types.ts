@@ -9,6 +9,7 @@
 // block is a registry entry (mirroring how `EDU_TOOLS` drives the tool grid) —
 // never a new page variant.
 
+import type { LucideIcon } from "lucide-react";
 import type { StudyKit } from "../kits/kitService";
 import type { EducationLibraryRow } from "../library/types";
 import type { ModeSignal } from "../study/dashboard/nextActions";
@@ -18,8 +19,7 @@ import type { StudyGoalRow } from "../study/types";
 /** One thing worth doing right now, with a reason and a time estimate. */
 export interface NextAction {
   key: string;
-  /** Lucide icon component. */
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   label: string;
   /** Why THIS, in one line. A next action without a reason is a to-do list. */
   why: string;
