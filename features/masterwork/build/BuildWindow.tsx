@@ -121,6 +121,8 @@ function BuildWindowInner({
 }) {
   const [rulebook, setRulebook] = useState<Rulebook | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  /** Bumped by "Try again" — a transient read must not be a dead end. */
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [kind, setKind] = useState<MasterworkKind | null>(null);
   const [name, setName] = useState("");
   const [deliverable, setDeliverable] = useState("");
@@ -147,7 +149,7 @@ function BuildWindowInner({
     return () => {
       cancelled = true;
     };
-  }, [rulebookId]);
+  }, [rulebookId, loadAttempt]);
 
   const recommended = rulebook ? recommendKind(rulebook) : "edit";
   const chosenKind: MasterworkKind = kind ?? recommended;
@@ -209,9 +211,26 @@ function BuildWindowInner({
   // ── Body ─────────────────────────────────────────────────────────────────
   const body = (() => {
     if (loadError) {
+      // A DEAD END IS A DEFECT (2026-08-24, found by opening this window in a
+      // browser). The Rulebook read can lose a race with session restore on a
+      // freshly-navigated page; without a retry the window just said "We
+      // couldn't load that Rulebook." forever and the only way out was a full
+      // page reload the Expert has no reason to guess at. One reload of the
+      // read clears it.
       return (
-        <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-muted-foreground">
-          {loadError}
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+          <p className="text-sm text-muted-foreground">{loadError}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setLoadError(null);
+              setLoadAttempt((n) => n + 1);
+            }}
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Try again
+          </Button>
         </div>
       );
     }

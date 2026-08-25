@@ -494,13 +494,19 @@ export function TryMasterworkBox({
 
   return (
     <div className="space-y-2">
+      {/* ONE sentence, never two saying the same thing (2026-08-24, seen in
+          the browser): the Understudy card explains itself AND this box was
+          repeating the ask node's description underneath it — "Your system is
+          already running…" directly below "A rough stand-in using your 100
+          approved rules." That is the novel Arman keeps refusing to read. The
+          ask node's description is for surfaces that draw no chrome of their
+          own; here the host owns the explaining, and the only thing worth
+          adding is what comes back OUT. */}
       {makes && makes.trim() ? (
         <p className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5 text-xs text-foreground">
           <span className="text-muted-foreground">You get back: </span>
           {makes.trim()}
         </p>
-      ) : askSpec?.description ? (
-        <p className="text-xs text-muted-foreground">{askSpec.description}</p>
       ) : null}
       {fields.map((f, i) => (
         <div key={f.key} className="space-y-1">
