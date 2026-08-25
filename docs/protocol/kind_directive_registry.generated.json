@@ -63,7 +63,7 @@
     {
       "capability": "side_effect",
       "class": "action",
-      "doc": "Author and persist an agent through the trained Agent Service builder. Requires name + goals; supports variables, tools, model guidance, and provider-validated structured output.",
+      "doc": "Author and persist an agent through the trained Agent Service builder. Requires name + goals; supports variables, tools, model guidance, and provider-validated structured output. Takes the REQUEST (name + goals) and runs the meta-agent; to supply the finished definition yourself, emit create_agent_definition instead.",
       "item_model": "CreateAgentInput",
       "noun": "create_agent",
       "purposes": [],
@@ -232,6 +232,422 @@
         "type": "object"
       },
       "slug": "directive_v1_action_create_agent"
+    },
+    {
+      "capability": "side_effect",
+      "class": "action",
+      "doc": "Create one agent from its FINISHED definition (prompt messages, variables, model, settings, category, tags) \u2014 the shape the Agent Structure Builder emits, applied through every birth guard. Ownership is the acting user's and executable tools are never taken from the wire; both come from the call, not the model.",
+      "item_model": "AgentDefinitionItem",
+      "noun": "create_agent_definition",
+      "purposes": [],
+      "schema": {
+        "$defs": {
+          "AgentDefinitionMessage": {
+            "additionalProperties": false,
+            "description": "One prompt message. The system message comes first.",
+            "properties": {
+              "content": {
+                "items": {
+                  "$ref": "#/$defs/AgentDefinitionTextBlock"
+                },
+                "title": "Content",
+                "type": "array"
+              },
+              "role": {
+                "enum": [
+                  "system",
+                  "user",
+                  "assistant"
+                ],
+                "title": "Role",
+                "type": "string"
+              }
+            },
+            "required": [
+              "role",
+              "content"
+            ],
+            "title": "AgentDefinitionMessage",
+            "type": "object"
+          },
+          "AgentDefinitionSettings": {
+            "additionalProperties": false,
+            "description": "Run settings. A reasoning agent spends ``max_output_tokens`` on reasoning\nFIRST and the answer second \u2014 the birth floor reconciles a ceiling too small\nto hold both (``agent_factory.guards.enforce_reasoning_output_budget``).",
+            "properties": {
+              "internal_url_context": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Internal Url Context"
+              },
+              "internal_web_search": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Internal Web Search"
+              },
+              "max_output_tokens": {
+                "anyOf": [
+                  {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Max Output Tokens"
+              },
+              "reasoning_effort": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "none",
+                      "minimal",
+                      "low",
+                      "medium",
+                      "high",
+                      "xhigh"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Reasoning Effort"
+              },
+              "reasoning_summary": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "concise",
+                      "detailed",
+                      "never",
+                      "auto",
+                      "always"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Reasoning Summary"
+              },
+              "stream": {
+                "default": true,
+                "title": "Stream",
+                "type": "boolean"
+              },
+              "temperature": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Temperature"
+              },
+              "top_p": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Top P"
+              }
+            },
+            "title": "AgentDefinitionSettings",
+            "type": "object"
+          },
+          "AgentDefinitionTextBlock": {
+            "additionalProperties": false,
+            "description": "One content block of a prompt message. Content is ALWAYS a list of these\n\u2014 never a bare string (the PromptJSON rule the builder is trained on).",
+            "properties": {
+              "text": {
+                "title": "Text",
+                "type": "string"
+              },
+              "type": {
+                "const": "text",
+                "default": "text",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "title": "AgentDefinitionTextBlock",
+            "type": "object"
+          },
+          "AgentDefinitionVariable": {
+            "additionalProperties": false,
+            "description": "One ``{{name}}`` placeholder the agent's messages reference.",
+            "properties": {
+              "customComponent": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/AgentDefinitionVariableComponent"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "defaultValue": {
+                "default": "",
+                "title": "Defaultvalue",
+                "type": "string"
+              },
+              "helpText": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Helptext"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "required": {
+                "default": false,
+                "title": "Required",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "title": "AgentDefinitionVariable",
+            "type": "object"
+          },
+          "AgentDefinitionVariableComponent": {
+            "additionalProperties": false,
+            "description": "The input control a variable renders as. Omit for a plain textarea.",
+            "properties": {
+              "allowOther": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Allowother"
+              },
+              "max": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Max"
+              },
+              "min": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Min"
+              },
+              "options": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Options"
+              },
+              "step": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Step"
+              },
+              "toggleValues": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Togglevalues"
+              },
+              "type": {
+                "enum": [
+                  "textarea",
+                  "toggle",
+                  "radio",
+                  "checkbox",
+                  "select",
+                  "number"
+                ],
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "AgentDefinitionVariableComponent",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_action_create_agent_definition",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "description": "A complete agent, exactly as a model may author it.\n\nApplied through ``directive_v1_action_create_agent_definition`` it becomes a\nlive ``agent.definition`` row (with its v1 snapshot); rendered, it is the\nagent a person is watching being built.",
+              "properties": {
+                "__kind": {
+                  "const": "agent_definition",
+                  "default": "agent_definition",
+                  "description": "The registered kind this payload is an instance of.",
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "category": {
+                  "title": "Category",
+                  "type": "string"
+                },
+                "context_policies": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Context Policies",
+                  "type": "array"
+                },
+                "custom_tools": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Custom Tools",
+                  "type": "array"
+                },
+                "description": {
+                  "default": "",
+                  "title": "Description",
+                  "type": "string"
+                },
+                "messages": {
+                  "items": {
+                    "$ref": "#/$defs/AgentDefinitionMessage"
+                  },
+                  "title": "Messages",
+                  "type": "array"
+                },
+                "model_id": {
+                  "title": "Model Id",
+                  "type": "string"
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                },
+                "settings": {
+                  "$ref": "#/$defs/AgentDefinitionSettings"
+                },
+                "tags": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Tags",
+                  "type": "array"
+                },
+                "variable_definitions": {
+                  "items": {
+                    "$ref": "#/$defs/AgentDefinitionVariable"
+                  },
+                  "title": "Variable Definitions",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "name",
+                "messages",
+                "model_id",
+                "settings",
+                "category"
+              ],
+              "title": "AgentDefinitionItem",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_action_create_agent_definition"
     },
     {
       "capability": "side_effect",
