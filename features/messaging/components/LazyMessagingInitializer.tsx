@@ -6,7 +6,10 @@
 // stuck at 0 until the user clicked the icon.
 
 import { useAppSelector } from '@/lib/redux/hooks';
-import { selectUser } from '@/lib/redux/selectors/userSelectors';
+import {
+    selectAccessToken,
+    selectUserId,
+} from '@/lib/redux/selectors/userSelectors';
 import dynamic from 'next/dynamic';
 
 const MessagingInitializer = dynamic(
@@ -15,7 +18,13 @@ const MessagingInitializer = dynamic(
 );
 
 export default function LazyMessagingInitializer() {
-    const userId = useAppSelector(selectUser)?.id;
-    if (!userId) return null;
+    const userId = useAppSelector(selectUserId);
+    const accessToken = useAppSelector(selectAccessToken);
+
+    // Redux identity and the browser's Supabase session are hydrated in
+    // separate steps. Mounting in between makes the authenticated-only DM RPC
+    // execute as `anon`, producing a real 42501 before auth finishes. Identity
+    // alone is not authority: wait until the session token exists.
+    if (!userId || !accessToken) return null;
     return <MessagingInitializer />;
 }
