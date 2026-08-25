@@ -48,16 +48,33 @@ Two laws fall straight out of it:
 
 ## Entry points
 
-**Routes**
+**Routes** — all three tiers ship.
 - `app/(admin)/administration/marketing/run-console/page.tsx` — the SYSTEM tier
   mount (manage.aimatrx.com). Admin gating is the `(admin)` layout's job.
-- The organization and brand mounts do not ship in v1. They are
-  `<RunConsole scope={{tier:'organization', organizationId}} />` and
-  `<RunConsole scope={{tier:'site', siteId}} />` — no rework required.
+- `app/(core)/marketing/automations/page.tsx` — the ORGANIZATION tier mount.
+  Server component (exports real `metadata`) that renders the client
+  `OrganizationRunConsoleMount`, which reads the active org from
+  `selectOrganizationId` (`appContextSlice`) and renders
+  `<RunConsole scope={{tier:'organization', organizationId}} />`. No active
+  org → `OrganizationRequiredNotice` (never a crash or an empty page — same
+  door as `RecordUnavailableNotice`'s "Switch organization"). Fulfills the
+  former `marketing.automations` Coming Soon promise (registry entry removed;
+  `marketing-nav.ts` status dropped) — 2026-08-25.
+- `app/(core)/marketing/brands/[brandId]/sites/[siteId]/automations/page.tsx`
+  — the SITE tier mount. Renders `SiteRunConsoleMount`, which reads
+  `siteId`/`site` from `MarketingSiteContext` (the site layout already
+  access-gates and resolves it) and renders
+  `<RunConsole scope={{tier:'site', siteId}} />`. Registered as a real site
+  section (`automations`, group `Programs`) in `route-sections.ts` +
+  `site-section-icons.ts` so it appears in the site's own nav — 2026-08-25.
 
 **Components**
 - `RunConsole.tsx` — the whole console: control bar, brand table, run log,
   results tabs.
+- `OrganizationRunConsoleMount.tsx` / `SiteRunConsoleMount.tsx` — the
+  client-side scope resolvers for the organization and site route mounts
+  (split out because their `page.tsx` files are Server Components exporting
+  real `metadata`, and a `"use client"` page cannot also export `metadata`).
 - `ScheduleCascadePanel.tsx` — the tier's own schedule editor plus the
   "which schedule governs each brand" resolution table.
 
@@ -149,6 +166,28 @@ which tier is winning. It saves storage and nothing else.
 
 ## Change log
 
+- `2026-08-25` — **Organization and site tiers mounted; v1 is now all three
+  tiers, live.** Arman: *"the question is if we already have this set up so
+  that organizations and users can use them as well for their websites and
+  clients… the organizations will be able to set their own that will then
+  override our system one."* Answer: yes, mostly — the shape (`RunConsole`
+  scope prop, the cascade, `listConsoleSites`'s site-tier filter) already
+  supported it; only the mounts were missing. Added
+  `/marketing/automations` (organization tier — fulfills the former
+  `marketing.automations` Coming Soon promise, entry deleted from
+  `lib/coming-soon/registry.ts`, status dropped from `marketing-nav.ts`) and
+  `/marketing/brands/[brandId]/sites/[siteId]/automations` (site tier,
+  registered as a real site section under `Programs`). No active org on the
+  organization mount renders a "pick an organization" empty state, never a
+  crash. **RLS verified live** against `seo.engine_schedule` (Supabase MCP,
+  `brsgrqvjdzwihsvnfqkf`): `std_insert`/`std_select` grant any
+  `iam.organization_member` row (not just owner/admin) full access to that
+  org's rows via `iam.has_org_access` — no policy change needed. Live-tested
+  an organization-tier schedule save + remove through the UI: the "which
+  schedule governs each brand" table correctly flipped every brand from
+  `System default` to `Organization` on save and back on remove, proving the
+  cascade override end to end. Site-tier mount verified reachable from the
+  site's own sidebar nav (NO DEAD ENDS) and renders scoped to that one site.
 - `2026-08-25` — **The two hand-rolled `<table>`s became the canonical
   `MatrxDataTable`, and the page names its AI.** Arman: *"you're showing
   tabular data, but you're not using our canonical table... you've handled

@@ -236,15 +236,11 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["/marketing hub card", "/marketing/analytics route"],
   },
-  "marketing.automations": {
-    id: "marketing.automations",
-    label: "Marketing Automations",
-    owner: "marketing",
-    promise:
-      "Run trigger-based marketing workflows: on a new crawl finding, on a rank drop, on a brand mention, on a published page.",
-    stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/automations route"],
-  },
+  // "marketing.automations" FULFILLED 2026-08-25: `/marketing/automations`
+  // now mounts the run console (KI-049) at the organization tier — the same
+  // component the system tier drives at
+  // `/administration/marketing/run-console`. See
+  // `features/marketing/seo/run-console/FEATURE.md`.
   // Planned PUBLIC analyzers advertised on the /seo tool index. Declared in
   // features/marketing/lib/marketing-nav.ts (MARKETING_PUBLIC_TOOL_CATEGORIES);
   // each ships at its already-advertised /seo/* URL.

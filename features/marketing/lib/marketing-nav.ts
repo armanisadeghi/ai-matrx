@@ -689,10 +689,8 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         label: "Automations",
         href: marketingRoutes.automations(),
         description:
-          "Trigger-based marketing workflows — on crawl finding, on rank drop, on mention.",
+          "Drive the coverage engines by hand and author the schedule for the brands your organization controls.",
         iconName: "Workflow",
-        status: "coming-soon",
-        comingSoonId: "marketing.automations",
       },
     ],
   },

@@ -91,6 +91,15 @@ export const MARKETING_SITE_SECTIONS = [
     exact: true,
   },
   {
+    slug: "automations",
+    name: "Automations",
+    titlePrefix: "Automations",
+    description:
+      "Run the keyword-coverage engines by hand for this brand, and author the schedule that overrides the organization and system defaults.",
+    letter: "Am",
+    group: "Programs",
+  },
+  {
     slug: "growth-loop",
     name: "Growth Loop",
     titlePrefix: "Growth Loop",

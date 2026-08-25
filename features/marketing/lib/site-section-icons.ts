@@ -37,6 +37,7 @@ import {
   Settings,
   Timer,
   TrendingUp,
+  Workflow,
   type LucideIcon,
 } from "lucide-react";
 
@@ -47,6 +48,7 @@ export const MARKETING_SITE_SECTION_ICONS: Record<
   LucideIcon
 > = {
   "": Gauge,
+  automations: Workflow,
   "growth-loop": RefreshCw,
   performance: Timer,
   sitemaps: Map,
