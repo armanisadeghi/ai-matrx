@@ -84,7 +84,7 @@ export function useUserOrganizations() {
   }, [key]);
 
   const current = resolved?.key === key ? resolved : null;
-  const refresh = useCallback(() => setNonce((value) => value + 1), []);
+  const refresh = () => setNonce((value) => value + 1);
 
   return {
     organizations: current?.organizations ?? [],
