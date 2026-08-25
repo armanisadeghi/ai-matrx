@@ -381,12 +381,6 @@ export default function AdminSandboxManagementPage() {
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
             <Container className="w-6 h-6 text-orange-500" />
-            <div>
-              <h1 className="text-lg font-semibold">Sandbox Management</h1>
-              <p className="text-sm text-muted-foreground">
-                Monitor and manage all sandbox instances across all users
-              </p>
-            </div>
           </div>
           <div className="flex items-center gap-2">
             {instances.length > 0 && (

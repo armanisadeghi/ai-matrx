@@ -55,15 +55,12 @@ export default function SchedulingAdminOverview() {
     <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
       <div className="flex items-center gap-2">
         <CalendarClock className="h-5 w-5 text-blue-500" />
-        <div>
-          <h1 className="text-lg font-semibold leading-none">
-            Scheduling administration
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Cross-user view of the sch_* spine. RLS allows platform admins to
-            read everything via the is_platform_admin() escape hatch.
-          </p>
-        </div>
+        <p
+          className="truncate text-xs text-muted-foreground"
+          title="Cross-user view of the sch_* spine. RLS allows platform admins to read everything via the is_platform_admin() escape hatch."
+        >
+          Cross-user view of the sch_* spine. RLS allows platform admins to read everything via the is_platform_admin() escape hatch.
+        </p>
       </div>
 
       {error && (

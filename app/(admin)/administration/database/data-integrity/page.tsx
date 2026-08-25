@@ -496,17 +496,13 @@ export default function DataIntegrityPage() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 px-4 py-4 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5 text-primary" />
-            Data Integrity
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1 max-w-3xl">
-            On-demand integrity audit: referential/storage checks, security
-            guards, and the repo&apos;s <code>check:*</code> gates. Read-only —
-            nothing here mutates data. Checks live in <code>lib/integrity</code>
-            ; the SQL set also runs via <code>pnpm check:data-integrity</code>.
-            Repo gates are strictly on-demand — use the per-row run button.
+        <div className="flex items-center gap-2">
+          <ShieldAlert className="h-5 w-5 text-primary" />
+          <p
+            className="truncate text-xs text-muted-foreground"
+            title="Read-only — nothing here mutates data. Repo gates are strictly on-demand; use the per-row run button."
+          >
+            Read-only — nothing here mutates data. Repo gates are strictly on-demand; use the per-row run button.
           </p>
         </div>
         <div className="flex items-center gap-2">

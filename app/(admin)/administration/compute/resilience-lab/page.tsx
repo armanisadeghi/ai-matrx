@@ -793,16 +793,6 @@ export default function ResilienceLabPage() {
 
   return (
     <div className="p-6 flex flex-col gap-6 max-w-6xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-semibold">Resilience Lab</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Synthetic failure scenarios for the request-recovery + netRequests
-          system. Each button runs through the real guarded-submit plumbing
-          (IndexedDB + netRequests + sonner toast) so success here means the
-          production path handles the same failure end-to-end.
-        </p>
-      </div>
-
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Simulated user input</CardTitle>

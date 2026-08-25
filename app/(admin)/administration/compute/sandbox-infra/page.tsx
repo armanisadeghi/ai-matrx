@@ -389,13 +389,7 @@ export default function SandboxInfraPage() {
 
     return (
         <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl font-semibold">Sandbox Infrastructure</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Live health for the EC2 and self-hosted sandbox orchestrators. Auto-refreshes every 30s.
-                    </p>
-                </div>
+            <div className="px-6 py-4 border-b border-border flex items-center justify-end">
                 <Button
                     variant="outline"
                     size="sm"

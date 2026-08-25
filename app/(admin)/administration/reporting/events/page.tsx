@@ -200,7 +200,6 @@ export default function AdminEventsPage() {
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <div className="flex items-center gap-2">
         <Activity className="size-5 text-primary" />
-        <h1 className="text-lg font-semibold text-foreground">Events</h1>
         <span className="text-sm text-muted-foreground">
           platform.activity_log — the event spine
         </span>

@@ -135,14 +135,6 @@ export default function ScannerHealthPage() {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <CalendarCheck className="h-5 w-5 text-blue-500" />
-          <div>
-            <h1 className="text-lg font-semibold leading-none">
-              Scanner health
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Live status from aidream&apos;s matrx-scheduler scanner.
-            </p>
-          </div>
         </div>
         <Button
           variant="outline"

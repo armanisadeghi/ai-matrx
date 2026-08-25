@@ -30,13 +30,6 @@ export default function TemplatesPage() {
     <div className="h-full overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
       <div className="flex items-center gap-2">
         <CalendarRange className="h-5 w-5 text-blue-500" />
-        <div>
-          <h1 className="text-lg font-semibold leading-none">Templates</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Admin-curated starter schedules. Users will be able to clone any
-            template into their own account from the create form.
-          </p>
-        </div>
       </div>
 
       <Alert>
