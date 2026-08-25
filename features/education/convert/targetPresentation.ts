@@ -27,6 +27,23 @@ import type { LucideIcon } from "lucide-react";
 import type { TargetKind } from "./types";
 
 export interface TargetPresentation {
+  /**
+   * The student-facing name for this format. Deliberately the word a learner
+   * says out loud ("Flashcards", "Practice test"), not the storage token.
+   */
+  label: string;
+  /**
+   * What ONE countable unit of this format is called, so a surface can render
+   * "12 cards" / "6 questions" without a second lookup. Null for formats that
+   * are one document rather than a list of items.
+   */
+  unit: { one: string; many: string } | null;
+  /**
+   * The verb on the primary action of a FINISHED artifact. Distinct from
+   * `runningVerb` (what the system is doing while producing it): a student
+   * reads "Study" / "Listen" / "Take quiz", never a generic "Open".
+   */
+  verb: string;
   icon: LucideIcon;
   /** Icon / emphasis colour. */
   fg: string;
@@ -42,6 +59,9 @@ export interface TargetPresentation {
 
 export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
   deck: {
+    label: "Flashcards",
+    unit: { one: "card", many: "cards" },
+    verb: "Study",
     icon: Layers,
     fg: "text-sky-600 dark:text-sky-400",
     chip: "bg-sky-500/10",
@@ -50,6 +70,9 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     runningVerb: "Writing your flashcards",
   },
   summary: {
+    label: "Summary",
+    unit: null,
+    verb: "Read",
     icon: ScrollText,
     fg: "text-emerald-600 dark:text-emerald-400",
     chip: "bg-emerald-500/10",
@@ -58,6 +81,9 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     runningVerb: "Writing your summary",
   },
   mind_map: {
+    label: "Mind map",
+    unit: null,
+    verb: "Explore",
     icon: Network,
     fg: "text-violet-600 dark:text-violet-400",
     chip: "bg-violet-500/10",
@@ -66,6 +92,9 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     runningVerb: "Mapping the ideas",
   },
   audio: {
+    label: "Audio study",
+    unit: null,
+    verb: "Listen",
     icon: Headphones,
     fg: "text-amber-600 dark:text-amber-400",
     chip: "bg-amber-500/10",
@@ -74,6 +103,9 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     runningVerb: "Recording your audio overview",
   },
   memory_aid: {
+    label: "Memory aid",
+    unit: null,
+    verb: "Review",
     icon: Brain,
     fg: "text-fuchsia-600 dark:text-fuchsia-400",
     chip: "bg-fuchsia-500/10",
@@ -82,6 +114,9 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     runningVerb: "Inventing memory tricks",
   },
   quiz: {
+    label: "Quiz",
+    unit: { one: "question", many: "questions" },
+    verb: "Take quiz",
     icon: ListChecks,
     fg: "text-rose-600 dark:text-rose-400",
     chip: "bg-rose-500/10",
@@ -90,6 +125,9 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     runningVerb: "Writing your quiz questions",
   },
   practice_test: {
+    label: "Practice test",
+    unit: { one: "question", many: "questions" },
+    verb: "Take test",
     icon: FileCheck2,
     fg: "text-indigo-600 dark:text-indigo-400",
     chip: "bg-indigo-500/10",
@@ -98,6 +136,9 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     runningVerb: "Building your practice test",
   },
   notes: {
+    label: "Note",
+    unit: null,
+    verb: "Open",
     icon: NotebookPen,
     fg: "text-teal-600 dark:text-teal-400",
     chip: "bg-teal-500/10",
