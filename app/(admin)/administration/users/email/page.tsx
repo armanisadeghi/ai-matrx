@@ -258,14 +258,6 @@ export default function AdminEmailPage() {
       getWriteHandlers={getSurfaceWriteHandlers}
     >
       <div className="h-full overflow-y-auto space-y-6 p-6">
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Email Users</h1>
-          <p className="text-muted-foreground">
-            Send emails to users directly from the admin portal
-          </p>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Email Form */}
           <div className="lg:col-span-2 space-y-6">
