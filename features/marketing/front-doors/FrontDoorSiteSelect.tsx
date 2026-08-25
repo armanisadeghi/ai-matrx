@@ -13,7 +13,7 @@
 import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Globe2 } from "lucide-react";
+import { Globe2, Plus } from "lucide-react";
 
 import {
   Select,
@@ -86,26 +86,36 @@ export function FrontDoorSiteSelect({
   }
 
   return (
-    <Select
-      value={state.site.id}
-      onValueChange={(siteId) =>
-        // Discrete site switch — Back returns to the previous site.
-        startTransition(() =>
-          router.push(`${basePath}?site=${encodeURIComponent(siteId)}`),
-        )
-      }
-      disabled={isNavigating}
-    >
-      <SelectTrigger className="h-8 w-full sm:w-80" aria-label={label}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {state.options.map((option) => (
-          <SelectItem key={option.id} value={option.id}>
-            {option.name} · {option.domain || option.root_url}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="flex w-full items-center gap-2 sm:w-auto">
+      <Select
+        value={state.site.id}
+        onValueChange={(siteId) =>
+          // Discrete site switch — Back returns to the previous site.
+          startTransition(() =>
+            router.push(`${basePath}?site=${encodeURIComponent(siteId)}`),
+          )
+        }
+        disabled={isNavigating}
+      >
+        <SelectTrigger className="h-8 w-full sm:w-80" aria-label={label}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {state.options.map((option) => (
+            <SelectItem key={option.id} value={option.id}>
+              {option.name} · {option.domain || option.root_url}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Link
+        href={marketingRoutes.newSite()}
+        aria-label="Add website"
+        title="Add website"
+        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      >
+        <Plus className="size-4" aria-hidden />
+      </Link>
+    </div>
   );
 }

@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Database, Gauge, Globe2, SearchCheck } from "lucide-react";
+import {
+  ArrowRight,
+  Database,
+  Gauge,
+  Globe2,
+  Plus,
+  SearchCheck,
+} from "lucide-react";
 
 import {
   Select,
@@ -98,30 +105,40 @@ export function SeoCapabilitiesWorkspace() {
           lives, and which system produces it. Choose a website only to open
           that capability's evidence.
         </p>
-        <Select
-          value={site.id}
-          onValueChange={(siteId) =>
-            // Discrete site switch — Back returns to the previous site.
-            startTransition(() =>
-              router.push(marketingRoutes.capabilities(siteId)),
-            )
-          }
-          disabled={isNavigating}
-        >
-          <SelectTrigger
-            className="mt-3 h-8 w-full sm:w-80"
-            aria-label="Website for evidence links"
+        <div className="mt-3 flex w-full items-center gap-2 sm:w-auto">
+          <Select
+            value={site.id}
+            onValueChange={(siteId) =>
+              // Discrete site switch — Back returns to the previous site.
+              startTransition(() =>
+                router.push(marketingRoutes.capabilities(siteId)),
+              )
+            }
+            disabled={isNavigating}
           >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                {option.name} · {option.domain || option.root_url}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <SelectTrigger
+              className="h-8 w-full sm:w-80"
+              aria-label="Website for evidence links"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((option) => (
+                <SelectItem key={option.id} value={option.id}>
+                  {option.name} · {option.domain || option.root_url}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Link
+            href={marketingRoutes.newSite()}
+            aria-label="Add website"
+            title="Add website"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <Plus className="size-4" aria-hidden />
+          </Link>
+        </div>
       </header>
 
       {(["snapshot", "catalogue", "provider"] as const).map((group) => {
