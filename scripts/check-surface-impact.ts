@@ -760,7 +760,8 @@ async function main() {
         2,
       ),
     );
-    process.exit(strict && scoped.some((f) => f.severity === "error") ? 1 : 0);
+    process.exitCode = strict && scoped.some((f) => f.severity === "error") ? 1 : 0;
+    return;
   }
 
   // Per-surface consumer report (the "is it safe to touch this?" mode)
@@ -830,7 +831,7 @@ async function main() {
     console.log(
       `${C.green}[ OK ]${C.reset} Surface impact clean — ${surfaces.length} surfaces, ${dbValues.length} value rows, ${assocs.length} agent bindings, ${shortcuts.length} shortcuts, ${writeTargets.length} write targets examined.`,
     );
-    process.exit(0);
+    return;
   }
   console.log(
     `${errors.length ? C.red : C.yellow}${C.bold}Surface impact: ${errors.length} breaking, ${warns.length} warning${C.reset}\n`,
@@ -844,7 +845,11 @@ async function main() {
     console.log(`      ${C.dim}fix: ${f.fix}${C.reset}`);
   }
   console.log("");
-  process.exit(strict && errors.length > 0 ? 1 : 0);
+  // process.exitCode, never process.exit(): exit() tears the process down
+  // before piped stdout flushes, so `| grep`/`> file` consumers saw only the
+  // first findings of a long report (observed 2026-08-25 — 43 findings, 11
+  // lines captured). Same fix on every early return above.
+  process.exitCode = strict && errors.length > 0 ? 1 : 0;
 }
 
 main().catch((err) => {
