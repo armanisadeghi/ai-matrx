@@ -111,8 +111,10 @@ export const smartExecute = createAsyncThunk<
           error instanceof Error
             ? error.message
             : "Select an organization before sending this message.";
-        console.error(`[smart-execute] ${message}`, { conversationId });
-        toast.error("Organization required", { description: message });
+        // This is expected, locally recoverable form validation: no request
+        // crossed the transport boundary and the draft remains intact. Keep it
+        // visible without manufacturing console-error + user-toast incidents.
+        toast.info("Organization required", { description: message });
         return;
       }
 
