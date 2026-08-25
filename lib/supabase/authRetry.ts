@@ -40,9 +40,12 @@ export function isMissingSessionError(
 ): boolean {
   if (!error) return false;
   if (error.code === "28000") return true;
-  const message = (error.message ?? "").toLowerCase();
-  if (message.startsWith("not authenticated")) return true;
-  return error.code === "42501" && message.startsWith("permission denied for function ");
+  const message = error.message?.toLowerCase();
+  if (message?.startsWith("not authenticated")) return true;
+  return (
+    error.code === "42501" &&
+    message?.startsWith("permission denied for function ") === true
+  );
 }
 
 /**
