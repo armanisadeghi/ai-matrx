@@ -39,6 +39,16 @@ export interface KindLoadingProps {
   icon?: string;
   /** Expected item count — clamped by each loader to a sane skeleton count. */
   count?: number;
+  /**
+   * THE SMART-LOADER FEED: the region's full partial value, exactly as it
+   * stands this frame (grows monotonically, never rewrites). Library
+   * skeletons ignore it; a data-fed loader reads it to PERFORM the arrival —
+   * surface real text as it lands, step counts up, soft-fade each piece in
+   * (Arman, 2026-08-24: animated, intelligent, never generic). Always
+   * provided by the pending render path; optional so static previews can
+   * render a loader with no stream behind it.
+   */
+  value?: Record<string, unknown> | null;
 }
 
 /** Read the early-key set out of an envelope's (partial) root value. */

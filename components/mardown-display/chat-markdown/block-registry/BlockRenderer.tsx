@@ -67,11 +67,13 @@ interface BlockRendererProps {
 }
 
 /**
- * canvasType → its dedicated streaming skeleton. Reuses the existing per-type
- * loading visualizations (QuizLoadingVisualization, etc.) instead of the
- * generic "Initializing Matrx" MatrxMiniLoader, which is meant for app boot and
- * reads as nonsense mid-response. Types without a bespoke skeleton fall back to
- * a neutral pulse (handled at the call site).
+ * canvasType → its dedicated streaming skeleton — LEGACY (non-kind) blocks
+ * ONLY. A block carrying a `metadata.__ir` envelope went through the kind
+ * system and follows the ONE loading sequence instead (kind loader → real
+ * component from its first renderable frame); this table serves the old
+ * envelope-less blocks (history messages, direct typed fences) so their
+ * behavior stays untouched. Do not add kinds here — the per-kind streaming
+ * knob is the bridge ({provisional: true} + its too-thin gate).
  */
 const ARTIFACT_LOADING_COMPONENTS: Partial<
   Record<string, () => React.ReactElement>
@@ -134,7 +136,12 @@ const PendingStructuredBlock: React.FC<{ envelope: CanonicalBlockIR }> = ({
   // createElement over JSX: the loader is a STATIC module-level component
   // selected from the registry at render time (not created during render) —
   // this form makes that legible to react-hooks/static-components.
-  return React.createElement(resolveKindLoadingComponent(slug), early);
+  // The full partial value rides along (KindLoadingProps.value) so data-fed
+  // smart loaders can perform the arrival; skeleton loaders ignore it.
+  return React.createElement(resolveKindLoadingComponent(slug), {
+    ...early,
+    value: envelope.root.value ?? null,
+  });
 };
 
 /**

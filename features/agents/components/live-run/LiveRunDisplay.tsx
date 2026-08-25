@@ -124,6 +124,15 @@ export function LiveRunDisplay({
         {errorMessage ? (
           <p className="pb-2 text-xs text-destructive">{errorMessage}</p>
         ) : null}
+        {!requestId && !errorMessage ? (
+          // A bound run with no stream handle yet is still a run: say so.
+          // An empty box reads as a broken window (see the blank-window
+          // incident, 2026-08-24).
+          <p className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+            {statusText ?? "Starting…"}
+          </p>
+        ) : null}
         {requestId ? (
           <div
             ref={bodyRef}

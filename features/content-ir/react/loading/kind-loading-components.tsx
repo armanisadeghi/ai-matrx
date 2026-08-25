@@ -168,6 +168,20 @@ const Sk: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 /**
+ * Soft reveal for a live early key: keyed by its text, so the first arrival
+ * AND every later change fade in gently (Arman, 2026-08-24: "animated with a
+ * fade, a slow, soft fade — never jerky"). Pure CSS; no state.
+ */
+const Reveal: React.FC<{ text: string; className?: string }> = ({
+  text,
+  className,
+}) => (
+  <span key={text} className={`animate-[fade-in_0.6s_ease-out] ${className ?? ""}`}>
+    {text}
+  </span>
+);
+
+/**
  * Shared chrome: tinted icon chip + spinner + the early keys (title /
  * loading_message / description / subtext) above a loader-specific skeleton
  * body, on a faint accent wash.
@@ -208,20 +222,23 @@ const Shell: React.FC<
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {heading ? (
-              <span className="truncate text-sm font-medium text-foreground">
-                {heading}
-              </span>
+              <Reveal
+                text={heading}
+                className="truncate text-sm font-medium text-foreground"
+              />
             ) : (
               <Sk className="h-3.5 w-40" />
             )}
             <Loader2 className={`h-3 w-3 shrink-0 animate-spin ${t.spin}`} />
           </div>
           {sub ? (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{sub}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              <Reveal text={sub} />
+            </p>
           ) : null}
           {loadingSubtext && sub !== loadingSubtext ? (
             <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
-              {loadingSubtext}
+              <Reveal text={loadingSubtext} />
             </p>
           ) : null}
         </div>

@@ -89,6 +89,13 @@ export function flashcardsServerDataFromEnvelope(
     );
   }
 
+  // FIRST-RENDERABLE-UNIT gate (Arman, 2026-08-24): mid-stream, an empty
+  // deck is not a deck — declining the frame keeps the kind's loader up until
+  // the first card face exists, and then the real component takes over and
+  // grows card by card. A COMPLETE set with zero cards is the final truth and
+  // still renders (the component owns its own empty state).
+  if (!setComplete && cards.length === 0) return undefined;
+
   const serverData: FlashcardsBlockData & Record<string, unknown> = {
     cards,
     isComplete: setComplete,

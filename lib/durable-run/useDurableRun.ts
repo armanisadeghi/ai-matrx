@@ -52,6 +52,7 @@ import { removeRequest } from "@/features/agents/redux/execution-system/active-r
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import type { ForeignStreamConsumer } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
+import type { LiveRunProgressItem } from "@/features/agents/components/live-run/LiveRunProgress";
 import { callApi } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -273,6 +274,8 @@ export interface UseDurableRunOptions<TResult> {
     label: string;
     /** Stable window id. */
     instanceId?: string;
+    /** Closing line in the window when the run settles. */
+    completeMessage?: string;
     /**
      * The caller renders the adopted stream ITSELF and the generic floating
      * window must not open.
@@ -645,14 +648,75 @@ export function useDurableRun<TResult>(
   // block above the surface's own content, and never a spinner. No-op when the
   // caller did not ask for live output (`active` stays false).
   const running = state.status === "running" || state.status === "rejoining";
+  const settled = state.status === "done" || state.status === "error";
+
+  // 🚨 THE WINDOW MUST NEVER BE BLANK.
+  //
+  // `LiveRunDisplay` renders STREAMED CONTENT off the requestId. A durable
+  // pipeline emits typed progress events and (usually) no assistant text at
+  // all, so binding only a requestId gives the user a titled, EMPTY white box
+  // for the whole run — and it stays empty after the run settles, because
+  // there was never any content to render. That is what "I click play and get
+  // a blank window that never renders anything" was: not a hang, not a lost
+  // stream, just a window with nothing wired to its body.
+  //
+  // Every durable run already narrates itself (`state.stages`), so the stages
+  // ARE the content. Feeding them in as progress makes the window show the run
+  // instead of a void — for every surface on this hook, not just the one that
+  // reported it.
+  const progress = (() => {
+    if (!options.live || options.live.surfaceOwnsDisplay === true) return null;
+    if (!running && !settled) return null;
+    const seen = new Set<string>();
+    const items = state.stages
+      .filter((line) => {
+        if (seen.has(line)) return false;
+        seen.add(line);
+        return true;
+      })
+      .map<LiveRunProgressItem>((line, index, all) => ({
+        id: `stage-${index}`,
+        label: line,
+        status: index < all.length - 1 || settled ? "completed" : "running",
+      }));
+    if (state.status === "error") {
+      items.push({
+        id: "stage-error",
+        label: state.error ?? "The run failed.",
+        status: "failed" as const,
+      });
+    } else if (state.status === "done") {
+      items.push({
+        id: "stage-done",
+        label: options.live.completeMessage ?? "Finished.",
+        status: "completed" as const,
+      });
+    } else if (items.length === 0) {
+      // Before the first server stage lands the window still says something.
+      items.push({
+        id: "stage-connecting",
+        label: state.stage ?? "Starting…",
+        status: "running" as const,
+      });
+    }
+    return {
+      title: options.live.label ?? "AI is working",
+      ...(state.rejoinedTarget ? { description: state.rejoinedTarget } : {}),
+      items,
+    };
+  })();
+
   useFloatingLiveRun({
+    // The window stays bound after the run settles so the finished narration —
+    // and any failure reason — survives on screen. It is user-dismissed.
     active:
       Boolean(options.live) &&
       options.live?.surfaceOwnsDisplay !== true &&
-      running,
+      (running || settled),
     instanceId: options.live?.instanceId ?? `durable-run:${options.key}`,
     requestId: state.requestId,
     label: state.stage ?? options.live?.label ?? "AI is working",
+    progress,
   });
 
   return {
