@@ -1,0 +1,29 @@
+{
+  "source": "aidream packages/matrx-graph/matrx_graph/content_ir/directives.py",
+  "reserved_prefix": "directive_v",
+  "directive_version": 1,
+  "classes": [
+    "reference",
+    "view",
+    "create",
+    "update",
+    "delete",
+    "action",
+    "validation",
+    "secret"
+  ],
+  "capability_by_class": {
+    "reference": "pure",
+    "view": "pure",
+    "validation": "pure",
+    "secret": "sensitive",
+    "create": "side_effect",
+    "update": "side_effect",
+    "delete": "side_effect",
+    "action": "side_effect"
+  },
+  "in_content_classes": [
+    "reference",
+    "secret"
+  ]
+}
