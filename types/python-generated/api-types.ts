@@ -53580,6 +53580,12 @@ export interface components {
              * @default false
              */
             include_raw?: boolean;
+            /**
+             * Synthesize
+             * @description Also write a REAL grounded answer over these hits and return it as `rag_synthesize_result`, so `citations` can be shown as openable sources rather than asserted. OFF by default because it spends model tokens — a demo route that spends money on every load is a spend surface.
+             * @default false
+             */
+            synthesize?: boolean;
         };
         /** RankKindsRequest */
         RankKindsRequest: {

@@ -138472,6 +138472,12 @@
             "title": "Include Raw",
             "description": "Also stream the raw engine hits (the second projection). Off by default.",
             "default": false
+          },
+          "synthesize": {
+            "type": "boolean",
+            "title": "Synthesize",
+            "description": "Also write a REAL grounded answer over these hits and return it as `rag_synthesize_result`, so `citations` can be shown as openable sources rather than asserted. OFF by default because it spends model tokens — a demo route that spends money on every load is a spend surface.",
+            "default": false
           }
         },
         "type": "object",
