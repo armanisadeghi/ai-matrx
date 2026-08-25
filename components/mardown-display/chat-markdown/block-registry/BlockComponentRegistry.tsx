@@ -88,6 +88,18 @@ import {
   SeoRankTargetBlock as SeoRankTargetBlockImpl,
   SeoRankTargetRemovalBlock as SeoRankTargetRemovalBlockImpl,
 } from "../../blocks/rank-kinds/target-blocks";
+// RAG retrieval + citation kind family (RAG Kinds Run). `source_ref` is a
+// SYSTEM-WIDE primitive — the platform's cited-source shape — and is nested by
+// every other family that says "here is where this came from". The chunk
+// component adapts to `RagHitView` and renders the ONE canonical
+// `RagHitCard`; it draws no card of its own.
+import SourceRefBlockImpl from "../../blocks/rag-kinds/SourceRefBlock";
+import { RetrievedChunkBlock as RetrievedChunkBlockImpl } from "../../blocks/rag-kinds/RetrievedChunkBlock";
+import {
+  RagSearchResultBlock as RagSearchResultBlockImpl,
+  RagCrossDocSearchResultBlock as RagCrossDocSearchResultBlockImpl,
+  RagSynthesizeResultBlock as RagSynthesizeResultBlockImpl,
+} from "../../blocks/rag-kinds/collection-blocks";
 import {
   RatingBlock as RatingBlockImpl,
   OpeningHoursBlock as OpeningHoursBlockImpl,
@@ -688,6 +700,40 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <SeoRankTargetRemovalBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  // RAG retrieval + citation kind family (RAG Kinds Run).
+  SourceRefBlock: (props: React.ComponentProps<typeof SourceRefBlockImpl>) => (
+    <LazyBlockWrapper>
+      <SourceRefBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  RetrievedChunkBlock: (
+    props: React.ComponentProps<typeof RetrievedChunkBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <RetrievedChunkBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  RagSearchResultBlock: (
+    props: React.ComponentProps<typeof RagSearchResultBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <RagSearchResultBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  RagCrossDocSearchResultBlock: (
+    props: React.ComponentProps<typeof RagCrossDocSearchResultBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <RagCrossDocSearchResultBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  RagSynthesizeResultBlock: (
+    props: React.ComponentProps<typeof RagSynthesizeResultBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <RagSynthesizeResultBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
   RatingBlock: (props: React.ComponentProps<typeof RatingBlockImpl>) => (

@@ -370,6 +370,15 @@ export function isBlockLoading(block: {
  *    family: `serp_placement.result` is a union over the SHIPPED search item
  *    kinds above, and its component delegates straight through the search
  *    family's seam rather than re-drawing any of them.
+ *  - `source_ref` + `retrieved_chunk` + `rag_search_result` +
+ *    `rag_cross_doc_search_result` + `rag_synthesize_result` — the RAG
+ *    retrieval + citation family (RAG Kinds Run), produced ONLY by
+ *    `applyIrKindRoute`'s compiled-bridge flips (`__kind` JSON arrival only —
+ *    no tag/fence surface). `source_ref` is a SYSTEM-WIDE primitive, not a RAG
+ *    kind: it is the platform's cited-source shape and renders in two postures
+ *    from ONE component (a standalone card, and the shared `CitationChip`
+ *    inline). `retrieved_chunk` adapts to `RagHitView` and renders the
+ *    canonical `RagHitCard` rather than drawing a fourth hit card.
  */
 export type FeSynthesizedBlockType =
   | "media_block"
@@ -439,6 +448,11 @@ export type FeSynthesizedBlockType =
   | "seo_rank_portfolio"
   | "seo_rank_target_removal"
   | "provider_run_receipt"
+  | "source_ref"
+  | "retrieved_chunk"
+  | "rag_search_result"
+  | "rag_cross_doc_search_result"
+  | "rag_synthesize_result"
   | "web_analysis_item"
   | "flow_step_result"
   | "collection_result"
@@ -580,6 +594,11 @@ export type ShapeBlockType =
   | "seo_rank_portfolio"
   | "seo_rank_target_removal"
   | "provider_run_receipt"
+  | "source_ref"
+  | "retrieved_chunk"
+  | "rag_search_result"
+  | "rag_cross_doc_search_result"
+  | "rag_synthesize_result"
   | "chart"
   | "map"
   | "stats"
@@ -2058,6 +2077,21 @@ const SHAPE_BLOCK_DISPATCH = {
     BlockComponents.SeoRankTargetRemovalBlock,
   ),
   provider_run_receipt: searchKindEntry(BlockComponents.ProviderRunReceiptBlock),
+
+  // Kind-routed RAG retrieval + citation family (RAG Kinds Run): identical
+  // uniform `{ value, isComplete }` bridge, so the SAME three-branch entry
+  // serves it too. `source_ref` dispatched standalone renders its CARD
+  // posture; the inline chip posture is reached only from a parent kind
+  // through `RagKindNested`, never from this table.
+  source_ref: searchKindEntry(BlockComponents.SourceRefBlock),
+  retrieved_chunk: searchKindEntry(BlockComponents.RetrievedChunkBlock),
+  rag_search_result: searchKindEntry(BlockComponents.RagSearchResultBlock),
+  rag_cross_doc_search_result: searchKindEntry(
+    BlockComponents.RagCrossDocSearchResultBlock,
+  ),
+  rag_synthesize_result: searchKindEntry(
+    BlockComponents.RagSynthesizeResultBlock,
+  ),
 
   // NOTE: like `table` — normally consumed by the unified artifact stage
   // (TranscriptArtifact); preserved legacy path below.

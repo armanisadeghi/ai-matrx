@@ -163,6 +163,14 @@ describe("compiled bootstrap (system-components)", () => {
       seo_rank_portfolio: "seo_rank_portfolio",
       seo_rank_target_removal: "seo_rank_target_removal",
       provider_run_receipt: "provider_run_receipt",
+      // RAG retrieval + citation family (RAG Kinds Run). `source_ref` is a
+      // SYSTEM-WIDE primitive, not a RAG kind — the platform's cited-source
+      // shape, nested by every family that says where something came from.
+      source_ref: "source_ref",
+      retrieved_chunk: "retrieved_chunk",
+      rag_search_result: "rag_search_result",
+      rag_cross_doc_search_result: "rag_cross_doc_search_result",
+      rag_synthesize_result: "rag_synthesize_result",
     }));
   });
 });

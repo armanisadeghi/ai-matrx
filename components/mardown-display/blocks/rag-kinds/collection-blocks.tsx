@@ -105,9 +105,10 @@ export function RagSearchResultBlock({ serverData, className }: RagBlockProps) {
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex flex-wrap items-center gap-2">
-        <SectionHeading icon={Search}>
-          {query ? `Knowledge base — “${query}”` : "Knowledge base search"}
-        </SectionHeading>
+        <SectionHeading
+          icon={Search}
+          label={query ? `Knowledge base — “${query}”` : "Knowledge base search"}
+        />
         <RagChip title="Passages returned">
           {hits.length} {hits.length === 1 ? "passage" : "passages"}
         </RagChip>
@@ -154,9 +155,14 @@ export function RagCrossDocSearchResultBlock({ serverData, className }: RagBlock
     <div className={cn("space-y-4", className)}>
       <section className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <SectionHeading icon={BookOpenText}>
-            {libraryQuery ? `Curated library — “${libraryQuery}”` : "Curated library"}
-          </SectionHeading>
+          <SectionHeading
+            icon={BookOpenText}
+            label={
+              libraryQuery
+                ? `Curated library — “${libraryQuery}”`
+                : "Curated library"
+            }
+          />
           <RagChip>{libraryHits.length}</RagChip>
         </div>
         <RetrievalDiagnosticsPanel
@@ -172,9 +178,14 @@ export function RagCrossDocSearchResultBlock({ serverData, className }: RagBlock
 
       <section className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <SectionHeading icon={Layers}>
-            {caseQuery ? `Your own documents — “${caseQuery}”` : "Your own documents"}
-          </SectionHeading>
+          <SectionHeading
+            icon={Layers}
+            label={
+              caseQuery
+                ? `Your own documents — “${caseQuery}”`
+                : "Your own documents"
+            }
+          />
           <RagChip>{caseHits.length}</RagChip>
         </div>
         <RetrievalDiagnosticsPanel
@@ -256,9 +267,10 @@ export function RagSynthesizeResultBlock({ serverData, className }: RagBlockProp
 
       {citations.length > 0 && (
         <div className="space-y-1.5">
-          <SectionHeading icon={BookOpenText}>
-            Sources this answer stands on
-          </SectionHeading>
+          <SectionHeading
+            icon={BookOpenText}
+            label="Sources this answer stands on"
+          />
           <div className="space-y-1.5">
             {citations.map((citation, index) => (
               <RagKindNested
