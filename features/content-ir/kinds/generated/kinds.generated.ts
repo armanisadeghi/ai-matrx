@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "b72a3b68db64";
+export const KIND_REGISTRY_FINGERPRINT = "06be359a5c15";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5644,7 +5644,7 @@ export interface BatchedListResult {
 }
 
 /**
- * Kind `blog_post_outline` (registry v6).
+ * Kind `blog_post_outline` (registry v7).
  */
 export interface BlogPostOutline {
   /**
@@ -11539,7 +11539,7 @@ export interface SchemaQcResult {
  * the slug carried at v3. Everything below them is additive and optional, so
  * a consumer written against the old shape keeps working unchanged.
  *  *
- *  * Kind `scraped_page` (registry v5).
+ *  * Kind `scraped_page` (registry v6).
  */
 export interface ScrapedPage {
   /**

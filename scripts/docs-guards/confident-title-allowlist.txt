@@ -27,3 +27,6 @@ docs/MARKETING_PROGRAM_BOARD.md
 # False positive: the one-liner describes "canonical CRM/chat linkage" — the
 # platform's canonical-relationship concept — not a claim that the doc is canonical.
 docs/db_rebuild/proposals/communications_p0_foundation.md
+# Byte-identical protocol mirror whose authority is declared by the producer;
+# check:protocol-sync:strict verifies that this consumer copy has not drifted.
+docs/protocol/KIND_DIRECTIVES.md
