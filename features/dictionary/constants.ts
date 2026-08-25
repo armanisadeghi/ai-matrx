@@ -7,8 +7,8 @@ import type { DictLevel } from "@/features/dictionary/types";
 /**
  * The Mandate behind every "Ask assistant" button — resolved at launch
  * (`launchMandate` / `useMandate`), never a frozen agent id. The system default
- * is the factory-built Dictionary Assistant (aidream
- * `internal_agents/dictionary_assistant.md`); users rebind at `/agents/mandates`.
+ * is the Dictionary Assistant (the live DB agent is the sole authority —
+ * the .md spec system was deleted 2026-08-25); users rebind at `/agents/mandates`.
  * The discoverable global shortcut + the two skills it uses live in the DB.
  */
 export const DICTIONARY_ASSISTANT_MANDATE_KEY = "dictionary.workspace_guide";
