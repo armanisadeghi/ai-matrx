@@ -25,7 +25,21 @@ const OUT = resolve(ROOT, "features/matrx-envelope/catalog-nouns.generated.ts");
 const catalog = JSON.parse(readFileSync(MANIFEST, "utf-8"));
 
 const nouns = {};
+/**
+ * THE AUTO-VIEW's display table (KD4): the human label + family for EVERY
+ * catalogued noun, not just the plain-id ones. The prefix floor names a shape
+ * the frontend has never heard of, and it must name it the way the catalog
+ * does — "Agent · Agents", never the raw `agent` token — or the routing
+ * language gets a view for free and a legible name never.
+ *
+ * Two short strings per noun; the schemas (which are what made this manifest
+ * heavy enough to matter for build memory) are deliberately NOT carried.
+ */
+const display = {};
 for (const n of catalog.nouns) {
+  const label = (n.label ?? "").trim();
+  const family = (n.family ?? "").trim();
+  if (label || family) display[n.noun] = { label, family };
   const ids = n.identity_fields ?? [];
   if (!n.table || ids.length !== 1 || ids[0] !== "id") continue;
   nouns[n.noun] = { table: n.table, title_column: n.title_column ?? null };
@@ -47,11 +61,25 @@ export interface CatalogNounEntry {
 
 export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = ${JSON.stringify(nouns, null, 1)} as const;
 
+export interface CatalogNounDisplay {
+  /** The catalog's human label ("Agent"). Empty when the server has none. */
+  label: string;
+  /** The catalog family ("Agents"). Empty when the server has none. */
+  family: string;
+}
+
+/**
+ * Every catalogued noun's display identity — what THE AUTO-VIEW names a shape
+ * with when no custom renderer claims it. Read through
+ * \`features/content-ir/directives/nounDisplay.ts\`, never directly.
+ */
+export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = ${JSON.stringify(display, null, 1)} as const;
+
 /** Legacy wire noun → canonical entity token (server-published). */
 export const CATALOG_ALIASES: Record<string, string> = ${JSON.stringify(catalog.aliases ?? {}, null, 1)} as const;
 `;
 
 writeFileSync(OUT, body, "utf-8");
 console.log(
-  `wrote features/matrx-envelope/catalog-nouns.generated.ts (${Object.keys(nouns).length} plain-id nouns of ${catalog.nouns.length})`,
+  `wrote features/matrx-envelope/catalog-nouns.generated.ts (${Object.keys(nouns).length} plain-id nouns + ${Object.keys(display).length} display entries of ${catalog.nouns.length})`,
 );

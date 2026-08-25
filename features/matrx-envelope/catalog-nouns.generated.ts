@@ -435,6 +435,1785 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  }
 } as const;
 
+export interface CatalogNounDisplay {
+  /** The catalog's human label ("Agent"). Empty when the server has none. */
+  label: string;
+  /** The catalog family ("Agents"). Empty when the server has none. */
+  family: string;
+}
+
+/**
+ * Every catalogued noun's display identity — what THE AUTO-VIEW names a shape
+ * with when no custom renderer claims it. Read through
+ * `features/content-ir/directives/nounDisplay.ts`, never directly.
+ */
+export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
+ "agent": {
+  "label": "Agent",
+  "family": "Agents"
+ },
+ "agent_definition_version": {
+  "label": "Agent Definition Version",
+  "family": "Agents"
+ },
+ "agent_drift_alert": {
+  "label": "Agent Drift Alert",
+  "family": "Agents"
+ },
+ "agent_shortcut": {
+  "label": "Agent Shortcut",
+  "family": "Agents"
+ },
+ "agent_surface_binding": {
+  "label": "Agent Surface Binding",
+  "family": "Agents"
+ },
+ "agent_template": {
+  "label": "Agent Template",
+  "family": "Agents"
+ },
+ "agent_usage": {
+  "label": "Agent Usage",
+  "family": "Agents"
+ },
+ "app": {
+  "label": "App",
+  "family": "Apps"
+ },
+ "app_definition_version": {
+  "label": "App Definition Version",
+  "family": "Apps"
+ },
+ "app_error": {
+  "label": "App Error",
+  "family": "Apps"
+ },
+ "app_execution": {
+  "label": "App Execution",
+  "family": "Apps"
+ },
+ "app_rate_limit": {
+  "label": "App Rate Limit",
+  "family": "Apps"
+ },
+ "cx_agent_memory": {
+  "label": "Agent Memory",
+  "family": "Conversations"
+ },
+ "cx_agent_plan": {
+  "label": "Agent Plan",
+  "family": "Conversations"
+ },
+ "cx_agent_task": {
+  "label": "Agent Task",
+  "family": "Conversations"
+ },
+ "cx_code_edit": {
+  "label": "Code Edit",
+  "family": "Conversations"
+ },
+ "cx_code_message_file": {
+  "label": "Code Message File",
+  "family": "Conversations"
+ },
+ "cx_media": {
+  "label": "Media",
+  "family": "Conversations"
+ },
+ "cx_observational_memory": {
+  "label": "Observational Memory",
+  "family": "Conversations"
+ },
+ "cx_observational_memory_event": {
+  "label": "Observational Memory Event",
+  "family": "Conversations"
+ },
+ "cx_pending_injection": {
+  "label": "Pending Injection",
+  "family": "Conversations"
+ },
+ "cx_request": {
+  "label": "Conversation Request",
+  "family": "Conversations"
+ },
+ "cx_request_snapshot": {
+  "label": "Request Snapshot",
+  "family": "Conversations"
+ },
+ "cx_tool_trace": {
+  "label": "Tool Trace",
+  "family": "Conversations"
+ },
+ "cx_user_request": {
+  "label": "User Request",
+  "family": "Conversations"
+ },
+ "cx_user_todo": {
+  "label": "User Todo",
+  "family": "Conversations"
+ },
+ "working_document": {
+  "label": "Working Documents",
+  "family": "Conversations"
+ },
+ "rulebook": {
+  "label": "Rulebook",
+  "family": "Knowledge"
+ },
+ "masterwork_run": {
+  "label": "Masterwork Run",
+  "family": "Masterwork"
+ },
+ "conversation": {
+  "label": "Conversation",
+  "family": "Outputs"
+ },
+ "skill": {
+  "label": "Skill",
+  "family": "Skills"
+ },
+ "skill_render_definition": {
+  "label": "Skill Render Definition",
+  "family": "Skills"
+ },
+ "file": {
+  "label": "File",
+  "family": "Sources"
+ },
+ "file_version": {
+  "label": "File Version",
+  "family": "Sources"
+ },
+ "folder": {
+  "label": "Folder",
+  "family": "Sources"
+ },
+ "transcript": {
+  "label": "Transcript",
+  "family": "Sources"
+ },
+ "note": {
+  "label": "Note",
+  "family": "Sources & Outputs"
+ },
+ "access_request": {
+  "label": "Access Request",
+  "family": "System"
+ },
+ "tool": {
+  "label": "Tool",
+  "family": "Tools"
+ },
+ "tool_bundle": {
+  "label": "Tool Bundle",
+  "family": "Tools"
+ },
+ "tool_definition_version": {
+  "label": "Tool Definition Version",
+  "family": "Tools"
+ },
+ "tool_test_sample": {
+  "label": "Tool Test Sample",
+  "family": "Tools"
+ },
+ "tool_ui": {
+  "label": "Tool UI",
+  "family": "Tools"
+ },
+ "tool_ui_incident": {
+  "label": "Tool UI Incident",
+  "family": "Tools"
+ },
+ "tool_ui_version": {
+  "label": "Tool UI Version",
+  "family": "Tools"
+ },
+ "project": {
+  "label": "Project",
+  "family": "Workspaces"
+ },
+ "task": {
+  "label": "Task",
+  "family": "Workspaces"
+ },
+ "feature_doc": {
+  "label": "Feature Doc",
+  "family": "documentation"
+ },
+ "growth_loop_event": {
+  "label": "Growth Loop Event",
+  "family": "marketing"
+ },
+ "growth_loop_stage_run": {
+  "label": "Growth Loop Stage Run",
+  "family": "marketing"
+ },
+ "plan_cms_fill_item": {
+  "label": "CMS Fill Item",
+  "family": "marketing"
+ },
+ "plan_cms_fill_job": {
+  "label": "CMS Fill Job",
+  "family": "marketing"
+ },
+ "seo_ai_visibility_citation": {
+  "label": "AI Visibility Citation",
+  "family": "marketing"
+ },
+ "seo_ai_visibility_claim": {
+  "label": "AI Visibility Claim",
+  "family": "marketing"
+ },
+ "seo_ai_visibility_response": {
+  "label": "AI Visibility Response",
+  "family": "marketing"
+ },
+ "seo_ai_visibility_signal": {
+  "label": "AI Visibility Signal",
+  "family": "marketing"
+ },
+ "seo_backlink": {
+  "label": "SEO Backlink",
+  "family": "marketing"
+ },
+ "seo_backlink_dimension_snapshot": {
+  "label": "Backlink Dimension Snapshot",
+  "family": "marketing"
+ },
+ "seo_backlink_observation": {
+  "label": "Backlink Observation",
+  "family": "marketing"
+ },
+ "seo_backlink_snapshot": {
+  "label": "Backlink Snapshot",
+  "family": "marketing"
+ },
+ "seo_change_assessment": {
+  "label": "SEO Change Assessment",
+  "family": "marketing"
+ },
+ "seo_change_event": {
+  "label": "SEO Change Event",
+  "family": "marketing"
+ },
+ "seo_change_item": {
+  "label": "SEO Change Item",
+  "family": "marketing"
+ },
+ "seo_change_metric": {
+  "label": "SEO Change Metric",
+  "family": "marketing"
+ },
+ "seo_change_theory": {
+  "label": "SEO Change Theory",
+  "family": "marketing"
+ },
+ "seo_competitor": {
+  "label": "SEO Competitor",
+  "family": "marketing"
+ },
+ "seo_competitor_observation": {
+  "label": "Competitor Observation",
+  "family": "marketing"
+ },
+ "seo_competitor_opportunity": {
+  "label": "Competitor Opportunity",
+  "family": "marketing"
+ },
+ "seo_gsc_dig_rule": {
+  "label": "GSC Dig Rule",
+  "family": "marketing"
+ },
+ "seo_keyword_class_rule": {
+  "label": "Keyword Class Rule",
+  "family": "marketing"
+ },
+ "seo_keyword_market_observation": {
+  "label": "Keyword Market Observation",
+  "family": "marketing"
+ },
+ "seo_landscape_brief": {
+  "label": "Competitive Landscape Brief",
+  "family": "marketing"
+ },
+ "seo_link_gap_domain": {
+  "label": "Link Gap Domain",
+  "family": "marketing"
+ },
+ "seo_link_gap_match": {
+  "label": "Link Gap Match",
+  "family": "marketing"
+ },
+ "seo_page_performance": {
+  "label": "Page Performance",
+  "family": "marketing"
+ },
+ "seo_provider_call": {
+  "label": "SEO Provider Call",
+  "family": "marketing"
+ },
+ "seo_provider_task": {
+  "label": "SEO Provider Task",
+  "family": "marketing"
+ },
+ "seo_rank_observation": {
+  "label": "Rank Observation",
+  "family": "marketing"
+ },
+ "seo_raw_payload": {
+  "label": "SEO Raw Payload",
+  "family": "marketing"
+ },
+ "seo_referring_domain_profile": {
+  "label": "Referring Domain Profile",
+  "family": "marketing"
+ },
+ "seo_reputation_case": {
+  "label": "Reputation Case",
+  "family": "marketing"
+ },
+ "seo_search_performance_daily": {
+  "label": "Search Performance Daily",
+  "family": "marketing"
+ },
+ "seo_serp_result": {
+  "label": "SERP Result",
+  "family": "marketing"
+ },
+ "seo_serp_snapshot": {
+  "label": "SERP Snapshot",
+  "family": "marketing"
+ },
+ "seo_web_analytics_daily": {
+  "label": "Web Analytics Daily",
+  "family": "marketing"
+ },
+ "assist": {
+  "label": "Assist",
+  "family": "platform"
+ },
+ "research_context_bundle": {
+  "label": "Research Context Bundle",
+  "family": "research"
+ },
+ "seo_change_set": {
+  "label": "SEO Change",
+  "family": "seo"
+ },
+ "seo_collection_run": {
+  "label": "SEO Collection Run",
+  "family": "seo"
+ },
+ "seo_keyword": {
+  "label": "SEO Keyword",
+  "family": "seo"
+ },
+ "seo_keyword_edge": {
+  "label": "Keyword Edge",
+  "family": "seo"
+ },
+ "seo_keyword_market": {
+  "label": "Keyword Market Data",
+  "family": "seo"
+ },
+ "seo_keyword_topic": {
+  "label": "Keyword Topic Assignment",
+  "family": "seo"
+ },
+ "seo_rank_target": {
+  "label": "SEO Rank Target",
+  "family": "seo"
+ },
+ "seo_site_keyword_value": {
+  "label": "Site Keyword Value",
+  "family": "seo"
+ },
+ "seo_site_topic_value": {
+  "label": "Site Topic Value",
+  "family": "seo"
+ },
+ "seo_topic": {
+  "label": "SEO Topic",
+  "family": "seo"
+ },
+ "activity": {
+  "label": "Activity Log Entry",
+  "family": "Other"
+ },
+ "agent_card": {
+  "label": "Agent Card",
+  "family": "Other"
+ },
+ "agent_provision": {
+  "label": "Mandate Provision",
+  "family": "Other"
+ },
+ "agent_run": {
+  "label": "Agent Run",
+  "family": "Other"
+ },
+ "agent_run_stage": {
+  "label": "Agent Run Stage",
+  "family": "Other"
+ },
+ "ai_api": {
+  "label": "AI API",
+  "family": "Other"
+ },
+ "ai_endpoint": {
+  "label": "AI Endpoint",
+  "family": "Other"
+ },
+ "ai_model": {
+  "label": "AI Model",
+  "family": "Other"
+ },
+ "ai_model_alias": {
+  "label": "AI Model Alias",
+  "family": "Other"
+ },
+ "ai_offering": {
+  "label": "AI Offering",
+  "family": "Other"
+ },
+ "ai_provider": {
+  "label": "AI Provider",
+  "family": "Other"
+ },
+ "ai_setting": {
+  "label": "AI Setting",
+  "family": "Other"
+ },
+ "app_instance": {
+  "label": "App Instance",
+  "family": "Other"
+ },
+ "app_log": {
+  "label": "App Log",
+  "family": "Other"
+ },
+ "app_setting": {
+  "label": "App Setting",
+  "family": "Other"
+ },
+ "app_sync_status": {
+  "label": "App Sync Status",
+  "family": "Other"
+ },
+ "approach": {
+  "label": "Approach",
+  "family": "Other"
+ },
+ "artifact": {
+  "label": "Artifact",
+  "family": "Other"
+ },
+ "assessment": {
+  "label": "Assessment",
+  "family": "Other"
+ },
+ "assessment_item": {
+  "label": "Assessment Item",
+  "family": "Other"
+ },
+ "assessment_result": {
+  "label": "Assessment Result",
+  "family": "Other"
+ },
+ "batch_cost_event": {
+  "label": "Batch Cost Event",
+  "family": "Other"
+ },
+ "batch_provider_batch": {
+  "label": "Provider Batch",
+  "family": "Other"
+ },
+ "batch_work_item": {
+  "label": "Batch Work Item",
+  "family": "Other"
+ },
+ "browser_account_binding": {
+  "label": "Browser Account Binding",
+  "family": "Other"
+ },
+ "browser_action_event": {
+  "label": "Browser Action Event",
+  "family": "Other"
+ },
+ "browser_authenticator_window": {
+  "label": "Browser Authenticator Window",
+  "family": "Other"
+ },
+ "browser_capture": {
+  "label": "Browser Capture",
+  "family": "Other"
+ },
+ "browser_control_request": {
+  "label": "Browser Control Request",
+  "family": "Other"
+ },
+ "browser_handoff": {
+  "label": "Browser Handoff",
+  "family": "Other"
+ },
+ "browser_login_attempt": {
+  "label": "Browser Login Attempt",
+  "family": "Other"
+ },
+ "browser_login_recipe": {
+  "label": "Browser Login Recipe",
+  "family": "Other"
+ },
+ "browser_profile": {
+  "label": "Cloud Browser Profile",
+  "family": "Other"
+ },
+ "browser_profile_checkpoint": {
+  "label": "Browser Profile Checkpoint",
+  "family": "Other"
+ },
+ "browser_run": {
+  "label": "Cloud Browser Run",
+  "family": "Other"
+ },
+ "browser_site_observation": {
+  "label": "Browser Site Observation",
+  "family": "Other"
+ },
+ "browser_site_policy": {
+  "label": "Browser Site Policy",
+  "family": "Other"
+ },
+ "browser_stream_ticket": {
+  "label": "Browser Stream Ticket",
+  "family": "Other"
+ },
+ "canvas_comment": {
+  "label": "Canvas Comment",
+  "family": "Other"
+ },
+ "canvas_comment_like": {
+  "label": "Canvas Comment Like",
+  "family": "Other"
+ },
+ "canvas_item": {
+  "label": "Canvas Item",
+  "family": "Other"
+ },
+ "canvas_item_state": {
+  "label": "Canvas Item State",
+  "family": "Other"
+ },
+ "canvas_like": {
+  "label": "Canvas Like",
+  "family": "Other"
+ },
+ "canvas_score": {
+  "label": "Canvas Score",
+  "family": "Other"
+ },
+ "canvas_view": {
+  "label": "Canvas View",
+  "family": "Other"
+ },
+ "category": {
+  "label": "Category",
+  "family": "Other"
+ },
+ "cmp_entry": {
+  "label": "Comparison Entry",
+  "family": "Other"
+ },
+ "cmp_feedback": {
+  "label": "Comparison Response Feedback",
+  "family": "Other"
+ },
+ "code_file": {
+  "label": "Code File",
+  "family": "Other"
+ },
+ "code_folder": {
+  "label": "Code Folder",
+  "family": "Other"
+ },
+ "code_repository": {
+  "label": "Code Repository",
+  "family": "Other"
+ },
+ "coding_session": {
+  "label": "Coding Session",
+  "family": "Other"
+ },
+ "coding_session_entry": {
+  "label": "Coding Session Entry",
+  "family": "Other"
+ },
+ "comment": {
+  "label": "Comment",
+  "family": "Other"
+ },
+ "comparison_set": {
+  "label": "Comparison Set",
+  "family": "Other"
+ },
+ "contact_medium": {
+  "label": "Contact Medium",
+  "family": "Other"
+ },
+ "contact_submission": {
+  "label": "Contact Submission",
+  "family": "Other"
+ },
+ "content_ir_kind": {
+  "label": "Content-IR Kind",
+  "family": "Other"
+ },
+ "content_ir_kind_component": {
+  "label": "Kind Component",
+  "family": "Other"
+ },
+ "content_ir_kind_component_incident": {
+  "label": "Kind Component Incident",
+  "family": "Other"
+ },
+ "content_ir_kind_conformance": {
+  "label": "Shape Conformance",
+  "family": "Other"
+ },
+ "content_ir_kind_edge": {
+  "label": "Content-IR Kind Edge",
+  "family": "Other"
+ },
+ "content_ir_kind_example": {
+  "label": "Kind Example",
+  "family": "Other"
+ },
+ "content_ir_kind_instance": {
+  "label": "Saved Result",
+  "family": "Other"
+ },
+ "content_ir_kind_surface": {
+  "label": "Kind Surface",
+  "family": "Other"
+ },
+ "context_item": {
+  "label": "Context Item",
+  "family": "Other"
+ },
+ "context_item_suggestion": {
+  "label": "Context Item Suggestion",
+  "family": "Other"
+ },
+ "conversation_value": {
+  "label": "Conversation Value",
+  "family": "Other"
+ },
+ "crm_address": {
+  "label": "Address",
+  "family": "Other"
+ },
+ "crm_affiliation": {
+  "label": "Affiliation",
+  "family": "Other"
+ },
+ "crm_blocklist_entry": {
+  "label": "Blocklist Entry",
+  "family": "Other"
+ },
+ "crm_contact_candidate": {
+  "label": "Contact Candidate",
+  "family": "Other"
+ },
+ "crm_deal": {
+  "label": "Deal",
+  "family": "Other"
+ },
+ "crm_deal_stage_event": {
+  "label": "Deal Stage Event",
+  "family": "Other"
+ },
+ "crm_enrichment_call": {
+  "label": "Enrichment Call",
+  "family": "Other"
+ },
+ "crm_interaction": {
+  "label": "Interaction",
+  "family": "Other"
+ },
+ "crm_merge_candidate": {
+  "label": "Merge Candidate",
+  "family": "Other"
+ },
+ "crm_outreach_list": {
+  "label": "Outreach List",
+  "family": "Other"
+ },
+ "crm_outreach_list_member": {
+  "label": "Outreach List Member",
+  "family": "Other"
+ },
+ "crm_party_merge": {
+  "label": "Party Merge",
+  "family": "Other"
+ },
+ "crm_registry_ingest_run": {
+  "label": "Registry Ingest Run",
+  "family": "Other"
+ },
+ "crm_registry_source": {
+  "label": "Registry Source",
+  "family": "Other"
+ },
+ "crm_saved_view": {
+  "label": "Smart View",
+  "family": "Other"
+ },
+ "crm_sending_event": {
+  "label": "Sending Event",
+  "family": "Other"
+ },
+ "crm_sending_identity": {
+  "label": "Sending Identity",
+  "family": "Other"
+ },
+ "crm_sending_identity_check": {
+  "label": "Sending Check",
+  "family": "Other"
+ },
+ "crm_sending_policy": {
+  "label": "Sending Policy",
+  "family": "Other"
+ },
+ "data_store": {
+  "label": "Data Store",
+  "family": "Other"
+ },
+ "dataset": {
+  "label": "Dataset",
+  "family": "Other"
+ },
+ "derive_run": {
+  "label": "Derive Run",
+  "family": "Other"
+ },
+ "dict_setting": {
+  "label": "Dict Setting",
+  "family": "Other"
+ },
+ "dm_conversation": {
+  "label": "Direct Conversation",
+  "family": "Other"
+ },
+ "dm_message": {
+  "label": "Direct Message",
+  "family": "Other"
+ },
+ "dm_participant": {
+  "label": "DM Conversation Participant",
+  "family": "Other"
+ },
+ "domain_classification": {
+  "label": "Domain Classification",
+  "family": "Other"
+ },
+ "fc_card": {
+  "label": "Flashcard",
+  "family": "Other"
+ },
+ "fc_detail": {
+  "label": "Flashcard Detail",
+  "family": "Other"
+ },
+ "fc_set": {
+  "label": "Flashcard Set",
+  "family": "Other"
+ },
+ "file_analysis": {
+  "label": "File Analysis",
+  "family": "Other"
+ },
+ "file_entities": {
+  "label": "Extracted Term",
+  "family": "Other"
+ },
+ "file_overrides": {
+  "label": "File Override",
+  "family": "Other"
+ },
+ "file_page_annotations": {
+  "label": "Page Annotation",
+  "family": "Other"
+ },
+ "file_pages": {
+  "label": "File Page",
+  "family": "Other"
+ },
+ "flexible_data": {
+  "label": "Flexible Data",
+  "family": "Other"
+ },
+ "game_badge": {
+  "label": "Game Badge",
+  "family": "Other"
+ },
+ "game_result": {
+  "label": "Game Result",
+  "family": "Other"
+ },
+ "game_room": {
+  "label": "Game Room",
+  "family": "Other"
+ },
+ "global_execution": {
+  "label": "Runtime Execution",
+  "family": "Other"
+ },
+ "global_execution_checkpoint": {
+  "label": "Runtime Checkpoint",
+  "family": "Other"
+ },
+ "global_execution_event": {
+  "label": "Runtime Event",
+  "family": "Other"
+ },
+ "global_meter_entry": {
+  "label": "Runtime Meter Entry",
+  "family": "Other"
+ },
+ "global_origin": {
+  "label": "Runtime Origin",
+  "family": "Other"
+ },
+ "global_request": {
+  "label": "Runtime Request",
+  "family": "Other"
+ },
+ "growth_loop_run": {
+  "label": "Growth Loop Run",
+  "family": "Other"
+ },
+ "guided_checklist_run": {
+  "label": "Guided Checklist Run",
+  "family": "Other"
+ },
+ "heatmap_save": {
+  "label": "Heatmap Save",
+  "family": "Other"
+ },
+ "hindsight_enrollment": {
+  "label": "Hindsight Enrollment",
+  "family": "Other"
+ },
+ "hindsight_finding": {
+  "label": "Hindsight Finding",
+  "family": "Other"
+ },
+ "hindsight_regression_case": {
+  "label": "Regression Case",
+  "family": "Other"
+ },
+ "hindsight_replay": {
+  "label": "Hindsight Replay",
+  "family": "Other"
+ },
+ "hindsight_replay_step": {
+  "label": "Wire Replay Step",
+  "family": "Other"
+ },
+ "hindsight_review": {
+  "label": "Hindsight Review",
+  "family": "Other"
+ },
+ "industry_curator": {
+  "label": "Industry Curator",
+  "family": "Other"
+ },
+ "interview_document_revision": {
+  "label": "Interview Document Revision",
+  "family": "Other"
+ },
+ "interview_hole": {
+  "label": "Interview Adversary Hole",
+  "family": "Other"
+ },
+ "interview_question": {
+  "label": "Interview Open Question",
+  "family": "Other"
+ },
+ "interview_session": {
+  "label": "Vision Interview Session",
+  "family": "Other"
+ },
+ "interview_turn": {
+  "label": "Interview Turn",
+  "family": "Other"
+ },
+ "invitation": {
+  "label": "Invitation",
+  "family": "Other"
+ },
+ "invitation_code": {
+  "label": "Invitation Code",
+  "family": "Other"
+ },
+ "invitation_request": {
+  "label": "Invitation Request",
+  "family": "Other"
+ },
+ "item_mastery": {
+  "label": "Item Mastery",
+  "family": "Other"
+ },
+ "judge_verdict": {
+  "label": "Judge Verdict",
+  "family": "Other"
+ },
+ "kg_alert": {
+  "label": "KG Alert",
+  "family": "Other"
+ },
+ "kg_suggestion_ack": {
+  "label": "KG Suggestion Ack",
+  "family": "Other"
+ },
+ "kg_sweep_queue": {
+  "label": "KG Sweep Queue",
+  "family": "Other"
+ },
+ "kg_sweep_run": {
+  "label": "KG Sweep Run",
+  "family": "Other"
+ },
+ "kg_sweep_state": {
+  "label": "KG Sweep State",
+  "family": "Other"
+ },
+ "kg_value_match": {
+  "label": "KG Value Match",
+  "family": "Other"
+ },
+ "league_membership": {
+  "label": "League Membership",
+  "family": "Other"
+ },
+ "learn_doc": {
+  "label": "Study Guide",
+  "family": "Other"
+ },
+ "library_doc": {
+  "label": "Library Document",
+  "family": "Other"
+ },
+ "mandate": {
+  "label": "Mandate",
+  "family": "Other"
+ },
+ "mandate_binding": {
+  "label": "Mandate Binding",
+  "family": "Other"
+ },
+ "mandate_exemplar": {
+  "label": "Mandate Exemplar",
+  "family": "Other"
+ },
+ "marketing_initiative": {
+  "label": "Initiative",
+  "family": "Other"
+ },
+ "masterwork_corpus_item": {
+  "label": "Masterwork Corpus Piece",
+  "family": "Other"
+ },
+ "membership": {
+  "label": "Membership",
+  "family": "Other"
+ },
+ "message": {
+  "label": "Message",
+  "family": "Other"
+ },
+ "message_template": {
+  "label": "Message Template",
+  "family": "Other"
+ },
+ "ner_shadow": {
+  "label": "NER Shadow",
+  "family": "Other"
+ },
+ "note_folder": {
+  "label": "Note Folder",
+  "family": "Other"
+ },
+ "ops_issue_event": {
+  "label": "Ops Issue Event",
+  "family": "Other"
+ },
+ "organization": {
+  "label": "Organization",
+  "family": "Other"
+ },
+ "output_feedback": {
+  "label": "Output Feedback",
+  "family": "Other"
+ },
+ "page_extraction_job": {
+  "label": "Extraction Dataset",
+  "family": "Other"
+ },
+ "page_extraction_page_run": {
+  "label": "Page Extraction Page Run",
+  "family": "Other"
+ },
+ "party": {
+  "label": "Entity",
+  "family": "Other"
+ },
+ "party_contact_point": {
+  "label": "Contact Point",
+  "family": "Other"
+ },
+ "pc_article": {
+  "label": "Podcast Article",
+  "family": "Other"
+ },
+ "pc_episode": {
+  "label": "Podcast Episode",
+  "family": "Other"
+ },
+ "pc_show": {
+  "label": "Podcast Show",
+  "family": "Other"
+ },
+ "pc_studio_run": {
+  "label": "Podcast Studio Run",
+  "family": "Other"
+ },
+ "pc_studio_run_asset": {
+  "label": "Podcast Studio Run Asset",
+  "family": "Other"
+ },
+ "pdf_redaction_audit": {
+  "label": "PDF Redaction Audit",
+  "family": "Other"
+ },
+ "plan_entity": {
+  "label": "Plan Entity",
+  "family": "Other"
+ },
+ "plan_node": {
+  "label": "Plan Node",
+  "family": "Other"
+ },
+ "plan_node_artifact": {
+  "label": "Plan Node Artifact",
+  "family": "Other"
+ },
+ "plan_node_step": {
+  "label": "Plan Node Step",
+  "family": "Other"
+ },
+ "plan_profile": {
+  "label": "Plan Vertical Profile",
+  "family": "Other"
+ },
+ "platform_outcome_event": {
+  "label": "Outcome Event",
+  "family": "Other"
+ },
+ "podcast_race": {
+  "label": "Podcast Race Episode",
+  "family": "Other"
+ },
+ "processed_document": {
+  "label": "Processed document",
+  "family": "Other"
+ },
+ "processed_document_page": {
+  "label": "Processed document page",
+  "family": "Other"
+ },
+ "purpose": {
+  "label": "Purpose",
+  "family": "Other"
+ },
+ "quiz_session": {
+  "label": "Quiz Session",
+  "family": "Other"
+ },
+ "rag_ingest_run": {
+  "label": "Ingest Run",
+  "family": "Other"
+ },
+ "redaction_mapping": {
+  "label": "Redaction Mapping",
+  "family": "Other"
+ },
+ "research_analysis": {
+  "label": "Research Analysis",
+  "family": "Other"
+ },
+ "research_content": {
+  "label": "Research Content",
+  "family": "Other"
+ },
+ "research_document": {
+  "label": "Research Document",
+  "family": "Other"
+ },
+ "research_keyword": {
+  "label": "Research Keyword",
+  "family": "Other"
+ },
+ "research_media": {
+  "label": "Research Media",
+  "family": "Other"
+ },
+ "research_source": {
+  "label": "Research Source",
+  "family": "Other"
+ },
+ "research_synthesis": {
+  "label": "Research Synthesis",
+  "family": "Other"
+ },
+ "research_tag": {
+  "label": "Research Tag",
+  "family": "Other"
+ },
+ "research_template": {
+  "label": "Research Template",
+  "family": "Other"
+ },
+ "research_topic": {
+  "label": "Research Topic",
+  "family": "Other"
+ },
+ "sandbox_instance": {
+  "label": "Sandbox Instance",
+  "family": "Other"
+ },
+ "sch_agent_task": {
+  "label": "Agent Task Config",
+  "family": "Other"
+ },
+ "sch_run": {
+  "label": "Task Run",
+  "family": "Other"
+ },
+ "sch_task": {
+  "label": "Scheduled Task",
+  "family": "Other"
+ },
+ "sch_trigger": {
+  "label": "Task Trigger",
+  "family": "Other"
+ },
+ "scope": {
+  "label": "Scope",
+  "family": "Other"
+ },
+ "scope_association_suggestion": {
+  "label": "Scope Association Suggestion",
+  "family": "Other"
+ },
+ "scope_item_value_suggestion": {
+  "label": "Scope Item Value Suggestion",
+  "family": "Other"
+ },
+ "scope_suggestion": {
+  "label": "Scope Suggestion",
+  "family": "Other"
+ },
+ "scope_type": {
+  "label": "Scope Type",
+  "family": "Other"
+ },
+ "seo_ai_visibility_panel": {
+  "label": "AI Visibility Panel",
+  "family": "Other"
+ },
+ "seo_backlink_change_event": {
+  "label": "Backlink Change Event",
+  "family": "Other"
+ },
+ "seo_coverage_mention": {
+  "label": "Coverage Mention",
+  "family": "Other"
+ },
+ "seo_coverage_tracker": {
+  "label": "Coverage Tracker",
+  "family": "Other"
+ },
+ "seo_dimension_value_matcher": {
+  "label": "Dimension Value Matcher",
+  "family": "Other"
+ },
+ "seo_geo_place": {
+  "label": "Geo Place",
+  "family": "Other"
+ },
+ "seo_keyword_facet": {
+  "label": "Keyword Facet",
+  "family": "Other"
+ },
+ "seo_keyword_place": {
+  "label": "Keyword Place",
+  "family": "Other"
+ },
+ "seo_keyword_saved_view": {
+  "label": "Keyword Saved View",
+  "family": "Other"
+ },
+ "seo_page_measurement_health": {
+  "label": "Page Measurement Health",
+  "family": "Other"
+ },
+ "seo_serp_mention": {
+  "label": "SERP Prospect Mention",
+  "family": "Other"
+ },
+ "seo_serp_opportunity": {
+  "label": "SERP Prospect Opportunity",
+  "family": "Other"
+ },
+ "seo_site_geo_area": {
+  "label": "Site Geo Area",
+  "family": "Other"
+ },
+ "seo_site_value_combo": {
+  "label": "Site Value Combination",
+  "family": "Other"
+ },
+ "seo_site_value_worth": {
+  "label": "Site Value Worth",
+  "family": "Other"
+ },
+ "seo_site_vocabulary": {
+  "label": "Site Vocabulary",
+  "family": "Other"
+ },
+ "seo_source_request": {
+  "label": "SEO Source Request",
+  "family": "Other"
+ },
+ "seo_starter_pack": {
+  "label": "SEO Industry Starter Pack",
+  "family": "Other"
+ },
+ "seo_starter_pack_item": {
+  "label": "SEO Starter Pack Item",
+  "family": "Other"
+ },
+ "seo_story_angle": {
+  "label": "SEO Story Angle",
+  "family": "Other"
+ },
+ "shared_canvas_item": {
+  "label": "Shared Canvas Item",
+  "family": "Other"
+ },
+ "sms_consent": {
+  "label": "SMS Consent",
+  "family": "Other"
+ },
+ "sms_conversation": {
+  "label": "SMS Conversation",
+  "family": "Other"
+ },
+ "sms_message": {
+  "label": "SMS Message",
+  "family": "Other"
+ },
+ "sms_message_media": {
+  "label": "SMS Media",
+  "family": "Other"
+ },
+ "sms_notification": {
+  "label": "SMS Notification",
+  "family": "Other"
+ },
+ "sms_notification_preference": {
+  "label": "SMS Notification Preference",
+  "family": "Other"
+ },
+ "sms_phone_number": {
+  "label": "SMS Phone Number",
+  "family": "Other"
+ },
+ "structured_list": {
+  "label": "Structured List",
+  "family": "Other"
+ },
+ "studio_documents": {
+  "label": "Studio Document",
+  "family": "Other"
+ },
+ "studio_recording_chunks": {
+  "label": "Studio Recording Chunk",
+  "family": "Other"
+ },
+ "studio_recording_segments": {
+  "label": "Studio Recording Segment",
+  "family": "Other"
+ },
+ "studio_run": {
+  "label": "Studio Run",
+  "family": "Other"
+ },
+ "studio_session": {
+  "label": "Audio Session",
+  "family": "Other"
+ },
+ "studio_session_settings": {
+  "label": "Studio Session Settings",
+  "family": "Other"
+ },
+ "study_attempt": {
+  "label": "Study Attempt",
+  "family": "Other"
+ },
+ "study_goal": {
+  "label": "Study Goal",
+  "family": "Other"
+ },
+ "study_media": {
+  "label": "Study Media",
+  "family": "Other"
+ },
+ "study_plan": {
+  "label": "Study Plan",
+  "family": "Other"
+ },
+ "study_plan_block": {
+  "label": "Study Plan Block",
+  "family": "Other"
+ },
+ "study_plan_day": {
+  "label": "Study Plan Day",
+  "family": "Other"
+ },
+ "study_session": {
+  "label": "Study Session",
+  "family": "Other"
+ },
+ "surface": {
+  "label": "UI Surface",
+  "family": "Other"
+ },
+ "system_error": {
+  "label": "System Error",
+  "family": "Other"
+ },
+ "system_personal_org_failure": {
+  "label": "System Personal Org Failure",
+  "family": "Other"
+ },
+ "system_write_failure": {
+  "label": "System Write Failure",
+  "family": "Other"
+ },
+ "thread": {
+  "label": "Thread",
+  "family": "Other"
+ },
+ "tool_call": {
+  "label": "Tool Call",
+  "family": "Other"
+ },
+ "udt_dataset_fields": {
+  "label": "Dataset Field",
+  "family": "Other"
+ },
+ "udt_dataset_rows": {
+  "label": "Dataset Row",
+  "family": "Other"
+ },
+ "udt_document": {
+  "label": "Document",
+  "family": "Other"
+ },
+ "udt_structured_list_items": {
+  "label": "Structured List Item",
+  "family": "Other"
+ },
+ "ui_surface_agent_pref": {
+  "label": "UI Surface Agent Pref",
+  "family": "Other"
+ },
+ "ui_surface_config": {
+  "label": "UI Surface Config",
+  "family": "Other"
+ },
+ "user_achievement": {
+  "label": "User Achievement",
+  "family": "Other"
+ },
+ "user_analysis_preference": {
+  "label": "User Analysis Preference",
+  "family": "Other"
+ },
+ "user_bookmark": {
+  "label": "User Bookmark",
+  "family": "Other"
+ },
+ "user_email_preference": {
+  "label": "User Email Preference",
+  "family": "Other"
+ },
+ "user_feedback": {
+  "label": "User Feedback",
+  "family": "Other"
+ },
+ "user_form_profile": {
+  "label": "User Form Profile",
+  "family": "Other"
+ },
+ "user_markdown_sample": {
+  "label": "User Markdown Sample",
+  "family": "Other"
+ },
+ "user_memory": {
+  "label": "User Memory",
+  "family": "Other"
+ },
+ "user_preference": {
+  "label": "User Preference",
+  "family": "Other"
+ },
+ "user_profile": {
+  "label": "User Profile",
+  "family": "Other"
+ },
+ "user_stat": {
+  "label": "User Stats",
+  "family": "Other"
+ },
+ "user_surface_state": {
+  "label": "User Surface State",
+  "family": "Other"
+ },
+ "voice": {
+  "label": "Voice",
+  "family": "Other"
+ },
+ "war_room": {
+  "label": "War Room",
+  "family": "Other"
+ },
+ "wbx_capture": {
+  "label": "Extension Web Capture",
+  "family": "Other"
+ },
+ "wbx_guidance": {
+  "label": "Extension Guidance",
+  "family": "Other"
+ },
+ "wbx_highlight": {
+  "label": "Extension Highlight",
+  "family": "Other"
+ },
+ "wbx_pattern": {
+  "label": "Extension Scrape Pattern",
+  "family": "Other"
+ },
+ "wbx_screenshot": {
+  "label": "Extension Screenshot",
+  "family": "Other"
+ },
+ "wbx_seo_audit": {
+  "label": "Extension SEO Audit",
+  "family": "Other"
+ },
+ "wc_claim": {
+  "label": "WC Claim",
+  "family": "Other"
+ },
+ "wc_impairment_definition": {
+  "label": "WC Impairment Definition",
+  "family": "Other"
+ },
+ "wc_injury": {
+  "label": "WC Injury",
+  "family": "Other"
+ },
+ "wc_report": {
+  "label": "WC Report",
+  "family": "Other"
+ },
+ "web_analysis_item": {
+  "label": "Analysis Item",
+  "family": "Other"
+ },
+ "web_brand": {
+  "label": "Brand",
+  "family": "Other"
+ },
+ "web_brand_asset": {
+  "label": "Brand Asset",
+  "family": "Other"
+ },
+ "web_business_fact": {
+  "label": "Business Fact",
+  "family": "Other"
+ },
+ "web_business_location": {
+  "label": "Business Location",
+  "family": "Other"
+ },
+ "web_crawl_event": {
+  "label": "Web Crawl Event",
+  "family": "Other"
+ },
+ "web_crawl_preset": {
+  "label": "Web Crawl Preset",
+  "family": "Other"
+ },
+ "web_crawl_schedule": {
+  "label": "Web Crawl Schedule",
+  "family": "Other"
+ },
+ "web_crawl_session": {
+  "label": "Crawl Session",
+  "family": "Other"
+ },
+ "web_crawl_url": {
+  "label": "Web Crawl URL",
+  "family": "Other"
+ },
+ "web_discovered_item": {
+  "label": "Discovered Item",
+  "family": "Other"
+ },
+ "web_finding": {
+  "label": "Finding",
+  "family": "Other"
+ },
+ "web_gsc_page_stat": {
+  "label": "GSC Page Stat",
+  "family": "Other"
+ },
+ "web_link_edge": {
+  "label": "Link Edge",
+  "family": "Other"
+ },
+ "web_listing_publisher": {
+  "label": "Listing Publisher",
+  "family": "Other"
+ },
+ "web_location_listing": {
+  "label": "Location Listing",
+  "family": "Other"
+ },
+ "web_page": {
+  "label": "Canonical Page",
+  "family": "Other"
+ },
+ "web_page_content": {
+  "label": "Page Draft Content",
+  "family": "Other"
+ },
+ "web_page_evidence": {
+  "label": "Web Page Evidence",
+  "family": "Other"
+ },
+ "web_page_sitemap": {
+  "label": "Page Sitemap Membership",
+  "family": "Other"
+ },
+ "web_property": {
+  "label": "Brand Property",
+  "family": "Other"
+ },
+ "web_provider": {
+  "label": "Provider",
+  "family": "Other"
+ },
+ "web_result": {
+  "label": "Analysis Result",
+  "family": "Other"
+ },
+ "web_screenshot": {
+  "label": "Screenshot",
+  "family": "Other"
+ },
+ "web_site": {
+  "label": "Site",
+  "family": "Other"
+ },
+ "web_site_endpoint_rule": {
+  "label": "Site Endpoint Rule",
+  "family": "Other"
+ },
+ "web_site_item_config": {
+  "label": "Site Item Config",
+  "family": "Other"
+ },
+ "web_sitemap": {
+  "label": "Sitemap",
+  "family": "Other"
+ },
+ "web_snapshot": {
+  "label": "Snapshot",
+  "family": "Other"
+ },
+ "wf_node_data_slot": {
+  "label": "Workflow Node Data Slot",
+  "family": "Other"
+ },
+ "work_item": {
+  "label": "Runtime Work Item",
+  "family": "Other"
+ },
+ "workbook": {
+  "label": "Workbook",
+  "family": "Other"
+ },
+ "workflow": {
+  "label": "Workflow",
+  "family": "Other"
+ },
+ "workflow_card": {
+  "label": "Workflow Card",
+  "family": "Other"
+ },
+ "workflow_checkpoint": {
+  "label": "Workflow Checkpoint",
+  "family": "Other"
+ },
+ "workflow_definition_version": {
+  "label": "Workflow Definition Version",
+  "family": "Other"
+ },
+ "workflow_idempotency": {
+  "label": "Workflow Idempotency",
+  "family": "Other"
+ },
+ "workflow_job": {
+  "label": "Workflow Job",
+  "family": "Other"
+ },
+ "workflow_node_events": {
+  "label": "Workflow Node Events",
+  "family": "Other"
+ },
+ "workflow_node_outcome": {
+  "label": "Workflow Node Outcome",
+  "family": "Other"
+ },
+ "workflow_plan": {
+  "label": "Workflow Plan",
+  "family": "Other"
+ },
+ "workflow_plan_event": {
+  "label": "Workflow Plan Event",
+  "family": "Other"
+ },
+ "workflow_plan_sample": {
+  "label": "Workflow Plan Sample",
+  "family": "Other"
+ },
+ "workflow_recovery_audit": {
+  "label": "Workflow Recovery Audit",
+  "family": "Other"
+ },
+ "workflow_run": {
+  "label": "Workflow Run",
+  "family": "Other"
+ },
+ "workflow_run_log": {
+  "label": "Workflow Run Log",
+  "family": "Other"
+ },
+ "workflow_runtime_surface": {
+  "label": "Run Surface",
+  "family": "Other"
+ },
+ "workflow_template": {
+  "label": "Workflow Template",
+  "family": "Other"
+ },
+ "workflow_trigger": {
+  "label": "Workflow Trigger",
+  "family": "Other"
+ },
+ "workflow_trigger_fire": {
+  "label": "Workflow Trigger Fire",
+  "family": "Other"
+ },
+ "youtube_search": {
+  "label": "YouTube Search",
+  "family": "Other"
+ },
+ "youtube_video": {
+  "label": "YouTube Video",
+  "family": "Other"
+ },
+ "structured_list_group": {
+  "label": "Structured List Group",
+  "family": "Derived shapes"
+ },
+ "structured_list_item": {
+  "label": "Structured List Item",
+  "family": "Derived shapes"
+ },
+ "table_column": {
+  "label": "Table Column",
+  "family": "Derived shapes"
+ },
+ "table_row": {
+  "label": "Table Row",
+  "family": "Derived shapes"
+ },
+ "table_cell": {
+  "label": "Table Cell",
+  "family": "Derived shapes"
+ },
+ "table_schema": {
+  "label": "Table Schema",
+  "family": "Derived shapes"
+ },
+ "context_value": {
+  "label": "Context Value",
+  "family": "Derived shapes"
+ },
+ "agent_variable": {
+  "label": "Agent Variable",
+  "family": "Derived shapes"
+ },
+ "transcript_segment": {
+  "label": "Transcript Segment",
+  "family": "Derived shapes"
+ },
+ "session_transcript": {
+  "label": "Session Transcript",
+  "family": "Derived shapes"
+ },
+ "workbook_sheet": {
+  "label": "Workbook Sheet",
+  "family": "Derived shapes"
+ },
+ "document_page": {
+  "label": "Document Page",
+  "family": "Derived shapes"
+ },
+ "file_page": {
+  "label": "File Page",
+  "family": "Derived shapes"
+ },
+ "agent_version": {
+  "label": "Agent Version",
+  "family": "Derived shapes"
+ },
+ "content_block": {
+  "label": "Content Block",
+  "family": "Derived shapes"
+ },
+ "kg_entity": {
+  "label": "Kg Entity",
+  "family": "Derived shapes"
+ }
+} as const;
+
 /** Legacy wire noun → canonical entity token (server-published). */
 export const CATALOG_ALIASES: Record<string, string> = {
  "agent_app": "app",
