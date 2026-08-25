@@ -129,3 +129,6 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 - 2026-08-25 — Separated Rulebook rules from built Masterworks on the detail page: each now has
   its own KPIs and actions, while the Masterworks summary stays out of the way for a new Rulebook.
+- 2026-08-25 — Standardized Rulebook, Masterworks, Understudy, and Sources card padding, header
+  rhythm, footer button height, and single-action alignment; rule groups now use a clear 24/8/4
+  spacing hierarchy.
