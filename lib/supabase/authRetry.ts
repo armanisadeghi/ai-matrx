@@ -1,6 +1,6 @@
 // lib/supabase/authRetry.ts
 //
-// One primitive for the class of failure where a browser write reached
+// One primitive for the class of failure where a browser operation reached
 // PostgREST with NO user JWT even though the app believes a user is signed in
 // (the supabase-js session was momentarily unavailable — refresh in flight,
 // storage read mid-rewrite, cookie chunk swap). The request then executes as
@@ -31,22 +31,25 @@ export interface AuthRetryableResult<T> {
 
 /**
  * True when the DB refused because the request carried no authenticated user.
- * `28000` is the SQLSTATE the canvas write RPCs raise; the message test covers
- * RPCs that raise the same condition without setting ERRCODE.
+ * `28000` is the SQLSTATE the canvas write RPCs raise; the message tests cover
+ * RPCs that raise the same condition without setting ERRCODE, plus PostgREST's
+ * own response when an anonymous request reaches an authenticated-only RPC.
  */
 export function isMissingSessionError(
   error: { code?: string | null; message?: string | null } | null | undefined,
 ): boolean {
   if (!error) return false;
   if (error.code === "28000") return true;
-  return (error.message ?? "").toLowerCase().startsWith("not authenticated");
+  const message = (error.message ?? "").toLowerCase();
+  if (message.startsWith("not authenticated")) return true;
+  return error.code === "42501" && message.startsWith("permission denied for function ");
 }
 
 /**
  * Run a supabase call; if it fails purely because no session reached the
  * server, re-resolve the session and run it ONCE more.
  *
- * The operation must be idempotent — every current caller writes through an
+ * The operation must be idempotent — reads are safe, and write callers use an
  * upsert keyed on a natural key, so the retry can only land the same row.
  *
  * Returns the second attempt's result when a retry happened, else the first.

@@ -17,6 +17,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import type { StorageUsageResponse } from "@/features/files/types";
 
 // ---------------------------------------------------------------------------
@@ -60,12 +61,14 @@ export async function getUsageStatusDirect(
   userId: string,
   opts: { isGuest?: boolean; signal?: AbortSignal } = {},
 ): Promise<StorageUsageResponse> {
-  let q = supabase.rpc("get_usage_status", {
-    p_user_id: userId,
-    p_is_guest: opts.isGuest ?? false,
+  const { data, error } = await runWithSessionRetry(() => {
+    let q = supabase.rpc("get_usage_status", {
+      p_user_id: userId,
+      p_is_guest: opts.isGuest ?? false,
+    });
+    if (opts.signal) q = q.abortSignal(opts.signal);
+    return q;
   });
-  if (opts.signal) q = q.abortSignal(opts.signal);
-  const { data, error } = await q;
   if (error) throw pgErrorToError(error);
 
   // get_usage_status returns Json directly (no row schema) — sanctioned
