@@ -52,7 +52,13 @@ import {
   kwGuidelinesQueryKey,
   setKwGuidelines,
 } from "@/features/marketing/search-console/data-kw-guidelines";
-import { KeywordMeaningSuggestions } from "../suggestions/KeywordMeaningSuggestions";
+import { useAppSelector } from "@/lib/redux/hooks";
+import type { RootState } from "@/lib/redux/store";
+import { selectAssistsForSurface } from "@/features/assists/redux/assistsSlice";
+import {
+  KEYWORD_MEANING_SURFACE,
+  KeywordMeaningSuggestions,
+} from "../suggestions/KeywordMeaningSuggestions";
 import { GuidelinesDraftButton } from "./GuidelinesDraft";
 import { GUIDELINES_STALE_AFTER_DAYS } from "./GuidelinesGapPrompt";
 
@@ -144,6 +150,38 @@ export function KwGuidelinesPanel({
         description: extractErrorMessage(error),
       }),
   });
+
+  /**
+   * Approving a guidelines proposal writes the document through
+   * `seo.gsc_set_site_kw_guidelines` — but it happens inside the assist CARD,
+   * which knows nothing about this panel's query. Measured live 2026-08-25:
+   * the toast said "this is now part of how your keywords are read" while the
+   * editor two inches below still read "Never written". A receipt that
+   * contradicts the screen it is on teaches people not to trust the receipt.
+   *
+   * So the panel watches its own queue: when a guidelines proposal for this
+   * site leaves the pending list — approved, rejected, or dismissed — the
+   * document is re-read from the server. Every consumer shares the query key,
+   * so the gap prompts on the other screens settle with it.
+   */
+  const pendingGuidelineIds = useAppSelector((state: RootState) =>
+    selectAssistsForSurface(state, KEYWORD_MEANING_SURFACE),
+  )
+    .filter(
+      (assist) =>
+        assist.action.kind === "apply_keyword_meaning" &&
+        assist.action.siteId === siteId &&
+        assist.action.proposal.proposal === "guideline_edit",
+    )
+    .map((assist) => assist.id)
+    .sort()
+    .join(",");
+
+  useEffect(() => {
+    void queryClient.invalidateQueries({
+      queryKey: kwGuidelinesQueryKey(siteId),
+    });
+  }, [pendingGuidelineIds, queryClient, siteId]);
 
   const age = daysSince(stored.data?.updated_at ?? null);
   const stale = age !== null && age > STALE_AFTER_DAYS;
