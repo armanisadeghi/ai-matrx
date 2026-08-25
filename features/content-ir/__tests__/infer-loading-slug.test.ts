@@ -8,7 +8,10 @@
  */
 
 import type { KindSchema } from "@ai-matrx/content-ir";
-import { inferLoadingSlug } from "../react/loading/infer-loading-slug";
+import {
+  inferLoadingSlug,
+  inferLoadingSlugFromJsonSchema,
+} from "../react/loading/infer-loading-slug";
 import { KIND_LOADING_SLUGS } from "../react/loading/kind-loading-slugs";
 import { kindRegistry } from "../registry/kind-registry";
 
@@ -119,6 +122,44 @@ describe("inferLoadingSlug", () => {
     // The resolution order BlockRenderer applies:
     const resolved = def?.loadingComponent ?? inferLoadingSlug(def?.schema) ?? null;
     expect(resolved).toBe("quiz");
+  });
+
+  it("derives from a raw JSON Schema too — the only shape most kinds carry", () => {
+    // `data` is NULL for 344 of the 392 undeclared renderable kinds
+    // (2026-08-25), so this door — not the KindSchema one — is what actually
+    // covers the backlog. Shapes below are real live contracts.
+    const seoAudit = {
+      type: "object",
+      properties: {
+        __kind: { type: "string" },
+        checked: { type: "boolean" },
+        summary: { type: "string" },
+        evidence: { type: "array", items: { type: "object" } },
+        issues_found: { type: "array", items: { type: "object" } },
+        recommendations: { type: "array", items: { type: "string" } },
+      },
+    };
+    expect(inferLoadingSlugFromJsonSchema(seoAudit)).toBe("list");
+
+    const markdownKind = {
+      type: "object",
+      properties: { __kind: { type: "string" }, text: { type: "string" } },
+    };
+    expect(inferLoadingSlugFromJsonSchema(markdownKind)).toBe("document");
+
+    // A scalar list is NOT a structured array — chips say nothing about shape.
+    const tagsOnly = {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        tags: { type: "array", items: { type: "string" } },
+      },
+    };
+    expect(inferLoadingSlugFromJsonSchema(tagsOnly)).toBe("card");
+
+    expect(inferLoadingSlugFromJsonSchema(null)).toBeNull();
+    expect(inferLoadingSlugFromJsonSchema({ type: "object" })).toBeNull();
+    expect(inferLoadingSlugFromJsonSchema("nonsense")).toBeNull();
   });
 
   it("every compiled kind either declares a slug or derives a usable one", () => {

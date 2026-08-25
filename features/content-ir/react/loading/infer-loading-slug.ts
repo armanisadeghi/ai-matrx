@@ -123,3 +123,65 @@ export function inferLoadingSlug(
   if (entries.length >= 2 && entries.length <= 12) return "card";
   return null;
 }
+
+/**
+ * The SAME derivation over a raw JSON Schema.
+ *
+ * Most kinds have no parser `KindSchema` at all: Python owns them and stores
+ * only `emitted_json_schema` (344 of 392 undeclared renderable kinds on
+ * 2026-08-25, measured — `kind_definition.data` is NULL for every one). A
+ * derivation that reads only `KindSchema` is therefore blind to the large
+ * majority of the backlog it exists to serve, which is why this second door
+ * exists rather than a second set of rules: both doors normalize to the same
+ * `{name → type}` census and run the identical precedence above.
+ */
+export function inferLoadingSlugFromJsonSchema(
+  jsonSchema: unknown,
+): KindLoadingSlug | null {
+  if (!jsonSchema || typeof jsonSchema !== "object" || Array.isArray(jsonSchema)) {
+    return null;
+  }
+  const root = jsonSchema as Record<string, unknown>;
+
+  // A non-object root mirrors KindSchema.root handling.
+  const rootType = root.type;
+  if (rootType === "string") return "document";
+  if (rootType === "array") return "list";
+
+  const properties = root.properties;
+  if (!properties || typeof properties !== "object" || Array.isArray(properties)) {
+    return null;
+  }
+
+  // Translate JSON Schema property types into the FieldSchema `type` strings
+  // the census above understands. Only the distinctions the rules read
+  // matter: structured arrays, strings, everything else.
+  const fields: Record<string, { type: string }> = {};
+  for (const [name, raw] of Object.entries(properties as Record<string, unknown>)) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+    const prop = raw as Record<string, unknown>;
+    const type = prop.type;
+    if (type === "array") {
+      // A list of OBJECTS is a structured array; a list of scalars is not
+      // (it renders as chips/tags, which says nothing about the silhouette).
+      const items = prop.items;
+      const itemType =
+        items && typeof items === "object" && !Array.isArray(items)
+          ? (items as Record<string, unknown>).type
+          : undefined;
+      const structured =
+        itemType === "object" ||
+        itemType === undefined || // $ref'd child kind — structured by definition
+        (items && typeof items === "object" && "$ref" in (items as object));
+      fields[name] = { type: structured ? "array" : "string[]" };
+      continue;
+    }
+    if (type === "string") {
+      fields[name] = { type: "string" };
+      continue;
+    }
+    fields[name] = { type: typeof type === "string" ? type : "json" };
+  }
+
+  return inferLoadingSlug({ kind: "", fields: fields as never });
+}

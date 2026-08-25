@@ -83,6 +83,20 @@ class KindRegistry {
   private readonly kindVersions = new Map<string, number>();
   private readonly kindListeners = new Map<string, Set<() => void>>();
   private epoch = 0;
+  /**
+   * `emitted_json_schema` per kind, kept BESIDE the definitions.
+   *
+   * Python-owned kinds store only the emitted JSON Schema — `data` is NULL,
+   * so `storageToKindSchema` produces nothing and `KindDefinition.schema`
+   * stays undefined (344 of 392 undeclared renderable kinds on 2026-08-25).
+   * The loading-slug derivation needs SOME description of the shape to pick a
+   * silhouette, so the emitted contract rides along here rather than being
+   * discarded. A side map (not a new `KindDefinition` field) because that type
+   * is owned by `@ai-matrx/content-ir`.
+   */
+  private readonly emittedSchemas = new Map<string, unknown>();
+  /** Declared `metadata.loading_component` per kind — same reason as above. */
+  private readonly declaredLoading = new Map<string, string>();
 
   constructor(systemKinds: KindDefinition[]) {
     for (const def of systemKinds) {
@@ -96,6 +110,39 @@ class KindRegistry {
 
   getSchema(kind: string): KindSchema | undefined {
     return this.defs.get(kind)?.schema ?? undefined;
+  }
+
+  /** The kind's `emitted_json_schema`, when the source carried one. */
+  getEmittedJsonSchema(kind: string): unknown {
+    return this.emittedSchemas.get(kind);
+  }
+
+  /** Record an emitted contract for a kind (warm/cold ingest only). */
+  setEmittedJsonSchema(kind: string, schema: unknown): void {
+    if (schema === null || schema === undefined) return;
+    this.emittedSchemas.set(kind, schema);
+  }
+
+  /**
+   * The kind's DECLARED `metadata.loading_component`, from the catalog entry.
+   *
+   * Read this rather than `getDefinition(kind)?.loadingComponent` when all you
+   * need is the slug: a kind whose `data` is NULL never produces a
+   * `KindDefinition` at all (the warm loop only walks kinds that yielded a
+   * parser schema), so its declared slug is invisible on the definition — it
+   * lives only here.
+   */
+  getDeclaredLoadingComponent(kind: string): string | null {
+    return (
+      this.defs.get(kind)?.loadingComponent ??
+      this.declaredLoading.get(kind) ??
+      null
+    );
+  }
+
+  /** Record a declared loading slug for a kind (warm/cold ingest only). */
+  setDeclaredLoadingComponent(kind: string, slug: string | null): void {
+    if (slug) this.declaredLoading.set(kind, slug);
   }
 
   listDefinitions(): KindDefinition[] {
@@ -171,6 +218,13 @@ class KindRegistry {
           const loadingBySlug = new Map<string, string | null>();
           for (const entry of entries) {
             loadingBySlug.set(entry.slug, entry.loadingComponent ?? null);
+            // Capture from the ENTRY list, which covers every catalog kind —
+            // including the Python-owned ones whose `data` is NULL and which
+            // therefore never reach the definition loop below. Without this
+            // their declared loading slug is silently lost and the shape
+            // renders the generic skeleton no matter what its owner chose.
+            this.setDeclaredLoadingComponent(entry.slug, entry.loadingComponent ?? null);
+            this.setEmittedJsonSchema(entry.slug, entry.emittedJsonSchema);
           }
           for (const [kind, schema] of Object.entries(schemas)) {
             const existing = this.defs.get(kind);
