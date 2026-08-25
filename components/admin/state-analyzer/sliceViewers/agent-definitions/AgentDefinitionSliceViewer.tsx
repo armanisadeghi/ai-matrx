@@ -11,6 +11,7 @@ import {
   AiModelRef,
   AiToolRef,
 } from "@/components/official/entity-ref/AiIdentityRef";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 function CompactPre({ children }: { children: string }) {
   return (
@@ -181,7 +182,16 @@ export default function AgentDefinitionSliceViewer({
               </div>
               <KvRow label="isVersion">{String(record.isVersion)}</KvRow>
               <KvRow label="parentAgentId">
-                {record.parentAgentId ?? "null"}
+                {record.parentAgentId ? (
+                  <EntityRef
+                    token="agent"
+                    id={record.parentAgentId}
+                    showIcon={false}
+                    openInNewTab
+                  />
+                ) : (
+                  "null"
+                )}
               </KvRow>
               <KvRow label="version">
                 {record.version != null ? String(record.version) : "null"}
@@ -350,9 +360,29 @@ export default function AgentDefinitionSliceViewer({
               </div>
               <KvRow label="createdBy">{record.createdBy ?? "null"}</KvRow>
               <KvRow label="organizationId">
-                {record.organizationId ?? "null"}
+                {record.organizationId ? (
+                  <EntityRef
+                    token="organization"
+                    id={record.organizationId}
+                    showIcon={false}
+                    openInNewTab
+                  />
+                ) : (
+                  "null"
+                )}
               </KvRow>
-              <KvRow label="taskId">{record.taskId ?? "null"}</KvRow>
+              <KvRow label="taskId">
+                {record.taskId ? (
+                  <EntityRef
+                    token="task"
+                    id={record.taskId}
+                    showIcon={false}
+                    openInNewTab
+                  />
+                ) : (
+                  "null"
+                )}
+              </KvRow>
             </section>
 
             <section className="space-y-px">
@@ -360,7 +390,16 @@ export default function AgentDefinitionSliceViewer({
                 lineage
               </div>
               <KvRow label="sourceAgentId">
-                {record.sourceAgentId ?? "null"}
+                {record.sourceAgentId ? (
+                  <EntityRef
+                    token="agent"
+                    id={record.sourceAgentId}
+                    showIcon={false}
+                    openInNewTab
+                  />
+                ) : (
+                  "null"
+                )}
               </KvRow>
               <KvRow label="sourceSnapshotAt">
                 {record.sourceSnapshotAt ?? "null"}

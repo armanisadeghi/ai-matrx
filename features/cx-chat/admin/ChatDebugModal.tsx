@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import {
@@ -225,11 +226,29 @@ export function ChatDebugModal({
                   </div>
                   <div>
                     <span className="text-foreground">conversationId:</span>{" "}
-                    {session?.conversationId ?? "—"}
+                    {session?.conversationId ? (
+                      <EntityRef
+                        token="conversation"
+                        id={session.conversationId}
+                        showIcon={false}
+                        openInNewTab
+                      />
+                    ) : (
+                      "—"
+                    )}
                   </div>
                   <div>
                     <span className="text-foreground">agentId:</span>{" "}
-                    {session?.agentId ?? "—"}
+                    {session?.agentId ? (
+                      <EntityRef
+                        token="agent"
+                        id={session.agentId}
+                        showIcon={false}
+                        openInNewTab
+                      />
+                    ) : (
+                      "—"
+                    )}
                   </div>
                   <div>
                     <span className="text-foreground">apiMode:</span>{" "}
