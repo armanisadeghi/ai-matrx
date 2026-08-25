@@ -56,6 +56,7 @@ import {
 } from "../kinds/schema-proposal";
 import { itemPresentationMarkdownFromValue } from "../kinds/item-presentation";
 import { MERMAID_DIAGRAM_KIND_DEFINITION } from "../kinds/mermaid-diagram";
+import { SCRAPER_PAGE_KIND_DEFINITIONS } from "../kinds/scraper-page";
 import { TASK_LIST_KIND_DEFINITIONS } from "../kinds/task-list";
 import { RESOURCE_COLLECTION_KIND_DEFINITIONS } from "../kinds/resource-collection";
 import { PROGRESS_TRACKER_KIND_DEFINITIONS } from "../kinds/progress-tracker";
@@ -101,6 +102,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // kinds/ modules are cycle-free by construction (core/envelope-value) so
   // these consts are always defined here regardless of import entry point.
   MERMAID_DIAGRAM_KIND_DEFINITION,
+  ...SCRAPER_PAGE_KIND_DEFINITIONS,
   ...TASK_LIST_KIND_DEFINITIONS,
   ...RESOURCE_COLLECTION_KIND_DEFINITIONS,
   ...PROGRESS_TRACKER_KIND_DEFINITIONS,

@@ -952,6 +952,22 @@ export async function bridgeFillStart(
      * `steps` is passed (that is the raw knob the preset sits on).
      */
     effortTier?: EffortTier | null;
+    /**
+     * Run only THESE plan nodes. Omit = every fillable linked draft on the
+     * site, which is what the Setup rung does. This is how "run the rest of
+     * the pipeline on the pages I picked" reaches the same durable queue as
+     * the whole-site button — one engine, two selections, never a second path.
+     */
+    nodeIds?: string[];
+    /**
+     * Re-author pages that are ALREADY PUBLISHED, into their drafts (live
+     * content is never touched). OFF by default so a whole-site run can never
+     * start rewriting a live site as a side effect; a deliberate selection of
+     * published pages turns it on.
+     */
+    includePublished?: boolean;
+    /** Redo only these steps — the narrow grain of `overwrite`. */
+    overwriteSteps?: string[];
   },
 ): Promise<FillStartResult> {
   const result = await dispatch(
@@ -965,6 +981,9 @@ export async function bridgeFillStart(
         include_review: options.includeReview !== false,
         effort_tier: options.effortTier ?? null,
         overwrite: options.overwrite === true,
+        overwrite_steps: options.overwriteSteps ?? null,
+        include_published: options.includePublished === true,
+        node_ids: options.nodeIds ?? null,
       },
     }),
   );

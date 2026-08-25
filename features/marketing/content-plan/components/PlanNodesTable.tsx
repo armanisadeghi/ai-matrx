@@ -13,6 +13,12 @@
  * (sort, page size, hidden columns) persists via useListViewPrefs
  * ("content-plan-nodes"); search/filters/page are query state and never
  * persist.
+ *
+ * ROWS ARE SELECTABLE, and the bulk bar runs the pipeline on the selection —
+ * the table's canonical `selection` config, not a bespoke checkbox column.
+ * Until this existed the only way from a plan to built pages was the
+ * whole-site Setup rung or one page at a time, while the durable queue had
+ * always accepted a node list. Filter to what you want, select it, run it.
  */
 import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -22,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
 import type { PageSearchPerformance } from "@/features/marketing/types";
 import { NodeMeasureDoor } from "./NodeMeasureDoor";
+import { RunPipelineBulkAction } from "./RunPipelineBulkAction";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -135,6 +142,10 @@ export function PlanNodesTable({
     "content-plan-nodes",
     SURFACE_PREFS,
   );
+
+  // Selection is session state, never persisted: a stale selection restored on
+  // a later visit is how someone runs a job over pages they forgot they picked.
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Query state (search / filters / page) — session-only, never persisted.
   // Sort and page size SEED from the persisted style prefs and write back.
@@ -668,6 +679,25 @@ export function PlanNodesTable({
       getRowId={(row) => row.id}
       isLoading={isLoading}
       isFetching={isFetching}
+      selection={{
+        selectedIds,
+        onSelectedIdsChange: setSelectedIds,
+        noun: "page",
+        // Every planned page can be run. A page whose steps are all finished
+        // is still selectable on purpose — the run skips finished work, so
+        // including it costs nothing and disabling it would make "select all
+        // and run" the one thing a user cannot do.
+        actions: (selected, ids) => (
+          <RunPipelineBulkAction
+            siteId={siteId}
+            cmsSiteId={cmsSiteId}
+            selected={selected}
+            selectedIds={ids}
+            pipelineByNodeId={pipelineByNodeId}
+            onStarted={() => setSelectedIds([])}
+          />
+        ),
+      }}
       query={{
         mode: "controlled",
         state: query,

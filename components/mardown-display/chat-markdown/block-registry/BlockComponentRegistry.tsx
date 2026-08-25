@@ -59,6 +59,7 @@ import {
   PageRemovalBlock as PageRemovalBlockImpl,
   PageSectionBlock as PageSectionBlockImpl,
   PageVideoBlock as PageVideoBlockImpl,
+  RedirectHopBlock as RedirectHopBlockImpl,
 } from "../../blocks/scraper-kinds/primitive-blocks";
 
 import {

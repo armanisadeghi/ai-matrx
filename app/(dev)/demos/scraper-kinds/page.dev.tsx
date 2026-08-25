@@ -39,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { toast } from "@/lib/toast";
 
 interface DroppedValue {
@@ -92,60 +93,11 @@ function readTranslation(v: unknown): TranslationReport | null {
   return { provider: String(v.provider ?? "matrx_scraper"), unknown, dropped };
 }
 
-/** How many entries an array field carries, for the section headers. */
-function count(v: unknown): number {
-  return Array.isArray(v) ? v.length : 0;
-}
-
 function preview(v: unknown, chars = 400): string {
   if (v === null || v === undefined) return "—";
   if (typeof v === "string") return v.length > chars ? `${v.slice(0, chars)}…` : v;
   const json = JSON.stringify(v, null, 1);
   return json.length > chars ? `${json.slice(0, chars)}…` : json;
-}
-
-/** A section of the kind — collapsed by default when it is large. */
-function Section({
-  title,
-  subtitle,
-  children,
-  defaultOpen = false,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="rounded-md border border-border bg-card">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between px-3 py-2 text-left"
-      >
-        <span className="text-sm font-medium text-foreground">{title}</span>
-        <span className="text-xs text-muted-foreground">
-          {subtitle} {open ? "▾" : "▸"}
-        </span>
-      </button>
-      {open && <div className="border-t border-border px-3 py-2">{children}</div>}
-    </div>
-  );
-}
-
-function ScalarRow({ label, value }: { label: string; value: unknown }) {
-  const empty = value === null || value === undefined || value === "";
-  return (
-    <div className="flex gap-3 border-b border-border/50 py-1 last:border-0">
-      <span className="w-44 shrink-0 font-mono text-[11px] text-muted-foreground">{label}</span>
-      <span
-        className={`min-w-0 flex-1 break-words text-xs ${empty ? "text-muted-foreground/60" : "text-foreground"}`}
-      >
-        {empty ? "—" : preview(value, 300)}
-      </span>
-    </div>
-  );
 }
 
 function JsonPanel({ value }: { value: unknown }) {
@@ -155,27 +107,6 @@ function JsonPanel({ value }: { value: unknown }) {
     </pre>
   );
 }
-
-const SCALARS: [string, string][] = [
-  ["url", "url"],
-  ["response_url", "response_url"],
-  ["status_code", "status_code"],
-  ["success", "success"],
-  ["failure_reason", "failure_reason"],
-  ["title", "title"],
-  ["published_at", "published_at"],
-  ["modified_at", "modified_at"],
-  ["scraped_at", "scraped_at"],
-  ["content_type", "content_type"],
-  ["content_type_raw", "content_type_raw"],
-  ["site_name", "site_name"],
-  ["page_key", "page_key"],
-  ["char_count", "char_count"],
-  ["cms", "cms"],
-  ["firewall", "firewall"],
-  ["ttfb_ms", "ttfb_ms"],
-  ["main_image", "main_image"],
-];
 
 export default function ScraperKindsDemoPage() {
   const { post } = useBackendApi();
@@ -386,85 +317,14 @@ export default function ScraperKindsDemoPage() {
             </TabsList>
 
             {/* ---------------- KEPT ---------------- */}
-            <TabsContent value="kept" className="space-y-2">
-              <Section title="Identity, transport and outcome" defaultOpen subtitle="18 fields">
-                {SCALARS.map(([label, key]) => (
-                  <ScalarRow key={key} label={label} value={page[key]} />
-                ))}
-                <ScalarRow label="security_headers" value={page.security_headers} />
-                <ScalarRow label="redirect_chain" value={page.redirect_chain} />
-                <ScalarRow label="failure_details" value={page.failure_details} />
-              </Section>
-
-              <Section
-                title="Readable text"
-                subtitle={`${String(page.text ?? "").length.toLocaleString()} chars`}
-              >
-                <ScalarRow label="text" value={page.text} />
-                <ScalarRow label="markdown" value={page.markdown} />
-                <ScalarRow label="research_text" value={page.research_text} />
-                <ScalarRow
-                  label="research_text_with_images"
-                  value={page.research_text_with_images}
-                />
-                <ScalarRow label="raw_text (non-HTML)" value={page.raw_text} />
-              </Section>
-
-              <Section title="Sections" subtitle={`${count(page.sections)} headings`}>
-                <JsonPanel value={page.sections} />
-              </Section>
-              <Section title="Outline" subtitle={`${count(page.outline)} headings`}>
-                <JsonPanel value={page.outline} />
-              </Section>
-              <Section
-                title="Blocks — the ordered content stream"
-                subtitle={`${count(page.blocks)} blocks`}
-              >
-                <JsonPanel value={page.blocks} />
-              </Section>
-              <Section title="Tables" subtitle={`${count(page.tables)} tables`}>
-                <JsonPanel value={page.tables} />
-              </Section>
-              <Section title="Code blocks" subtitle={`${count(page.code_blocks)}`}>
-                <JsonPanel value={page.code_blocks} />
-              </Section>
-              <Section title="Lists" subtitle={`${count(page.lists)}`}>
-                <JsonPanel value={page.lists} />
-              </Section>
-              <Section
-                title="Media"
-                subtitle={`${count(page.images)} images · ${count(page.videos)} videos · ${count(page.audios)} audio`}
-              >
-                <JsonPanel
-                  value={{ images: page.images, videos: page.videos, audios: page.audios }}
-                />
-              </Section>
-              <Section
-                title="Links"
-                subtitle={`${count(page.links)} anchors + typed URL buckets`}
-              >
-                <JsonPanel value={{ links: page.links, link_urls: page.link_urls }} />
-              </Section>
-              <Section title="Page metadata (head)" subtitle="canonical · robots · OG · JSON-LD">
-                <JsonPanel value={page.metadata} />
-              </Section>
-              <Section
-                title="Cleaning report — what the scraper removed"
-                subtitle={
-                  isRecord(page.cleaning)
-                    ? `${count(page.cleaning.removed)} removals`
-                    : "none recorded"
-                }
-              >
-                <p className="mb-2 text-xs text-muted-foreground">
-                  Power-user / SEO surface. On an owned site this is where a call to action ends
-                  up when the noise remover decides it is chrome.
-                </p>
-                <JsonPanel value={page.cleaning} />
-              </Section>
-              <Section title="Fingerprint" subtitle="near-duplicate signatures">
-                <JsonPanel value={page.fingerprint} />
-              </Section>
+            {/*
+              THE POINT OF THE WHOLE EXERCISE. Not a field dump — the page
+              renders through `KindInstanceRender`, the SAME production route
+              path a chat message, a workflow run page or an agent result
+              takes. What you see here is what every surface will show.
+            */}
+            <TabsContent value="kept">
+              <KindInstanceRender kind="scraped_page" value={page} showRoutingNote />
             </TabsContent>
 
             {/* ---------------- HIDDEN ---------------- */}
