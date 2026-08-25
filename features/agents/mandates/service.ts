@@ -275,8 +275,6 @@ export async function fetchMandatePins(
   return out;
 }
 
-// ── The document-variable precondition (disease D4) ─────────────────────────
-
 /** Fetch the platform-default Holder identities for a small set of mandates. */
 export async function fetchMandateAssignments(
   mandateKeys: readonly string[],
@@ -310,6 +308,8 @@ export async function fetchMandateAssignments(
   }
   return assignments;
 }
+
+// ── The document-variable precondition (disease D4) ─────────────────────────
 
 /**
  * REFUSE when a Mandate's required variables were not supplied.
