@@ -103,7 +103,9 @@ export function buildGscKeyColumn<T extends { key: string }>(
     id: "key",
     accessorKey: "key",
     header,
-    filter: false,
+    // MSR-03/04 — text contains, wired by the table to the same server-side
+    // search the toolbar box already drives (one truth, two entry points).
+    filter: "text",
     cell: (row) => {
       const href = recordHref?.(row) ?? null;
       const label = gscKeyCell(dimension, row.key);

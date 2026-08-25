@@ -36,9 +36,15 @@ async function seoDb() {
 
 const assertData = makeAssertData("reach your Search Console data");
 
-const RANGE_FILTER_KEYS = new Set<string>(
-  GSC_RANGE_FILTERS.flatMap((r) => [r.min as string, r.max as string]),
-);
+const RANGE_FILTER_KEYS = new Set<string>([
+  ...GSC_RANGE_FILTERS.flatMap((r) => [r.min as string, r.max as string]),
+  // MSR-03/04 — CTR and value-score ranges (not toolbar chips yet, but the
+  // table's own column filters wire straight through the same bag).
+  "ctr_min",
+  "ctr_max",
+  "value_score_min",
+  "value_score_max",
+]);
 
 /**
  * The filter bag as the RPCs want it. Exported because the C14 Keyword
@@ -62,6 +68,12 @@ export function cleanGscFilters(filters: GscFilters): Json {
     if (key === "levels") {
       const levels = parseLevelFilter(value);
       if (levels.length > 0) out.levels = levels;
+      continue;
+    }
+    if (key === "traffic_classes") {
+      // MSR-03/04 — same pipe encoding as `levels`, RPC key `traffic_classes`.
+      const classes = parseLevelFilter(value);
+      if (classes.length > 0) out.traffic_classes = classes;
       continue;
     }
     // C14 metric ranges: a bound that is not a number is dropped rather than

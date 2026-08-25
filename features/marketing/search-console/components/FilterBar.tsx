@@ -90,6 +90,11 @@ const FILTER_LABELS: Record<GscFilterKey, string> = {
   impressions_max: "Impressions",
   position_min: "Position",
   position_max: "Position",
+  ctr_min: "CTR",
+  ctr_max: "CTR",
+  traffic_classes: "Class",
+  value_score_min: "Score",
+  value_score_max: "Score",
 };
 
 const FILTER_CHIP_LABELS: Record<GscFilterKey, string> = {

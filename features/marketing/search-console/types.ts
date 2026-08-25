@@ -132,6 +132,21 @@ export interface GscFilters {
   impressions_max?: string;
   position_min?: string;
   position_max?: string;
+  /**
+   * MSR-03/04 — CTR range (fraction 0..1, matching the `ctr` field), and the
+   * value SCORE range. Query dimension only, applied after aggregation
+   * exactly like the other metric ranges.
+   */
+  ctr_min?: string;
+  ctr_max?: string;
+  value_score_min?: string;
+  value_score_max?: string;
+  /**
+   * MSR-03/04 — the Class column's filter (`gsc_perf_breakdown`'s
+   * `traffic_classes`), encoded like `levels` (`cls=`): `money|educational`.
+   * Query dimension only.
+   */
+  traffic_classes?: string;
 }
 
 /**
@@ -180,6 +195,11 @@ export const GSC_FILTER_KEYS: readonly GscFilterKey[] = [
   "impressions_max",
   "position_min",
   "position_max",
+  "ctr_min",
+  "ctr_max",
+  "value_score_min",
+  "value_score_max",
+  "traffic_classes",
 ];
 
 export interface GscStampFilter {
@@ -502,7 +522,11 @@ export type GscSortKey =
   | "key"
   | "delta_clicks"
   /** The SERVICE column — sorted by topic name, server-side (C14 + services). */
-  | "topic";
+  | "topic"
+  /** MSR-03/04 — Class · Score · Level, server-side, query dimension only. */
+  | "traffic_class"
+  | "value_score"
+  | "value_band";
 
 /**
  * Dig Here rule vocabulary — mirrored EXACTLY by the server whitelist inside
