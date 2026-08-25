@@ -1,15 +1,18 @@
-// /demos/kind-loaders — the whole kind loading library on one screen, with a
-// simulated early-key arrival so each loader's empty→fed progression shows.
+// /demos/kind-loaders — the loading library in both phases, plus what the
+// REAL registered kinds resolve to. Server-loads live `kind_definition` rows
+// so section 2 is never invented data.
 
 import type { Metadata } from "next";
 import KindLoaderGallery from "./KindLoaderGallery";
+import { loadRealKinds } from "./real-kinds";
 
 export const metadata: Metadata = {
   title: "Kind Loading Library",
   description:
-    "Every loader in the kind loading library, side by side, with live early keys.",
+    "Every loading silhouette in placeholder and loading phases, plus the silhouette each real kind resolves to.",
 };
 
-export default function KindLoadersDemoPage() {
-  return <KindLoaderGallery />;
+export default async function KindLoadersDemoPage() {
+  const { rows, error } = await loadRealKinds();
+  return <KindLoaderGallery realKinds={rows} loadError={error} />;
 }

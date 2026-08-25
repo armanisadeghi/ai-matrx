@@ -49,6 +49,8 @@
 import React from "react";
 import { resolveKindLoadingComponent } from "../loading/kind-loading-registry";
 import { resolveLoadingSlugForKind } from "../loading/resolve-loading-slug";
+import { useContentIrKindVersion } from "../use-registry-repaint";
+import { useEnsureKindRenderable } from "../ensure-kind-renderable";
 import type { KindLoadingProps } from "../loading/kind-loading.types";
 
 export type KindSlotPhase = "reserved" | "arriving" | "settled" | "failed";
@@ -97,6 +99,26 @@ export function KindSlot({
   chrome,
   className,
 }: KindSlotProps) {
+  // A slot is usually the FIRST thing on screen to name a kind — often long
+  // before any stream mentions it — so it owes the same two duties the chat
+  // render path owes:
+  //  1. DEMAND what is missing. Rendering a kind is the fetch signal, on every
+  //     surface (THE ONE LOADING SEQUENCE). Without this a slot for a DB-only
+  //     kind sat on the generic skeleton for the whole run, because nothing
+  //     else had asked for its definition yet.
+  //  2. SUBSCRIBE, so the answer arriving late actually repaints this slot.
+  //     Registry reads are plain synchronous lookups; nothing in React state
+  //     changes when a definition lands.
+  useEnsureKindRenderable(kind ?? null);
+  const kindVersion = useContentIrKindVersion(kind ?? null);
+
+  // Explicit memo: React Compiler is OFF in this repo, and resolution should
+  // re-run when the kind or its registry answer changes — not every render.
+  const slug = React.useMemo(() => {
+    void kindVersion; // registry-arrival invalidation key
+    return resolveLoadingSlugForKind(kind).slug;
+  }, [kind, kindVersion]);
+
   // ONE root element across every phase — React reconciles it in place, so
   // the container (and the reader's scroll position) survives the swap. A
   // conditional that returned different roots per phase would remount and
@@ -115,6 +137,7 @@ export function KindSlot({
         error
       ) : (
         <PendingSilhouette
+          slug={slug}
           kind={kind}
           phase={phase}
           early={early}
@@ -125,18 +148,14 @@ export function KindSlot({
   );
 }
 
-/**
- * The reserved/arriving body: the kind's declared-or-derived silhouette in
- * the matching mood. Split out so the slug resolution happens per render of
- * the pending branch only — a settled slot never touches the registry.
- */
+/** The reserved/arriving body: the resolved silhouette, in the right mood. */
 const PendingSilhouette: React.FC<{
+  slug: string | null;
   kind?: string | null;
   phase: "reserved" | "arriving";
   early?: KindLoadingProps;
   chrome?: "full" | "bare";
-}> = ({ kind, phase, early, chrome }) => {
-  const slug = resolveLoadingSlugForKind(kind).slug;
+}> = ({ slug, kind, phase, early, chrome }) => {
   const Loader = resolveKindLoadingComponent(slug);
   return React.createElement(Loader, {
     ...early,
