@@ -1,35 +1,16 @@
 # message-crud / server
 
-Thunks that talk to the **Python backend** via `callApi()` instead of going
-direct to Supabase via `supabase.rpc()`. Every file here is paired with —
-and intentionally NOT a replacement for — a thunk in the parent directory.
+> Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/STATE.md` § 4 — the endpoint inventory for these thunks lives there. Read it before touching this feature in ANY repo.
 
-These exist so we can A/B the two paths in production surfaces, measure,
-and then delete the loser. Do not wire these into existing call sites
-silently; opt in per surface.
+Thunks that talk to the **Python backend** via `callApi()` instead of going direct to Supabase via
+`supabase.rpc()`.
 
-## Pairing table
-
-| Existing (Supabase RPC) | Server-backed (here) | Notes |
-| --- | --- | --- |
-| `forkConversation` (`cx_fork_conversation` RPC) | `forkConversationServer` (`POST /cx/conversations/{id}/fork`) | Server version accepts `from_message_id` + `exclusive` for cleaner "fork before this message" semantics |
-| `forkConversation` + `editMessage` + `executeInstance` (3-call combo for "Edit & Resubmit (Fork)") | `forkAndRunServer` (`POST /ai/conversations/{id}/fork-and-run`, streaming) | Collapses the entire edit-and-fork flow into one atomic streamed call |
-| `deleteMessage` (`cx_message_soft_delete` RPC, looped for batch) | `batchDeleteMessages` (`POST /cx/conversations/{id}/messages/delete`) | Hard delete; cascades tool_use ↔ tool_result pairs; supports `dry_run: true` |
-| _(no existing equivalent)_ | `replaceMessages` (`POST /cx/conversations/{id}/messages/replace`) | User-initiated compaction: soft-delete a range, insert a single visible summary, reversible |
-| _(no existing equivalent)_ | `hideMessages` (`POST /cx/conversations/{id}/messages/hide`) | System compaction: hide from the model only; user UI unchanged |
-| _(no existing equivalent)_ | `restoreCompaction` (`POST /cx/conversations/{id}/messages/restore`) | Reverse a `replace` or `hide` |
-| _(no existing equivalent)_ | `compactTurns` (`POST /cx/conversations/{id}/turns/compact`) | Compact whole user→user turns; delegates to replace/hide |
-
-## Spec
-
-`/docs/FE_CONVERSATION_API_CHANGES.md` — server-team contract for every
-endpoint listed above. Request/response types are also in
-`types/python-generated/api-types.ts` (auto-generated).
-
-## Stream event
-
-`features/agents/types/conversation-stream-events.ts` defines the
-`ConversationForkedEvent` payload that `fork-and-run` emits as the first
-NDJSON event. That type is NOT in `api-types.ts` because stream-event
-payloads aren't OpenAPI-shaped (same situation as the scraper's
-`page_extraction` events).
+- **Every file here is paired with — and intentionally NOT a replacement for — a thunk in the parent
+  directory.** They exist so the two paths can be A/B'd in production, measured, and the loser
+  deleted.
+- **Do not wire these into existing call sites silently; opt in per surface.**
+- `batchDeleteMessages` is a **hard** delete (the Supabase twin soft-deletes). Do not swap one for
+  the other on the assumption that they are equivalent.
+- `ConversationForkedEvent` (`features/agents/types/conversation-stream-events.ts`) is deliberately
+  NOT in `api-types.ts` — stream-event payloads are not OpenAPI-shaped. Do not "fix" that by adding
+  it to the generated types.

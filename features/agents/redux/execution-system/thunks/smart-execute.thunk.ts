@@ -38,7 +38,7 @@ interface SmartExecuteArgs {
   surfaceKey?: string;
   /**
    * When a run is live on this conversation, which of the three send modes
-   * (docs/TURN_BOUNDARY_INBOX.md — Arman's ruling) this send uses. Both are
+   * (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md — Arman's ruling) this send uses. Both are
    * SERVER-HELD inbox items answered on the already-open stream:
    *   "queue" (default) — delivery "turn_end": waits until the run is
    *     COMPLETELY done, then delivered as the next message (FIFO, one per
@@ -165,7 +165,7 @@ export const smartExecute = createAsyncThunk<
       }
 
       // ── Send while a run is live — the three send modes ─────────────────────
-      // (Arman's ruling — docs/TURN_BOUNDARY_INBOX.md.) A send into a
+      // (Arman's ruling — /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md.) A send into a
       // conversation whose run is STILL LIVE must never start a second
       // concurrent turn (double stream, abort-registry eviction, interleaved
       // history; the server's turn lock now refuses it too). Both modes hand
@@ -441,7 +441,7 @@ export const cancelExecution = createAsyncThunk<
 /**
  * INTERRUPT ("stop & redirect") — the third send mode. Instantly stop from
  * the user's perspective, keep the costs, hide the abandoned tail, send the
- * composer text as the reply. Mechanics (docs/TURN_BOUNDARY_INBOX.md):
+ * composer text as the reply. Mechanics (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md):
  *
  *   1. `POST /ai/cancel/{request_id}?mode=interrupt` — the server stops the
  *      run at its next boundary and persists the abandoned tail HIDDEN

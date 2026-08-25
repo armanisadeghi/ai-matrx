@@ -11,7 +11,7 @@
  * legacy callers into this shape and the old type is retired.
  *
  * Mental model: `features/agents/agent-system-mental-model.md`
- * Full field reference: `features/agents/conversation-invocation-reference.md`
+ * Full field reference: `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`
  */
 
 import type { LLMParams } from "./agent-api-types";

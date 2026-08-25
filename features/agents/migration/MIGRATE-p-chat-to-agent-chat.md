@@ -98,7 +98,7 @@ Today the agent system has its own write paths to cx_ tables. The four `/api/cx-
 - Wire `(a)/chat` to call the same routes (consistent), or
 - Confirm the agent execution-system thunks fully replace them and these routes become dead code at deletion time.
 
-Pick one model and document it in `features/agents/docs/STREAMING_SYSTEM.md`.
+Pick one model and document it in `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`.
 
 ### Step 2 — Cut over and delete (gated on Step 1 verified)
 
@@ -199,7 +199,7 @@ Once `(a)/chat` matches every checkbox above:
 - `features/agents/components/chat/ChatRoomClient.tsx` — accept `mode: "guest" | "user"` prop
 - `features/agents/components/chat/ChatAgentPicker.tsx` — add user/builtin tabs and the mid-chat switcher variant
 - `features/agents/hooks/useAgentLauncher.ts` — verify NDJSON cancel matches `DEPRECATED-useAgentChat` semantics
-- `features/agents/docs/STREAMING_SYSTEM.md` — document the persistence-API decision
+- `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md` — document the persistence-API decision
 
 ### Delete (Step 2)
 

@@ -455,7 +455,7 @@ export type ResourceBlockType =
   // A processed document (an OCR'd → AI-cleaned file) attached by reference.
   // Unlike every block type above, it emits no content[] block: attachment
   // durability is the canonical file → conversation association edge described
-  // in RESOURCE_WIRE_SPEC.md.
+  // in /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESOURCE-WIRE.md.
   | "processed_document"
   | "editor_error"
   | "editor_code_snippet";

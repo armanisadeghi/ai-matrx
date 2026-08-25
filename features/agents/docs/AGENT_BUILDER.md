@@ -93,7 +93,7 @@ This is also why **Builder-specific settings** (`maxIterations`, `maxRetriesPerI
 2. `launchConversation` is dispatched with `routing.apiEndpointMode: "manual"` and Builder settings attached.
 3. `assembleManualRequest` reads the live definition plus the panel's committed turns from Redux, then flattens them into the manual payload.
 4. Fetch hits `POST /ai/manual`. Server validates the bundled definition and runs it without an agent-cache lookup.
-5. Response streams back through the standard NDJSON pipeline (see [`STREAMING_SYSTEM.md`](./STREAMING_SYSTEM.md)).
+5. Response streams back through the standard NDJSON pipeline (see [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md)).
 6. Nothing is persisted unless `builder.store = true`.
 
 When persistence is enabled, each manual request gets a fresh server wire conversation even though the test panel keeps one stable local Redux key for multi-turn continuity. Persisted-message consumers must therefore derive database conversation identity from the reserved `chat.message` row; they must never treat the local panel key as a database foreign key.
@@ -139,7 +139,7 @@ Every context policy declares whether the agent may CHANGE its value or only REA
 
 - [`AGENT_RUNNER.md`](./AGENT_RUNNER.md) — the sibling surface; read both together
 - [`AGENT_VERSIONING.md`](./AGENT_VERSIONING.md) — what "save" does
-- [`AGENT_INVOCATION_LIFECYCLE.md`](./AGENT_INVOCATION_LIFECYCLE.md) — endpoint routing contrasted against Runner
+- [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md) — endpoint routing contrasted against Runner
 - `features/agent-settings/FEATURE.md` — *(to be written once wired)*
 
 ---
@@ -155,4 +155,4 @@ Every context policy declares whether the agent may CHANGE its value or only REA
 
 ---
 
-> **Keep-docs-live:** any change to the Builder payload shape, advanced settings enum, or `/ai/manual` contract must update this doc AND `AGENT_INVOCATION_LIFECYCLE.md`.
+> **Keep-docs-live:** any change to the Builder payload shape, advanced settings enum, or `/ai/manual` contract must update this doc AND `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`.

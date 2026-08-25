@@ -3,7 +3,7 @@
  *
  * The invariants proven here are the ones whose loss re-creates the
  * disappearing-run class on multi-call surfaces — read
- * features/agents/docs/LIVE_RUN_RETENTION.md before weakening any of them.
+ * /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md before weakening any of them.
  */
 
 import { configureStore } from "@reduxjs/toolkit";

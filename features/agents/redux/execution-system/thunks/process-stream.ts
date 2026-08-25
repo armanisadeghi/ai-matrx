@@ -2412,7 +2412,7 @@ export async function processStream({
         // stream. For each item: retire its "waiting its turn" card, and (when
         // user-visible) seed the transcript bubble from the echoed text. The
         // echo makes this work even for items queued by another device/panel —
-        // no local record required (docs/TURN_BOUNDARY_INBOX.md).
+        // no local record required (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md).
         for (const item of event.data.items ?? []) {
           dispatch(
             removeInboxItem({

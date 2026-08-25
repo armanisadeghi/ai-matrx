@@ -5,7 +5,7 @@
  * that keeps the row alive for the life of the set ("set hold"): an owner
  * hook's reap (`removeRequest` on unmount / pre-next-run) then DEFERS until
  * the entry leaves the set, exactly like a mounted viewer's hold — see
- * features/agents/docs/LIVE_RUN_RETENTION.md. This is what lets a surface
+ * /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md. This is what lets a surface
  * remount and find every run it was displaying still fully streamed.
  *
  * Never dispatch the slice's internal reducers directly: adding without the

@@ -93,7 +93,7 @@
 | [`features/agents/redux/execution-system/thunks/process-stream.ts`](../redux/execution-system/thunks/process-stream.ts) | `tool_delegated` branch: widget_* names dispatch `dispatchWidgetAction` without pausing; non-widget preserved. `handle.onComplete` fires at stream end (all display modes). `handle.onError` fires on stream-level errors. |
 | [`features/agents/hooks/useAgentLauncher.ts`](../hooks/useAgentLauncher.ts) | Replaced the four callback passthroughs with `widgetHandleId` |
 | [`features/agents/components/tools-management/CLIENT_SIDE_TOOLS.md`](../components/tools-management/CLIENT_SIDE_TOOLS.md) | Appended Widget Actions section |
-| [`features/agents/conversation-invocation-reference.md`](../conversation-invocation-reference.md) | Rewrote callbacks section to describe `widgetHandleId` only |
+| [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md) | Rewrote callbacks section to describe `widgetHandleId` only |
 | [`features/agents/agent-system-mental-model.md`](../agent-system-mental-model.md) | §7 flipped from 🚧 to ✅, content updated |
 | [`features/agents/ROADMAP-agent-ecosystem-rebuild.md`](../ROADMAP-agent-ecosystem-rebuild.md) | §0 flipped from 🚧 to ✅ LANDED |
 
@@ -161,7 +161,7 @@ The original [`TODO-widget-tools-plan.md`](../TODO-widget-tools-plan.md) had 9 p
 ### 2.5 Docs
 - **Usage:** [`WIDGET_HANDLE_SYSTEM.md`](WIDGET_HANDLE_SYSTEM.md).
 - **Contract:** [`CLIENT_SIDE_TOOLS.md`](../components/tools-management/CLIENT_SIDE_TOOLS.md) (widget-actions section appended).
-- **Reference:** [`conversation-invocation-reference.md`](../conversation-invocation-reference.md) §10 rewritten.
+- **Reference:** [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md) §10 rewritten.
 - **Architecture:** [`agent-system-mental-model.md`](../agent-system-mental-model.md) §7 updated.
 - **Strategy:** [`ROADMAP-agent-ecosystem-rebuild.md`](../ROADMAP-agent-ecosystem-rebuild.md) §0 marked landed.
 - **History:** [`TODO-widget-tools-plan.md`](../TODO-widget-tools-plan.md) kept unchanged for provenance.

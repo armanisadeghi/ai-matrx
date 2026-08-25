@@ -252,7 +252,7 @@ export function useSetupPasses(
 
       // Abort any prior stream BEFORE reaping its row — an orphaned fetch
       // draining into a missing row is the disappearing-run class (see
-      // features/agents/docs/LIVE_RUN_RETENTION.md seam #3).
+      // /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md seam #3).
       abortRef.current?.abort();
       if (adoptedRequestIdRef.current) {
         dispatch(removeRequest(adoptedRequestIdRef.current));

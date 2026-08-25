@@ -30,7 +30,7 @@ export function AgentToastOverlay({
   // Live output is read straight off the conversation's newest request row
   // (no `MarkdownStream requestId=`), so this viewer retains the row for its
   // own mount lifetime — otherwise an owner reap mid-stream blanks it for good.
-  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  // Doctrine: /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md.
   useRetainLatestRequestForViewer(conversationId, "AgentToastOverlay");
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
   const title = useAppSelector(selectInstanceDisplayTitle(conversationId));

@@ -153,7 +153,7 @@ test("re-creating an existing request NEVER resets its streamed state", () => {
   // adopting the same server-side pipeline run dispatches createRequest under
   // the SAME server X-Request-ID. That must continue into the existing row —
   // a reset would blank every mounted viewer and silently drop all later
-  // events. See features/agents/docs/LIVE_RUN_RETENTION.md.
+  // events. See /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md.
   const store = makeStore();
   createTestRequest(store);
 

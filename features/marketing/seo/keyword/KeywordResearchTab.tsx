@@ -84,7 +84,7 @@ export function KeywordResearchTab({
   // The run set is the REMOUNT-PROOF home of this surface's live output:
   // registered runs live in Redux under this key, so a tab switch, a
   // query-driven re-render, or any parent remount re-attaches to the same
-  // streamed content (features/agents/docs/LIVE_RUN_RETENTION.md § Multi-run
+  // streamed content /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md § Multi-run
   // surfaces). Keyed per phrase + site so parallel windows never collide.
   const runSetKey = `keyword-research:${normalizeKeywordPhrase(phrase)}:${siteId ?? "no-site"}`;
   const research = useKeywordResearch(siteId, organizationId, {

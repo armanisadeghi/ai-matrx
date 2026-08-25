@@ -117,4 +117,4 @@ If the agent's `action` enum changes or `focus` is renamed to `current_item`, ev
 
 ---
 
-> **Keep-docs-live:** any change to version semantics, drift detection, or the `engine.isVersion` contract must update this doc AND `AGENT_INVOCATION_LIFECYCLE.md`.
+> **Keep-docs-live:** any change to version semantics, drift detection, or the `engine.isVersion` contract must update this doc AND `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`.

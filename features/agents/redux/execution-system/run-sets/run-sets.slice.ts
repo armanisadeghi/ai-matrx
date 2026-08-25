@@ -2,7 +2,7 @@
  * Run Sets — the surface-keyed, ORDERED collection of live agent runs and
  * non-stream data payloads that one UI surface displays together.
  *
- * 🚨 WHY THIS EXISTS (read features/agents/docs/LIVE_RUN_RETENTION.md first):
+ * 🚨 WHY THIS EXISTS (read /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md first):
  * launcher hooks keep their run identity (requestId, status) in component
  * state, so ANY remount of the surface — a tab switch, a query-driven
  * re-render upstream, a `key=` change — loses which runs the surface was
@@ -23,7 +23,7 @@
  *
  * ROW LIFETIME: adding a run to a set does NOT itself retain the
  * `activeRequests` row — retention stays viewer-scoped (the mounted
- * `RunSetDisplay`/`MarkdownStream` holds it, per LIVE_RUN_RETENTION.md).
+ * `RunSetDisplay`/`MarkdownStream` holds it, per /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md).
  * Membership additionally CANCELS owner reaps while the set exists via the
  * set-hold thunks in run-sets.thunks.ts. Always add/clear through those
  * thunks (`addRunToSet` / `clearRunSet` / `removeRunSetEntry`), never by

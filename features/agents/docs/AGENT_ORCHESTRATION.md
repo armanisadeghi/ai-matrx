@@ -53,7 +53,7 @@ When a tool fails in a recoverable way, the orchestrator feeds the error back to
 | Kind | Executed where | Stream behavior |
 |---|---|---|
 | **Server-side tools** | Server (Python tool executors) | Stream continues; tool result flows inline as part of the next model generation. |
-| **Durable delegated tools** | Server emits `tool_delegated` → client executes → client POSTs result | Stream **pauses** until the client submits results via `POST /ai/conversations/{id}/tool_results`. See [`DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md`](./DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md). |
+| **Durable delegated tools** | Server emits `tool_delegated` → client executes → client POSTs result | Stream **pauses** until the client submits results via `POST /ai/conversations/{id}/tool_results`. See [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md). |
 | **Widget tools** | Client (via `useWidgetHandle`) | Stream is **NOT paused**. Widget actions are fire-and-forget; results batched via microtask queue and POSTed in one consolidated request. See [`WIDGET_HANDLE_SYSTEM.md`](./WIDGET_HANDLE_SYSTEM.md). |
 
 The widget-tool non-pause is a deliberate performance choice: widget actions are UI-effectful, not semantically critical for the next LLM iteration.
@@ -145,9 +145,9 @@ These are Builder-only and travel on `ConversationInvocation.builder`:
 
 ## Related
 
-- [`AGENT_INVOCATION_LIFECYCLE.md`](./AGENT_INVOCATION_LIFECYCLE.md) — endpoint routing
-- [`STREAMING_SYSTEM.md`](./STREAMING_SYSTEM.md) — wire protocol
-- [`DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md`](./DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md) — delegated tools contract
+- [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md) — endpoint routing
+- [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md) — wire protocol
+- [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md) — delegated tools contract
 - [`WIDGET_HANDLE_SYSTEM.md`](./WIDGET_HANDLE_SYSTEM.md) — widget tools
 - `features/tool-call-visualization/FEATURE.md` — rendering tool calls in the UI
 
@@ -159,4 +159,4 @@ These are Builder-only and travel on `ConversationInvocation.builder`:
 
 ---
 
-> **Keep-docs-live:** any change to iteration, retry, or tool-kind semantics must update this doc. Changes to widget-vs-durable stream behavior must cross-update `WIDGET_HANDLE_SYSTEM.md` and `DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md`.
+> **Keep-docs-live:** any change to iteration, retry, or tool-kind semantics must update this doc. Changes to widget-vs-durable stream behavior must cross-update `WIDGET_HANDLE_SYSTEM.md` and `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md`.

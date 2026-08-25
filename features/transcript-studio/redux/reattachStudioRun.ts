@@ -27,7 +27,7 @@
  * spine whether anything is still running for the conversation and follows its
  * event stream to terminal. Streams run `detach_on_disconnect`, so the work
  * never stopped — only our delivery did. Token text is deliberately NOT
- * replayed (platform doctrine, `features/agents/docs/LIVE_RUN_RETENTION.md`):
+ * replayed (platform doctrine, `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md`):
  * reconnect shows live STATUS until terminal, then the conversation refetch
  * carries the finished output. That refetch is where a recovered result comes
  * from here too.
@@ -282,7 +282,7 @@ export async function reattachStudioRun({
    *
    * A rejoined run has no client-side request row (this page never opened the
    * stream) and the platform never replays tokens into one
-   * (`LIVE_RUN_RETENTION.md`). Binding the window to the conversation alone
+   * (`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md`). Binding the window to the conversation alone
    * would open an EMPTY box that never fills — a dead end dressed as progress.
    * So the window carries real stages instead, and the finished text lands in
    * it as the last row's preview: the sanctioned "narrate when you can't

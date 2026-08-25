@@ -151,7 +151,7 @@ export function InputActionButtons({
 
   // While a run streams, the composer STAYS live: Send queues the text into
   // the Turn-Boundary Inbox (the running agent answers it at its next pause,
-  // on the same stream — docs/TURN_BOUNDARY_INBOX.md), and a separate Stop
+  // on the same stream — /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md), and a separate Stop
   // button cancels the run. Send during a run needs text to queue; while the
   // mic is active the send path blocks so trailing audio isn't dropped.
   const isSendDisabled = isExecuting

@@ -77,7 +77,7 @@ export function SmartAgentInput({
   const isAmbient = presentation === "ambient";
   // Queued-while-running message cards render above EITHER variant, so every
   // surface that mounts a composer also sees / edits / withdraws its queue
-  // (docs/TURN_BOUNDARY_INBOX.md). Renders null when the queue is empty.
+  // (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md). Renders null when the queue is empty.
   const queueStrip =
     conversationId && !isAmbient ? (
       <InboxQueueStrip conversationId={conversationId} />

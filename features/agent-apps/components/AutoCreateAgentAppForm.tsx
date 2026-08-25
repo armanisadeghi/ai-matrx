@@ -238,7 +238,7 @@ function AutoCreateAgentAppFormWithAgent({
   // `MarkdownStream requestId=`), so each row is retained here for this
   // form's mount lifetime — an owner reap mid-stream would blank the
   // generation view permanently.
-  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  // Doctrine: /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md.
   useRetainRequestForViewer(codeTaskId, "AutoCreateAgentAppForm:code");
   useRetainRequestForViewer(metadataTaskId, "AutoCreateAgentAppForm:metadata");
   const isCodeStreamEnded = useAppSelector((state) => {

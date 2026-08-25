@@ -46,7 +46,7 @@ review dossier, or approval monitor.
 
 ## Invariants that survive from the old doc
 
-- MCP tools integrate through the **durable delegated tool path** — never a parallel execution path ([`../agents/docs/DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md`](../agents/docs/DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md)).
+- MCP tools integrate through the **durable delegated tool path** — never a parallel execution path ([`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md)).
 - OAuth tokens stay server-side; the client never sees raw credentials.
 - **DCR credentials are attempt-scoped.** Never cache a returned client ID without its
   matching secret; a downstream failure must not poison the next authorization attempt.

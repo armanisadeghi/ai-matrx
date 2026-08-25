@@ -681,7 +681,7 @@ async function waitForExtraction(
   // reap landing mid-run makes the extraction it is waiting for unreachable,
   // and the wait silently times out into a no-result. Hold the row for the
   // poll, release it in `finally`.
-  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  // Doctrine: /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md.
   const viewerId = `runHeadlessAgentJson:${args.surfaceKey}:${requestId}`;
   dispatch(retainRequestForViewer({ requestId, viewerId }));
 

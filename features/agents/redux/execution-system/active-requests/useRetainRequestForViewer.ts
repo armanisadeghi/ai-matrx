@@ -14,7 +14,7 @@
  * missing row are silently dropped, so the content never comes back until a
  * full remount + rejoin. This is the "data streams in, then just disappears"
  * bug that has been re-introduced repeatedly. Full doctrine:
- * features/agents/docs/LIVE_RUN_RETENTION.md.
+ * /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md.
  *
  * The contract: every viewer of a requestId calls this hook. Owner cleanup
  * then DEFERS instead of deleting (`pendingRemovalByRequestId`), and the

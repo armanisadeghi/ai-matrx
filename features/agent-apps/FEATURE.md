@@ -155,7 +155,7 @@ The legacy `app/api/public/agent-apps/[slug]/execute/route.ts` (deleted on `2026
 
 - **Depends on:** `features/agents/`, `features/agent-shortcuts/`, `features/artifacts/` (rendering), `features/agent-context/` (variable/scope resolution)
 - **Depended on by:** Public URL consumers, admin/user/org app libraries
-- **Cross-links:** `features/agents/docs/AGENT_INVOCATION_LIFECYCLE.md` (ephemeral branch), `features/agents/agent-system-mental-model.md` §6, `features/tool-call-visualization/FEATURE.md`
+- **Cross-links:** `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md` (ephemeral branch), `features/agents/agent-system-mental-model.md` §6, `features/tool-call-visualization/FEATURE.md`
 
 ---
 

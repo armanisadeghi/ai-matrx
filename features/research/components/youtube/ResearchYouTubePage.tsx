@@ -43,7 +43,7 @@ export default function ResearchYouTubePage() {
   /** In-flight stream controllers — each fetch and adopter watchdog share the
    * same object. All are aborted on unmount so orphaned streams never keep
    * draining into reaped rows (events on a missing row are silently dropped; see
-   * features/agents/docs/LIVE_RUN_RETENTION.md seam #3). */
+   * /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md seam #3). */
   const streamAbortControllersRef = useRef(new Set<AbortController>());
 
   useEffect(

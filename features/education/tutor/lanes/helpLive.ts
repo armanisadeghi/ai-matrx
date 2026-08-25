@@ -139,7 +139,7 @@ export function helpLive(ctx: HelpLiveContext) {
       const result = await runHeadlessAgentJson(dispatch, getState, {
         mandateKey,
         surfaceKey: "flashcards-help-live",
-        // NOT ephemeral (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md); kept out of
+        // NOT ephemeral (see /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/EPHEMERAL-RUNS.md); kept out of
         // normal chats via a distinct system source_feature (source-registry.ts).
         sourceFeature: "education-flashcards",
         ...livePosture(ctx.onConversationCreated),

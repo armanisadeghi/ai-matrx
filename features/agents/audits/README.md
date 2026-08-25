@@ -13,5 +13,5 @@ landed; use as reference for follow-up cleanup work.
 These audits are **tactical checklists**. They are referenced from the three strategic docs at the parent level:
 
 - [`../agent-system-mental-model.md`](../agent-system-mental-model.md) — the architecture: Build → Test → Consume, Shortcuts, Apps, Widget Handle, Redux layout.
-- [`../conversation-invocation-reference.md`](../conversation-invocation-reference.md) — the `ConversationInvocation` contract every surface hands to `launchConversation`.
+- [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md) — the `ConversationInvocation` contract every surface hands to `launchConversation`.
 - [`../ROADMAP-agent-ecosystem-rebuild.md`](../ROADMAP-agent-ecosystem-rebuild.md) — ordered workstreams (Chat, Shortcuts, Apps, Widget Handle) plus the retirement schedule that pulls from audits 02 + 04.

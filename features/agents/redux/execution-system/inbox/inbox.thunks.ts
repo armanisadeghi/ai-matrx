@@ -1,6 +1,6 @@
 /**
  * conversationInbox thunks — the client half of the Turn-Boundary Inbox
- * (docs/TURN_BOUNDARY_INBOX.md; server contract: aidream
+ * (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md; server contract: aidream
  * docs/cx_chat/TURN_BOUNDARY_INBOX.md).
  *
  * SINGLE FUNNEL: every "send while the agent is running" flows through

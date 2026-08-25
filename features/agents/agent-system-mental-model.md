@@ -403,7 +403,7 @@ Legacy slices under `features/agents/redux/old/` are still mounted for migration
   - **Shortcut** — UI context auto-fills; invocation is highly configurable (13 display modes, 6 input styles, auto-fire or show-inputs-first, multi-turn or single-turn, etc.).
   - **App** — bespoke UI captures input, often with no chat at all; agent output renders as an interactive artifact.
 
-**Every surface constructs a `ConversationInvocation`** and hands it to `launchConversation`. See [`conversation-invocation-reference.md`](conversation-invocation-reference.md) for the field-by-field contract.
+**Every surface constructs a `ConversationInvocation`** and hands it to `launchConversation`. See [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`](/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md) for the field-by-field contract.
 
 ---
 

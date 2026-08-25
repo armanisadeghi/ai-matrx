@@ -2,7 +2,7 @@
 
 /**
  * InboxQueueStrip — the waiting-message cards for the three send modes
- * (docs/TURN_BOUNDARY_INBOX.md — Arman's ruling 2026-07-29):
+ * (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md — Arman's ruling 2026-07-29):
  *
  *   QUEUE (default): "waits until the agent is completely done, then sends as
  *     the next turn." Card actions: edit, withdraw, and "Deliver now" (promote

@@ -306,7 +306,7 @@ silently drops items the server would have happily applied.
   `conversation_id`; without it the key is the display). Consumed by the new
   `value_store_stored` "result ready" card (`components/mardown-display/blocks/
   data-events/ValueStoreStoredBlock.tsx`), which renders the descriptor's fence via
-  `MatrxEnvelopeBlock`. Stream wiring: `features/agents/docs/STREAMING_SYSTEM.md`
+  `MatrxEnvelopeBlock`. Stream wiring: `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`
   change log 2026-07-12.
 - 2026-07-11 — **`url` added to the reference taxonomy (8-type).** New `UrlRefItem { url, label? }`
   in `envelope.ts`; `urlReference.ts` (`buildUrlReferenceFence`/`buildMultiUrlReferenceFence`);

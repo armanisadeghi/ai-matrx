@@ -76,7 +76,7 @@ export function useAuthorityRouter(siteId: string) {
   useEffect(
     () => () => {
       // Abort FIRST, then reap — an orphaned fetch draining into a missing
-      // row is the disappearing-run class (LIVE_RUN_RETENTION.md seam #3).
+      // row is the disappearing-run class (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md seam #3).
       abortRef.current?.abort();
       abortRef.current = null;
       if (requestRef.current) {

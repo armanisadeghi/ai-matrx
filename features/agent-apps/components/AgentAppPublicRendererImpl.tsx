@@ -234,7 +234,7 @@ function CustomComponentRenderer({
   // `responseText` is rendered through `MarkdownStream content=`, which is the
   // plain-text form and carries no retention (only `requestId=` routes through
   // StreamAwareChatMarkdown). Retain the row for this viewer's lifetime.
-  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  // Doctrine: /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md.
   useRetainRequestForViewer(requestId, "AgentAppPublicRenderer");
 
   const requestStatus = request?.status;

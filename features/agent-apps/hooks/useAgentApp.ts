@@ -418,7 +418,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   // Agent-app shells render `response` (accumulated text) rather than
   // `MarkdownStream requestId=`, so the canonical viewer retention never
   // applies — retain here for the hook's mount lifetime.
-  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  // Doctrine: /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md.
   useRetainRequestForViewer(requestId, "useAgentApp");
 
   const isExecuting = useAppSelector((state) =>

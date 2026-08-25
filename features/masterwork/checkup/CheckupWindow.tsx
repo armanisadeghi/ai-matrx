@@ -136,7 +136,7 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
 
   // The row this panel renders from must outlive the panel — reaping it
   // mid-stream is the recurring "my findings just disappeared" defect
-  // (features/agents/docs/LIVE_RUN_RETENTION.md).
+  // /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md).
   useRetainRequestForViewer(run.requestId, "masterwork-checkup");
 
   // ── Clicking "Final checkup" IS the final checkup ─────────────────────────

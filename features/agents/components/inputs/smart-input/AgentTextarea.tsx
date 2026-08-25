@@ -152,7 +152,7 @@ export function AgentTextarea({
     (isExpanded || (isSubmitting ? 0 : charCount) > 80);
 
   // Send is ALWAYS a send — never a disguised Stop. While a run is streaming,
-  // smartExecute applies the three send modes (docs/TURN_BOUNDARY_INBOX.md):
+  // smartExecute applies the three send modes (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md):
   //   Enter        → QUEUE: waits until the agent is completely done, then
   //                  sends as the next turn (default).
   //   ⌘/Ctrl+Enter → STEER: delivered at the agent's next pause, mid-run.

@@ -1,5 +1,5 @@
 -- Per-keyword goals (focused lens) — workstream A of
--- docs/handoffs/research-lens-video-and-experts.md.
+-- /Users/armanisadeghi/code/common-docs/systems/knowledge/research/HANDOFF.md.
 --
 -- rs_keyword.goal: the user-authored "what is THIS search for" sentence that
 -- threads into every agent prompt that touches the keyword.

@@ -11,7 +11,7 @@
  *
  * The wrapped iterable should be driven by NDJSON parsing; the server MUST
  * emit `{kind:"heartbeat"}` at least every `heartbeatTimeoutMs / 2` ms for
- * long-running operations. See docs/concepts/streaming-contract.md.
+ * long-running operations. See /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/STREAM-CONTRACT.md.
  */
 
 import { HeartbeatTimeoutError, TotalTimeoutError } from "./errors";

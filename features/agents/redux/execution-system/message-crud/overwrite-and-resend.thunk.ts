@@ -15,7 +15,7 @@
  *
  * Until that RPC ships on the Python side, this thunk falls back to a
  * client-side multi-call sequence (delete each message in turn). That's
- * documented in PYTHON_RESUME_SPEC.md as a server task.
+ * documented in /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md as a server task.
  *
  * Flow:
  *   1. Read the message position. Sanity-check role==='user'.

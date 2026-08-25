@@ -72,7 +72,7 @@ export function useHeadlessAgentJson(): UseHeadlessAgentJson {
   // `MarkdownStream`, so they get none of the retention that the canonical
   // viewers carry. Retain here and the whole headless-JSON family is covered:
   // an owner reap landing mid-stream defers instead of blanking the surface.
-  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  // Doctrine: /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md.
   useRetainRequestForViewer(activeRequestId, "useHeadlessAgentJson");
 
   async function run<T = unknown>(

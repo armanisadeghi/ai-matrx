@@ -211,7 +211,7 @@ export function gradeCard(args: GradeCardArgs) {
         mandateKey: FC_MANDATES.gradeSpoken,
         surfaceKey: `fastfire-grade-${cardId}`,
         // NOT ephemeral: the platform's ephemeral path is half-built and
-        // 404s against the v2 conversation gate (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md).
+        // 404s against the v2 conversation gate (see /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/EPHEMERAL-RUNS.md).
         // We persist instead, and keep these out of the user's normal chats
         // via a distinct, system-marked source_feature (source-registry.ts).
         sourceFeature: "education-fastfire",

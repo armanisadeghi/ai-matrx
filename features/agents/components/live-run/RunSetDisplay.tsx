@@ -14,7 +14,7 @@
  * State lives in the `runSets` slice keyed by the caller's stable `setKey`,
  * NOT in this component — a remount re-attaches to every run the surface was
  * displaying (the disappearing-run class this kills is documented in
- * features/agents/docs/LIVE_RUN_RETENTION.md § Multi-run surfaces). Register
+ * /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md § Multi-run surfaces). Register
  * runs with `addRunToSet` from the launcher hook's `onAdopted`, add API
  * payloads with `addDataToSet`, and `clearRunSet` ONLY when the user starts a
  * new logical session — never on unmount.

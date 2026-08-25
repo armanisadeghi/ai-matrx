@@ -61,106 +61,16 @@ All 10 slices use the same key structure: `byInstanceId: Record<string, T>`.
 
 ## Execution Pipeline
 
-### Step A — Preconditions
+The preconditions, the `assembleRequest` source→payload map, the endpoint matrix, the stream
+event → reducer map, and the Builder `/ai/manual` path are **cross-repo contracts and no longer
+live here.** They are in the node's kit — read these before changing any of them:
 
-1. **`agentDefinition` must be loaded.** The agent row must exist in Redux before any creation thunk can snapshot it. `executeInstance` never reads this slice — only creation does.
+- `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`
+- `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`
 
-2. **`executionInstances` shell must exist.** `assembleRequest` returns null without one.
-
-3. **Instance factories** — `createManualInstance` is the default. `createTestInstance`, `createManualInstanceNoAgent`, `createInstanceFromShortcut` only change how init runs (prefilled vars, overrides, scope mappings, no agent id). The run pipeline afterward is identical.
-
-### Step B — Body Assembly (`assembleRequest`)
-
-`assembleRequest(state, instanceId)` reads across all instance slices + `appContext` and builds a snake_case payload:
-
-| Source Slice | Selector | → Payload Field |
-|-------------|----------|----------------|
-| `instanceUserInput` | direct read | `user_input` (string or content block array) |
-| `instanceResources` | `selectResourcePayloads` | merged into `user_input` as blocks |
-| `instanceVariableValues` | `selectResolvedVariables` | `variables` |
-| `instanceModelOverrides` | `selectSettingsOverridesForApi` | `config_overrides` |
-| `instanceContext` | `selectContextPayload` | `context` |
-| `instanceClientTools` | direct read | `client_tools` |
-| `appContext` | org/workspace/project/task selectors | scope fields on payload |
-
-### Step C — Fire and Stream
-
-1. **Auth** — `apiConfigSlice` (baseUrl) + `userSlice` (Bearer token or fingerprint) build headers.
-2. **Routing** — `selectLatestConversationId(instanceId)` checks history first, `activeRequests` as fallback. Turn 1 → `POST /ai/agents/{agentId}`. Turn 2+ → `POST /ai/conversations/{conversationId}` with a narrowed body.
-   - **AI runtime version (v1/v2 spine):** every AI path is version-resolved by `resolveEndpointPath` via `selectEndpointOverrideConfig`, which folds in the scoped overrides from `lib/api/ai-api-version.ts`. The default is **v2** (`AI_API_VERSION_DEFAULT`) — turn 1 actually POSTs `/v2/ai/agents/{id}`, turn 2+ `/v2/ai/conversations/{id}`, Builder `/v2/ai/manual`. `/v2` is inserted at the **front** of the in-app path (`/v2/ai/*`, never `/ai/v2/*`) and is scoped to ONLY the four covered surfaces (chat/manual/agents/conversations) — cancel, warm, resume, fork-and-run, blocks, etc. stay on v1. Admins flip v1⇄v2 live via the sidebar **AI v2/AI v1** toggle (or the Run Settings panel); the choice persists per browser. Flip `AI_API_VERSION_DEFAULT` to `"v1"` for an instant, code-level, app-wide revert.
-3. **Optimistic turn** — `addUserTurn` fires before `createRequest` so the user's message appears instantly.
-4. **`createRequest`** — Row in `activeRequests.byRequestId`, status `"pending"`.
-5. **NDJSON stream loop** — `parseNdjsonStream(response)` yields typed events, each dispatched to its dedicated reducer:
-   - `chunk` → `appendChunk` — string concat into `accumulatedText`
-   - `status_update` → `setCurrentStatus` — overwrites `currentStatus`, appends to `statusHistory`
-   - `content_block` → `upsertContentBlock` — keyed by `blockId`, preserves emission order in `contentBlockOrder`
-   - `tool_event` (lifecycle) → `upsertToolLifecycle` — per-callId state machine (started → progress/step → completed/error)
-   - `tool_event` (delegated) → `addPendingToolCall` — instance pauses, awaits client response
-   - `completion` → `setCompletion` — single typed object, also extracts tokenUsage/finishReason for history
-   - `error` → `setRequestStatus` with `isFatal` flag — non-fatal errors allow the stream to continue
-   - `data` → `appendDataPayload` — genuine catch-all for unstructured events only
-   - `broker` → `appendDataPayload` — basic storage (broker system likely to be deprecated)
-   - `end` → `commitAssistantTurn` writes completed text to conversation history
-6. **Client metrics** — computed after stream ends, attached to both request and conversation turn. Now tracks `contentBlockEvents` and `statusUpdateEvents` alongside the original counters.
-
-### Step D — Chat Execution Path (Builder)
-
-The builder right panel uses a separate execution path that always hits `POST /api/ai/chat` with the agent definition read FRESH from Redux (including unsaved dirty edits). This bypasses the agent/conversation routing entirely.
-
-**Key files:**
-- `execute-chat-instance.thunk.ts` — `assembleChatRequest()` + `executeChatInstance` thunk
-- `process-stream.ts` — shared NDJSON stream processor used by both `executeInstance` and `executeChatInstance`
-
-**Differences from the standard path (Step B/C):**
-
-| Concern | Standard (`executeInstance`) | Builder (`executeChatInstance`) |
-|---------|---------------------------|-------------------------------|
-| Agent definition | Snapshotted at instance creation | Read FRESH on every execution |
-| Endpoint | `/agents/{id}` → `/conversations/{id}` | Always `/api/ai/chat` |
-| LLM params | `config_overrides` (delta only) | Spread flat at top level (full merged settings) |
-| Messages | Server manages history; client sends `user_input` | Client builds full `messages[]` from priming + history + input |
-| Control fields | N/A | `debug`, `store`, `max_iterations`, `max_retries_per_iteration` from `builderAdvancedSettings` |
-| Conversation mode | `"agent"` or `"conversation"` | `"chat"` |
-
-**`assembleChatRequest(state, instanceId)` source mapping:**
-
-| Source Slice | Selector | → Payload Field |
-|-------------|----------|----------------|
-| `agentDefinition` (FRESH read) | `state.agentDefinition.agents[agentId]` | `ai_model_id`, `messages` (priming), `tools`, `custom_tools` |
-| `instanceConversationHistory` | `historyEntry.turns[]` → `turnsToMessages()` | appended to `messages` |
-| `instanceUserInput` | direct read | appended to `messages` as final user turn |
-| `instanceResources` | `selectResourcePayloads` | merged into final user message blocks |
-| `instanceModelOverrides` | `selectCurrentSettings` (full merged, NOT deltas) | spread flat on payload |
-| `instanceVariableValues` | `selectResolvedVariables` | `variables` |
-| `instanceContext` | `selectContextPayload` | `context` |
-| `instanceClientTools` | direct read | `client_tools` |
-| `instanceUIState` | `builderAdvancedSettings` | `debug`, `store`, `max_iterations`, `max_retries_per_iteration` |
-| `instanceUIState` | `reuseConversationId` | conditionally sets `conversation_id` |
-
-**Type safety:** `ChatRequestPayload` is derived directly from the auto-generated schema via `NonNullableFields<components["schemas"]["ChatRequest"]>` in `agent-api-types.ts`. No hand-rolled interfaces — `pnpm update-api-types` picks up backend changes automatically.
-
-**Three scenarios in the builder:**
-1. **First call** — No history. Priming messages + user input → `/api/ai/chat`.
-2. **AutoClear ON + history exists** — `reInstanceAndExecute({ useChat: true })` destroys the old instance, creates a fresh one with `mode: "chat"`, then dispatches `executeChatInstance`.
-3. **Multi-turn continuation** — Priming messages + accumulated history turns + new user input → `/api/ai/chat`.
-
-**Structured System Instruction (parallel toggle):**
-
-When `builderAdvancedSettings.useStructuredSystemInstruction` is ON, the system message from the agent's priming messages is **extracted** from the `messages` array and sent as a structured `system_instruction` object instead. This unlocks the server's `SystemInstruction` builder pipeline:
-
-- `content` — the extracted system message text (what we currently use)
-- `include_date` — inject current date (default: true)
-- `intro` / `outro` — text placed before/after everything
-- `prepend_sections` / `append_sections` — injected around the base instruction
-- `content_blocks` — UUIDs or slugs fetched from the DB and injected automatically
-- `tools_list` — tool names auto-formatted in the prompt
-- `include_code_guidelines` / `include_safety_guidelines` — built-in sections
-
-When the toggle is OFF (default), the system message stays in `messages[]` and the server extracts it automatically — identical to the current behavior. See `aidream-chat-endpoint.md` for the full `SystemInstruction` type and rendering order.
-
-Types: `SystemInstruction` and `SystemInstructionInput` in `agent-api-types.ts`.
-
----
+🚨 **What used to be written here was wrong on two points** — it routed Builder to
+`POST /api/ai/chat` (it is `POST /ai/manual`) and it dispatched on `status_update` (removed; it is
+`phase`). Do not restore it from git.
 
 ## Key Design Rules
 

@@ -77,7 +77,7 @@ These are overlays on the same runtime Chat uses — no separate code path, just
 3. `launchConversation` dispatched with `routing.apiEndpointMode: "agent"`, `origin: "manual"`.
 4. `assembleRequest(state, instanceId)` builds the minimal body — agent ID, variables, context, user input, optional config overrides.
 5. Fetch → `POST /ai/agents/{id}`.
-6. Stream processed through standard pipeline ([`STREAMING_SYSTEM.md`](./STREAMING_SYSTEM.md)).
+6. Stream processed through standard pipeline ([`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md)).
 7. Subsequent turns → `POST /ai/conversations/{conversationId}`.
 
 ### Flow 2 — Pin a past version
@@ -110,8 +110,8 @@ These are overlays on the same runtime Chat uses — no separate code path, just
 
 - [`AGENT_BUILDER.md`](./AGENT_BUILDER.md) — the sibling surface; read both together
 - [`AGENT_VERSIONING.md`](./AGENT_VERSIONING.md) — version pin semantics
-- [`AGENT_INVOCATION_LIFECYCLE.md`](./AGENT_INVOCATION_LIFECYCLE.md) — endpoint routing
-- [`STREAMING_SYSTEM.md`](./STREAMING_SYSTEM.md) — stream event pipeline
+- [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md) — endpoint routing
+- [`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/CLIENT-RUNTIME.md) — stream event pipeline
 - `features/conversation/FEATURE.md` — the Chat surface (same runtime)
 
 ---
@@ -123,4 +123,4 @@ These are overlays on the same runtime Chat uses — no separate code path, just
 
 ---
 
-> **Keep-docs-live:** any change to the Runner payload shape, endpoint routing, or observability overlay must update this doc AND `AGENT_INVOCATION_LIFECYCLE.md`.
+> **Keep-docs-live:** any change to the Runner payload shape, endpoint routing, or observability overlay must update this doc AND `/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/INVOCATION-CONTRACT.md`.

@@ -293,7 +293,7 @@ const activeRequestsSlice = createSlice({
       // same durable run). That stream must CONTINUE into the existing row.
       // Fresh logical runs always mint a fresh client id, so they never hit
       // this branch. This is THE DISAPPEARING-RUN CLASS — see
-      // features/agents/docs/LIVE_RUN_RETENTION.md before touching.
+      // /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md before touching.
       const existing = state.byRequestId[requestId];
       if (existing) {
         // A re-adoption supersedes any deferred owner cleanup.

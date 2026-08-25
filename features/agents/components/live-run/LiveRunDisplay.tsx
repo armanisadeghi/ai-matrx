@@ -102,7 +102,7 @@ export function LiveRunDisplay({
   // it. Retain the canonical request row for exactly as long as this viewer is
   // mounted, so launcher cleanup during a query-driven remount cannot blank
   // the output (THE DISAPPEARING-RUN CLASS — see
-  // features/agents/docs/LIVE_RUN_RETENTION.md).
+  // /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md).
   useRetainRequestForViewer(requestId, "live-run-display");
 
   const bodyRef = useRef<HTMLDivElement | null>(null);

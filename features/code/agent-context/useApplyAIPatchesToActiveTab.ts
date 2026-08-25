@@ -114,7 +114,7 @@ export function useApplyAIPatchesToActiveTab({
   // Renders live stream output straight from the request row (no
   // `MarkdownStream requestId=`), so retention is this viewer's own job —
   // an owner reap mid-stream would otherwise blank it permanently.
-  // Doctrine: features/agents/docs/LIVE_RUN_RETENTION.md.
+  // Doctrine: /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md.
   useRetainRequestForViewer(requestId, "useApplyAIPatchesToActiveTab");
 
   useEffect(() => {

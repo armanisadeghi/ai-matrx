@@ -2,7 +2,7 @@
  * conversationInbox slice — messages sent while the agent is running.
  *
  * THE THREE SEND MODES (Arman's ruling 2026-07-29 — full statement in
- * docs/TURN_BOUNDARY_INBOX.md; never re-litigate these semantics):
+ * /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md; never re-litigate these semantics):
  *
  *   QUEUE (default) — the message waits until the run FULLY ends, then sends
  *     as the next normal turn. A real FIFO queue, client-held, editable until

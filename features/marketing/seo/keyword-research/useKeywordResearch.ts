@@ -219,7 +219,7 @@ export function useKeywordResearch(
    * fetch and the adopter watchdog share. Aborted on unmount and before a new
    * run so an orphaned stream can never keep draining into a reaped row
    * (events on a missing row are silently dropped — the disappearing-run
-   * class; see features/agents/docs/LIVE_RUN_RETENTION.md). */
+   * class; see /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md). */
   const streamAbortRef = useRef<AbortController | null>(null);
   /** Monotonic run epoch. Bumped by every run/rejoin seed; each stream
    * consumer captures its epoch and its state writes no-op once a newer run

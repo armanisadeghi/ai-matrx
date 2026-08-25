@@ -56,7 +56,7 @@ export function AiVisibilityTool() {
    * the adopter watchdog share. Aborted on unmount and before a new run so an
    * orphaned stream never keeps draining into a reaped row (events on a
    * missing row are silently dropped — the disappearing-run class; see
-   * features/agents/docs/LIVE_RUN_RETENTION.md seam #3). */
+   * /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md seam #3). */
   const streamAbortRef = useRef<AbortController | null>(null);
   const liveProgress = useRef<LiveRunProgressState>(initialProgress());
   const [brandName, setBrandName] = useState("");
