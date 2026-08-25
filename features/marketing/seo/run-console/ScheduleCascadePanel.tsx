@@ -4,12 +4,18 @@
  * Schedules — authored here, at the tier you are standing on, and resolved by
  * the cascade site > organization > system.
  *
- * 🚨 NOTHING RUNS AUTOMATICALLY YET. This panel is STORAGE ONLY: v1 of the run
- * console is manual by Arman's explicit ruling, and no dispatcher exists. The
- * banner says exactly that, in those words, because a schedule UI that implies
- * a schedule runs is a lie the operator would only discover by nothing
- * happening. (Platform law: no unapproved schedules — creating a scheduler task
- * is NOT part of this feature.)
+ * 🚨 THESE ROWS NOW RUN. `seo_engine_schedule_dispatcher` (approved by Arman
+ * 2026-08-25, every 15 minutes) claims due rows through
+ * `seo.engine_schedules_claim` and runs each brand's pass through the SAME
+ * command path the Run now button uses, so an automatic run is as inspectable
+ * as a manual one in Run history. A row saved here IS the approval record for
+ * that engine on that brand — which is why the banner must never again say
+ * "nothing runs".
+ *
+ * The cascade shown in the table is READ FROM THE DATABASE
+ * (`seo.engine_schedule_resolve`), the same function the dispatcher obeys —
+ * never a local copy, because a console that disagrees with the dispatcher
+ * about who gets charged is the failure this feature exists to prevent.
  *
  * Arman's cascade, verbatim: "what I put applies only to companies that don't
  * have their own schedule in. Organizations that have their own schedule, all
@@ -18,7 +24,7 @@
  */
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, Info, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,9 +43,10 @@ import { extractErrorMessage } from "@/utils/errors";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { ConsoleEngine } from "./engines";
 import {
-  resolveScheduleForSite,
+  resolveSchedulesForSites,
   retireEngineSchedule,
   saveEngineSchedule,
+  type ResolvedSchedule,
   type ScheduleDraft,
 } from "./data";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
@@ -50,8 +57,8 @@ import type {
 } from "./types";
 
 /** The one sentence this panel must never soften. */
-export const NO_DISPATCHER_NOTICE =
-  "Nothing runs automatically yet — schedules take effect when the dispatcher ships.";
+export const DISPATCHER_NOTICE =
+  "The dispatcher checks these schedules every 15 minutes — a switched-on row will run on its own.";
 
 const DAY_NAMES = [
   "Sunday",
@@ -69,7 +76,7 @@ function tierLabel(tier: string): string {
   return "System default";
 }
 
-function describe(row: EngineScheduleRow): string {
+function describe(row: EngineScheduleRow | ResolvedSchedule): string {
   const when =
     row.cadence === "hourly"
       ? "Every hour"
@@ -125,6 +132,20 @@ export function ScheduleCascadePanel({
   const queryClient = useQueryClient();
   const own = ownRowFor(scope, schedules);
 
+  // Who governs whom is the DISPATCHER's answer, not this component's — see the
+  // file header. Keyed on the schedules so a save re-reads the cascade.
+  const siteIds = sites.map((site) => site.id);
+  const { data: governingBySite = new Map<string, ResolvedSchedule>() } = useQuery({
+    queryKey: [
+      "seo-engine-schedule-cascade",
+      engine.slug,
+      siteIds,
+      schedules.map((row) => `${row.id}:${row.updated_at}`),
+    ],
+    queryFn: () => resolveSchedulesForSites(engine.slug, siteIds),
+    enabled: siteIds.length > 0,
+  });
+
   const [cadence, setCadence] = useState<string>(own?.cadence ?? "daily");
   const [runAt, setRunAt] = useState<string>(
     (own?.run_at_utc ?? "04:50").slice(0, 5),
@@ -171,7 +192,7 @@ export function ScheduleCascadePanel({
     },
     onSuccess: () => {
       invalidate();
-      toast.success("Schedule saved", { description: NO_DISPATCHER_NOTICE });
+      toast.success("Schedule saved", { description: DISPATCHER_NOTICE });
     },
     onError: (error) =>
       toast.error("Could not save the schedule", {
@@ -196,11 +217,12 @@ export function ScheduleCascadePanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
-      <div className="flex shrink-0 items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-1.5">
-        <Info className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
+      <div className="flex shrink-0 items-start gap-2 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1.5">
+        <Info className="mt-px h-3.5 w-3.5 shrink-0 text-primary" />
         <p className="text-[11px] leading-relaxed text-foreground">
-          {NO_DISPATCHER_NOTICE} Saving one records what you want and nothing
-          else; every pass today is the manual Run now above.
+          {DISPATCHER_NOTICE} A saved row IS the approval — it spends money on
+          its own cadence, and every automatic pass shows up in Run history with
+          its AI calls, exactly like a Run now.
         </p>
       </div>
 
@@ -404,7 +426,7 @@ export function ScheduleCascadePanel({
             </thead>
             <tbody>
               {sites.map((site) => {
-                const governing = resolveScheduleForSite(schedules, site);
+                const governing = governingBySite.get(site.id) ?? null;
                 return (
                   <tr
                     key={site.id}

@@ -18,6 +18,7 @@ import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { makeAssertData, extractErrorMessage } from "@/utils/errors";
 import { readAllRows } from "@/lib/supabase/readAllRows";
+import type { Database } from "@/types/database.types";
 import type {
   ConsoleSiteRow,
   EngineScheduleRow,
@@ -103,26 +104,39 @@ export async function listEngineSchedules(
 }
 
 /**
- * THE CASCADE, in one function: site > organization > system.
+ * THE CASCADE — read from the DATABASE, never re-implemented here.
  *
- * Nearest wins. The system row applies only where nothing closer exists —
- * Arman: "what I put applies only to companies that don't have their own
- * schedule in."
+ * Nearest wins: site > organization > system. Arman: "what I put applies only
+ * to companies that don't have their own schedule in."
+ *
+ * 🚨 This used to be a local `.find()` chain, and the dispatcher
+ * (`seo.engine_schedules_claim`) needed the same rule server-side. Two copies of
+ * a rule that decides which brands get charged is how a console ends up SHOWING
+ * one schedule while the dispatcher RUNS another. `seo.engine_schedule_resolve`
+ * is the one implementation; this function is a thin read of it, and the
+ * dispatcher reads the very same function. Never restore a local copy.
+ *
+ * Invoker-rights on purpose — RLS still bounds what an operator sees.
  */
-export function resolveScheduleForSite(
-  schedules: readonly EngineScheduleRow[],
-  site: { id: string; organization_id: string },
-): EngineScheduleRow | null {
-  return (
-    schedules.find((row) => row.scope_tier === "site" && row.site_id === site.id) ??
-    schedules.find(
-      (row) =>
-        row.scope_tier === "organization" &&
-        row.scope_organization_id === site.organization_id,
-    ) ??
-    schedules.find((row) => row.scope_tier === "system") ??
-    null
+export type ResolvedSchedule =
+  Database["seo"]["Functions"]["engine_schedule_resolve"]["Returns"][number];
+
+export async function resolveSchedulesForSites(
+  engineSlug: string,
+  siteIds: readonly string[],
+): Promise<Map<string, ResolvedSchedule>> {
+  if (siteIds.length === 0) return new Map();
+  const db = await seoDb();
+  const response = await db.rpc("engine_schedule_resolve", {
+    p_engine_slug: engineSlug,
+    p_site_ids: [...siteIds],
+  });
+  const rows = assertData(
+    response.data,
+    response.error,
+    "resolve the schedule cascade",
   );
+  return new Map(rows.map((row) => [row.site_id, row]));
 }
 
 export interface ScheduleDraft {
