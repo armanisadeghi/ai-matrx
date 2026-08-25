@@ -44,6 +44,10 @@ export interface PdfPreviewProps {
    */
   pageNumber?: number;
   onPageChange?: (page: number) => void;
+  /** Human label used by navigation affordances. Defaults to "page". */
+  pageLabel?: string;
+  /** Large translucent previous/next controls over the document canvas. */
+  floatingPageControls?: boolean;
   /**
    * Optional render-slot for the overlay mounted on top of the rendered
    * page (annotation rectangles, search highlights, etc.). Receives
@@ -63,6 +67,8 @@ export default function PdfPreview({
   className,
   pageNumber,
   onPageChange,
+  pageLabel,
+  floatingPageControls,
   renderOverlay,
 }: PdfPreviewProps) {
   const {
@@ -100,6 +106,8 @@ export default function PdfPreview({
         bytesTotal={bytesTotal}
         pageNumber={pageNumber}
         onPageChange={onPageChange}
+        pageLabel={pageLabel}
+        floatingPageControls={floatingPageControls}
         renderOverlay={renderOverlay}
         className="h-full w-full"
       />
