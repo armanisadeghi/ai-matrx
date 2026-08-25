@@ -15,13 +15,18 @@ import {
   CopyButtons,
   type CopyButtonsProps,
 } from "@/components/agent-copy/CopyButtons";
+import {
+  renderKindKitIcon,
+  type KindKitIcon,
+} from "@/components/kind-kit/icon-slot";
 
 export interface KindHeaderStat {
   /** Short label, e.g. "keywords". */
   label: string;
   /** The number/text, e.g. 42 or "3 buckets". */
   value: React.ReactNode;
-  icon?: React.ComponentType<{ className?: string }>;
+  /** Lucide component or an already-created icon element. */
+  icon?: KindKitIcon;
   /** Optional hover text. */
   title?: string;
 }
@@ -30,7 +35,7 @@ export interface KindHeaderBarProps {
   /** The instance title (usually `data[title_key]`). */
   title: React.ReactNode;
   /** Lucide component or an already-created icon element. */
-  icon?: React.ComponentType<{ className?: string }> | React.ReactElement;
+  icon?: KindKitIcon;
   /** Small muted line under the title (a primary keyword, a subtitle). */
   subtitle?: React.ReactNode;
   /** At-a-glance numbers rendered as compact "value label" stats. */
@@ -66,25 +71,13 @@ export function KindHeaderBar({
 }: KindHeaderBarProps) {
   const titleCls = size === "md" ? "text-base" : "text-sm";
   const iconCls = size === "md" ? "h-5 w-5" : "h-4 w-4";
-  const iconNode = React.isValidElement(icon)
-    ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
-        className: cn(
-          "mt-0.5 shrink-0 text-primary",
-          iconCls,
-          (icon.props as { className?: string }).className,
-        ),
-      })
-    : icon
-      ? React.createElement(icon, {
-          className: cn("mt-0.5 shrink-0 text-primary", iconCls),
-        })
-      : null;
+  const iconNode = renderKindKitIcon(
+    icon,
+    cn("mt-0.5 shrink-0 text-primary", iconCls),
+  );
   return (
     <div
-      className={cn(
-        "flex flex-wrap items-center gap-x-3 gap-y-1.5",
-        className,
-      )}
+      className={cn("flex flex-wrap items-center gap-x-3 gap-y-1.5", className)}
     >
       <div className="flex min-w-0 flex-1 basis-48 items-start gap-2">
         {iconNode}
@@ -112,8 +105,9 @@ export function KindHeaderBar({
               title={s.title}
               className="flex items-baseline gap-1 text-xs"
             >
-              {s.icon && (
-                <s.icon className="h-3 w-3 self-center text-muted-foreground" />
+              {renderKindKitIcon(
+                s.icon,
+                "h-3 w-3 self-center text-muted-foreground",
               )}
               <dd className="font-semibold tabular-nums text-foreground">
                 {s.value}
@@ -132,7 +126,9 @@ export function KindHeaderBar({
       {(actions || copy) && (
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {actions}
-          {copy && <CopyButtons {...copy} size={size === "md" ? "sm" : "icon"} />}
+          {copy && (
+            <CopyButtons {...copy} size={size === "md" ? "sm" : "icon"} />
+          )}
         </div>
       )}
     </div>

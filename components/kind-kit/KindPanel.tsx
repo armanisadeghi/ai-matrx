@@ -27,6 +27,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  renderKindKitIcon,
+  type KindKitIcon,
+} from "@/components/kind-kit/icon-slot";
 
 export interface KindPanelMenuItem {
   label: string;
@@ -42,8 +46,8 @@ export interface KindPanelMenuItem {
 export interface KindPanelProps {
   /** Header title. Wraps onto extra lines rather than truncating. */
   title: React.ReactNode;
-  /** Lucide icon (or any component taking className) shown before the title. */
-  icon?: React.ComponentType<{ className?: string }>;
+  /** Lucide component or an already-created icon element shown before the title. */
+  icon?: KindKitIcon;
   /** Count pill after the title (e.g. number of items). */
   count?: number | string;
   /** Any extra pill/badge after the count (a status, a score). */
@@ -74,7 +78,7 @@ export interface KindPanelProps {
 
 export function KindPanel({
   title,
-  icon: Icon,
+  icon,
   count,
   badge,
   streaming = false,
@@ -106,9 +110,7 @@ export function KindPanel({
           variant === "bare" && "px-0",
         )}
       >
-        {Icon && (
-          <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-        )}
+        {renderKindKitIcon(icon, "mt-0.5 h-3.5 w-3.5 shrink-0 text-primary")}
         <h3 className="min-w-0 flex-1 text-xs font-semibold uppercase leading-5 tracking-wide text-foreground break-words">
           {title}
         </h3>
@@ -117,7 +119,9 @@ export function KindPanel({
             {count}
           </span>
         )}
-        {badge !== undefined && <span className="mt-0.5 shrink-0">{badge}</span>}
+        {badge !== undefined && (
+          <span className="mt-0.5 shrink-0">{badge}</span>
+        )}
         {streaming && (
           <Loader2
             aria-label="Still arriving"
@@ -149,7 +153,8 @@ export function KindPanel({
                     onSelect={() => item.onSelect()}
                     className={cn(
                       "text-xs",
-                      item.destructive && "text-destructive focus:text-destructive",
+                      item.destructive &&
+                        "text-destructive focus:text-destructive",
                     )}
                   >
                     {item.icon && <item.icon className="mr-2 h-3.5 w-3.5" />}

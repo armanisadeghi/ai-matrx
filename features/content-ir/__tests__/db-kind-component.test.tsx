@@ -50,6 +50,10 @@ import {
   getAllowedImportsList,
   getDefaultImportsForKindComponents,
 } from "@/features/agent-apps/utils/allowed-imports";
+import {
+  clearCapturedErrors,
+  getSnapshot,
+} from "@/lib/diagnostics/errorCaptureStore";
 
 function dbRow(
   overrides: Partial<KindComponentProjection> &
@@ -243,6 +247,7 @@ describe("DbKindComponentImpl — compile + render + error boundary", () => {
   });
 
   it("a throwing component falls back to the generic structured viewer, loudly — never a blank hole", () => {
+    clearCapturedErrors();
     const consoleError = jest
       .spyOn(console, "error")
       .mockImplementation(() => {});
@@ -272,14 +277,20 @@ describe("DbKindComponentImpl — compile + render + error boundary", () => {
     });
 
     // The generic structured viewer renders (never a blank hole), and the
-    // boundary screamed.
+    // boundary screamed once through the structured adapter.
     expect(host.textContent).toBeTruthy();
     expect(host.textContent).not.toContain("authoring bug");
+    expect(
+      getSnapshot().filter(
+        (entry) =>
+          entry.source === "react-render" && entry.relation === "kind:k1_boom",
+      ),
+    ).toHaveLength(1);
     expect(
       consoleError.mock.calls.some((call) =>
         String(call[0]).includes("DbKindComponentErrorBoundary"),
       ),
-    ).toBe(true);
+    ).toBe(false);
     act(() => root?.unmount());
     host.remove();
     consoleError.mockRestore();
@@ -376,7 +387,7 @@ describe("staleness — refresh re-keys the compile cache", () => {
       componentKey: "k1_stale_view",
       isActive: true,
       componentSource:
-        'export default function V1({ data }) { return <div>v1:{data.title}</div>; }',
+        "export default function V1({ data }) { return <div>v1:{data.title}</div>; }",
       updatedAt: "2026-07-17T00:00:00Z",
     });
     registry.ingestDbRows([v1]);
@@ -391,7 +402,7 @@ describe("staleness — refresh re-keys the compile cache", () => {
       {
         ...v1,
         componentSource:
-          'export default function V2({ data }) { return <div>v2:{data.title}</div>; }',
+          "export default function V2({ data }) { return <div>v2:{data.title}</div>; }",
         updatedAt: "2026-07-18T00:00:00Z",
       },
     ]);
@@ -463,9 +474,9 @@ describe("deterministic db-row ordering", () => {
       "b",
     ]);
     // Input order irrelevant: reversed input, same verdict.
-    expect(sortKindComponentRows([...rows].reverse()).map((r) => r.id[0])).toEqual(
-      ["e", "d", "c", "a", "b"],
-    );
+    expect(
+      sortKindComponentRows([...rows].reverse()).map((r) => r.id[0]),
+    ).toEqual(["e", "d", "c", "a", "b"]);
   });
 
   it("sorts the generic fallback LAST even when it is is_default with the best sort_order — a fallback may never outrank a real component", () => {

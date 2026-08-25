@@ -90,7 +90,9 @@ describe("kind-kit", () => {
     expect(rows).toHaveLength(3);
     expect(rows[0]?.textContent).toContain("a");
     // first row: "Move up" disabled, "Move down" moves a below b
-    const up0 = rows[0]?.querySelector<HTMLButtonElement>('[aria-label="Move up"]');
+    const up0 = rows[0]?.querySelector<HTMLButtonElement>(
+      '[aria-label="Move up"]',
+    );
     expect(up0?.disabled).toBe(true);
     click(rows[0]!.querySelector('[aria-label="Move down"]'));
     expect(onReorder).toHaveBeenCalledWith(["b", "a", "c"]);
@@ -105,7 +107,11 @@ describe("kind-kit", () => {
     act(() => {
       root.render(
         <SortableList
-          items={[{ id: "x", label: "X" }, { id: "y", label: "Y" }, { id: "z", label: "Z" }]}
+          items={[
+            { id: "x", label: "X" },
+            { id: "y", label: "Y" },
+            { id: "z", label: "Z" },
+          ]}
           onReorder={onReorder}
         />,
       );
@@ -115,13 +121,41 @@ describe("kind-kit", () => {
     // jsdom has no layout: give rows a fake vertical ruler (40px each, 4px gap).
     rows.forEach((li, i) => {
       li.getBoundingClientRect = () =>
-        ({ top: i * 44, bottom: i * 44 + 40, height: 40, left: 0, right: 100, width: 100, x: 0, y: i * 44, toJSON: () => ({}) }) as DOMRect;
+        ({
+          top: i * 44,
+          bottom: i * 44 + 40,
+          height: 40,
+          left: 0,
+          right: 100,
+          width: 100,
+          x: 0,
+          y: i * 44,
+          toJSON: () => ({}),
+        }) as DOMRect;
     });
     list.getBoundingClientRect = () =>
-      ({ top: 0, bottom: 132, height: 132, left: 0, right: 100, width: 100, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+      ({
+        top: 0,
+        bottom: 132,
+        height: 132,
+        left: 0,
+        right: 100,
+        width: 100,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect;
 
-    const dataTransfer = { effectAllowed: "", dropEffect: "", setData: jest.fn() };
-    const fire = (el: Element, type: string, init: Record<string, unknown> = {}) =>
+    const dataTransfer = {
+      effectAllowed: "",
+      dropEffect: "",
+      setData: jest.fn(),
+    };
+    const fire = (
+      el: Element,
+      type: string,
+      init: Record<string, unknown> = {},
+    ) =>
       act(() => {
         const ev = new Event(type, { bubbles: true, cancelable: true });
         Object.assign(ev, { dataTransfer, ...init });
@@ -130,15 +164,19 @@ describe("kind-kit", () => {
 
     // arm the handle of row 0, start the drag, hover the last slot, drop
     act(() => {
-      rows[0]!.querySelector('[aria-label="Drag to reorder"]')!.dispatchEvent(
-        new Event("pointerdown", { bubbles: true }),
-      );
+      rows[0]!
+        .querySelector('[aria-label="Drag to reorder"]')!
+        .dispatchEvent(new Event("pointerdown", { bubbles: true }));
     });
     fire(rows[0]!, "dragstart");
     fire(list, "dragover", { clientY: 100 }); // inside row 2's slot (88..128)
     // placeholder styling on the dragged row, displacement on the passed rows
-    expect(container.querySelectorAll("li")[0]?.className).toContain("border-dashed");
-    expect((container.querySelectorAll("li")[1] as HTMLElement).style.transform).toContain("translate3d(0, -44px");
+    expect(container.querySelectorAll("li")[0]?.className).toContain(
+      "border-dashed",
+    );
+    expect(
+      (container.querySelectorAll("li")[1] as HTMLElement).style.transform,
+    ).toContain("translate3d(0, -44px");
     fire(list, "drop");
     expect(onReorder).toHaveBeenCalledWith([
       { id: "y", label: "Y" },
@@ -168,9 +206,13 @@ describe("kind-kit", () => {
     // the subline is NOT inside the header row
     expect(header.textContent).not.toContain("Narrower phrases");
     expect(container.textContent).toContain("Narrower phrases");
-    const footer = container.querySelector("[data-testid='footer']")!.parentElement!;
+    const footer = container.querySelector(
+      "[data-testid='footer']",
+    )!.parentElement!;
     expect(footer.className).toContain("mt-auto");
-    expect(container.querySelector('[aria-label="More actions"]')).not.toBeNull();
+    expect(
+      container.querySelector('[aria-label="More actions"]'),
+    ).not.toBeNull();
     expect(container.querySelector("section")!.className).toContain("flex-col");
   });
 
@@ -184,7 +226,9 @@ describe("kind-kit", () => {
       );
     });
     const grid = container.firstElementChild as HTMLElement;
-    expect(grid.style.gridTemplateColumns).toContain("repeat(auto-fit, minmax(");
+    expect(grid.style.gridTemplateColumns).toContain(
+      "repeat(auto-fit, minmax(",
+    );
     expect(grid.style.gridTemplateColumns).toContain("300px");
     expect(grid.style.gridTemplateColumns).toContain("/ 3");
     expect(grid.className).toContain("items-stretch");
@@ -208,16 +252,64 @@ describe("kind-kit", () => {
     expect(container.querySelectorAll("button").length).toBeGreaterThan(0);
   });
 
-  it("KindHeaderBar accepts an already-created icon element", () => {
+  it("kind-kit icon slots accept component references and already-created elements", () => {
+    function TestIcon({ className }: { className?: string }) {
+      return <svg data-testid="component-icon" className={className} />;
+    }
     act(() => {
       root.render(
-        <KindHeaderBar
-          title="QME report"
-          icon={<svg data-testid="qme-icon" />}
-        />,
+        <div>
+          <KindHeaderBar
+            title="QME report"
+            icon={
+              <svg data-testid="header-element-icon" className="authored" />
+            }
+            stats={[
+              { label: "component", value: 1, icon: TestIcon },
+              {
+                label: "element",
+                value: 2,
+                icon: (
+                  <svg data-testid="stat-element-icon" className="authored" />
+                ),
+              },
+            ]}
+          />
+          <KindPanel title="Component panel" icon={TestIcon} />
+          <KindPanel
+            title="Element panel"
+            icon={<svg data-testid="panel-element-icon" className="authored" />}
+          />
+        </div>,
       );
     });
-    expect(container.querySelector('[data-testid="qme-icon"]')).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="header-element-icon"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="stat-element-icon"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="panel-element-icon"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelectorAll('[data-testid="component-icon"]'),
+    ).toHaveLength(2);
+    expect(
+      container
+        .querySelector('[data-testid="stat-element-icon"]')
+        ?.getAttribute("class"),
+    ).toContain("text-muted-foreground");
+    expect(
+      container
+        .querySelector('[data-testid="panel-element-icon"]')
+        ?.getAttribute("class"),
+    ).toContain("text-primary");
+    expect(
+      container
+        .querySelector('[data-testid="panel-element-icon"]')
+        ?.getAttribute("class"),
+    ).toContain("authored");
   });
 
   it("TagList: chips wrap (never truncate), add/remove/edit/toggle wire through", () => {
@@ -247,8 +339,14 @@ describe("kind-kit", () => {
     expect(onRemove).toHaveBeenCalledWith("beta long phrase", 1);
     expect(container.querySelector('[aria-label="Edit alpha"]')).not.toBeNull();
     // add: button → input → Enter
-    click([...container.querySelectorAll("button")].find((b) => b.textContent?.includes("Add keyword"))!);
-    const input = container.querySelector<HTMLInputElement>('input[aria-label="Add keyword…"]')!;
+    click(
+      [...container.querySelectorAll("button")].find((b) =>
+        b.textContent?.includes("Add keyword"),
+      )!,
+    );
+    const input = container.querySelector<HTMLInputElement>(
+      'input[aria-label="Add keyword…"]',
+    )!;
     expect(input).not.toBeNull();
   });
 
@@ -278,7 +376,9 @@ describe("kind-kit", () => {
     for (const layout of ["list", "cards", "table", "text"] as const) {
       act(() => root.render(<StreamingSkeleton layout={layout} rows={2} />));
       expect(container.querySelector("[role='status']")).not.toBeNull();
-      expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
+      expect(
+        container.querySelectorAll(".animate-pulse").length,
+      ).toBeGreaterThan(0);
     }
   });
 });

@@ -162,7 +162,7 @@ across sibling panels inside a `KindPanelGrid`.
 | Prop | Type | Default | Meaning |
 |---|---|---|---|
 | `title` | `ReactNode` | required | Header title. Wraps, never truncates. |
-| `icon` | `ComponentType<{ className?: string }>` | — | Lucide icon before the title. |
+| `icon` | `ComponentType<{ className?: string }> \| ReactElement` | — | Lucide component (`icon={Search}`) or element (`icon={<Search />}`). |
 | `count` | `number \| string` | — | Count pill after the title. |
 | `badge` | `ReactNode` | — | Extra pill after the count (status, score). |
 | `streaming` | `boolean` | `false` | Spinner in the header while this panel's data is still arriving. |
@@ -204,7 +204,7 @@ One row that wraps on narrow widths; the copy bar stays on the right.
 | `title` | `ReactNode` | required | Usually `data[title_key]`. |
 | `icon` | `ComponentType<{ className?: string }> \| ReactElement` | — | Lucide component (`icon={SearchCheck}`) or element (`icon={<SearchCheck />}`). |
 | `subtitle` | `ReactNode` | — | Muted line under the title. |
-| `stats` | `{ label: string; value: ReactNode; icon?; title?: string }[]` | — | Compact "value label" stats (e.g. `{ label: "keywords", value: 42 }`). |
+| `stats` | `{ label: string; value: ReactNode; icon?: ComponentType<{ className?: string }> \| ReactElement; title?: string }[]` | — | Compact stats; each icon accepts component or element form. |
 | `streaming` | `boolean` | `false` | Spinner + `streamingLabel` while the instance is still arriving. |
 | `streamingLabel` | `string` | `"Streaming"` | — |
 | `copy` | `CopyButtonsProps` minus `size`/`className` | — | The copy bar. **Required inside: `label: string`.** Pass what you have: `human?: string \| () => string`, `agent?: AgentPayloadInput \| string \| () => …`, `json?: unknown \| () => unknown`, `export?: { items, sheetRows? }`, `hide?: ("copy" \| "ai" \| "export")[]`. Omit `copy` to render no copy bar. |
@@ -331,6 +331,10 @@ commits, Esc cancels), and an inline "Add" input.
 
 ## Change log
 
+- 2026-08-25 — Every public kind-kit icon slot now accepts both a Lucide
+  component reference and an already-created element. Header stats and panels
+  share the same renderer as the header icon, preventing stored DB components
+  from passing an element where React expects a component type.
 - 2026-08-23 — `KindHeaderBar.icon` accepts both component references and
   already-created elements; DB-authored components cannot crash React by using
   the common `icon={<Icon />}` form.

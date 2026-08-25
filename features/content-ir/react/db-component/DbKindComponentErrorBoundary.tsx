@@ -62,11 +62,9 @@ export class DbKindComponentErrorBoundary extends React.Component<
   }
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error(
-      `[DbKindComponentErrorBoundary] DB kind component for "${this.props.kind}" threw at render — falling back to the generic structured viewer:`,
-      error,
-      errorInfo.componentStack,
-    );
+    // This structured capture is the scream. Do not mirror it through
+    // console.error: the production console adapter would persist the same
+    // failure again as a generic `console-error` symptom.
     captureReactRenderError(error, {
       boundary: "DbKindComponentErrorBoundary",
       componentStack: errorInfo.componentStack ?? null,
