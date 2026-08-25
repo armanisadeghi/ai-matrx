@@ -53,6 +53,9 @@ interface InboxQueueStripProps {
   conversationId: string;
 }
 
+const queueActionClassName =
+  "h-11 w-11 min-h-11 min-w-11 shrink-0 rounded p-0 text-muted-foreground hover:bg-muted hover:text-foreground lg:h-8 lg:w-8 lg:min-h-8 lg:min-w-8";
+
 function statusLabel(item: ConversationInboxItem): string {
   if (item.status === "failed") return item.error ?? "Failed to send";
   if (item.status === "sending") return "Handing to the agent…";
@@ -113,7 +116,7 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
             <button
               type="button"
               aria-label="How waiting messages work"
-              className="inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring lg:h-5 lg:w-5"
             >
               <CircleHelp className="h-3.5 w-3.5" />
             </button>
@@ -158,7 +161,7 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
         return (
           <div
             key={item.injectionId}
-            className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${
+            className={`flex items-start gap-2 rounded-lg border px-2.5 py-1.5 text-xs lg:items-center ${
               failed
                 ? "border-destructive/40 bg-destructive/5"
                 : collabNote
@@ -177,78 +180,135 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                       : "text-muted-foreground"
               }`}
             />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  tabIndex={0}
-                  className="min-w-0 flex-1 truncate text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            <div className="min-w-0 flex-1 self-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    tabIndex={0}
+                    className="block truncate rounded-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {collabNote && collabAgent
+                      ? `Note from ${collabAgent}`
+                      : item.text}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="top"
+                  className="max-w-[24rem] break-words"
                 >
-                  {collabNote && collabAgent
-                    ? `Note from ${collabAgent}`
-                    : item.text}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[24rem] break-words">
-                {item.text}
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  tabIndex={0}
-                  className={`shrink-0 cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
-                    failed ? "text-destructive" : "text-muted-foreground"
-                  }`}
-                >
-                  {statusLabel(item)}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[20rem]">
-                {statusHelp}
-              </TooltipContent>
-            </Tooltip>
-            {failed && (
-              <IconButton
-                type="button"
-                icon={RotateCcw}
-                size="xs"
-                variant="ghost"
-                tooltip="Retry — try saving this message to the queue again."
-                tooltipSide="top"
-                aria-label="Retry queued message"
-                className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={() => {
-                  dispatch(
-                    removeInboxItem({
-                      conversationId,
-                      injectionId: item.injectionId,
-                    }),
-                  );
-                  dispatch(
-                    enqueueInboxMessage({
-                      conversationId,
-                      text: item.text,
-                      mode: item.mode,
-                    }),
-                  );
-                }}
-              />
-            )}
-            {item.mode === "queue" &&
-              item.status === "pending" &&
-              !collabNote && (
+                  {item.text}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    tabIndex={0}
+                    className={`block truncate rounded-sm text-[11px] leading-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring lg:cursor-help ${
+                      failed ? "text-destructive" : "text-muted-foreground"
+                    }`}
+                  >
+                    {statusLabel(item)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[20rem]">
+                  {statusHelp}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="flex shrink-0 items-center self-center">
+              {failed && (
                 <IconButton
                   type="button"
-                  icon={Zap}
+                  icon={RotateCcw}
                   size="xs"
                   variant="ghost"
-                  tooltip="Deliver at the next pause — the agent keeps working, but receives this sooner."
+                  tooltip="Retry — try saving this message to the queue again."
                   tooltipSide="top"
-                  aria-label="Deliver queued message at the agent's next pause"
-                  className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label="Retry queued message"
+                  className={queueActionClassName}
+                  iconClassName="h-4 w-4"
+                  onClick={() => {
+                    dispatch(
+                      removeInboxItem({
+                        conversationId,
+                        injectionId: item.injectionId,
+                      }),
+                    );
+                    dispatch(
+                      enqueueInboxMessage({
+                        conversationId,
+                        text: item.text,
+                        mode: item.mode,
+                      }),
+                    );
+                  }}
+                />
+              )}
+              {item.mode === "queue" &&
+                item.status === "pending" &&
+                !collabNote && (
+                  <IconButton
+                    type="button"
+                    icon={Zap}
+                    size="xs"
+                    variant="ghost"
+                    tooltip="Deliver at the next pause — the agent keeps working, but receives this sooner."
+                    tooltipSide="top"
+                    aria-label="Deliver queued message at the agent's next pause"
+                    className={queueActionClassName}
+                    iconClassName="h-4 w-4"
+                    onClick={() =>
+                      dispatch(
+                        promoteQueuedToSteer({
+                          conversationId,
+                          injectionId: item.injectionId,
+                        }),
+                      )
+                    }
+                  />
+                )}
+              {editable && (
+                <IconButton
+                  type="button"
+                  icon={Pencil}
+                  size="xs"
+                  variant="ghost"
+                  tooltip="Edit — change this message before the agent receives it."
+                  tooltipSide="top"
+                  aria-label="Edit queued message"
+                  className={queueActionClassName}
+                  iconClassName="h-4 w-4"
+                  onClick={() =>
+                    setEditing({
+                      injectionId: item.injectionId,
+                      mode: item.mode,
+                      text: item.text,
+                    })
+                  }
+                />
+              )}
+              {!busy && (
+                <IconButton
+                  type="button"
+                  icon={X}
+                  size="xs"
+                  variant="ghost"
+                  tooltip={
+                    failed
+                      ? "Dismiss — remove this failed message."
+                      : "Withdraw — remove this message before the agent receives it."
+                  }
+                  tooltipSide="top"
+                  aria-label={
+                    failed
+                      ? "Dismiss failed message"
+                      : "Withdraw queued message"
+                  }
+                  className={queueActionClassName}
+                  iconClassName="h-4 w-4"
                   onClick={() =>
                     dispatch(
-                      promoteQueuedToSteer({
+                      retractInboxItem({
                         conversationId,
                         injectionId: item.injectionId,
                       }),
@@ -256,51 +316,7 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                   }
                 />
               )}
-            {editable && (
-              <IconButton
-                type="button"
-                icon={Pencil}
-                size="xs"
-                variant="ghost"
-                tooltip="Edit — change this message before the agent receives it."
-                tooltipSide="top"
-                aria-label="Edit queued message"
-                className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={() =>
-                  setEditing({
-                    injectionId: item.injectionId,
-                    mode: item.mode,
-                    text: item.text,
-                  })
-                }
-              />
-            )}
-            {!busy && (
-              <IconButton
-                type="button"
-                icon={X}
-                size="xs"
-                variant="ghost"
-                tooltip={
-                  failed
-                    ? "Dismiss — remove this failed message."
-                    : "Withdraw — remove this message before the agent receives it."
-                }
-                tooltipSide="top"
-                aria-label={
-                  failed ? "Dismiss failed message" : "Withdraw queued message"
-                }
-                className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={() =>
-                  dispatch(
-                    retractInboxItem({
-                      conversationId,
-                      injectionId: item.injectionId,
-                    }),
-                  )
-                }
-              />
-            )}
+            </div>
           </div>
         );
       })}

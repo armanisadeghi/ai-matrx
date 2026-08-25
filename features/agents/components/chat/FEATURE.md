@@ -180,7 +180,7 @@ is temporarily offline.
 
 **Non-chat surfaces steer through the SAME inbox (2026-08-21).** The three send modes are not a composer feature — they are how ANY surface tells a running agent something. The Cloud Browser's "Take control" is the first non-composer consumer: it enqueues a `steer` / `system_message` note and waits for the delivery ack (the card leaving the slice on `injection_consumed`) before moving control, and its "Take over immediately" escape is `cancelExecution` + a `turn_end` note carrying the reason the cancel itself cannot ([`features/cloud-browser/FEATURE.md`](../../../cloud-browser/FEATURE.md) § "Taking control"). Anything else that needs to interrupt or steer an agent from outside the composer reuses `enqueueInboxMessage` / `cancelExecution` — never a second signalling path. `selectInboxItemStatus(conversationId, injectionId)` exists for exactly this: `null` is the delivery ack.
 
-**Invariants — a send during a stream QUEUES by default; steering and interrupting are explicit; only the explicit Stop button cancels.** Attachments can't queue/steer (text-only) — `smartExecute` blocks with a toast rather than silently dropping files. Cards render via `InboxQueueStrip` in both SmartAgentInput variants + `CompactAssistantInput` + `NewChatLandingInput`. Both waiting modes are server-held rows in `chat.pending_injection` — reload-safe by construction. The server's turn lock backstops all of this: a concurrent run gets 409 `run_in_flight`; an identical duplicate fire from the same user within 45s is silently ignored.
+**Invariants — a send during a stream QUEUES by default; steering and interrupting are explicit; only the explicit Stop button cancels.** Attachments can't queue/steer (text-only) — `smartExecute` blocks with a toast rather than silently dropping files. Cards render via `InboxQueueStrip` in both SmartAgentInput variants + `CompactAssistantInput` + `NewChatLandingInput`; their text/status column must shrink before the action group, and every waiting-message action is a 44px target through tablet widths so retry/edit/withdraw can never be pushed beyond a narrow viewport. Both waiting modes are server-held rows in `chat.pending_injection` — reload-safe by construction. The server's turn lock backstops all of this: a concurrent run gets 409 `run_in_flight`; an identical duplicate fire from the same user within 45s is silently ignored.
 
 ### Flow 7 — Reconnect after refresh / stream loss (the canonical `/runtime` surface)
 
@@ -271,6 +271,8 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 ---
 
 ## Change log
+
+- `2026-08-25` — codex: **waiting-message cards keep their recovery actions reachable on narrow screens.** The message and status now share a shrinkable column while retry/deliver/edit/withdraw live in an explicit non-shrinking action group; all waiting-message actions (including help) expose 44px targets through tablet widths and compact only on desktop.
 
 - `2026-08-25` — codex: **missing-organization send validation no longer creates false production incidents.** The fail-closed guard still preserves the draft and blocks before networking, but `smartExecute` now uses an informational corrective toast instead of emitting both a captured console error and captured error toast.
 
