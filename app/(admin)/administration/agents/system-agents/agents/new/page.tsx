@@ -27,15 +27,6 @@ export default function NewSystemAgentChoicePage() {
             Back to system agents
           </Button>
         </Link>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">
-            New System Agent
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Pick how you want to create this builtin. The agent will be visible
-            to every user once created.
-          </p>
-        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
