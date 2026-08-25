@@ -457,8 +457,13 @@ const claims: Claim[] = [
     where: "CLAUDE.md (all markdown links)",
     check: () => {
       const dead: string[] = [];
+      // `\.{0,2}` — NOT `\.?`. With one optional dot a `../common-docs/x.md`
+      // pointer had its first dot eaten, the capture became `./common-docs/x.md`
+      // and resolved against THIS repo, so every cross-repo pointer that exists
+      // was reported dead. A guard that screams about files it can see is worse
+      // than no guard.
       for (const m of CLAUDE_MD.matchAll(
-        /\]\(\.?\/?([^)#\s]+\.(?:md|ts|tsx|sql|mjs|json))(?:#[^)]*)?\)/g,
+        /\]\((\.{0,2}\/?[^)#\s]+\.(?:md|ts|tsx|sql|mjs|json))(?:#[^)]*)?\)/g,
       )) {
         const rel = m[1].replace(/^\.\//, "");
         if (rel.startsWith("http")) continue;
