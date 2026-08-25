@@ -35,6 +35,20 @@ export type TableViewState = {
   filters: ColumnFilterMap;
   page: number;
   pageSize: number;
+  /**
+   * Field names hidden in THIS view. A per-view mask, never a table property:
+   * hiding a column for yourself must not hide it for a colleague.
+   */
+  hidden: string[];
+  /**
+   * Field names in THIS view's order. An OVERRIDE, not a snapshot — a name the
+   * table no longer has is dropped, and a column the table gained that this
+   * list never heard of is appended rather than vanishing. That is what lets a
+   * saved view survive the table growing a column.
+   *
+   * Empty means "use the table's own field_order".
+   */
+  order: string[];
 };
 
 export type TableViewDefaults = {
@@ -42,7 +56,9 @@ export type TableViewDefaults = {
 };
 
 /** Query-string keys this module owns. Nothing else may write them. */
-export const TABLE_VIEW_PARAM_KEYS = ["q", "sort", "f", "p", "ps"] as const;
+export const TABLE_VIEW_PARAM_KEYS = [
+  "q", "sort", "f", "p", "ps", "hide", "ord",
+] as const;
 
 /**
  * Keys whose changes REPLACE rather than push a history entry.
@@ -143,7 +159,32 @@ export function parseTableViewParams(
     filters,
     page: readPositiveInt("p", 1),
     pageSize: readPositiveInt("ps", defaults.pageSize),
+    hidden: parseFieldNameList(params.get("hide")),
+    order: parseFieldNameList(params.get("ord")),
   };
+}
+
+/**
+ * Comma-separated field names — compact enough that a view with a dozen columns
+ * still produces a link a person can look at.
+ *
+ * Machine field names have no commas by construction; a value that somehow
+ * contains one would corrupt the whole list, so such a list is REFUSED entirely
+ * rather than silently reinterpreted as different columns.
+ */
+export function parseFieldNameList(raw: string | null): string[] {
+  if (!raw) return [];
+  const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  // De-duplicate, preserving first position — a repeated name in `ord` would
+  // otherwise render the same column twice.
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const p of parts) {
+    if (seen.has(p)) continue;
+    seen.add(p);
+    out.push(p);
+  }
+  return out;
 }
 
 /**
@@ -167,7 +208,45 @@ export function tableViewParamPatch(
     f: hasFilters ? JSON.stringify(active) : null,
     p: state.page > 1 ? String(state.page) : null,
     ps: state.pageSize === defaults.pageSize ? null : String(state.pageSize),
+    hide: state.hidden.length > 0 ? state.hidden.join(",") : null,
+    ord: state.order.length > 0 ? state.order.join(",") : null,
   };
+}
+
+/**
+ * The columns this view actually shows, in order.
+ *
+ * THE MERGE IS WHAT MAKES A SAVED VIEW SURVIVE A CHANGING TABLE:
+ *   - a name in `order` the table no longer has is DROPPED (a deleted column
+ *     must not leave a hole);
+ *   - a column the table has that `order` never mentioned is APPENDED in the
+ *     table's own order (a column added last week appears, rather than being
+ *     invisible until someone edits the view);
+ *   - `hidden` is applied last, so hiding never disturbs ordering.
+ */
+export function resolveViewColumns<T extends { field_name: string; field_order: number }>(
+  fields: readonly T[],
+  state: Pick<TableViewState, "hidden" | "order">,
+): T[] {
+  const byName = new Map(fields.map((f) => [f.field_name, f]));
+  const tableOrder = [...fields].sort((a, b) => a.field_order - b.field_order);
+
+  const ordered: T[] = [];
+  const placed = new Set<string>();
+  for (const name of state.order) {
+    const field = byName.get(name);
+    if (!field || placed.has(name)) continue;
+    ordered.push(field);
+    placed.add(name);
+  }
+  for (const field of tableOrder) {
+    if (placed.has(field.field_name)) continue;
+    ordered.push(field);
+    placed.add(field.field_name);
+  }
+
+  const hidden = new Set(state.hidden);
+  return ordered.filter((f) => !hidden.has(f.field_name));
 }
 
 /** Do two views describe the same thing? Used to avoid pointless history churn. */
@@ -178,6 +257,8 @@ export function sameTableView(a: TableViewState, b: TableViewState): boolean {
     a.sortDirection === b.sortDirection &&
     a.page === b.page &&
     a.pageSize === b.pageSize &&
+    a.hidden.join(",") === b.hidden.join(",") &&
+    a.order.join(",") === b.order.join(",") &&
     JSON.stringify(activeFiltersOnly(a.filters)) ===
       JSON.stringify(activeFiltersOnly(b.filters))
   );

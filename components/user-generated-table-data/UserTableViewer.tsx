@@ -54,6 +54,8 @@ import {
 } from "@/lib/field-formats/choices";
 import { defaultFormatForBase } from "@/lib/field-formats/registry";
 import { useTableViewUrlState } from "@/features/data-tables/hooks/useTableViewUrlState";
+import { resolveViewColumns } from "@/features/data-tables/table-view-url";
+import { ColumnViewMenu } from "@/features/data-tables/components/ColumnViewMenu";
 import {
   useTableRealtime,
   type TableRealtimeEvent,
@@ -338,6 +340,10 @@ const UserTableViewer = ({
     setCurrentPage,
     limit,
     setLimit,
+    hiddenColumns,
+    setHiddenColumns,
+    columnOrder,
+    setColumnOrder,
     resetView,
     isViewCustomized,
   } = useTableViewUrlState({ defaultPageSize: 20, resetKey: tableId });
@@ -1849,7 +1855,20 @@ const UserTableViewer = ({
   }, [tableId]);
 
   const rowIdsOnPage = displayRows.map((row) => row.id);
-  const fieldNamesInOrder = fields.map((f) => f.field_name);
+  /**
+   * The columns THIS VIEW renders, in this view's order.
+   *
+   * `fields` stays the table's full truth (Table Settings, the agent scope, the
+   * row editor all need every column). `viewFields` is what the GRID draws.
+   * Keeping both is deliberate: hiding a column from your view must never hide
+   * it from the row editor, from export, or from an agent reading the schema.
+   */
+  const viewFields = resolveViewColumns(fields, {
+    hidden: hiddenColumns,
+    order: columnOrder,
+  });
+
+  const fieldNamesInOrder = viewFields.map((f) => f.field_name);
 
   const readCell = useCallback(
     (address: CellAddress): unknown =>
@@ -2406,6 +2425,35 @@ const UserTableViewer = ({
         </div>
       )}
 
+      {/* Column visibility + order for THIS VIEW. Deliberately next to the
+          grid rather than inside Table Settings: Table Settings edits the
+          table for everyone, this edits only what you are looking at. */}
+      <div className="flex shrink-0 items-center justify-end gap-1">
+        <ColumnViewMenu
+          fields={fields.map((f) => ({
+            field_name: f.field_name,
+            display_name: f.display_name,
+            field_order: f.field_order,
+          }))}
+          hidden={hiddenColumns}
+          order={columnOrder}
+          onHiddenChange={setHiddenColumns}
+          onOrderChange={setColumnOrder}
+        />
+        {isViewCustomized && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+            onClick={resetView}
+            title="Clear search, sort, filters and column choices"
+          >
+            Reset view
+          </Button>
+        )}
+      </div>
+
       {/* Undo lives beside the grid, not only on Cmd-Z: a shortcut nobody can
           see is not a safety net for a non-technical user. */}
       {!isReadOnly && (cellUndo.canUndo || cellUndo.canRedo) && (
@@ -2498,7 +2546,7 @@ const UserTableViewer = ({
                   }
                 />
               </TableHead>
-              {fields.map((field) => {
+              {viewFields.map((field) => {
                 const isSorted = sortField === field.field_name;
                 const columnFilter = columnFilters[field.field_name];
                 return (
@@ -2573,7 +2621,7 @@ const UserTableViewer = ({
                   className={r % 2 === 1 ? "bg-muted/10" : ""}
                 >
                   <TableCell className="py-3" />
-                  {fields.map((field, c) => (
+                  {viewFields.map((field, c) => (
                     <TableCell
                       key={`skeleton-${r}-${field.id}`}
                       className="py-3"
@@ -2598,7 +2646,7 @@ const UserTableViewer = ({
             ) : displayRows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={fields.length + 2}
+                  colSpan={viewFields.length + 2}
                   className="text-center py-8"
                 >
                   {hasColumnFilters
@@ -2632,7 +2680,7 @@ const UserTableViewer = ({
                       aria-label={`Select row ${index + 1}`}
                     />
                   </TableCell>
-                  {fields.map((field) => {
+                  {viewFields.map((field) => {
                     const rawValue = row.data[field.field_name];
                     const cellData =
                       rawValue !== null

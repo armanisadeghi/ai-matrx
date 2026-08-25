@@ -668,6 +668,26 @@ removed the only signal an editor was open, and a cell holding unsaved text
 became indistinguishable from a saved one — that is how an edit gets lost
 without anyone noticing.
 
+### Columns: the view's, not the table's
+
+🚨 **PER-VIEW, NOT PER-TABLE.** `ColumnViewMenu` (beside the grid) changes only
+what YOU see — it writes `hide` / `ord` to the URL and never touches
+`udt_dataset_fields.field_order`, which is the table's shared default and
+belongs to everyone who opens it. **Table Settings still owns that.** Two people
+can hold two different views of the same table at once. Do not "simplify" the
+two controls together.
+
+`viewFields` (what the grid draws) and `fields` (the table's full truth) are
+deliberately separate: hiding a column from your view must never hide it from
+the row editor, from export, or from an agent reading the schema.
+
+**The merge rules are what let a saved view survive a changing table**
+(`resolveViewColumns`): a name the table no longer has is DROPPED so there is no
+hole; a column the table gained that the view never heard of is APPENDED in the
+table's own order rather than being invisible; `hidden` is applied last so
+hiding never disturbs ordering. The last visible column cannot be hidden — an
+empty grid looks broken and offers nothing to click to recover.
+
 ## Change log
 
 - `2026-08-25` — **URL-backed table filters no longer crash with React #185.** The shared

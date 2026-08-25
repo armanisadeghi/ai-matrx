@@ -1,6 +1,8 @@
 import type { ColumnFilterMap } from "../column-filters";
 import {
   activeFiltersOnly,
+  parseFieldNameList,
+  resolveViewColumns,
   isColumnFilterMap,
   parseSortParam,
   parseTableViewParams,
@@ -19,6 +21,8 @@ const baseState = (over: Partial<TableViewState> = {}): TableViewState => ({
   filters: {},
   page: 1,
   pageSize: 20,
+  hidden: [],
+  order: [],
   ...over,
 });
 
@@ -68,6 +72,8 @@ describe("parseTableViewParams", () => {
       filters,
       page: 3,
       pageSize: 50,
+      hidden: [],
+      order: [],
     });
   });
 
@@ -102,6 +108,8 @@ describe("tableViewParamPatch", () => {
       f: null,
       p: null,
       ps: null,
+      hide: null,
+      ord: null,
     });
   });
 
@@ -195,5 +203,66 @@ describe("activeFiltersOnly", () => {
       x: { mode: "values", values: [], includeBlank: true, negate: false },
     };
     expect(Object.keys(activeFiltersOnly(filters))).toEqual(["x"]);
+  });
+});
+
+
+describe("column visibility and order", () => {
+  const FIELDS = [
+    { field_name: "a", field_order: 0 },
+    { field_name: "b", field_order: 1 },
+    { field_name: "c", field_order: 2 },
+  ];
+
+  it("uses the table's own order when the view has none", () => {
+    expect(
+      resolveViewColumns(FIELDS, { hidden: [], order: [] }).map((f) => f.field_name),
+    ).toEqual(["a", "b", "c"]);
+  });
+
+  it("applies the view's order", () => {
+    expect(
+      resolveViewColumns(FIELDS, { hidden: [], order: ["c", "a", "b"] }).map((f) => f.field_name),
+    ).toEqual(["c", "a", "b"]);
+  });
+
+  // The two rules that let a saved view survive a table that keeps changing.
+  it("APPENDS a column the view never heard of, rather than hiding it", () => {
+    expect(
+      resolveViewColumns(FIELDS, { hidden: [], order: ["c"] }).map((f) => f.field_name),
+    ).toEqual(["c", "a", "b"]);
+  });
+
+  it("DROPS a name the table no longer has, rather than leaving a hole", () => {
+    expect(
+      resolveViewColumns(FIELDS, { hidden: [], order: ["deleted", "b"] }).map((f) => f.field_name),
+    ).toEqual(["b", "a", "c"]);
+  });
+
+  it("hides without disturbing order", () => {
+    expect(
+      resolveViewColumns(FIELDS, { hidden: ["a"], order: ["c", "a", "b"] }).map((f) => f.field_name),
+    ).toEqual(["c", "b"]);
+  });
+
+  it("never renders a duplicated name twice", () => {
+    expect(
+      resolveViewColumns(FIELDS, { hidden: [], order: ["b", "b", "a"] }).map((f) => f.field_name),
+    ).toEqual(["b", "a", "c"]);
+  });
+
+  it("round-trips through the URL", () => {
+    const state = baseState({ hidden: ["b"], order: ["c", "a"] });
+    const patch = tableViewParamPatch(state, DEFAULTS);
+    expect(patch.hide).toBe("b");
+    expect(patch.ord).toBe("c,a");
+    const sp = new URLSearchParams();
+    for (const [k, v] of Object.entries(patch)) if (v !== null) sp.set(k, v);
+    expect(parseTableViewParams(sp, DEFAULTS)).toEqual(state);
+  });
+
+  it("de-duplicates and trims a hand-edited list", () => {
+    expect(parseFieldNameList(" a , b ,a,, b ")).toEqual(["a", "b"]);
+    expect(parseFieldNameList(null)).toEqual([]);
   });
 });

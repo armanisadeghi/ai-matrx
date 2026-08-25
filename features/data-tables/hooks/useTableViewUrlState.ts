@@ -56,6 +56,14 @@ export type TableViewUrlState = {
   setCurrentPage: (value: number) => void;
   limit: number;
   setLimit: (value: number) => void;
+  /** Field names hidden in this view. */
+  hiddenColumns: string[];
+  setHiddenColumns: (value: string[]) => void;
+  /** Field names in this view's order; empty means the table's own order. */
+  columnOrder: string[];
+  setColumnOrder: (value: string[]) => void;
+  /** Convenience: flip one column's visibility. */
+  toggleColumn: (fieldName: string) => void;
   /** Clear every view control at once (and the URL with it). */
   resetView: () => void;
   /** True when anything is narrowing or reordering — drives a "Reset view" affordance. */
@@ -130,6 +138,26 @@ export function useTableViewUrlState(options: {
       (pageSize: number) => patchState({ pageSize }),
       [patchState],
     ),
+    hiddenColumns: state.hidden,
+    setHiddenColumns: useCallback(
+      (hidden: string[]) => patchState({ hidden }),
+      [patchState],
+    ),
+    columnOrder: state.order,
+    setColumnOrder: useCallback(
+      (order: string[]) => patchState({ order }),
+      [patchState],
+    ),
+    toggleColumn: useCallback(
+      (fieldName: string) =>
+        patchWhole((prev) => ({
+          ...prev,
+          hidden: prev.hidden.includes(fieldName)
+            ? prev.hidden.filter((f) => f !== fieldName)
+            : [...prev.hidden, fieldName],
+        })),
+      [patchWhole],
+    ),
     resetView: useCallback(() => {
       patchWhole(parseTableViewParams(new URLSearchParams(), defaults));
     }, [defaults, patchWhole]),
@@ -138,6 +166,8 @@ export function useTableViewUrlState(options: {
       state.sortField !== null ||
       state.page > 1 ||
       state.pageSize !== defaults.pageSize ||
+      state.hidden.length > 0 ||
+      state.order.length > 0 ||
       Object.keys(state.filters).length > 0,
   };
 }
