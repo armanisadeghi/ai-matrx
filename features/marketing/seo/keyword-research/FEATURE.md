@@ -269,6 +269,68 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-25 — **MSR-26 (Arman's ruling): keyword research belongs to a SITE, never
+  the organization.** Supersedes the MSR-14 entry below — the derivative
+  "does any phrase already have a `site_keyword_value` row" heuristic is
+  retired; there is now a REAL binding.
+  - `POST /seo/keywords/research` requires `site_id` (no org-wide fallback,
+    rejected honestly); it authorizes via `authorize_site_editor` and threads
+    `site_id` through `run_research_command` → `run_keyword_relationship_research`
+    → `SeoCommandRun.start(site_id=…)` (the run ledger row is now site-bound,
+    using RLS the ledger already supported) and into `_store_research_artifact`.
+  - The saved artifact (`content_ir.kind_instance`) is bound to its site through
+    `platform.associations` (`content_ir_kind_instance` -> `web_site`, registered
+    with `container_side='none'`) — never a `site_id` column on that
+    platform-shared table. Written via `aidream.services.associations`
+    (the app-wide ownership-gated engine), **not** the client-only `assoc_add`
+    RPC — `platform.associations` grants `authenticated` SELECT only, so a
+    backend write through an RLS-scoped session 42501s (this exact mistake
+    broke research topic→project edges on 2026-07-25; see that module's
+    docstring).
+  - `seo.fn_ingest_keyword_research` gained `p_site_id` (appended, so the
+    old 3-arg overload was dropped after repointing the one caller) and now
+    upserts a `seo.site_keyword_value` row for every keyword the run touches
+    (idempotent — `ON CONFLICT (site_id, keyword_id) DO NOTHING`). That is what
+    makes a researched keyword "belong to" the site while the phrase stays in
+    the shared global library (`seo.keyword`).
+  - New `seo.site_keyword_value_copy(p_from_site, p_to_site, p_keyword_ids?,
+    p_dry_run)` — sibling of `seo.site_meaning_copy`, same dry-run-then-write
+    contract, permission-checked both ends via `seo.fn_is_site_editor`. UI:
+    `CopyKeywordsFromSite.tsx`, mounted on the site's keyword-value settings
+    page next to `CopyMeaningFromSite`.
+  - **Reads are site-scoped through a dedicated RPC, not the generic
+    associations service.** `associationsService.listForTargets`/
+    `assoc_for_targets` gates on `iam.org_readable(edge.organization_id)` —
+    plain ORG membership — which is exactly the permissions-follow-the-org
+    shape the ruling rejected ("permissions need to follow the site… it
+    automatically comes from the parent"). Discovered live: a site editor
+    without formal org membership got an empty saved-research library despite
+    a real bound artifact. Fixed with `seo.fn_list_site_research_instance_ids
+    (p_site_id)`, gated on `seo.fn_is_site_editor` — the same site-based
+    authorization every other keyword-plane site read/write in this feature
+    already uses. `listSavedKeywordResearch`, `getLatestSavedKeywordResearch`,
+    `getKeywordDossierCompleteness`, `useSavedKeywordResearch`,
+    `useKeywordResearch` all take `siteId` now (not `organizationId`).
+  - `KeywordResearchWorkbench` (the org-level `/marketing/keyword-research`
+    entry point) requires picking a site before Research or the saved library
+    will run — `?site=` deep-link, no auto-selected default (a wrong silent
+    default would bind a paid run to the wrong site). `KeywordResearchWindow`
+    (opened from anywhere) offers the same inline picker unless its opener
+    already knows the site (`useOpenKeywordResearchWindow({ siteId })`).
+    `KeywordResearchTab` (Keyword Intelligence panel) takes `siteId` from
+    `scope?.siteId` and disables Research with an explainer when the keyword
+    has no site in scope.
+  - `SavedResearchLibrary` is now strictly one site's library — the MSR-14
+    cross-site filter dropdown and `getSiteIdsByKeywordPhrase` derivative
+    lookup are DELETED (dead once the real binding existed).
+  - **Backfill: none, deliberately.** Every artifact saved before this change
+    has no site binding and none was invented — it simply will not appear in
+    any site's saved-research library. `seo.site_keyword_value_copy` is the
+    assign-forward path for a human who wants an old run's keywords on a site
+    now.
+  - Verified live: a real (non-mocked) research run bound to a site persisted
+    the run ledger, the association edge, and `site_keyword_value` rows; the
+    saved-research library reopened scoped to exactly that site.
 - 2026-08-25 — **MSR-14 + MSR-15 (Arman's marketing-surface-repair walkthrough).**
   MSR-14: `SavedResearchLibrary` gained a real text search over `primary_keyword`
   and a **Site** filter (grouped by brand). Investigated first: neither the
