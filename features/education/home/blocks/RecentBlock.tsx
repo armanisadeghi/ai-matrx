@@ -34,7 +34,10 @@ export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
       </div>
       <EducationLibraryCards
         rows={snapshot.library.recent}
-        density="compact"
+        // Comfortable, not compact: compact packs five cards across, which cut
+        // every study title down to "Cellular ..." — a library of identical
+        // ellipses is worse than no library block at all.
+        density="comfortable"
         showShared={false}
         // The library's own menu builder, so "…" offers exactly the same
         // actions here as it does on /education/library.

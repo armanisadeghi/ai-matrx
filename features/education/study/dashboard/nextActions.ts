@@ -13,6 +13,24 @@ import type { ItemMasteryRow } from "../types";
 /** An item is "weak" if flagged struggling or its live mastery is below this. */
 const WEAK_PCT = 0.4;
 
+/**
+ * Spine item types that are the SAME thing to a learner, folded onto one key.
+ *
+ * `education.item_mastery` holds both `fc_card` and the pre-rename `flashcard`
+ * spelling, and grouping on the raw value rendered two separate "Flashcards"
+ * lanes on the study surfaces — "Flashcards: 27 due" directly above
+ * "Flashcards: 3 due", which reads as a bug and makes the counts untrustworthy.
+ * Fold aliases here, not at the label, so the COUNTS merge too.
+ */
+const ITEM_TYPE_ALIASES: Record<string, string> = {
+  flashcard: "fc_card",
+};
+
+/** The canonical spine key for an item type. */
+export function canonicalItemType(itemType: string): string {
+  return ITEM_TYPE_ALIASES[itemType] ?? itemType;
+}
+
 export interface ModeSignal {
   itemType: string;
   label: string;
@@ -34,15 +52,16 @@ export function dueWeakByMode(
   const byType = new Map<string, ModeSignal>();
   const nowMs = now.getTime();
   for (const m of mastery) {
-    let sig = byType.get(m.item_type);
+    const itemType = canonicalItemType(m.item_type);
+    let sig = byType.get(itemType);
     if (!sig) {
       sig = {
-        itemType: m.item_type,
-        label: itemTypeLabel(m.item_type),
+        itemType,
+        label: itemTypeLabel(itemType),
         due: 0,
         weak: 0,
       };
-      byType.set(m.item_type, sig);
+      byType.set(itemType, sig);
     }
     if (m.due_at && new Date(m.due_at).getTime() <= nowMs) sig.due += 1;
     if ((m.attempt_count ?? 0) > 0) {

@@ -88,19 +88,19 @@ export function EducationLibraryCards({
               >
                 <Icon className="h-5 w-5" />
               </span>
-              <div className="min-w-0 flex-1 pr-14">
+              <div className={cn("min-w-0 flex-1", stats.dueCount > 0 && "pr-14")}>
                 {/* A REAL anchor so cmd-click / middle-click / "open in new
                     tab" / keyboard focus all reach the artifact. */}
                 {href ? (
                   <Link
                     href={href}
-                    className="block truncate text-sm font-semibold text-foreground hover:underline"
+                    className="block text-sm font-semibold leading-snug text-foreground hover:underline [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden"
                     title={row.title}
                   >
                     {row.title}
                   </Link>
                 ) : (
-                  <span className="block truncate text-sm font-semibold text-foreground">
+                  <span className="block text-sm font-semibold leading-snug text-foreground [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
                     {row.title}
                   </span>
                 )}
@@ -135,8 +135,10 @@ export function EducationLibraryCards({
                 accuracy={stats.accuracy}
                 className="mb-2"
               />
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-[11px] text-muted-foreground">
+              {/* Meta sits on its OWN line above the actions. Side by side, the
+                  action button squeezed it to "Not starte…" on a narrow card. */}
+              <div className="mb-1.5 min-h-4">
+                <span className="block truncate text-[11px] text-muted-foreground">
                   {stats.hasProgress ? (
                     <>
                       {stats.accuracy != null && (
@@ -161,30 +163,28 @@ export function EducationLibraryCards({
                     <> · {row.owner_email}</>
                   )}
                 </span>
-
-                <div className="flex shrink-0 items-center gap-1">
-                  {href && (
-                    <Link
-                      href={href}
-                      className={cn(
-                        "rounded-md px-2 py-1 text-xs font-semibold transition-colors",
-                        artifactTile(visual),
-                        "hover:brightness-110",
-                      )}
-                    >
-                      {visual.verb}
-                    </Link>
-                  )}
-                  <ItemMenu config={menuFor(row)} align="end">
-                    <button
-                      type="button"
-                      aria-label={`Actions for ${row.title}`}
-                      className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </ItemMenu>
-                </div>
+              </div>
+              <div className="flex items-center justify-end gap-1">
+                {href && (
+                  <Link
+                    href={href}
+                    className={cn(
+                      "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors hover:brightness-110",
+                      artifactTile(visual),
+                    )}
+                  >
+                    {visual.verb}
+                  </Link>
+                )}
+                <ItemMenu config={menuFor(row)} align="end">
+                  <button
+                    type="button"
+                    aria-label={`Actions for ${row.title}`}
+                    className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </ItemMenu>
               </div>
             </div>
           </div>
