@@ -30,20 +30,13 @@
  */
 
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  BrainCircuit,
-  Check,
-  Loader2,
-  UserCheck,
-} from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { BrainCircuit, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
-import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   humanLines,
@@ -51,11 +44,8 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
-import { getTopicPlacementStatus } from "./data";
-import type { TopicPlacementPassResult } from "./types";
+import type { TopicPlacementPassResult, TopicPlacementStatus } from "./types";
 
-/** The knob registry namespace this strip obeys. */
-const KNOB_FEATURE = "seo.topic_placement";
 // 🚨 THIS PATH SHIPS AHEAD OF THE DEPLOYED BACKEND, ON PURPOSE.
 // `POST /seo/keywords/topics/backfill` lives on aidream main (service
 // `topic_placement_backfill.py`, endpoint added 2026-08-22) and reaches
@@ -86,83 +76,22 @@ function pct(part: number, whole: number): number {
   return whole > 0 ? (part / whole) * 100 : 0;
 }
 
-function Meter({
-  label,
-  part,
-  whole,
-  suffix,
-  tone,
-}: {
-  label: string;
-  part: number;
-  whole: number;
-  suffix: string;
-  tone: "primary" | "muted";
-}) {
-  const share = pct(part, whole);
-  return (
-    <div className="min-w-0 flex-1">
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
-        </p>
-        <p
-          className={cn(
-            "text-[11px] tabular-nums",
-            tone === "primary"
-              ? "font-semibold text-foreground"
-              : "text-muted-foreground",
-          )}
-        >
-          {share.toFixed(share >= 10 ? 0 : 1)}%
-        </p>
-      </div>
-      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn(
-            "h-full rounded-full transition-all",
-            tone === "primary" ? "bg-primary" : "bg-muted-foreground/50",
-          )}
-          style={{ width: `${Math.min(share, 100)}%` }}
-        />
-      </div>
-      <p className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">
-        {formatCount(part)} of {formatCount(whole)} {suffix}
-      </p>
-    </div>
-  );
-}
-
 export function TopicPlacementStrip({
   siteId,
   siteName,
+  status,
+  minImpressions,
   onPassFinished,
 }: {
   siteId: string;
   siteName: string;
+  status: TopicPlacementStatus;
+  minImpressions: number;
   onPassFinished: () => void;
 }) {
   const queryClient = useQueryClient();
   const isAdmin = useAppSelector(selectIsAdmin);
   const [lastPass, setLastPass] = useState<string | null>(null);
-
-  // The demand floor is the SERVER's number. Reading it here (rather than
-  // assuming one) is what lets the strip report what the floor defers instead
-  // of presenting a shortened queue as the whole job.
-  const knobs = useQuery({
-    queryKey: ["marketing", "gsc", "placement-knobs"],
-    queryFn: () => fetchFeatureKnobValues(KNOB_FEATURE),
-    staleTime: 5 * 60 * 1000,
-  });
-  const minImpressions = Number(knobs.data?.min_impressions ?? 0);
-
-  const status = useQuery({
-    queryKey: ["seo", "topics", "placement-status", siteId, minImpressions],
-    queryFn: ({ signal }) =>
-      getTopicPlacementStatus(siteId, minImpressions, signal),
-    enabled: knobs.isSuccess,
-    staleTime: 30 * 1000,
-  });
 
   // The assigner's own reasoning is the product here, so the pass streams into
   // the floating live-run window rather than hiding behind a spinner.
@@ -203,19 +132,7 @@ export function TopicPlacementStrip({
     onPassFinished();
   }, [onPassFinished, pass.result, queryClient]);
 
-  const row = status.data;
-
-  if (status.isError) {
-    return (
-      <div className="flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-1.5">
-        <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
-        <p className="text-xs text-foreground">
-          Could not read the offering placement status.
-        </p>
-      </div>
-    );
-  }
-  if (!row) return null;
+  const row = status;
 
   const clicksPlaced = pct(row.demand_clicks_placed, row.demand_clicks);
   const owed = row.queue_pending - row.queue_deferred;
@@ -227,41 +144,23 @@ export function TopicPlacementStrip({
     <div
       className={cn(
         "flex shrink-0 flex-col gap-2 rounded-lg border p-2",
-        complete ? "border-border bg-card" : "border-primary/40 bg-accent/30",
+        "border-border bg-card",
       )}
     >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
         <p className="text-xs font-medium text-foreground">
-          Placing keywords on the tree{" "}
-          <span className="font-normal text-muted-foreground">
-            — a keyword with no offering can never resolve a value
-          </span>
+          Place keywords on offerings
         </p>
         {complete ? (
           <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
             <Check className="h-3 w-3" /> Demand placed
           </span>
         ) : (
-          <span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] tabular-nums text-primary">
+          <span className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-foreground">
             {formatCount(owed)} keywords owed
           </span>
         )}
-        {row.proposals_pending > 0 ? (
-          <span className="inline-flex items-center gap-1 rounded border border-warning/50 bg-warning/10 px-1.5 py-0.5 text-[10px] tabular-nums text-warning">
-            <UserCheck className="h-3 w-3" />
-            {formatCount(row.proposals_pending)} awaiting your confirmation
-          </span>
-        ) : null}
-        {row.queue_failed > 0 ? (
-          <span
-            className="inline-flex items-center gap-1 rounded border border-warning/50 bg-warning/10 px-1.5 py-0.5 text-[10px] tabular-nums text-warning"
-            title={row.last_error ?? "Quarantined after repeated failures"}
-          >
-            <AlertTriangle className="h-3 w-3" />
-            {formatCount(row.queue_failed)} quarantined
-          </span>
-        ) : null}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <CopyButtons
             size="xs"
@@ -320,54 +219,22 @@ export function TopicPlacementStrip({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-x-4 gap-y-2">
-        <Meter
-          label="Search Console clicks placed"
-          part={row.demand_clicks_placed}
-          whole={row.demand_clicks}
-          suffix="clicks"
-          tone="primary"
-        />
-        <Meter
-          label="Keywords with demand"
-          part={row.demand_keywords_placed}
-          whole={row.demand_keywords}
-          suffix="keywords"
-          tone="muted"
-        />
-      </div>
-
       {pass.stage && running ? (
         <p className="text-[10px] text-foreground">{pass.stage}</p>
       ) : null}
       {pass.error ? (
         <p className="text-[10px] text-destructive">{pass.error}</p>
       ) : null}
-      <p className="text-[10px] leading-relaxed text-muted-foreground">
-        {row.next_phrase && !complete ? (
-          <>
-            Next up: <span className="text-foreground">{row.next_phrase}</span>{" "}
-            — the queue is ordered by the clicks and impressions a keyword
-            actually earned in the last {row.demand_window_days ?? 90}{" "}
-            days.{" "}
-          </>
-        ) : null}
-        {row.queue_deferred > 0 ? (
-          <>
-            {formatCount(row.queue_deferred)} keywords are held back by the
-            demand floor ({minImpressions} impressions), not placed and not
-            counted as done.{" "}
-          </>
-        ) : null}
-        {row.placed_by_human > 0 ? (
-          <>
-            The assigner never touches the {formatCount(row.placed_by_human)}{" "}
-            {row.placed_by_human === 1 ? "keyword" : "keywords"} you placed
-            yourself.{" "}
-          </>
-        ) : null}
-        {lastPass ? <span className="text-foreground">{lastPass}</span> : null}
-      </p>
+      {lastPass ? (
+        <p className="text-[10px] text-muted-foreground">{lastPass}</p>
+      ) : row.next_phrase && !complete ? (
+        <p className="truncate text-[10px] text-muted-foreground">
+          Next: <span className="text-foreground">{row.next_phrase}</span>
+          {row.queue_deferred > 0
+            ? ` · ${formatCount(row.queue_deferred)} below the ${minImpressions}-impression floor`
+            : ""}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -42,10 +42,13 @@ import { formatCount } from "@/features/marketing/search-console/types";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
+import { commitUrlParams } from "@/lib/url-state/useUrlState";
 import { getValueVocabulary } from "../data";
 import { buildBandMeta, reviewWindow } from "../lib";
 import {
   getOfferingSplit,
+  getTopicPlacementStatus,
   getTopicDeleteImpact,
   getTopicStats,
   deleteTopic,
@@ -62,7 +65,10 @@ import {
   tallyByTopic,
   type TopicTreeNode,
 } from "./lib";
-import { OfferingSplitHeadline } from "./OfferingSplitHeadline";
+import {
+  OfferingSplitHeadline,
+  type OfferingKpiTarget,
+} from "./OfferingSplitHeadline";
 import { ProposedQueue } from "./ProposedQueue";
 import { TopicPlacementStrip } from "./TopicPlacementStrip";
 import {
@@ -86,6 +92,22 @@ import {
 // its own wrapper over the same RPC that silently dropped the reason (P24).
 import { setKeywordService } from "@/features/marketing/seo/keyword-workbench/data";
 import { UnplacedQueue } from "./UnplacedQueue";
+
+function parseOfferingKpiTarget(
+  value: string | null,
+): OfferingKpiTarget | null {
+  switch (value) {
+    case "offering":
+    case "authority":
+    case "unplaced":
+    case "placed-clicks":
+    case "placed-keywords":
+    case "proposals":
+      return value;
+    default:
+      return null;
+  }
+}
 
 export function TopicTreeWorkbench() {
   const { site, brandId } = useMarketingSite();
@@ -116,6 +138,10 @@ export function TopicTreeWorkbench() {
     null,
   );
   const contextNodeRef = useRef<TopicTreeNode | null>(null);
+  const treeSectionRef = useRef<HTMLDivElement | null>(null);
+  const proposalSectionRef = useRef<HTMLDivElement | null>(null);
+  const unplacedSectionRef = useRef<HTMLDivElement | null>(null);
+  const activeKpi = parseOfferingKpiTarget(searchParams.get("offering-focus"));
 
   // ── Reads ─────────────────────────────────────────────────────────────────
   const topics = useQuery({
@@ -136,6 +162,27 @@ export function TopicTreeWorkbench() {
     queryFn: ({ signal }) =>
       getOfferingSplit(siteId, window28.start, window28.end, signal),
   });
+  const placementKnobs = useQuery({
+    queryKey: ["marketing", "gsc", "placement-knobs"],
+    queryFn: () => fetchFeatureKnobValues("seo.topic_placement"),
+    staleTime: 5 * 60 * 1000,
+  });
+  const minPlacementImpressions = Number(
+    placementKnobs.data?.min_impressions ?? 0,
+  );
+  const placementStatus = useQuery({
+    queryKey: [
+      "seo",
+      "topics",
+      "placement-status",
+      siteId,
+      minPlacementImpressions,
+    ],
+    queryFn: ({ signal }) =>
+      getTopicPlacementStatus(siteId, minPlacementImpressions, signal),
+    enabled: placementKnobs.isSuccess,
+    staleTime: 30 * 1000,
+  });
   const vocab = useQuery({
     queryKey: ["seo", "value", "vocab", siteId, "value_band"],
     queryFn: ({ signal }) => getValueVocabulary(siteId, "value_band", signal),
@@ -151,6 +198,44 @@ export function TopicTreeWorkbench() {
   });
   const refreshTree = () =>
     queryClient.invalidateQueries({ queryKey: ["seo", "topics"] });
+
+  useEffect(() => {
+    const target =
+      activeKpi === "proposals"
+        ? proposalSectionRef.current
+        : activeKpi === "unplaced"
+          ? unplacedSectionRef.current
+          : activeKpi
+            ? treeSectionRef.current
+            : null;
+    if (!target) return;
+    const frame = window.requestAnimationFrame(() =>
+      target.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeKpi]);
+
+  const selectKpi = (target: OfferingKpiTarget) => {
+    const filters =
+      target === "offering"
+        ? { branch: { kind: "select", value: "offering" } }
+        : target === "authority"
+          ? { branch: { kind: "select", value: "non_revenue" } }
+          : target === "placed-clicks"
+            ? { clicks: { kind: "number", min: 1 } }
+            : target === "placed-keywords"
+              ? { keywordsBranch: { kind: "number", min: 1 } }
+              : null;
+    commitUrlParams(
+      {
+        "offering-focus": target,
+        ...(filters
+          ? { "table.offering-tree.f": JSON.stringify(filters) }
+          : {}),
+      },
+      "push",
+    );
+  };
 
   // ── Writes ────────────────────────────────────────────────────────────────
   const failed = (action: string) => (error: unknown) =>
@@ -543,135 +628,142 @@ export function TopicTreeWorkbench() {
         <OfferingSplitHeadline
           rows={split.data ?? []}
           windowLabel={windowLabel}
+          placement={placementStatus.data}
+          activeTarget={activeKpi}
+          onSelect={selectKpi}
         />
       )}
 
-      {loadingTree ? (
-        <TableLoadingComponent />
-      ) : treeError ? (
-        <InlineQueryError
-          what="the offering tree"
-          error={treeError}
-          onRetry={() => {
-            void topics.refetch();
-            void worth.refetch();
-            void stats.refetch();
-          }}
-        />
-      ) : (
-        <OfferingTreeTable
-          nodes={[...tree.byId.values()]}
-          byId={tree.byId}
-          metas={metas}
-          collapsed={collapsed}
-          selectedId={selectedId}
-          busy={busy}
-          actions={topicActions}
-          onToggle={toggleNode}
-          onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
-          onCreate={createOffering}
-          onSaveEdits={saveTableEdits}
-          wrapTable={(table) => (
-            <NonEditableContextMenu
-              sourceFeature="marketing"
-              menuVersion={1}
-              contextData={{ content: "" }}
-              resolveContextOnOpen={(target) => {
-                const topicId = target
-                  ?.closest("[data-row-id]")
-                  ?.getAttribute("data-row-id");
-                const node = topicId ? (tree.byId.get(topicId) ?? null) : null;
-                contextNodeRef.current = node;
-                if (!node) return null;
-                setSelectedId(node.topic.id);
-                return {
-                  [CONTEXT_MENU_ENTITY_KEY]: {
-                    type: "seo_topic",
-                    id: node.topic.id,
-                    title: node.topic.name,
+      <div ref={treeSectionRef} className="scroll-mt-3">
+        {loadingTree ? (
+          <TableLoadingComponent />
+        ) : treeError ? (
+          <InlineQueryError
+            what="the offering tree"
+            error={treeError}
+            onRetry={() => {
+              void topics.refetch();
+              void worth.refetch();
+              void stats.refetch();
+            }}
+          />
+        ) : (
+          <OfferingTreeTable
+            nodes={[...tree.byId.values()]}
+            byId={tree.byId}
+            metas={metas}
+            collapsed={collapsed}
+            selectedId={selectedId}
+            busy={busy}
+            actions={topicActions}
+            onToggle={toggleNode}
+            onSelect={(id) => setSelectedId(id === selectedId ? null : id)}
+            onCreate={createOffering}
+            onSaveEdits={saveTableEdits}
+            wrapTable={(table) => (
+              <NonEditableContextMenu
+                sourceFeature="marketing"
+                menuVersion={1}
+                contextData={{ content: "" }}
+                resolveContextOnOpen={(target) => {
+                  const topicId = target
+                    ?.closest("[data-row-id]")
+                    ?.getAttribute("data-row-id");
+                  const node = topicId
+                    ? (tree.byId.get(topicId) ?? null)
+                    : null;
+                  contextNodeRef.current = node;
+                  if (!node) return null;
+                  setSelectedId(node.topic.id);
+                  return {
+                    [CONTEXT_MENU_ENTITY_KEY]: {
+                      type: "seo_topic",
+                      id: node.topic.id,
+                      title: node.topic.name,
+                    },
+                    content: [
+                      node.topic.name,
+                      `${node.subtree.keywords.toLocaleString()} keywords`,
+                      `${node.subtree.clicks.toLocaleString()} clicks`,
+                      `${node.subtree.impressions.toLocaleString()} impressions`,
+                      `effective worth ${node.effectiveWeight}`,
+                    ].join(" · "),
+                    topic_id: node.topic.id,
+                    topic_name: node.topic.name,
+                    keyword_count: node.subtree.keywords,
+                    clicks: node.subtree.clicks,
+                    impressions: node.subtree.impressions,
+                  };
+                }}
+                extraSections={[
+                  {
+                    id: "topic-actions",
+                    label: "Offering",
+                    items: [
+                      {
+                        kind: "item",
+                        id: "topic-view-keywords",
+                        label: "See keywords in this branch",
+                        icon: PanelTop,
+                        description:
+                          "Open the filtered keyword report in a floating panel",
+                        onSelect: () => runContextAction("onViewKeywords"),
+                      },
+                      {
+                        kind: "item",
+                        id: "topic-pin-parent",
+                        label: "Choose parent offering…",
+                        icon: Pin,
+                        onSelect: () => runContextAction("onPinParent"),
+                      },
+                      {
+                        kind: "item",
+                        id: "topic-make-root",
+                        label: "Make this the top of its own branch",
+                        icon: ListTree,
+                        onSelect: () => runContextAction("onMakeRoot"),
+                      },
+                      {
+                        kind: "item",
+                        id: "topic-add-child",
+                        label: "Add an offering beneath this…",
+                        icon: GitBranchPlus,
+                        onSelect: () => runContextAction("onAddChild"),
+                      },
+                      { kind: "separator", id: "topic-actions-separator-1" },
+                      {
+                        kind: "item",
+                        id: "topic-set-worth",
+                        label: "Set what it’s worth here…",
+                        icon: CircleDollarSign,
+                        onSelect: () => runContextAction("onSetWorth"),
+                      },
+                      {
+                        kind: "item",
+                        id: "topic-edit",
+                        label: "Edit description…",
+                        icon: Pencil,
+                        onSelect: () => runContextAction("onEdit"),
+                      },
+                      { kind: "separator", id: "topic-actions-separator-2" },
+                      {
+                        kind: "item",
+                        id: "topic-delete",
+                        label: "Delete offering…",
+                        icon: Trash2,
+                        destructive: true,
+                        onSelect: () => runContextAction("onDelete"),
+                      },
+                    ],
                   },
-                  content: [
-                    node.topic.name,
-                    `${node.subtree.keywords.toLocaleString()} keywords`,
-                    `${node.subtree.clicks.toLocaleString()} clicks`,
-                    `${node.subtree.impressions.toLocaleString()} impressions`,
-                    `effective worth ${node.effectiveWeight}`,
-                  ].join(" · "),
-                  topic_id: node.topic.id,
-                  topic_name: node.topic.name,
-                  keyword_count: node.subtree.keywords,
-                  clicks: node.subtree.clicks,
-                  impressions: node.subtree.impressions,
-                };
-              }}
-              extraSections={[
-                {
-                  id: "topic-actions",
-                  label: "Offering",
-                  items: [
-                    {
-                      kind: "item",
-                      id: "topic-view-keywords",
-                      label: "See keywords in this branch",
-                      icon: PanelTop,
-                      description:
-                        "Open the filtered keyword report in a floating panel",
-                      onSelect: () => runContextAction("onViewKeywords"),
-                    },
-                    {
-                      kind: "item",
-                      id: "topic-pin-parent",
-                      label: "Choose parent offering…",
-                      icon: Pin,
-                      onSelect: () => runContextAction("onPinParent"),
-                    },
-                    {
-                      kind: "item",
-                      id: "topic-make-root",
-                      label: "Make this the top of its own branch",
-                      icon: ListTree,
-                      onSelect: () => runContextAction("onMakeRoot"),
-                    },
-                    {
-                      kind: "item",
-                      id: "topic-add-child",
-                      label: "Add an offering beneath this…",
-                      icon: GitBranchPlus,
-                      onSelect: () => runContextAction("onAddChild"),
-                    },
-                    { kind: "separator", id: "topic-actions-separator-1" },
-                    {
-                      kind: "item",
-                      id: "topic-set-worth",
-                      label: "Set what it’s worth here…",
-                      icon: CircleDollarSign,
-                      onSelect: () => runContextAction("onSetWorth"),
-                    },
-                    {
-                      kind: "item",
-                      id: "topic-edit",
-                      label: "Edit description…",
-                      icon: Pencil,
-                      onSelect: () => runContextAction("onEdit"),
-                    },
-                    { kind: "separator", id: "topic-actions-separator-2" },
-                    {
-                      kind: "item",
-                      id: "topic-delete",
-                      label: "Delete offering…",
-                      icon: Trash2,
-                      destructive: true,
-                      onSelect: () => runContextAction("onDelete"),
-                    },
-                  ],
-                },
-              ]}
-            >
-              {table}
-            </NonEditableContextMenu>
-          )}
-        />
-      )}
+                ]}
+              >
+                {table}
+              </NonEditableContextMenu>
+            )}
+          />
+        )}
+      </div>
 
       {tree.orphanedParents.length > 0 ? (
         <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-warning">
@@ -681,27 +773,41 @@ export function TopicTreeWorkbench() {
         </p>
       ) : null}
 
-      <TopicPlacementStrip
-        siteId={siteId}
-        siteName={siteId}
-        onPassFinished={refreshTree}
-      />
+      {placementStatus.error ? (
+        <InlineQueryError
+          what="the offering placement status"
+          error={placementStatus.error}
+          onRetry={() => void placementStatus.refetch()}
+        />
+      ) : placementStatus.data ? (
+        <TopicPlacementStrip
+          siteId={siteId}
+          siteName={siteId}
+          status={placementStatus.data}
+          minImpressions={minPlacementImpressions}
+          onPassFinished={refreshTree}
+        />
+      ) : null}
 
       {/* P26 — ONE TABLE. The tree above is legitimately a TREE; these two
           keyword lists are TABLES, and they are the canonical one. */}
-      <ProposedQueue
-        siteId={siteId}
-        siteDomain={site.domain}
-        brandId={brandId}
-        onChanged={refreshTree}
-      />
+      <div ref={proposalSectionRef} className="scroll-mt-3">
+        <ProposedQueue
+          siteId={siteId}
+          siteDomain={site.domain}
+          brandId={brandId}
+          onChanged={refreshTree}
+        />
+      </div>
 
-      <UnplacedQueue
-        siteId={siteId}
-        siteDomain={site.domain}
-        brandId={brandId}
-        onChanged={refreshTree}
-      />
+      <div ref={unplacedSectionRef} className="scroll-mt-3">
+        <UnplacedQueue
+          siteId={siteId}
+          siteDomain={site.domain}
+          brandId={brandId}
+          onChanged={refreshTree}
+        />
+      </div>
 
       {editDraft ? (
         <TopicEditDialog

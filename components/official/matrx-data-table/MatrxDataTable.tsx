@@ -1032,7 +1032,7 @@ function MatrxDataTableCore<T>({
                           >
                             {showRowCopy && copy ? (
                               <CopyButtons
-                                size="icon"
+                                size="xs"
                                 label={copy.label}
                                 human={() => copy.humanRow(displayRow)}
                                 json={() =>
@@ -1376,7 +1376,7 @@ function MatrxDataTableCore<T>({
                           >
                             {showRowCopy && copy ? (
                               <CopyButtons
-                                size="icon"
+                                size="xs"
                                 label={copy.label}
                                 human={() => copy.humanRow(displayRow)}
                                 json={() =>
@@ -1400,7 +1400,7 @@ function MatrxDataTableCore<T>({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                className="h-11 w-11 text-muted-foreground hover:text-foreground lg:h-5 lg:w-5 [&_svg]:size-3"
                                 aria-label={
                                   opensWindowOnRowClick
                                     ? "Open in side panel"

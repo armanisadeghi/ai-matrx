@@ -14,10 +14,25 @@
  * folding it into "offering" would flatter the agency.
  */
 
-import { BadgeDollarSign, CircleHelp, Landmark } from "lucide-react";
+import {
+  BadgeDollarSign,
+  BrainCircuit,
+  CircleHelp,
+  Landmark,
+  MousePointerClick,
+  UserCheck,
+} from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { formatCount } from "@/features/marketing/search-console/types";
-import type { OfferingSplitRow } from "./types";
+import type { OfferingSplitRow, TopicPlacementStatus } from "./types";
+
+export type OfferingKpiTarget =
+  | "offering"
+  | "authority"
+  | "unplaced"
+  | "placed-clicks"
+  | "placed-keywords"
+  | "proposals";
 
 interface Bucket {
   key: "offering" | "authority" | "unassigned";
@@ -105,24 +120,85 @@ function pct(part: number, whole: number): string {
 export function OfferingSplitHeadline({
   rows,
   windowLabel,
+  placement,
+  activeTarget,
+  onSelect,
 }: {
   rows: OfferingSplitRow[];
   windowLabel: string;
+  placement?: TopicPlacementStatus;
+  activeTarget: OfferingKpiTarget | null;
+  onSelect: (target: OfferingKpiTarget) => void;
 }) {
   const buckets = summarizeSplit(rows);
   const totalClicks = buckets.reduce((sum, bucket) => sum + bucket.clicks, 0);
   const offering = buckets[0];
   const unplaced = buckets[2];
+  const clicksPlaced = placement
+    ? pct(placement.demand_clicks_placed, placement.demand_clicks)
+    : "—";
+  const keywordsPlaced = placement
+    ? pct(placement.demand_keywords_placed, placement.demand_keywords)
+    : "—";
+  const owed = placement
+    ? Math.max(placement.queue_pending - placement.queue_deferred, 0)
+    : 0;
+
+  const placementCards = placement
+    ? [
+        {
+          key: "placed-clicks" as const,
+          label: "Search clicks placed",
+          value: clicksPlaced,
+          detail: `${formatCount(placement.demand_clicks_placed)} of ${formatCount(placement.demand_clicks)} clicks`,
+          icon: MousePointerClick,
+          title:
+            "Filter the offering tree to branches with placed search clicks",
+        },
+        {
+          key: "placed-keywords" as const,
+          label: "Keywords with demand",
+          value: keywordsPlaced,
+          detail: `${formatCount(placement.demand_keywords_placed)} of ${formatCount(placement.demand_keywords)} placed`,
+          icon: BrainCircuit,
+          title: "Filter the offering tree to branches with placed keywords",
+        },
+        ...(owed > 0
+          ? [
+              {
+                key: "unplaced" as const,
+                label: "Needs placement",
+                value: formatCount(owed),
+                detail: "Open the unplaced keyword table",
+                icon: CircleHelp,
+                title: "Show keywords that still need an offering",
+              },
+            ]
+          : []),
+        ...(placement.proposals_pending > 0
+          ? [
+              {
+                key: "proposals" as const,
+                label: "Needs confirmation",
+                value: formatCount(placement.proposals_pending),
+                detail: "Open the confirmation table",
+                icon: UserCheck,
+                title: "Show placements awaiting your confirmation",
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   return (
-    <section className="shrink-0 rounded-lg border border-border bg-card px-2 py-2">
-      <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
-        <div className="min-w-64 px-1">
+    <section className="shrink-0 rounded-lg border border-border bg-card p-2">
+      <div className="flex flex-col gap-2 2xl:flex-row 2xl:items-center">
+        <div className="min-w-56 px-1">
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="text-sm font-semibold text-foreground">
               Where search traffic leads
             </h2>
-            <span className="text-[10px] text-muted-foreground xl:hidden">
+            <span className="text-[10px] text-muted-foreground 2xl:hidden">
               {windowLabel}
             </span>
           </div>
@@ -141,23 +217,33 @@ export function OfferingSplitHeadline({
               <>No clicks in this window; showing impressions.</>
             )}
           </p>
-          <p className="hidden text-[10px] text-muted-foreground xl:block">
+          <p className="hidden text-[10px] text-muted-foreground 2xl:block">
             {windowLabel}
           </p>
         </div>
 
-        <div className="grid flex-1 gap-1.5 sm:grid-cols-3">
+        <div className="grid flex-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
           {buckets.map((bucket) => {
             const chrome = BUCKET_CHROME[bucket.key];
             const Icon = chrome.icon;
+            const target =
+              bucket.key === "offering"
+                ? "offering"
+                : bucket.key === "authority"
+                  ? "authority"
+                  : "unplaced";
             return (
-              <div
+              <button
+                type="button"
                 key={bucket.key}
+                onClick={() => onSelect(target)}
+                aria-pressed={activeTarget === target}
                 className={cn(
-                  "flex min-w-0 items-center gap-2 rounded-md border px-2 py-1.5",
+                  "flex min-w-0 items-center gap-2 rounded-md border px-2 py-1.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   chrome.ring,
+                  activeTarget === target && "ring-2 ring-ring",
                 )}
-                title={bucket.meaning}
+                title={`${bucket.meaning} Click to show it.`}
               >
                 <Icon className={cn("h-4 w-4 shrink-0", chrome.tone)} />
                 <div className="min-w-0 flex-1">
@@ -181,7 +267,38 @@ export function OfferingSplitHeadline({
                     </span>
                   </div>
                 </div>
-              </div>
+              </button>
+            );
+          })}
+          {placementCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <button
+                type="button"
+                key={card.key}
+                onClick={() => onSelect(card.key)}
+                aria-pressed={activeTarget === card.key}
+                className={cn(
+                  "flex min-w-0 items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  activeTarget === card.key && "ring-2 ring-ring",
+                )}
+                title={card.title}
+              >
+                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="truncate text-[11px] font-medium text-foreground">
+                      {card.label}
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums text-foreground">
+                      {card.value}
+                    </span>
+                  </div>
+                  <p className="truncate text-[10px] text-muted-foreground">
+                    {card.detail}
+                  </p>
+                </div>
+              </button>
             );
           })}
         </div>

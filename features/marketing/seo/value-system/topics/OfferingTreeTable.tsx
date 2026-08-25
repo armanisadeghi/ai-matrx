@@ -509,7 +509,7 @@ export function OfferingTreeTable({
       }}
       pageSize={0}
       zebra
-      className="h-[62dvh] min-h-[360px] max-h-[720px]"
+      className="h-[72dvh] min-h-[480px] max-h-[960px] lg:h-[78dvh] lg:min-h-[540px]"
       tableClassName="rounded-t-none"
     />
   );
@@ -533,7 +533,7 @@ function OfferingActions({
           variant="ghost"
           size="icon"
           disabled={busy}
-          className="h-10 w-10 lg:h-7 lg:w-7"
+          className="h-11 w-11 lg:h-5 lg:w-5 [&_svg]:size-3"
           aria-label={`Actions for ${node.topic.name}`}
         >
           <MoreVertical className="h-4 w-4" />

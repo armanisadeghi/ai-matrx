@@ -167,6 +167,29 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).not.toContain('aria-label="Open in window"');
   });
 
+  it("keeps table-owned desktop row actions at the micro size", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        copy={{
+          label: "Row",
+          listLabel: "Rows",
+          location: "Test table",
+          rowKind: "test-row",
+          listKind: "test-row-list",
+          humanRow: (row) => row.name,
+        }}
+        detail={{}}
+      />,
+    );
+
+    expect(markup).toContain("lg:h-5");
+    expect(markup).toContain("lg:w-8");
+    expect(markup).toContain('aria-label="Open in window"');
+  });
+
   it("freezes the first (identity) column below sm by default", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable
