@@ -89,6 +89,9 @@ second symptom instead of deduping the incident.
     In `next dev` the overlay already surfaces every `console.error`, so the
     wrapper is pure downside there; in prod/preview there is no overlay and the
     Inspector is the one surface. Never reinstate the dev wrap.
+  - Tagged shell icon-registry failures are promoted from the console fallback
+    to `shell-navigation`, preserving the rejected icon, fallback icon, code,
+    relation, and stack without adding a duplicate `console-error` entry.
 - **Python backend** — `lib/diagnostics/captureApiError.ts`, called from the error
   chokepoints in `lib/api/call-api.ts` **and** `lib/python-client.ts` (via
   `capturePythonClientError.ts`). The legacy `useBackendApi` adapter now delegates
@@ -314,6 +317,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-25 — **Shell icon registry failures are structured and singular.** A rejected shell icon now arrives as `shell-navigation` with `SHELL_ICON_UNREGISTERED`, `relation=icon:<name>`, the `CircleHelp` recovery, and its stack. The production console adapter promotes the tagged error instead of also creating a generic `console-error` symptom; focused tests pin both the typed branch and the ordinary console fallback.
 - 2026-08-25 — **DB kind render failures persist once.** `DbKindComponentErrorBoundary` already emits the actionable `react-render` capture with `relation=kind:<slug>` and the component stack; its adjacent `console.error` crossed the production console adapter and created a second generic `console-error` symptom for the same throw. The mirror is removed while the structured capture, generic-viewer recovery, and author incident report remain intact; the focused boundary test asserts one structured capture and no boundary-owned console mirror.
 - 2026-08-24 — **Nested console errors retain their diagnostics, and structured Supabase failures persist once.** The global console serializer now walks arrays/objects, preserves nested `Error` name/message/stack/cause/custom fields, and terminates cycles, so the common `console.error(label, { err })` shape cannot degrade to `{}`. Working-document association failures already captured as `supabase-postgrest` no longer mirror through the console fallback; focused tests pin both the serializer and the deferred-edge incident.
 - 2026-08-23 — **Study PostgREST failures persist once, with their structured cause.** `study/serviceError.fail()` still returns the complete message/details/hint/code string to callers, but recognizes the canonical PostgREST result shape and no longer mirrors that already-captured error through `console.error`. The captured `study_streak` `PGRST116` had produced two in-memory red entries and two `ops.system_error` rows—one actionable `supabase-postgrest` record and one generic console symptom. Non-PostgREST failures still scream through the console fallback; focused tests pin both branches.

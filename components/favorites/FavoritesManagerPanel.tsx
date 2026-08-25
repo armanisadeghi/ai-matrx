@@ -15,6 +15,10 @@ import { useState } from "react";
 import { Check, Search, Star } from "lucide-react";
 import ShellIcon from "@/features/shell/components/ShellIcon";
 import {
+  resolveShellIconName,
+  type ShellIconName,
+} from "@/features/shell/shellIconMap";
+import {
   flattenNavDestinations,
   iconColorMap,
 } from "@/features/shell/constants/nav-data";
@@ -95,7 +99,7 @@ export function FavoritesManagerPanel({ onClose }: FavoritesManagerPanelProps) {
                 checked
                 label={f.label}
                 description={f.href}
-                iconName={f.iconName ?? "Star"}
+                iconName={resolveShellIconName(f.iconName ?? "Star")}
                 color={f.color ?? "slate"}
                 onToggle={() => unpin(f.id)}
               />
@@ -170,7 +174,7 @@ function Row({
   disabled?: boolean;
   label: string;
   description?: string;
-  iconName: string;
+  iconName: ShellIconName;
   color: string;
   onToggle: () => void;
 }) {
@@ -182,9 +186,7 @@ function Row({
       aria-pressed={checked}
       className={cn(
         "flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors",
-        disabled
-          ? "cursor-not-allowed opacity-40"
-          : "hover:bg-accent/50",
+        disabled ? "cursor-not-allowed opacity-40" : "hover:bg-accent/50",
       )}
     >
       <span

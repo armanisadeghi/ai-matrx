@@ -14,7 +14,10 @@
  * (now retired) — there is exactly one set of these listeners in the app.
  */
 
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  captureError,
+  type CaptureInput,
+} from "@/lib/diagnostics/errorCaptureStore";
 import { extractErrorMessage } from "@/utils/errors";
 import { isKnownThirdPartyNoise } from "@/lib/console-noise";
 import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
@@ -22,6 +25,22 @@ import { isChunkLoadError } from "@/components/errors/chunk-load-recovery";
 let installed = false;
 /** Guards against capturing a console.error that fires from inside capture. */
 let inConsoleCapture = false;
+
+function isUnregisteredShellIconError(value: unknown): value is Error & {
+  code: "SHELL_ICON_UNREGISTERED";
+  iconName: string;
+  fallbackIconName: string;
+} {
+  return (
+    value instanceof Error &&
+    "code" in value &&
+    value.code === "SHELL_ICON_UNREGISTERED" &&
+    "iconName" in value &&
+    typeof value.iconName === "string" &&
+    "fallbackIconName" in value &&
+    typeof value.fallbackIconName === "string"
+  );
+}
 
 /** JSON-safe serialization that preserves Error objects at any nesting depth. */
 export function serializeForErrorCapture(
@@ -71,6 +90,46 @@ export function serializeForErrorCapture(
     out[key] = serializeForErrorCapture(nested, includeStack, seen);
   }
   return out;
+}
+
+/** Preserve typed console diagnostics before falling back to generic console noise. */
+export function buildConsoleCaptureInput(args: unknown[]): CaptureInput {
+  const errArg = args.find((arg) => arg instanceof Error);
+  if (isUnregisteredShellIconError(errArg)) {
+    return {
+      source: "shell-navigation",
+      relation: `icon:${errArg.iconName}`,
+      code: errArg.code,
+      message: errArg.message,
+      details: `The shell rendered the ${errArg.fallbackIconName} fallback because ${errArg.iconName} is not registered.`,
+      name: errArg.name,
+      stack: errArg.stack,
+      raw: serializeForErrorCapture(args),
+    };
+  }
+
+  const message = args
+    .map((arg) =>
+      typeof arg === "string"
+        ? arg
+        : arg instanceof Error
+          ? arg.message
+          : (() => {
+              try {
+                return JSON.stringify(serializeForErrorCapture(arg, false));
+              } catch {
+                return String(arg);
+              }
+            })(),
+    )
+    .join(" ");
+  return {
+    source: "console-error",
+    message: message || "console.error",
+    name: errArg instanceof Error ? errArg.name : undefined,
+    stack: errArg instanceof Error ? errArg.stack : undefined,
+    raw: serializeForErrorCapture(args),
+  };
 }
 
 /**
@@ -161,30 +220,7 @@ export function installGlobalErrorCapture(): void {
         if (isKnownThirdPartyNoise(args)) return;
         if (args.some((arg) => isChunkLoadError(arg))) return;
         inConsoleCapture = true;
-        const message = args
-          .map((a) =>
-            typeof a === "string"
-              ? a
-              : a instanceof Error
-                ? a.message
-                : (() => {
-                    try {
-                      return JSON.stringify(serializeForErrorCapture(a, false));
-                    } catch {
-                      return String(a);
-                    }
-                  })(),
-          )
-          .join(" ");
-        const errArg = args.find((a) => a instanceof Error) as
-          Error | undefined;
-        captureError({
-          source: "console-error",
-          message: message || "console.error",
-          name: errArg?.name,
-          stack: errArg?.stack,
-          raw: serializeForErrorCapture(args),
-        });
+        captureError(buildConsoleCaptureInput(args));
       } catch {
         /* capture must never break the caller */
       } finally {

@@ -15,7 +15,7 @@ export interface LaunchpadDestination {
   label: string;
   href: string;
   description?: string;
-  iconName: string;
+  iconName: ShellIconName;
   color?: string;
   groupLabel: string;
   external?: boolean;

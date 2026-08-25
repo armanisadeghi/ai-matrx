@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-08-24`
+**Last updated:** `2026-08-25`
 
 ---
 
@@ -61,6 +61,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 - **Mobile navigation is a solid bottom drawer.** Do not restore glass, a left sheet, inline primary-group accordions, or an adaptive-height panel.
 - **Keep one mobile scroll area.** `BottomSheetBody` owns scrolling; drill-in screens and search results flow inside it.
 - **Keep iOS interaction minimums.** Rows are at least 48px and the search input is 16px.
+- **Every first-party `ShellIcon` name is compile-time registered.** Persisted or external names must pass through `resolveShellIconName`; an invalid value renders `CircleHelp` and emits one structured `shell-navigation` diagnostic.
 
 ## Related features
 
@@ -81,6 +82,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 
 ## Change log
 
+- `2026-08-25` — Codex: registered the mobile drawer's `ChevronLeft` Back icon, made `ShellIcon` accept only closed-registry names so first-party omissions fail type-check, and preserved external invalid-icon fallback events as structured `shell-navigation` diagnostics instead of generic console errors.
 - `2026-08-24` — Codex: replaced the glass left mobile sheet and inline primary-group accordions with a solid, searchable, fixed-height bottom drawer with drill-in and Back navigation.
 - `2026-08-15` — Codex: added the prominent admin-only new-tab Launchpad door to the persistent sidebar footer.
 - `2026-08-15` — Codex: Preserved mode-switch meaning in the collapsed rail and centralized the route-menu row visual contract.

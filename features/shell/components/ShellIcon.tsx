@@ -5,10 +5,11 @@ import type { LucideProps } from "lucide-react";
 import {
   resolveShellIconName,
   shellIconComponents,
+  type ShellIconName,
 } from "../shellIconMap";
 
 interface ShellIconProps extends LucideProps {
-  name: string;
+  name: ShellIconName;
 }
 
 export default function ShellIcon({ name, ...props }: ShellIconProps) {

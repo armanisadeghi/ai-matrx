@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { QuickActions } from "@/features/dashboard/components/QuickActions";
 import { PinnedSection } from "@/features/dashboard/components/PinnedSection";
 import ShellIcon from "@/features/shell/components/ShellIcon";
+import { resolveShellIconName } from "@/features/shell/shellIconMap";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { cn } from "@/lib/utils";
@@ -49,7 +50,7 @@ export default function UserLaunchpad() {
             id: favorite.id,
             label: favorite.label,
             href: favorite.href,
-            iconName: favorite.iconName ?? "Star",
+            iconName: resolveShellIconName(favorite.iconName ?? "Star"),
             color: favorite.color,
             groupLabel: "Pinned",
             external: favorite.href.startsWith("http"),

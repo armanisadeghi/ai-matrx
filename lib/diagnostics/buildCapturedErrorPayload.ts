@@ -64,6 +64,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "runtime-exception": "Runtime exception",
   "unhandled-rejection": "Unhandled promise rejection",
   "console-error": "Console error",
+  "shell-navigation": "Shell navigation contract violation",
   "api-http": "Backend HTTP error",
   "api-network": "Backend network error",
   "react-render": "React render error",

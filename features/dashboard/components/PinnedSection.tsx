@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Star, X } from "lucide-react";
 import ShellIcon from "@/features/shell/components/ShellIcon";
+import { resolveShellIconName } from "@/features/shell/shellIconMap";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
 import { cn } from "@/lib/utils";
 import { usePinned } from "@/components/favorites/usePinned";
@@ -46,6 +47,9 @@ export function PinnedSection({
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {favorites.map((f) => {
+            const iconName = f.iconName
+              ? resolveShellIconName(f.iconName)
+              : null;
             const inner = (
               <>
                 <span
@@ -54,8 +58,8 @@ export function PinnedSection({
                     iconColorMap[f.color ?? "slate"] ?? iconColorMap.slate,
                   )}
                 >
-                  {f.iconName ? (
-                    <ShellIcon name={f.iconName} size={18} strokeWidth={2} />
+                  {iconName ? (
+                    <ShellIcon name={iconName} size={18} strokeWidth={2} />
                   ) : (
                     <Star size={18} />
                   )}

@@ -18,6 +18,7 @@ import {
   CalendarDays,
   CalendarClock,
   ChevronDown,
+  ChevronLeft,
   Compass,
   ChevronRight,
   CircleHelp,
@@ -138,6 +139,7 @@ export const shellIconComponents = {
   CalendarDays,
   CalendarClock,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   CircleHelp,
   CircleDollarSign,
@@ -247,6 +249,19 @@ export function isShellIconName(name: string): name is ShellIconName {
   return Object.hasOwn(shellIconComponents, name);
 }
 
+/** Structured console diagnostic consumed by the global Error Inspector adapter. */
+export class UnregisteredShellIconError extends Error {
+  readonly code = "SHELL_ICON_UNREGISTERED";
+  readonly iconName: string;
+  readonly fallbackIconName = "CircleHelp";
+
+  constructor(iconName: string) {
+    super(`[shell-nav] Unregistered icon name: ${iconName}`);
+    this.name = "UnregisteredShellIconError";
+    this.iconName = iconName;
+  }
+}
+
 /**
  * Normalizes persisted or external icon names before they enter typed shell
  * navigation. Unknown values stay visible as a help glyph instead of leaving
@@ -256,6 +271,6 @@ export function resolveShellIconName(
   name: string | null | undefined,
 ): ShellIconName {
   if (name && isShellIconName(name)) return name;
-  if (name) console.error(`[shell-nav] Unregistered icon name: ${name}`);
+  if (name) console.error(new UnregisteredShellIconError(name));
   return "CircleHelp";
 }

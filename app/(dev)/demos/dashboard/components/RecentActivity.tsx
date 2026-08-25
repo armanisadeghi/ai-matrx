@@ -2,8 +2,15 @@
 // Static content showcasing what's new on the platform
 
 import ShellIcon from "@/features/shell/components/ShellIcon";
+import type { ShellIconName } from "@/features/shell/shellIconMap";
 
-const recentItems = [
+const recentItems: Array<{
+  title: string;
+  description: string;
+  iconName: ShellIconName;
+  time: string;
+  color: string;
+}> = [
   {
     title: "New Research Mode",
     description:

@@ -7,12 +7,13 @@
 // "encourage users to do more" goal.
 
 import type { DashboardMetrics } from "../types";
+import type { ShellIconName } from "@/features/shell/shellIconMap";
 
 export interface MetricCardConfig {
   key: keyof DashboardMetrics;
   label: string;
   /** ShellIcon (Lucide) name. */
-  iconName: string;
+  iconName: ShellIconName;
   /** iconColorMap key (shared with the nav). */
   color: string;
   /** Where clicking the card goes. */

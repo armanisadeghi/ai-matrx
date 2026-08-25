@@ -2,8 +2,15 @@
 // Three horizontal cards for key workflows
 
 import ShellIcon from "@/features/shell/components/ShellIcon";
+import type { ShellIconName } from "@/features/shell/shellIconMap";
 
-const actions = [
+const actions: Array<{
+  label: string;
+  description: string;
+  href: string;
+  iconName: ShellIconName;
+  color: string;
+}> = [
   {
     label: "New Chat",
     description: "Start an AI conversation",

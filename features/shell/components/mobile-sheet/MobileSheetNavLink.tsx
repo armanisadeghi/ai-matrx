@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
+import type { ShellIconName } from "@/features/shell/shellIconMap";
 import ShellIcon from "../ShellIcon";
 
 interface MobileSheetNavLinkProps {
   href: string;
-  iconName: string;
+  iconName: ShellIconName;
   label: string;
   /** Render as an indented child of a nav group (smaller icon, inset). */
   isChild?: boolean;

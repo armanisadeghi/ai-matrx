@@ -42,6 +42,8 @@ export type CapturedErrorSource =
   | "unhandled-rejection"
   /** A `console.error(...)` call (noise-filtered). */
   | "console-error"
+  /** A shell navigation icon name was not present in the closed icon registry. */
+  | "shell-navigation"
   /** A Python-backend call returned a non-2xx HTTP status. */
   | "api-http"
   /** A Python-backend call failed at the network layer (timeout, DNS, abort). */

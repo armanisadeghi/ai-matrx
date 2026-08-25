@@ -9,6 +9,7 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 
 import type { DiscoverItem } from "./constants/discover";
+import type { ShellIconName } from "@/features/shell/shellIconMap";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // START SOMETHING  —  the fixed "create / launch" row at the top of the page.
@@ -21,17 +22,53 @@ export interface QuickAction {
   id: string; // stable id (use the href)
   label: string;
   href: string;
-  iconName: string;
+  iconName: ShellIconName;
   color: string;
 }
 
 export const QUICK_ACTIONS: QuickAction[] = [
-  { id: "/chat/new", label: "New Chat", href: "/chat/new", iconName: "MessageCircle", color: "indigo" },
-  { id: "/agents/new", label: "New Agent", href: "/agents/new", iconName: "Webhook", color: "blue" },
-  { id: "/files/all", label: "Upload Files", href: "/files/all", iconName: "FolderOpen", color: "amber" },
-  { id: "/research/topics/new", label: "New Research", href: "/research/topics/new", iconName: "FlaskConical", color: "purple" },
-  { id: "/transcripts/new", label: "New Transcript", href: "/transcripts/new", iconName: "Mic", color: "rose" },
-  { id: "/notes", label: "New Note", href: "/notes", iconName: "NotebookPen", color: "amber" },
+  {
+    id: "/chat/new",
+    label: "New Chat",
+    href: "/chat/new",
+    iconName: "MessageCircle",
+    color: "indigo",
+  },
+  {
+    id: "/agents/new",
+    label: "New Agent",
+    href: "/agents/new",
+    iconName: "Webhook",
+    color: "blue",
+  },
+  {
+    id: "/files/all",
+    label: "Upload Files",
+    href: "/files/all",
+    iconName: "FolderOpen",
+    color: "amber",
+  },
+  {
+    id: "/research/topics/new",
+    label: "New Research",
+    href: "/research/topics/new",
+    iconName: "FlaskConical",
+    color: "purple",
+  },
+  {
+    id: "/transcripts/new",
+    label: "New Transcript",
+    href: "/transcripts/new",
+    iconName: "Mic",
+    color: "rose",
+  },
+  {
+    id: "/notes",
+    label: "New Note",
+    href: "/notes",
+    iconName: "NotebookPen",
+    color: "amber",
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@
 // — that's the one knob file. This module just assembles the pool from it.
 
 import { flattenNavDestinations } from "@/features/shell/constants/nav-data";
+import type { ShellIconName } from "@/features/shell/shellIconMap";
 import {
   DISCOVER_HIDDEN_HREFS,
   DISCOVER_FEATURED_ORDER,
@@ -18,7 +19,7 @@ export interface DiscoverItem {
   id: string;
   label: string;
   href: string;
-  iconName: string;
+  iconName: ShellIconName;
   description: string;
   color: string;
   external?: boolean;
@@ -54,8 +55,12 @@ function collectFromNav(): DiscoverItem[] {
 function orderByFeatured(items: DiscoverItem[]): DiscoverItem[] {
   const rank = new Map(DISCOVER_FEATURED_ORDER.map((h, i) => [h, i]));
   return [...items].sort((a, b) => {
-    const ra = rank.has(a.href) ? (rank.get(a.href) as number) : Number.MAX_SAFE_INTEGER;
-    const rb = rank.has(b.href) ? (rank.get(b.href) as number) : Number.MAX_SAFE_INTEGER;
+    const ra = rank.has(a.href)
+      ? (rank.get(a.href) as number)
+      : Number.MAX_SAFE_INTEGER;
+    const rb = rank.has(b.href)
+      ? (rank.get(b.href) as number)
+      : Number.MAX_SAFE_INTEGER;
     if (ra !== rb) return ra - rb;
     return a.label.localeCompare(b.label);
   });

@@ -15,6 +15,15 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D259 — Mobile shell navigation renders duplicate `/education` React keys (2026-08-25)
+
+Opening the mobile navigation drawer on `/agents/8bdef30f-8110-4a5b-9edb-79d0ef1ba0fc/build`
+at 375×812 logs React's `Encountered two children with the same key, /education` error.
+The drawer remains usable and this is independent of the corrected `ChevronLeft` icon-registry
+failure. Trace the viewer-filtered `nav-data.ts` collection and give the two Education entries
+stable identity-based keys instead of using the shared href alone; verify root, search, and
+drill-in lists because each currently derives keys separately.
+
 ### D257 — `extend.wbx_demo` is world-writable over the public API (2026-08-25)
 
 Policy `wbx_demo_svc` is `FOR ALL TO PUBLIC USING (true) WITH CHECK (true)`.
