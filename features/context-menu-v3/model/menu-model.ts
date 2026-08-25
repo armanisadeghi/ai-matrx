@@ -47,6 +47,8 @@ import {
   Bug,
   Braces,
   BrainCircuit,
+  Volume2,
+  Headphones,
   type LucideIcon,
 } from "lucide-react";
 import type { IconComponentType } from "@/components/official/icons/IconResolver";
@@ -205,6 +207,8 @@ export interface MenuModel {
 /** The nodes a layout needs to address individually. */
 export interface MenuRoles {
   copy: MenuItemNode;
+  speak: MenuItemNode;
+  spokenSummary: MenuItemNode;
   copyAs: MenuSubmenuNode | null;
   json: MenuSubmenuNode | null;
   cut: MenuItemNode;
@@ -510,6 +514,24 @@ export function buildMenuModel(
     disabled: actionText.source === "none",
     onSelect: () => void m.handleCopy(),
   };
+  const speak: MenuItemNode = {
+    kind: "item",
+    id: "speak",
+    label: "Speak",
+    icon: Volume2,
+    iconClassName: "text-sky-500",
+    disabled: actionText.source === "none",
+    onSelect: m.handleSpeak,
+  };
+  const spokenSummary: MenuItemNode = {
+    kind: "item",
+    id: "spoken-summary",
+    label: "Summarize for listening",
+    icon: Headphones,
+    iconClassName: "text-violet-500",
+    disabled: actionText.source === "none" || !m.spokenSummaryAvailable,
+    onSelect: m.handleSpokenSummary,
+  };
   const copyAs: MenuSubmenuNode | null =
     m.copyVariantActions.length > 0
       ? {
@@ -814,7 +836,17 @@ export function buildMenuModel(
   sections.push({
     id: "clipboard",
     group: "clipboard",
-    nodes: compactNodes([copy, copyAs, json, cut, paste, selectAll, find]),
+    nodes: compactNodes([
+      copy,
+      speak,
+      spokenSummary,
+      copyAs,
+      json,
+      cut,
+      paste,
+      selectAll,
+      find,
+    ]),
   });
   sections.push(...extras["after-clipboard"]);
   sections.push({ id: "tools", group: "tools", nodes: [chat] });
@@ -858,6 +890,8 @@ export function buildMenuModel(
     sections,
     roles: {
       copy,
+      speak,
+      spokenSummary,
       copyAs,
       json,
       cut,

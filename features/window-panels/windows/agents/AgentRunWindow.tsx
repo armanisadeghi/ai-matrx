@@ -218,6 +218,7 @@ interface AgentRunBodyProps {
    * The structured-content channel — never folded into `initialDraftText`.
    */
   initialVariableValues?: Record<string, string> | null;
+  initialAutoRun?: boolean;
 }
 
 function AgentRunBody({
@@ -225,6 +226,7 @@ function AgentRunBody({
   selectedConversationId,
   initialDraftText,
   initialVariableValues,
+  initialAutoRun = false,
 }: AgentRunBodyProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -304,6 +306,10 @@ function AgentRunBody({
     runtime: { surfaceName: null },
     ready: !isInitializing,
     preferFresh: hasDraft,
+    config: {
+      autoRun: initialAutoRun,
+      defaultVariables: initialVariableValues ?? null,
+    },
   });
 
   // ── Seed the composed draft into the fresh conversation's composer ─────────
@@ -481,6 +487,7 @@ interface AgentRunWindowProps {
   initialDraftText?: string | null;
   /** Structured-content channel paired with `initialDraftText` — see AgentRunBodyProps. */
   initialVariableValues?: Record<string, string> | null;
+  initialAutoRun?: boolean;
 }
 
 export default function AgentRunWindow({
@@ -491,6 +498,7 @@ export default function AgentRunWindow({
   initialAgentName,
   initialDraftText,
   initialVariableValues,
+  initialAutoRun = false,
 }: AgentRunWindowProps) {
   if (!isOpen) return null;
   return (
@@ -501,6 +509,7 @@ export default function AgentRunWindow({
       initialAgentName={initialAgentName ?? null}
       initialDraftText={initialDraftText ?? null}
       initialVariableValues={initialVariableValues ?? null}
+      initialAutoRun={initialAutoRun}
     />
   );
 }
@@ -512,6 +521,7 @@ function AgentRunWindowInner({
   initialAgentName,
   initialDraftText,
   initialVariableValues,
+  initialAutoRun,
 }: {
   onClose: () => void;
   initialAgentId: string | null;
@@ -519,6 +529,7 @@ function AgentRunWindowInner({
   initialAgentName: string | null;
   initialDraftText: string | null;
   initialVariableValues: Record<string, string> | null;
+  initialAutoRun: boolean;
 }) {
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
   const [selectedConversationId, setSelectedConversationId] = useState<
@@ -606,6 +617,7 @@ function AgentRunWindowInner({
           selectedConversationId={selectedConversationId}
           initialDraftText={initialDraftText}
           initialVariableValues={initialVariableValues}
+          initialAutoRun={initialAutoRun}
         />
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center text-muted-foreground">

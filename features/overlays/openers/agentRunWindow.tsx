@@ -49,6 +49,8 @@ export interface OpenAgentRunWindowOptions {
    * passing a value here — an undeclared name is silently dropped).
    */
   initialVariableValues?: Record<string, string> | null;
+  /** Start the seeded run immediately after the window opens. */
+  initialAutoRun?: boolean;
 }
 
 export interface AgentRunWindowHandle {
@@ -68,6 +70,7 @@ export function useOpenAgentRunWindow() {
             initialAgentName: opts.initialAgentName,
             initialDraftText: opts.initialDraftText,
             initialVariableValues: opts.initialVariableValues,
+            initialAutoRun: opts.initialAutoRun,
           },
         }),
       );
@@ -96,6 +99,7 @@ export function AgentRunWindowController(props: OpenAgentRunWindowOptions): null
     props.initialAgentName,
     props.initialDraftText,
     props.initialVariableValues,
+    props.initialAutoRun,
   ]);
   return null;
 }

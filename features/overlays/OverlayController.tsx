@@ -2866,6 +2866,7 @@ export default function OverlayController() {
                 ? (data.initialVariableValues as Record<string, string>)
                 : null
             }
+            initialAutoRun={data?.initialAutoRun === true}
           />
         );
       })()}

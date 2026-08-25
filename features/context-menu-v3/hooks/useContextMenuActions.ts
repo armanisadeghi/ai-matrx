@@ -66,6 +66,9 @@ import { toast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useSpeech } from "@/features/audio/service/useSpeech";
+import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { insertTextAtCursor } from "@/utils/editor-text-insertion";
 import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -235,6 +238,9 @@ export interface ContextMenuActions {
   canNativeUndo: boolean;
   // Handlers
   handleCopy: () => Promise<void>;
+  handleSpeak: () => void;
+  handleSpokenSummary: () => void;
+  spokenSummaryAvailable: boolean;
   handleCut: () => Promise<void>;
   handlePaste: () => Promise<void>;
   handleSelectAll: () => void;
@@ -329,6 +335,11 @@ export function useContextMenuActions(
   } = useSurfaceBoundAgents(surfaceName, { isEditable });
 
   const { launchShortcut, launchAgent } = useAgentLauncher();
+  const { speak } = useSpeech({ processMarkdown: true, label: "Selected text" });
+  const { roles: surfaceAgentRoles } = useSurfaceAgentRoles(
+    surfaceName ?? "matrx-unregistered/context-menu",
+  );
+  const openAgentRunWindow = useOpenAgentRunWindow();
   const quickActions = useQuickActions();
   const openDiffWindow = useOpenDiffViewerWindow();
   const openFindReplace = useOpenFindReplace();
@@ -430,6 +441,25 @@ export function useContextMenuActions(
       console.error("[ContextMenuV3] copy failed", err);
       showManualCopy({ text: actionText.text });
     }
+  };
+
+  const handleSpeak = () => {
+    if (actionText.text.trim()) speak(actionText.text);
+  };
+
+  const spokenSummaryAgentId =
+    surfaceAgentRoles.spoken_summary?.effectiveAgentId ?? null;
+  const handleSpokenSummary = () => {
+    if (!spokenSummaryAgentId || !actionText.text.trim()) return;
+    openAgentRunWindow({
+      initialAgentId: spokenSummaryAgentId,
+      initialAgentName: surfaceAgentRoles.spoken_summary?.role.label ?? null,
+      initialVariableValues: {
+        content: actionText.text,
+        style: "Extremely Concise Summary",
+      },
+      initialAutoRun: true,
+    });
   };
 
   const handleCut = async () => {
@@ -977,6 +1007,9 @@ export function useContextMenuActions(
     isAdminIndicatorOpen,
     canNativeUndo,
     handleCopy,
+    handleSpeak,
+    handleSpokenSummary,
+    spokenSummaryAvailable: Boolean(spokenSummaryAgentId),
     handleCut,
     handlePaste,
     handleSelectAll,

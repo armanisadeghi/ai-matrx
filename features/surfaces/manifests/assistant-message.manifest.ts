@@ -194,6 +194,19 @@ This surface is for acting ON rendered output (explain, transform, extract, save
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  agentRoles: [
+    {
+      name: "spoken_summary",
+      label: "Listening summary",
+      description:
+        "Converts selected response text or a whole message into concise, natural prose designed for listening.",
+      kind: "single",
+      defaultAgentId: null,
+      allowCustom: true,
+      autoRun: "always",
+      sortOrder: 100,
+    },
+  ],
 };
 
 export function createAssistantMessageScope(values: {

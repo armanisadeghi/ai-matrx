@@ -97,7 +97,15 @@ export function arrangeMenu(
   //    one submenu carrying the surface's OWN label (e.g. "Note").
 
   // Strip: the universal verbs, icon-only (greyed when unavailable).
-  const strip: MenuLeafNode[] = [r.copy, r.cut, r.paste, r.undo, r.redo, r.find];
+  const strip: MenuLeafNode[] = [
+    r.copy,
+    r.speak,
+    r.cut,
+    r.paste,
+    r.undo,
+    r.redo,
+    r.find,
+  ];
 
   const sections: MenuSection[] = [];
 
@@ -105,7 +113,7 @@ export function arrangeMenu(
   sections.push({
     id: "clipboard",
     group: "clipboard",
-    nodes: compact([r.copyAs, r.json, r.selectAll]),
+    nodes: compact([r.spokenSummary, r.copyAs, r.json, r.selectAll]),
   });
 
   // AI + libraries — every placement row, same names as Classic.
