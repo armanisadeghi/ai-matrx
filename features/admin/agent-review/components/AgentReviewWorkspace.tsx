@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   ArrowRight,
   Check,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
   RotateCcw,
 } from "lucide-react";
@@ -56,6 +58,7 @@ export default function AgentReviewWorkspace({
 }: {
   reviewId: string;
 }) {
+  const router = useRouter();
   const user = useAppSelector(selectUser);
   const [row, setRow] = useState<ReviewQueueRow | null>(null);
   const [registry, setRegistry] = useState<ReviewRegistry>(
