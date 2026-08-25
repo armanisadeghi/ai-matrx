@@ -9,7 +9,7 @@
 // One network call per (filter, limit) per TTL window across the whole session.
 //
 // If profiling shows even this is too heavy at scale, the next step is a
-// precomputed summary RPC/table (docs/knowledge/05 §B5) — this module is the
+// precomputed summary RPC/table (a dead reference: docs/knowledge/05 never existed) — this module is the
 // single seam to swap that in behind.
 
 import { fetchKgGraph } from "./kgGraphService";
