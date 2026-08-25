@@ -26,6 +26,7 @@
 import { useCallback, useState } from "react";
 import { Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 import { useKindActionRunner } from "./useKindActionRunner";
 
@@ -38,6 +39,12 @@ export interface KindAgentActionButtonProps {
   variables: Record<string, unknown>;
   /** Partial settings delta (e.g. aspect_ratio, duration_seconds). */
   llmOverrides?: Partial<LLMParams> | null;
+  /** Optional user gate for actions that can spend credits or cause effects. */
+  confirmation?: {
+    title: string;
+    description: string;
+    confirmLabel?: string;
+  } | null;
   className?: string;
   size?: "default" | "sm" | "lg";
 }
@@ -47,6 +54,7 @@ export function KindAgentActionButton({
   label,
   variables,
   llmOverrides,
+  confirmation,
   className,
   size = "sm",
 }: KindAgentActionButtonProps) {
@@ -56,15 +64,35 @@ export function KindAgentActionButton({
   const handleClick = useCallback(async () => {
     if (isLaunching) return;
     setIsLaunching(true);
-    // The runner owns error handling (toast + capture) and never throws; the
-    // returned envelope only drives this button's busy state.
-    await runAction("trigger_agent", {
-      agentId,
-      variables,
-      ...(llmOverrides ? { llmOverrides } : null),
-    });
-    setIsLaunching(false);
-  }, [agentId, isLaunching, runAction, llmOverrides, variables]);
+    try {
+      if (confirmation) {
+        const accepted = await confirm({
+          title: confirmation.title,
+          description: confirmation.description,
+          confirmLabel: confirmation.confirmLabel ?? label ?? "Run agent",
+        });
+        if (!accepted) return;
+      }
+
+      // The runner owns error handling (toast + capture) and never throws; the
+      // returned envelope only drives this button's busy state.
+      await runAction("trigger_agent", {
+        agentId,
+        variables,
+        ...(llmOverrides ? { llmOverrides } : null),
+      });
+    } finally {
+      setIsLaunching(false);
+    }
+  }, [
+    agentId,
+    confirmation,
+    isLaunching,
+    label,
+    runAction,
+    llmOverrides,
+    variables,
+  ]);
 
   return (
     <Button

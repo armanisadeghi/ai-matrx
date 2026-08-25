@@ -43,6 +43,13 @@ const ASPECT_RATIO_VALUES = new Set<NonNullable<LLMParams["aspect_ratio"]>>([
   "21:9",
 ]);
 
+const VIDEO_GENERATION_CONFIRMATION = {
+  title: "Generate this video?",
+  description:
+    "Video generation uses a paid provider and may consume account credits. Review the selected prompt, aspect ratio, and duration before continuing.",
+  confirmLabel: "Generate video",
+};
+
 function isVariation(value: unknown): value is VideoPromptVariationData {
   return (
     typeof value === "object" &&
@@ -58,7 +65,10 @@ function readData(serverData: unknown): VideoPromptOptionsData | null {
   const prompts = candidate.prompts.filter(isVariation);
   if (prompts.length === 0) return null;
   return {
-    concept_received: typeof candidate.concept_received === "string" ? candidate.concept_received : null,
+    concept_received:
+      typeof candidate.concept_received === "string"
+        ? candidate.concept_received
+        : null,
     action:
       candidate.action && typeof candidate.action.agentId === "string"
         ? candidate.action
@@ -104,7 +114,7 @@ function CopyPromptButton({ prompt }: { prompt: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      className="inline-flex min-h-11 items-center gap-1 rounded-md border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       aria-label="Copy prompt"
     >
       {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -151,6 +161,8 @@ function VariationCard({
               label={action.label ?? "Generate video"}
               variables={{ [action.variableName]: variation.prompt }}
               llmOverrides={overrides}
+              confirmation={VIDEO_GENERATION_CONFIRMATION}
+              className="min-h-11"
             />
           ) : null}
         </div>
@@ -184,6 +196,12 @@ export default function VideoPromptOptionsBlock({
       {data.concept_received ? (
         <p className="text-sm text-muted-foreground">
           Concept: {data.concept_received}
+        </p>
+      ) : null}
+      {data.action ? (
+        <p className="text-xs text-muted-foreground" role="note">
+          Video generation uses paid provider credits. You will confirm before
+          it starts.
         </p>
       ) : null}
       <div className="space-y-2">

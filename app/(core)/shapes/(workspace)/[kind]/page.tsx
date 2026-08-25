@@ -24,6 +24,7 @@ export default async function ShapePreviewPage({ params }: PageProps) {
         emittedJsonSchema={detail.emittedJsonSchema}
       />
       <div className="px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
+        <h1 className="sr-only">{detail.label}</h1>
         <div className="mt-3">
           <ShapePreviewTab
             kind={detail.kind}
