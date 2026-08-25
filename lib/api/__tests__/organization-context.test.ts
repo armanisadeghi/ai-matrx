@@ -145,6 +145,27 @@ describe("callApi organization context", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("does not start a stream without explicit organization context", async () => {
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock;
+    const state = requestState(null, ORGANIZATION_ID);
+
+    const result = await callApi({
+      path: "/seo/sites/{site_id}/analytics/sync",
+      method: "POST",
+      pathParams: { site_id: "site-test" },
+      body: { window_days: 28 },
+      stream: true,
+      _testOverrides: { forceBaseUrl: "https://server.test" },
+    })(jest.fn(), () => state, undefined);
+
+    expect(result.error).toMatchObject({
+      type: "validation_error",
+      code: "organization_context_required",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("binds the selected organization into the real fetch body and header", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

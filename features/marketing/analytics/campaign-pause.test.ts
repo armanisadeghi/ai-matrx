@@ -12,7 +12,11 @@ describe("GA4 collection campaign pause", () => {
     const dispatch = jest.fn() as unknown as AppDispatch;
 
     await expect(
-      syncSiteAnalytics(dispatch, "site-1", "org-1"),
+      syncSiteAnalytics(
+        dispatch,
+        "site-1",
+        "11111111-1111-4111-8111-111111111111",
+      ),
     ).rejects.toThrow(GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON);
 
     expect(dispatch).not.toHaveBeenCalled();

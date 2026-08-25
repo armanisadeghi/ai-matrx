@@ -13,6 +13,7 @@ jest.mock("@/lib/api/call-api", () => ({
 }));
 
 const callApiMock = jest.mocked(callApi);
+const SITE_ORGANIZATION_ID = "11111111-1111-4111-8111-111111111111";
 
 function successfulDispatch(): AppDispatch {
   return jest.fn().mockResolvedValue({ data: null }) as unknown as AppDispatch;
@@ -36,15 +37,30 @@ describe("marketing organization scope", () => {
   });
 
   it("uses the site organization for analytics", async () => {
-    await syncSiteAnalytics(successfulDispatch(), "site-1", "org-site");
+    await syncSiteAnalytics(
+      successfulDispatch(),
+      "site-1",
+      SITE_ORGANIZATION_ID,
+    );
 
     expect(callApiMock).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/seo/sites/{site_id}/analytics/sync",
         pathParams: { site_id: "site-1" },
-        scopeOverrides: { organization_id: "org-site" },
+        scopeOverrides: { organization_id: SITE_ORGANIZATION_ID },
       }),
     );
+  });
+
+  it("refuses malformed analytics organization scope before dispatch", async () => {
+    const dispatch = successfulDispatch();
+
+    await expect(
+      syncSiteAnalytics(dispatch, "site-1", "org-site"),
+    ).rejects.toThrow("The selected organization ID is invalid.");
+
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(callApiMock).not.toHaveBeenCalled();
   });
 
   it("uses the site organization for Bing performance", async () => {

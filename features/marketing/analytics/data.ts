@@ -6,6 +6,7 @@ import { getLatestCollectionFailure } from "@/features/marketing/data/collection
 import type { TypedStreamEvent } from "@/lib/api/types";
 import type { AppDispatch } from "@/lib/redux/store";
 import { assertGoogleAnalyticsCampaignActive } from "@/features/marketing/google/ga4-campaign";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 /**
  * GA4 persisted read/sync (M-74, WS-12).
@@ -98,6 +99,7 @@ export async function syncSiteAnalytics(
   options: { windowDays?: number; isSuperAdmin?: boolean } = {},
   callbacks: AnalyticsSyncCallbacks = {},
 ): Promise<AnalyticsSyncResult> {
+  const admittedOrganizationId = requireOrganizationContext(organizationId);
   // Frontend safety layer. aidream independently refuses the same request so
   // a stale client or direct API call cannot bypass the campaign pause.
   assertGoogleAnalyticsCampaignActive(options.isSuperAdmin === true);
@@ -109,7 +111,7 @@ export async function syncSiteAnalytics(
       method: "POST",
       pathParams: { site_id: siteId },
       body: { window_days: options.windowDays ?? 28 },
-      scopeOverrides: { organization_id: organizationId },
+      scopeOverrides: { organization_id: admittedOrganizationId },
       stream: true,
       signal: callbacks.signal,
       onStreamEvent: (event) => {

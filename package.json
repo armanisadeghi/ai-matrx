@@ -23,7 +23,7 @@
     "test:window-panels": "jest features/window-panels/__tests__ --no-coverage",
     "test:content-ir": "jest features/content-ir --no-coverage",
     "test:workflow-runtime": "jest features/workflow-runtime --no-coverage",
-    "check:organization-context": "jest lib/api/__tests__/organization-context.test.ts features/secrets/__tests__/organization-context-transport.test.ts --runInBand --no-coverage",
+    "check:organization-context": "jest lib/api/__tests__/organization-context.test.ts features/secrets/__tests__/organization-context-transport.test.ts features/marketing/data/organization-scope.test.ts --runInBand --no-coverage",
     "clean": "rimraf .next node_modules/.cache",
     "clean:turbo": "rimraf .next/dev/cache/turbopack",
     "clean:deep": "rimraf .next .turbo node_modules/.cache tsconfig.tsbuildinfo",

@@ -451,6 +451,13 @@ to_jsonb(NEW))` and dereference that composite so column drift still fails
   `seo.collection_run` directly under RLS and reconstruct the same failure
   after navigation or refresh; a stored provider error is never stranded only
   in backend logs/raw evidence.
+- **GA4 sync is bound to the site's durable organization.**
+  `analytics/data.ts::syncSiteAnalytics` validates `site.organization_id`
+  before campaign checks or dispatch, and `callApi` sends that exact UUID in
+  the canonical header/body context. Aidream requires the header, compares the
+  admitted context with the authorized site's organization, and captures the
+  same UUID in the detached `run_collection` request. Missing or mismatched
+  identity stops before provider work.
 - **Machine discovery writes ONLY `web.discovered_item`.** Confirmed identity (`brand_asset`, `business_fact`, site identity columns) is written by humans (or by explicit promotion code) — never directly by a scraper.
 - **A specific discovery guess must stay specific through promotion.** Fax, homepage title/description/site name, Open Graph image, and Twitter card image are first-class confirmed kinds; the review inbox must never demote a recognized `guessed_kind` to `other` because of a partial local options list.
 - **Social discovery must be verifiable before confirmation.** Social candidates render the canonical provider icon plus the strongest identity encoded by the URL (handle/channel ID and profile/page/channel type). Every URL-bearing discovery exposes both a clickable URL and an explicit open-in-new-tab action. Remote profile HTML is not treated as browser-readable evidence because major social providers block cross-origin reads and framing; the live target remains the final authority.
@@ -550,6 +557,23 @@ judgments are removed rather than silently transplanted to a different topic.
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. GA4 is in a contained `internal_test` campaign: a fresh allowlisted identity has completed the canonical authorization, property binding, bounded collection, persisted-fact, and live Site settings rendering path; normal users and scheduled collection remain blocked until Google approves the scope. YouTube now has the matching contained reviewer path in Google Connections: explicit read-only disclosure, separate incremental authorization, deliberate owned-channel selection, and an in-app channel/recent-video preview; its real fresh-identity certification still remains. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-08-24 — Codex: **The GA4 stream now proves tenant identity end to end.**
+  The site organization is validated before frontend dispatch, required by the
+  backend OpenAPI operation, matched against the authorized site, and preserved
+  into detached collection work. Negative tests prove missing/malformed scope
+  performs no frontend dispatch/networking and no backend resource/provider
+  work; the focused suites block both releases.
+- 2026-08-24 — Codex: **Website deletion no longer dead-ends editors in a raw
+  database toast.** All three delete doors (Sites portfolio, Brand workspace,
+  and Site Settings) recognize only the platform's deliberate governed-action
+  `42501` and open the shared Access Gate dialog. It explains why full access is
+  required and lets the editor directly message the owner/admins to either
+  delete the site or grant full access; the request remains durable in Access
+  requests and is actionable inside Messages. The owner-side delete cancels
+  every active site session before the canonical soft delete. Site Settings now
+  resolves admin access before canceling its live crawl, closing the side-effect
+  defect where an editor's rejected delete could still stop the owner's work.
 
 - 2026-08-24 — Width caps removed from the table dashboards (site performance, search-console
   portfolio, reputation, media, SEO capabilities): Arman's ruling — a business dashboard uses the

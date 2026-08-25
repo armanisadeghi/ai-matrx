@@ -124,7 +124,9 @@ entity, pass that entity's durable organization with `scopeOverrides`. Typed-cli
 and raw stream callers must enforce the same contract and send the generated
 `organization_id` explicitly. GET endpoints also send it as a query parameter
 when their generated contract declares one. A server-side organization fallback
-is a defect, never recovery.
+is a defect, never recovery. The blocking `check:organization-context` suite
+includes a real `callApi` NDJSON configuration and proves absent organization
+context performs zero `fetch` calls before a stream can start.
 
 ## Multipart nuance (read before touching a `*/multipart` call)
 
@@ -253,6 +255,10 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-08-24 — Extended the blocking organization gate to a real GA4 NDJSON
+  caller. `syncSiteAnalytics` validates its site organization itself before
+  dispatch, and missing request context causes zero network I/O before stream
+  startup.
 - 2026-08-24 — Extracted the fail-closed organization transport kernel into
   `organization-context.ts`, made it reject malformed UUIDs, migrated Vault and
   Authenticator JSON transports onto it, and added the blocking
