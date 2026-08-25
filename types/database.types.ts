@@ -52508,6 +52508,7 @@ export type Database = {
         Args: { p_industry_id: string }
         Returns: undefined
       }
+      _pack_band_recut: { Args: { p_old: number }; Returns: number }
       _pack_convert_rules_to_meaning: {
         Args: { p_pack_id: string }
         Returns: Json

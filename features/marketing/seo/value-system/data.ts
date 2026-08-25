@@ -573,7 +573,15 @@ export async function adoptStarterPack(
     p_entity_id: packId,
     p_target: target,
   });
-  return assertData(response.data, response.error) as unknown as StarterPackAdoptResult;
+  // Name the ACTION, not the module: this is a write, and the library's own
+  // refusals (not entitled, not a member of that organization) are the useful
+  // half of the message. The module default ("reach your keyword value data")
+  // reported an authorization refusal as if the database were unreachable.
+  return assertData(
+    response.data,
+    response.error,
+    "adopt this pack",
+  ) as unknown as StarterPackAdoptResult;
 }
 
 // ── The ruling counter (the KPI that only YOU can move) ─────────────────────

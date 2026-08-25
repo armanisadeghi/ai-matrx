@@ -26,10 +26,32 @@ import {
   localFacetsAreComplete,
   type ColumnFilter,
 } from "@/features/data-tables/column-filters";
-import { isServiceFailure, type ColumnFacets } from "@/features/data-tables/types";
+import {
+  isServiceFailure,
+  type ColumnFacets,
+  type ServiceResult,
+} from "@/features/data-tables/types";
 
 interface ColumnHeaderMenuProps {
-  tableId: string;
+  /**
+   * The user-data table this column belongs to — the identity `getColumnFacets`
+   * needs. OMIT IT on a non-`udt_*` grid (CMS collections, and anything else
+   * that reuses this control): then `fetchFacets` decides where server-side
+   * facets come from, and with neither, the control works from the rows the
+   * browser already holds. See `sourceLabel` for what it says when it cannot
+   * see every row.
+   */
+  tableId?: string;
+  /**
+   * Server-side facets for a grid that is not a `udt_*` table. Called only when
+   * `localRows` does not cover `totalCount` — the local-data-first rule is the
+   * same for every source. Return null (or throw) to fall back to text mode.
+   */
+  fetchFacets?: (args: {
+    fieldName: string;
+    searchTerm?: string;
+    limit: number;
+  }) => Promise<ColumnFacets | null>;
   fieldName: string;
   displayName: string;
   dataType: string;
@@ -85,6 +107,7 @@ interface ColumnHeaderMenuProps {
  */
 const ColumnHeaderMenu = ({
   tableId,
+  fetchFacets,
   fieldName,
   displayName,
   dataType,
@@ -109,7 +132,16 @@ const ColumnHeaderMenu = ({
   const [valueQuery, setValueQuery] = useState("");
 
   const attemptRef = useRef<string | null>(null);
-  const attemptKey = `${tableId}::${fieldName}::${searchTerm ?? ""}`;
+  const attemptKey = `${tableId ?? "local"}::${fieldName}::${searchTerm ?? ""}`;
+
+  /**
+   * Can this mount answer "what is in this column" over rows it cannot see?
+   * A `udt_*` table can (the RPC); another source can only if it supplied
+   * `fetchFacets`. When neither holds, the menu says so instead of showing a
+   * value list computed from one page — a partial checklist reads as the whole
+   * column, which is the exact lie the facet RPC was built to stop.
+   */
+  const canFetchFacets = Boolean(fetchFacets) || Boolean(tableId);
 
   // LOCAL DATA FIRST. Most tables are small enough that every row is already in
   // memory, and then "what values are in this column" is a loop over an array —
@@ -123,7 +155,12 @@ const ColumnHeaderMenu = ({
   const localFacets = useMemo(
     () =>
       haveAllRows
-        ? computeColumnFacets({ tableId, fieldName, rows: localRows, limit: 200 })
+        ? computeColumnFacets({
+            tableId: tableId ?? "local",
+            fieldName,
+            rows: localRows,
+            limit: 200,
+          })
         : null,
     [haveAllRows, tableId, fieldName, localRows],
   );
@@ -131,13 +168,21 @@ const ColumnHeaderMenu = ({
   // Fetched facets only ever fill the gap the local path cannot.
   useEffect(() => {
     if (!open || haveAllRows) return undefined;
+    if (!canFetchFacets) return undefined;
     if (attemptRef.current === attemptKey) return undefined;
     attemptRef.current = attemptKey;
 
     let settled = false;
     setLoading(true);
     setFacetError(null);
-    void getColumnFacets({ tableId, fieldName, limit: 200, searchTerm })
+    const request: Promise<ServiceResult<ColumnFacets>> = fetchFacets
+      ? fetchFacets({ fieldName, searchTerm, limit: 200 }).then((data) =>
+          data
+            ? ({ data } as ServiceResult<ColumnFacets>)
+            : ({ error: "Could not read this column." } as ServiceResult<ColumnFacets>),
+        )
+      : getColumnFacets({ tableId: tableId as string, fieldName, limit: 200, searchTerm });
+    void request
       .then((result) => {
         settled = true;
         if (isServiceFailure(result)) setFacetError(result.error);
@@ -165,7 +210,7 @@ const ColumnHeaderMenu = ({
         attemptRef.current = null;
       }
     };
-  }, [open, haveAllRows, attemptKey, tableId, fieldName, searchTerm]);
+  }, [open, haveAllRows, canFetchFacets, attemptKey, tableId, fetchFacets, fieldName, searchTerm]);
 
   // Closing resets so reopening after an edit never shows stale counts, and a
   // failed attempt is allowed to be retried.
@@ -311,6 +356,17 @@ const ColumnHeaderMenu = ({
             <p className="mb-1.5 text-[11px] leading-snug text-amber-600 dark:text-amber-400">
               Couldn&rsquo;t read this column&rsquo;s values, so there&rsquo;s no
               list to pick from. Text matching still works.
+            </p>
+          )}
+
+          {/* NEVER show a checklist built from one page as if it were the
+              column. A grid with no facet source and more rows than it holds
+              says so and offers text matching, which IS complete because the
+              server applies it. */}
+          {!canFetchFacets && !haveAllRows && (
+            <p className="mb-1.5 text-[11px] leading-snug text-muted-foreground">
+              This column has more rows than are loaded, so there&rsquo;s no
+              complete value list to pick from. Text matching still works.
             </p>
           )}
 

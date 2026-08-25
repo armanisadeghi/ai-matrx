@@ -60,6 +60,7 @@ import {
   previewStarterPack,
   starterPackPreviewQueryKey,
 } from "../data";
+import { runSiteMatchers } from "../workbench/session/data";
 import {
   bandMetaFor,
   buildBandMeta,
@@ -436,7 +437,7 @@ export function PackReview({
 
   // ── adopt ────────────────────────────────────────────────────────────────
   const adopt = useMutation({
-    mutationFn: (places: GeoPlacesDraft) => {
+    mutationFn: async (places: GeoPlacesDraft) => {
       const parts: StarterPackPart[] = [];
       if (selectableMeaning.some((m) => ticked.has(keyOf("meaning", m.item_id))))
         parts.push("meaning");
@@ -446,7 +447,7 @@ export function PackReview({
       if (selectableGeoBands.some((b) => ticked.has(keyOf("geo_band", b.item_id))))
         parts.push("geo_bands");
       if (tickedAreas.length) parts.push("geo_areas");
-      return adoptStarterPack(siteId, pack.id, {
+      const written = await adoptStarterPack(siteId, pack.id, {
         // An empty parts list would mean "every part"; guard with an impossible
         // part set by only calling when something is ticked (see button).
         parts,
@@ -455,6 +456,24 @@ export function PackReview({
         geoPlaceIds: places.placeIds,
         seedGuidelines,
       });
+      // THE NUMBERS ON THAT SCREEN ONLY BECOME TRUE WHEN THE ENGINE RUNS.
+      // Adoption writes matchers; matchers do nothing until they are evaluated
+      // into stamps. Leaving that to a later run would mean the person accepts
+      // a projection and then watches their keywords not move — so the run is
+      // part of adopting, not a follow-up chore. It is reported honestly, and a
+      // failure here is loud rather than silent: the phrases are saved either
+      // way, and re-running is one press on the Dimensions screen.
+      let stamped: number | null = null;
+      let engineFailed = false;
+      if (written.matchers > 0) {
+        try {
+          const run = await runSiteMatchers(siteId);
+          stamped = run.stamped;
+        } catch {
+          engineFailed = true;
+        }
+      }
+      return { ...written, stamped, engineFailed };
     },
     onSuccess: (result) => {
       const written =
@@ -465,10 +484,19 @@ export function PackReview({
         result.matchers +
         result.worths;
       setAskingPlaces(false);
+      if (result.engineFailed) {
+        toast.error(
+          "Adopted — but your phrases have not been applied to your keywords yet.",
+          {
+            description:
+              "The rules are saved. Press “Apply rules to keywords” on the Dimensions screen to stamp them; nothing you ticked was lost.",
+          },
+        );
+      }
       toast.success(
         written === 0 && !result.guidelines_seeded
           ? "Nothing new to write — everything you ticked was already on this site."
-          : `Adopted ${written} item${written === 1 ? "" : "s"} from ${pack.name}: ${result.worths} worths and ${result.matchers} matchers across ${result.meaning_values} answers, ${result.topics} topic worths, ${result.value_bands + result.geo_bands} bands, ${result.geo_areas} service areas${result.guidelines_seeded ? ", plus the guidelines skeleton" : ""}. They are yours now — edit any of them on the Dimensions screen.`,
+          : `Adopted ${written} item${written === 1 ? "" : "s"} from ${pack.name}: ${result.worths} worths and ${result.matchers} matchers across ${result.meaning_values} answers, ${result.topics} topic worths, ${result.value_bands + result.geo_bands} bands, ${result.geo_areas} service areas${result.guidelines_seeded ? ", plus the guidelines skeleton" : ""}. They are yours now — edit any of them on the Dimensions screen.${result.stamped !== null ? ` Applied to ${formatCount(result.stamped)} of your keywords.` : ""}`,
         result.geo_areas_pending > 0
           ? {
               description: `${result.geo_areas_pending} service area${result.geo_areas_pending === 1 ? "" : "s"} still ${result.geo_areas_pending === 1 ? "has" : "have"} no places, so ${result.geo_areas_pending === 1 ? "it matches" : "they match"} nothing yet.`,
@@ -644,7 +672,7 @@ export function PackReview({
           <SectionHeader
             icon={ListChecks}
             title="What your searches mean"
-            hint="Each line is one ANSWER this industry gives — a value on a dimension, the phrases that spot it, and what it does to a keyword's score. ±points move the score up or down from the 100 baseline; a ×factor is only for relative words like “free”. Everything that fires shows up in that keyword's why chain."
+            hint="Each line is one ANSWER this industry gives — a value on a dimension, the phrases that spot it, and what it does to a keyword's score. ±points move the score up or down from the 100 baseline; a ×factor is only for relative words like “free”. Everything that fires shows up in that keyword's why chain. A keyword carries ONE answer per dimension, so where two of these compete for the same keyword the count above is within a percent, not to the row."
             selectable={selectableMeaning.length}
             selected={
               selectableMeaning.filter((m) => ticked.has(keyOf("meaning", m.item_id))).length
