@@ -51,6 +51,10 @@ export interface RunOutcome {
   siteId: string;
   siteName: string;
   finishedAt: string;
+  /** When the pass began — the window the decisions are read from. */
+  startedAt: string;
+  /** The site's own floor, so a row can say "proposal" instead of a bare %. */
+  confidenceFloor: number;
   claimed: number;
   placed: number;
   proposed: number;

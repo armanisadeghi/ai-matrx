@@ -11,7 +11,7 @@ import { ExternalLink, PencilLine, Loader2 } from "lucide-react";
 
 import { EnvelopeFallbackCard } from "@/features/matrx-envelope/EnvelopeFallbackCard";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import type { EnvelopeRendererProps } from "@/features/matrx-envelope/registry";
+import type { DirectiveRendererProps } from "@/features/matrx-envelope/registry";
 
 import { parsePlanNodePatchItems } from "./parseDirectiveItems";
 import { useResolvePatchedNode } from "./useResolvePlanTree";
@@ -59,13 +59,13 @@ function PatchCard({ item }: { item: PlanNodePatchItem }) {
   );
 }
 
-const PlanNodePatchRenderer = ({ envelope }: EnvelopeRendererProps) => {
-  const items = parsePlanNodePatchItems(envelope);
+const PlanNodePatchRenderer = ({ directive }: DirectiveRendererProps) => {
+  const items = parsePlanNodePatchItems(directive);
   // NEVER return null — see EnvelopeFallbackCard.
   if (items.length === 0) {
     return (
       <EnvelopeFallbackCard
-        envelope={envelope}
+        directive={directive}
         reason="no addressable patch items"
       />
     );

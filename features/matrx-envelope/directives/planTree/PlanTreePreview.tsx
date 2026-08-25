@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 import { ApplyDirectiveButton } from "@/features/matrx-envelope/ApplyDirectiveButton";
-import type { MatrxEnvelope } from "@/features/matrx-envelope/envelope";
+import type { DecodedDirective } from "@/features/content-ir/directives/decode";
 
 import type { PlanTreeDirectiveItem, PlanTreeNodeSpec } from "./types";
 
@@ -150,11 +150,11 @@ function NodeRow({
 
 export function PlanTreePreview({
   item,
-  envelope,
+  directive,
   applied,
 }: {
   item: PlanTreeDirectiveItem;
-  envelope: MatrxEnvelope;
+  directive: DecodedDirective;
   applied: boolean;
 }) {
   const [expandAll, setExpandAll] = useState(false);
@@ -163,7 +163,10 @@ export function PlanTreePreview({
 
   const total = useMemo(() => totalNodes(item.nodes), [item.nodes]);
   const breakdown = useMemo(() => countByType(item.nodes), [item.nodes]);
-  const json = useMemo(() => JSON.stringify(envelope, null, 2), [envelope]);
+  const json = useMemo(
+    () => JSON.stringify(directive.shell, null, 2),
+    [directive.shell],
+  );
 
   async function copyJson() {
     await navigator.clipboard.writeText(json);
@@ -191,7 +194,7 @@ export function PlanTreePreview({
         <span className="ml-auto flex items-center gap-2">
           {!applied ? (
             <ApplyDirectiveButton
-              envelope={envelope}
+              directive={directive}
               label={`Apply ${total} pages`}
               itemCount={total}
             />

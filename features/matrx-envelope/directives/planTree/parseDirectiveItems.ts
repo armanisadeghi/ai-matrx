@@ -1,4 +1,4 @@
-import type { MatrxEnvelope } from "@/features/matrx-envelope/envelope";
+import type { DecodedDirective } from "@/features/content-ir/directives/decode";
 
 import type {
   PlanNodePatchItem,
@@ -43,11 +43,11 @@ function parseNode(raw: unknown): PlanTreeNodeSpec | null {
 
 /** Tolerant parse of `plan_tree` envelope items — never throws. */
 export function parsePlanTreeItems(
-  envelope: MatrxEnvelope,
+  directive: DecodedDirective,
 ): PlanTreeDirectiveItem[] {
-  if (!Array.isArray(envelope.items)) return [];
+  if (!Array.isArray(directive.items)) return [];
   const items: PlanTreeDirectiveItem[] = [];
-  for (const raw of envelope.items) {
+  for (const raw of directive.items) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
     const record = raw as Record<string, unknown>;
     // The site is addressable EITHER way (aidream PlanTreeItem accepts both):
@@ -74,11 +74,11 @@ export function parsePlanTreeItems(
 
 /** Tolerant parse of `plan_node_patch` envelope items — never throws. */
 export function parsePlanNodePatchItems(
-  envelope: MatrxEnvelope,
+  directive: DecodedDirective,
 ): PlanNodePatchItem[] {
-  if (!Array.isArray(envelope.items)) return [];
+  if (!Array.isArray(directive.items)) return [];
   const items: PlanNodePatchItem[] = [];
-  for (const raw of envelope.items) {
+  for (const raw of directive.items) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
     const record = raw as Record<string, unknown>;
     const nodeId = asString(record.node_id);

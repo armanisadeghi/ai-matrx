@@ -12,7 +12,7 @@
  */
 
 import { EnvelopeFallbackCard } from "@/features/matrx-envelope/EnvelopeFallbackCard";
-import type { EnvelopeRendererProps } from "@/features/matrx-envelope/registry";
+import type { DirectiveRendererProps } from "@/features/matrx-envelope/registry";
 
 import { parsePlanTreeItems } from "./parseDirectiveItems";
 import { useResolvePlanTree } from "./useResolvePlanTree";
@@ -24,24 +24,24 @@ import { PlanTreePreview } from "./PlanTreePreview";
  *  PlanTreePreview for why the payload is never hidden from the user. */
 function PlanTreeItem({
   item,
-  envelope,
+  directive,
 }: {
   item: PlanTreeDirectiveItem;
-  envelope: EnvelopeRendererProps["envelope"];
+  directive: DirectiveRendererProps["directive"];
 }) {
   const { status, data } = useResolvePlanTree(item);
   const applied = status === "resolved" && !!data;
-  return <PlanTreePreview item={item} envelope={envelope} applied={applied} />;
+  return <PlanTreePreview item={item} directive={directive} applied={applied} />;
 }
 
-const PlanTreeRenderer = ({ envelope }: EnvelopeRendererProps) => {
-  const items = parsePlanTreeItems(envelope);
+const PlanTreeRenderer = ({ directive }: DirectiveRendererProps) => {
+  const items = parsePlanTreeItems(directive);
   // NEVER return null — that deletes the whole message block (see
   // EnvelopeFallbackCard). Degrade visibly instead.
   if (items.length === 0) {
     return (
       <EnvelopeFallbackCard
-        envelope={envelope}
+        directive={directive}
         reason="no readable plan items"
       />
     );
@@ -52,7 +52,7 @@ const PlanTreeRenderer = ({ envelope }: EnvelopeRendererProps) => {
         <PlanTreeItem
           key={`${item.site_id ?? item.site ?? "site"}:${index}`}
           item={item}
-          envelope={envelope}
+          directive={directive}
         />
       ))}
     </>

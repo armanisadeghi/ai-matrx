@@ -23,7 +23,8 @@
  * Legacy V1 parser available in content-splitter.ts for rollback if needed.
  */
 
-import { isMatrxEnvelope } from "@/features/matrx-envelope/envelope";
+import { tryDecodeDirective } from "@/features/content-ir/directives/decode";
+import { RESERVED_PREFIX } from "@/features/content-ir/directives/grammar";
 import { isJsonObject } from "@/types/json";
 import type {
   TypedRenderBlock,
@@ -298,6 +299,24 @@ function extractFirstJsonKey(content: string): string | null {
   return match ? match[1] : null;
 }
 
+/**
+ * A streaming head that is ALREADY unambiguously a Kind Directive: `__kind`
+ * first, with a value in the reserved `directive_v` namespace.
+ *
+ * The key alone is not enough and must never be treated as enough — `__kind`
+ * first is how EVERY content-IR kind instance announces itself, so keying on the
+ * key would hijack every flashcard_set and quiz into the directive renderer.
+ * The reserved prefix on the VALUE is what makes the namespaces disjoint, which
+ * is the whole point of the grammar.
+ */
+const DIRECTIVE_HEAD_RE = new RegExp(
+  String.raw`^\{\s*"__kind"\s*:\s*"${RESERVED_PREFIX}`,
+);
+
+function looksLikeDirectiveHead(content: string): boolean {
+  return DIRECTIVE_HEAD_RE.test(content.trimStart());
+}
+
 export type DetectedJsonBlockType = keyof typeof JSON_BLOCK_PATTERNS | "matrx";
 
 export function detectJsonBlockType(
@@ -306,16 +325,25 @@ export function detectJsonBlockType(
   const trimmed = content.trim();
   if (trimmed.startsWith("{")) {
     try {
+      // Detection IS "does the one decoder recognize it" — so a stored 4-key
+      // fence and a current two-key shell are classified by the same rules that
+      // will later render them, in one place, forever.
       const parsed: unknown = JSON.parse(trimmed);
-      if (isMatrxEnvelope(parsed)) return "matrx";
+      if (tryDecodeDirective(parsed)) return "matrx";
     } catch {
       // Partial stream — fall through to first-key heuristic.
     }
   }
 
+  // Mid-stream, before the closing brace arrives.
+  if (looksLikeDirectiveHead(content)) return "matrx";
+
   const firstKey = extractFirstJsonKey(content);
   if (!firstKey) return null;
 
+  // The retired 4-key shell, READ-ONLY: stored conversations still hold these
+  // fences and they must keep rendering. Nothing emits this shape any more —
+  // `decodeDirective` translates it once, at the render seam.
   if (firstKey === "matrx_version") return "matrx";
 
   for (const [type, pattern] of Object.entries(JSON_BLOCK_PATTERNS)) {
@@ -353,15 +381,17 @@ function validateJsonBlock(
     trimmed = trimmed.replace(/```+\s*$/, "").trim();
     try {
       const parsed: unknown = JSON.parse(trimmed);
-      if (isMatrxEnvelope(parsed)) {
+      if (tryDecodeDirective(parsed)) {
         return { isComplete: true, shouldShow: true };
       }
     } catch {
-      // Still streaming the envelope shell.
+      // Still streaming the two-key shell.
     }
     return {
       isComplete: false,
-      shouldShow: extractFirstJsonKey(trimmed) === "matrx_version",
+      shouldShow:
+        looksLikeDirectiveHead(trimmed) ||
+        extractFirstJsonKey(trimmed) === "matrx_version",
     };
   }
 

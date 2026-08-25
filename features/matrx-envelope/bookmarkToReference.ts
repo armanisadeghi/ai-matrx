@@ -22,10 +22,13 @@ import type {
   ListItemBookmark,
 } from "@/types/python-generated/stream-events";
 import {
-  MATRX_VERSION,
-  type MatrxEnvelope,
-  type ReferenceItem,
-  type ReferenceType,
+  type DecodedDirective,
+  decodeDirective,
+} from "@/features/content-ir/directives/decode";
+import { buildDirectiveSlug, buildKindDirective } from "@/features/content-ir/directives/grammar";
+import type {
+  ReferenceItem,
+  ReferenceType,
 } from "@/features/matrx-envelope/envelope";
 import { buildReferenceFence } from "@/features/matrx-envelope/referenceFence";
 
@@ -68,12 +71,15 @@ export function bookmarkToReference(
 }
 
 /**
- * Group a bookmark list into one canonical `reference` envelope per reference
- * type (so a table carrying both columns + cells renders as two chip strips).
+ * Group a bookmark list into one decoded reference directive per reference noun
+ * (so a table carrying both columns + cells renders as two chip strips). The
+ * shell is minted through the grammar and decoded straight back, so a bookmark
+ * strip and a server-minted fence are the SAME object by the time the renderer
+ * sees them — there is no bookmark-shaped second path.
  */
-export function bookmarksToReferenceEnvelopes(
+export function bookmarksToReferenceDirectives(
   bookmarks: unknown,
-): MatrxEnvelope<ReferenceItem>[] {
+): DecodedDirective[] {
   if (!Array.isArray(bookmarks)) return [];
   const byType = new Map<ReferenceType, ReferenceItem[]>();
   for (const b of bookmarks) {
@@ -83,12 +89,12 @@ export function bookmarksToReferenceEnvelopes(
     arr.push(mapped.item);
     byType.set(mapped.type, arr);
   }
-  return [...byType.entries()].map(([type, items]) => ({
-    matrx_version: MATRX_VERSION,
-    kind: "reference",
-    type,
-    items,
-  }));
+  return [...byType.entries()].flatMap(([type, items]) => {
+    const decoded = decodeDirective(
+      buildKindDirective(buildDirectiveSlug("reference", type), items),
+    );
+    return decoded ? [decoded] : [];
+  });
 }
 
 /**
@@ -106,7 +112,12 @@ export function bookmarksToReferenceEnvelopes(
  */
 export function buildBookmarkReferenceFence(bookmarks: unknown): string {
   const list = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
-  return bookmarksToReferenceEnvelopes(list)
-    .map((env) => buildReferenceFence({ type: env.type, items: env.items }))
+  return bookmarksToReferenceDirectives(list)
+    .map((d) =>
+      buildReferenceFence({
+        type: d.noun,
+        items: d.items as unknown as ReferenceItem[],
+      }),
+    )
     .join("\n\n");
 }

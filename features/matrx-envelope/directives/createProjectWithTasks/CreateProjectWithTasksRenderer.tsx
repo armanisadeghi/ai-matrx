@@ -17,7 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
 import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
-import type { EnvelopeRendererProps } from "@/features/matrx-envelope/registry";
+import type { DirectiveRendererProps } from "@/features/matrx-envelope/registry";
 
 import { parseCreateProjectWithTasksItems } from "./parseDirectiveItems";
 import { useResolveCreatedProject } from "./useResolveCreatedProject";
@@ -360,10 +360,10 @@ function ProjectDirectiveCard({
   return cardInner;
 }
 
-const CreateProjectWithTasksRenderer: React.FC<EnvelopeRendererProps> = ({
-  envelope,
+const CreateProjectWithTasksRenderer: React.FC<DirectiveRendererProps> = ({
+  directive,
 }) => {
-  const items = parseCreateProjectWithTasksItems(envelope);
+  const items = parseCreateProjectWithTasksItems(directive);
 
   if (items.length === 0) {
     return (

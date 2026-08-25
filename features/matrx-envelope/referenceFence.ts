@@ -2,8 +2,9 @@
  * Matrx Envelope — reference-fence serializer + reader (the missing authoring
  * primitive named in the backend handoff).
  *
- * ONE in-content encoding for a reference: a ```matrx fenced envelope with
- * `kind:"reference"` (see docs/protocol/MATRX_REFERENCES.md). This module is the
+ * ONE in-content encoding for a reference: a ```matrx fence carrying the two-key
+ * Kind Directive shell `{"__kind":"directive_v1_reference_<noun>","items":[…]}`.
+ * This module is the
  * single FE home for PRODUCING that fence (authoring) and READING it back
  * (round-trip + display) — used by the picklist variable path today, by table /
  * secret authoring later. Never hand-assemble a fence string elsewhere.
@@ -16,11 +17,13 @@
  */
 
 import {
-  MATRX_VERSION,
-  isMatrxEnvelope,
-  type MatrxEnvelope,
-  type ReferenceItem,
-  type ReferenceType,
+  type DecodedDirective,
+  tryDecodeDirective,
+} from "@/features/content-ir/directives/decode";
+import { buildDirectiveSlug, buildKindDirective } from "@/features/content-ir/directives/grammar";
+import type {
+  ReferenceItem,
+  ReferenceType,
 } from "@/features/matrx-envelope/envelope";
 
 const FENCE_OPEN = "```matrx";
@@ -43,21 +46,29 @@ function tryParseJson(raw: string): unknown {
 // ── Build (authoring) ────────────────────────────────────────────────────────
 
 /**
- * Serialize a `kind:"reference"` envelope as the canonical ```matrx fence string
+ * Serialize a reference directive as the canonical ```matrx fence string
  * (verbatim-persistable). Items are the FLAT canonical shape typed per the
- * reference `type` (`picklist_item`, `table_cell`, …). The four-key shell is fixed.
+ * reference noun (`structured_list_item`, `table_cell`, …).
+ *
+ * THE ONE PLACE THE CLIENT MINTS A FENCE. Every copy-shortcut builder in this
+ * feature funnels here, so the wire shape is decided once: the two-key Kind
+ * Directive shell with `__kind` FIRST
+ * (`{"__kind":"directive_v1_reference_<noun>","items":[…]}`). The retired 4-key
+ * shell is never emitted again — it is only ever READ, by the decoder's shim.
+ *
+ * `type` is passed as a NOUN and the slug is BUILT by the grammar, so a fence
+ * whose slug could not be parsed back is unmintable: an unknown noun throws
+ * here rather than shipping a string nothing can route.
  */
 export function buildReferenceFence(args: {
   type: ReferenceType | string;
   items: ReferenceItem[];
 }): string {
-  const envelope: MatrxEnvelope<ReferenceItem> = {
-    matrx_version: MATRX_VERSION,
-    kind: "reference",
-    type: args.type,
-    items: args.items,
-  };
-  return `${FENCE_OPEN}\n${JSON.stringify(envelope, null, 2)}\n${FENCE_CLOSE}`;
+  const shell = buildKindDirective(
+    buildDirectiveSlug("reference", args.type),
+    args.items,
+  );
+  return `${FENCE_OPEN}\n${JSON.stringify(shell, null, 2)}\n${FENCE_CLOSE}`;
 }
 
 /**
@@ -85,40 +96,41 @@ export function buildPicklistItemFence(args: {
 
 // ── Parse (round-trip) ───────────────────────────────────────────────────────
 
-/** Every Matrx envelope embedded in a host string (each ```matrx fence that parses). */
-function extractMatrxEnvelopes(text: string): MatrxEnvelope[] {
-  const out: MatrxEnvelope[] = [];
+/**
+ * Every Kind Directive embedded in a host string (each ```matrx fence that
+ * decodes). Stored 4-key fences decode here too — that is the decoder's shim
+ * doing its one job — so a value saved in 2025 reads back identically.
+ */
+function extractDirectives(text: string): DecodedDirective[] {
+  const out: DecodedDirective[] = [];
   if (!text) return out;
 
   if (text.includes(FENCE_OPEN)) {
     for (const match of text.matchAll(matrxFenceRe())) {
-      const parsed = tryParseJson(match[1]);
-      if (parsed && isMatrxEnvelope(parsed)) out.push(parsed);
+      const decoded = tryDecodeDirective(tryParseJson(match[1]));
+      if (decoded) out.push(decoded);
     }
     return out;
   }
 
-  // Tolerant: a bare envelope JSON with no fence wrapper.
-  const parsed = tryParseJson(text.trim());
-  if (parsed && isMatrxEnvelope(parsed)) out.push(parsed);
+  // Tolerant: a bare shell JSON with no fence wrapper.
+  const decoded = tryDecodeDirective(tryParseJson(text.trim()));
+  if (decoded) out.push(decoded);
   return out;
 }
 
 /**
- * Parse the first `reference` envelope from a fence string (with or without the
- * ``` wrapper). Returns `null` when nothing parses — never throws.
+ * Parse the first `reference` directive from a fence string (with or without
+ * the ``` wrapper). Returns `null` when nothing decodes — never throws.
  */
 export function parseReferenceFence(
   value: string,
-): { envelope: MatrxEnvelope; items: ReferenceItem[] } | null {
-  const envelope = extractMatrxEnvelopes(value).find(
-    (e) => e.kind === "reference",
+): { directive: DecodedDirective; items: ReferenceItem[] } | null {
+  const directive = extractDirectives(value).find(
+    (d) => d.directiveClass === "reference",
   );
-  if (!envelope) return null;
-  const items = Array.isArray(envelope.items)
-    ? (envelope.items as unknown as ReferenceItem[])
-    : [];
-  return { envelope, items };
+  if (!directive) return null;
+  return { directive, items: directive.items as unknown as ReferenceItem[] };
 }
 
 // ── Dual-read (migration bridge) ─────────────────────────────────────────────
@@ -187,11 +199,11 @@ export function readPicklistSelection(value: unknown): PicklistSelectionRead {
   // New string form: zero+ ```matrx fences with residual "Other" lines, OR pure
   // free text with no fence.
   if (typeof value === "string" && value.trim()) {
-    const envelopes = extractMatrxEnvelopes(value);
-    for (const env of envelopes) {
-      if (env.kind === "reference") refsFromItems(env.items, refs);
+    const directives = extractDirectives(value);
+    for (const d of directives) {
+      if (d.directiveClass === "reference") refsFromItems(d.items, refs);
     }
-    if (envelopes.length === 0) {
+    if (directives.length === 0) {
       otherText.push(value.trim()); // pure free text — preserve as one entry
     } else {
       const residual = value.replace(matrxFenceRe(), "").trim();

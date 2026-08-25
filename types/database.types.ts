@@ -53013,6 +53013,7 @@ export type Database = {
           p_language?: string
           p_research: Json
           p_research_doc_id?: string
+          p_site_id?: string
         }
         Returns: Json
       }
@@ -54727,6 +54728,15 @@ export type Database = {
           total_count: number
           workflow_status: string
         }[]
+      }
+      site_keyword_value_copy: {
+        Args: {
+          p_dry_run?: boolean
+          p_from_site: string
+          p_keyword_ids?: string[]
+          p_to_site: string
+        }
+        Returns: Json
       }
       site_meaning_copy: {
         Args: {

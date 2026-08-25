@@ -1,4 +1,4 @@
-import type { MatrxEnvelope } from "@/features/matrx-envelope/envelope";
+import type { DecodedDirective } from "@/features/content-ir/directives/decode";
 
 import type {
   CreateProjectTaskItem,
@@ -74,10 +74,10 @@ function parseItem(raw: unknown): CreateProjectWithTasksItem | null {
 
 /** Tolerant parse of envelope items — never throws. */
 export function parseCreateProjectWithTasksItems(
-  envelope: MatrxEnvelope,
+  directive: DecodedDirective,
 ): CreateProjectWithTasksItem[] {
-  if (!Array.isArray(envelope.items)) return [];
-  return envelope.items
+  if (!Array.isArray(directive.items)) return [];
+  return directive.items
     .map(parseItem)
     .filter((item): item is CreateProjectWithTasksItem => item !== null);
 }

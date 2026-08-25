@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * "Apply" for an `output_directive` envelope that arrived as CONTENT.
+ * "Apply" for a side-effect Kind Directive that arrived as CONTENT.
  *
  * THE POSITION RULE, honoured exactly: a directive inside content NEVER
  * auto-executes (MATRX_ENVELOPE.md) — that is the guard against untrusted
@@ -9,9 +9,9 @@
  * "is inert": the user seeing it must be able to say yes. This button IS that
  * yes, and it is the same semantic as approving an `ask`-policy proposal.
  *
- * It posts the envelope to `POST /directives/confirm` (`confirmDirective`), which
- * re-validates every item against the registered `(kind, type)` item model and
- * applies it through the ONE server handler, running as the user under RLS.
+ * It posts the two-key shell to `POST /directives/confirm` (`confirmDirective`),
+ * which re-validates every item against the item model registered for that SLUG
+ * and applies it through the ONE server handler, running as the user under RLS.
  * `proposal_id` is optional there, so an envelope the server never proposed
  * (e.g. one a text-mode agent wrote into its reply, where the structured-output
  * dispatcher never fired) applies through the identical path.
@@ -23,8 +23,8 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Loader2, Play, TriangleAlert } from "lucide-react";
 
+import type { DecodedDirective } from "@/features/content-ir/directives/decode";
 import { confirmDirective } from "@/features/directive-catalog/service";
-import type { MatrxEnvelope } from "@/features/matrx-envelope/envelope";
 import { BackendApiError } from "@/lib/api/errors";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
@@ -36,7 +36,7 @@ type ApplyState =
   | { status: "error"; message: string };
 
 export interface ApplyDirectiveButtonProps {
-  envelope: MatrxEnvelope;
+  directive: DecodedDirective;
   /** Optional label override, e.g. "Apply plan". */
   label?: string;
   /** How many things this will write — shown during the wait so a long apply
@@ -46,7 +46,7 @@ export interface ApplyDirectiveButtonProps {
 }
 
 export function ApplyDirectiveButton({
-  envelope,
+  directive,
   label = "Apply",
   itemCount,
   onApplied,
@@ -68,18 +68,24 @@ export function ApplyDirectiveButton({
     return () => clearInterval(id);
   }, [state.status]);
 
-  // Only side-effect envelopes are applicable; a reference/secret never is.
-  // Both executing kinds confirm through the same endpoint (Plane 1 + Plane 2).
-  if (envelope.kind !== "output_directive" && envelope.kind !== "function") return null;
+  // THE POSITION LAW, asked ONCE. Only a side-effect class is applicable; a
+  // reference / view / validation / secret never is. Before the merge this was a
+  // hand-kept list of two envelope kinds that had to agree with three other
+  // hand-kept lists on the server; now it is the same derived predicate the
+  // server uses, read off the parsed slug.
+  if (!directive.parsed.executes) return null;
 
-  const items = Array.isArray(envelope.items) ? envelope.items : [];
+  const items = directive.items;
 
   async function handleApply() {
     setState({ status: "applying" });
     try {
       const result = await confirmDirective(baseUrl, {
-        directive: envelope.type,
-        items: items as Record<string, unknown>[],
+        // The SLUG is the identity — one field, one name for the thing. The
+        // server's DirectiveConfirmRequest rejects a request that does not say
+        // exactly what it is confirming rather than guessing at it.
+        directive: directive.slug,
+        items,
       });
       setState({
         status: "applied",

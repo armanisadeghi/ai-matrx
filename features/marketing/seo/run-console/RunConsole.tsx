@@ -29,7 +29,7 @@
  *     window rather than a spinner.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState , useRef} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -66,6 +66,8 @@ import {
 } from "./data";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { ScheduleCascadePanel } from "./ScheduleCascadePanel";
+import { extractErrorMessage } from "@/utils/errors";
+import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import type { ConsoleSiteRow, RunConsoleScope, RunOutcome } from "./types";
 
 function pct(part: number, whole: number): number {
@@ -272,6 +274,9 @@ export function RunConsole({
       : {}),
   });
 
+  // Stamped at launch so the decisions read asks for THIS pass's window.
+  const runStartedAtRef = useRef<string>(new Date().toISOString());
+
   const siteRows = sites.data ?? [];
   const siteById = new Map(siteRows.map((site) => [site.id, site]));
   const visible = siteRows.filter((site) => {
@@ -303,6 +308,8 @@ export function RunConsole({
               siteId: result.site_id,
               siteName: site?.name ?? result.site_id,
               finishedAt: new Date().toISOString(),
+              startedAt: runStartedAtRef.current,
+              confidenceFloor: result.confidence_floor ?? 90,
               claimed: result.claimed,
               placed: result.placed,
               proposed: result.proposed,
@@ -337,6 +344,7 @@ export function RunConsole({
     }
     setQueue(rest);
     pass.reset();
+    runStartedAtRef.current = new Date().toISOString();
     void pass.launch(
       { site_id: site.id, refresh: true, limit: effectiveCap },
       site.name,
@@ -692,6 +700,19 @@ export function RunConsole({
                         <p className="mt-0.5 text-[10px] text-destructive">
                           {outcome.error}
                         </p>
+                      ) : null}
+                      {/* The counts are the headline; THIS is the run. Nothing
+                          the machine decided stays hidden behind a total. */}
+                      {outcome.claimed > 0 ? (
+                        <div className="mt-1.5 rounded border border-border/70 bg-background/40 p-1">
+                          <RunDecisions
+                            siteId={outcome.siteId}
+                            siteName={outcome.siteName}
+                            brandId={siteById.get(outcome.siteId)?.brand_id ?? undefined}
+                            since={outcome.startedAt}
+                            confidenceFloor={outcome.confidenceFloor}
+                          />
+                        </div>
                       ) : null}
                     </li>
                   ))}

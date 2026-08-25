@@ -17,29 +17,34 @@
  * So: when a renderer cannot draw its rich view, it renders THIS instead.
  * Content survives, the user sees that something arrived, and `reason` says
  * why it degraded.
+ *
+ * It is also THE PREFIX FLOOR of the Kind Directives route: a slug whose class
+ * has no registered renderer lands here, named by its class and noun, with an
+ * Apply button when the class is a side effect. A shape the frontend has never
+ * heard of is still legible and still actionable.
  */
 
 import { Boxes } from "lucide-react";
 
+import type { DecodedDirective } from "@/features/content-ir/directives/decode";
 import { ApplyDirectiveButton } from "@/features/matrx-envelope/ApplyDirectiveButton";
-import type { MatrxEnvelope } from "@/features/matrx-envelope/envelope";
 
 export interface EnvelopeFallbackCardProps {
-  envelope: MatrxEnvelope;
+  directive: DecodedDirective;
   /** Short, human explanation of why the rich renderer degraded. */
   reason?: string;
 }
 
 export function EnvelopeFallbackCard({
-  envelope,
+  directive,
   reason,
 }: EnvelopeFallbackCardProps) {
-  const count = Array.isArray(envelope.items) ? envelope.items.length : 0;
+  const count = directive.items.length;
   return (
     <div className="my-3 inline-flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted px-2.5 py-1 text-sm">
       <Boxes className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      <span className="text-foreground">{envelope.kind}</span>
-      <span className="text-muted-foreground">/ {envelope.type}</span>
+      <span className="text-foreground">{directive.directiveClass}</span>
+      <span className="text-muted-foreground">/ {directive.noun}</span>
       <span className="text-muted-foreground">
         · {count} {count === 1 ? "item" : "items"}
       </span>
@@ -47,7 +52,7 @@ export function EnvelopeFallbackCard({
         <span className="text-muted-foreground">· {reason}</span>
       ) : null}
       {/* Degraded rendering never removes the user's ability to act on it. */}
-      <ApplyDirectiveButton envelope={envelope} />
+      <ApplyDirectiveButton directive={directive} />
     </div>
   );
 }
