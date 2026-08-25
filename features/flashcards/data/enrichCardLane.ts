@@ -36,6 +36,12 @@ export function enrichAndSaveCard(args: {
   depth: Depth;
   /** Live-render handle — see `enrichCard`; the caller owns the instance. */
   onConversationCreated?: (conversationId: string) => void;
+  /**
+   * The run's requestId, mid-stream — the handle a surface subscribes to in
+   * order to render the `card_enrichment` kind AS IT ARRIVES (bulk enrich's
+   * live cascade). See `enrichCard`.
+   */
+  onRequestId?: (requestId: string) => void;
 }) {
   return async (
     dispatch: AppDispatch,
@@ -48,6 +54,7 @@ export function enrichAndSaveCard(args: {
       ...(args.onConversationCreated
         ? { onConversationCreated: args.onConversationCreated }
         : {}),
+      ...(args.onRequestId ? { onRequestId: args.onRequestId } : {}),
     })(dispatch, getState).catch(() => null);
     return finishEnrich(card, details);
   };

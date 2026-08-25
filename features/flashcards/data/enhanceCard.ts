@@ -259,6 +259,13 @@ export function enrichCard(args: {
    * (`destroyInstanceIfAllowed`) once done with the display.
    */
   onConversationCreated?: (conversationId: string) => void;
+  /**
+   * Fires the moment the run's REQUEST row exists — mid-stream, before any
+   * content. A surface that renders the `card_enrichment` kind live
+   * (`selectKindEnvelope(requestId, "card_enrichment")`) needs this id, not the
+   * conversation id, and it needs it while the stream is still running.
+   */
+  onRequestId?: (requestId: string) => void;
 }) {
   return async (
     dispatch: AppDispatch,
@@ -290,6 +297,7 @@ export function enrichCard(args: {
         ...(args.onConversationCreated
           ? { onConversationCreated: args.onConversationCreated }
           : {}),
+        ...(args.onRequestId ? { onRequestId: args.onRequestId } : {}),
         // D151 — quota is committed the moment this answers; the preview must
         // outlive the dialog that asked for it.
         onResult: async (run) => {
