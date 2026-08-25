@@ -413,7 +413,6 @@ export function GscDimensionTable({
   // resolveContextOnOpen + the table's data-row-id stamps; extraSections
   // items read the row captured at open time.
   const openDrilldown = useOpenGscDrilldownWindow();
-  const clickedRowRef = useRef<GscBreakdownRow | null>(null);
   const resolveRowContext = (target: HTMLElement | null) => {
     const key = target
       ?.closest("[data-row-id]")
@@ -421,8 +420,20 @@ export function GscDimensionTable({
     const row = key ? (rows.find((r) => r.key === key) ?? null) : null;
     clickedRowRef.current = row;
     if (!row) return null;
+    // MSR-01 — the row's own entity, so Attach To / Share target the exact
+    // keyword or page that was right-clicked, not the pane as a whole.
+    const entity =
+      dimension === "query"
+        ? keywordEntityRef({
+            phrase: row.key,
+            keywordId: row.keyword_id ?? null,
+          })
+        : dimension === "page" && row.page_id
+          ? { type: "web_page" as const, id: row.page_id, title: row.key }
+          : null;
     return {
       content: humanLines(gscMetricCopyLines(labels.column, dimension, row)),
+      [CONTEXT_MENU_ENTITY_KEY]: entity,
     };
   };
   const openViewPanel = () => {
@@ -498,6 +509,21 @@ export function GscDimensionTable({
     });
   };
 
+  // Built once per render regardless of dimension (cheap — no data access),
+  // so the layout below can place Class near identity and Score/Level with
+  // the metrics without calling the builder twice.
+  const [classCol, scoreCol, bandCol] = buildGscValueColumns<GscBreakdownRow>(
+    valueFor,
+    { siteId, keywordOf: (row) => row.key },
+    { keywordIdOf: (row) => row.keyword_id ?? null },
+    levelFilterOptions,
+  );
+  const valueColumns = {
+    traffic_class: classCol,
+    value_score: scoreCol,
+    value_band: bandCol,
+  };
+
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [
     ...(watchable
       ? [
@@ -526,17 +552,16 @@ export function GscDimensionTable({
         ? marketingRoutes.sitePage(null, siteId, row.page_id)
         : null,
     ),
-    ...(dimension === "query"
-      ? buildGscValueColumns<GscBreakdownRow>(
-          valueFor,
-          {
-            siteId,
-            keywordOf: (row) => row.key,
-          },
-          { keywordIdOf: (row) => row.keyword_id ?? null },
-        )
-      : []),
+    // MSR-07 — Class is the editable, primary field: it stays with the
+    // identity columns on the left. Score and Level are read-only receipts
+    // over the same metrics window, so they move to the END with Clicks /
+    // Impressions / CTR / Position (which are also narrower there — see
+    // `buildGscMetricColumns`), freeing the middle of the table.
+    ...(dimension === "query" ? [valueColumns.traffic_class] : []),
     ...buildGscMetricColumns<GscBreakdownRow>(hasCompare, "clicks-only"),
+    ...(dimension === "query"
+      ? [valueColumns.value_score, valueColumns.value_band]
+      : []),
   ];
 
   // The right-click vocabulary, in the reader's words. Each opens a panel;
@@ -615,7 +640,40 @@ export function GscDimensionTable({
           detail={{ enabled: false }}
           window={{ enabled: false }}
           {...(dimension === "query"
-            ? { edit: { enabled: true, onSave: saveClassEdits } }
+            ? {
+                edit: { enabled: true, onSave: saveClassEdits },
+                // MSR-05 — the 5,000+-keyword workflow: filter to "no
+                // class", sort by clicks/level/score, select, assign in
+                // bulk through the SAME canonical write as the cell edit.
+                selection: {
+                  selectedIds,
+                  onSelectedIdsChange: setSelectedIds,
+                  isRowSelectable: (row: GscBreakdownRow) =>
+                    Boolean(row.keyword_id),
+                  noun: "keyword",
+                  actions: (selected: GscBreakdownRow[]) => (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] text-muted-foreground">
+                        Set class:
+                      </span>
+                      {BULK_CLASS_OPTIONS.map((option) => (
+                        <Button
+                          key={option.value}
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs"
+                          disabled={bulkPending}
+                          onClick={() =>
+                            void runBulkClassAssign(option.value, selected)
+                          }
+                        >
+                          {option.label}
+                        </Button>
+                      ))}
+                    </div>
+                  ),
+                },
+              }
             : {})}
           onRowOpen={onDrill}
           pageSize={pageSize}
@@ -767,9 +825,29 @@ export function GscDimensionTable({
               : []),
           ],
         },
+        // MSR-01 — the shared keyword row-actions family (Set class / Set
+        // service / Set level / Open Keyword Intelligence): the same menu
+        // every other keyword surface offers, not a bespoke subset.
+        ...(dimension === "query" ? [keywordMenuSection] : []),
       ]}
     >
-      {table}
+      {/*
+       * ContextMenuV3's desktop trigger is `<ContextMenuTrigger asChild>` —
+       * Radix `Slot` requires EXACTLY one element child, so the assign
+       * panels and the table must share ONE wrapper, never two siblings.
+       *
+       * The keyword assign panels render their own inline UI (dimension
+       * picker, ruling dialog) — mounted here, above the table, per
+       * `keyword-actions`' own contract: never inside a Dialog, so the
+       * portalled value picker's outside-click doesn't get read as closing
+       * a wrapping dialog.
+       */}
+      <div className="flex h-full min-h-0 flex-col">
+        {dimension === "query" && keywordSurfaces.isOpen ? (
+          <div className="mb-2 shrink-0">{keywordSurfaces.node}</div>
+        ) : null}
+        <div className="min-h-0 flex-1">{table}</div>
+      </div>
     </NonEditableContextMenu>
   );
 }
