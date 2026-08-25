@@ -38,6 +38,7 @@ import {
   Images,
   Loader2,
   Ellipsis,
+  Sparkles,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MergeCardsDialog } from "./MergeCardsDialog";
@@ -91,7 +92,10 @@ import { AudioOverviewSection } from "./AudioOverviewSection";
 import { EnhanceSetDialog } from "./EnhanceSetDialog";
 import { IllustrateSetWindow } from "./IllustrateSetWindow";
 import { BulkEnrichWindow } from "./BulkEnrichWindow";
-import { useBulkEnrichRun, bulkEnrichSummary } from "./bulkEnrichRun";
+import {
+  useBulkEnrichRun,
+  summarizeBulkEnrichCounts,
+} from "./bulkEnrichRun";
 import {
   cardHasDetailLayers,
   selectCardDetailLayers,
@@ -372,7 +376,6 @@ export function SetDetailView({ setId }: { setId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
-  const [enhanceOpen, setEnhanceOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
   const [studyModesOpen, setStudyModesOpen] = useState(false);
   const [deckToolsOpen, setDeckToolsOpen] = useState(false);
@@ -482,6 +485,54 @@ export function SetDetailView({ setId }: { setId: string }) {
         ? "No image cleared the bar on this run — see why, card by card."
         : `${outcome.attached} card${outcome.attached === 1 ? "" : "s"} illustrated — review them.`,
     );
+  };
+
+  // ── Enrich every card (the batch) ─────────────────────────────────────────
+  // Arman: "maybe you have a set of cards and you wanna enrich all of them.
+  // You click one button, they all get enriched." One button, a live N-of-M
+  // count, cancellable, per-card fault isolated, truthful summary. Cards that
+  // already carry layers are skipped and SAID so — never re-billed.
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
+  const enrichGuard = useEntitlementGuard("education.card_enrichment");
+  const coppa = useAiComplianceGate();
+  const {
+    run: bulkRun,
+    start: startBulkEnrich,
+    cancel: cancelBulkEnrich,
+    reset: resetBulkEnrich,
+  } = useBulkEnrichRun(dispatch, store.getState);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  /** Per-card "make this deeper", opened FROM a tile (never a modal list). */
+  const [enhanceCard, setEnhanceCard] = useState<CardWithDetails | null>(null);
+
+  const runBulkEnrich = async (): Promise<void> => {
+    if (!data) return;
+    const cards = data.cards;
+    const todo = cards.filter((c) => !cardHasDetailLayers(c.details));
+    if (todo.length === 0) {
+      toast.info("Every card in this set already has detail layers.");
+      return;
+    }
+    if (!(await coppa.ensureAllowed())) return;
+    // Guard the BATCH before any spend; each successful card commits its own
+    // metered unit inside the runner.
+    await enrichGuard.guard(async () => {
+      setBulkOpen(true);
+      const outcome = await startBulkEnrich({
+        cards,
+        depth: "applied",
+        onCardEnriched: async () => {
+          await enrichGuard.commit();
+        },
+      });
+      // Whatever landed is already in the DB — refetch so the deck's badges
+      // match what the run is reporting.
+      setReloadKey((k) => k + 1);
+      if (outcome.counts.enriched > 0 || outcome.counts.failed > 0) {
+        toast.success(summarizeBulkEnrichCounts(outcome.counts));
+      }
+    });
   };
 
   const reviewImage = async (
@@ -834,14 +885,27 @@ export function SetDetailView({ setId }: { setId: string }) {
                   disabled={data.cards.length === 0}
                 />
                 {canEdit && (
+                  <div className="flex flex-col items-start gap-0.5">
                   <Button
                     variant="outline"
-                    onClick={() => setEnhanceOpen(true)}
-                    disabled={data.cards.length === 0}
+                    onClick={() => void runBulkEnrich()}
+                    disabled={
+                      data.cards.length === 0 ||
+                      enrichGuard.isChecking ||
+                      bulkRun.phase === "running"
+                    }
+                    title="Add explanations, examples and memory tricks to every card in this deck — read them while studying under &quot;More on this card&quot;"
                   >
-                    <Expand className="mr-1.5 h-4 w-4" />
-                    Enhance
+                    {bulkRun.phase === "running" ? (
+                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="mr-1.5 h-4 w-4" />
+                    )}
+                    Enrich all cards
                   </Button>
+                  {/* Limit shown BEFORE the action (TRUST mandate). */}
+                  <EntitlementMeter capability="education.card_enrichment" />
+                  </div>
                 )}
                 {canEdit && (
                   <div className="flex flex-col items-start gap-0.5">
@@ -1078,6 +1142,9 @@ export function SetDetailView({ setId }: { setId: string }) {
                           })
                         }
                         onOpen={() => openCard(card)}
+                        onEnhance={
+                          canEdit ? () => setEnhanceCard(card) : undefined
+                        }
                       />
                     ))}
                   </div>
@@ -1115,6 +1182,22 @@ export function SetDetailView({ setId }: { setId: string }) {
               />
             )}
             <illustrate.Paywall />
+
+            {/* The batch's live surface: "N of M cards enriched", cancellable,
+                then the truthful summary. Floats so the deck never shifts. */}
+            {bulkOpen && (
+              <BulkEnrichWindow
+                run={bulkRun}
+                setName={data.set.name}
+                onClose={() => {
+                  setBulkOpen(false);
+                  resetBulkEnrich();
+                }}
+                onCancel={cancelBulkEnrich}
+              />
+            )}
+            <coppa.Gate />
+            <enrichGuard.Paywall />
 
             <Drawer open={studyModesOpen} onOpenChange={setStudyModesOpen}>
               <DrawerContent className="max-h-[85dvh]">
@@ -1249,12 +1332,18 @@ export function SetDetailView({ setId }: { setId: string }) {
                           className="h-11 justify-start"
                           onClick={() => {
                             setDeckToolsOpen(false);
-                            setEnhanceOpen(true);
+                            void runBulkEnrich();
                           }}
-                          disabled={data.cards.length === 0}
+                          disabled={
+                            data.cards.length === 0 ||
+                            bulkRun.phase === "running"
+                          }
                         >
-                          <Expand className="mr-2 h-4 w-4" /> Enhance cards
+                          <Sparkles className="mr-2 h-4 w-4" /> Enrich all cards
                         </Button>
+                      )}
+                      {canEdit && (
+                        <EntitlementMeter capability="education.card_enrichment" />
                       )}
                       {canEdit && (
                         <Button
@@ -1296,13 +1385,20 @@ export function SetDetailView({ setId }: { setId: string }) {
               </DrawerContent>
             </Drawer>
 
-            <EnhanceSetDialog
-              open={enhanceOpen}
-              onOpenChange={setEnhanceOpen}
-              setId={setId}
-              cards={data.cards}
-              onChanged={() => setReloadKey((k) => k + 1)}
-            />
+            {/* Per-card "make this deeper", opened from a specific card tile —
+                never a modal list of the whole deck to scroll and pick from.
+                The set-level action is "Enrich all cards" above. */}
+            {enhanceCard && (
+              <EnhanceSetDialog
+                open={enhanceCard !== null}
+                onOpenChange={(next) => {
+                  if (!next) setEnhanceCard(null);
+                }}
+                setId={setId}
+                cards={[enhanceCard]}
+                onChanged={() => setReloadKey((k) => k + 1)}
+              />
+            )}
 
             {/* Canonical block printer — same dialog, variants, and settings
                 as the markdown-block flashcards lane. */}

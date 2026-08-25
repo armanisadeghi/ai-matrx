@@ -229,7 +229,11 @@ export function bulkEnrichProgressLabel(state: BulkEnrichRunState): string {
  * failure away — "68 enriched, 2 failed, 10 already had layers".
  */
 export function bulkEnrichSummary(state: BulkEnrichRunState): string {
-  const c = bulkEnrichCounts(state);
+  return summarizeBulkEnrichCounts(bulkEnrichCounts(state));
+}
+
+/** The same truth, straight from the counts (what the runner hands back). */
+export function summarizeBulkEnrichCounts(c: BulkEnrichCounts): string {
   const parts: string[] = [`${c.enriched} enriched`];
   if (c.empty > 0) parts.push(`${c.empty} had nothing to add`);
   if (c.failed > 0) parts.push(`${c.failed} failed`);
