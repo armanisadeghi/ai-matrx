@@ -46,7 +46,6 @@ export default async function ShapeStreamPage({ params }: PageProps) {
               kind={detail.kind}
               label={detail.label}
               kindDefinitionId={detail.id}
-              loadingComponent={detail.loadingComponent}
             />
           </ShapeSurfaceRuntime>
         </div>

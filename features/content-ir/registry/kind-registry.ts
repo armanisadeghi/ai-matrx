@@ -117,10 +117,21 @@ class KindRegistry {
     return this.emittedSchemas.get(kind);
   }
 
-  /** Record an emitted contract for a kind (warm/cold ingest only). */
+  /**
+   * Record an emitted contract for a kind (warm/cold ingest only).
+   *
+   * BUMPS the kind. A loading silhouette is DERIVED from this schema, so for
+   * a Python-owned kind (`data` NULL, no parser schema, therefore never in
+   * the warm loop's `bumpKind`) this setter is the only moment its shape
+   * becomes knowable. Without the bump, a mounted slot's repaint key never
+   * moved and it sat on the shapeless generic skeleton for the whole run —
+   * precisely the case the slot exists for.
+   */
   setEmittedJsonSchema(kind: string, schema: unknown): void {
     if (schema === null || schema === undefined) return;
+    if (this.emittedSchemas.get(kind) === schema) return;
     this.emittedSchemas.set(kind, schema);
+    this.bumpKind(kind);
   }
 
   /**
@@ -140,9 +151,17 @@ class KindRegistry {
     );
   }
 
-  /** Record a declared loading slug for a kind (warm/cold ingest only). */
+  /**
+   * Record a declared loading slug for a kind (warm/cold ingest only).
+   * BUMPS the kind — same reason as `setEmittedJsonSchema`: this is where a
+   * Python-owned kind's declared silhouette arrives, and a mounted slot has
+   * to repaint when it does.
+   */
   setDeclaredLoadingComponent(kind: string, slug: string | null): void {
-    if (slug) this.declaredLoading.set(kind, slug);
+    if (!slug) return;
+    if (this.declaredLoading.get(kind) === slug) return;
+    this.declaredLoading.set(kind, slug);
+    this.bumpKind(kind);
   }
 
   listDefinitions(): KindDefinition[] {

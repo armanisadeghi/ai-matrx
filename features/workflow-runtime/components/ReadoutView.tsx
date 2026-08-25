@@ -245,27 +245,37 @@ function NodeReadout({
     //
     // A TERMINAL run reserves nothing: there is no future to hold space for,
     // and "This step never ran." is the final, honest answer.
-    const reservedKind =
-      waiting && !terminal ? nodeOutputKind(definition, nodeId) : null;
+    //
+    // `errored` is not in TERMINAL_RUN_STATUSES but the run is over all the
+    // same, and three sibling consoles already treat it that way. Reserving
+    // there left a mute, breathing skeleton on screen forever — `bare` skips
+    // the header that would have said "Coming up", and the host tile is in
+    // content mode, so nothing on screen explained itself.
+    const over = terminal || runStatus === "errored";
+    const reservedKind = waiting && !over ? nodeOutputKind(definition, nodeId) : null;
+    const caption = !waiting
+      ? (PHASE_LABEL[phase] ?? phase)
+      : over
+        ? "This step never ran."
+        : "This fills in when the run reaches this step.";
+
+    // The words AND the shape: the caption is never dropped, so a slot that
+    // waits a long time (or a run that pauses) always says what it is waiting
+    // for, while the silhouette beneath it holds the footprint.
     if (reservedKind) {
       return (
-        <KindSlot
-          slotKey={`${runId}:${nodeId}`}
-          kind={reservedKind}
-          phase="reserved"
-          chrome="bare"
-        />
+        <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground">{caption}</p>
+          <KindSlot
+            slotKey={`${runId}:${nodeId}`}
+            kind={reservedKind}
+            phase="reserved"
+            chrome="bare"
+          />
+        </div>
       );
     }
-    return (
-      <p className="text-xs text-muted-foreground">
-        {!waiting
-          ? (PHASE_LABEL[phase] ?? phase)
-          : terminal
-            ? "This step never ran."
-            : "This fills in when the run reaches this step."}
-      </p>
-    );
+    return <p className="text-xs text-muted-foreground">{caption}</p>;
   }
 
   if (multiRun === "latest") {

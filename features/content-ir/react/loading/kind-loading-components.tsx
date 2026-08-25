@@ -296,7 +296,11 @@ const Shell: React.FC<
             <Icon className={`h-4 w-4 ${t.icon}`} />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+            {/* `min-h-5` for the same reason as the sub-line below: the
+                heading is a 20px text span while reserved and a 14px shimmer
+                bar while arriving-without-a-title, and that difference moved
+                the page on the switch. The row now holds 20px either way. */}
+            <div className="flex min-h-5 items-center gap-2">
               {heading ? (
                 <Reveal
                   text={heading}
@@ -315,24 +319,25 @@ const Shell: React.FC<
                 <Loader2 className={`h-3 w-3 shrink-0 animate-spin ${t.spin}`} />
               )}
             </div>
-            {reserved ? (
+            {/* THE SUB-LINE IS ALWAYS PRESENT, in both phases. It used to be
+                rendered only when there was something to say, so `reserved`
+                (always "Coming up") stood 8px taller than a keyless
+                `arriving` — the placeholder→loading switch nudged the whole
+                page up and then back down, which is the one thing this
+                component exists to prevent. It now always occupies its line;
+                only the words change. */}
+            <p className="mt-0.5 min-h-4 truncate text-xs text-muted-foreground">
+              {reserved ? (
+                <span className="text-muted-foreground/70">Coming up</span>
+              ) : sub ? (
+                <Reveal text={sub} />
+              ) : null}
+            </p>
+            {loadingSubtext && !reserved && sub !== loadingSubtext ? (
               <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
-                Coming up
+                <Reveal text={loadingSubtext} />
               </p>
-            ) : (
-              <>
-                {sub ? (
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                    <Reveal text={sub} />
-                  </p>
-                ) : null}
-                {loadingSubtext && sub !== loadingSubtext ? (
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
-                    <Reveal text={loadingSubtext} />
-                  </p>
-                ) : null}
-              </>
-            )}
+            ) : null}
           </div>
         </div>
         {children}

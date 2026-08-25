@@ -170,11 +170,16 @@ export default function KindLoaderGallery({
                     ) : null}
                   </div>
                   <div className="flex-1 p-3">
+                    {/* `chrome="bare"` — this tile already draws the frame,
+                        the label, and the badges. Full chrome here rendered
+                        the label twice inside a second bordered box, which is
+                        the double-chrome defect this page is meant to help
+                        people avoid. */}
                     <KindSlot
                       slotKey={`gallery:${row.kind}`}
                       kind={row.kind}
                       phase="reserved"
-                      early={{ title: row.label }}
+                      chrome="bare"
                     />
                   </div>
                   <p className="flex items-center gap-1 border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">

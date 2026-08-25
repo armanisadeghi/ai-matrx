@@ -33,7 +33,7 @@ import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/in
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { isPartialReadyKind } from "@/features/content-ir/react/partial-kind-route";
-import { isKnownKindLoadingSlug } from "@/features/content-ir/react/loading/kind-loading-slugs";
+import { resolveLoadingSlugForKind } from "@/features/content-ir/react/loading/resolve-loading-slug";
 import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import {
   WIRE_MODE_LABEL,
@@ -50,8 +50,6 @@ interface ShapeStreamTabProps {
   kind: string;
   label: string;
   kindDefinitionId: string;
-  /** `kind_definition.metadata.loading_component` (null = undeclared). */
-  loadingComponent: string | null;
 }
 
 const TICK_MS = 60;
@@ -99,7 +97,6 @@ export default function ShapeStreamTab({
   kind,
   label,
   kindDefinitionId,
-  loadingComponent,
 }: ShapeStreamTabProps) {
   const examples = useKindExamples(kindDefinitionId);
   const [mode, setMode] = useState<WireMode>("fenced");
@@ -184,8 +181,9 @@ export default function ShapeStreamTab({
   }, [canonical, kind, mode, speedIdx]);
 
   const partialReady = isPartialReadyKind(kind);
-  const loadingKnown =
-    loadingComponent !== null && isKnownKindLoadingSlug(loadingComponent);
+  // What the RUNTIME will actually render for this kind — declared, derived,
+  // or generic — from the one module the render path uses.
+  const resolvedLoading = resolveLoadingSlugForKind(kind);
   const isStreamActive = runState === "playing";
 
   return (
@@ -284,20 +282,36 @@ export default function ShapeStreamTab({
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Registry facts
           </p>
+          {/* THE RUNTIME'S OWN ANSWER, not a re-derivation. This panel used
+              to compute only "is the declared slug known?", which since
+              derivation shipped stated the OPPOSITE of the pane rendering
+              beside it: it called every undeclared kind a generic skeleton
+              (~95% of them now derive a real silhouette) and claimed an
+              invalid declaration falls back to generic (it falls through to
+              derivation). It also read DB metadata only, so ~23 kinds that
+              declare a loader in CODE were reported as undeclared. */}
           <VerdictRow
-            ok={loadingKnown}
-            warn={loadingComponent !== null}
+            ok={resolvedLoading.origin !== "generic"}
+            warn={resolvedLoading.invalidDeclared !== undefined}
             title={
-              loadingComponent
-                ? `Loading component: ${loadingComponent}`
-                : "No loading component declared"
+              resolvedLoading.slug
+                ? `Loading component: ${resolvedLoading.slug}${
+                    resolvedLoading.origin === "derived" ? " (derived)" : ""
+                  }`
+                : "No loading component — generic skeleton"
             }
             detail={
-              loadingComponent
-                ? loadingKnown
-                  ? "Declared and present in the loading library."
-                  : "Declared slug is NOT in the loading library — falls back to the generic skeleton (unknown-loading-component)."
-                : "Streams behind the generic skeleton. Set metadata.loading_component on the shape."
+              resolvedLoading.invalidDeclared !== undefined
+                ? `Declares “${resolvedLoading.invalidDeclared}”, which is not in the loading library — ignored, and ${
+                    resolvedLoading.slug
+                      ? `“${resolvedLoading.slug}” was derived from this shape's schema instead`
+                      : "nothing could be derived, so it streams behind the generic skeleton"
+                  }. Fix the declaration (unknown-loading-component).`
+                : resolvedLoading.origin === "declared"
+                  ? "Declared on the shape and present in the loading library."
+                  : resolvedLoading.origin === "derived"
+                    ? "Derived from this shape's own schema — a real, shape-appropriate loader. Declare one only to override it."
+                    : "This shape isn't distinctive enough to derive a loader, so it streams behind the generic skeleton. Set metadata.loading_component."
             }
           />
           <VerdictRow

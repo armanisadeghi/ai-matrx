@@ -20,7 +20,6 @@ import { useEnsureKindRenderable } from "@/features/content-ir/react/ensure-kind
 import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
 import { resolveLoadingSlugForKind } from "@/features/content-ir/react/loading/resolve-loading-slug";
 import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
-import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import {
   resolveAnnouncedKindLoading,

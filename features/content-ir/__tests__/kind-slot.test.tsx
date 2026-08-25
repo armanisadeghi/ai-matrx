@@ -88,6 +88,45 @@ describe("resolveLoadingSlugForKind", () => {
     expect(result.slug).not.toBeNull();
   });
 
+  it("an EMPTY declaration is 'not declared', not a bad declaration", () => {
+    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      kindRegistry.upsertDefinition({
+        kind: "slot_declared_blank",
+        schemaSource: "content_ir",
+        tier: "cold",
+        loadingComponent: "   ",
+        schema: { ...LIST_SCHEMA, kind: "slot_declared_blank" },
+      });
+      const result = resolveLoadingSlugForKind("slot_declared_blank");
+      expect(result.invalidDeclared).toBeUndefined();
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("a late-arriving declaration MOVES the repaint key, so mounted slots refresh", () => {
+    // The setters that record a Python-owned kind's declaration and emitted
+    // schema did not bump the per-kind version, so a slot mounted before the
+    // warm sweep kept rendering the generic skeleton for the whole run — the
+    // exact case the slot exists for.
+    const kind = "slot_late_arrival";
+    const before = kindRegistry.getKindVersion(kind);
+    kindRegistry.setDeclaredLoadingComponent(kind, "table");
+    expect(kindRegistry.getKindVersion(kind)).toBeGreaterThan(before);
+    expect(resolveLoadingSlugForKind(kind).slug).toBe("table");
+
+    const afterDeclared = kindRegistry.getKindVersion(kind);
+    kindRegistry.setEmittedJsonSchema(kind, { type: "object" });
+    expect(kindRegistry.getKindVersion(kind)).toBeGreaterThan(afterDeclared);
+
+    // Idempotent: re-recording the SAME value must not churn every subscriber.
+    const settled = kindRegistry.getKindVersion(kind);
+    kindRegistry.setDeclaredLoadingComponent(kind, "table");
+    expect(kindRegistry.getKindVersion(kind)).toBe(settled);
+  });
+
   it("answers generic for no kind at all", () => {
     expect(resolveLoadingSlugForKind(null)).toEqual({
       slug: null,
@@ -159,6 +198,26 @@ describe("the placeholder phase", () => {
     // Still, not working.
     expect(bare).not.toContain("animate-pulse");
     expect(bare).not.toContain("animate-spin");
+  });
+
+  it("the two phases render the SAME ROWS — no line appears in one and not the other", () => {
+    // The 8px lurch: `reserved` always rendered a "Coming up" sub-line while a
+    // keyless `arriving` rendered none, so the header changed height on the
+    // switch — the page nudged up, then back down when a title arrived. Both
+    // phases must occupy the same rows; only the words may differ.
+    const rows = (markup: string) => (markup.match(/<p /g) ?? []).length;
+    expect(rows(render("reserved"))).toBe(rows(render("arriving")));
+
+    const titled = (phase: "reserved" | "arriving") =>
+      renderToStaticMarkup(
+        <KindSlot
+          slotKey="s-eq"
+          kind="slot_phase_kind"
+          phase={phase}
+          early={{ title: "T", loadingMessage: "M" }}
+        />,
+      );
+    expect(rows(titled("reserved"))).toBe(rows(titled("arriving")));
   });
 
   it("with no title yet, reserved names the kind where arriving shimmers", () => {

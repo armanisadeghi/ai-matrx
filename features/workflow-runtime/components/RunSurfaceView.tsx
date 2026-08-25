@@ -119,7 +119,10 @@ function readoutOutputKind(
   definition?: WorkflowDefinitionLike,
 ): string | null {
   const source = readout.source;
-  if (source.kind !== "node" && source.kind !== "childRun") return null;
+  // NODE only. A `childRun` readout renders a nested run BOARD (or a status
+  // disclosure), never that node's kind component — reserving its declared
+  // shape would promise a silhouette nothing on that path can ever produce.
+  if (source.kind !== "node") return null;
   return nodeOutputKind(definition, source.nodeId);
 }
 

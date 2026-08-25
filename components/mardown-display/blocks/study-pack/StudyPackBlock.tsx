@@ -25,8 +25,8 @@ import {
   type StudyPackChild,
   type StudyPackData,
 } from "@/features/content-ir/kinds/study-pack";
-import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
+import { resolveLoadingSlugForKind } from "@/features/content-ir/react/loading/resolve-loading-slug";
 import { cn } from "@/lib/utils";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -78,10 +78,14 @@ export function readStudyPackData(serverData: unknown): StudyPackData {
 
 /** A member that hasn't arrived yet — its kind's own loading skeleton. */
 function MemberSkeleton({ kind, label }: { kind: string; label: string }) {
-  const Loading = resolveKindLoadingComponent(
-    kindRegistry.getDefinition(kind)?.loadingComponent,
-  );
-  return <Loading kind={kind} title={label} />;
+  // THE ONE resolution (declared → derived → generic). Reading
+  // `getDefinition().loadingComponent` skipped the side map a Python-owned
+  // kind's declaration lives in, did no derivation at all, and passed an
+  // invalid slug straight through to the generic skeleton — the exact trap
+  // `resolve-loading-slug.ts` exists to close. It agreed only by luck: all
+  // four current members carry a valid COMPILED slug.
+  const Loading = resolveKindLoadingComponent(resolveLoadingSlugForKind(kind).slug);
+  return <Loading kind={kind} title={label} phase="reserved" />;
 }
 
 export interface StudyPackBlockProps {
