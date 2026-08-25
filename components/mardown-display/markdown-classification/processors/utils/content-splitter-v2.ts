@@ -87,6 +87,24 @@ export interface SplitterBlock {
  */
 export type ContentBlock = SplitterBlock;
 
+/**
+ * A streaming head that is ALREADY unambiguously a Kind Directive: `__kind`
+ * first, with a value in the reserved `directive_v` namespace.
+ *
+ * The key alone is not enough and must never be treated as enough — `__kind`
+ * first is how EVERY content-IR kind instance announces itself, so keying on the
+ * key would hijack every flashcard_set and quiz into the directive renderer.
+ * The reserved prefix on the VALUE is what makes the namespaces disjoint, which
+ * is the whole point of the grammar.
+ */
+const DIRECTIVE_HEAD_RE = new RegExp(
+  String.raw`^\{\s*"__kind"\s*:\s*"${RESERVED_PREFIX}`,
+);
+
+function looksLikeDirectiveHead(content: string): boolean {
+  return DIRECTIVE_HEAD_RE.test(content.trimStart());
+}
+
 function blockHasResolvedRootKind(block: SplitterBlock): boolean {
   const envelope = block.metadata?.[IR_ENVELOPE_KEY];
   if (typeof envelope !== "object" || envelope === null) return false;
@@ -111,7 +129,17 @@ export function recoverEmbeddedKindJsonBlocks(
   const recovered: SplitterBlock[] = [];
 
   for (const block of input) {
-    if (block.type === "artifact" || blockHasResolvedRootKind(block)) {
+    // A ```matrx fence IS the directive — there is nothing "embedded" to
+    // recover from it. Since the Kind Directives merge its body legitimately
+    // declares `__kind`, so without this it exploded into an anonymous kind
+    // JSON block, lost its `matrx` identity, and rendered as a JSON code
+    // viewer instead of a reference chip. `matrx_file` is the same shape.
+    if (
+      block.type === "artifact" ||
+      block.type === "matrx" ||
+      block.type === "matrx_file" ||
+      blockHasResolvedRootKind(block)
+    ) {
       recovered.push(block);
       continue;
     }
@@ -124,6 +152,20 @@ export function recoverEmbeddedKindJsonBlocks(
 
     for (const piece of pieces) {
       if (piece.type === "kind") {
+        // ONE PIPELINE: a recovered object whose `__kind` sits in the reserved
+        // `directive_v` namespace is a Kind Directive, not an anonymous kind
+        // instance. It gets the `matrx` block type so it routes through the
+        // slug/class registry (MatrxEnvelopeBlock) exactly like a fenced one —
+        // rather than through the generic structured floor, which would report
+        // an unregistered kind for something that is registered server-side.
+        if (looksLikeDirectiveHead(piece.content)) {
+          recovered.push({
+            type: "matrx",
+            content: piece.content,
+            language: "json",
+          });
+          continue;
+        }
         recovered.push({
           type: "code",
           content: piece.content,
@@ -297,24 +339,6 @@ const JSON_BLOCK_PATTERNS = {
 function extractFirstJsonKey(content: string): string | null {
   const match = content.trimStart().match(/^\{\s*"([^"]+)"/);
   return match ? match[1] : null;
-}
-
-/**
- * A streaming head that is ALREADY unambiguously a Kind Directive: `__kind`
- * first, with a value in the reserved `directive_v` namespace.
- *
- * The key alone is not enough and must never be treated as enough — `__kind`
- * first is how EVERY content-IR kind instance announces itself, so keying on the
- * key would hijack every flashcard_set and quiz into the directive renderer.
- * The reserved prefix on the VALUE is what makes the namespaces disjoint, which
- * is the whole point of the grammar.
- */
-const DIRECTIVE_HEAD_RE = new RegExp(
-  String.raw`^\{\s*"__kind"\s*:\s*"${RESERVED_PREFIX}`,
-);
-
-function looksLikeDirectiveHead(content: string): boolean {
-  return DIRECTIVE_HEAD_RE.test(content.trimStart());
 }
 
 export type DetectedJsonBlockType = keyof typeof JSON_BLOCK_PATTERNS | "matrx";

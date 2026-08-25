@@ -36,7 +36,7 @@ const ROWS: Row[] = [
   {
     title: "1 · Reference · the current two-key shell (THE BREAK)",
     note: "What aidream mints today. Must render as a live chip, never as raw JSON.",
-    markdown: `Here is the brief you asked about: ${fence({
+    markdown: `Here is the brief you asked about:\n\n${fence({
       __kind: "directive_v1_reference_conversation_value",
       items: [{ key: "research_brief", label: "Research brief" }],
     })}`,
@@ -74,8 +74,16 @@ const ROWS: Row[] = [
       __kind: "directive_v1_action_plan_tree",
       items: [
         {
+          site_id: null,
           site: "example.com",
-          nodes: [{ slug: "pricing", title: "Pricing", type: "page" }],
+          nodes: [
+            {
+              label: "Pricing",
+              node_type: "pillar",
+              slug: "pricing",
+              children: [{ label: "Pricing FAQ", node_type: "article" }],
+            },
+          ],
         },
       ],
     }),
