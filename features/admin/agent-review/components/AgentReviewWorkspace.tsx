@@ -155,37 +155,45 @@ export default function AgentReviewWorkspace({
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <header className="shrink-0 border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link href={row.url} target="_blank">
+        <div className="flex min-w-0 items-center gap-2">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="shrink-0"
+            aria-label="Back to reviews"
+            title="Back to reviews"
+            onClick={() => router.back()}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+
+          <div className="relative min-w-0 flex-1 overflow-hidden">
+            <h1 className="truncate pr-8 text-lg font-semibold" title={row.title}>
+              {row.title}
+            </h1>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-r from-transparent to-background"
+            />
+          </div>
+
+          <Button asChild size="sm" variant="outline" className="shrink-0">
+            <Link href={row.url} target="_blank" rel="noreferrer">
               <ExternalLink className="mr-1.5 h-4 w-4" /> Open page
             </Link>
           </Button>
-          <Button asChild size="sm" variant="ghost">
-            <Link href="/administration/users/agent-review">
-              <ArrowLeft className="mr-1.5 h-4 w-4" /> All reviews
-            </Link>
-          </Button>
         </div>
-        <h1 className="mt-3 text-xl font-semibold">{row.title}</h1>
-        <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm md:grid-cols-4">
-          <div>
-            <dt className="text-muted-foreground">Current step</dt>
-            <dd>{REVIEW_STATUS_LABELS[status]}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Domain</dt>
-            <dd>{names.domain}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Feature</dt>
-            <dd>{names.feature}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Repository</dt>
-            <dd>{row.repo_slug}</dd>
-          </div>
-        </dl>
+
+        <nav
+          aria-label="Review classification"
+          className="mt-1.5 flex min-w-0 items-center gap-1 text-xs"
+        >
+          <span className="min-w-0 truncate font-medium">{row.repo_slug}</span>
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 truncate font-medium">{names.domain}</span>
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 truncate font-medium">{names.feature}</span>
+        </nav>
       </header>
 
       <nav aria-label="Review progress" className="shrink-0 border-b px-4 py-3">
