@@ -9,14 +9,6 @@ jest.mock("next/dynamic", () => ({
     },
 }));
 
-jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: () => true,
-}));
-
-jest.mock("@/lib/redux/selectors/userSelectors", () => ({
-  selectIsAdmin: () => true,
-}));
-
 jest.mock("@/features/overlays/openers/convertToShapeWindow", () => ({
   useOpenConvertToShapeWindow: () => jest.fn(),
 }));
@@ -87,7 +79,6 @@ describe("JsonBlock canonical streaming toolbar", () => {
     expect(
       root.querySelector('[data-content-renderer="JsonBlock"]'),
     ).not.toBeNull();
-    expect(root.textContent).toContain("JsonBlock");
     expect(
       root.querySelector('[data-menu-item="convert-to-shape"]'),
     ).not.toBeNull();

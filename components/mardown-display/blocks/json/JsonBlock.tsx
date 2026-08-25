@@ -41,8 +41,6 @@ import {
 import { stringifyCompact } from "@/components/mardown-display/blocks/json/json-compact-stringify";
 import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/CodeBlockWithContextAttach";
 import { useOpenConvertToShapeWindow } from "@/features/overlays/openers/convertToShapeWindow";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 
 // Lazy-loaded — these views/dialogs only open on user action, and JsonBlock
 // itself lives inside the MarkdownStream ssr:false gate, so the boundaries
@@ -116,7 +114,6 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   messageId,
   allowConvertToShape = true,
 }) => {
-  const isAdmin = useAppSelector(selectIsAdmin);
   const openConvertToShape = useOpenConvertToShapeWindow();
   const [mode, setMode] = useState<ViewMode>("code");
   const [saveNewOpen, setSaveNewOpen] = useState(false);
@@ -374,14 +371,6 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
           disabled={!compactForm || !expandedForm}
           onToggle={toggleFormat}
         />
-      )}
-      {isAdmin && (
-        <span
-          className="hidden rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] leading-none text-amber-700 sm:inline dark:text-amber-300"
-          title="Streaming renderer: JsonBlock"
-        >
-          JsonBlock
-        </span>
       )}
     </div>
   );
