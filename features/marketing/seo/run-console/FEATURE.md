@@ -2,17 +2,17 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-24`
+**Last updated:** `2026-08-25`
 
 ---
 
 ## Purpose
 
 ONE console for driving the keyword-coverage engines by hand, at three
-permission tiers, and for authoring the schedule those engines will eventually
-run on. Topic placement is the first engine wired in; the shape accepts the
-others (facet backfill, gazetteer detection, situational refresh) without a
-second console.
+permission tiers, and for authoring the schedule those engines run on. TWO
+engines are wired: **topic placement** (KI-014) and **situational refresh**
+(KI-016). The shape accepts the rest (facet backfill, gazetteer detection)
+without a second console.
 
 Register item: **KI-049** in
 `common-docs/systems/marketing/seo/seo-keywords/REGISTER.md`. The engine itself
@@ -69,8 +69,11 @@ Two laws fall straight out of it:
   `site-section-icons.ts` so it appears in the site's own nav — 2026-08-25.
 
 **Components**
-- `RunConsole.tsx` — the whole console: control bar, brand table, run log,
-  results tabs.
+- `RunConsole.tsx` — the SHELL (which engine, at which tier) plus the topic-
+  placement body: control bar, brand table, run log, results tabs. The engine
+  is a tab; the tier is a prop.
+- `SituationalRefreshConsole.tsx` — the situational engine's body (KI-016):
+  brand table keyed on segment freshness, Run now, per-segment results.
 - `OrganizationRunConsoleMount.tsx` / `SiteRunConsoleMount.tsx` — the
   client-side scope resolvers for the organization and site route mounts
   (split out because their `page.tsx` files are Server Components exporting
@@ -82,7 +85,14 @@ Two laws fall straight out of it:
 - `data.ts` — `listConsoleSites`, `listEngineSchedules`,
   `resolveScheduleForSite` (THE CASCADE), `saveEngineSchedule`,
   `retireEngineSchedule`.
-- `engines.ts` — the engine registry. Adding an engine is adding a row.
+- `engines.ts` — the engine registry. Adding an engine is adding a row. Each
+  row declares its `runner`: `aidream_command` (a paid streaming pass) or
+  `rpc` (the whole engine is a database function — zero AI spend, seconds not
+  minutes, and no stream to watch).
+- `data.ts` also carries `getSituationalRefreshStatus` /
+  `runSituationalRefresh`. The RUN is not new code: it presses
+  `evaluateConditionMatchers`, the ONE client wrapper the Dig Here strip and
+  the Dimensions Re-evaluate button already press.
 - `types.ts` — scope, tiers, `RunOutcome`.
 
 **The run**
@@ -162,6 +172,28 @@ skip, and the `last_dispatched_at` claim under `FOR UPDATE SKIP LOCKED`.
 
 ---
 
+## The engines
+
+| Engine | What owed work means | Runner | Autonomy capability |
+|---|---|---|---|
+| `seo.topic_placement` | Keywords with demand and no Offering (`seo.fn_topic_placement_sites_owing`, ordered by owed clicks) | aidream command, streaming | `topic_assigner` |
+| `seo.situational_refresh` | Condition matchers whose segment was last worked out longer ago than `seo.situational_stamps.stale_after_hours` (`seo.fn_situational_sites_owing`, ordered by the AGE of the oldest as-of — a NULL sorts first, because never-derived is the stalest thing there is) | `seo.fn_evaluate_condition_matchers`, in-browser or under `acting_as_user` from the dispatcher | `matcher_engine` |
+
+**KI-016 in one line:** a situational stamp is a claim about NOW and carries an
+`as_of`; nothing re-derived it unattended, so the as-of aged while still
+printing as current. Adding a THIRD engine is: a row in `engines.ts`, an
+owed-work branch + in-flight `operation` in `seo.engine_schedules_due`, and one
+entry in aidream's `ENGINE_RUNNERS`. Never a new scheduled task.
+
+## Autonomy (KI-044) — the console shows what the engine is allowed to do
+
+Every engine names an `autonomyCapability`, and the situational brand table
+carries an **AI may** column reading `seo.fn_autonomy_gate` per brand, so
+nobody presses Run now and then wonders why nothing was written. A run held
+back by autonomy prints its refusal sentence in the run log instead of a count
+— a zero that means "off" or "waiting for you" must never read as "nothing to
+do".
+
 ## Invariants & gotchas
 
 - 🚨 **A saved, enabled row SPENDS MONEY on its own cadence.** `DISPATCHER_NOTICE`
@@ -175,6 +207,10 @@ skip, and the `last_dispatched_at` claim under `FOR UPDATE SKIP LOCKED`.
   (`resolveScheduleForSite`) is DELETED. Never restore one: a console that
   disagrees with the dispatcher about who gets charged is the exact failure this
   feature exists to prevent.
+- 🚨 **An engine that is registered here but not in aidream's `ENGINE_RUNNERS`
+  can be SCHEDULED and will never RUN.** The dispatcher claims the row (burning
+  its window) and reports `unknown_engine`. That is deliberate and loud, but it
+  means a new engine ships in this order: aidream first, console second.
 - 🚨 **ONE dispatcher, one path.** Do not create a second scheduler task for an
   SEO engine — add the engine to `ENGINE_RUNNERS` in aidream's
   `engine_schedule_dispatch.py` plus its owed-work branch in
@@ -199,6 +235,39 @@ skip, and the `last_dispatched_at` claim under `FOR UPDATE SKIP LOCKED`.
 ---
 
 ## Change log
+
+- `2026-08-25` — 🚨 **A SECOND ENGINE: SITUATIONAL REFRESH (KI-016), and the
+  console says what each engine is ALLOWED to do (KI-044).** A situational stamp
+  ("parked — 1 impression or fewer in 28 days") is a claim about NOW and carries
+  an `as_of`; C5 built the engine that re-derives it and nothing ever ran that
+  engine unattended, so a segment was only as fresh as the last Re-evaluate and
+  its as-of aged quietly into a lie with a timestamp on it.
+  **Not a new schedule.** The proposed `seo_situational_stamp_refresh` task
+  (daily 05:20 UTC) is withdrawn and was never seeded — this is an engine ROW
+  riding the ONE approved dispatcher, with its cadence authored through the same
+  cascade in the same Schedule tab.
+  **In the database** (`migrations/seo_situational_refresh_engine.sql`): knobs
+  `stale_after_hours` (24) and `max_passes_per_run` (25 — replacing a hard-coded
+  constant that had been sitting in `data-dig.ts`, because a ceiling in code is
+  not a knob); `seo.fn_situational_sites_owing`; `seo.situational_refresh_status`;
+  one more branch in `seo.engine_schedules_due` plus its in-flight fence
+  (`keywords.situational_refresh`).
+  **Here**: `RunConsole` became a shell with an engine tab strip;
+  `SituationalRefreshConsole.tsx` is the new body; `ConsoleEngine.runner` is a
+  union so an engine can be a database call instead of a streaming command.
+  Both bodies share the brand list, the knob read and ONE `ScheduleCascadePanel`.
+  **In aidream**: `services/seo/situational_stamp_refresh.py` +
+  `ENGINE_RUNNERS["seo.situational_refresh"]`.
+  **Proven live on Data Destruction**, fixture removed afterwards: a matcher
+  created through the product's own path showed the brand owing a refresh with
+  an as-of of **never**; one console run stamped **326** and moved the as-of;
+  narrowing the rule and re-running **released 322** while the one **pinned**
+  stamp survived and the still-matching keywords kept their original `as_of`.
+  Then, with `matcher_engine` flipped to "Review required" at the site rung, the
+  same button reported *"Applying your own rules may not apply anything without
+  you — what it found is waiting in Approvals"* with **matched 326 · proposed
+  322**, and wrote nothing at all — not even `last_evaluated_at`, which would
+  have claimed a re-derivation that did not happen.
 
 - `2026-08-25` — 🚨 **THE DISPATCHER. Saved schedules now run themselves, and the cascade has ONE implementation.** Arman approved exactly one scheduled task for this — `seo_engine_schedule_dispatcher`, every 15 minutes — and ruled that a row saved in this console IS the approval record for that engine on that brand.
   **In the database** (`migrations/seo_engine_schedule_dispatcher.sql`): `seo.engine_schedule.last_dispatched_at`; `seo.engine_schedule_resolve` (invoker-rights, the ONE cascade — site > organization > system, nearest wins, enabled state carried not filtered so a brand's OFF still governs); `seo.engine_schedules_due` (definer, service-role only — enabled winner + window open + not fired this window + site owes work + no in-flight run, ordered by most owed clicks via `seo.fn_topic_placement_sites_owing`, capped by the winning row's `sites_per_run`); `seo.engine_schedules_claim` (stamps `last_dispatched_at` under `FOR UPDATE SKIP LOCKED` in the same statement it selects, so two overlapping ticks cannot double-spend).
