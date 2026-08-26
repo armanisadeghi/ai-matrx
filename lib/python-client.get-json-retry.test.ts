@@ -22,7 +22,7 @@ jest.mock("@/lib/diagnostics/capturePythonClientError", () => ({
 }));
 
 import { capturePythonClientError } from "@/lib/diagnostics/capturePythonClientError";
-import { getJson } from "@/lib/python-client";
+import { getJson, postJson } from "@/lib/python-client";
 
 const captureMock = jest.mocked(capturePythonClientError);
 
@@ -72,6 +72,51 @@ describe("python-client getJson transient recovery", () => {
     ).rejects.toThrow("Failed to fetch");
 
     expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(captureMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("python-client caller-owned error classification", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("does not capture a POST failure when the caller owns classification", async () => {
+    global.fetch = jest.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ error: "not_found", message: "run not found" }),
+        { status: 404, headers: { "content-type": "application/json" } },
+      ),
+    );
+
+    await expect(
+      postJson(
+        "/podcast/runs/missing/reconcile",
+        {},
+        {
+          baseUrlOverride: "https://server.example.test",
+          captureErrors: false,
+        },
+      ),
+    ).rejects.toMatchObject({ status: 404 });
+
+    expect(captureMock).not.toHaveBeenCalled();
+  });
+
+  it("still captures an unexpected POST failure by default", async () => {
+    global.fetch = jest.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ error: "not_found", message: "run not found" }),
+        { status: 404, headers: { "content-type": "application/json" } },
+      ),
+    );
+
+    await expect(
+      postJson("/podcast/runs/missing/reconcile", {}, {
+        baseUrlOverride: "https://server.example.test",
+      }),
+    ).rejects.toMatchObject({ status: 404 });
+
     expect(captureMock).toHaveBeenCalledTimes(1);
   });
 });

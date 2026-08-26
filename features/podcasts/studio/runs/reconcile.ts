@@ -154,6 +154,11 @@ export async function reconcileRun(
     const { data } = await postJson<ReconcileResult>(
       `/podcast/runs/${runId}/reconcile`,
       {},
+      // A missing run is an expected recovery verdict: stale clients can still
+      // ask after the durable row is gone, and this function deliberately
+      // converts that 404 to null. Do not persist an incident before the
+      // recovery boundary gets to classify it.
+      { captureErrors: false },
     );
     return data && typeof data.outcome === "string" ? data : null;
   } catch {

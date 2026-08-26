@@ -108,6 +108,12 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-26 — **A missing reconcile target stays inside the recovery boundary.**
+  `reconcileRun` owns the expected 404 and returns `null`; its `postJson` call
+  now uses `captureErrors: false`, and the shared POST transport honors that
+  existing option like GET and multipart already do. Stale deployed tabs can
+  no longer turn an intentionally handled missing run into `system_error`.
+
 - 2026-08-25 — **The missing-run guard now claims a fresh start atomically.**
   Orphan classification previously peeked at the module-scoped pending request
   and consumed it later. Two overlapping boots could both pass the peek, one

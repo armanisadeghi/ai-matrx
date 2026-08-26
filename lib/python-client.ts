@@ -541,6 +541,7 @@ export async function postJson<T, B = unknown>(
     const data = (await response.json()) as T;
     return { data, meta: meta(response, requestId) };
   } catch (err) {
+    if (opts.captureErrors === false) throw err;
     failClient(err, "POST", path, url);
   }
 }
