@@ -17,7 +17,7 @@ export interface Snapshot {
   /** Human-readable provenance, e.g. "schema_truth_snapshot() RPC (live)". */
   source: string;
   provenance: SnapshotProvenance;
-  /** schema -> Set(table names) — base + partitioned-parent tables. */
+  /** schema -> Set(table names) — base, partitioned-parent, and partition-child tables. */
   tables: Map<string, Set<string>>;
   /** schema -> Set(view names) — views/matviews; valid `.from()` targets, never "dead". */
   views: Map<string, Set<string>>;

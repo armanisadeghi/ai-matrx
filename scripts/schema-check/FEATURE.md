@@ -33,7 +33,8 @@ fails) in `pnpm validate`.
 
 The FE has no direct Postgres connection (PostgREST only), so truth comes from the
 read-only RPC **`public.schema_truth_snapshot()`** (migration
-`migrations/schema_truth_snapshot_rpc.sql`) — live schema→tables/views + the
+`migrations/schema_truth_snapshot_rpc.sql`, extended by
+`migrations/schema_truth_snapshot_include_partition_children.sql`) — live schema→tables/views + the
 PostgREST-exposed schema list, structural metadata only (no row data). The
 refresher (`get-current-schema.ts`) writes it to **`scripts/schema-check/current-schema.json`**
 (committed, so every check is offline). Fallback order if the RPC is unreachable:

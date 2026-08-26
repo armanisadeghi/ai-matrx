@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 465 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 470 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "5917ca0854a5";
+export const KIND_REGISTRY_FINGERPRINT = "9b60bfd39f64";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -8035,6 +8035,39 @@ export interface InterviewGateDecision {
 }
 
 /**
+ * Kind `interview_hole_set` (registry v3).
+ */
+export interface InterviewHoleSet {
+  holes: ({
+    /**
+     * Evidence or a concrete failure story backing the attack.
+     */
+    evidence: string;
+    /**
+     * The concrete mechanism by which the claim fails.
+     */
+    why_it_breaks: string;
+    /**
+     * The exact claim under attack, quoted or tightly paraphrased.
+     */
+    claim_attacked: string;
+    /**
+     * fatal = vision collapses if false; unknown = needs outside evidence; undecided = open design choice.
+     */
+    classification: "fatal" | "unknown" | "undecided";
+  })[];
+  __kind: "interview_hole_set";
+  /**
+   * What you say to the person this round - plain language, brief and concrete. This is your spoken turn.
+   */
+  commentary: string;
+  /**
+   * How much more value another turn of yours at this stage would add: 5 = much more to do, 1 = this stage is complete. Never shown to the person.
+   */
+  wrap_rating: number;
+}
+
+/**
  * Output of ``interview.route`` — which node the hub dispatched to.
  *  *
  *  * Kind `interview_routing_decision` (registry v5).
@@ -8811,6 +8844,37 @@ export interface MedSpaReviewResponseKit {
 }
 
 /**
+ * Kind `media_candidate_verdict` (registry v4).
+ */
+export interface MediaCandidateVerdict {
+  /**
+   * Candidate identifier as supplied to the ranker.
+   */
+  id: string;
+  /**
+   * Fit grade for this candidate against the announcement.
+   */
+  fit: "strong" | "possible" | "poor" | "insufficient_evidence";
+  /**
+   * 1-based rank; 0 means unranked.
+   */
+  rank: number;
+  __kind: "media_candidate_verdict";
+  /**
+   * Plain-language justification for the fit grade and rank.
+   */
+  reason: string;
+  /**
+   * Up to three concerns that limit the fit or reachability.
+   */
+  concerns: string[];
+  /**
+   * Contact reachability status for this candidate.
+   */
+  reachability: "confirmed" | "candidate_only" | "none" | "unknown";
+}
+
+/**
  * Kind `media_chapters` (registry v4).
  */
 export interface MediaChapters {
@@ -8822,6 +8886,43 @@ export interface MediaChapters {
    * The chapters, in playback order — contiguous, gapless, strictly increasing.
    */
   chapters: MediaChapter[];
+}
+
+/**
+ * Kind `media_list_ranking_result` (registry v5).
+ */
+export interface MediaListRankingResult {
+  __kind: "media_list_ranking_result";
+  /**
+   * One verdict per candidate supplied to the ranker.
+   */
+  results: ({
+    /**
+     * Candidate identifier as supplied to the ranker.
+     */
+    id: string;
+    /**
+     * Fit grade for this candidate against the announcement.
+     */
+    fit: "strong" | "possible" | "poor" | "insufficient_evidence";
+    /**
+     * 1-based rank; 0 means unranked.
+     */
+    rank: number;
+    __kind: "media_candidate_verdict";
+    /**
+     * Plain-language justification for the fit grade and rank.
+     */
+    reason: string;
+    /**
+     * Up to three concerns that limit the fit or reachability.
+     */
+    concerns: string[];
+    /**
+     * Contact reachability status for this candidate.
+     */
+    reachability: "confirmed" | "candidate_only" | "none" | "unknown";
+  })[];
 }
 
 /**
@@ -11033,6 +11134,86 @@ export interface Rating {
    * Top of the rating scale.
    */
   best_possible?: number;
+}
+
+/**
+ * Kind `recipient_shortlist_result` (registry v4).
+ */
+export interface RecipientShortlistResult {
+  __kind: "recipient_shortlist_result";
+  /**
+   * One verdict per evaluated recipient.
+   */
+  results: ({
+    /**
+     * Recipient identifier.
+     */
+    id: string;
+    /**
+     * Send-order rank; 0 when not ranked.
+     */
+    rank: number;
+    __kind: "recipient_shortlist_verdict";
+    /**
+     * Rationale for the verdict.
+     */
+    reason: string;
+    /**
+     * Blocking condition; empty string when none.
+     */
+    blocker: string;
+    /**
+     * Outreach decision for this recipient.
+     */
+    verdict: "send" | "hold" | "skip" | "insufficient_evidence";
+    personalization_hook: {
+    /**
+     * Personalization fact; empty string when none.
+     */
+    fact: string;
+    /**
+     * Source for the fact; empty string when none.
+     */
+    source: string;
+  };
+  })[];
+}
+
+/**
+ * Kind `recipient_shortlist_verdict` (registry v3).
+ */
+export interface RecipientShortlistVerdict {
+  /**
+   * Recipient identifier.
+   */
+  id: string;
+  /**
+   * Send-order rank; 0 when not ranked.
+   */
+  rank: number;
+  __kind: "recipient_shortlist_verdict";
+  /**
+   * Rationale for the verdict.
+   */
+  reason: string;
+  /**
+   * Blocking condition; empty string when none.
+   */
+  blocker: string;
+  /**
+   * Outreach decision for this recipient.
+   */
+  verdict: "send" | "hold" | "skip" | "insufficient_evidence";
+  personalization_hook: {
+    /**
+     * Personalization fact; empty string when none.
+     */
+    fact: string;
+    /**
+     * Source for the fact; empty string when none.
+     */
+    source: string;
+  };
 }
 
 /**
@@ -18329,6 +18510,7 @@ export type GeneratedKindSlug =
   | "ingested_sources"
   | "interview_finalize_result"
   | "interview_gate_decision"
+  | "interview_hole_set"
   | "interview_routing_decision"
   | "interview_scribe_apply_result"
   | "interview_session_hydration"
@@ -18357,7 +18539,9 @@ export type GeneratedKindSlug =
   | "masterwork_checkup_finding"
   | "math_problem"
   | "med_spa_review_response_kit"
+  | "media_candidate_verdict"
   | "media_chapters"
+  | "media_list_ranking_result"
   | "memory_aid"
   | "memory_hint"
   | "mermaid_diagram"
@@ -18442,6 +18626,8 @@ export type GeneratedKindSlug =
   | "rag_upsert_result"
   | "random_string_result"
   | "rating"
+  | "recipient_shortlist_result"
+  | "recipient_shortlist_verdict"
   | "record_result"
   | "redirect_hop"
   | "regex_extract_result"
@@ -18797,6 +18983,7 @@ export interface KindPayloadBySlug {
   "ingested_sources": IngestedSources;
   "interview_finalize_result": InterviewFinalizeResult;
   "interview_gate_decision": InterviewGateDecision;
+  "interview_hole_set": InterviewHoleSet;
   "interview_routing_decision": InterviewRoutingDecision;
   "interview_scribe_apply_result": InterviewScribeApplyResult;
   "interview_session_hydration": InterviewSessionHydration;
@@ -18825,7 +19012,9 @@ export interface KindPayloadBySlug {
   "masterwork_checkup_finding": MasterworkCheckupFinding;
   "math_problem": MathProblem;
   "med_spa_review_response_kit": MedSpaReviewResponseKit;
+  "media_candidate_verdict": MediaCandidateVerdict;
   "media_chapters": MediaChapters;
+  "media_list_ranking_result": MediaListRankingResult;
   "memory_aid": MemoryAid;
   "memory_hint": MemoryHint;
   "mermaid_diagram": MermaidDiagram;
@@ -18910,6 +19099,8 @@ export interface KindPayloadBySlug {
   "rag_upsert_result": RagUpsertResult;
   "random_string_result": RandomStringResult;
   "rating": Rating;
+  "recipient_shortlist_result": RecipientShortlistResult;
+  "recipient_shortlist_verdict": RecipientShortlistVerdict;
   "record_result": RecordResult;
   "redirect_hop": RedirectHop;
   "regex_extract_result": RegexExtractResult;
@@ -19269,6 +19460,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "ingested_sources",
   "interview_finalize_result",
   "interview_gate_decision",
+  "interview_hole_set",
   "interview_routing_decision",
   "interview_scribe_apply_result",
   "interview_session_hydration",
@@ -19297,7 +19489,9 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "masterwork_checkup_finding",
   "math_problem",
   "med_spa_review_response_kit",
+  "media_candidate_verdict",
   "media_chapters",
+  "media_list_ranking_result",
   "memory_aid",
   "memory_hint",
   "mermaid_diagram",
@@ -19382,6 +19576,8 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "rag_upsert_result",
   "random_string_result",
   "rating",
+  "recipient_shortlist_result",
+  "recipient_shortlist_verdict",
   "record_result",
   "redirect_hop",
   "regex_extract_result",
