@@ -16,6 +16,7 @@
 
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createDashboardScope } from "@/features/surfaces/manifests/dashboard.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { usePinned } from "@/components/favorites/usePinned";
 import { useDashboardMetrics } from "../hooks/useDashboardMetrics";
 import { useDiscoverRotation } from "../hooks/useDiscoverRotation";
@@ -79,15 +80,26 @@ export function DashboardClient() {
       getScope={getScope}
       isEditable={false}
     >
-      <div className="h-full overflow-y-auto bg-background pb-8">
-        <div className="mx-auto w-full max-w-6xl space-y-5 px-4 pb-8 pt-[calc(var(--shell-header-h)+1.5rem)] md:px-6">
-          <DashboardGreeting />
-          <MetricsStrip />
-          <QuickActions />
-          <PinnedSection />
-          <DiscoverSection items={rotation.items} showMore={rotation.showMore} />
+      <NonEditableContextMenu
+        sourceFeature="system"
+        surfaceName="matrx-user/dashboard"
+        menuVersion={1}
+        getApplicationScope={getScope}
+        contentSource={{ type: "raw" }}
+      >
+        <div className="h-full overflow-y-auto bg-background pb-8">
+          <div className="mx-auto w-full max-w-6xl space-y-5 px-4 pb-8 pt-[calc(var(--shell-header-h)+1.5rem)] md:px-6">
+            <DashboardGreeting />
+            <MetricsStrip />
+            <QuickActions />
+            <PinnedSection />
+            <DiscoverSection
+              items={rotation.items}
+              showMore={rotation.showMore}
+            />
+          </div>
         </div>
-      </div>
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }

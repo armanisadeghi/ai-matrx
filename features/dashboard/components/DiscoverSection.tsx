@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Compass, RefreshCw } from "lucide-react";
+import { Compass } from "lucide-react";
 import ShellIcon from "@/features/shell/components/ShellIcon";
+import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
 import { cn } from "@/lib/utils";
 import { PinButton } from "@/components/favorites/PinButton";
@@ -17,7 +18,12 @@ function DiscoverCard({ item }: { item: DiscoverItem }) {
   const chip = iconColorMap[item.color] ?? iconColorMap.slate;
   const body = (
     <>
-      <span className={cn("flex h-9 w-9 items-center justify-center rounded-xl", chip)}>
+      <span
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-xl",
+          chip,
+        )}
+      >
         <ShellIcon name={item.iconName} size={18} strokeWidth={2} />
       </span>
       <div className="mt-3 min-w-0">
@@ -34,7 +40,7 @@ function DiscoverCard({ item }: { item: DiscoverItem }) {
   return (
     <div className="group relative flex flex-col rounded-2xl border border-border bg-card p-4 transition-colors hover:border-foreground/20 hover:bg-accent/40">
       {/* Pin sits above the link layer; it has its own stopPropagation. */}
-      <div className="absolute right-2 top-2 z-10 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+      <div className="absolute right-0 top-0 z-10">
         <PinButton
           item={{
             id: item.href,
@@ -52,12 +58,12 @@ function DiscoverCard({ item }: { item: DiscoverItem }) {
           href={item.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col"
+          className="flex flex-col pr-8"
         >
           {body}
         </a>
       ) : (
-        <Link href={item.href} className="flex flex-col">
+        <Link href={item.href} className="flex flex-col pr-8">
           {body}
         </Link>
       )}
@@ -77,7 +83,7 @@ export function DiscoverSection({
   if (items.length === 0) return null;
 
   return (
-    <section className="space-y-2">
+    <section data-surface-value="discover_items" className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Compass size={14} className="text-muted-foreground" />
@@ -85,14 +91,12 @@ export function DiscoverSection({
             Discover
           </h2>
         </div>
-        <button
-          type="button"
+        <RefreshCwTapButton
           onClick={showMore}
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          <RefreshCw size={12} />
-          Show more
-        </button>
+          variant="transparent"
+          ariaLabel="Show more dashboard discoveries"
+          label="Show more"
+        />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (

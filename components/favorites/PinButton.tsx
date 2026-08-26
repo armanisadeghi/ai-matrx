@@ -31,8 +31,8 @@ export interface PinButtonProps {
 }
 
 const SIZES = {
-  sm: { btn: "h-7 w-7", icon: 14 },
-  md: { btn: "h-9 w-9", icon: 17 },
+  sm: { pill: "matrx-tap-pill-sm", icon: 14 },
+  md: { pill: "", icon: 17 },
 } as const;
 
 export function PinButton({
@@ -66,20 +66,21 @@ export function PinButton({
       aria-label={pinned ? `Unpin ${item.label}` : `Pin ${item.label}`}
       title={pinned ? "Unpin from favorites" : "Pin to favorites"}
       className={cn(
-        "inline-flex items-center justify-center rounded-full transition-colors",
-        "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        dims.btn,
+        "matrx-tap-target rounded-full transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         pinned
           ? "text-amber-500"
           : "text-muted-foreground hover:text-foreground",
         className,
       )}
     >
-      <Star
-        size={dims.icon}
-        strokeWidth={2}
-        className={pinned ? "fill-amber-500" : "fill-transparent"}
-      />
+      <span className={cn("matrx-tap-pill hover:bg-accent", dims.pill)}>
+        <Star
+          size={dims.icon}
+          strokeWidth={2}
+          className={pinned ? "fill-amber-500" : "fill-transparent"}
+        />
+      </span>
     </button>
   );
 }

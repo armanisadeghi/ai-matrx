@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-24`
+**Last updated:** `2026-08-25`
 
 ---
 
@@ -15,10 +15,12 @@
 ## Entry points
 
 **Routes**
+
 - `app/(core)/dashboard/page.tsx` — Server Component wrapper; injects the shell header via `<PageHeader><HeaderIconTitle icon="LayoutDashboard" title="Dashboard" /></PageHeader>`, then renders `<DashboardClient>`. Lives in `(core)` so it shares the slim modern shell (sidebar + header). The proxy redirects guests off `/dashboard`.
 - `app/(core)/dashboard/layout.tsx` — funnels new users (`isNewUser`) to `/welcome`; sets route metadata.
 
 **Components** (`features/dashboard/components/`)
+
 - `DashboardClient.tsx` — composes the page (greeting → metrics → quick actions → pinned → discover).
 - `MetricsStrip.tsx` — featured + secondary engagement counts.
 - `QuickActions.tsx` — fixed "start something" launchers.
@@ -27,10 +29,12 @@
 - `DashboardGreeting.tsx` — time-aware greeting.
 
 **Hooks**
+
 - `useDashboardMetrics()` (`hooks/useDashboardMetrics.ts`) — React-Query-wrapped read of the `get_user_dashboard_metrics` RPC (dedups across remounts).
 - `useDiscoverRotation()` (`hooks/useDiscoverRotation.ts`) — picks which slice of the Discover pool to show.
 
 **Data/config**
+
 - `dashboard.config.ts` — **the single curate-here file.** Edit to hide/reorder/add Discover items (`DISCOVER_HIDDEN_HREFS` / `DISCOVER_FEATURED_ORDER` / `DISCOVER_EXTRA`) and the "Start something" launchers (`QUICK_ACTIONS`).
 - `constants/discover.ts` — assembles `DISCOVER_POOL` FROM `primaryNavItems` (the nav registry, so every spotlight is a real route) using the config knobs above.
 - `constants/metricCards.ts` — `METRIC_CARDS` (one per RPC key; tweak labels/icons/order/empty-hints here).
@@ -40,9 +44,11 @@
 ## Data model
 
 **RPC** (Supabase) — `migrations/get_user_dashboard_metrics.sql`
+
 - `get_user_dashboard_metrics()` → jsonb. `SECURITY DEFINER`, derives identity from `auth.uid()` (takes NO arg — a caller can't request another user's counts). Counts the calling user's rows in the CURRENT tables: `agx_agent`, `cx_conversation` (NOT `conversations`), `cld_files`, `aga_apps` (`status='published'`), `notes`, `ctx_tasks`, `transcripts`, `ctx_scopes`, `agx_shortcut`, `rs_topic` (research reports), `pc_episodes` (podcasts), `dm_messages` (messages sent, `sender_id`). Replaces the role of the legacy `get_user_stats` (which counted the deprecated `conversation`/`recipe`/`udt_datasets` entity tables).
 
 **Key types**
+
 - `DashboardMetrics` (`features/dashboard/types.ts`)
 - `FavoriteItem` / `FavoritesPreferences` (`lib/redux/preferences/userPreferencesSlice.ts`); `FavoriteKind` / `UserEntityState` (`features/scopes/types.ts`) — see Favorites below.
 
@@ -64,7 +70,7 @@
 
 ## Key flows
 
-1. **Metrics load.** `MetricsStrip` → `useDashboardMetrics()` → `supabase.rpc("get_user_dashboard_metrics")` (cached 60s). Zero counts render the `emptyHint` nudge ("Build your first agent").
+1. **Metrics load.** `MetricsStrip` → `useDashboardMetrics()` → `supabase.rpc("get_user_dashboard_metrics")` (cached 60s). Zero counts render the `emptyHint` nudge ("Build your first agent"); a failed query renders an explicit retry state and never presents fallback zeros as real counts.
 2. **Pin from Discover.** Hover a Discover card → `<PinButton>` → `usePinned().toggle()` → **both** the `toggleFavorite` reducer (prefs cache, debounced upsert + cross-tab broadcast) **and** `favoritesService.setFavorite(...)` (canonical `user_entity_state` flag, `ues_set`). The item appears in `PinnedSection` and `FavoritesNavGroup` immediately (same Redux read).
 3. **Discover rotation.** `useDiscoverRotation(DISCOVER_POOL, 6)` returns a window seeded by day + per-mount cursor; "Show more" advances it. First page load is deterministic; date and per-mount variation begin only after hydration.
 
@@ -79,6 +85,8 @@
 - **`Star` must stay in `shellIconMap`.** The sidebar Favorites entry renders its icon via `ShellIcon name="Star"`; if `Star` is dropped from `features/shell/shellIconMap.ts` the collapsed entry becomes an empty hole.
 - **RPC takes no argument.** Call `supabase.rpc("get_user_dashboard_metrics")` with no params; identity is `auth.uid()`.
 - **First-render text is timezone-neutral.** `DashboardGreeting` supplies `Welcome back` as its `useSyncExternalStore` server snapshot, then switches to the user's local time-aware client snapshot after hydration. Never read the clock in a render initializer: server UTC and browser local time can produce different text.
+- **The page is one read-only surface.** `DashboardClient` wraps the full hub with `NonEditableContextMenu`, passes the same live `createDashboardScope()` used by `SurfaceRuntimeProvider`, and the rendered sections expose `data-surface-value` anchors for the manifest values. Do not add a second menu or a divergent scope builder.
+- **Dashboard actions stay touch-safe.** Pin, unpin, rotation, quick-action, and metric links keep a minimum 44 px interactive target; pin/unpin controls are visible without hover so they remain discoverable on touch devices.
 
 ---
 
@@ -92,12 +100,14 @@
 ## Doctrine compliance
 
 **Primitives reused**
+
 - Data: `primaryNavItems` + `iconColorMap` (`features/shell/constants/nav-data.ts`) — Discover pool, colors, quick actions.
 - Components: `ShellIcon`, `NavFlyoutGroup`, `NavItem` (shell); `sonner` toast; `cn`.
 - Redux: `userPreferencesSlice` (extended, not forked) + sync engine; `selectActiveUserName` / `selectUserId`.
 - Data fetching: `@tanstack/react-query`.
 
 **Primitives introduced**
+
 - `favorites` preferences module + `FavoriteItem` (`userPreferencesSlice.ts`) — Why new: no existing module modeled cross-surface user-curated pins. Considered extending: `coding.favoriteConversationIds` (a bare-id, conversation-only list). Rejected because: it is record-specific and uncapped; favorites must be typed, capped, and span any surface.
 - `usePinned` / `<PinButton>` (`components/favorites/`) — Why new: no generic pin control existed. Reused everywhere; not dashboard-specific.
 - `favoritesService` (`features/scopes/service/favoritesService.ts`) — Why new: `platform.user_entity_state` had no FE chokepoint. Considered extending: `associationsService` / `categoriesService`. Rejected because: different table + RPCs + semantics (per-user flags, not org edges/nouns). Built as their exact sibling (same `ScopesRpcResult` envelope + `rpc()` cast-bridge), not a fork.
@@ -107,6 +117,7 @@
 
 ## Change log
 
+- `2026-08-25` — Codex: Completed the dashboard surface wiring: added the canonical read-only context menu over the live manifest scope, mapped rendered sections to their surface values, made metrics failures explicit and retryable, and raised pin/unpin/rotation/quick-action controls to visible 44 px touch targets.
 - `2026-08-24` — Codex: Reworded the Pinned empty state so the star control is named in text, and raised every secondary metric pill to a 44 px minimum touch target.
 - `2026-08-17` — Codex: Made the dashboard greeting timezone-safe: SSR and hydration now share a deterministic `Welcome back` snapshot, then the browser applies the local time-aware greeting. Added a regression that hydrates across conflicting server/browser clocks without React errors.
 - `2026-07-21` — Claude: Fixed the `/dashboard` hydration mismatch in `PinnedSection` — favorites live only in the client Redux store (synced after boot), so SSR always renders the empty state while the client's first render could show pinned items. Now gated on `useIsMounted()` (existing `hooks/use-is-mounted.ts` primitive): renders empty until mounted so SSR and the client first render match. Verified in browser — no hydration warnings; pinned grid appears post-mount.

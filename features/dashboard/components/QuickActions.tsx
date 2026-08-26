@@ -14,7 +14,7 @@ export function QuickActions({
   layout?: "rail" | "grid";
 }) {
   return (
-    <section className="space-y-2">
+    <section data-surface-value="quick_actions" className="space-y-2">
       <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         Start something
       </h2>
@@ -33,7 +33,7 @@ export function QuickActions({
             rel={openInNewTab ? "noopener noreferrer" : undefined}
             prefetch={openInNewTab ? false : undefined}
             className={cn(
-              "inline-flex shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-foreground/20 hover:bg-accent/50",
+              "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-foreground/20 hover:bg-accent/50",
               layout === "grid" && "min-w-0 px-2.5",
             )}
           >

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Star, X } from "lucide-react";
+import { Star } from "lucide-react";
+import { XTapButton } from "@/components/icons/tap-buttons";
 import ShellIcon from "@/features/shell/components/ShellIcon";
 import { resolveShellIconName } from "@/features/shell/shellIconMap";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
@@ -23,14 +24,17 @@ export function PinnedSection({
   const favorites = isMounted ? pinnedFavorites : [];
 
   return (
-    <section className="space-y-2">
+    <section data-surface-value="pinned_items" className="space-y-2">
       <div className="flex items-center gap-2">
         <Star size={14} className="text-amber-500" />
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Pinned
         </h2>
         {favorites.length > 0 && (
-          <span className="text-xs text-muted-foreground">
+          <span
+            data-surface-value="pinned_count"
+            className="text-xs text-muted-foreground"
+          >
             {favorites.length}
           </span>
         )}
@@ -72,7 +76,7 @@ export function PinnedSection({
             return (
               <div
                 key={f.id}
-                className="group relative flex items-center gap-3 rounded-2xl border border-border bg-card p-3 transition-colors hover:border-foreground/20 hover:bg-accent/40"
+                className="group relative flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card p-3 pr-11 transition-colors hover:border-foreground/20 hover:bg-accent/40"
               >
                 {f.href.startsWith("http") ? (
                   <a
@@ -94,15 +98,13 @@ export function PinnedSection({
                     {inner}
                   </Link>
                 )}
-                <button
-                  type="button"
+                <XTapButton
                   onClick={() => unpin(f.id)}
-                  aria-label={`Unpin ${f.label}`}
-                  title="Unpin"
-                  className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
-                >
-                  <X size={14} />
-                </button>
+                  ariaLabel={`Unpin ${f.label}`}
+                  tooltip={`Unpin ${f.label}`}
+                  variant="transparent"
+                  className="absolute right-0 top-0 text-muted-foreground"
+                />
               </div>
             );
           })}
