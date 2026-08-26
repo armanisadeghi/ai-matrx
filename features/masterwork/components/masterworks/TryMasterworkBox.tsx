@@ -276,10 +276,16 @@ export function TryMasterworkBox({
     setRunId(newRunId);
   }, [fields, values, masterworkId, startRun]);
 
+  // The Audition judges the WORK, so it wants the deliverable when there is a
+  // separable one (generate) and the ruling when the work and the reasoning
+  // are one document (edit). Both keys are `masterwork_result`'s, declared by
+  // the builder on the terminal step; `report` is the pre-2026-08-26 key and
+  // is read so runs built before that still offer the door.
   const candidateText =
     terminal && runStatus === "completed" && finalInvocation?.output
       ? String(
-          (finalInvocation.output as Record<string, unknown>).result ??
+          (finalInvocation.output as Record<string, unknown>).deliverable ??
+            (finalInvocation.output as Record<string, unknown>).ruling ??
             (finalInvocation.output as Record<string, unknown>).report ??
             "",
         ).trim() || null

@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 481 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 482 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "1c831b1362d5";
+export const KIND_REGISTRY_FINGERPRINT = "9154e016fdfe";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -8869,6 +8869,19 @@ export interface MasterworkCheckupFinding {
      */
     __kind?: string;
   };
+}
+
+/**
+ * Kind `masterwork_result` (registry v2).
+ */
+export interface MasterworkResult {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "masterwork_result";
+  ruling?: string;
+  approach?: string | null;
+  deliverable?: string | null;
 }
 
 /**
@@ -18904,6 +18917,7 @@ export type GeneratedKindSlug =
   | "mapped_list_result"
   | "markdown"
   | "masterwork_checkup_finding"
+  | "masterwork_result"
   | "math_problem"
   | "med_spa_review_response_kit"
   | "media_candidate_verdict"
@@ -19388,6 +19402,7 @@ export interface KindPayloadBySlug {
   "mapped_list_result": MappedListResult;
   "markdown": Markdown;
   "masterwork_checkup_finding": MasterworkCheckupFinding;
+  "masterwork_result": MasterworkResult;
   "math_problem": MathProblem;
   "med_spa_review_response_kit": MedSpaReviewResponseKit;
   "media_candidate_verdict": MediaCandidateVerdict;
@@ -19876,6 +19891,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "mapped_list_result",
   "markdown",
   "masterwork_checkup_finding",
+  "masterwork_result",
   "math_problem",
   "med_spa_review_response_kit",
   "media_candidate_verdict",
