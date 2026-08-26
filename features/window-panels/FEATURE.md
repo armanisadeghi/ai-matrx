@@ -81,11 +81,35 @@ The rule, and why it is not a style preference:
   Search Console page for one slice — `KpiBand` + `PerformanceChart` + `GscDimensionTable`.
   Every insight table's panel action opens it with `filters: { query_eq: row.query }` instead
   of rendering its own list.
+- 🚨 **AND THE PANEL REPLACES THE TRIP, IT DOES NOT LINK TO IT.** Arman, 2026-08-26: *"We
+  don't ever want to send the user off of the page, over to a route like the agent's mandate
+  route. Instead, you should do the same thing that we do when the user clicks on the settings
+  icon for the agents that are assigned into roles."* A working surface that names a record
+  OPENS its window; a `<Link>` to that record's route from such a surface is the regression
+  this law exists to stop. The route keeps existing for browsing the whole list.
+- Worked example: `MandateWindow` (`windows/agents/MandateWindow.tsx`) — the mandate twin of
+  `AgentSettingsWindow`. Its Yours pane IS `MandateOverridePanel` (what `/agents/mandates`
+  composes) and its Admin pane IS `MandateDetailView` (the console drawer, whole). The
+  window's own code is the shell only: which mandates are in scope (the surface's own + its
+  family's), which is selected, which pane shows, and ONE scoped load
+  (`fetchMandateConsoleData({ mandateKeys })` — a handful of rows, not the platform's 365).
 - Mechanical note: `MatrxDataTable`'s `window` prop is for the table's own record window.
   When the panel should be a canonical surface instead, set `window={{ enabled: false }}` and
   open the canonical window from a `rowActions` button.
 
 ## Change Log
+
+- 2026-08-26 — **`mandateWindow` — mandates handled in place.** Every mandate NAME on a
+  working surface (the Agents menu's "AI doing jobs here" rows, `PageAgents` chips) now opens
+  this panel over the page instead of navigating to `/agents/mandates` or the admin console;
+  both `<Link>`s are gone. Two panes, both canonical components: **Yours** (everyone) is
+  `MandateOverridePanel` + `MandateResolutionRibbon` — principal chips, agent swap, settings
+  overrides, consumption map, copy & customize — with `MandateNotesPanel` beside it for
+  admins; **Admin** (super-admin) is `MandateDetailView`, the console drawer entire (health
+  verdict and its fix, pinned agent, test bench, notes, bindings). It opens on the surface's
+  own + family mandates and loads only those rows, and stamps the surface onto notes written
+  there. Registered the full way (overlay id, metadata + `urlSync: "mandate"`, catalogue,
+  controller mount, Tools grid tile). Selection is DERIVED, not synced in an effect.
 
 - 2026-08-25 — **`structuredValueWindow` — the canonical panel for ONE structured value.**
   Any surface with a structure too big to read in place (`useOpenStructuredValueWindow({ value,
