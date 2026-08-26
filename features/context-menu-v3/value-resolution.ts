@@ -63,6 +63,15 @@ export interface ResolveScopeArgs {
 /**
  * Build the complete `ApplicationScope` for this menu invocation.
  *
+ * Assembly: the static underlay (`contextData` + the shell-captured selection
+ * triad) is built first; when the surface supplies a LIVE builder
+ * (`getApplicationScope`) its result is overlaid PER KEY on top. A key the
+ * builder emits is authoritative — including an explicit empty (the Vault
+ * forces `selection: ""` so a highlight over revealed plaintext never enters
+ * the scope). A key the builder never mentions falls back to the underlay, so
+ * a live-scope surface no longer silently discards `contextData` or the
+ * captured selection/text_before/text_after wholesale.
+ *
  * Order of precedence for `content`:
  *   1. surface `getApplicationScope().content` / `contextData.content`
  *   2. the full value of an editable field (from the selection range)
@@ -73,14 +82,27 @@ export interface ResolveScopeArgs {
 export function resolveApplicationScope(
   args: ResolveScopeArgs,
 ): ApplicationScope {
-  const base: ApplicationScope = args.getApplicationScope
-    ? { ...args.getApplicationScope() }
-    : buildFromMenuContext(args);
+  const base: ApplicationScope = buildFromMenuContext(args);
+  if (args.getApplicationScope) {
+    const live = args.getApplicationScope();
+    for (const [k, v] of Object.entries(live)) {
+      if (SKIP_MERGE_KEYS.has(k) || v === undefined) continue;
+      base[k] = v;
+    }
+  }
 
   // No-fake-menu net: if no usable content resolved but the DOM gave us text,
-  // adopt it so Copy / AI actions always have something to act on.
+  // adopt it so Copy / AI actions always have something to act on. A surface
+  // with a LIVE builder opted out of this net (documented in FEATURE.md — the
+  // Vault relies on it: DOM text there can be revealed plaintext, and an empty
+  // live scope must stay empty rather than adopt it).
   const hasContent = strOf(base.content).trim().length > 0;
-  if (!hasContent && args.fallbackContent && args.fallbackContent.trim()) {
+  if (
+    !args.getApplicationScope &&
+    !hasContent &&
+    args.fallbackContent &&
+    args.fallbackContent.trim()
+  ) {
     base.content = args.fallbackContent;
   }
 
