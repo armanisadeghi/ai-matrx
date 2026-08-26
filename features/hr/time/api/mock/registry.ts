@@ -1084,85 +1084,6 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
    * the shape; these four cases exist because route 28 needs the header's own state machine and its
    * "N of M approved" figure, and a missing fixture throws rather than degrading.
    */
-  hr_pay_period_get: {
-    happy: {
-      ok: true,
-      data: {
-        id: PERIOD,
-        payGroupId: "44444444-4444-4444-8444-444444444444",
-        payGroupName: "Semimonthly — Hourly",
-        periodStartOn: "2026-03-16",
-        periodEndOn: "2026-03-31",
-        payDate: "2026-04-05",
-        sequenceNumber: 6,
-        // 🚨 `submitted` is a PERIOD state and never a row state (§14 D8).
-        state: "submitted",
-        submittedAt: "2026-04-01T16:00:00Z",
-        approvedAt: null,
-        exportedAt: null,
-        lockedAt: null,
-        closedAt: null,
-        reopenedAt: null,
-        reopenReason: null,
-        boundaryWorkweekIds: [WORKWEEK],
-        counts: { employments: 41, approved: 38, open: 2, attested: 1, disputed: 0 },
-      },
-    },
-    empty: {
-      ok: true,
-      data: {
-        id: PERIOD,
-        payGroupId: "44444444-4444-4444-8444-444444444444",
-        payGroupName: "Semimonthly — Hourly",
-        periodStartOn: "2026-04-01",
-        periodEndOn: "2026-04-15",
-        payDate: null,
-        sequenceNumber: 7,
-        state: "open",
-        submittedAt: null,
-        approvedAt: null,
-        exportedAt: null,
-        lockedAt: null,
-        closedAt: null,
-        reopenedAt: null,
-        reopenReason: null,
-        boundaryWorkweekIds: [],
-        counts: { employments: 41, approved: 0, open: 41, attested: 0, disputed: 0 },
-      },
-    },
-    // A REOPENED period. Its rows stay `approved` and their steps reopen — there is no row-level
-    // reopened state, which is exactly what §14 D8 exists to stop a surface from inventing.
-    edge: {
-      ok: true,
-      data: {
-        id: PERIOD,
-        payGroupId: "44444444-4444-4444-8444-444444444444",
-        payGroupName: "Semimonthly — Hourly",
-        periodStartOn: "2026-02-16",
-        periodEndOn: "2026-02-28",
-        payDate: "2026-03-05",
-        sequenceNumber: 4,
-        state: "reopened",
-        submittedAt: "2026-03-01T16:00:00Z",
-        approvedAt: "2026-03-02T17:00:00Z",
-        exportedAt: "2026-03-03T09:00:00Z",
-        lockedAt: "2026-03-04T09:00:00Z",
-        closedAt: null,
-        reopenedAt: "2026-03-09T17:00:00Z",
-        reopenReason: "A missed clock-out was reported after the period was locked.",
-        boundaryWorkweekIds: [WORKWEEK],
-        counts: { employments: 41, approved: 41, open: 0, attested: 0, disputed: 2 },
-      },
-    },
-    error: {
-      ok: false,
-      error: "not_found",
-      message: "no pay period with that id is readable",
-      user_message: "We could not find that pay period.",
-      details: {},
-    },
-  },
-
   hr_attendance_exception_list: {
     happy: {
       ok: true,
@@ -1505,6 +1426,388 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
       message: "pin rejected",
       user_message: "That did not work. Try again, or ask your manager for help.",
       details: {},
+    },
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════════════════════════
+  // LANE L3 / HRB-015 — routes 32, 33, 31a and 31b. Appended by the periods/exports/overtime lane.
+  //
+  // Chosen for the cases that are EXPENSIVE TO DISCOVER LATE: the period that refuses approval
+  // because timecards are still open, the reopen that must state it does not re-pay, the
+  // adjustment tagged to a locked period and paid in the next one, and — the one that matters most
+  // in this whole feature — the overtime row that was worked without approval and is PAID.
+  // ═════════════════════════════════════════════════════════════════════════════════════════════
+
+  hr_pay_period_list: {
+    happy: {
+      ok: true,
+      data: {
+        rows: [
+          {
+            id: PERIOD, payGroupId: "44444444-0000-4000-8000-000000000001", payGroupName: "Hourly — Fremont",
+            periodStartOn: "2026-03-01", periodEndOn: "2026-03-15", payDate: "2026-03-20",
+            sequenceNumber: 6, state: "submitted",
+            submittedAt: "2026-03-16T16:00:00Z", approvedAt: null, exportedAt: null, lockedAt: null,
+            closedAt: null, reopenedAt: null, reopenReason: null,
+            boundaryWorkweekIds: [WORKWEEK, "22222222-2222-4222-8222-222222222223"],
+            counts: { employments: 288, approved: 285, open: 0, attested: 285, disputed: 3 },
+          },
+          {
+            id: "33333333-3333-4333-8333-333333333334", payGroupId: "44444444-0000-4000-8000-000000000001",
+            payGroupName: "Hourly — Fremont", periodStartOn: "2026-03-16", periodEndOn: "2026-03-31",
+            payDate: "2026-04-05", sequenceNumber: 7, state: "open",
+            submittedAt: null, approvedAt: null, exportedAt: null, lockedAt: null, closedAt: null,
+            reopenedAt: null, reopenReason: null, boundaryWorkweekIds: [],
+            counts: { employments: 288, approved: 0, open: 288, attested: 0, disputed: 0 },
+          },
+          {
+            id: "33333333-3333-4333-8333-333333333332", payGroupId: "44444444-0000-4000-8000-000000000002",
+            payGroupName: "Salaried — HQ", periodStartOn: "2026-02-16", periodEndOn: "2026-02-28",
+            payDate: "2026-03-05", sequenceNumber: 5, state: "locked",
+            submittedAt: "2026-03-01T16:00:00Z", approvedAt: "2026-03-02T17:00:00Z",
+            exportedAt: "2026-03-02T18:10:00Z", lockedAt: "2026-03-03T09:00:00Z", closedAt: null,
+            reopenedAt: null, reopenReason: null, boundaryWorkweekIds: [WORKWEEK],
+            counts: { employments: 41, approved: 41, open: 0, attested: 41, disputed: 0 },
+          },
+        ],
+        page: 1, pageSize: 50, totalRows: 3, hasMore: false,
+      },
+    },
+    empty: { ok: true, data: { rows: [], page: 1, pageSize: 50, totalRows: 0, hasMore: false } },
+    error: {
+      ok: false,
+      error: "hr_capability_denied",
+      message: "time.read not held",
+      user_message: "You need the time.read capability to see pay periods.",
+      details: { capability: "time.read" },
+    },
+    // A period that was REOPENED. The surface must state that this did not un-export or re-pay.
+    edge: {
+      ok: true,
+      data: {
+        rows: [
+          {
+            id: PERIOD, payGroupId: "44444444-0000-4000-8000-000000000001", payGroupName: "Hourly — Fremont",
+            periodStartOn: "2026-03-01", periodEndOn: "2026-03-15", payDate: "2026-03-20",
+            sequenceNumber: 6, state: "reopened",
+            submittedAt: "2026-03-16T16:00:00Z", approvedAt: "2026-03-17T17:00:00Z",
+            exportedAt: "2026-03-17T18:04:11Z", lockedAt: "2026-03-18T09:00:00Z", closedAt: null,
+            reopenedAt: "2026-03-19T11:00:00Z",
+            reopenReason: "Three clock-outs on 03-12 were recorded against the wrong assignment.",
+            boundaryWorkweekIds: [WORKWEEK, "22222222-2222-4222-8222-222222222223"],
+            counts: { employments: 288, approved: 288, open: 0, attested: 288, disputed: 1 },
+          },
+        ],
+        page: 1, pageSize: 50, totalRows: 1, hasMore: false,
+      },
+    },
+  },
+
+  hr_pay_period_get: {
+    // Approvable: nothing open. THREE disagreements — approval is allowed and the surface says so.
+    happy: {
+      ok: true,
+      data: {
+        id: PERIOD, payGroupId: "44444444-0000-4000-8000-000000000001", payGroupName: "Hourly — Fremont",
+        periodStartOn: "2026-03-01", periodEndOn: "2026-03-15", payDate: "2026-03-20",
+        sequenceNumber: 6, state: "submitted",
+        submittedAt: "2026-03-16T16:00:00Z", approvedAt: null, exportedAt: null, lockedAt: null,
+        closedAt: null, reopenedAt: null, reopenReason: null,
+        boundaryWorkweekIds: [WORKWEEK, "22222222-2222-4222-8222-222222222223"],
+        counts: { employments: 288, approved: 285, open: 0, attested: 285, disputed: 3 },
+      },
+    },
+    // NOT approvable: two timecards still open. No boundary weeks — the "no straddle" panel state.
+    empty: {
+      ok: true,
+      data: {
+        id: PERIOD, payGroupId: "44444444-0000-4000-8000-000000000001", payGroupName: "Hourly — Fremont",
+        periodStartOn: "2026-03-16", periodEndOn: "2026-03-31", payDate: "2026-04-05",
+        sequenceNumber: 7, state: "submitted",
+        submittedAt: "2026-04-01T16:00:00Z", approvedAt: null, exportedAt: null, lockedAt: null,
+        closedAt: null, reopenedAt: null, reopenReason: null, boundaryWorkweekIds: [],
+        counts: { employments: 288, approved: 286, open: 2, attested: 286, disputed: 0 },
+      },
+    },
+    error: {
+      ok: false,
+      error: "not_found",
+      message: "pay period not visible to caller",
+      user_message: "We could not find that pay period.",
+      details: {},
+    },
+    // LOCKED and exported: the adjustment lane is the only edit door, and reopen is the only exit.
+    edge: {
+      ok: true,
+      data: {
+        id: PERIOD, payGroupId: "44444444-0000-4000-8000-000000000001", payGroupName: "Hourly — Fremont",
+        periodStartOn: "2026-03-01", periodEndOn: "2026-03-15", payDate: "2026-03-20",
+        sequenceNumber: 6, state: "locked",
+        submittedAt: "2026-03-16T16:00:00Z", approvedAt: "2026-03-17T17:00:00Z",
+        exportedAt: "2026-03-17T18:04:11Z", lockedAt: "2026-03-18T09:00:00Z", closedAt: null,
+        reopenedAt: null, reopenReason: null,
+        boundaryWorkweekIds: [WORKWEEK, "22222222-2222-4222-8222-222222222223"],
+        counts: { employments: 288, approved: 288, open: 0, attested: 288, disputed: 1 },
+      },
+    },
+  },
+
+  hr_time_adjustment_list: {
+    happy: {
+      ok: true,
+      data: {
+        rows: [
+          {
+            id: "77777777-0000-4000-8000-000000000001",
+            employmentId: EMPLOYMENT, employeeDisplayName: "Dana Ruiz",
+            originalPayPeriodId: PERIOD,
+            targetPayPeriodId: "33333333-3333-4333-8333-333333333334",
+            targetPeriodLabel: "16–31 March",
+            workDate: "2026-03-12", earningCodeId: "55555555-0000-4000-8000-000000000001",
+            earningCodeName: "Overtime", hoursDelta: 1.5, amountDelta: 65.25, amountWithheld: false,
+            reasonCategoryName: "Missed punch",
+            reasonNote: "Clock-out on 03-12 was recorded 90 minutes early; corrected after lock.",
+            workflowInstanceId: "88888888-0000-4000-8000-000000000001",
+            workflowState: "Awaiting payroll approval",
+            createdAt: "2026-03-19T10:12:00Z", createdByName: "Priya Nair",
+            exportedInExportId: null,
+          },
+        ],
+        page: 1, pageSize: 50, totalRows: 1, hasMore: false,
+      },
+    },
+    empty: { ok: true, data: { rows: [], page: 1, pageSize: 50, totalRows: 0, hasMore: false } },
+    error: {
+      ok: false,
+      error: "hr_capability_denied",
+      message: "time.read not held",
+      user_message: "You need the time.read capability to see corrections.",
+      details: { capability: "time.read" },
+    },
+    // 🚨 THE ADVISORY CASE: hours are correct and payable, the AMOUNT IS ABSENT, and `amountWithheld`
+    // sits beside it so a null can never be read as a zero.
+    edge: {
+      ok: true,
+      data: {
+        rows: [
+          {
+            id: "77777777-0000-4000-8000-000000000002",
+            employmentId: EMPLOYMENT, employeeDisplayName: "Marcus Bell",
+            originalPayPeriodId: PERIOD,
+            targetPayPeriodId: "33333333-3333-4333-8333-333333333334",
+            targetPeriodLabel: "16–31 March",
+            workDate: "2026-03-09", earningCodeId: "55555555-0000-4000-8000-000000000004",
+            earningCodeName: "Predictability pay", hoursDelta: 1, amountDelta: null,
+            amountWithheld: true,
+            reasonCategoryName: "Schedule change",
+            reasonNote: "Shift moved inside the notice window on 03-09.",
+            workflowInstanceId: "88888888-0000-4000-8000-000000000002",
+            workflowState: "Approved — rides the next export",
+            createdAt: "2026-03-19T14:40:00Z", createdByName: "Priya Nair",
+            exportedInExportId: null,
+          },
+        ],
+        page: 1, pageSize: 50, totalRows: 1, hasMore: false,
+      },
+    },
+  },
+
+  hr_overtime_preapproval_list: {
+    happy: {
+      ok: true,
+      data: {
+        rows: [
+          {
+            id: "99999999-0000-4000-8000-000000000001",
+            employmentId: EMPLOYMENT, employeeDisplayName: "Dana Ruiz", workweekId: WORKWEEK,
+            requestedByName: "Dana Ruiz", requestKind: "advance",
+            coversFrom: "2026-03-19T00:00:00Z", coversTo: "2026-03-20T00:00:00Z",
+            requestedHours: 4, approvedHours: null, reasonNote: "Inventory count runs past close.",
+            state: "requested", workflowInstanceId: "88888888-0000-4000-8000-000000000011",
+            decidedAt: null, decidedByName: null, actualOtHours: null, varianceHours: null,
+            unapprovedOtFlagged: false, correctiveActionId: null,
+            thresholdAxes: ["weekly", "daily"], calc: CALC_OK,
+          },
+          {
+            id: "99999999-0000-4000-8000-000000000002",
+            employmentId: EMPLOYMENT, employeeDisplayName: "Marcus Bell", workweekId: WORKWEEK,
+            requestedByName: "Priya Nair", requestKind: "advance",
+            coversFrom: "2026-03-17T00:00:00Z", coversTo: "2026-03-18T00:00:00Z",
+            requestedHours: 6, approvedHours: 4,
+            reasonNote: "Coverage for a call-off; capped at four hours.",
+            state: "approved", workflowInstanceId: "88888888-0000-4000-8000-000000000012",
+            decidedAt: "2026-03-17T15:02:00Z", decidedByName: "Priya Nair",
+            actualOtHours: 4, varianceHours: 0, unapprovedOtFlagged: false,
+            correctiveActionId: null, thresholdAxes: ["weekly"], calc: CALC_OK,
+          },
+        ],
+        page: 1, pageSize: 50, totalRows: 2, hasMore: false,
+      },
+    },
+    empty: { ok: true, data: { rows: [], page: 1, pageSize: 50, totalRows: 0, hasMore: false } },
+    // 🚨 Exempt employees never enter this lane — refused at validate, with the reason NAMED.
+    error: {
+      ok: false,
+      error: "hr_validation_error",
+      message: "position assignment is FLSA-exempt",
+      user_message:
+        "This assignment is exempt from overtime, so there is no overtime to pre-approve.",
+      details: { reason: "flsa_exempt" },
+    },
+    // ═══════════════════════════════════════════════════════════════════════════════════════════
+    // 🚨 THE MOST IMPORTANT FIXTURE IN THIS FILE.
+    //
+    // Row 1: overtime worked AFTER A DENIAL. Row 2: overtime nobody asked about. Row 3: worked
+    // BEYOND AN APPROVED CAP. All three carry `actualOtHours` intact and `unapprovedOtFlagged`
+    // true, and there is NO field anywhere in this shape that could withhold, hold, zero or defer
+    // payment — because unapproved overtime is still PAID and no fixture may suggest otherwise.
+    // ═══════════════════════════════════════════════════════════════════════════════════════════
+    edge: {
+      ok: true,
+      data: {
+        rows: [
+          {
+            id: "99999999-0000-4000-8000-000000000003",
+            employmentId: EMPLOYMENT, employeeDisplayName: "Dana Ruiz", workweekId: WORKWEEK,
+            requestedByName: "Dana Ruiz", requestKind: "advance",
+            coversFrom: "2026-03-18T00:00:00Z", coversTo: "2026-03-19T00:00:00Z",
+            requestedHours: 3, approvedHours: null,
+            reasonNote: "Asked to stay for the delivery.",
+            state: "denied", workflowInstanceId: "88888888-0000-4000-8000-000000000013",
+            decidedAt: "2026-03-18T14:00:00Z", decidedByName: "Priya Nair",
+            actualOtHours: 3.75, varianceHours: 3.75, unapprovedOtFlagged: true,
+            correctiveActionId: null, thresholdAxes: ["weekly", "daily"], calc: CALC_OK,
+          },
+          {
+            id: "99999999-0000-4000-8000-000000000004",
+            employmentId: EMPLOYMENT, employeeDisplayName: "Alex Whitfield", workweekId: WORKWEEK,
+            requestedByName: "System", requestKind: "retroactive",
+            coversFrom: "2026-03-16T00:00:00Z", coversTo: "2026-03-17T00:00:00Z",
+            requestedHours: null, approvedHours: null, reasonNote: null,
+            state: "auto_flagged", workflowInstanceId: null,
+            decidedAt: null, decidedByName: null,
+            actualOtHours: 2.25, varianceHours: 2.25, unapprovedOtFlagged: true,
+            correctiveActionId: null, thresholdAxes: ["weekly"], calc: CALC_OK,
+          },
+          {
+            id: "99999999-0000-4000-8000-000000000005",
+            employmentId: EMPLOYMENT, employeeDisplayName: "Marcus Bell", workweekId: WORKWEEK,
+            requestedByName: "Priya Nair", requestKind: "advance",
+            coversFrom: "2026-03-17T00:00:00Z", coversTo: "2026-03-18T00:00:00Z",
+            requestedHours: 6, approvedHours: 4,
+            reasonNote: "Coverage for a call-off; capped at four hours.",
+            state: "approved", workflowInstanceId: "88888888-0000-4000-8000-000000000012",
+            decidedAt: "2026-03-17T15:02:00Z", decidedByName: "Priya Nair",
+            actualOtHours: 5.5, varianceHours: 1.5, unapprovedOtFlagged: true,
+            correctiveActionId: "aaaaaaa1-0000-4000-8000-000000000001",
+            thresholdAxes: ["weekly", "daily"], calc: CALC_OK,
+          },
+        ],
+        page: 1, pageSize: 50, totalRows: 3, hasMore: false,
+      },
+    },
+  },
+
+  hr_overtime_preapproval_get: {
+    happy: {
+      ok: true,
+      data: {
+        id: "99999999-0000-4000-8000-000000000001",
+        employmentId: EMPLOYMENT, employeeDisplayName: "Dana Ruiz", workweekId: WORKWEEK,
+        requestedByName: "Dana Ruiz", requestKind: "advance",
+        coversFrom: "2026-03-19T00:00:00Z", coversTo: "2026-03-20T00:00:00Z",
+        requestedHours: 4, approvedHours: null,
+        reasonNote: "Inventory count runs past close.",
+        state: "requested", workflowInstanceId: "88888888-0000-4000-8000-000000000011",
+        decidedAt: null, decidedByName: null, actualOtHours: null, varianceHours: null,
+        unapprovedOtFlagged: false, correctiveActionId: null,
+        thresholdAxes: ["weekly", "daily"], calc: CALC_OK,
+      },
+    },
+    empty: {
+      ok: true,
+      data: {
+        id: "99999999-0000-4000-8000-000000000009",
+        employmentId: EMPLOYMENT, employeeDisplayName: "Dana Ruiz", workweekId: null,
+        requestedByName: "Dana Ruiz", requestKind: "advance",
+        coversFrom: "2026-03-25T00:00:00Z", coversTo: "2026-03-26T00:00:00Z",
+        requestedHours: null, approvedHours: null, reasonNote: null,
+        state: "withdrawn", workflowInstanceId: null, decidedAt: null, decidedByName: null,
+        actualOtHours: null, varianceHours: null, unapprovedOtFlagged: false,
+        correctiveActionId: null, thresholdAxes: [], calc: CALC_OK,
+      },
+    },
+    error: {
+      ok: false,
+      error: "not_found",
+      message: "request not visible to caller",
+      user_message: "We could not find that overtime request.",
+      details: {},
+    },
+    // 🚨 WORKED AFTER A DENIAL — a materially different management fact from "nobody asked", and
+    // still PAID. The decision panel renders this with the write-up door and the paid sentence.
+    edge: {
+      ok: true,
+      data: {
+        id: "99999999-0000-4000-8000-000000000003",
+        employmentId: EMPLOYMENT, employeeDisplayName: "Dana Ruiz", workweekId: WORKWEEK,
+        requestedByName: "Dana Ruiz", requestKind: "advance",
+        coversFrom: "2026-03-18T00:00:00Z", coversTo: "2026-03-19T00:00:00Z",
+        requestedHours: 3, approvedHours: null,
+        reasonNote: "Asked to stay for the delivery.",
+        state: "denied", workflowInstanceId: "88888888-0000-4000-8000-000000000013",
+        decidedAt: "2026-03-18T14:00:00Z", decidedByName: "Priya Nair",
+        actualOtHours: 3.75, varianceHours: 3.75, unapprovedOtFlagged: true,
+        correctiveActionId: null, thresholdAxes: ["weekly", "daily"], calc: CALC_OK,
+      },
+    },
+  },
+
+  hr_overtime_preapproval_create: {
+    happy: {
+      ok: true,
+      data: {
+        id: "99999999-0000-4000-8000-000000000010",
+        employmentId: EMPLOYMENT, employeeDisplayName: "Dana Ruiz", workweekId: WORKWEEK,
+        requestedByName: "Dana Ruiz", requestKind: "advance",
+        coversFrom: "2026-03-19T00:00:00Z", coversTo: "2026-03-20T00:00:00Z",
+        requestedHours: 4, approvedHours: null, reasonNote: "Raised from an approaching-OT alert.",
+        state: "requested", workflowInstanceId: "88888888-0000-4000-8000-000000000014",
+        decidedAt: null, decidedByName: null, actualOtHours: null, varianceHours: null,
+        unapprovedOtFlagged: false, correctiveActionId: null,
+        thresholdAxes: ["weekly"], calc: CALC_OK,
+      },
+    },
+    empty: {
+      ok: true,
+      data: {
+        id: "99999999-0000-4000-8000-000000000011",
+        employmentId: EMPLOYMENT, employeeDisplayName: "Dana Ruiz", workweekId: null,
+        requestedByName: "Dana Ruiz", requestKind: "standing",
+        coversFrom: "2026-03-19T00:00:00Z", coversTo: "2026-04-19T00:00:00Z",
+        requestedHours: 0, approvedHours: null, reasonNote: "Standing authorization, no estimate.",
+        state: "requested", workflowInstanceId: "88888888-0000-4000-8000-000000000015",
+        decidedAt: null, decidedByName: null, actualOtHours: null, varianceHours: null,
+        unapprovedOtFlagged: false, correctiveActionId: null, thresholdAxes: [], calc: CALC_OK,
+      },
+    },
+    // 🚨 Exempt is refused AT VALIDATE with the reason named — never a silent no-op.
+    error: {
+      ok: false,
+      error: "hr_validation_error",
+      message: "position assignment is FLSA-exempt",
+      user_message:
+        "This assignment is exempt from overtime, so there is no overtime to pre-approve.",
+      details: { reason: "flsa_exempt" },
+    },
+    // The date has entered a locked period — routed to the adjustment lane, not refused blankly.
+    edge: {
+      ok: false,
+      error: "hr_period_locked",
+      message: "covers_from is inside a locked pay period",
+      user_message:
+        "That date is in a locked pay period. We can record a correction that lands in the next period instead.",
+      details: { pay_period_id: PERIOD, state: "locked" },
     },
   },
 };
