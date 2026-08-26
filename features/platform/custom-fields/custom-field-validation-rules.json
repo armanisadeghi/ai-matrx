@@ -1146,6 +1146,33 @@
           [
             "a",
             "invalid_format"
+          ]
+        ]
+      },
+      "$note": "+44... IS valid E.164, so only the declared-pattern warning fires - and even a DECLARED pattern on a phone only warns, in strict mode, which is what this case pins."
+    },
+    {
+      "name": "phone_both_warnings_fire_and_neither_rejects",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "phone",
+          "validation_rules": {
+            "pattern": "^\\+1"
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "555"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "a",
+            "invalid_format"
           ],
           [
             "a",
@@ -1153,7 +1180,7 @@
           ]
         ]
       },
-      "$note": "Both the E.164 shape warning and the declared-pattern warning fire; neither rejects."
+      "$note": "Fails BOTH the E.164 shape and the declared pattern: two warnings, zero rejections, ok stays true."
     },
     {
       "name": "multiplicity_two_failures_on_one_key",
