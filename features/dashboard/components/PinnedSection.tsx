@@ -83,7 +83,7 @@ export function PinnedSection({
                     href={f.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex min-w-0 flex-1 items-center gap-3"
+                    className="flex min-h-11 min-w-0 flex-1 items-center gap-3"
                   >
                     {inner}
                   </a>
@@ -93,7 +93,7 @@ export function PinnedSection({
                     target={openInNewTab ? "_blank" : undefined}
                     rel={openInNewTab ? "noopener noreferrer" : undefined}
                     prefetch={openInNewTab ? false : undefined}
-                    className="flex min-w-0 flex-1 items-center gap-3"
+                    className="flex min-h-11 min-w-0 flex-1 items-center gap-3"
                   >
                     {inner}
                   </Link>
