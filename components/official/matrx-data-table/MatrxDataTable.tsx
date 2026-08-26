@@ -32,6 +32,7 @@ import {
 } from "@dnd-kit/core";
 import Link from "next/link";
 import {
+  ChevronLeft,
   ChevronRight,
   Eraser,
   GripVertical,
@@ -274,6 +275,14 @@ function MatrxDataTableCore<T>({
   // Two sticky leading cells would overlap, and a frozen checkbox identifies
   // nothing — selection and the mobile frozen identity column are exclusive.
   const mobileScroll = !mobileCards && mobile !== "plain" && !selection;
+  /**
+   * A checkbox must NOT be stretched to the 44px touch floor — a bordered
+   * 44×44 box with a 14px tick lost inside it reads as an empty text field,
+   * not a control. It keeps its size and grows an invisible 44×44 hit area
+   * instead, which is what the floor was actually asking for.
+   */
+  const CHECKBOX_TAP_AREA =
+    "relative max-lg:before:absolute max-lg:before:-inset-[15px] max-lg:before:content-['']";
   const mobileCardsClass =
     mobileCardsBreakpoint === "lg" ? "lg:hidden" : "sm:hidden";
   const tableWithCardsClass =
@@ -452,15 +461,33 @@ function MatrxDataTableCore<T>({
     label: copy?.listLabel ? `Table: ${copy.listLabel}` : "MatrxDataTable",
   });
   const [scrollHintRight, setScrollHintRight] = useState(false);
+  const [scrollHintLeft, setScrollHintLeft] = useState(false);
   const updateScrollHint = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
     setScrollHintRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+    setScrollHintLeft(el.scrollLeft > 2);
   }, []);
   useEffect(() => {
     updateScrollHint();
     window.addEventListener("resize", updateScrollHint);
-    return () => window.removeEventListener("resize", updateScrollHint);
+    // The window is not the only thing that changes this container's width —
+    // a collapsing sidebar, an opening panel, or a column set that arrives a
+    // tick later all do, and each one silently invalidated the hint before.
+    const el = scrollRef.current;
+    const observer =
+      el && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(updateScrollHint)
+        : null;
+    if (el && observer) {
+      observer.observe(el);
+      const table = el.querySelector("table");
+      if (table) observer.observe(table);
+    }
+    return () => {
+      window.removeEventListener("resize", updateScrollHint);
+      observer?.disconnect();
+    };
   }, [updateScrollHint, data, columns]);
 
   const visibleColumns = useMemo(
@@ -1034,7 +1061,14 @@ function MatrxDataTableCore<T>({
         ref={rootRef}
         data-url-state-table={urlState?.id}
         className={cn(
-          "flex h-full min-h-0 flex-col gap-2 max-lg:[&_button]:min-h-11 max-lg:[&_button]:min-w-11 max-lg:[&_input]:min-h-11 max-lg:[&_table_a]:inline-flex max-lg:[&_table_a]:min-h-11 max-lg:[&_table_a]:items-center",
+          // The touch-target floor deliberately SKIPS checkboxes, radios and
+          // switches. Radix renders those as `<button role="checkbox">`, so the
+          // blanket `[&_button]` rule inflated a 14px checkbox into a 44×44
+          // bordered empty box — measured on Search Console → Queries at 375px,
+          // where every row read as an empty text input rather than a selection
+          // control. The control keeps its own size and gains the 44px tap area
+          // as an invisible ::before below.
+          "flex h-full min-h-0 flex-col gap-2 max-lg:[&_button:not([role=checkbox]):not([role=radio]):not([role=switch])]:min-h-11 max-lg:[&_button:not([role=checkbox]):not([role=radio]):not([role=switch])]:min-w-11 max-lg:[&_input]:min-h-11 max-lg:[&_table_a]:inline-flex max-lg:[&_table_a]:min-h-11 max-lg:[&_table_a]:items-center",
           className,
         )}
       >
@@ -1416,6 +1450,7 @@ function MatrxDataTableCore<T>({
                   {selection ? (
                     <th className="h-9 w-9 px-2 text-left align-middle">
                       <Checkbox
+                        className={CHECKBOX_TAP_AREA}
                         checked={
                           allOnPageSelected
                             ? true
@@ -1611,6 +1646,7 @@ function MatrxDataTableCore<T>({
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Checkbox
+                              className={CHECKBOX_TAP_AREA}
                               checked={isChecked}
                               disabled={
                                 !(selection.isRowSelectable?.(row) ?? true)
@@ -1794,19 +1830,50 @@ function MatrxDataTableCore<T>({
               </tbody>
             </table>
           </div>
-          {/* Mobile-only scroll affordance: right/left edge fades over the
-            scroll container (siblings, so they don't scroll away). The right
-            fade carries a chevron until the user reaches the end. Desktop
-            (>= sm) never shows them; `mobile="plain"` opts out entirely. */}
-          {mobileScroll && scrollHintRight ? (
+          {/* THE OFF-SCREEN COLUMNS MUST BE DISCOVERABLE — at EVERY width.
+            Edge fades over the scroll container (siblings, so they don't
+            scroll away), each carrying a chevron, shown from the MEASURED
+            overflow rather than a breakpoint.
+
+            This used to be `sm:hidden` and gated on `mobileScroll`, which is
+            false whenever `selection` is on. Measured 2026-08-25 on Search
+            Console → Queries at 1362px: 1,662px of table in a 1,284px
+            container — Position, Score and Level were entirely off the right
+            edge with NOTHING on screen saying so, because both gates were
+            closed. A desktop viewport is not a promise that everything fits.
+            `mobile="plain"` still opts out of the frozen identity column; it
+            does not opt out of knowing there is more to read. */}
+          {scrollHintLeft ? (
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-y-0 right-0 z-30 flex w-10 items-center justify-end rounded-r-md bg-gradient-to-l from-card via-card/60 to-transparent pr-0.5 sm:hidden"
+              className="pointer-events-none absolute inset-y-0 left-0 z-30 flex w-10 items-center justify-start rounded-l-md bg-gradient-to-r from-card via-card/60 to-transparent pl-0.5"
+            >
+              <ChevronLeft className="h-4 w-4 text-muted-foreground/70" />
+            </div>
+          ) : null}
+          {scrollHintRight ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 right-0 z-30 flex w-10 items-center justify-end rounded-r-md bg-gradient-to-l from-card via-card/60 to-transparent pr-0.5"
             >
               <ChevronRight className="h-4 w-4 text-muted-foreground/70" />
             </div>
           ) : null}
         </div>
+
+        {/* Said in words too — a gradient is a hint, not an answer, and a
+          reader who cannot see the Score column does not know to look for it.
+          In flow, under the table, so it never covers a row. */}
+        {scrollHintRight || scrollHintLeft ? (
+          <p className="shrink-0 px-0.5 text-[10px] text-muted-foreground">
+            More columns off-{scrollHintRight && !scrollHintLeft
+              ? "screen to the right"
+              : scrollHintLeft && !scrollHintRight
+                ? "screen to the left"
+                : "screen either side"}{" "}
+            — scroll the table sideways to read them.
+          </p>
+        ) : null}
 
         {defaultPageSize !== 0 && totalItems > 0 ? (
           <div className="shrink-0">

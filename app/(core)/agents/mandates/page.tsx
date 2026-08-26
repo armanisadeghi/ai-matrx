@@ -1,28 +1,29 @@
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { MandatesHeader } from "@/features/agents/mandates/components/MandatesHeader";
-import { MandateOverridesPage } from "@/features/agents/mandates/components/MandateOverridesPage";
+import { legacyFeatureRedirect } from "@/features/agents/mandates/browse/url-compat";
+import { MandatesBrowsePage } from "@/features/agents/mandates/browse/MandatesBrowsePage";
 
 /**
- * /agents/mandates — which agent (and which settings) runs each system step.
+ * /agents/mandates — every named job the platform delegates to an agent, on
+ * the canonical entity-list shell (2026-08-26 rework; vision in
+ * features/agents/mandates/FEATURE.md). Manage a mandate in place (row click →
+ * window panel) or on its dedicated route (/agents/mandates/[mandateKey]).
+ * Admin pin management lives at /administration/agents/mandates.
  *
- * The user/org-facing half of the Mandates system: browse mandates, see the
- * resolved agent with provenance, and override per-user or per-org (agent
- * swap or settings-only). Admin pin management lives at
- * /administration/agents/mandates. System-of-record:
- * common-docs/systems/mandates/FEATURE.md.
+ * Legacy deep links (`?feature=<domain>`, the pre-rework contract used by 25+
+ * doors) are normalized server-side onto the canonical `?filters=` form — a
+ * REAL select filter, not a text search.
  */
-export default async function MandatesRoute() {
+export default async function MandatesRoute({
+  searchParams,
+}: {
+  searchParams: Promise<{ feature?: string | string[]; filters?: string | string[] }>;
+}) {
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) redirect("/agents");
 
-  return (
-    <>
-      <PageHeader>
-        <MandatesHeader />
-      </PageHeader>
-      <MandateOverridesPage />
-    </>
-  );
+  const legacy = legacyFeatureRedirect(await searchParams);
+  if (legacy) redirect(legacy);
+
+  return <MandatesBrowsePage />;
 }
