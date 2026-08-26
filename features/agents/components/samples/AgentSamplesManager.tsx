@@ -41,7 +41,14 @@ import {
 } from "@/features/agents/samples/service";
 
 function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  if (error instanceof Error) return error.message;
+  // PostgrestError (the approve RPC's cap refusal rides this) is a plain
+  // object — String() renders "[object Object]".
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message: unknown }).message;
+    if (typeof message === "string" && message) return message;
+  }
+  return String(error);
 }
 
 const FRESHNESS_LABEL: Record<SampleFreshness, string> = {
@@ -370,7 +377,9 @@ function BorrowFromRunsSection({
         const final = await fetchRunFinalResponse(next);
         setFinalById((prev) => ({ ...prev, [next]: final }));
       } catch (error: unknown) {
-        toast.error(`Couldn't load the run's response: ${describeError(error)}`);
+        toast.error(
+          `Couldn't load the run's response: ${describeError(error)}`,
+        );
       }
     }
   }

@@ -368,11 +368,16 @@ export function AgentRunnerPage({
       /> */}
 
       {/* "Use a sample" chips — approved test cases prefill the composer via
-          the same input slices the user's own typing uses. */}
-      <AgentSampleStrip
-        agentId={agentId}
-        conversationId={activeConversationId}
-      />
+          the same input slices the user's own typing uses. The glass shell
+          header floats OVER this page's body, so the strip offsets itself
+          below it (mt, not pt: the strip's own border must sit under the
+          header line, not span the gap). */}
+      <div className="shrink-0 mt-[var(--header-height)]">
+        <AgentSampleStrip
+          agentId={agentId}
+          conversationId={activeConversationId}
+        />
+      </div>
 
       {/* Main conversation area */}
       <div className="flex-1 overflow-hidden flex justify-center min-w-0">
@@ -443,7 +448,12 @@ export function AgentRunnerPage({
         // via the AgentConversationColumn this page renders) — never a
         // parallel write path, so undo, the sacred draft protection in
         // `input-draft-protection.ts`, and the send flow all behave identically.
-        dispatch(setUserInputText({ conversationId: activeConversationId, text: next }));
+        dispatch(
+          setUserInputText({
+            conversationId: activeConversationId,
+            text: next,
+          }),
+        );
       },
 
       conversation_title: async (value: unknown) => {
