@@ -513,7 +513,6 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           id: noteId,
           title: label,
           resourceType: "note",
-          isOwner: !noteRecord?._sharedWithMe,
         }}
         extraSections={tabExtraSections}
         onMenuOpenChange={(open) => {

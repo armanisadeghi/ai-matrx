@@ -227,7 +227,6 @@ export function NoteSidebarRow({
         id: note.id,
         title: displayLabel(note.label),
         resourceType: "note",
-        isOwner: true,
       }}
       extraSections={buildNoteContextSections({
         ...menuCtx,

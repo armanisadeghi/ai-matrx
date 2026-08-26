@@ -381,7 +381,6 @@ export function ListDetailClient({
           id: list.list_id,
           title: list.list_name || "Untitled list",
           resourceType: "structured_list",
-          isOwner,
         }}
         extraSections={menuSections}
       >

@@ -94,7 +94,6 @@ export function ListCard({
         id: list.id,
         title: list.list_name,
         resourceType: "structured_list",
-        isOwner: true,
       }}
       enableFloatingIcon={false}
     >

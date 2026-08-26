@@ -1425,7 +1425,6 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           type: "rulebook",
           id: rulebook.id,
           title: rulebook.name,
-          isOwner: canEdit,
         }}
         extraSections={pageMenuSections}
       >
