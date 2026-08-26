@@ -126,8 +126,13 @@ export const SCALE_LEGEND: { value: RatingValue; label: string }[] = [
   { value: 5, label: "Outstanding" },
 ];
 
-// The three "add one at a time" list sections.
-export type ListSectionKey = "accomplishments" | "strengths" | "opportunities";
+// The four "add one at a time" narrative sections. Responsibilities belong
+// first because they establish the role against which the rest is evaluated.
+export type ListSectionKey =
+  | "responsibilities"
+  | "accomplishments"
+  | "strengths"
+  | "opportunities";
 
 export const LIST_SECTIONS: {
   key: ListSectionKey;
@@ -137,22 +142,29 @@ export const LIST_SECTIONS: {
   placeholder: string;
 }[] = [
   {
-    key: "accomplishments",
+    key: "responsibilities",
     index: 1,
+    title: "Job Responsibilities",
+    description: "The core responsibilities this role is accountable for.",
+    placeholder: "Describe a job responsibility…",
+  },
+  {
+    key: "accomplishments",
+    index: 2,
     title: "Accomplishments",
     description: "Concrete wins from this review period. Add them one at a time.",
     placeholder: "Describe an accomplishment…",
   },
   {
     key: "strengths",
-    index: 2,
+    index: 3,
     title: "Strengths",
     description: "What this person does consistently well.",
     placeholder: "Describe a strength…",
   },
   {
     key: "opportunities",
-    index: 3,
+    index: 4,
     title: "Opportunities for Improvement",
     description: "Where there is the most room to grow.",
     placeholder: "Describe an opportunity…",
@@ -171,6 +183,7 @@ export interface Review {
   reviewPeriod: string;
   dateOfEvaluation: string;
   // Lists
+  responsibilities: string[];
   accomplishments: string[];
   strengths: string[];
   opportunities: string[];
@@ -203,6 +216,7 @@ export function createBlankReview(): Review {
     dateOfHire: "",
     reviewPeriod: "",
     dateOfEvaluation: "",
+    responsibilities: [],
     accomplishments: [],
     strengths: [],
     opportunities: [],

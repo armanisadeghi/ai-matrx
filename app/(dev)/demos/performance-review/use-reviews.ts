@@ -25,9 +25,29 @@ function loadReviews(): Review[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as Review[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter((value): value is Partial<Review> => Boolean(value && typeof value === "object"))
+      .map((value) => ({
+        ...createBlankReview(),
+        ...value,
+        responsibilities: Array.isArray(value.responsibilities)
+          ? value.responsibilities.filter((item): item is string => typeof item === "string")
+          : [],
+        accomplishments: Array.isArray(value.accomplishments)
+          ? value.accomplishments.filter((item): item is string => typeof item === "string")
+          : [],
+        strengths: Array.isArray(value.strengths)
+          ? value.strengths.filter((item): item is string => typeof item === "string")
+          : [],
+        opportunities: Array.isArray(value.opportunities)
+          ? value.opportunities.filter((item): item is string => typeof item === "string")
+          : [],
+      }));
+  } catch (error) {
+    console.error("Unable to load saved performance reviews", error);
     return [];
   }
 }
@@ -36,8 +56,8 @@ function saveReviews(reviews: Review[]) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-  } catch {
-    /* quota or private mode — silently ignore for the demo */
+  } catch (error) {
+    console.error("Unable to save performance reviews", error);
   }
 }
 
@@ -82,28 +102,33 @@ export function useReviews(): UseReviews {
 
   // Hydrate once on mount (client only) to avoid SSR mismatch.
   useEffect(() => {
-    const loaded = loadReviews();
-    if (loaded.length === 0) {
-      const blank = createBlankReview();
-      setReviews([blank]);
-      setActiveId(blank.id);
-    } else {
-      setReviews(loaded);
-      setActiveId(loaded[0].id);
-    }
-    setHydrated(true);
+    const timer = setTimeout(() => {
+      const loaded = loadReviews();
+      if (loaded.length === 0) {
+        const blank = createBlankReview();
+        setReviews([blank]);
+        setActiveId(blank.id);
+      } else {
+        setReviews(loaded);
+        setActiveId(loaded[0].id);
+      }
+      setHydrated(true);
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
   // Debounced persistence whenever reviews change (after hydration).
   useEffect(() => {
     if (!hydrated) return;
-    setSaveState("saving");
+    const stateTimer = setTimeout(() => setSaveState("saving"), 0);
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       saveReviews(reviews);
       setSaveState("saved");
     }, 400);
     return () => {
+      clearTimeout(stateTimer);
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [reviews, hydrated]);
@@ -287,7 +312,7 @@ export function useReviews(): UseReviews {
           : null;
     }
 
-    // Completion: header fields + 3 lists + all-rated + overall.
+    // Completion: header fields + narrative sections + all-rated + overall.
     let done = 0;
     let total = 0;
     const headerFields: (keyof Review)[] = [
@@ -304,7 +329,12 @@ export function useReviews(): UseReviews {
       total += 1;
       if (active && String(active[f] ?? "").trim()) done += 1;
     }
-    for (const s of ["accomplishments", "strengths", "opportunities"] as const) {
+    for (const s of [
+      "responsibilities",
+      "accomplishments",
+      "strengths",
+      "opportunities",
+    ] as const) {
       total += 1;
       if (active && active[s].length > 0) done += 1;
     }
