@@ -64,6 +64,8 @@ export type KioskPunchView =
   | { kind: "confirmed"; result: KioskPunchResult }
   /** §3.4's real second punch. ONE door, and never a silent write. */
   | { kind: "duplicate"; result: KioskPunchResult }
+  /** Behind that one door. See `KioskDisputeInstructions` for why it instructs rather than writes. */
+  | { kind: "disputing"; result: KioskPunchResult }
   /** The server's own sentence, verbatim. Never names anyone who did not authenticate. */
   | { kind: "refused"; message: string }
   | { kind: "clock-wrong" }
@@ -77,6 +79,8 @@ export interface KioskPunch {
   submit: (pin: string) => void;
   /** 🚨 Same intent, same key — one more attempt at the SAME punch, never a second one. */
   retry: (pin: string) => void;
+  /** The duplicate card's ONE door. Opens instructions; it never writes a second punch. */
+  dispute: () => void;
   /** Back to idle from anywhere. The tablet must never sit on a person's name. */
   dismiss: () => void;
 }
@@ -184,6 +188,11 @@ export function useKioskPunch({
       if (!intent) return;
       void send(retryPunchIntent(intent), pin);
     },
+
+    dispute: () =>
+      setView((current) =>
+        current.kind === "duplicate" ? { kind: "disputing", result: current.result } : current,
+      ),
 
     dismiss: () => {
       setIntent(null);

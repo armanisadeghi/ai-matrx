@@ -75,8 +75,17 @@ export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): Kios
   const [view, setView] = useState<KioskDeviceView>({ kind: "loading" });
   const [skew, setSkew] = useState<KioskClockSkew | null>(null);
   const [offline, setOffline] = useState(false);
+  /**
+   * Seconds between the re-checks a *pending* device makes while it waits to be trusted. The
+   * server's own `heartbeatSeconds`, learned from the first authenticate response — which carries
+   * the config even when it declines to issue a token. Null until then, and the poll simply does
+   * not run: 🚨 there is no fallback constant, because a fallback is how a configured interval
+   * silently becomes something else on the one tablet nobody is watching.
+   */
+  const [trustPollSeconds, setTrustPollSeconds] = useState<number | null>(null);
+  const [trustPollToken, setTrustPollToken] = useState(0);
 
-  // ── Authenticate once, on mount. Never re-run on a brick. ────────────────────────────────────
+  // ── Authenticate on mount, and again on each trust re-check while pending ───────────────────
   useEffect(() => {
     const identity = readKioskIdentity();
     if (!identity || identity.deviceId !== deviceId) {
@@ -89,6 +98,7 @@ export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): Kios
       .then((session) => {
         if (!live) return;
         setSkew(measureKioskSkew(session.serverTime, Date.now(), session.config.maxClockSkewSeconds));
+        setTrustPollSeconds(session.config.heartbeatSeconds);
 
         if (isBrickingTrust(session.trustState)) {
           setView({ kind: "bricked", trustState: session.trustState });
@@ -132,7 +142,22 @@ export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): Kios
     return () => {
       live = false;
     };
-  }, [deviceId, mockCase]);
+  }, [deviceId, mockCase, trustPollToken]);
+
+  // ── While pending: re-check on its own, so nobody has to come back and touch the tablet ─────
+  //
+  // §3.3's flowchart has the waiting screen resume the moment an administrator sets `trusted`. The
+  // screen already promises it will start working by itself; this is that promise. 🚨 It runs ONLY
+  // in `awaiting-trust` — a bricked device never re-checks anything.
+  const awaitingTrust = view.kind === "awaiting-trust";
+  useEffect(() => {
+    if (!awaitingTrust || !trustPollSeconds) return;
+    const id = window.setInterval(
+      () => setTrustPollToken((n) => n + 1),
+      trustPollSeconds * 1000,
+    );
+    return () => window.clearInterval(id);
+  }, [awaitingTrust, trustPollSeconds]);
 
   // ── The heartbeat. Re-checks trust and re-syncs the clock, at the server's own interval. ─────
   const ready = view.kind === "ready" ? view : null;

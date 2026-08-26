@@ -1,207 +1,197 @@
 /**
- * features/hr/time/kiosk/KioskPunchSurface.tsx — route 36 `/kiosk/[deviceId]`.
+ * features/hr/time/kiosk/KioskPunchSurface.tsx — route 36 `/kiosk/[deviceId]` (L3-67 … L3-71).
  *
- * The whole kiosk punch experience: idle → choose an action → PIN → the server answers → a card →
- * back to idle. Every screen it can be on is in `KioskScreens.tsx` or `KioskCards.tsx`, and the
- * frame it sits in has no way out (`KioskFrame.tsx`).
+ * The whole kiosk, assembled: authenticate the device, hold the session, heartbeat, and take one
+ * punch at a time. Every rule it obeys is stated where it is implemented — this file's job is to be
+ * exhaustive over the two unions (`KioskDeviceView` × `KioskPunchView`) and to add nothing.
  *
- * 🚨 **NO EMPLOYEE LIST, ANYWHERE.** The idle screen names the location and nothing else. There is
- * no "who's clocked in", no recent-punch feed, no headcount. All three would be roster disclosures
- * on an unattended screen.
+ * 🚨 **The device states outrank the punch states, always.** A brick is rendered instead of
+ * everything else, including a confirmation that had just appeared: a device revoked mid-punch is a
+ * device that stops, not one that finishes politely.
  *
- * 🚨 **THE ACTION IS CHOSEN BEFORE THE PIN, AND ILLEGAL KINDS ARE STILL OFFERED.** This is the one
- * place the widget's "illegal transitions are not rendered" rule cannot apply: the kiosk does not
- * know who is standing there until the PIN is accepted, so it cannot know their clock state. The
- * server refuses an illegal kind for that employee's state (§1.2) and the refusal renders verbatim.
- * The contract carries this; the courtesy cannot.
+ * 🚨 **No app shell, no nav, no session, no AI, no doors out** (L3-65). The `(kiosk)` layout gives
+ * this surface `<Providers>` and nothing else — no `getServerAuth`, no `AppShell`, no `PageHeader`
+ * (there is no shell to portal a header into). `no-dead-ends` names the kiosk as its one deliberate
+ * exception; the absence of exits here is the security property, not an oversight.
  */
 
 "use client";
 
-import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
-import type { KioskDeviceSession, PunchKind } from "@/features/hr/time/api/types";
+import { geoCaptureBeforeNotice } from "@/features/hr/time/clock/geoCapture";
 
-import { punchKindPresentation } from "../clock/punchVocabulary";
-import {
-  KioskConfirmationCard,
-  KioskCorrectionRequestedScreen,
-  KioskDuplicateCard,
-} from "./KioskCards";
+import { KioskFrame } from "./KioskFrame";
+import { KioskIdleScreen } from "./KioskIdleScreen";
 import { KioskPinPad } from "./KioskPinPad";
 import {
-  KioskOfflineScreen,
-  KioskSkewRefusedScreen,
-} from "./KioskScreens";
-import { KIOSK_SKEW_REFUSAL, type KioskClockSkew } from "./kioskSkew";
+  KioskConfirmationCard,
+  KioskDisputeInstructions,
+  KioskDuplicateCard,
+} from "./KioskResultCards";
+import {
+  KioskAwaitingTrustScreen,
+  KioskBrickScreen,
+  KioskClockWrongCard,
+  KioskDeviceRefusedScreen,
+  KioskOfflineCard,
+  KioskRefusedCard,
+  KioskUnpairedScreen,
+} from "./KioskStateScreens";
+import { useKioskDevice } from "./useKioskDevice";
 import { useKioskPunch } from "./useKioskPunch";
 
-/**
- * The acts a wall clock offers. Clock in/out are the primary pair; the four break kinds sit behind
- * them at a smaller weight because they are a fraction of the traffic.
- */
-const PRIMARY_KINDS: PunchKind[] = ["clock_in", "clock_out"];
-const BREAK_KINDS: PunchKind[] = ["break_start", "break_end", "meal_start", "meal_end"];
-
-/**
- * The auto-dismiss countdown. `seconds` is the knob `kiosk_confirm_dismiss_seconds` from the
- * device's own config — never a constant. Returns the seconds left, and fires `onDone` at zero.
- */
-function useAutoDismiss(active: boolean, seconds: number, onDone: () => void): number {
-  const [remaining, setRemaining] = useState(seconds);
-
-  useEffect(() => {
-    if (!active) {
-      setRemaining(seconds);
-      return;
-    }
-    setRemaining(seconds);
-    const id = window.setInterval(() => {
-      setRemaining((current) => {
-        if (current <= 1) {
-          window.clearInterval(id);
-          onDone();
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 1000);
-    return () => window.clearInterval(id);
-    // `onDone` is stable enough for this purpose: it only ever returns the surface to idle.
-  }, [active, seconds, onDone]);
-
-  return remaining;
-}
-
 export function KioskPunchSurface({
-  session,
   deviceId,
-  skew,
   mockCase,
 }: {
-  session: KioskDeviceSession;
   deviceId: string;
-  skew: KioskClockSkew | null;
   mockCase?: HrFixtureCase;
 }) {
-  const punch = useKioskPunch(session, deviceId, skew, mockCase);
-  const { view } = punch;
+  const device = useKioskDevice(deviceId, mockCase);
 
-  const dismissing = view.kind === "confirmed" || view.kind === "correction";
-  const remaining = useAutoDismiss(
-    dismissing,
-    session.config.confirmDismissSeconds,
-    punch.toIdle,
-  );
-
-  if (view.kind === "offline") {
+  // The device states are terminal for the surface — nothing below them renders.
+  if (device.view.kind === "loading") {
     return (
-      <div className="flex flex-col items-center gap-8">
-        <KioskOfflineScreen />
-        <Button onClick={punch.toIdle} className="min-h-[72px] px-10 text-xl">
-          Back
-        </Button>
-      </div>
+      <KioskFrame>
+        <div className="flex items-center justify-center">
+          <Loader2 className="size-12 animate-spin text-muted-foreground" />
+        </div>
+      </KioskFrame>
     );
   }
-
-  if (view.kind === "skew-refused") {
+  if (device.view.kind === "unpaired") return <KioskUnpairedScreen />;
+  if (device.view.kind === "bricked") return <KioskBrickScreen trustState={device.view.trustState} />;
+  if (device.view.kind === "refused") {
+    return <KioskDeviceRefusedScreen message={device.view.message} />;
+  }
+  if (device.view.kind === "awaiting-trust") {
     return (
-      <div className="flex flex-col items-center gap-8">
-        <KioskSkewRefusedScreen message={KIOSK_SKEW_REFUSAL} />
-        <Button onClick={punch.toIdle} className="min-h-[72px] px-10 text-xl">
-          Back
-        </Button>
-      </div>
-    );
-  }
-
-  if (view.kind === "refused") {
-    return (
-      <div className="flex flex-col items-center gap-8 text-center">
-        {/* Verbatim from the server. Never elaborated — elaboration is the oracle. */}
-        <h1 className="max-w-lg text-3xl font-semibold text-foreground">{view.message}</h1>
-        <Button onClick={punch.toIdle} className="min-h-[72px] px-10 text-xl">
-          Try again
-        </Button>
-      </div>
-    );
-  }
-
-  if (view.kind === "confirmed") {
-    return <KioskConfirmationCard result={view.result} secondsRemaining={remaining} />;
-  }
-
-  if (view.kind === "correction") {
-    return <KioskCorrectionRequestedScreen result={view.result} secondsRemaining={remaining} />;
-  }
-
-  if (view.kind === "duplicate") {
-    return (
-      <KioskDuplicateCard
-        result={view.result}
-        onDispute={punch.dispute}
-        onDismiss={punch.toIdle}
+      <KioskAwaitingTrustScreen
+        deviceId={device.view.identity.deviceId}
+        organizationName={device.view.identity.organizationDisplayName}
+        locationName={device.view.identity.locationName}
       />
     );
   }
 
-  if (view.kind === "pin" || view.kind === "submitting") {
-    return (
-      <KioskPinPad
-        pin={punch.pin}
-        pinLength={session.config.pinLength}
-        busy={view.kind === "submitting"}
-        actionLabel={punchKindPresentation(view.punchKind).label}
-        onChange={punch.setPin}
-        onCancel={punch.cancel}
-      />
-    );
-  }
-
-  // Idle. The screen a tablet shows for eight hours a day: an invitation and nothing else.
   return (
-    <section className="flex flex-col items-center gap-10">
-      <h1 className="text-center text-4xl font-semibold text-foreground">
-        Tap to clock in or out
-      </h1>
-
-      <div className="grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
-        {PRIMARY_KINDS.map((kind) => {
-          const presentation = punchKindPresentation(kind);
-          const Icon = presentation.icon;
-          return (
-            <Button
-              key={kind}
-              type="button"
-              onClick={() => punch.choose(kind)}
-              className="min-h-[128px] gap-4 text-2xl font-semibold"
-            >
-              <Icon className="size-8" />
-              {presentation.label}
-            </Button>
-          );
-        })}
-      </div>
-
-      <div className="grid w-full grid-cols-2 gap-4">
-        {BREAK_KINDS.map((kind) => {
-          const presentation = punchKindPresentation(kind);
-          return (
-            <Button
-              key={kind}
-              type="button"
-              variant="outline"
-              onClick={() => punch.choose(kind)}
-              className="min-h-[80px] text-lg"
-            >
-              {presentation.label}
-            </Button>
-          );
-        })}
-      </div>
-    </section>
+    <KioskReadySurface
+      deviceId={deviceId}
+      device={device}
+      view={device.view}
+      mockCase={mockCase}
+    />
   );
+}
+
+/**
+ * Split out so the punch hook mounts only against a **proven** trusted session — a hook called
+ * conditionally is a React error, and a session narrowed by an `if` two components up is a session
+ * the type system stops helping with.
+ */
+function KioskReadySurface({
+  deviceId,
+  device,
+  view,
+  mockCase,
+}: {
+  deviceId: string;
+  device: ReturnType<typeof useKioskDevice>;
+  view: Extract<ReturnType<typeof useKioskDevice>["view"], { kind: "ready" }>;
+  mockCase?: HrFixtureCase;
+}) {
+  const punch = useKioskPunch({
+    deviceId,
+    session: view.session,
+    skew: device.skew,
+    offline: device.offline,
+    mockCase,
+  });
+
+  const { config } = view.session;
+  // §4.9's before-the-punch notice, from the DEVICE's config rather than a clock state — the kiosk
+  // has no subject to ask about, but capture posture is a property of the tablet, not the person.
+  const captureNotice = geoCaptureBeforeNotice({
+    geoRequested: config.requireGeo,
+    photoRequested: config.requirePhoto,
+    maxGeoAccuracyM: null,
+  });
+
+  const frame = (children: ReactNode) => (
+    <KioskFrame
+      organizationName={view.identity.organizationDisplayName}
+      locationName={config.locationName ?? view.identity.locationName}
+    >
+      {children}
+    </KioskFrame>
+  );
+
+  // 🚨 Offline outranks whatever the punch view holds: a tablet that cannot reach the server must
+  // say so on the idle screen too, so nobody starts a punch that cannot land (L3-71).
+  if (device.offline && (punch.view.kind === "idle" || punch.view.kind === "offline")) {
+    return frame(<KioskOfflineCard />);
+  }
+
+  switch (punch.view.kind) {
+    case "idle":
+      return frame(
+        <KioskIdleScreen
+          skew={device.skew}
+          busy={false}
+          onChoose={punch.begin}
+          captureNotice={captureNotice}
+        />,
+      );
+
+    case "pin":
+      return frame(
+        <KioskPinPad
+          punchKind={punch.view.punchKind}
+          pinLength={config.pinLength}
+          busy={false}
+          onSubmit={punch.submit}
+          onCancel={punch.dismiss}
+        />,
+      );
+
+    // 🚨 Visibly unfinished, and deliberately NOT a confirmation (L3-68). Nothing on this screen
+    // says a punch happened, because at this instant nothing is known to have happened.
+    case "submitting":
+      return frame(
+        <div className="flex flex-col items-center gap-6">
+          <Loader2 className="size-16 animate-spin text-muted-foreground" />
+          <p className="text-3xl text-foreground">Recording…</p>
+          <p className="text-xl text-muted-foreground">Wait for the confirmation before you go.</p>
+        </div>,
+      );
+
+    case "confirmed":
+      return frame(<KioskConfirmationCard result={punch.view.result} />);
+
+    case "duplicate":
+      return frame(
+        <KioskDuplicateCard
+          result={punch.view.result}
+          onAcknowledge={punch.dismiss}
+          onDispute={() => punch.dispute()}
+        />,
+      );
+
+    case "disputing":
+      return frame(
+        <KioskDisputeInstructions result={punch.view.result} onDone={punch.dismiss} />,
+      );
+
+    case "refused":
+      return frame(<KioskRefusedCard message={punch.view.message} />);
+
+    case "clock-wrong":
+      return frame(<KioskClockWrongCard />);
+
+    case "offline":
+      return frame(<KioskOfflineCard />);
+  }
 }
