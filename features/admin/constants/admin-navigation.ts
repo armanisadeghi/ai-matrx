@@ -602,7 +602,10 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
       {
         name: "Coverage engines",
         iconName: "BrainCircuit",
-        destinations: [destination("/administration/marketing/run-console")],
+        destinations: [
+          destination("/administration/marketing/run-console"),
+          destination("/administration/marketing/seo-operations"),
+        ],
       },
     ],
   },
