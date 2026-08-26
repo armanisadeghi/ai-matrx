@@ -2,7 +2,7 @@
 
 **One-liner:** Separate the platform suggestion catalog from brand-owned offerings and explicit site availability so no site can display or assign an offering it has not selected.
 **Change types:** canonicalize · split · migrate · modify
-**Status:** GO received; canonical tables, backfill, and operation RPCs applied live and ledgered 2026-08-25. Frontend/Python consumer cutover remains in progress.
+**Status:** GO received; target tables, backfill, and operation RPCs applied live and ledgered 2026-08-25. Frontend/Python consumer cutover remains in progress.
 
 ## 1. Scope — the cluster
 
