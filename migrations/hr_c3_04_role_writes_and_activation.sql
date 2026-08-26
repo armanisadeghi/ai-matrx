@@ -53,6 +53,11 @@
 --    stable for the window, and auditable afterwards. Full reasoning at the call site.
 --    OWED: §1.3b owes one sentence distinguishing absolute from relative scopes on delegation.
 --
+-- 6. 🚨 §1.1's `crm.ensure_user_party` IS THE WRONG HELPER AND ACTIVATION DOES NOT CALL IT.
+--    That function is hard-bound to the AI Matrx org and provisions parties in OUR tenant. An
+--    activating employer needs a person in THEIR org. Full reasoning at the call site.
+--    OWED: SPEC-ACCESS §1.1.
+--
 -- 4. ACTIVATION SETS `created_by` ON THE EMPLOYMENT TO THE NOMINEE'S LOGIN, NOT THE CALLER'S.
 --    §2.1 makes `created_by` the subject's `hr.employee.login_user_id` so the kernel's owner arm
 --    answers a self-read first and costs nothing. `platform._stamp_actor` uses
@@ -674,8 +679,31 @@ begin
   values (v_org, coalesce(p_payload ->> 'department_name','General'))
   returning id into v_dept;
 
-  -- the nominee's person, via crm.ensure_user_party
-  v_party := crm.ensure_user_party(v_nominee_user, v_org);
+  -- 🚨 §1.1 SAYS "party via crm.ensure_user_party" AND THAT FUNCTION CANNOT DO THIS JOB.
+  -- Read live: crm.ensure_user_party(p_user_id, p_source) is hard-bound to the AI MATRX org
+  -- ('5dc930e9-…' as a `constant` in its body) and refuses to run unless that exact tenant is
+  -- present — it provisions a party in OUR CRM tenant, for OUR user records. An employer being
+  -- activated needs a person row in THEIR OWN organization, and hr.employee enforces exactly that
+  -- (employee_party_unique_per_org, and the org-scoped FK). Calling it here would either fail or
+  -- silently attach a customer's first employee to a party in AI Matrx's tenant.
+  -- So the party is created in the TARGET org, reusing an existing claimed party there if the
+  -- nominee already has one. OWED: SPEC-ACCESS §1.1's "party via crm.ensure_user_party" clause.
+  select pt.id into v_party
+    from crm.party pt
+   where pt.organization_id = v_org and pt.claimed_by = v_nominee_user
+     and pt.deleted_at is null and pt.canonical_id is null
+   limit 1;
+  if v_party is null then
+    insert into crm.party (organization_id, party_kind, display_name, record_class, claimed_by,
+                           claimed_at, source, source_detail, visibility)
+    values (v_org, 'person',
+            coalesce(p_payload ->> 'display_name',
+                     coalesce(p_payload ->> 'legal_first_name','First') || ' ' ||
+                     coalesce(p_payload ->> 'legal_last_name','Last')),
+            'contact', v_nominee_user, now(), 'user_registration', 'hr_activation',
+            'internal'::platform.visibility)
+    returning id into v_party;
+  end if;
 
   insert into hr.employee (organization_id, party_id, employee_number, legal_first_name,
                            legal_last_name, display_name, login_user_id, primary_location_id)
