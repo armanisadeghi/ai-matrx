@@ -113,6 +113,19 @@ describe("buildShapePlan", () => {
     }
   });
 
+  it("rejects the reserved directive_v namespace with its own message (A-10.4)", () => {
+    // A well-formed token that claims the Kind Directives namespace — the
+    // generic pattern accepts it, the reservation must not.
+    const plan = buildShapePlan(PROPOSAL, "directive_v1_reference_note");
+    expect(isShapePlanFailure(plan)).toBe(true);
+    if (isShapePlanFailure(plan)) {
+      expect(plan.errors[0]).toContain('reserved "directive_v" namespace');
+    }
+    // A malformed near-miss inside the namespace is still refused.
+    const nearMiss = buildShapePlan(PROPOSAL, "directive_vx");
+    expect(isShapePlanFailure(nearMiss)).toBe(true);
+  });
+
   it("surfaces dropped CONSTRAINT keywords as lossy-conversion warnings", () => {
     const plan = buildShapePlan(
       {

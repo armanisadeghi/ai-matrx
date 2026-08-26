@@ -339,7 +339,9 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
               }
           : slugStatus === "invalid"
             ? {
-                text: "Lowercase letters, digits and underscores only",
+                text: slug.startsWith("directive_v")
+                  ? "The directive_v namespace is reserved for the Kind Directives protocol — pick a different name"
+                  : "Lowercase letters, digits and underscores only",
                 tone: "bad",
               }
             : { text: "Used as the __kind identifier", tone: "muted" };

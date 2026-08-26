@@ -48,6 +48,7 @@ import {
   type LegResult,
 } from "@ai-matrx/content-ir";
 import { RESERVED_SHAPE_SLUGS } from "@/features/content-ir/studio/constants";
+import { isReservedDirectiveSlug } from "@/features/content-ir/directives/grammar";
 
 import type { ShapeWriteClient } from "@/features/content-ir/studio/shape-authoring-service";
 
@@ -65,6 +66,16 @@ export interface ShapeProposalInput {
 
 export const KIND_SLUG_PATTERN = /^[a-z][a-z0-9_]*$/;
 
+/**
+ * The `directive_v` namespace is RESERVED for the Kind Directives protocol —
+ * a user-authored shape may never claim it (that reservation is what makes the
+ * kind `transcript` and the directive `directive_v1_reference_transcript`
+ * collision-free). This is the FRONTEND authoring gate the grammar's
+ * `isReservedDirectiveSlug` doc promises; the server-side registrar
+ * (`ShapeSpec.__post_init__` in aidream) enforces the same reservation on its
+ * side.
+ */
+
 /** "Customer Feedback Report" → "customer_feedback_report". */
 export function deriveKindSlug(name: string): string {
   return name
@@ -78,7 +89,7 @@ export function deriveKindSlug(name: string): string {
 }
 
 export function isValidKindSlug(slug: string): boolean {
-  return KIND_SLUG_PATTERN.test(slug);
+  return KIND_SLUG_PATTERN.test(slug) && !isReservedDirectiveSlug(slug);
 }
 
 // ---------------------------------------------------------------------------
@@ -128,6 +139,13 @@ export function buildShapePlan(
   proposal: ShapeProposalInput,
   slug: string,
 ): ShapePlan | ShapePlanFailure {
+  if (isReservedDirectiveSlug(slug)) {
+    return {
+      errors: [
+        `"${slug}" sits in the reserved "directive_v" namespace — those slugs belong to the Kind Directives protocol and can never name a user Shape. Pick a name that does not start with "directive_v".`,
+      ],
+    };
+  }
   if (!isValidKindSlug(slug)) {
     return {
       errors: [
@@ -182,6 +200,21 @@ export function buildShapePlan(
     rootPlan,
     ...plan.kinds.filter((k) => k.kind !== slug),
   ];
+
+  // Child kinds derive their slugs from the root name + field names, so a
+  // reserved-namespace child is reachable even when the root is not (e.g. a
+  // root "directive" with a field "v1_note"). The reservation gates EVERY
+  // planned slug, not only the one the user typed.
+  const reservedChildren = planned
+    .map((k) => k.kind)
+    .filter((k) => isReservedDirectiveSlug(k));
+  if (reservedChildren.length > 0) {
+    return {
+      errors: [
+        `${reservedChildren.map((k) => `"${k}"`).join(", ")} would sit in the reserved "directive_v" namespace — those slugs belong to the Kind Directives protocol and can never name a user Shape. Rename the schema or the offending nested field.`,
+      ],
+    };
+  }
 
   if (planned.length > MAX_PLANNED_KINDS_PER_PROPOSAL) {
     return {
@@ -424,6 +457,18 @@ export async function createShapeFromPlan(
   options: CreateShapeOptions,
 ): Promise<CreateShapeResult> {
   const { client, organizationId, plan, sample } = options;
+
+  // Write-time belt for the reserved-namespace gate: buildShapePlan refuses a
+  // reserved slug, but a plan is plain data — anything that assembled one
+  // another way still cannot register into the Kind Directives namespace.
+  const reserved = plan.planned
+    .map((k) => k.kind)
+    .filter((k) => isReservedDirectiveSlug(k));
+  if (reserved.length > 0) {
+    throw new Error(
+      `Refusing to register ${reserved.map((k) => `"${k}"`).join(", ")} — the "directive_v" namespace is reserved for the Kind Directives protocol.`,
+    );
+  }
 
   const defRows: KindDefinitionInsert[] = plan.planned.map((k) => ({
     kind: k.kind,

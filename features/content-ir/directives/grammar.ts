@@ -134,6 +134,11 @@ export function isDirectiveClass(value: unknown): value is DirectiveClass {
  * Deliberately broader than {@link parseDirectiveSlug}: a MALFORMED
  * `directive_v…` slug is still reserved, so authoring gates reject it instead
  * of letting a near-miss through as an ordinary kind.
+ *
+ * The gates that consume this: the FE shape-authoring path
+ * (`features/agents/components/schema-proposal/create-shape.ts` —
+ * `isValidKindSlug`, `buildShapePlan`, and a write-time belt in
+ * `createShapeFromPlan`) and, server-side, aidream's `ShapeSpec` registrar.
  */
 export function isReservedDirectiveSlug(slug: unknown): slug is string {
   return typeof slug === "string" && slug.startsWith(RESERVED_PREFIX);

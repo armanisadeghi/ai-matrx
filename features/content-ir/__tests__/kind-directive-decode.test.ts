@@ -134,14 +134,32 @@ describe("the retired 4-key shell — stored content only", () => {
     ).toBe("directive_v1_action_context_groom");
   });
 
-  it("REFUSES an old shell that does not map onto the grammar", () => {
+  it("REFUSES an old shell whose GENUINE directive claim cannot be honored", () => {
+    // A known retired kind with a type that is not a legal noun IS a directive
+    // claim — refusing it loudly is correct.
     expect(() =>
       decodeDirective({
         matrx_version: 1,
-        kind: "not_a_kind",
-        type: "note",
+        kind: "reference",
+        type: "Not A Noun",
         items: [],
       }),
     ).toThrow(/does not map onto the Kind Directives grammar/);
+  });
+
+  it("A-10.3: a non-directive object carrying matrx_version is NOT a directive — null, never an alarm", () => {
+    // The retired sentinel alone is not a directive claim. Before this fix,
+    // every one of these THREW a user-visible DirectiveDecodeError.
+    expect(decodeDirective({ matrx_version: 2, payload: { x: 1 } })).toBeNull();
+    expect(
+      decodeDirective({ matrx_version: 1, kind: "not_a_kind", type: "note", items: [] }),
+    ).toBeNull();
+    expect(decodeDirective({ matrx_version: 1, kind: 7, type: "note" })).toBeNull();
+    // And the forgiving seam agrees without calling onError.
+    const reasons: string[] = [];
+    expect(
+      tryDecodeDirective({ matrx_version: 2, payload: { x: 1 } }, (m) => reasons.push(m)),
+    ).toBeNull();
+    expect(reasons).toEqual([]);
   });
 });
