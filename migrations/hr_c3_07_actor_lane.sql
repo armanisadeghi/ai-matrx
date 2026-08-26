@@ -789,7 +789,7 @@ begin
     jsonb_build_object('email', p_delivery_address, 'verification_target', p_delivery_address,
                        'name', rq.requester_name));
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   -- 🚨 THE LIVE STATE VOCABULARY HAS NO `approved`, and it does not need one: HR approving the
   -- request IS minting the token, and the row's next honest state is `preparing`. The live CHECK
   -- admits received | verifying | preparing | delivered | denied | partially_delivered — a state
@@ -968,7 +968,7 @@ begin
       p_employment_id);
   end if;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   select id into v_prev from hr.employment_pin
    where employment_id = p_employment_id and revoked_at is null and deleted_at is null;
   if v_prev is not null then
@@ -1016,7 +1016,7 @@ begin
     return jsonb_build_object('ok', false, 'reason','locked', 'locked_until', p.locked_until);
   end if;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   if p.pin_hash = extensions.crypt(coalesce(p_pin,''), p.pin_hash) then
     update hr.employment_pin
        set failed_attempt_count = 0, locked_until = null, last_used_at = now() where id = p.id;
@@ -1054,7 +1054,7 @@ begin
   v_ttl := (hr._knob('hr.time_and_attendance','kiosk_session_ttl_hours') #>> '{}')::integer;
   v_tok := encode(extensions.gen_random_bytes(32), 'hex');
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   insert into hr.kiosk_session
     (organization_id, kiosk_device_id, session_token_hash, auth_method, expires_at)
   values (d.organization_id, d.id, encode(extensions.digest(v_tok,'sha256'),'hex'), 'device',
@@ -1096,7 +1096,7 @@ begin
 
   v_ver := hr.verify_employment_pin(v_empl, p_employment_pin);
   if not (v_ver ->> 'ok')::boolean then
-    perform set_config('hr.privileged_write','on',true);
+    perform hr.arm_write();
     update hr.kiosk_session set failed_attempt_count = failed_attempt_count + 1 where id = s.id;
     -- the reason is uniform to the kiosk; the true reason is on the PIN row
     return jsonb_build_object('ok', false, 'reason',
@@ -1104,7 +1104,7 @@ begin
       'locked_until', v_ver -> 'locked_until');
   end if;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   update hr.kiosk_session set employment_id = v_empl, auth_method = 'pin', started_at = now()
    where id = s.id;
 
@@ -1125,7 +1125,7 @@ begin
   if not found or s.expires_at <= now() then
     return jsonb_build_object('ok', false, 'reason','session_not_valid');
   end if;
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   update hr.kiosk_device set last_seen_at = now() where id = s.kiosk_device_id;
   return jsonb_build_object('ok', true, 'kiosk_session_id', s.id, 'expires_at', s.expires_at,
                             'employment_id', s.employment_id);
@@ -1142,7 +1142,7 @@ begin
    where session_token_hash = encode(extensions.digest(coalesce(p_session_token,''),'sha256'),'hex')
      and ended_at is null and deleted_at is null;
   if not found then return jsonb_build_object('ok', false, 'reason','session_not_valid'); end if;
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   -- the live end_reason vocabulary is completed | expired | timeout | revoked | device_suspended |
   -- superseded; anything else is normalised rather than refused, because a kiosk closing a session
   -- must never fail on a word

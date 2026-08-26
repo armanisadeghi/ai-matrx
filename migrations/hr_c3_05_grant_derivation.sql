@@ -247,7 +247,7 @@ declare
   v_ins int := 0; v_upd int := 0; v_del int := 0; v_same int := 0;
   d record; v_perm uuid; v_changed boolean;
 begin
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
 
   create temp table _hr_desired (
     resource_type text, resource_id uuid, grantee_user_id uuid, grantee_organization_id uuid,

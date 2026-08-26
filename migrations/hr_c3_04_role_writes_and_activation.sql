@@ -221,7 +221,7 @@ begin
     join hr.employee e on e.id = em.employee_id
    where e.login_user_id = v_uid and em.organization_id = v_org and em.deleted_at is null limit 1;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   insert into hr.role_assignment
     (organization_id, employment_id, role_key, scope_kind, scope_id, scope_employment_ids,
      effective_from, effective_to, granted_by_employment_id, granted_by_user_id, reason)
@@ -266,7 +266,7 @@ begin
       ARRAY[p_assignment_id]);
   end if;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   -- never a delete: the immutable-history rule (AD-8). The row stays and stops being active.
   update hr.role_assignment
      set is_active = false, revoked_at = now(), revoked_reason = p_reason,
@@ -337,7 +337,7 @@ begin
       'the caller holds neither the authority.grant capability nor org ownership', v_holder_emp);
   end if;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   insert into hr.approval_authority
     (organization_id, holder_kind, holder_id, action_type, scope_kind, scope_id,
      scope_employment_ids, limits, rank, effective_from, effective_to, source,
@@ -382,7 +382,7 @@ begin
       'the caller holds neither authority.grant nor org ownership', v_holder_emp, ARRAY[p_authority_id]);
   end if;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   update hr.approval_authority
      set is_active = false, effective_to = least(coalesce(effective_to, current_date), current_date),
          reason = coalesce(reason,'') || case when p_reason is null then '' else ' | revoked: ' || p_reason end
@@ -449,7 +449,7 @@ begin
       v_holder_emp, ARRAY[p_authority_id]);
   end if;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   insert into hr.approval_delegation
     (organization_id, authority_id, delegator_employment_id, delegate_employment_id,
      effective_from, effective_to, reason)
@@ -501,7 +501,7 @@ begin
       d.delegate_employment_id, ARRAY[p_delegation_id]);
   end if;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
 
   -- 🚨 A RELATIVE SCOPE IS RESOLVED AT MATERIALISATION, NEVER COPIED — and a probe caught the
   -- copy. §1.3b says scope is "inherited from the delegator's row — never wider", and for an
@@ -577,7 +577,7 @@ begin
       d.delegate_employment_id, ARRAY[p_delegation_id]);
   end if;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   -- ending writes effective_to (and is_active where the end is immediate), NEVER a delete — the
   -- immutable-history rule (AD-8)
   if d.materialized_authority_id is not null then
@@ -650,7 +650,7 @@ begin
       'the nominee must be a member of the organization');
   end if;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
 
   -- the employer of record
   insert into hr.employer_profile (organization_id, legal_name, ein)

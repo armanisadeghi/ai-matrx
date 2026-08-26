@@ -665,7 +665,7 @@ begin
   v_ttl := (hr._knob('hr.access','break_glass_grant_ttl_minutes') #>> '{}')::integer;
   v_subject := nullif(v_verdict ->> 'subject_employment_id','')::uuid;
 
-  perform set_config('hr.privileged_write','on',true);
+  perform hr.arm_write();
   insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level,
                                status, expires_at)
   values (p_token, p_id, v_uid, 'viewer', 'active', now() + make_interval(mins => v_ttl))
