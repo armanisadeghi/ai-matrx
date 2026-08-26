@@ -20026,6 +20026,1294 @@ export type Database = {
       [_ in never]: never
     }
   }
+  esign: {
+    Tables: {
+      campaign: {
+        Row: {
+          audience_kind: string
+          audience_ref: Json
+          category_id: string | null
+          close_reason: string | null
+          closed_at: string | null
+          config_snapshot: Json
+          consumer_key: string
+          created_at: string
+          created_by: string | null
+          declined_count: number
+          deleted_at: string | null
+          document_source: Json
+          expired_count: number
+          expires_at: string
+          failed_count: number
+          id: string
+          member_count: number
+          message: string | null
+          metadata: Json
+          opened_at: string | null
+          organization_id: string
+          sensitivity: string
+          signed_count: number
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          audience_kind?: string
+          audience_ref?: Json
+          category_id?: string | null
+          close_reason?: string | null
+          closed_at?: string | null
+          config_snapshot?: Json
+          consumer_key: string
+          created_at?: string
+          created_by?: string | null
+          declined_count?: number
+          deleted_at?: string | null
+          document_source?: Json
+          expired_count?: number
+          expires_at: string
+          failed_count?: number
+          id?: string
+          member_count?: number
+          message?: string | null
+          metadata?: Json
+          opened_at?: string | null
+          organization_id: string
+          sensitivity?: string
+          signed_count?: number
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          audience_kind?: string
+          audience_ref?: Json
+          category_id?: string | null
+          close_reason?: string | null
+          closed_at?: string | null
+          config_snapshot?: Json
+          consumer_key?: string
+          created_at?: string
+          created_by?: string | null
+          declined_count?: number
+          deleted_at?: string | null
+          document_source?: Json
+          expired_count?: number
+          expires_at?: string
+          failed_count?: number
+          id?: string
+          member_count?: number
+          message?: string | null
+          metadata?: Json
+          opened_at?: string | null
+          organization_id?: string
+          sensitivity?: string
+          signed_count?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      campaign_member: {
+        Row: {
+          batch_no: number | null
+          campaign_id: string
+          created_at: string
+          created_by: string | null
+          email: string
+          enrolled_at: string
+          envelope_id: string | null
+          failure_reason: string | null
+          full_name: string
+          id: string
+          last_state_at: string | null
+          member_user_id: string | null
+          metadata: Json
+          organization_id: string
+          status: string
+          subject_ref_id: string | null
+          subject_ref_type: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          batch_no?: number | null
+          campaign_id: string
+          created_at?: string
+          created_by?: string | null
+          email: string
+          enrolled_at?: string
+          envelope_id?: string | null
+          failure_reason?: string | null
+          full_name: string
+          id?: string
+          last_state_at?: string | null
+          member_user_id?: string | null
+          metadata?: Json
+          organization_id: string
+          status?: string
+          subject_ref_id?: string | null
+          subject_ref_type?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          batch_no?: number | null
+          campaign_id?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          enrolled_at?: string
+          envelope_id?: string | null
+          failure_reason?: string | null
+          full_name?: string
+          id?: string
+          last_state_at?: string | null
+          member_user_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          status?: string
+          subject_ref_id?: string | null
+          subject_ref_type?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_member_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_member_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "envelope"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      config_definition: {
+        Row: {
+          bound_value: Json | null
+          config_key: string
+          created_at: string
+          created_by: string | null
+          default_value: Json
+          deleted_at: string | null
+          id: string
+          label: string
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          overridable_by: string[]
+          override_direction: string
+          spec_ref: string | null
+          updated_at: string
+          updated_by: string | null
+          value_type: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          bound_value?: Json | null
+          config_key: string
+          created_at?: string
+          created_by?: string | null
+          default_value: Json
+          deleted_at?: string | null
+          id?: string
+          label: string
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          overridable_by?: string[]
+          override_direction?: string
+          spec_ref?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value_type?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          bound_value?: Json | null
+          config_key?: string
+          created_at?: string
+          created_by?: string | null
+          default_value?: Json
+          deleted_at?: string | null
+          id?: string
+          label?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          overridable_by?: string[]
+          override_direction?: string
+          spec_ref?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value_type?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      config_value: {
+        Row: {
+          config_key: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          set_reason: string | null
+          updated_at: string
+          updated_by: string | null
+          value: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          config_key: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          set_reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          config_key?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          set_reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      consent_disclosure: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          disclosure_key: string
+          effective_from: string
+          id: string
+          is_current: boolean
+          is_platform_default: boolean
+          locale: string
+          metadata: Json
+          organization_id: string
+          superseded_by_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          version_label: string
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          disclosure_key?: string
+          effective_from?: string
+          id?: string
+          is_current?: boolean
+          is_platform_default?: boolean
+          locale?: string
+          metadata?: Json
+          organization_id: string
+          superseded_by_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          version_label: string
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          disclosure_key?: string
+          effective_from?: string
+          id?: string
+          is_current?: boolean
+          is_platform_default?: boolean
+          locale?: string
+          metadata?: Json
+          organization_id?: string
+          superseded_by_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          version_label?: string
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      envelope: {
+        Row: {
+          callback_key: string | null
+          category_id: string | null
+          certificate_id: string | null
+          completed_at: string | null
+          config_snapshot: Json
+          consumer_key: string
+          created_at: string
+          created_by: string | null
+          decline_summary: string | null
+          declined_at: string | null
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          message: string | null
+          metadata: Json
+          organization_id: string
+          reopened_from_envelope_id: string | null
+          retention_class: string | null
+          retention_trigger: string | null
+          sensitivity: string
+          sent_at: string | null
+          signing_order: string
+          source_id: string | null
+          source_type: string | null
+          status: string
+          superseded_by_envelope_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          callback_key?: string | null
+          category_id?: string | null
+          certificate_id?: string | null
+          completed_at?: string | null
+          config_snapshot?: Json
+          consumer_key: string
+          created_at?: string
+          created_by?: string | null
+          decline_summary?: string | null
+          declined_at?: string | null
+          deleted_at?: string | null
+          expires_at: string
+          id?: string
+          message?: string | null
+          metadata?: Json
+          organization_id: string
+          reopened_from_envelope_id?: string | null
+          retention_class?: string | null
+          retention_trigger?: string | null
+          sensitivity?: string
+          sent_at?: string | null
+          signing_order?: string
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          superseded_by_envelope_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          callback_key?: string | null
+          category_id?: string | null
+          certificate_id?: string | null
+          completed_at?: string | null
+          config_snapshot?: Json
+          consumer_key?: string
+          created_at?: string
+          created_by?: string | null
+          decline_summary?: string | null
+          declined_at?: string | null
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          message?: string | null
+          metadata?: Json
+          organization_id?: string
+          reopened_from_envelope_id?: string | null
+          retention_class?: string | null
+          retention_trigger?: string | null
+          sensitivity?: string
+          sent_at?: string | null
+          signing_order?: string
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          superseded_by_envelope_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelope_certificate_fk"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "envelope_certificate"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "envelope_reopened_from_fk"
+            columns: ["reopened_from_envelope_id"]
+            isOneToOne: false
+            referencedRelation: "envelope"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "envelope_superseded_by_fk"
+            columns: ["superseded_by_envelope_id"]
+            isOneToOne: false
+            referencedRelation: "envelope"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      envelope_certificate: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          envelope_id: string
+          generated_at: string
+          id: string
+          key_id: string
+          metadata: Json
+          organization_id: string
+          payload: Json
+          payload_hash: string
+          rendered_file_id: string | null
+          signature: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          envelope_id: string
+          generated_at?: string
+          id?: string
+          key_id: string
+          metadata?: Json
+          organization_id: string
+          payload?: Json
+          payload_hash: string
+          rendered_file_id?: string | null
+          signature: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          envelope_id?: string
+          generated_at?: string
+          id?: string
+          key_id?: string
+          metadata?: Json
+          organization_id?: string
+          payload?: Json
+          payload_hash?: string
+          rendered_file_id?: string | null
+          signature?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelope_certificate_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "envelope"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      envelope_document: {
+        Row: {
+          byte_size: number | null
+          content_file_id: string | null
+          content_file_version: number | null
+          content_hash: string | null
+          created_at: string
+          created_by: string | null
+          document_id: string | null
+          document_version: number | null
+          envelope_id: string
+          field_map: Json
+          frozen_at: string | null
+          hash_algorithm: string
+          id: string
+          is_frozen: boolean
+          metadata: Json
+          mime_type: string | null
+          name: string
+          organization_id: string
+          page_count: number | null
+          position: number
+          render_source: Json
+          source_kind: string
+          template_id: string | null
+          template_version: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          byte_size?: number | null
+          content_file_id?: string | null
+          content_file_version?: number | null
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          document_version?: number | null
+          envelope_id: string
+          field_map?: Json
+          frozen_at?: string | null
+          hash_algorithm?: string
+          id?: string
+          is_frozen?: boolean
+          metadata?: Json
+          mime_type?: string | null
+          name: string
+          organization_id: string
+          page_count?: number | null
+          position?: number
+          render_source?: Json
+          source_kind?: string
+          template_id?: string | null
+          template_version?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          byte_size?: number | null
+          content_file_id?: string | null
+          content_file_version?: number | null
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          document_version?: number | null
+          envelope_id?: string
+          field_map?: Json
+          frozen_at?: string | null
+          hash_algorithm?: string
+          id?: string
+          is_frozen?: boolean
+          metadata?: Json
+          mime_type?: string | null
+          name?: string
+          organization_id?: string
+          page_count?: number | null
+          position?: number
+          render_source?: Json
+          source_kind?: string
+          template_id?: string | null
+          template_version?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelope_document_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "envelope"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      envelope_event: {
+        Row: {
+          actor_label: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          auth_method: string | null
+          created_at: string
+          created_by: string | null
+          device_hint: string | null
+          document_id: string | null
+          envelope_id: string
+          event_type: string
+          id: string
+          ip_address: unknown
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          payload: Json
+          provider_event_id: string | null
+          signer_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_agent: string | null
+          version: number
+        }
+        Insert: {
+          actor_label?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          auth_method?: string | null
+          created_at?: string
+          created_by?: string | null
+          device_hint?: string | null
+          document_id?: string | null
+          envelope_id: string
+          event_type: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+          payload?: Json
+          provider_event_id?: string | null
+          signer_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_agent?: string | null
+          version?: number
+        }
+        Update: {
+          actor_label?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          auth_method?: string | null
+          created_at?: string
+          created_by?: string | null
+          device_hint?: string | null
+          document_id?: string | null
+          envelope_id?: string
+          event_type?: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          payload?: Json
+          provider_event_id?: string | null
+          signer_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_agent?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelope_event_envelope_fk"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "envelope"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      envelope_external_ref: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          envelope_id: string
+          external_envelope_id: string | null
+          external_status: string | null
+          id: string
+          last_sync_at: string | null
+          metadata: Json
+          organization_id: string
+          provider_key: string
+          raw_payload: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          envelope_id: string
+          external_envelope_id?: string | null
+          external_status?: string | null
+          id?: string
+          last_sync_at?: string | null
+          metadata?: Json
+          organization_id: string
+          provider_key: string
+          raw_payload?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          envelope_id?: string
+          external_envelope_id?: string | null
+          external_status?: string | null
+          id?: string
+          last_sync_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          provider_key?: string
+          raw_payload?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelope_external_ref_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "envelope"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      envelope_signer: {
+        Row: {
+          actor_token_id: string | null
+          actor_type: string
+          auth_method: string
+          consent_disclosure_id: string | null
+          consented_at: string | null
+          created_at: string
+          created_by: string | null
+          decline_reason: string | null
+          declined_at: string | null
+          delegated_to_signer_id: string | null
+          delegation_reason: string | null
+          delivery_error: string | null
+          document_previewed_at: string | null
+          email: string
+          envelope_id: string
+          full_name: string
+          id: string
+          is_required: boolean
+          last_notified_at: string | null
+          metadata: Json
+          notify_attempts: number
+          organization_id: string
+          phone: string | null
+          position: number
+          reminder_count: number
+          role: string
+          signature_adopted_at: string | null
+          signature_image_file_id: string | null
+          signature_kind: string | null
+          signature_payload_hash: string | null
+          signed_at: string | null
+          signed_content_hash: string | null
+          signer_user_id: string | null
+          status: string
+          subject_ref_id: string | null
+          subject_ref_type: string | null
+          typed_name: string | null
+          typed_style: string | null
+          updated_at: string
+          updated_by: string | null
+          verification_factor: string | null
+          verification_passed: boolean | null
+          version: number
+        }
+        Insert: {
+          actor_token_id?: string | null
+          actor_type: string
+          auth_method?: string
+          consent_disclosure_id?: string | null
+          consented_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          decline_reason?: string | null
+          declined_at?: string | null
+          delegated_to_signer_id?: string | null
+          delegation_reason?: string | null
+          delivery_error?: string | null
+          document_previewed_at?: string | null
+          email: string
+          envelope_id: string
+          full_name: string
+          id?: string
+          is_required?: boolean
+          last_notified_at?: string | null
+          metadata?: Json
+          notify_attempts?: number
+          organization_id: string
+          phone?: string | null
+          position: number
+          reminder_count?: number
+          role?: string
+          signature_adopted_at?: string | null
+          signature_image_file_id?: string | null
+          signature_kind?: string | null
+          signature_payload_hash?: string | null
+          signed_at?: string | null
+          signed_content_hash?: string | null
+          signer_user_id?: string | null
+          status?: string
+          subject_ref_id?: string | null
+          subject_ref_type?: string | null
+          typed_name?: string | null
+          typed_style?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_factor?: string | null
+          verification_passed?: boolean | null
+          version?: number
+        }
+        Update: {
+          actor_token_id?: string | null
+          actor_type?: string
+          auth_method?: string
+          consent_disclosure_id?: string | null
+          consented_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          decline_reason?: string | null
+          declined_at?: string | null
+          delegated_to_signer_id?: string | null
+          delegation_reason?: string | null
+          delivery_error?: string | null
+          document_previewed_at?: string | null
+          email?: string
+          envelope_id?: string
+          full_name?: string
+          id?: string
+          is_required?: boolean
+          last_notified_at?: string | null
+          metadata?: Json
+          notify_attempts?: number
+          organization_id?: string
+          phone?: string | null
+          position?: number
+          reminder_count?: number
+          role?: string
+          signature_adopted_at?: string | null
+          signature_image_file_id?: string | null
+          signature_kind?: string | null
+          signature_payload_hash?: string | null
+          signed_at?: string | null
+          signed_content_hash?: string | null
+          signer_user_id?: string | null
+          status?: string
+          subject_ref_id?: string | null
+          subject_ref_type?: string | null
+          typed_name?: string | null
+          typed_style?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_factor?: string | null
+          verification_passed?: boolean | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelope_signer_delegated_to_fk"
+            columns: ["delegated_to_signer_id"]
+            isOneToOne: false
+            referencedRelation: "envelope_signer"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "envelope_signer_disclosure_fk"
+            columns: ["consent_disclosure_id"]
+            isOneToOne: false
+            referencedRelation: "consent_disclosure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "envelope_signer_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "envelope"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider: {
+        Row: {
+          adapter: string
+          config: Json
+          created_at: string
+          created_by: string | null
+          credentials: Json
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          label: string
+          metadata: Json
+          organization_id: string
+          provider_key: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          adapter?: string
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          credentials?: Json
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          metadata?: Json
+          organization_id: string
+          provider_key: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          adapter?: string
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          credentials?: Json
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          provider_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      provider_binding: {
+        Row: {
+          bound_reason: string | null
+          category_id: string | null
+          consumer_key: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          metadata: Json
+          organization_id: string
+          provider_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          bound_reason?: string | null
+          category_id?: string | null
+          consumer_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          organization_id: string
+          provider_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          bound_reason?: string | null
+          category_id?: string | null
+          consumer_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          organization_id?: string
+          provider_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_binding_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "provider"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signing_key: {
+        Row: {
+          activated_at: string
+          algorithm: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_current: boolean
+          key_id: string
+          metadata: Json
+          organization_id: string
+          public_key: string
+          retired_at: string | null
+          secret_key: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          activated_at?: string
+          algorithm?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_current?: boolean
+          key_id: string
+          metadata?: Json
+          organization_id: string
+          public_key: string
+          retired_at?: string | null
+          secret_key: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          activated_at?: string
+          algorithm?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_current?: boolean
+          key_id?: string
+          metadata?: Json
+          organization_id?: string
+          public_key?: string
+          retired_at?: string | null
+          secret_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      _act_adopt: {
+        Args: {
+          p_ctx: Json
+          p_image_file_id: string
+          p_kind: string
+          p_strokes: Json
+          p_typed_name: string
+          p_typed_style: string
+        }
+        Returns: Json
+      }
+      _act_consent: {
+        Args: { p_ctx: Json; p_disclosure_id: string }
+        Returns: Json
+      }
+      _act_decline: { Args: { p_ctx: Json; p_reason: string }; Returns: Json }
+      _act_delegate: {
+        Args: {
+          p_ctx: Json
+          p_email: string
+          p_full_name: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      _act_download: {
+        Args: { p_ctx: Json; p_document_id: string }
+        Returns: Json
+      }
+      _act_load: { Args: { p_ctx: Json }; Returns: Json }
+      _act_preview_ack: {
+        Args: { p_ctx: Json; p_document_id: string }
+        Returns: Json
+      }
+      _act_sign: {
+        Args: { p_action_id: string; p_ctx: Json; p_observed: Json }
+        Returns: Json
+      }
+      _arm: { Args: never; Returns: undefined }
+      _can_act: { Args: { p_signer_id: string }; Returns: Json }
+      _certificate_payload: { Args: { p_envelope_id: string }; Returns: Json }
+      _ctx_internal: {
+        Args: { p_ip: unknown; p_signer_id: string; p_ua: string }
+        Returns: Json
+      }
+      _ctx_outsider: {
+        Args: {
+          p_action: string
+          p_ip: unknown
+          p_session: string
+          p_ua: string
+        }
+        Returns: Json
+      }
+      _disarm: { Args: never; Returns: undefined }
+      _event: {
+        Args: {
+          p_actor_label?: string
+          p_actor_token_id?: string
+          p_actor_type: string
+          p_actor_user_id?: string
+          p_auth_method?: string
+          p_device_hint?: string
+          p_document_id?: string
+          p_envelope_id: string
+          p_event_type: string
+          p_ip?: unknown
+          p_payload?: Json
+          p_provider_event_id?: string
+          p_signer_id?: string
+          p_user_agent?: string
+        }
+        Returns: string
+      }
+      _may_manage: {
+        Args: { p_envelope_id: string; p_level?: string }
+        Returns: boolean
+      }
+      _may_manage_campaign: {
+        Args: { p_campaign_id: string; p_level?: string }
+        Returns: boolean
+      }
+      _maybe_complete: { Args: { p_envelope_id: string }; Returns: Json }
+      _notify: {
+        Args: {
+          p_actor_token_id?: string
+          p_body?: string
+          p_channel?: string
+          p_deep_link?: string
+          p_envelope_id: string
+          p_event_key: string
+          p_payload?: Json
+          p_signer_id?: string
+          p_subject?: string
+          p_to_address?: string
+          p_to_user?: string
+        }
+        Returns: string
+      }
+      _notify_actionable: {
+        Args: { p_envelope_id: string; p_event_key: string }
+        Returns: number
+      }
+      _notify_actionable_capped: {
+        Args: { p_envelope_id: string; p_max: number }
+        Returns: number
+      }
+      _privileged: { Args: never; Returns: boolean }
+      _project: { Args: { p_resource: string; p_row: Json }; Returns: Json }
+      _requester_actor_type: {
+        Args: { p_consumer_key: string }
+        Returns: string
+      }
+      _revoke_open_tokens: {
+        Args: { p_envelope_id: string; p_reason: string }
+        Returns: number
+      }
+      config_resolve: {
+        Args: { p_key: string; p_organization_id: string }
+        Returns: Json
+      }
+      config_set: {
+        Args: {
+          p_key: string
+          p_organization_id: string
+          p_reason?: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      generate_certificate: { Args: { p_envelope_id: string }; Returns: Json }
+      resolve_config_snapshot: {
+        Args: { p_organization_id: string; p_sensitivity: string }
+        Returns: Json
+      }
+      wf_apply_signature_request: {
+        Args: { p_instance_id: string }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   extend: {
     Tables: {
       extension_auth_codes: {
@@ -24147,6 +25435,17678 @@ export type Database = {
       ensure_row_version_partitions: {
         Args: { months_ahead?: number }
         Returns: number
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  hr: {
+    Tables: {
+      _write_guard_key: {
+        Row: {
+          created_at: string
+          id: boolean
+          key: string
+        }
+        Insert: {
+          created_at?: string
+          id?: boolean
+          key: string
+        }
+        Update: {
+          created_at?: string
+          id?: boolean
+          key?: string
+        }
+        Relationships: []
+      }
+      access_audit: {
+        Row: {
+          access_role_key: string | null
+          action: string
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          basis: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          denial_reason: string | null
+          field_key: string | null
+          granted: boolean
+          id: string
+          is_break_glass: boolean
+          is_self_access: boolean
+          justification: string | null
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          purpose: string
+          record_class_key: string | null
+          request_context: Json
+          request_ref: string | null
+          row_count: number | null
+          sensitivity_tier: string
+          subject_employment_id: string | null
+          target_ids: string[]
+          target_token: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          access_role_key?: string | null
+          action: string
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          basis: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          denial_reason?: string | null
+          field_key?: string | null
+          granted: boolean
+          id?: string
+          is_break_glass?: boolean
+          is_self_access?: boolean
+          justification?: string | null
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+          purpose: string
+          record_class_key?: string | null
+          request_context?: Json
+          request_ref?: string | null
+          row_count?: number | null
+          sensitivity_tier: string
+          subject_employment_id?: string | null
+          target_ids?: string[]
+          target_token: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          access_role_key?: string | null
+          action?: string
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          basis?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          denial_reason?: string | null
+          field_key?: string | null
+          granted?: boolean
+          id?: string
+          is_break_glass?: boolean
+          is_self_access?: boolean
+          justification?: string | null
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          purpose?: string
+          record_class_key?: string | null
+          request_context?: Json
+          request_ref?: string | null
+          row_count?: number | null
+          sensitivity_tier?: string
+          subject_employment_id?: string | null
+          target_ids?: string[]
+          target_token?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_audit_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "access_audit_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "access_audit_subject_employment_id_fkey"
+            columns: ["subject_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_subject_employment_id_fkey"
+            columns: ["subject_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      access_role: {
+        Row: {
+          break_glass_allowed: boolean
+          capabilities: string[]
+          created_at: string
+          created_by: string | null
+          default_scope_kind: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          is_assignable: boolean
+          is_builtin: boolean
+          label: string
+          metadata: Json
+          organization_id: string
+          role_key: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          break_glass_allowed?: boolean
+          capabilities?: string[]
+          created_at?: string
+          created_by?: string | null
+          default_scope_kind?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_assignable?: boolean
+          is_builtin?: boolean
+          label: string
+          metadata?: Json
+          organization_id: string
+          role_key: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          break_glass_allowed?: boolean
+          capabilities?: string[]
+          created_at?: string
+          created_by?: string | null
+          default_scope_kind?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_assignable?: boolean
+          is_builtin?: boolean
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          role_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      accommodation_request: {
+        Row: {
+          accommodation_provided: string | null
+          application_id: string | null
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by_employment_id: string | null
+          deleted_at: string | null
+          denial_basis: string | null
+          effective_from: string | null
+          effective_to: string | null
+          employment_id: string | null
+          id: string
+          interactive_process_log: Json
+          leave_case_id: string | null
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          record_class_key: string
+          request_summary: string
+          requested_at: string
+          restricted_note_id: string | null
+          retention_trigger_at: string | null
+          review_on: string | null
+          state: string
+          subject_kind: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          accommodation_provided?: string | null
+          application_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by_employment_id?: string | null
+          deleted_at?: string | null
+          denial_basis?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          employment_id?: string | null
+          id?: string
+          interactive_process_log?: Json
+          leave_case_id?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id: string
+          record_class_key?: string
+          request_summary: string
+          requested_at?: string
+          restricted_note_id?: string | null
+          retention_trigger_at?: string | null
+          review_on?: string | null
+          state?: string
+          subject_kind: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          accommodation_provided?: string | null
+          application_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by_employment_id?: string | null
+          deleted_at?: string | null
+          denial_basis?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          employment_id?: string | null
+          id?: string
+          interactive_process_log?: Json
+          leave_case_id?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id?: string
+          record_class_key?: string
+          request_summary?: string
+          requested_at?: string
+          restricted_note_id?: string | null
+          retention_trigger_at?: string | null
+          review_on?: string | null
+          state?: string
+          subject_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accommodation_request_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accommodation_request_decided_by_employment_id_fkey"
+            columns: ["decided_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accommodation_request_decided_by_employment_id_fkey"
+            columns: ["decided_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "accommodation_request_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accommodation_request_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "accommodation_request_leave_case_id_fkey"
+            columns: ["leave_case_id"]
+            isOneToOne: false
+            referencedRelation: "leave_case"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accommodation_request_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "accommodation_request_restricted_note_id_fkey"
+            columns: ["restricted_note_id"]
+            isOneToOne: false
+            referencedRelation: "restricted_note"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_evidence: {
+        Row: {
+          agent_ref: string | null
+          agent_version: string | null
+          autonomy_mode: string
+          candidates_considered: Json
+          created_at: string
+          created_by: string | null
+          criteria_snapshot: Json
+          criteria_version: string | null
+          deleted_at: string | null
+          explanation: string | null
+          human_decision: string | null
+          human_decision_at: string | null
+          human_decision_by_employment_id: string | null
+          id: string
+          legal_hold_count: number
+          mandate_key: string
+          metadata: Json
+          model_ref: string | null
+          organization_id: string
+          output_kind: string | null
+          override_note: string | null
+          record_class_key: string
+          retention_trigger_at: string | null
+          sensitivity_ceiling: string
+          subject_id: string
+          subject_token: string
+          suggested_at: string
+          suggestion: Json
+          surface: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          agent_ref?: string | null
+          agent_version?: string | null
+          autonomy_mode: string
+          candidates_considered?: Json
+          created_at?: string
+          created_by?: string | null
+          criteria_snapshot?: Json
+          criteria_version?: string | null
+          deleted_at?: string | null
+          explanation?: string | null
+          human_decision?: string | null
+          human_decision_at?: string | null
+          human_decision_by_employment_id?: string | null
+          id?: string
+          legal_hold_count?: number
+          mandate_key: string
+          metadata?: Json
+          model_ref?: string | null
+          organization_id: string
+          output_kind?: string | null
+          override_note?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          sensitivity_ceiling?: string
+          subject_id: string
+          subject_token: string
+          suggested_at?: string
+          suggestion?: Json
+          surface: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          agent_ref?: string | null
+          agent_version?: string | null
+          autonomy_mode?: string
+          candidates_considered?: Json
+          created_at?: string
+          created_by?: string | null
+          criteria_snapshot?: Json
+          criteria_version?: string | null
+          deleted_at?: string | null
+          explanation?: string | null
+          human_decision?: string | null
+          human_decision_at?: string | null
+          human_decision_by_employment_id?: string | null
+          id?: string
+          legal_hold_count?: number
+          mandate_key?: string
+          metadata?: Json
+          model_ref?: string | null
+          organization_id?: string
+          output_kind?: string | null
+          override_note?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          sensitivity_ceiling?: string
+          subject_id?: string
+          subject_token?: string
+          suggested_at?: string
+          suggestion?: Json
+          surface?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_evidence_human_decision_by_employment_id_fkey"
+            columns: ["human_decision_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_evidence_human_decision_by_employment_id_fkey"
+            columns: ["human_decision_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "ai_evidence_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+        ]
+      }
+      alert_routing_rule: {
+        Row: {
+          alert_family: string
+          alert_tier: string
+          channels: string[]
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          escalate_after_minutes: number | null
+          escalate_to_role_keys: string[]
+          event_key: string | null
+          id: string
+          include_line_manager: boolean
+          is_active: boolean
+          metadata: Json
+          name: string | null
+          organization_id: string
+          quiet_hours: Json
+          recipient_employment_ids: string[]
+          recipient_role_keys: string[]
+          scope_id: string | null
+          scope_kind: string
+          set_by_employment_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          alert_family: string
+          alert_tier?: string
+          channels?: string[]
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          escalate_after_minutes?: number | null
+          escalate_to_role_keys?: string[]
+          event_key?: string | null
+          id?: string
+          include_line_manager?: boolean
+          is_active?: boolean
+          metadata?: Json
+          name?: string | null
+          organization_id: string
+          quiet_hours?: Json
+          recipient_employment_ids?: string[]
+          recipient_role_keys?: string[]
+          scope_id?: string | null
+          scope_kind?: string
+          set_by_employment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          alert_family?: string
+          alert_tier?: string
+          channels?: string[]
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          escalate_after_minutes?: number | null
+          escalate_to_role_keys?: string[]
+          event_key?: string | null
+          id?: string
+          include_line_manager?: boolean
+          is_active?: boolean
+          metadata?: Json
+          name?: string | null
+          organization_id?: string
+          quiet_hours?: Json
+          recipient_employment_ids?: string[]
+          recipient_role_keys?: string[]
+          scope_id?: string | null
+          scope_kind?: string
+          set_by_employment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_routing_rule_set_by_employment_id_fkey"
+            columns: ["set_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_routing_rule_set_by_employment_id_fkey"
+            columns: ["set_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      application: {
+        Row: {
+          accommodation_request_id: string | null
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          applied_at: string
+          candidate_id: string
+          consideration_evidence: Json
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          disposition: string | null
+          disposition_at: string | null
+          id: string
+          legal_hold_count: number
+          metadata: Json
+          opening_id: string
+          organization_id: string
+          posting_id: string | null
+          record_class_key: string
+          rejected_by_employment_id: string | null
+          rejection_reason_category_id: string | null
+          rejection_reason_note: string | null
+          retention_trigger_at: string | null
+          screening_answers: Json
+          stage_bucket: string
+          stage_category_id: string | null
+          stage_entered_at: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          accommodation_request_id?: string | null
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          applied_at?: string
+          candidate_id: string
+          consideration_evidence?: Json
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          disposition?: string | null
+          disposition_at?: string | null
+          id?: string
+          legal_hold_count?: number
+          metadata?: Json
+          opening_id: string
+          organization_id: string
+          posting_id?: string | null
+          record_class_key?: string
+          rejected_by_employment_id?: string | null
+          rejection_reason_category_id?: string | null
+          rejection_reason_note?: string | null
+          retention_trigger_at?: string | null
+          screening_answers?: Json
+          stage_bucket?: string
+          stage_category_id?: string | null
+          stage_entered_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          accommodation_request_id?: string | null
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          applied_at?: string
+          candidate_id?: string
+          consideration_evidence?: Json
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          disposition?: string | null
+          disposition_at?: string | null
+          id?: string
+          legal_hold_count?: number
+          metadata?: Json
+          opening_id?: string
+          organization_id?: string
+          posting_id?: string | null
+          record_class_key?: string
+          rejected_by_employment_id?: string | null
+          rejection_reason_category_id?: string | null
+          rejection_reason_note?: string | null
+          retention_trigger_at?: string | null
+          screening_answers?: Json
+          stage_bucket?: string
+          stage_category_id?: string | null
+          stage_entered_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "application_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_opening_id_fkey"
+            columns: ["opening_id"]
+            isOneToOne: false
+            referencedRelation: "opening"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_posting_id_fkey"
+            columns: ["posting_id"]
+            isOneToOne: false
+            referencedRelation: "posting"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "application_rejected_by_employment_id_fkey"
+            columns: ["rejected_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_rejected_by_employment_id_fkey"
+            columns: ["rejected_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      approval_authority: {
+        Row: {
+          action_type: string
+          created_at: string
+          created_by: string | null
+          delegated_from_id: string | null
+          delegation_id: string | null
+          effective_from: string
+          effective_to: string | null
+          granted_by_user_id: string | null
+          holder_id: string
+          holder_kind: string
+          id: string
+          is_active: boolean
+          limits: Json
+          metadata: Json
+          organization_id: string
+          rank: number
+          reason: string | null
+          scope_employment_ids: string[]
+          scope_id: string | null
+          scope_kind: string
+          source: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          created_by?: string | null
+          delegated_from_id?: string | null
+          delegation_id?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          granted_by_user_id?: string | null
+          holder_id: string
+          holder_kind?: string
+          id?: string
+          is_active?: boolean
+          limits?: Json
+          metadata?: Json
+          organization_id: string
+          rank?: number
+          reason?: string | null
+          scope_employment_ids?: string[]
+          scope_id?: string | null
+          scope_kind?: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          created_by?: string | null
+          delegated_from_id?: string | null
+          delegation_id?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          granted_by_user_id?: string | null
+          holder_id?: string
+          holder_kind?: string
+          id?: string
+          is_active?: boolean
+          limits?: Json
+          metadata?: Json
+          organization_id?: string
+          rank?: number
+          reason?: string | null
+          scope_employment_ids?: string[]
+          scope_id?: string | null
+          scope_kind?: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_authority_self_fk"
+            columns: ["delegated_from_id"]
+            isOneToOne: false
+            referencedRelation: "approval_authority"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_delegation: {
+        Row: {
+          authority_id: string
+          created_at: string
+          created_by: string | null
+          delegate_employment_id: string
+          delegator_employment_id: string
+          effective_from: string
+          effective_to: string
+          id: string
+          materialized_authority_id: string | null
+          metadata: Json
+          organization_id: string
+          reason: string
+          responded_at: string | null
+          response_note: string | null
+          revoked_at: string | null
+          revoked_reason: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          authority_id: string
+          created_at?: string
+          created_by?: string | null
+          delegate_employment_id: string
+          delegator_employment_id: string
+          effective_from?: string
+          effective_to: string
+          id?: string
+          materialized_authority_id?: string | null
+          metadata?: Json
+          organization_id: string
+          reason: string
+          responded_at?: string | null
+          response_note?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          authority_id?: string
+          created_at?: string
+          created_by?: string | null
+          delegate_employment_id?: string
+          delegator_employment_id?: string
+          effective_from?: string
+          effective_to?: string
+          id?: string
+          materialized_authority_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          reason?: string
+          responded_at?: string | null
+          response_note?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_delegation_authority_id_fkey"
+            columns: ["authority_id"]
+            isOneToOne: false
+            referencedRelation: "approval_authority"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_delegation_delegate_employment_id_fkey"
+            columns: ["delegate_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_delegation_delegate_employment_id_fkey"
+            columns: ["delegate_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "approval_delegation_delegator_employment_id_fkey"
+            columns: ["delegator_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_delegation_delegator_employment_id_fkey"
+            columns: ["delegator_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "approval_delegation_materialized_authority_id_fkey"
+            columns: ["materialized_authority_id"]
+            isOneToOne: false
+            referencedRelation: "approval_authority"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset: {
+        Row: {
+          acquired_on: string | null
+          asset_class: string
+          asset_tag: string | null
+          category_id: string | null
+          compliance_due_on: string | null
+          created_at: string
+          created_by: string | null
+          crew_id: string | null
+          custom: Json
+          deleted_at: string | null
+          external_asset_ref: string | null
+          external_system_key: string | null
+          id: string
+          identifier: string | null
+          location_id: string | null
+          make: string | null
+          metadata: Json
+          model: string | null
+          name: string
+          notes: string | null
+          organization_id: string
+          owned_or_leased: string | null
+          purchase_amount: number | null
+          replacement_cost: number | null
+          retired_on: string | null
+          serial_number: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          warranty_expires_on: string | null
+          year: number | null
+        }
+        Insert: {
+          acquired_on?: string | null
+          asset_class?: string
+          asset_tag?: string | null
+          category_id?: string | null
+          compliance_due_on?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          external_asset_ref?: string | null
+          external_system_key?: string | null
+          id?: string
+          identifier?: string | null
+          location_id?: string | null
+          make?: string | null
+          metadata?: Json
+          model?: string | null
+          name: string
+          notes?: string | null
+          organization_id: string
+          owned_or_leased?: string | null
+          purchase_amount?: number | null
+          replacement_cost?: number | null
+          retired_on?: string | null
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          warranty_expires_on?: string | null
+          year?: number | null
+        }
+        Update: {
+          acquired_on?: string | null
+          asset_class?: string
+          asset_tag?: string | null
+          category_id?: string | null
+          compliance_due_on?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          external_asset_ref?: string | null
+          external_system_key?: string | null
+          id?: string
+          identifier?: string | null
+          location_id?: string | null
+          make?: string | null
+          metadata?: Json
+          model?: string | null
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          owned_or_leased?: string | null
+          purchase_amount?: number | null
+          replacement_cost?: number | null
+          retired_on?: string | null
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          warranty_expires_on?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_assignment: {
+        Row: {
+          asset_id: string | null
+          asset_name: string
+          asset_tag: string | null
+          assigned_by_employment_id: string | null
+          assigned_on: string
+          category_id: string | null
+          checklist_item_id: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          due_back_on: string | null
+          employment_id: string
+          external_asset_ref: string | null
+          external_system_key: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          replacement_cost: number | null
+          return_condition: string | null
+          return_evidence: Json
+          returned_on: string | null
+          serial_number: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          asset_id?: string | null
+          asset_name: string
+          asset_tag?: string | null
+          assigned_by_employment_id?: string | null
+          assigned_on: string
+          category_id?: string | null
+          checklist_item_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          due_back_on?: string | null
+          employment_id: string
+          external_asset_ref?: string | null
+          external_system_key?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          replacement_cost?: number | null
+          return_condition?: string | null
+          return_evidence?: Json
+          returned_on?: string | null
+          serial_number?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          asset_id?: string | null
+          asset_name?: string
+          asset_tag?: string | null
+          assigned_by_employment_id?: string | null
+          assigned_on?: string
+          category_id?: string | null
+          checklist_item_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          due_back_on?: string | null
+          employment_id?: string
+          external_asset_ref?: string | null
+          external_system_key?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          replacement_cost?: number | null
+          return_condition?: string | null
+          return_evidence?: Json
+          returned_on?: string | null
+          serial_number?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_assignment_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "asset"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_assignment_assigned_by_employment_id_fkey"
+            columns: ["assigned_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_assignment_assigned_by_employment_id_fkey"
+            columns: ["assigned_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "asset_assignment_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_assignment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_assignment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      attendance_exception: {
+        Row: {
+          actual_end_at: string | null
+          actual_start_at: string | null
+          calc: Json
+          computed_at: string
+          corrective_action_id: string | null
+          created_at: string
+          created_by: string | null
+          detected_at: string
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          exception_kind: string
+          id: string
+          jurisdiction_id: string
+          local_work_date: string
+          metadata: Json
+          organization_id: string
+          premium_earning_code_id: string | null
+          punch_id: string | null
+          resolution_note: string | null
+          resolution_state: string
+          resolved_at: string | null
+          resolved_by_employment_id: string | null
+          rule_version_ids: string[]
+          scheduled_end_at: string | null
+          scheduled_start_at: string | null
+          severity: string
+          shift_id: string | null
+          tz: string
+          updated_at: string
+          updated_by: string | null
+          variance_minutes: number | null
+          version: number
+          work_interval_id: string | null
+          work_location_id: string
+        }
+        Insert: {
+          actual_end_at?: string | null
+          actual_start_at?: string | null
+          calc?: Json
+          computed_at?: string
+          corrective_action_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detected_at?: string
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          exception_kind: string
+          id?: string
+          jurisdiction_id: string
+          local_work_date: string
+          metadata?: Json
+          organization_id: string
+          premium_earning_code_id?: string | null
+          punch_id?: string | null
+          resolution_note?: string | null
+          resolution_state?: string
+          resolved_at?: string | null
+          resolved_by_employment_id?: string | null
+          rule_version_ids?: string[]
+          scheduled_end_at?: string | null
+          scheduled_start_at?: string | null
+          severity?: string
+          shift_id?: string | null
+          tz: string
+          updated_at?: string
+          updated_by?: string | null
+          variance_minutes?: number | null
+          version?: number
+          work_interval_id?: string | null
+          work_location_id: string
+        }
+        Update: {
+          actual_end_at?: string | null
+          actual_start_at?: string | null
+          calc?: Json
+          computed_at?: string
+          corrective_action_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detected_at?: string
+          employment_id?: string
+          engine_key?: string
+          engine_version?: string
+          exception_kind?: string
+          id?: string
+          jurisdiction_id?: string
+          local_work_date?: string
+          metadata?: Json
+          organization_id?: string
+          premium_earning_code_id?: string | null
+          punch_id?: string | null
+          resolution_note?: string | null
+          resolution_state?: string
+          resolved_at?: string | null
+          resolved_by_employment_id?: string | null
+          rule_version_ids?: string[]
+          scheduled_end_at?: string | null
+          scheduled_start_at?: string | null
+          severity?: string
+          shift_id?: string | null
+          tz?: string
+          updated_at?: string
+          updated_by?: string | null
+          variance_minutes?: number | null
+          version?: number
+          work_interval_id?: string | null
+          work_location_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_exception_corrective_action_fk"
+            columns: ["corrective_action_id"]
+            isOneToOne: false
+            referencedRelation: "corrective_action"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_exception_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_exception_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "attendance_exception_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_exception_premium_earning_code_id_fkey"
+            columns: ["premium_earning_code_id"]
+            isOneToOne: false
+            referencedRelation: "earning_code"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_exception_punch_id_fkey"
+            columns: ["punch_id"]
+            isOneToOne: false
+            referencedRelation: "punch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_exception_resolved_by_employment_id_fkey"
+            columns: ["resolved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_exception_resolved_by_employment_id_fkey"
+            columns: ["resolved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "attendance_exception_shift_fk"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shift"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_exception_shift_fk"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "v_my_week"
+            referencedColumns: ["shift_id"]
+          },
+          {
+            foreignKeyName: "attendance_exception_work_interval_id_fkey"
+            columns: ["work_interval_id"]
+            isOneToOne: false
+            referencedRelation: "work_interval"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_exception_work_location_id_fkey"
+            columns: ["work_location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auto_close_rule: {
+        Row: {
+          apply_break_deduction: boolean
+          blocks_period_lock: boolean
+          break_deduction_minutes: number | null
+          close_at_strategy: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          exception_severity: string
+          grace_minutes: number
+          id: string
+          is_active: boolean
+          max_shift_hours: number | null
+          metadata: Json
+          name: string
+          notify_employee: boolean
+          notify_manager: boolean
+          organization_id: string
+          priority: number
+          raises_exception_kind: string
+          scope_id: string | null
+          scope_kind: string
+          trigger_kind: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          apply_break_deduction?: boolean
+          blocks_period_lock?: boolean
+          break_deduction_minutes?: number | null
+          close_at_strategy?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          exception_severity?: string
+          grace_minutes?: number
+          id?: string
+          is_active?: boolean
+          max_shift_hours?: number | null
+          metadata?: Json
+          name: string
+          notify_employee?: boolean
+          notify_manager?: boolean
+          organization_id: string
+          priority?: number
+          raises_exception_kind?: string
+          scope_id?: string | null
+          scope_kind?: string
+          trigger_kind: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          apply_break_deduction?: boolean
+          blocks_period_lock?: boolean
+          break_deduction_minutes?: number | null
+          close_at_strategy?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          exception_severity?: string
+          grace_minutes?: number
+          id?: string
+          is_active?: boolean
+          max_shift_hours?: number | null
+          metadata?: Json
+          name?: string
+          notify_employee?: boolean
+          notify_manager?: boolean
+          organization_id?: string
+          priority?: number
+          raises_exception_kind?: string
+          scope_id?: string | null
+          scope_kind?: string
+          trigger_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      availability: {
+        Row: {
+          approval_state: string
+          availability_kind: string
+          change_reason_category_id: string | null
+          created_at: string
+          created_by: string | null
+          day_of_week: number | null
+          deleted_at: string | null
+          effective_from: string
+          effective_range: unknown
+          effective_to: string | null
+          employment_id: string
+          ends_at_local: string | null
+          id: string
+          is_all_day: boolean
+          max_hours_per_week: number | null
+          max_shifts_per_week: number | null
+          metadata: Json
+          note: string | null
+          organization_id: string
+          recorded_at: string
+          specific_date: string | null
+          starts_at_local: string | null
+          supersedes_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          approval_state?: string
+          availability_kind: string
+          change_reason_category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: number | null
+          deleted_at?: string | null
+          effective_from: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id: string
+          ends_at_local?: string | null
+          id?: string
+          is_all_day?: boolean
+          max_hours_per_week?: number | null
+          max_shifts_per_week?: number | null
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          recorded_at?: string
+          specific_date?: string | null
+          starts_at_local?: string | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          approval_state?: string
+          availability_kind?: string
+          change_reason_category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          day_of_week?: number | null
+          deleted_at?: string | null
+          effective_from?: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id?: string
+          ends_at_local?: string | null
+          id?: string
+          is_all_day?: boolean
+          max_hours_per_week?: number | null
+          max_shifts_per_week?: number | null
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          recorded_at?: string
+          specific_date?: string | null
+          starts_at_local?: string | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "availability_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "availability"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      background_check: {
+        Row: {
+          adjudicated_at: string | null
+          adjudicated_by_employment_id: string | null
+          adjudication: string | null
+          adverse_action_evidence: Json
+          adverse_action_sent_at: string | null
+          application_id: string | null
+          authorization_esign_request_id: string | null
+          authorization_evidence: Json
+          authorized_at: string | null
+          candidate_response_at: string | null
+          candidate_response_deadline_at: string | null
+          candidate_response_note: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          disclosure_document_file_id: string | null
+          disclosure_presented_at: string | null
+          employment_id: string | null
+          id: string
+          inbound_received_at: string | null
+          inbound_result_file_id: string | null
+          inbound_result_ref: string | null
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          outbound_payload_summary: Json
+          outbound_request_ref: string | null
+          outbound_sent_at: string | null
+          package_kind: string
+          package_name: string | null
+          path: string
+          pre_adverse_evidence: Json
+          pre_adverse_sent_at: string | null
+          provider_account_ref: string | null
+          provider_key: string | null
+          record_class_key: string
+          restricted_note_id: string | null
+          result_summary: string | null
+          retention_trigger_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          adjudicated_at?: string | null
+          adjudicated_by_employment_id?: string | null
+          adjudication?: string | null
+          adverse_action_evidence?: Json
+          adverse_action_sent_at?: string | null
+          application_id?: string | null
+          authorization_esign_request_id?: string | null
+          authorization_evidence?: Json
+          authorized_at?: string | null
+          candidate_response_at?: string | null
+          candidate_response_deadline_at?: string | null
+          candidate_response_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          disclosure_document_file_id?: string | null
+          disclosure_presented_at?: string | null
+          employment_id?: string | null
+          id?: string
+          inbound_received_at?: string | null
+          inbound_result_file_id?: string | null
+          inbound_result_ref?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id: string
+          outbound_payload_summary?: Json
+          outbound_request_ref?: string | null
+          outbound_sent_at?: string | null
+          package_kind: string
+          package_name?: string | null
+          path?: string
+          pre_adverse_evidence?: Json
+          pre_adverse_sent_at?: string | null
+          provider_account_ref?: string | null
+          provider_key?: string | null
+          record_class_key?: string
+          restricted_note_id?: string | null
+          result_summary?: string | null
+          retention_trigger_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          adjudicated_at?: string | null
+          adjudicated_by_employment_id?: string | null
+          adjudication?: string | null
+          adverse_action_evidence?: Json
+          adverse_action_sent_at?: string | null
+          application_id?: string | null
+          authorization_esign_request_id?: string | null
+          authorization_evidence?: Json
+          authorized_at?: string | null
+          candidate_response_at?: string | null
+          candidate_response_deadline_at?: string | null
+          candidate_response_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          disclosure_document_file_id?: string | null
+          disclosure_presented_at?: string | null
+          employment_id?: string | null
+          id?: string
+          inbound_received_at?: string | null
+          inbound_result_file_id?: string | null
+          inbound_result_ref?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id?: string
+          outbound_payload_summary?: Json
+          outbound_request_ref?: string | null
+          outbound_sent_at?: string | null
+          package_kind?: string
+          package_name?: string | null
+          path?: string
+          pre_adverse_evidence?: Json
+          pre_adverse_sent_at?: string | null
+          provider_account_ref?: string | null
+          provider_key?: string | null
+          record_class_key?: string
+          restricted_note_id?: string | null
+          result_summary?: string | null
+          retention_trigger_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "background_check_adjudicated_by_employment_id_fkey"
+            columns: ["adjudicated_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "background_check_adjudicated_by_employment_id_fkey"
+            columns: ["adjudicated_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "background_check_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "background_check_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "background_check_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "background_check_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "background_check_restricted_note_id_fkey"
+            columns: ["restricted_note_id"]
+            isOneToOne: false
+            referencedRelation: "restricted_note"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benefits_event: {
+        Row: {
+          benefits_end_on: string | null
+          cobra_event_kind: string | null
+          created_at: string
+          created_by: string | null
+          deduction_code_ids: string[]
+          deleted_at: string | null
+          election_metadata: Json
+          employment_id: string
+          event_kind: string
+          hours_of_service_basis: Json
+          id: string
+          metadata: Json
+          note: string | null
+          notification_due_on: string | null
+          occurred_on: string
+          organization_id: string
+          provider_confirmation_ref: string | null
+          provider_key: string | null
+          provider_notified_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          benefits_end_on?: string | null
+          cobra_event_kind?: string | null
+          created_at?: string
+          created_by?: string | null
+          deduction_code_ids?: string[]
+          deleted_at?: string | null
+          election_metadata?: Json
+          employment_id: string
+          event_kind: string
+          hours_of_service_basis?: Json
+          id?: string
+          metadata?: Json
+          note?: string | null
+          notification_due_on?: string | null
+          occurred_on: string
+          organization_id: string
+          provider_confirmation_ref?: string | null
+          provider_key?: string | null
+          provider_notified_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          benefits_end_on?: string | null
+          cobra_event_kind?: string | null
+          created_at?: string
+          created_by?: string | null
+          deduction_code_ids?: string[]
+          deleted_at?: string | null
+          election_metadata?: Json
+          employment_id?: string
+          event_kind?: string
+          hours_of_service_basis?: Json
+          id?: string
+          metadata?: Json
+          note?: string | null
+          notification_due_on?: string | null
+          occurred_on?: string
+          organization_id?: string
+          provider_confirmation_ref?: string | null
+          provider_key?: string | null
+          provider_notified_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefits_event_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "benefits_event_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      calculation_snapshot: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          applicability_facts: Json
+          as_of_date: string
+          calculation_kind: string
+          clamps: Json
+          computed_at: string
+          created_at: string
+          created_by: string | null
+          employment_id: string | null
+          engine_key: string
+          engine_version: string
+          id: string
+          inputs: Json
+          jurisdiction_key: string
+          metadata: Json
+          organization_id: string
+          outputs: Json
+          prospective: boolean
+          recalculation_batch_id: string | null
+          resolution: Json
+          subject_id: string
+          subject_type: string
+          superseded_by_id: string | null
+          supersedes_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type: string
+          applicability_facts?: Json
+          as_of_date: string
+          calculation_kind: string
+          clamps?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          employment_id?: string | null
+          engine_key: string
+          engine_version: string
+          id?: string
+          inputs?: Json
+          jurisdiction_key: string
+          metadata?: Json
+          organization_id: string
+          outputs?: Json
+          prospective?: boolean
+          recalculation_batch_id?: string | null
+          resolution?: Json
+          subject_id: string
+          subject_type: string
+          superseded_by_id?: string | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          applicability_facts?: Json
+          as_of_date?: string
+          calculation_kind?: string
+          clamps?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          employment_id?: string | null
+          engine_key?: string
+          engine_version?: string
+          id?: string
+          inputs?: Json
+          jurisdiction_key?: string
+          metadata?: Json
+          organization_id?: string
+          outputs?: Json
+          prospective?: boolean
+          recalculation_batch_id?: string | null
+          resolution?: Json
+          subject_id?: string
+          subject_type?: string
+          superseded_by_id?: string | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calculation_snapshot_employment_fk"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calculation_snapshot_employment_fk"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "calculation_snapshot_jurisdiction_key_fkey"
+            columns: ["jurisdiction_key"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "calculation_snapshot_recalculation_batch_id_fkey"
+            columns: ["recalculation_batch_id"]
+            isOneToOne: false
+            referencedRelation: "recalculation_batch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calculation_snapshot_superseded_by_fk"
+            columns: ["superseded_by_id"]
+            isOneToOne: false
+            referencedRelation: "calculation_snapshot"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calculation_snapshot_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "calculation_snapshot"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          anonymised_at: string | null
+          consent_at: string | null
+          consent_basis: string
+          converted_to_employee_id: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          do_not_contact: boolean
+          email: string | null
+          id: string
+          legal_first_name: string | null
+          legal_hold_count: number
+          legal_last_name: string | null
+          linkedin_url: string | null
+          location_text: string | null
+          metadata: Json
+          organization_id: string
+          party_id: string | null
+          phone: string | null
+          portfolio_url: string | null
+          preferred_name: string | null
+          privacy_request_at: string | null
+          privacy_request_state: string | null
+          record_class_key: string
+          referred_by_employment_id: string | null
+          resume_file_id: string | null
+          retention_trigger_at: string | null
+          source_category_id: string | null
+          source_detail: string | null
+          talent_pool_opt_in: boolean
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          anonymised_at?: string | null
+          consent_at?: string | null
+          consent_basis?: string
+          converted_to_employee_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          do_not_contact?: boolean
+          email?: string | null
+          id?: string
+          legal_first_name?: string | null
+          legal_hold_count?: number
+          legal_last_name?: string | null
+          linkedin_url?: string | null
+          location_text?: string | null
+          metadata?: Json
+          organization_id: string
+          party_id?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          preferred_name?: string | null
+          privacy_request_at?: string | null
+          privacy_request_state?: string | null
+          record_class_key?: string
+          referred_by_employment_id?: string | null
+          resume_file_id?: string | null
+          retention_trigger_at?: string | null
+          source_category_id?: string | null
+          source_detail?: string | null
+          talent_pool_opt_in?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          anonymised_at?: string | null
+          consent_at?: string | null
+          consent_basis?: string
+          converted_to_employee_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          do_not_contact?: boolean
+          email?: string | null
+          id?: string
+          legal_first_name?: string | null
+          legal_hold_count?: number
+          legal_last_name?: string | null
+          linkedin_url?: string | null
+          location_text?: string | null
+          metadata?: Json
+          organization_id?: string
+          party_id?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          preferred_name?: string | null
+          privacy_request_at?: string | null
+          privacy_request_state?: string | null
+          record_class_key?: string
+          referred_by_employment_id?: string | null
+          resume_file_id?: string | null
+          retention_trigger_at?: string | null
+          source_category_id?: string | null
+          source_detail?: string | null
+          talent_pool_opt_in?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "candidate_converted_to_employee_id_fkey"
+            columns: ["converted_to_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_converted_to_employee_id_fkey"
+            columns: ["converted_to_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "candidate_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "candidate_referred_by_employment_id_fkey"
+            columns: ["referred_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_referred_by_employment_id_fkey"
+            columns: ["referred_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      candidate_conversion: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          application_id: string
+          candidate_id: string
+          converted_at: string
+          copied_fields: Json
+          created_at: string
+          created_by: string | null
+          denied_fields: string[]
+          employee_id: string
+          employment_id: string
+          field_map_version: string
+          id: string
+          metadata: Json
+          offer_id: string | null
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          application_id: string
+          candidate_id: string
+          converted_at?: string
+          copied_fields?: Json
+          created_at?: string
+          created_by?: string | null
+          denied_fields?: string[]
+          employee_id: string
+          employment_id: string
+          field_map_version: string
+          id?: string
+          metadata?: Json
+          offer_id?: string | null
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          application_id?: string
+          candidate_id?: string
+          converted_at?: string
+          copied_fields?: Json
+          created_at?: string
+          created_by?: string | null
+          denied_fields?: string[]
+          employee_id?: string
+          employment_id?: string
+          field_map_version?: string
+          id?: string
+          metadata?: Json
+          offer_id?: string | null
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_conversion_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_conversion_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_conversion_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "candidate_conversion_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_conversion_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_conversion_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_conversion_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "candidate_conversion_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_conversion_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "candidate_conversion_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offer"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_message: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          application_id: string | null
+          body_preview: string | null
+          bounced_at: string | null
+          candidate_id: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          delivered_at: string | null
+          direction: string
+          external_message_ref: string | null
+          failure_reason: string | null
+          id: string
+          message_kind: string
+          metadata: Json
+          no_show_flag: boolean
+          notification_id: string | null
+          opened_at: string | null
+          organization_id: string
+          replied_at: string | null
+          sent_at: string | null
+          subject: string | null
+          template_key: string | null
+          template_version: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          application_id?: string | null
+          body_preview?: string | null
+          bounced_at?: string | null
+          candidate_id: string
+          channel: string
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          direction: string
+          external_message_ref?: string | null
+          failure_reason?: string | null
+          id?: string
+          message_kind: string
+          metadata?: Json
+          no_show_flag?: boolean
+          notification_id?: string | null
+          opened_at?: string | null
+          organization_id: string
+          replied_at?: string | null
+          sent_at?: string | null
+          subject?: string | null
+          template_key?: string | null
+          template_version?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          application_id?: string | null
+          body_preview?: string | null
+          bounced_at?: string | null
+          candidate_id?: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          direction?: string
+          external_message_ref?: string | null
+          failure_reason?: string | null
+          id?: string
+          message_kind?: string
+          metadata?: Json
+          no_show_flag?: boolean
+          notification_id?: string | null
+          opened_at?: string | null
+          organization_id?: string
+          replied_at?: string | null
+          sent_at?: string | null
+          subject?: string | null
+          template_key?: string | null
+          template_version?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_message_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_message_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_message_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "candidate_message_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_message_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_message_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_notice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_message_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_notice"
+            referencedColumns: ["notification_id"]
+          },
+        ]
+      }
+      careers_portal: {
+        Row: {
+          about_html: string | null
+          accommodation_notice: string | null
+          ai_use_notice: string | null
+          analytics: Json
+          applicant_privacy_notice: string | null
+          brand: Json
+          created_at: string
+          created_by: string | null
+          custom_domain: string | null
+          custom_domain_verified_at: string | null
+          deleted_at: string | null
+          display_name: string
+          eeo_statement: string | null
+          employer_profile_id: string
+          hero_file_id: string | null
+          id: string
+          locale: string
+          logo_file_id: string | null
+          metadata: Json
+          organization_id: string
+          published_at: string | null
+          show_departments: boolean
+          show_locations: boolean
+          state: string
+          tagline: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          widget_allowed_origins: string[]
+          widget_enabled: boolean
+          widget_key: string
+        }
+        Insert: {
+          about_html?: string | null
+          accommodation_notice?: string | null
+          ai_use_notice?: string | null
+          analytics?: Json
+          applicant_privacy_notice?: string | null
+          brand?: Json
+          created_at?: string
+          created_by?: string | null
+          custom_domain?: string | null
+          custom_domain_verified_at?: string | null
+          deleted_at?: string | null
+          display_name: string
+          eeo_statement?: string | null
+          employer_profile_id: string
+          hero_file_id?: string | null
+          id?: string
+          locale?: string
+          logo_file_id?: string | null
+          metadata?: Json
+          organization_id: string
+          published_at?: string | null
+          show_departments?: boolean
+          show_locations?: boolean
+          state?: string
+          tagline?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          widget_allowed_origins?: string[]
+          widget_enabled?: boolean
+          widget_key: string
+        }
+        Update: {
+          about_html?: string | null
+          accommodation_notice?: string | null
+          ai_use_notice?: string | null
+          analytics?: Json
+          applicant_privacy_notice?: string | null
+          brand?: Json
+          created_at?: string
+          created_by?: string | null
+          custom_domain?: string | null
+          custom_domain_verified_at?: string | null
+          deleted_at?: string | null
+          display_name?: string
+          eeo_statement?: string | null
+          employer_profile_id?: string
+          hero_file_id?: string | null
+          id?: string
+          locale?: string
+          logo_file_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          published_at?: string | null
+          show_departments?: boolean
+          show_locations?: boolean
+          state?: string
+          tagline?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          widget_allowed_origins?: string[]
+          widget_enabled?: boolean
+          widget_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "careers_portal_employer_profile_id_fkey"
+            columns: ["employer_profile_id"]
+            isOneToOne: true
+            referencedRelation: "employer_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_item: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          assignee_employment_id: string | null
+          assignee_role: string
+          checklist_run_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          document_file_id: string | null
+          due_on: string | null
+          esign_request_id: string | null
+          id: string
+          is_blocking: boolean
+          is_statutory: boolean
+          item_kind: string
+          metadata: Json
+          organization_id: string
+          position: number
+          related_id: string | null
+          related_token: string | null
+          result_evidence: Json
+          result_state: string | null
+          state: string
+          template_item_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          verification_source: string | null
+          verified_at: string | null
+          verified_by_employment_id: string | null
+          version: number
+          waiver_reason: string | null
+          workspace_task_id: string | null
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          assignee_employment_id?: string | null
+          assignee_role: string
+          checklist_run_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_file_id?: string | null
+          due_on?: string | null
+          esign_request_id?: string | null
+          id?: string
+          is_blocking?: boolean
+          is_statutory?: boolean
+          item_kind: string
+          metadata?: Json
+          organization_id: string
+          position: number
+          related_id?: string | null
+          related_token?: string | null
+          result_evidence?: Json
+          result_state?: string | null
+          state?: string
+          template_item_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          verification_source?: string | null
+          verified_at?: string | null
+          verified_by_employment_id?: string | null
+          version?: number
+          waiver_reason?: string | null
+          workspace_task_id?: string | null
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          assignee_employment_id?: string | null
+          assignee_role?: string
+          checklist_run_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_file_id?: string | null
+          due_on?: string | null
+          esign_request_id?: string | null
+          id?: string
+          is_blocking?: boolean
+          is_statutory?: boolean
+          item_kind?: string
+          metadata?: Json
+          organization_id?: string
+          position?: number
+          related_id?: string | null
+          related_token?: string | null
+          result_evidence?: Json
+          result_state?: string | null
+          state?: string
+          template_item_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          verification_source?: string | null
+          verified_at?: string | null
+          verified_by_employment_id?: string | null
+          version?: number
+          waiver_reason?: string | null
+          workspace_task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_item_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_item_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_item_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "checklist_item_assignee_employment_id_fkey"
+            columns: ["assignee_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_item_assignee_employment_id_fkey"
+            columns: ["assignee_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "checklist_item_checklist_run_id_fkey"
+            columns: ["checklist_run_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_item_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_template_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_item_verified_by_employment_id_fkey"
+            columns: ["verified_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_item_verified_by_employment_id_fkey"
+            columns: ["verified_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      checklist_run: {
+        Row: {
+          anchor_date: string
+          checklist_template_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          employment_id: string
+          id: string
+          items_complete: number
+          items_failed: number
+          items_total: number
+          lifecycle_event: string
+          metadata: Json
+          opened_at: string
+          organization_id: string
+          reopen_reason: string | null
+          reopened_at: string | null
+          state: string
+          template_snapshot: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          anchor_date: string
+          checklist_template_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          employment_id: string
+          id?: string
+          items_complete?: number
+          items_failed?: number
+          items_total?: number
+          lifecycle_event: string
+          metadata?: Json
+          opened_at?: string
+          organization_id: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          state?: string
+          template_snapshot?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          anchor_date?: string
+          checklist_template_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          employment_id?: string
+          id?: string
+          items_complete?: number
+          items_failed?: number
+          items_total?: number
+          lifecycle_event?: string
+          metadata?: Json
+          opened_at?: string
+          organization_id?: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          state?: string
+          template_snapshot?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_run_checklist_template_id_fkey"
+            columns: ["checklist_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_template"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_run_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_run_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      checklist_template: {
+        Row: {
+          applies_to_department_ids: string[]
+          applies_to_job_title_ids: string[]
+          applies_to_location_ids: string[]
+          applies_to_worker_class: string[]
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          lifecycle_event: string
+          metadata: Json
+          name: string
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          version_label: string | null
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          applies_to_department_ids?: string[]
+          applies_to_job_title_ids?: string[]
+          applies_to_location_ids?: string[]
+          applies_to_worker_class?: string[]
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          lifecycle_event: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          version_label?: string | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          applies_to_department_ids?: string[]
+          applies_to_job_title_ids?: string[]
+          applies_to_location_ids?: string[]
+          applies_to_worker_class?: string[]
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          lifecycle_event?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          version_label?: string | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      checklist_template_item: {
+        Row: {
+          assignee_role: string
+          checklist_template_id: string
+          course_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          due_anchor: string
+          due_offset_days: number | null
+          form_template_ref: string | null
+          id: string
+          is_blocking: boolean
+          is_statutory: boolean
+          item_kind: string
+          metadata: Json
+          organization_id: string
+          position: number
+          provisioning_systems: string[]
+          statutory_rule_class: string | null
+          suppress_when_deceased: boolean
+          suppress_when_worker_class: string[]
+          target_kind: string | null
+          target_ref: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          assignee_role: string
+          checklist_template_id: string
+          course_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_anchor?: string
+          due_offset_days?: number | null
+          form_template_ref?: string | null
+          id?: string
+          is_blocking?: boolean
+          is_statutory?: boolean
+          item_kind: string
+          metadata?: Json
+          organization_id: string
+          position: number
+          provisioning_systems?: string[]
+          statutory_rule_class?: string | null
+          suppress_when_deceased?: boolean
+          suppress_when_worker_class?: string[]
+          target_kind?: string | null
+          target_ref?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          assignee_role?: string
+          checklist_template_id?: string
+          course_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_anchor?: string
+          due_offset_days?: number | null
+          form_template_ref?: string | null
+          id?: string
+          is_blocking?: boolean
+          is_statutory?: boolean
+          item_kind?: string
+          metadata?: Json
+          organization_id?: string
+          position?: number
+          provisioning_systems?: string[]
+          statutory_rule_class?: string | null
+          suppress_when_deceased?: boolean
+          suppress_when_worker_class?: string[]
+          target_kind?: string | null
+          target_ref?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_template_item_checklist_template_id_fkey"
+            columns: ["checklist_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_template"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_template_item_course_fk"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "course"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compensation: {
+        Row: {
+          amount: number
+          annualized_amount: number | null
+          approved_at: string | null
+          approved_by_employment_id: string | null
+          change_reason_category_id: string | null
+          component_kind: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          deleted_at: string | null
+          earning_code_id: string | null
+          effective_from: string
+          effective_range: unknown
+          effective_to: string | null
+          employment_id: string
+          fte: number | null
+          id: string
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          pay_basis: string
+          pay_range_max: number | null
+          pay_range_min: number | null
+          per_unit: string | null
+          position_assignment_id: string | null
+          record_class_key: string
+          recorded_at: string
+          retention_trigger_at: string | null
+          supersedes_id: string | null
+          updated_at: string
+          updated_by: string | null
+          variable_plan_ref: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          workflow_instance_id: string | null
+        }
+        Insert: {
+          amount: number
+          annualized_amount?: number | null
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          change_reason_category_id?: string | null
+          component_kind: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          earning_code_id?: string | null
+          effective_from: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id: string
+          fte?: number | null
+          id?: string
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id: string
+          pay_basis: string
+          pay_range_max?: number | null
+          pay_range_min?: number | null
+          per_unit?: string | null
+          position_assignment_id?: string | null
+          record_class_key?: string
+          recorded_at?: string
+          retention_trigger_at?: string | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          variable_plan_ref?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_instance_id?: string | null
+        }
+        Update: {
+          amount?: number
+          annualized_amount?: number | null
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          change_reason_category_id?: string | null
+          component_kind?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          earning_code_id?: string | null
+          effective_from?: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id?: string
+          fte?: number | null
+          id?: string
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id?: string
+          pay_basis?: string
+          pay_range_max?: number | null
+          pay_range_min?: number | null
+          per_unit?: string | null
+          position_assignment_id?: string | null
+          record_class_key?: string
+          recorded_at?: string
+          retention_trigger_at?: string | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          variable_plan_ref?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compensation_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "compensation_earning_code_id_fkey"
+            columns: ["earning_code_id"]
+            isOneToOne: false
+            referencedRelation: "earning_code"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "compensation_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "position_assignment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_position_current"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "compensation_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "compensation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "v_compensation_current"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      corrective_action: {
+        Row: {
+          attendance_exception_id: string | null
+          category_id: string | null
+          confidentiality_tier: string
+          consequence_if_unmet: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          employee_acknowledged_at: string | null
+          employee_acknowledgement_kind: string | null
+          employee_statement: string | null
+          employment_id: string
+          esign_request_id: string | null
+          expected_improvement: string | null
+          follow_up_on: string | null
+          follow_up_outcome: string | null
+          id: string
+          incident_on: string
+          issued_by_employment_id: string
+          issued_on: string
+          legal_hold_count: number
+          level: string
+          metadata: Json
+          organization_id: string
+          outcome: string | null
+          outcome_on: string | null
+          policy_cited: string | null
+          policy_document_file_id: string | null
+          prior_action_id: string | null
+          record_class_key: string
+          retention_trigger_at: string | null
+          summary: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          attendance_exception_id?: string | null
+          category_id?: string | null
+          confidentiality_tier?: string
+          consequence_if_unmet?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employee_acknowledged_at?: string | null
+          employee_acknowledgement_kind?: string | null
+          employee_statement?: string | null
+          employment_id: string
+          esign_request_id?: string | null
+          expected_improvement?: string | null
+          follow_up_on?: string | null
+          follow_up_outcome?: string | null
+          id?: string
+          incident_on: string
+          issued_by_employment_id: string
+          issued_on: string
+          legal_hold_count?: number
+          level: string
+          metadata?: Json
+          organization_id: string
+          outcome?: string | null
+          outcome_on?: string | null
+          policy_cited?: string | null
+          policy_document_file_id?: string | null
+          prior_action_id?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          summary: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          attendance_exception_id?: string | null
+          category_id?: string | null
+          confidentiality_tier?: string
+          consequence_if_unmet?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employee_acknowledged_at?: string | null
+          employee_acknowledgement_kind?: string | null
+          employee_statement?: string | null
+          employment_id?: string
+          esign_request_id?: string | null
+          expected_improvement?: string | null
+          follow_up_on?: string | null
+          follow_up_outcome?: string | null
+          id?: string
+          incident_on?: string
+          issued_by_employment_id?: string
+          issued_on?: string
+          legal_hold_count?: number
+          level?: string
+          metadata?: Json
+          organization_id?: string
+          outcome?: string | null
+          outcome_on?: string | null
+          policy_cited?: string | null
+          policy_document_file_id?: string | null
+          prior_action_id?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          summary?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corrective_action_attendance_exception_id_fkey"
+            columns: ["attendance_exception_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_exception"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "corrective_action_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "corrective_action_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "corrective_action_issued_by_employment_id_fkey"
+            columns: ["issued_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "corrective_action_issued_by_employment_id_fkey"
+            columns: ["issued_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "corrective_action_prior_fk"
+            columns: ["prior_action_id"]
+            isOneToOne: false
+            referencedRelation: "corrective_action"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "corrective_action_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+        ]
+      }
+      course: {
+        Row: {
+          category_id: string | null
+          code: string | null
+          created_at: string
+          created_by: string | null
+          credential_name: string | null
+          credential_valid_months: number | null
+          current_version_id: string | null
+          custom: Json
+          default_duration_minutes: number | null
+          deleted_at: string | null
+          delivery_kind: string
+          description: string | null
+          external_url: string | null
+          grants_credential: boolean
+          id: string
+          is_active: boolean
+          is_mandated: boolean
+          mandate_rule_class: string | null
+          max_attempts: number | null
+          metadata: Json
+          organization_id: string
+          pass_score: number | null
+          provider_name: string | null
+          recertification_window_days: number | null
+          requires_assessment: boolean
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_name?: string | null
+          credential_valid_months?: number | null
+          current_version_id?: string | null
+          custom?: Json
+          default_duration_minutes?: number | null
+          deleted_at?: string | null
+          delivery_kind?: string
+          description?: string | null
+          external_url?: string | null
+          grants_credential?: boolean
+          id?: string
+          is_active?: boolean
+          is_mandated?: boolean
+          mandate_rule_class?: string | null
+          max_attempts?: number | null
+          metadata?: Json
+          organization_id: string
+          pass_score?: number | null
+          provider_name?: string | null
+          recertification_window_days?: number | null
+          requires_assessment?: boolean
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_name?: string | null
+          credential_valid_months?: number | null
+          current_version_id?: string | null
+          custom?: Json
+          default_duration_minutes?: number | null
+          deleted_at?: string | null
+          delivery_kind?: string
+          description?: string | null
+          external_url?: string | null
+          grants_credential?: boolean
+          id?: string
+          is_active?: boolean
+          is_mandated?: boolean
+          mandate_rule_class?: string | null
+          max_attempts?: number | null
+          metadata?: Json
+          organization_id?: string
+          pass_score?: number | null
+          provider_name?: string | null
+          recertification_window_days?: number | null
+          requires_assessment?: boolean
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_current_version_fk"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "course_version"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_version: {
+        Row: {
+          assessment: Json
+          changelog: string | null
+          content_file_id: string | null
+          content_ref: Json
+          content_sha256: string | null
+          course_id: string
+          created_at: string
+          created_by: string | null
+          duration_minutes: number | null
+          id: string
+          locale: string
+          metadata: Json
+          organization_id: string
+          published_at: string | null
+          retired_at: string | null
+          retirement_reason: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          version_label: string | null
+          version_number: number
+        }
+        Insert: {
+          assessment?: Json
+          changelog?: string | null
+          content_file_id?: string | null
+          content_ref?: Json
+          content_sha256?: string | null
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number | null
+          id?: string
+          locale?: string
+          metadata?: Json
+          organization_id: string
+          published_at?: string | null
+          retired_at?: string | null
+          retirement_reason?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          version_label?: string | null
+          version_number: number
+        }
+        Update: {
+          assessment?: Json
+          changelog?: string | null
+          content_file_id?: string | null
+          content_ref?: Json
+          content_sha256?: string | null
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number | null
+          id?: string
+          locale?: string
+          metadata?: Json
+          organization_id?: string
+          published_at?: string | null
+          retired_at?: string | null
+          retirement_reason?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          version_label?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_version_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "course"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credential: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          credential_category_id: string | null
+          credential_kind: string
+          credential_number: string | null
+          deleted_at: string | null
+          document_file_id: string | null
+          employee_id: string
+          expires_on: string | null
+          id: string
+          issued_on: string | null
+          issuer_kind: string
+          issuer_name: string | null
+          issuer_ref: string | null
+          metadata: Json
+          name: string
+          organization_id: string
+          renewal_of_id: string | null
+          revocation_reason: string | null
+          revoked_on: string | null
+          training_assignment_id: string | null
+          updated_at: string
+          updated_by: string | null
+          verification_state: string
+          verified_at: string | null
+          verified_by_employment_id: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          credential_category_id?: string | null
+          credential_kind: string
+          credential_number?: string | null
+          deleted_at?: string | null
+          document_file_id?: string | null
+          employee_id: string
+          expires_on?: string | null
+          id?: string
+          issued_on?: string | null
+          issuer_kind?: string
+          issuer_name?: string | null
+          issuer_ref?: string | null
+          metadata?: Json
+          name: string
+          organization_id: string
+          renewal_of_id?: string | null
+          revocation_reason?: string | null
+          revoked_on?: string | null
+          training_assignment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_state?: string
+          verified_at?: string | null
+          verified_by_employment_id?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          credential_category_id?: string | null
+          credential_kind?: string
+          credential_number?: string | null
+          deleted_at?: string | null
+          document_file_id?: string | null
+          employee_id?: string
+          expires_on?: string | null
+          id?: string
+          issued_on?: string | null
+          issuer_kind?: string
+          issuer_name?: string | null
+          issuer_ref?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          renewal_of_id?: string | null
+          revocation_reason?: string | null
+          revoked_on?: string | null
+          training_assignment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_state?: string
+          verified_at?: string | null
+          verified_by_employment_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credential_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credential_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "credential_renewal_fk"
+            columns: ["renewal_of_id"]
+            isOneToOne: false
+            referencedRelation: "credential"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credential_training_assignment_fk"
+            columns: ["training_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "training_assignment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credential_verified_by_employment_id_fkey"
+            columns: ["verified_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credential_verified_by_employment_id_fkey"
+            columns: ["verified_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      crew: {
+        Row: {
+          category_id: string | null
+          code: string | null
+          created_at: string
+          created_by: string | null
+          crew_kind: string
+          custom: Json
+          default_job_title_ids: string[]
+          deleted_at: string | null
+          department_id: string | null
+          home_location_id: string | null
+          id: string
+          is_active: boolean
+          is_mobile: boolean
+          lead_employment_id: string | null
+          metadata: Json
+          name: string
+          organization_id: string
+          required_credential_ids: string[]
+          route_definition: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_kind?: string
+          custom?: Json
+          default_job_title_ids?: string[]
+          deleted_at?: string | null
+          department_id?: string | null
+          home_location_id?: string | null
+          id?: string
+          is_active?: boolean
+          is_mobile?: boolean
+          lead_employment_id?: string | null
+          metadata?: Json
+          name: string
+          organization_id: string
+          required_credential_ids?: string[]
+          route_definition?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_kind?: string
+          custom?: Json
+          default_job_title_ids?: string[]
+          deleted_at?: string | null
+          department_id?: string | null
+          home_location_id?: string | null
+          id?: string
+          is_active?: boolean
+          is_mobile?: boolean
+          lead_employment_id?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          required_credential_ids?: string[]
+          route_definition?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_home_location_id_fkey"
+            columns: ["home_location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_lead_employment_id_fkey"
+            columns: ["lead_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_lead_employment_id_fkey"
+            columns: ["lead_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      deduction_code: {
+        Row: {
+          category_id: string | null
+          code: string
+          created_at: string
+          created_by: string | null
+          deduction_kind: string
+          deleted_at: string | null
+          external_code_map: Json
+          id: string
+          is_active: boolean
+          metadata: Json
+          name: string
+          organization_id: string
+          provider_ref: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_id?: string | null
+          code: string
+          created_at?: string
+          created_by?: string | null
+          deduction_kind: string
+          deleted_at?: string | null
+          external_code_map?: Json
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name: string
+          organization_id: string
+          provider_ref?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_id?: string | null
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          deduction_kind?: string
+          deleted_at?: string | null
+          external_code_map?: Json
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          provider_ref?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      department: {
+        Row: {
+          category_id: string | null
+          code: string | null
+          cost_center: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          head_employment_id: string | null
+          id: string
+          is_active: boolean
+          metadata: Json
+          name: string
+          organization_id: string
+          parent_department_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_id?: string | null
+          code?: string | null
+          cost_center?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          head_employment_id?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name: string
+          organization_id: string
+          parent_department_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_id?: string | null
+          code?: string | null
+          cost_center?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          head_employment_id?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          parent_department_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_head_employment_fk"
+            columns: ["head_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "department_head_employment_fk"
+            columns: ["head_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "department_parent_fk"
+            columns: ["parent_department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      derived_grant: {
+        Row: {
+          basis_id: string | null
+          basis_kind: string | null
+          created_at: string
+          created_by: string | null
+          derived_at: string
+          expires_at: string | null
+          grantee_organization_id: string | null
+          grantee_user_id: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          permission_id: string
+          permission_level: string
+          reason: string
+          resource_id: string
+          resource_type: string
+          subject_employment_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          basis_id?: string | null
+          basis_kind?: string | null
+          created_at?: string
+          created_by?: string | null
+          derived_at?: string
+          expires_at?: string | null
+          grantee_organization_id?: string | null
+          grantee_user_id?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          permission_id: string
+          permission_level?: string
+          reason: string
+          resource_id: string
+          resource_type: string
+          subject_employment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          basis_id?: string | null
+          basis_kind?: string | null
+          created_at?: string
+          created_by?: string | null
+          derived_at?: string
+          expires_at?: string | null
+          grantee_organization_id?: string | null
+          grantee_user_id?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          permission_id?: string
+          permission_level?: string
+          reason?: string
+          resource_id?: string
+          resource_type?: string
+          subject_employment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "derived_grant_subject_employment_id_fkey"
+            columns: ["subject_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "derived_grant_subject_employment_id_fkey"
+            columns: ["subject_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      disposition_event: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          approval_ref: string | null
+          approved_by_employment_id: string | null
+          archive_ref: string | null
+          created_at: string
+          created_by: string | null
+          disposition_kind: string
+          eligible_on: string
+          id: string
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          record_class_key: string
+          retention_expression_evaluated: string | null
+          retention_rule_id: string | null
+          row_digest: string
+          row_summary: Json
+          subject_id: string
+          subject_token: string
+          trigger_event_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          approval_ref?: string | null
+          approved_by_employment_id?: string | null
+          archive_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          disposition_kind: string
+          eligible_on: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+          record_class_key: string
+          retention_expression_evaluated?: string | null
+          retention_rule_id?: string | null
+          row_digest: string
+          row_summary?: Json
+          subject_id: string
+          subject_token: string
+          trigger_event_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          approval_ref?: string | null
+          approved_by_employment_id?: string | null
+          archive_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          disposition_kind?: string
+          eligible_on?: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          record_class_key?: string
+          retention_expression_evaluated?: string | null
+          retention_rule_id?: string | null
+          row_digest?: string
+          row_summary?: Json
+          subject_id?: string
+          subject_token?: string
+          trigger_event_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disposition_event_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disposition_event_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disposition_event_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "disposition_event_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disposition_event_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "disposition_event_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "disposition_event_retention_rule_id_fkey"
+            columns: ["retention_rule_id"]
+            isOneToOne: false
+            referencedRelation: "retention_rule"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      earning_code: {
+        Row: {
+          category_id: string | null
+          code: string
+          counts_toward_hours_of_service: boolean
+          counts_toward_ot: boolean
+          counts_toward_sick_accrual: boolean
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          external_code_map: Json
+          flat_amount: number | null
+          hours_category: string
+          id: string
+          is_active: boolean
+          is_overtime: boolean
+          is_seeded: boolean
+          is_statutory_premium: boolean
+          jurisdiction_rule_class: string | null
+          metadata: Json
+          multiplier: number | null
+          name: string
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_id?: string | null
+          code: string
+          counts_toward_hours_of_service?: boolean
+          counts_toward_ot?: boolean
+          counts_toward_sick_accrual?: boolean
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          external_code_map?: Json
+          flat_amount?: number | null
+          hours_category: string
+          id?: string
+          is_active?: boolean
+          is_overtime?: boolean
+          is_seeded?: boolean
+          is_statutory_premium?: boolean
+          jurisdiction_rule_class?: string | null
+          metadata?: Json
+          multiplier?: number | null
+          name: string
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_id?: string | null
+          code?: string
+          counts_toward_hours_of_service?: boolean
+          counts_toward_ot?: boolean
+          counts_toward_sick_accrual?: boolean
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          external_code_map?: Json
+          flat_amount?: number | null
+          hours_category?: string
+          id?: string
+          is_active?: boolean
+          is_overtime?: boolean
+          is_seeded?: boolean
+          is_statutory_premium?: boolean
+          jurisdiction_rule_class?: string | null
+          metadata?: Json
+          multiplier?: number | null
+          name?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      eeo_response: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          application_id: string | null
+          collected_at: string
+          collection_surface: string
+          created_at: string
+          created_by: string | null
+          declined_to_answer: boolean
+          deleted_at: string | null
+          disability_status_category_id: string | null
+          employment_id: string | null
+          ethnicity_category_id: string | null
+          gender_category_id: string | null
+          id: string
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          posting_id: string | null
+          race_category_ids: string[]
+          record_class_key: string
+          retention_trigger_at: string | null
+          subject_kind: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          veteran_status_category_id: string | null
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          application_id?: string | null
+          collected_at?: string
+          collection_surface?: string
+          created_at?: string
+          created_by?: string | null
+          declined_to_answer?: boolean
+          deleted_at?: string | null
+          disability_status_category_id?: string | null
+          employment_id?: string | null
+          ethnicity_category_id?: string | null
+          gender_category_id?: string | null
+          id?: string
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id: string
+          posting_id?: string | null
+          race_category_ids?: string[]
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          subject_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          veteran_status_category_id?: string | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          application_id?: string | null
+          collected_at?: string
+          collection_surface?: string
+          created_at?: string
+          created_by?: string | null
+          declined_to_answer?: boolean
+          deleted_at?: string | null
+          disability_status_category_id?: string | null
+          employment_id?: string | null
+          ethnicity_category_id?: string | null
+          gender_category_id?: string | null
+          id?: string
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id?: string
+          posting_id?: string | null
+          race_category_ids?: string[]
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          subject_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          veteran_status_category_id?: string | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eeo_response_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eeo_response_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eeo_response_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "eeo_response_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eeo_response_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eeo_response_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "eeo_response_posting_id_fkey"
+            columns: ["posting_id"]
+            isOneToOne: false
+            referencedRelation: "posting"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eeo_response_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+        ]
+      }
+      emergency_contact: {
+        Row: {
+          address: Json
+          alt_phone: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          email: string | null
+          employee_id: string
+          full_name: string
+          id: string
+          is_primary: boolean
+          metadata: Json
+          organization_id: string
+          phone: string | null
+          position: number | null
+          relationship_category_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          address?: Json
+          alt_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          employee_id: string
+          full_name: string
+          id?: string
+          is_primary?: boolean
+          metadata?: Json
+          organization_id: string
+          phone?: string | null
+          position?: number | null
+          relationship_category_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          address?: Json
+          alt_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          employee_id?: string
+          full_name?: string
+          id?: string
+          is_primary?: boolean
+          metadata?: Json
+          organization_id?: string
+          phone?: string | null
+          position?: number | null
+          relationship_category_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_contact_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_contact_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+        ]
+      }
+      employee: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_department_id: string | null
+          current_employment_id: string | null
+          current_job_title_id: string | null
+          current_manager_employee_id: string | null
+          current_position_assignment_id: string | null
+          custom: Json
+          deleted_at: string | null
+          directory_opt_out: boolean
+          directory_status: string
+          display_name: string
+          employee_number: string
+          former_names: Json
+          id: string
+          legal_first_name: string
+          legal_hold_count: number
+          legal_last_name: string
+          legal_middle_name: string | null
+          legal_name_suffix: string | null
+          login_user_id: string | null
+          metadata: Json
+          organization_id: string
+          party_id: string
+          photo_file_id: string | null
+          preferred_first_name: string | null
+          preferred_last_name: string | null
+          primary_location_id: string | null
+          pronouns: string | null
+          record_class_key: string
+          retention_trigger_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          work_email: string | null
+          work_phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_department_id?: string | null
+          current_employment_id?: string | null
+          current_job_title_id?: string | null
+          current_manager_employee_id?: string | null
+          current_position_assignment_id?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          directory_opt_out?: boolean
+          directory_status?: string
+          display_name: string
+          employee_number: string
+          former_names?: Json
+          id?: string
+          legal_first_name: string
+          legal_hold_count?: number
+          legal_last_name: string
+          legal_middle_name?: string | null
+          legal_name_suffix?: string | null
+          login_user_id?: string | null
+          metadata?: Json
+          organization_id: string
+          party_id: string
+          photo_file_id?: string | null
+          preferred_first_name?: string | null
+          preferred_last_name?: string | null
+          primary_location_id?: string | null
+          pronouns?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          work_email?: string | null
+          work_phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_department_id?: string | null
+          current_employment_id?: string | null
+          current_job_title_id?: string | null
+          current_manager_employee_id?: string | null
+          current_position_assignment_id?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          directory_opt_out?: boolean
+          directory_status?: string
+          display_name?: string
+          employee_number?: string
+          former_names?: Json
+          id?: string
+          legal_first_name?: string
+          legal_hold_count?: number
+          legal_last_name?: string
+          legal_middle_name?: string | null
+          legal_name_suffix?: string | null
+          login_user_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          party_id?: string
+          photo_file_id?: string | null
+          preferred_first_name?: string | null
+          preferred_last_name?: string | null
+          primary_location_id?: string | null
+          pronouns?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          work_email?: string | null
+          work_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_current_department_id_fkey"
+            columns: ["current_department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_current_employment_fk"
+            columns: ["current_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_current_employment_fk"
+            columns: ["current_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "employee_current_job_title_id_fkey"
+            columns: ["current_job_title_id"]
+            isOneToOne: false
+            referencedRelation: "job_title"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_current_manager_fk"
+            columns: ["current_manager_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_current_manager_fk"
+            columns: ["current_manager_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "employee_current_position_fk"
+            columns: ["current_position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "position_assignment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_current_position_fk"
+            columns: ["current_position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_position_current"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_primary_location_id_fkey"
+            columns: ["primary_location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+        ]
+      }
+      employee_private: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_of_birth: string | null
+          deleted_at: string | null
+          employee_id: string
+          home_address: Json
+          home_address_effective_from: string | null
+          id: string
+          legal_hold_count: number
+          mailing_address: Json
+          metadata: Json
+          national_id_ciphertext: string | null
+          national_id_kind: string | null
+          organization_id: string
+          personal_email: string | null
+          personal_phone: string | null
+          record_class_key: string
+          retention_trigger_at: string | null
+          ssn_ciphertext: string | null
+          ssn_hmac: string | null
+          ssn_key_id: string | null
+          ssn_last4: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          work_authorization_expires_on: string | null
+          work_authorization_kind: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_of_birth?: string | null
+          deleted_at?: string | null
+          employee_id: string
+          home_address?: Json
+          home_address_effective_from?: string | null
+          id?: string
+          legal_hold_count?: number
+          mailing_address?: Json
+          metadata?: Json
+          national_id_ciphertext?: string | null
+          national_id_kind?: string | null
+          organization_id: string
+          personal_email?: string | null
+          personal_phone?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          ssn_ciphertext?: string | null
+          ssn_hmac?: string | null
+          ssn_key_id?: string | null
+          ssn_last4?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          work_authorization_expires_on?: string | null
+          work_authorization_kind?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date_of_birth?: string | null
+          deleted_at?: string | null
+          employee_id?: string
+          home_address?: Json
+          home_address_effective_from?: string | null
+          id?: string
+          legal_hold_count?: number
+          mailing_address?: Json
+          metadata?: Json
+          national_id_ciphertext?: string | null
+          national_id_kind?: string | null
+          organization_id?: string
+          personal_email?: string | null
+          personal_phone?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          ssn_ciphertext?: string | null
+          ssn_hmac?: string | null
+          ssn_key_id?: string | null
+          ssn_last4?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          work_authorization_expires_on?: string | null
+          work_authorization_kind?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_private_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_private_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "employee_private_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+        ]
+      }
+      employer_profile: {
+        Row: {
+          applicability_basis: Json
+          careers_slug: string | null
+          created_at: string
+          created_by: string | null
+          dba_name: string | null
+          deleted_at: string | null
+          ein: string
+          entity_form: string | null
+          everify_required_states: string[]
+          formation_state: string | null
+          headcount_asof_date: string | null
+          headcount_total: number | null
+          id: string
+          is_aca_ale: boolean | null
+          is_eeo1_filer: boolean | null
+          is_federal_contractor: boolean | null
+          is_fmla_covered: boolean | null
+          legal_name: string
+          metadata: Json
+          organization_id: string
+          primary_address: Json
+          settings: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          workers_comp_policy: Json
+        }
+        Insert: {
+          applicability_basis?: Json
+          careers_slug?: string | null
+          created_at?: string
+          created_by?: string | null
+          dba_name?: string | null
+          deleted_at?: string | null
+          ein: string
+          entity_form?: string | null
+          everify_required_states?: string[]
+          formation_state?: string | null
+          headcount_asof_date?: string | null
+          headcount_total?: number | null
+          id?: string
+          is_aca_ale?: boolean | null
+          is_eeo1_filer?: boolean | null
+          is_federal_contractor?: boolean | null
+          is_fmla_covered?: boolean | null
+          legal_name: string
+          metadata?: Json
+          organization_id: string
+          primary_address?: Json
+          settings?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workers_comp_policy?: Json
+        }
+        Update: {
+          applicability_basis?: Json
+          careers_slug?: string | null
+          created_at?: string
+          created_by?: string | null
+          dba_name?: string | null
+          deleted_at?: string | null
+          ein?: string
+          entity_form?: string | null
+          everify_required_states?: string[]
+          formation_state?: string | null
+          headcount_asof_date?: string | null
+          headcount_total?: number | null
+          id?: string
+          is_aca_ale?: boolean | null
+          is_eeo1_filer?: boolean | null
+          is_federal_contractor?: boolean | null
+          is_fmla_covered?: boolean | null
+          legal_name?: string
+          metadata?: Json
+          organization_id?: string
+          primary_address?: Json
+          settings?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workers_comp_policy?: Json
+        }
+        Relationships: []
+      }
+      employment: {
+        Row: {
+          adjusted_service_date: string | null
+          created_at: string
+          created_by: string | null
+          current_manager_employment_id: string | null
+          current_position_assignment_id: string | null
+          custom: Json
+          deleted_at: string | null
+          employee_id: string
+          employer_profile_id: string
+          hire_date: string
+          id: string
+          is_rehire: boolean
+          last_day_worked: string | null
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          original_hire_date: string | null
+          pay_group_id: string | null
+          prior_employment_id: string | null
+          probation_end_date: string | null
+          record_class_key: string
+          retention_trigger_at: string | null
+          scheduled_last_day: string | null
+          separation_id: string | null
+          spell_number: number
+          status: string
+          termination_date: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          adjusted_service_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_manager_employment_id?: string | null
+          current_position_assignment_id?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          employee_id: string
+          employer_profile_id: string
+          hire_date: string
+          id?: string
+          is_rehire?: boolean
+          last_day_worked?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id: string
+          original_hire_date?: string | null
+          pay_group_id?: string | null
+          prior_employment_id?: string | null
+          probation_end_date?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          scheduled_last_day?: string | null
+          separation_id?: string | null
+          spell_number?: number
+          status?: string
+          termination_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          adjusted_service_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_manager_employment_id?: string | null
+          current_position_assignment_id?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          employee_id?: string
+          employer_profile_id?: string
+          hire_date?: string
+          id?: string
+          is_rehire?: boolean
+          last_day_worked?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id?: string
+          original_hire_date?: string | null
+          pay_group_id?: string | null
+          prior_employment_id?: string | null
+          probation_end_date?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          scheduled_last_day?: string | null
+          separation_id?: string | null
+          spell_number?: number
+          status?: string
+          termination_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employment_current_manager_fk"
+            columns: ["current_manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employment_current_manager_fk"
+            columns: ["current_manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "employment_current_position_fk"
+            columns: ["current_position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "position_assignment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employment_current_position_fk"
+            columns: ["current_position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_position_current"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employment_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employment_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "employment_employer_profile_id_fkey"
+            columns: ["employer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employment_pay_group_id_fkey"
+            columns: ["pay_group_id"]
+            isOneToOne: false
+            referencedRelation: "pay_group"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employment_prior_fk"
+            columns: ["prior_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employment_prior_fk"
+            columns: ["prior_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "employment_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "employment_separation_fk"
+            columns: ["separation_id"]
+            isOneToOne: false
+            referencedRelation: "separation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employment_pin: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          employment_id: string
+          failed_attempt_count: number
+          id: string
+          last_failed_at: string | null
+          last_used_at: string | null
+          locked_until: string | null
+          metadata: Json
+          must_reset: boolean
+          organization_id: string
+          pin_algo: string
+          pin_hash: string
+          pin_length: number
+          revoked_at: string | null
+          revoked_reason: string | null
+          rotated_from_id: string | null
+          set_at: string
+          set_by_employment_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employment_id: string
+          failed_attempt_count?: number
+          id?: string
+          last_failed_at?: string | null
+          last_used_at?: string | null
+          locked_until?: string | null
+          metadata?: Json
+          must_reset?: boolean
+          organization_id: string
+          pin_algo?: string
+          pin_hash: string
+          pin_length?: number
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          rotated_from_id?: string | null
+          set_at?: string
+          set_by_employment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employment_id?: string
+          failed_attempt_count?: number
+          id?: string
+          last_failed_at?: string | null
+          last_used_at?: string | null
+          locked_until?: string | null
+          metadata?: Json
+          must_reset?: boolean
+          organization_id?: string
+          pin_algo?: string
+          pin_hash?: string
+          pin_length?: number
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          rotated_from_id?: string | null
+          set_at?: string
+          set_by_employment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employment_pin_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employment_pin_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "employment_pin_rotated_fk"
+            columns: ["rotated_from_id"]
+            isOneToOne: false
+            referencedRelation: "employment_pin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employment_pin_set_by_employment_id_fkey"
+            columns: ["set_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employment_pin_set_by_employment_id_fkey"
+            columns: ["set_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      engagement: {
+        Row: {
+          agreement_file_id: string | null
+          auto_renew: boolean
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          employment_id: string
+          ends_on: string | null
+          engagement_terms: Json
+          id: string
+          metadata: Json
+          organization_id: string
+          platform_external_id: string | null
+          platform_of_record: string
+          platform_url: string | null
+          sow_file_id: string | null
+          starts_on: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          w9_file_id: string | null
+        }
+        Insert: {
+          agreement_file_id?: string | null
+          auto_renew?: boolean
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employment_id: string
+          ends_on?: string | null
+          engagement_terms?: Json
+          id?: string
+          metadata?: Json
+          organization_id: string
+          platform_external_id?: string | null
+          platform_of_record?: string
+          platform_url?: string | null
+          sow_file_id?: string | null
+          starts_on?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          w9_file_id?: string | null
+        }
+        Update: {
+          agreement_file_id?: string | null
+          auto_renew?: boolean
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employment_id?: string
+          ends_on?: string | null
+          engagement_terms?: Json
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          platform_external_id?: string | null
+          platform_of_record?: string
+          platform_url?: string | null
+          sow_file_id?: string | null
+          starts_on?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          w9_file_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagement_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      establishment: {
+        Row: {
+          address: Json
+          annual_average_employees: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          eeo1_establishment_id: string | null
+          employer_profile_id: string
+          id: string
+          is_headquarters: boolean
+          jurisdiction_id: string
+          metadata: Json
+          naics_code: string | null
+          name: string
+          organization_id: string
+          osha_establishment_name: string | null
+          total_hours_worked: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          address?: Json
+          annual_average_employees?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          eeo1_establishment_id?: string | null
+          employer_profile_id: string
+          id?: string
+          is_headquarters?: boolean
+          jurisdiction_id: string
+          metadata?: Json
+          naics_code?: string | null
+          name: string
+          organization_id: string
+          osha_establishment_name?: string | null
+          total_hours_worked?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          address?: Json
+          annual_average_employees?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          eeo1_establishment_id?: string | null
+          employer_profile_id?: string
+          id?: string
+          is_headquarters?: boolean
+          jurisdiction_id?: string
+          metadata?: Json
+          naics_code?: string | null
+          name?: string
+          organization_id?: string
+          osha_establishment_name?: string | null
+          total_hours_worked?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_employer_profile_id_fkey"
+            columns: ["employer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_identity: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          employee_id: string
+          external_id: string
+          external_url: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          payload: Json
+          synced_at: string | null
+          system_key: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employee_id: string
+          external_id: string
+          external_url?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          payload?: Json
+          synced_at?: string | null
+          system_key: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employee_id?: string
+          external_id?: string
+          external_url?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          payload?: Json
+          synced_at?: string | null
+          system_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_identity_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_identity_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+        ]
+      }
+      field_policy: {
+        Row: {
+          approver_action_type: string | null
+          column_name: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          policy: string
+          target_token: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          approver_action_type?: string | null
+          column_name: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          policy: string
+          target_token: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          approver_action_type?: string | null
+          column_name?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          policy?: string
+          target_token?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      holiday: {
+        Row: {
+          actual_on: string | null
+          applies_to_schedule_class: string[]
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          earning_code_id: string | null
+          holiday_calendar_id: string
+          id: string
+          is_paid: boolean
+          location_ids: string[]
+          metadata: Json
+          name: string
+          observed_on: string
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actual_on?: string | null
+          applies_to_schedule_class?: string[]
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          earning_code_id?: string | null
+          holiday_calendar_id: string
+          id?: string
+          is_paid?: boolean
+          location_ids?: string[]
+          metadata?: Json
+          name: string
+          observed_on: string
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actual_on?: string | null
+          applies_to_schedule_class?: string[]
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          earning_code_id?: string | null
+          holiday_calendar_id?: string
+          id?: string
+          is_paid?: boolean
+          location_ids?: string[]
+          metadata?: Json
+          name?: string
+          observed_on?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holiday_earning_code_id_fkey"
+            columns: ["earning_code_id"]
+            isOneToOne: false
+            referencedRelation: "earning_code"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holiday_holiday_calendar_id_fkey"
+            columns: ["holiday_calendar_id"]
+            isOneToOne: false
+            referencedRelation: "holiday_calendar"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holiday_calendar: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          holiday_pay_counts_toward_ot: boolean
+          id: string
+          is_default: boolean
+          jurisdiction_id: string | null
+          metadata: Json
+          name: string
+          organization_id: string
+          settings: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          holiday_pay_counts_toward_ot?: boolean
+          id?: string
+          is_default?: boolean
+          jurisdiction_id?: string | null
+          metadata?: Json
+          name: string
+          organization_id: string
+          settings?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          holiday_pay_counts_toward_ot?: boolean
+          id?: string
+          is_default?: boolean
+          jurisdiction_id?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          settings?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holiday_calendar_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      i9: {
+        Row: {
+          alternative_procedure_used: boolean
+          authorized_representative: Json
+          corrections: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          destroy_eligible_on: string | null
+          employment_id: string
+          esign_request_id: string | null
+          everify_case_number: string | null
+          everify_case_status: string | null
+          everify_required: boolean
+          everify_submitted_at: string | null
+          form_edition: string
+          form_file_id: string | null
+          id: string
+          is_remote_verification: boolean
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          receipt_expires_on: string | null
+          receipt_used: boolean
+          record_class_key: string
+          retention_trigger_at: string | null
+          reverification_completed_at: string | null
+          reverification_due_on: string | null
+          section1_attestation: string | null
+          section1_completed_at: string | null
+          section1_uscis_number: string | null
+          section1_work_auth_expires_on: string | null
+          section2_completed_at: string | null
+          section2_completed_by_employment_id: string | null
+          section2_first_day_of_employment: string | null
+          state: string
+          supplement_a: Json
+          supplement_b: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          alternative_procedure_used?: boolean
+          authorized_representative?: Json
+          corrections?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          destroy_eligible_on?: string | null
+          employment_id: string
+          esign_request_id?: string | null
+          everify_case_number?: string | null
+          everify_case_status?: string | null
+          everify_required?: boolean
+          everify_submitted_at?: string | null
+          form_edition: string
+          form_file_id?: string | null
+          id?: string
+          is_remote_verification?: boolean
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id: string
+          receipt_expires_on?: string | null
+          receipt_used?: boolean
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          reverification_completed_at?: string | null
+          reverification_due_on?: string | null
+          section1_attestation?: string | null
+          section1_completed_at?: string | null
+          section1_uscis_number?: string | null
+          section1_work_auth_expires_on?: string | null
+          section2_completed_at?: string | null
+          section2_completed_by_employment_id?: string | null
+          section2_first_day_of_employment?: string | null
+          state?: string
+          supplement_a?: Json
+          supplement_b?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          alternative_procedure_used?: boolean
+          authorized_representative?: Json
+          corrections?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          destroy_eligible_on?: string | null
+          employment_id?: string
+          esign_request_id?: string | null
+          everify_case_number?: string | null
+          everify_case_status?: string | null
+          everify_required?: boolean
+          everify_submitted_at?: string | null
+          form_edition?: string
+          form_file_id?: string | null
+          id?: string
+          is_remote_verification?: boolean
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id?: string
+          receipt_expires_on?: string | null
+          receipt_used?: boolean
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          reverification_completed_at?: string | null
+          reverification_due_on?: string | null
+          section1_attestation?: string | null
+          section1_completed_at?: string | null
+          section1_uscis_number?: string | null
+          section1_work_auth_expires_on?: string | null
+          section2_completed_at?: string | null
+          section2_completed_by_employment_id?: string | null
+          section2_first_day_of_employment?: string | null
+          state?: string
+          supplement_a?: Json
+          supplement_b?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "i9_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: true
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "i9_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: true
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "i9_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "i9_section2_completed_by_employment_id_fkey"
+            columns: ["section2_completed_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "i9_section2_completed_by_employment_id_fkey"
+            columns: ["section2_completed_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      i9_document: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_number: string | null
+          document_title: string
+          expires_on: string | null
+          i9_id: string
+          id: string
+          image_file_id: string | null
+          is_receipt: boolean
+          issuing_authority: string | null
+          list_group: string
+          metadata: Json
+          organization_id: string
+          presented_at: string | null
+          supplement_b_round: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_number?: string | null
+          document_title: string
+          expires_on?: string | null
+          i9_id: string
+          id?: string
+          image_file_id?: string | null
+          is_receipt?: boolean
+          issuing_authority?: string | null
+          list_group: string
+          metadata?: Json
+          organization_id: string
+          presented_at?: string | null
+          supplement_b_round?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_number?: string | null
+          document_title?: string
+          expires_on?: string | null
+          i9_id?: string
+          id?: string
+          image_file_id?: string | null
+          is_receipt?: boolean
+          issuing_authority?: string | null
+          list_group?: string
+          metadata?: Json
+          organization_id?: string
+          presented_at?: string | null
+          supplement_b_round?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "i9_document_i9_id_fkey"
+            columns: ["i9_id"]
+            isOneToOne: false
+            referencedRelation: "i9"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident: {
+        Row: {
+          assigned_to_employment_id: string | null
+          category_id: string | null
+          corrective_action_id: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          date_of_death: string | null
+          deleted_at: string | null
+          emergency_room: boolean | null
+          establishment_id: string | null
+          excluded_actor_ids: string[]
+          follow_up_on: string | null
+          hospitalized_overnight: boolean | null
+          id: string
+          incident_kind: string
+          injury_body_part: string | null
+          injury_event_description: string | null
+          injury_nature: string | null
+          injury_object_substance: string | null
+          leave_case_id: string | null
+          legal_hold_count: number
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          osha_case_number: string | null
+          osha_days_away: number | null
+          osha_days_restricted: number | null
+          osha_outcome: string | null
+          osha_privacy_case: boolean
+          osha_recordable: boolean | null
+          physician_name: string | null
+          provider_ref: string | null
+          record_class_key: string
+          reported_anonymously: boolean
+          reported_at: string
+          reporter_employment_id: string | null
+          resolution_summary: string | null
+          resolved_at: string | null
+          retention_trigger_at: string | null
+          return_to_work_on: string | null
+          state: string
+          subject_employment_id: string | null
+          subject_excluded: boolean
+          summary: string
+          treatment_beyond_first_aid: boolean | null
+          treatment_facility: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          work_restrictions: string | null
+          workers_comp_claim_ref: string | null
+        }
+        Insert: {
+          assigned_to_employment_id?: string | null
+          category_id?: string | null
+          corrective_action_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          date_of_death?: string | null
+          deleted_at?: string | null
+          emergency_room?: boolean | null
+          establishment_id?: string | null
+          excluded_actor_ids?: string[]
+          follow_up_on?: string | null
+          hospitalized_overnight?: boolean | null
+          id?: string
+          incident_kind: string
+          injury_body_part?: string | null
+          injury_event_description?: string | null
+          injury_nature?: string | null
+          injury_object_substance?: string | null
+          leave_case_id?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          occurred_at: string
+          organization_id: string
+          osha_case_number?: string | null
+          osha_days_away?: number | null
+          osha_days_restricted?: number | null
+          osha_outcome?: string | null
+          osha_privacy_case?: boolean
+          osha_recordable?: boolean | null
+          physician_name?: string | null
+          provider_ref?: string | null
+          record_class_key?: string
+          reported_anonymously?: boolean
+          reported_at?: string
+          reporter_employment_id?: string | null
+          resolution_summary?: string | null
+          resolved_at?: string | null
+          retention_trigger_at?: string | null
+          return_to_work_on?: string | null
+          state?: string
+          subject_employment_id?: string | null
+          subject_excluded?: boolean
+          summary: string
+          treatment_beyond_first_aid?: boolean | null
+          treatment_facility?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          work_restrictions?: string | null
+          workers_comp_claim_ref?: string | null
+        }
+        Update: {
+          assigned_to_employment_id?: string | null
+          category_id?: string | null
+          corrective_action_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          date_of_death?: string | null
+          deleted_at?: string | null
+          emergency_room?: boolean | null
+          establishment_id?: string | null
+          excluded_actor_ids?: string[]
+          follow_up_on?: string | null
+          hospitalized_overnight?: boolean | null
+          id?: string
+          incident_kind?: string
+          injury_body_part?: string | null
+          injury_event_description?: string | null
+          injury_nature?: string | null
+          injury_object_substance?: string | null
+          leave_case_id?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          osha_case_number?: string | null
+          osha_days_away?: number | null
+          osha_days_restricted?: number | null
+          osha_outcome?: string | null
+          osha_privacy_case?: boolean
+          osha_recordable?: boolean | null
+          physician_name?: string | null
+          provider_ref?: string | null
+          record_class_key?: string
+          reported_anonymously?: boolean
+          reported_at?: string
+          reporter_employment_id?: string | null
+          resolution_summary?: string | null
+          resolved_at?: string | null
+          retention_trigger_at?: string | null
+          return_to_work_on?: string | null
+          state?: string
+          subject_employment_id?: string | null
+          subject_excluded?: boolean
+          summary?: string
+          treatment_beyond_first_aid?: boolean | null
+          treatment_facility?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          work_restrictions?: string | null
+          workers_comp_claim_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_assigned_to_employment_id_fkey"
+            columns: ["assigned_to_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_assigned_to_employment_id_fkey"
+            columns: ["assigned_to_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "incident_corrective_action_id_fkey"
+            columns: ["corrective_action_id"]
+            isOneToOne: false
+            referencedRelation: "corrective_action"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_leave_case_id_fkey"
+            columns: ["leave_case_id"]
+            isOneToOne: false
+            referencedRelation: "leave_case"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "incident_reporter_employment_id_fkey"
+            columns: ["reporter_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_reporter_employment_id_fkey"
+            columns: ["reporter_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "incident_subject_employment_id_fkey"
+            columns: ["subject_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_subject_employment_id_fkey"
+            columns: ["subject_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      incident_party: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          employment_id: string | null
+          external_contact: Json
+          external_name: string | null
+          id: string
+          incident_id: string
+          interviewed_at: string | null
+          metadata: Json
+          organization_id: string
+          party_role: string
+          position: number | null
+          statement_note_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employment_id?: string | null
+          external_contact?: Json
+          external_name?: string | null
+          id?: string
+          incident_id: string
+          interviewed_at?: string | null
+          metadata?: Json
+          organization_id: string
+          party_role: string
+          position?: number | null
+          statement_note_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employment_id?: string | null
+          external_contact?: Json
+          external_name?: string | null
+          id?: string
+          incident_id?: string
+          interviewed_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          party_role?: string
+          position?: number | null
+          statement_note_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_party_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_party_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "incident_party_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incident"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_party_statement_note_id_fkey"
+            columns: ["statement_note_id"]
+            isOneToOne: false
+            referencedRelation: "restricted_note"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interview: {
+        Row: {
+          application_id: string
+          candidate_tz: string | null
+          created_at: string
+          created_by: string | null
+          debrief_at: string | null
+          debrief_note: string | null
+          deleted_at: string | null
+          feedback_blind_until_submitted: boolean
+          feedback_due_at: string | null
+          id: string
+          interview_kind: string
+          interviewer_employment_ids: string[]
+          kit_id: string | null
+          location_text: string | null
+          meeting_url: string | null
+          metadata: Json
+          organization_id: string
+          replaced_interviewer_employment_ids: string[]
+          rescheduled_from_id: string | null
+          round_number: number
+          scheduled_end_at: string | null
+          scheduled_start_at: string | null
+          self_schedule_token_ref: string | null
+          self_scheduled: boolean
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          application_id: string
+          candidate_tz?: string | null
+          created_at?: string
+          created_by?: string | null
+          debrief_at?: string | null
+          debrief_note?: string | null
+          deleted_at?: string | null
+          feedback_blind_until_submitted?: boolean
+          feedback_due_at?: string | null
+          id?: string
+          interview_kind?: string
+          interviewer_employment_ids?: string[]
+          kit_id?: string | null
+          location_text?: string | null
+          meeting_url?: string | null
+          metadata?: Json
+          organization_id: string
+          replaced_interviewer_employment_ids?: string[]
+          rescheduled_from_id?: string | null
+          round_number?: number
+          scheduled_end_at?: string | null
+          scheduled_start_at?: string | null
+          self_schedule_token_ref?: string | null
+          self_scheduled?: boolean
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          application_id?: string
+          candidate_tz?: string | null
+          created_at?: string
+          created_by?: string | null
+          debrief_at?: string | null
+          debrief_note?: string | null
+          deleted_at?: string | null
+          feedback_blind_until_submitted?: boolean
+          feedback_due_at?: string | null
+          id?: string
+          interview_kind?: string
+          interviewer_employment_ids?: string[]
+          kit_id?: string | null
+          location_text?: string | null
+          meeting_url?: string | null
+          metadata?: Json
+          organization_id?: string
+          replaced_interviewer_employment_ids?: string[]
+          rescheduled_from_id?: string | null
+          round_number?: number
+          scheduled_end_at?: string | null
+          scheduled_start_at?: string | null
+          self_schedule_token_ref?: string | null
+          self_scheduled?: boolean
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_kit_id_fkey"
+            columns: ["kit_id"]
+            isOneToOne: false
+            referencedRelation: "interview_kit"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interview_kit: {
+        Row: {
+          category_id: string | null
+          competencies: Json
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          estimated_minutes: number | null
+          guidance_for_interviewer: string | null
+          id: string
+          interview_kind: string | null
+          is_active: boolean
+          job_title_id: string | null
+          metadata: Json
+          name: string
+          organization_id: string
+          purpose: string | null
+          questions: Json
+          rating_scale: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_id?: string | null
+          competencies?: Json
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          estimated_minutes?: number | null
+          guidance_for_interviewer?: string | null
+          id?: string
+          interview_kind?: string | null
+          is_active?: boolean
+          job_title_id?: string | null
+          metadata?: Json
+          name: string
+          organization_id: string
+          purpose?: string | null
+          questions?: Json
+          rating_scale?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_id?: string | null
+          competencies?: Json
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          estimated_minutes?: number | null
+          guidance_for_interviewer?: string | null
+          id?: string
+          interview_kind?: string | null
+          is_active?: boolean
+          job_title_id?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          purpose?: string | null
+          questions?: Json
+          rating_scale?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_kit_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "job_title"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_title: {
+        Row: {
+          code: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          default_flsa_status: string | null
+          default_pay_basis: string | null
+          deleted_at: string | null
+          description: string | null
+          eeo1_job_category: string
+          grade: string | null
+          id: string
+          is_active: boolean
+          is_supervisor: boolean
+          job_family: string | null
+          job_level: string | null
+          metadata: Json
+          organization_id: string
+          pay_range_max: number | null
+          pay_range_min: number | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          default_flsa_status?: string | null
+          default_pay_basis?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          eeo1_job_category: string
+          grade?: string | null
+          id?: string
+          is_active?: boolean
+          is_supervisor?: boolean
+          job_family?: string | null
+          job_level?: string | null
+          metadata?: Json
+          organization_id: string
+          pay_range_max?: number | null
+          pay_range_min?: number | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          default_flsa_status?: string | null
+          default_pay_basis?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          eeo1_job_category?: string
+          grade?: string | null
+          id?: string
+          is_active?: boolean
+          is_supervisor?: boolean
+          job_family?: string | null
+          job_level?: string | null
+          metadata?: Json
+          organization_id?: string
+          pay_range_max?: number | null
+          pay_range_min?: number | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      jurisdiction: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          fips_code: string | null
+          id: string
+          is_active: boolean
+          iso_code: string | null
+          key: string
+          level: string
+          metadata: Json
+          name: string
+          organization_id: string
+          parent_key: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          fips_code?: string | null
+          id?: string
+          is_active?: boolean
+          iso_code?: string | null
+          key: string
+          level: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          parent_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          fips_code?: string | null
+          id?: string
+          is_active?: boolean
+          iso_code?: string | null
+          key?: string
+          level?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          parent_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jurisdiction_parent_key_fk"
+            columns: ["parent_key"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      jurisdiction_rule: {
+        Row: {
+          applicability: Json
+          basis: string
+          citation: Json
+          correction_of_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          jurisdiction_key: string
+          metadata: Json
+          organization_id: string
+          parameters: Json
+          rule_class_id: string
+          source_scope: string
+          status: string
+          supersedes_id: string | null
+          updated_at: string
+          updated_by: string | null
+          verification_due: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          applicability?: Json
+          basis: string
+          citation?: Json
+          correction_of_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_from: string
+          effective_to?: string | null
+          id?: string
+          jurisdiction_key: string
+          metadata?: Json
+          organization_id: string
+          parameters?: Json
+          rule_class_id: string
+          source_scope?: string
+          status?: string
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_due?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          applicability?: Json
+          basis?: string
+          citation?: Json
+          correction_of_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          jurisdiction_key?: string
+          metadata?: Json
+          organization_id?: string
+          parameters?: Json
+          rule_class_id?: string
+          source_scope?: string
+          status?: string
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_due?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jurisdiction_rule_correction_of_fk"
+            columns: ["correction_of_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jurisdiction_rule_jurisdiction_key_fkey"
+            columns: ["jurisdiction_key"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "jurisdiction_rule_rule_class_id_fkey"
+            columns: ["rule_class_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule_class"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jurisdiction_rule_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jurisdiction_rule_class: {
+        Row: {
+          absence_semantics: string
+          comparator: string
+          consumer_engines: string[]
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string
+          id: string
+          is_active: boolean
+          label: string
+          metadata: Json
+          org_configurable: string
+          organization_id: string
+          parameter_schema: Json
+          precedence_mode: string
+          produces_money: boolean
+          slug: string
+          supports_preemption: boolean
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          absence_semantics: string
+          comparator: string
+          consumer_engines?: string[]
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description: string
+          id?: string
+          is_active?: boolean
+          label: string
+          metadata?: Json
+          org_configurable: string
+          organization_id: string
+          parameter_schema?: Json
+          precedence_mode: string
+          produces_money?: boolean
+          slug: string
+          supports_preemption?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          absence_semantics?: string
+          comparator?: string
+          consumer_engines?: string[]
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          metadata?: Json
+          org_configurable?: string
+          organization_id?: string
+          parameter_schema?: Json
+          precedence_mode?: string
+          produces_money?: boolean
+          slug?: string
+          supports_preemption?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      jurisdiction_rule_test: {
+        Row: {
+          as_of_date: string
+          assertion_mode: string
+          code: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expected: Json
+          expected_status: string
+          facts: Json
+          id: string
+          input: Json
+          jurisdiction_key: string
+          metadata: Json
+          organization_id: string
+          pinned_rule_id: string | null
+          rule_class_id: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          as_of_date: string
+          assertion_mode?: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expected?: Json
+          expected_status?: string
+          facts?: Json
+          id?: string
+          input?: Json
+          jurisdiction_key: string
+          metadata?: Json
+          organization_id: string
+          pinned_rule_id?: string | null
+          rule_class_id: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          as_of_date?: string
+          assertion_mode?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expected?: Json
+          expected_status?: string
+          facts?: Json
+          id?: string
+          input?: Json
+          jurisdiction_key?: string
+          metadata?: Json
+          organization_id?: string
+          pinned_rule_id?: string | null
+          rule_class_id?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jurisdiction_rule_test_jurisdiction_key_fkey"
+            columns: ["jurisdiction_key"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "jurisdiction_rule_test_pinned_rule_id_fkey"
+            columns: ["pinned_rule_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jurisdiction_rule_test_rule_class_id_fkey"
+            columns: ["rule_class_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule_class"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kiosk_device: {
+        Row: {
+          allowed_geofence: Json
+          clock_skew_seconds: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          device_fingerprint: string | null
+          device_name: string
+          device_secret_hash: string
+          device_secret_set_at: string
+          id: string
+          last_seen_at: string | null
+          last_seen_ip: unknown
+          location_id: string
+          max_clock_skew_seconds: number
+          metadata: Json
+          organization_id: string
+          pairing_claimed_at: string | null
+          pairing_code_expires_at: string | null
+          pairing_code_hash: string | null
+          registered_by_employment_id: string | null
+          require_geo: boolean
+          require_photo: boolean
+          settings: Json
+          trust_state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          allowed_geofence?: Json
+          clock_skew_seconds?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          device_fingerprint?: string | null
+          device_name: string
+          device_secret_hash: string
+          device_secret_set_at?: string
+          id?: string
+          last_seen_at?: string | null
+          last_seen_ip?: unknown
+          location_id: string
+          max_clock_skew_seconds?: number
+          metadata?: Json
+          organization_id: string
+          pairing_claimed_at?: string | null
+          pairing_code_expires_at?: string | null
+          pairing_code_hash?: string | null
+          registered_by_employment_id?: string | null
+          require_geo?: boolean
+          require_photo?: boolean
+          settings?: Json
+          trust_state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          allowed_geofence?: Json
+          clock_skew_seconds?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          device_fingerprint?: string | null
+          device_name?: string
+          device_secret_hash?: string
+          device_secret_set_at?: string
+          id?: string
+          last_seen_at?: string | null
+          last_seen_ip?: unknown
+          location_id?: string
+          max_clock_skew_seconds?: number
+          metadata?: Json
+          organization_id?: string
+          pairing_claimed_at?: string | null
+          pairing_code_expires_at?: string | null
+          pairing_code_hash?: string | null
+          registered_by_employment_id?: string | null
+          require_geo?: boolean
+          require_photo?: boolean
+          settings?: Json
+          trust_state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kiosk_device_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kiosk_device_registered_by_employment_id_fkey"
+            columns: ["registered_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kiosk_device_registered_by_employment_id_fkey"
+            columns: ["registered_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      kiosk_session: {
+        Row: {
+          auth_method: string
+          client_ip: unknown
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          employment_id: string | null
+          end_reason: string | null
+          ended_at: string | null
+          expires_at: string
+          failed_attempt_count: number
+          geo_lat: number | null
+          geo_lng: number | null
+          geo_within_fence: boolean | null
+          id: string
+          kiosk_device_id: string
+          metadata: Json
+          organization_id: string
+          override_by_employment_id: string | null
+          override_reason: string | null
+          photo_file_id: string | null
+          punch_count: number
+          session_token_hash: string
+          started_at: string
+          updated_at: string
+          updated_by: string | null
+          user_agent: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          auth_method: string
+          client_ip?: unknown
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employment_id?: string | null
+          end_reason?: string | null
+          ended_at?: string | null
+          expires_at: string
+          failed_attempt_count?: number
+          geo_lat?: number | null
+          geo_lng?: number | null
+          geo_within_fence?: boolean | null
+          id?: string
+          kiosk_device_id: string
+          metadata?: Json
+          organization_id: string
+          override_by_employment_id?: string | null
+          override_reason?: string | null
+          photo_file_id?: string | null
+          punch_count?: number
+          session_token_hash: string
+          started_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_agent?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          auth_method?: string
+          client_ip?: unknown
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employment_id?: string | null
+          end_reason?: string | null
+          ended_at?: string | null
+          expires_at?: string
+          failed_attempt_count?: number
+          geo_lat?: number | null
+          geo_lng?: number | null
+          geo_within_fence?: boolean | null
+          id?: string
+          kiosk_device_id?: string
+          metadata?: Json
+          organization_id?: string
+          override_by_employment_id?: string | null
+          override_reason?: string | null
+          photo_file_id?: string | null
+          punch_count?: number
+          session_token_hash?: string
+          started_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_agent?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kiosk_session_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kiosk_session_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "kiosk_session_kiosk_device_id_fkey"
+            columns: ["kiosk_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kiosk_session_override_by_employment_id_fkey"
+            columns: ["override_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kiosk_session_override_by_employment_id_fkey"
+            columns: ["override_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      labor_target: {
+        Row: {
+          basis: string | null
+          created_at: string
+          created_by: string | null
+          crew_id: string | null
+          deleted_at: string | null
+          id: string
+          location_id: string
+          metadata: Json
+          organization_id: string
+          period_kind: string
+          period_start_on: string
+          projected_revenue: number | null
+          target_labor_amount: number | null
+          target_labor_percent: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          basis?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          location_id: string
+          metadata?: Json
+          organization_id: string
+          period_kind: string
+          period_start_on: string
+          projected_revenue?: number | null
+          target_labor_amount?: number | null
+          target_labor_percent?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          basis?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          location_id?: string
+          metadata?: Json
+          organization_id?: string
+          period_kind?: string
+          period_start_on?: string
+          projected_revenue?: number | null
+          target_labor_amount?: number | null
+          target_labor_percent?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "labor_target_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "labor_target_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_case: {
+        Row: {
+          actual_return_on: string | null
+          benefits_continuation: Json
+          calc: Json
+          case_kind: string
+          category_id: string | null
+          certification_due_on: string | null
+          certification_received_on: string | null
+          computed_at: string
+          concurrent_policy_ids: string[]
+          continuity: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          eligibility_evaluated_at: string | null
+          eligibility_result: Json
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          entitlement_hours: number | null
+          entitlement_measure: string | null
+          entitlement_period_end_on: string | null
+          entitlement_period_start_on: string | null
+          entitlement_used_hours: number
+          expected_return_on: string | null
+          id: string
+          incident_id: string | null
+          jurisdiction_id: string | null
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          provider_claim_ref: string | null
+          record_class_key: string
+          retention_trigger_at: string | null
+          rule_version_ids: string[]
+          runs_concurrent_with_pto: boolean
+          schedule_impact: Json
+          starts_on: string
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          work_restrictions: string | null
+        }
+        Insert: {
+          actual_return_on?: string | null
+          benefits_continuation?: Json
+          calc?: Json
+          case_kind: string
+          category_id?: string | null
+          certification_due_on?: string | null
+          certification_received_on?: string | null
+          computed_at?: string
+          concurrent_policy_ids?: string[]
+          continuity: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          eligibility_evaluated_at?: string | null
+          eligibility_result?: Json
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          entitlement_hours?: number | null
+          entitlement_measure?: string | null
+          entitlement_period_end_on?: string | null
+          entitlement_period_start_on?: string | null
+          entitlement_used_hours?: number
+          expected_return_on?: string | null
+          id?: string
+          incident_id?: string | null
+          jurisdiction_id?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id: string
+          provider_claim_ref?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          rule_version_ids?: string[]
+          runs_concurrent_with_pto?: boolean
+          schedule_impact?: Json
+          starts_on: string
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          work_restrictions?: string | null
+        }
+        Update: {
+          actual_return_on?: string | null
+          benefits_continuation?: Json
+          calc?: Json
+          case_kind?: string
+          category_id?: string | null
+          certification_due_on?: string | null
+          certification_received_on?: string | null
+          computed_at?: string
+          concurrent_policy_ids?: string[]
+          continuity?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          eligibility_evaluated_at?: string | null
+          eligibility_result?: Json
+          employment_id?: string
+          engine_key?: string
+          engine_version?: string
+          entitlement_hours?: number | null
+          entitlement_measure?: string | null
+          entitlement_period_end_on?: string | null
+          entitlement_period_start_on?: string | null
+          entitlement_used_hours?: number
+          expected_return_on?: string | null
+          id?: string
+          incident_id?: string | null
+          jurisdiction_id?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id?: string
+          provider_claim_ref?: string | null
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          rule_version_ids?: string[]
+          runs_concurrent_with_pto?: boolean
+          schedule_impact?: Json
+          starts_on?: string
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          work_restrictions?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_case_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_case_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "leave_case_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_case_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+        ]
+      }
+      leave_enrollment: {
+        Row: {
+          accrued_ytd_hours: number
+          balance_hours: number
+          change_reason_category_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          effective_from: string
+          effective_range: unknown
+          effective_to: string | null
+          employment_id: string
+          id: string
+          last_accrual_at: string | null
+          leave_policy_id: string
+          metadata: Json
+          organization_id: string
+          pending_hours: number
+          policy_year_start_on: string | null
+          recorded_at: string
+          reinstated_from_employment_id: string | null
+          reinstated_hours: number | null
+          supersedes_id: string | null
+          updated_at: string
+          updated_by: string | null
+          used_ytd_hours: number
+          version: number
+        }
+        Insert: {
+          accrued_ytd_hours?: number
+          balance_hours?: number
+          change_reason_category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_from: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id: string
+          id?: string
+          last_accrual_at?: string | null
+          leave_policy_id: string
+          metadata?: Json
+          organization_id: string
+          pending_hours?: number
+          policy_year_start_on?: string | null
+          recorded_at?: string
+          reinstated_from_employment_id?: string | null
+          reinstated_hours?: number | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          used_ytd_hours?: number
+          version?: number
+        }
+        Update: {
+          accrued_ytd_hours?: number
+          balance_hours?: number
+          change_reason_category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_from?: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id?: string
+          id?: string
+          last_accrual_at?: string | null
+          leave_policy_id?: string
+          metadata?: Json
+          organization_id?: string
+          pending_hours?: number
+          policy_year_start_on?: string | null
+          recorded_at?: string
+          reinstated_from_employment_id?: string | null
+          reinstated_hours?: number | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          used_ytd_hours?: number
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_enrollment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_enrollment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "leave_enrollment_leave_policy_id_fkey"
+            columns: ["leave_policy_id"]
+            isOneToOne: false
+            referencedRelation: "leave_policy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_enrollment_reinstated_from_employment_id_fkey"
+            columns: ["reinstated_from_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_enrollment_reinstated_from_employment_id_fkey"
+            columns: ["reinstated_from_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "leave_enrollment_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "leave_enrollment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_ledger: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          amount: number | null
+          balance_after: number
+          calc: Json
+          computed_at: string
+          created_at: string
+          created_by: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          entry_kind: string
+          hours_delta: number
+          id: string
+          leave_policy_id: string
+          leave_request_id: string | null
+          metadata: Json
+          note: string | null
+          occurred_on: string
+          organization_id: string
+          rate: number | null
+          reverses_entry_id: string | null
+          rule_version_ids: string[]
+          source_work_interval_id: string | null
+          source_workweek_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          amount?: number | null
+          balance_after: number
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          entry_kind: string
+          hours_delta: number
+          id?: string
+          leave_policy_id: string
+          leave_request_id?: string | null
+          metadata?: Json
+          note?: string | null
+          occurred_on: string
+          organization_id: string
+          rate?: number | null
+          reverses_entry_id?: string | null
+          rule_version_ids?: string[]
+          source_work_interval_id?: string | null
+          source_workweek_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          amount?: number | null
+          balance_after?: number
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          employment_id?: string
+          engine_key?: string
+          engine_version?: string
+          entry_kind?: string
+          hours_delta?: number
+          id?: string
+          leave_policy_id?: string
+          leave_request_id?: string | null
+          metadata?: Json
+          note?: string | null
+          occurred_on?: string
+          organization_id?: string
+          rate?: number | null
+          reverses_entry_id?: string | null
+          rule_version_ids?: string[]
+          source_work_interval_id?: string | null
+          source_workweek_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_ledger_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_ledger_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_ledger_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "leave_ledger_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_ledger_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "leave_ledger_leave_policy_id_fkey"
+            columns: ["leave_policy_id"]
+            isOneToOne: false
+            referencedRelation: "leave_policy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_ledger_leave_request_id_fkey"
+            columns: ["leave_request_id"]
+            isOneToOne: false
+            referencedRelation: "leave_request"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_ledger_reverses_fk"
+            columns: ["reverses_entry_id"]
+            isOneToOne: false
+            referencedRelation: "leave_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_ledger_source_work_interval_id_fkey"
+            columns: ["source_work_interval_id"]
+            isOneToOne: false
+            referencedRelation: "work_interval"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_ledger_source_workweek_id_fkey"
+            columns: ["source_workweek_id"]
+            isOneToOne: false
+            referencedRelation: "workweek"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_policy: {
+        Row: {
+          accrual_method: string
+          accrual_per_units: number | null
+          accrual_rate: number | null
+          accrual_starts: string
+          accrual_unit: string | null
+          annual_accrual_cap: number | null
+          balance_cap: number | null
+          blackout_rules: Json
+          carryover_allowed: boolean
+          carryover_cap: number | null
+          carryover_expires_after_days: number | null
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          documentation_required_after_days: number | null
+          earning_code_id: string | null
+          id: string
+          increment_minutes: number
+          is_active: boolean
+          leave_kind: string
+          mandated_uses: Json
+          metadata: Json
+          name: string
+          negative_balance_allowed: boolean
+          negative_balance_floor: number | null
+          organization_id: string
+          payout_on_termination: string
+          reinstate_on_rehire_within_days: number | null
+          requires_approval: boolean
+          schedule_class_scope: string[]
+          statutory_basis_rule_class: string | null
+          statutory_jurisdiction_id: string | null
+          updated_at: string
+          updated_by: string | null
+          usable_after_days: number
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          waiting_period_days: number
+          worker_class_scope: string[]
+        }
+        Insert: {
+          accrual_method: string
+          accrual_per_units?: number | null
+          accrual_rate?: number | null
+          accrual_starts?: string
+          accrual_unit?: string | null
+          annual_accrual_cap?: number | null
+          balance_cap?: number | null
+          blackout_rules?: Json
+          carryover_allowed?: boolean
+          carryover_cap?: number | null
+          carryover_expires_after_days?: number | null
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          documentation_required_after_days?: number | null
+          earning_code_id?: string | null
+          id?: string
+          increment_minutes?: number
+          is_active?: boolean
+          leave_kind: string
+          mandated_uses?: Json
+          metadata?: Json
+          name: string
+          negative_balance_allowed?: boolean
+          negative_balance_floor?: number | null
+          organization_id: string
+          payout_on_termination?: string
+          reinstate_on_rehire_within_days?: number | null
+          requires_approval?: boolean
+          schedule_class_scope?: string[]
+          statutory_basis_rule_class?: string | null
+          statutory_jurisdiction_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          usable_after_days?: number
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          waiting_period_days?: number
+          worker_class_scope?: string[]
+        }
+        Update: {
+          accrual_method?: string
+          accrual_per_units?: number | null
+          accrual_rate?: number | null
+          accrual_starts?: string
+          accrual_unit?: string | null
+          annual_accrual_cap?: number | null
+          balance_cap?: number | null
+          blackout_rules?: Json
+          carryover_allowed?: boolean
+          carryover_cap?: number | null
+          carryover_expires_after_days?: number | null
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          documentation_required_after_days?: number | null
+          earning_code_id?: string | null
+          id?: string
+          increment_minutes?: number
+          is_active?: boolean
+          leave_kind?: string
+          mandated_uses?: Json
+          metadata?: Json
+          name?: string
+          negative_balance_allowed?: boolean
+          negative_balance_floor?: number | null
+          organization_id?: string
+          payout_on_termination?: string
+          reinstate_on_rehire_within_days?: number | null
+          requires_approval?: boolean
+          schedule_class_scope?: string[]
+          statutory_basis_rule_class?: string | null
+          statutory_jurisdiction_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          usable_after_days?: number
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          waiting_period_days?: number
+          worker_class_scope?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_policy_earning_code_id_fkey"
+            columns: ["earning_code_id"]
+            isOneToOne: false
+            referencedRelation: "earning_code"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_policy_statutory_jurisdiction_id_fkey"
+            columns: ["statutory_jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_request: {
+        Row: {
+          affected_shift_ids: string[]
+          approved_hours: number | null
+          balance_at_request: number | null
+          calc: Json
+          computed_at: string
+          conflict_check: Json
+          created_at: string
+          created_by: string | null
+          custom: Json
+          day_parts: Json
+          decided_at: string | null
+          decided_by_employment_id: string | null
+          deleted_at: string | null
+          denial_reason: string | null
+          employment_id: string
+          ends_on: string
+          engine_key: string
+          engine_version: string
+          id: string
+          is_partial_day: boolean
+          leave_case_id: string | null
+          leave_policy_id: string
+          metadata: Json
+          organization_id: string
+          reason_category_id: string | null
+          reason_note: string | null
+          requested_hours: number
+          rule_version_ids: string[]
+          starts_on: string
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workflow_instance_id: string | null
+        }
+        Insert: {
+          affected_shift_ids?: string[]
+          approved_hours?: number | null
+          balance_at_request?: number | null
+          calc?: Json
+          computed_at?: string
+          conflict_check?: Json
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          day_parts?: Json
+          decided_at?: string | null
+          decided_by_employment_id?: string | null
+          deleted_at?: string | null
+          denial_reason?: string | null
+          employment_id: string
+          ends_on: string
+          engine_key: string
+          engine_version: string
+          id?: string
+          is_partial_day?: boolean
+          leave_case_id?: string | null
+          leave_policy_id: string
+          metadata?: Json
+          organization_id: string
+          reason_category_id?: string | null
+          reason_note?: string | null
+          requested_hours: number
+          rule_version_ids?: string[]
+          starts_on: string
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string | null
+        }
+        Update: {
+          affected_shift_ids?: string[]
+          approved_hours?: number | null
+          balance_at_request?: number | null
+          calc?: Json
+          computed_at?: string
+          conflict_check?: Json
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          day_parts?: Json
+          decided_at?: string | null
+          decided_by_employment_id?: string | null
+          deleted_at?: string | null
+          denial_reason?: string | null
+          employment_id?: string
+          ends_on?: string
+          engine_key?: string
+          engine_version?: string
+          id?: string
+          is_partial_day?: boolean
+          leave_case_id?: string | null
+          leave_policy_id?: string
+          metadata?: Json
+          organization_id?: string
+          reason_category_id?: string | null
+          reason_note?: string | null
+          requested_hours?: number
+          rule_version_ids?: string[]
+          starts_on?: string
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_request_decided_by_employment_id_fkey"
+            columns: ["decided_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_request_decided_by_employment_id_fkey"
+            columns: ["decided_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "leave_request_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_request_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "leave_request_leave_case_fk"
+            columns: ["leave_case_id"]
+            isOneToOne: false
+            referencedRelation: "leave_case"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_request_leave_policy_id_fkey"
+            columns: ["leave_policy_id"]
+            isOneToOne: false
+            referencedRelation: "leave_policy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_hold: {
+        Row: {
+          counsel_contact: string | null
+          created_at: string
+          created_by: string | null
+          custodian_employment_id: string | null
+          deleted_at: string | null
+          hold_kind: string
+          id: string
+          issued_by: string
+          matter_name: string
+          matter_ref: string | null
+          metadata: Json
+          notice_evidence: Json
+          notice_sent_at: string | null
+          opened_on: string
+          organization_id: string
+          release_authorised_by: string | null
+          release_note: string | null
+          released_on: string | null
+          scope_description: string
+          scope_selector: Json
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          counsel_contact?: string | null
+          created_at?: string
+          created_by?: string | null
+          custodian_employment_id?: string | null
+          deleted_at?: string | null
+          hold_kind: string
+          id?: string
+          issued_by: string
+          matter_name: string
+          matter_ref?: string | null
+          metadata?: Json
+          notice_evidence?: Json
+          notice_sent_at?: string | null
+          opened_on: string
+          organization_id: string
+          release_authorised_by?: string | null
+          release_note?: string | null
+          released_on?: string | null
+          scope_description: string
+          scope_selector?: Json
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          counsel_contact?: string | null
+          created_at?: string
+          created_by?: string | null
+          custodian_employment_id?: string | null
+          deleted_at?: string | null
+          hold_kind?: string
+          id?: string
+          issued_by?: string
+          matter_name?: string
+          matter_ref?: string | null
+          metadata?: Json
+          notice_evidence?: Json
+          notice_sent_at?: string | null
+          opened_on?: string
+          organization_id?: string
+          release_authorised_by?: string | null
+          release_note?: string | null
+          released_on?: string | null
+          scope_description?: string
+          scope_selector?: Json
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_hold_custodian_employment_id_fkey"
+            columns: ["custodian_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_hold_custodian_employment_id_fkey"
+            columns: ["custodian_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      legal_hold_item: {
+        Row: {
+          applied_at: string
+          created_at: string
+          created_by: string | null
+          id: string
+          legal_hold_id: string
+          metadata: Json
+          organization_id: string
+          record_class_key: string | null
+          release_reason: string | null
+          released_at: string | null
+          subject_id: string
+          subject_token: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          applied_at?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          legal_hold_id: string
+          metadata?: Json
+          organization_id: string
+          record_class_key?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          subject_id: string
+          subject_token: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          applied_at?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          legal_hold_id?: string
+          metadata?: Json
+          organization_id?: string
+          record_class_key?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          subject_id?: string
+          subject_token?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_hold_item_legal_hold_id_fkey"
+            columns: ["legal_hold_id"]
+            isOneToOne: false
+            referencedRelation: "legal_hold"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_hold_item_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+        ]
+      }
+      location: {
+        Row: {
+          address: Json
+          code: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          establishment_id: string | null
+          geo_lat: number | null
+          geo_lng: number | null
+          geofence_radius_m: number | null
+          id: string
+          is_active: boolean
+          is_remote: boolean
+          jurisdiction_id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          settings: Json
+          tz: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          address?: Json
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          establishment_id?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          geofence_radius_m?: number | null
+          id?: string
+          is_active?: boolean
+          is_remote?: boolean
+          jurisdiction_id: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          settings?: Json
+          tz: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          address?: Json
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          establishment_id?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          geofence_radius_m?: number | null
+          id?: string
+          is_active?: boolean
+          is_remote?: boolean
+          jurisdiction_id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          settings?: Json
+          tz?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      new_hire_report: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          artifact_file_id: string | null
+          confirmation_ref: string | null
+          created_at: string
+          created_by: string | null
+          due_on: string
+          employment_id: string
+          failure_reason: string | null
+          id: string
+          jurisdiction_id: string
+          metadata: Json
+          organization_id: string
+          rule_version_id: string | null
+          state: string
+          submission_method: string | null
+          submitted_at: string | null
+          tax_registration_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          artifact_file_id?: string | null
+          confirmation_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_on: string
+          employment_id: string
+          failure_reason?: string | null
+          id?: string
+          jurisdiction_id: string
+          metadata?: Json
+          organization_id: string
+          rule_version_id?: string | null
+          state?: string
+          submission_method?: string | null
+          submitted_at?: string | null
+          tax_registration_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          artifact_file_id?: string | null
+          confirmation_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_on?: string
+          employment_id?: string
+          failure_reason?: string | null
+          id?: string
+          jurisdiction_id?: string
+          metadata?: Json
+          organization_id?: string
+          rule_version_id?: string | null
+          state?: string
+          submission_method?: string | null
+          submitted_at?: string | null
+          tax_registration_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "new_hire_report_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "new_hire_report_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "new_hire_report_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "new_hire_report_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "new_hire_report_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "new_hire_report_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "new_hire_report_rule_version_id_fkey"
+            columns: ["rule_version_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "new_hire_report_tax_registration_id_fkey"
+            columns: ["tax_registration_id"]
+            isOneToOne: false
+            referencedRelation: "tax_registration"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer: {
+        Row: {
+          amount: number
+          application_id: string
+          approved_at: string | null
+          approved_by_employment_id: string | null
+          conditions: Json
+          counter_offer: Json
+          created_at: string
+          created_by: string | null
+          currency: string
+          decline_reason_category_id: string | null
+          deleted_at: string | null
+          department_id: string | null
+          esign_request_id: string | null
+          expires_at: string | null
+          flsa_status: string | null
+          fte: number
+          id: string
+          is_conditional: boolean
+          job_title_id: string
+          legal_hold_count: number
+          location_id: string | null
+          manager_employment_id: string | null
+          metadata: Json
+          offer_letter_file_id: string | null
+          opening_id: string
+          organization_id: string
+          pay_basis: string
+          per_unit: string | null
+          range_exception_reason: string | null
+          range_guardrail_state: string
+          record_class_key: string
+          rescind_reason: string | null
+          responded_at: string | null
+          retention_trigger_at: string | null
+          revision_number: number
+          sent_at: string | null
+          signing_bonus: number | null
+          start_on: string | null
+          start_on_changed_from: string | null
+          state: string
+          supersedes_offer_id: string | null
+          updated_at: string
+          updated_by: string | null
+          variable_pay: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          worker_class: string
+          workflow_instance_id: string | null
+        }
+        Insert: {
+          amount: number
+          application_id: string
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          conditions?: Json
+          counter_offer?: Json
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          decline_reason_category_id?: string | null
+          deleted_at?: string | null
+          department_id?: string | null
+          esign_request_id?: string | null
+          expires_at?: string | null
+          flsa_status?: string | null
+          fte?: number
+          id?: string
+          is_conditional?: boolean
+          job_title_id: string
+          legal_hold_count?: number
+          location_id?: string | null
+          manager_employment_id?: string | null
+          metadata?: Json
+          offer_letter_file_id?: string | null
+          opening_id: string
+          organization_id: string
+          pay_basis: string
+          per_unit?: string | null
+          range_exception_reason?: string | null
+          range_guardrail_state?: string
+          record_class_key?: string
+          rescind_reason?: string | null
+          responded_at?: string | null
+          retention_trigger_at?: string | null
+          revision_number?: number
+          sent_at?: string | null
+          signing_bonus?: number | null
+          start_on?: string | null
+          start_on_changed_from?: string | null
+          state?: string
+          supersedes_offer_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          variable_pay?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          worker_class: string
+          workflow_instance_id?: string | null
+        }
+        Update: {
+          amount?: number
+          application_id?: string
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          conditions?: Json
+          counter_offer?: Json
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          decline_reason_category_id?: string | null
+          deleted_at?: string | null
+          department_id?: string | null
+          esign_request_id?: string | null
+          expires_at?: string | null
+          flsa_status?: string | null
+          fte?: number
+          id?: string
+          is_conditional?: boolean
+          job_title_id?: string
+          legal_hold_count?: number
+          location_id?: string | null
+          manager_employment_id?: string | null
+          metadata?: Json
+          offer_letter_file_id?: string | null
+          opening_id?: string
+          organization_id?: string
+          pay_basis?: string
+          per_unit?: string | null
+          range_exception_reason?: string | null
+          range_guardrail_state?: string
+          record_class_key?: string
+          rescind_reason?: string | null
+          responded_at?: string | null
+          retention_trigger_at?: string | null
+          revision_number?: number
+          sent_at?: string | null
+          signing_bonus?: number | null
+          start_on?: string | null
+          start_on_changed_from?: string | null
+          state?: string
+          supersedes_offer_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          variable_pay?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          worker_class?: string
+          workflow_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "offer_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "job_title"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "offer_opening_id_fkey"
+            columns: ["opening_id"]
+            isOneToOne: false
+            referencedRelation: "opening"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+        ]
+      }
+      opening: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          filled_by_application_id: string | null
+          filled_by_employment_id: string | null
+          filled_on: string | null
+          id: string
+          metadata: Json
+          opening_number: number
+          organization_id: string
+          requisition_id: string
+          state: string
+          target_start_on: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          filled_by_application_id?: string | null
+          filled_by_employment_id?: string | null
+          filled_on?: string | null
+          id?: string
+          metadata?: Json
+          opening_number: number
+          organization_id: string
+          requisition_id: string
+          state?: string
+          target_start_on?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          filled_by_application_id?: string | null
+          filled_by_employment_id?: string | null
+          filled_on?: string | null
+          id?: string
+          metadata?: Json
+          opening_number?: number
+          organization_id?: string
+          requisition_id?: string
+          state?: string
+          target_start_on?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opening_filled_by_employment_id_fkey"
+            columns: ["filled_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opening_filled_by_employment_id_fkey"
+            columns: ["filled_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "opening_requisition_id_fkey"
+            columns: ["requisition_id"]
+            isOneToOne: false
+            referencedRelation: "requisition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      overtime_alert: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by_employment_id: string | null
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          alert_tier: string
+          attendance_exception_id: string | null
+          calc: Json
+          channels_sent: string[]
+          computed_at: string
+          cooldown_until: string | null
+          created_at: string
+          created_by: string | null
+          dedupe_key: string
+          delivered_at: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          fired_at: string
+          id: string
+          last_suppressed_at: string | null
+          metadata: Json
+          notification_ids: string[]
+          observed_value: number
+          organization_id: string
+          outcome: string | null
+          overtime_alert_rule_id: string | null
+          overtime_preapproval_id: string | null
+          projected_value: number | null
+          read_at: string | null
+          recipient_employment_ids: string[]
+          rule_version_ids: string[]
+          suppressed_count: number
+          threshold_kind: string
+          threshold_value: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workweek_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by_employment_id?: string | null
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          alert_tier?: string
+          attendance_exception_id?: string | null
+          calc?: Json
+          channels_sent?: string[]
+          computed_at?: string
+          cooldown_until?: string | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key: string
+          delivered_at?: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          fired_at?: string
+          id?: string
+          last_suppressed_at?: string | null
+          metadata?: Json
+          notification_ids?: string[]
+          observed_value: number
+          organization_id: string
+          outcome?: string | null
+          overtime_alert_rule_id?: string | null
+          overtime_preapproval_id?: string | null
+          projected_value?: number | null
+          read_at?: string | null
+          recipient_employment_ids?: string[]
+          rule_version_ids?: string[]
+          suppressed_count?: number
+          threshold_kind: string
+          threshold_value: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workweek_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by_employment_id?: string | null
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          alert_tier?: string
+          attendance_exception_id?: string | null
+          calc?: Json
+          channels_sent?: string[]
+          computed_at?: string
+          cooldown_until?: string | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string
+          delivered_at?: string | null
+          employment_id?: string
+          engine_key?: string
+          engine_version?: string
+          fired_at?: string
+          id?: string
+          last_suppressed_at?: string | null
+          metadata?: Json
+          notification_ids?: string[]
+          observed_value?: number
+          organization_id?: string
+          outcome?: string | null
+          overtime_alert_rule_id?: string | null
+          overtime_preapproval_id?: string | null
+          projected_value?: number | null
+          read_at?: string | null
+          recipient_employment_ids?: string[]
+          rule_version_ids?: string[]
+          suppressed_count?: number
+          threshold_kind?: string
+          threshold_value?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workweek_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "overtime_alert_acknowledged_by_employment_id_fkey"
+            columns: ["acknowledged_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_alert_acknowledged_by_employment_id_fkey"
+            columns: ["acknowledged_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "overtime_alert_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_alert_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_alert_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "overtime_alert_attendance_exception_id_fkey"
+            columns: ["attendance_exception_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_exception"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_alert_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_alert_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "overtime_alert_overtime_alert_rule_id_fkey"
+            columns: ["overtime_alert_rule_id"]
+            isOneToOne: false
+            referencedRelation: "overtime_alert_rule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_alert_overtime_preapproval_id_fkey"
+            columns: ["overtime_preapproval_id"]
+            isOneToOne: false
+            referencedRelation: "overtime_preapproval"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_alert_workweek_id_fkey"
+            columns: ["workweek_id"]
+            isOneToOne: false
+            referencedRelation: "workweek"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      overtime_alert_rule: {
+        Row: {
+          alert_tier: string
+          cooldown_minutes: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          evaluation_cadence: string
+          grace_minutes: number
+          id: string
+          is_active: boolean
+          metadata: Json
+          name: string
+          notify_channels: string[]
+          notify_employee: boolean
+          notify_roles: string[]
+          organization_id: string
+          scope_id: string | null
+          scope_kind: string
+          threshold_kind: string
+          threshold_value: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          alert_tier?: string
+          cooldown_minutes?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          evaluation_cadence?: string
+          grace_minutes?: number
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name: string
+          notify_channels?: string[]
+          notify_employee?: boolean
+          notify_roles?: string[]
+          organization_id: string
+          scope_id?: string | null
+          scope_kind?: string
+          threshold_kind: string
+          threshold_value: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          alert_tier?: string
+          cooldown_minutes?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          evaluation_cadence?: string
+          grace_minutes?: number
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name?: string
+          notify_channels?: string[]
+          notify_employee?: boolean
+          notify_roles?: string[]
+          organization_id?: string
+          scope_id?: string | null
+          scope_kind?: string
+          threshold_kind?: string
+          threshold_value?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      overtime_preapproval: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          actual_ot_hours: number | null
+          approved_hours: number | null
+          calc: Json
+          computed_at: string
+          corrective_action_id: string | null
+          covers_from: string
+          covers_to: string
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by_employment_id: string | null
+          deleted_at: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          id: string
+          metadata: Json
+          organization_id: string
+          reason_category_id: string | null
+          reason_note: string | null
+          request_kind: string
+          requested_by_employment_id: string
+          requested_hours: number | null
+          rule_version_ids: string[]
+          shift_ids: string[]
+          state: string
+          unapproved_ot_flagged: boolean
+          updated_at: string
+          updated_by: string | null
+          variance_hours: number | null
+          version: number
+          workflow_instance_id: string | null
+          workweek_id: string | null
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          actual_ot_hours?: number | null
+          approved_hours?: number | null
+          calc?: Json
+          computed_at?: string
+          corrective_action_id?: string | null
+          covers_from: string
+          covers_to: string
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by_employment_id?: string | null
+          deleted_at?: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          reason_category_id?: string | null
+          reason_note?: string | null
+          request_kind?: string
+          requested_by_employment_id: string
+          requested_hours?: number | null
+          rule_version_ids?: string[]
+          shift_ids?: string[]
+          state?: string
+          unapproved_ot_flagged?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          variance_hours?: number | null
+          version?: number
+          workflow_instance_id?: string | null
+          workweek_id?: string | null
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          actual_ot_hours?: number | null
+          approved_hours?: number | null
+          calc?: Json
+          computed_at?: string
+          corrective_action_id?: string | null
+          covers_from?: string
+          covers_to?: string
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by_employment_id?: string | null
+          deleted_at?: string | null
+          employment_id?: string
+          engine_key?: string
+          engine_version?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          reason_category_id?: string | null
+          reason_note?: string | null
+          request_kind?: string
+          requested_by_employment_id?: string
+          requested_hours?: number | null
+          rule_version_ids?: string[]
+          shift_ids?: string[]
+          state?: string
+          unapproved_ot_flagged?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          variance_hours?: number | null
+          version?: number
+          workflow_instance_id?: string | null
+          workweek_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "overtime_preapproval_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_preapproval_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_preapproval_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "overtime_preapproval_corrective_action_fk"
+            columns: ["corrective_action_id"]
+            isOneToOne: false
+            referencedRelation: "corrective_action"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_preapproval_decided_by_employment_id_fkey"
+            columns: ["decided_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_preapproval_decided_by_employment_id_fkey"
+            columns: ["decided_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "overtime_preapproval_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_preapproval_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "overtime_preapproval_requested_by_employment_id_fkey"
+            columns: ["requested_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_preapproval_requested_by_employment_id_fkey"
+            columns: ["requested_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "overtime_preapproval_workweek_id_fkey"
+            columns: ["workweek_id"]
+            isOneToOne: false
+            referencedRelation: "workweek"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pay_group: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          default_earning_code_id: string | null
+          deleted_at: string | null
+          employer_profile_id: string
+          first_period_start_on: string
+          holiday_calendar_id: string | null
+          id: string
+          is_active: boolean
+          metadata: Json
+          name: string
+          organization_id: string
+          pay_date_rule: Json
+          pay_frequency: string
+          settings: Json
+          timesheet_required: boolean
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          workweek_effective_from: string
+          workweek_start_dow: number
+          workweek_start_time: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          default_earning_code_id?: string | null
+          deleted_at?: string | null
+          employer_profile_id: string
+          first_period_start_on: string
+          holiday_calendar_id?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name: string
+          organization_id: string
+          pay_date_rule?: Json
+          pay_frequency: string
+          settings?: Json
+          timesheet_required?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workweek_effective_from: string
+          workweek_start_dow?: number
+          workweek_start_time?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          default_earning_code_id?: string | null
+          deleted_at?: string | null
+          employer_profile_id?: string
+          first_period_start_on?: string
+          holiday_calendar_id?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          pay_date_rule?: Json
+          pay_frequency?: string
+          settings?: Json
+          timesheet_required?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workweek_effective_from?: string
+          workweek_start_dow?: number
+          workweek_start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pay_group_default_earning_code_id_fkey"
+            columns: ["default_earning_code_id"]
+            isOneToOne: false
+            referencedRelation: "earning_code"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_group_employer_profile_id_fkey"
+            columns: ["employer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_group_holiday_calendar_id_fkey"
+            columns: ["holiday_calendar_id"]
+            isOneToOne: false
+            referencedRelation: "holiday_calendar"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pay_period: {
+        Row: {
+          approved_at: string | null
+          approved_by_employment_id: string | null
+          boundary_workweek_ids: string[]
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          exported_at: string | null
+          id: string
+          locked_at: string | null
+          locked_by_employment_id: string | null
+          metadata: Json
+          opened_at: string
+          organization_id: string
+          pay_date: string | null
+          pay_group_id: string
+          period_end_on: string
+          period_start_on: string
+          reopen_reason: string | null
+          reopened_at: string | null
+          sequence_number: number
+          state: string
+          submitted_at: string | null
+          submitted_by_employment_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workflow_instance_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          boundary_workweek_ids?: string[]
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          exported_at?: string | null
+          id?: string
+          locked_at?: string | null
+          locked_by_employment_id?: string | null
+          metadata?: Json
+          opened_at?: string
+          organization_id: string
+          pay_date?: string | null
+          pay_group_id: string
+          period_end_on: string
+          period_start_on: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          sequence_number: number
+          state?: string
+          submitted_at?: string | null
+          submitted_by_employment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          boundary_workweek_ids?: string[]
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          exported_at?: string | null
+          id?: string
+          locked_at?: string | null
+          locked_by_employment_id?: string | null
+          metadata?: Json
+          opened_at?: string
+          organization_id?: string
+          pay_date?: string | null
+          pay_group_id?: string
+          period_end_on?: string
+          period_start_on?: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          sequence_number?: number
+          state?: string
+          submitted_at?: string | null
+          submitted_by_employment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pay_period_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_period_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "pay_period_locked_by_employment_id_fkey"
+            columns: ["locked_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_period_locked_by_employment_id_fkey"
+            columns: ["locked_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "pay_period_pay_group_id_fkey"
+            columns: ["pay_group_id"]
+            isOneToOne: false
+            referencedRelation: "pay_group"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_period_submitted_by_employment_id_fkey"
+            columns: ["submitted_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_period_submitted_by_employment_id_fkey"
+            columns: ["submitted_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      pay_period_employment: {
+        Row: {
+          attestation_response: Json
+          attestation_statement: string | null
+          attested_at: string | null
+          calc: Json
+          computed_at: string
+          created_at: string
+          created_by: string | null
+          dispute_note: string | null
+          dispute_resolution: string | null
+          dispute_resolved_at: string | null
+          dispute_resolved_by_employment_id: string | null
+          disputed_at: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          id: string
+          manager_approved_at: string | null
+          manager_approved_by_employment_id: string | null
+          metadata: Json
+          organization_id: string
+          pay_period_id: string
+          rule_version_ids: string[]
+          state: string
+          total_amount: number | null
+          total_hours: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          attestation_response?: Json
+          attestation_statement?: string | null
+          attested_at?: string | null
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          dispute_note?: string | null
+          dispute_resolution?: string | null
+          dispute_resolved_at?: string | null
+          dispute_resolved_by_employment_id?: string | null
+          disputed_at?: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          id?: string
+          manager_approved_at?: string | null
+          manager_approved_by_employment_id?: string | null
+          metadata?: Json
+          organization_id: string
+          pay_period_id: string
+          rule_version_ids?: string[]
+          state?: string
+          total_amount?: number | null
+          total_hours?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          attestation_response?: Json
+          attestation_statement?: string | null
+          attested_at?: string | null
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          dispute_note?: string | null
+          dispute_resolution?: string | null
+          dispute_resolved_at?: string | null
+          dispute_resolved_by_employment_id?: string | null
+          disputed_at?: string | null
+          employment_id?: string
+          engine_key?: string
+          engine_version?: string
+          id?: string
+          manager_approved_at?: string | null
+          manager_approved_by_employment_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          pay_period_id?: string
+          rule_version_ids?: string[]
+          state?: string
+          total_amount?: number | null
+          total_hours?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pay_period_employment_dispute_resolved_by_employment_id_fkey"
+            columns: ["dispute_resolved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_period_employment_dispute_resolved_by_employment_id_fkey"
+            columns: ["dispute_resolved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "pay_period_employment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_period_employment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "pay_period_employment_manager_approved_by_employment_id_fkey"
+            columns: ["manager_approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_period_employment_manager_approved_by_employment_id_fkey"
+            columns: ["manager_approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "pay_period_employment_pay_period_id_fkey"
+            columns: ["pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_period"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_export: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledgement_ref: string | null
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          artifact_file_id: string | null
+          artifact_sha256: string | null
+          created_at: string
+          created_by: string | null
+          delivery_state: string
+          export_format: string
+          export_version: number
+          failure_reason: string | null
+          generated_at: string
+          id: string
+          idempotency_key: string
+          includes_adjustment_ids: string[]
+          line_count: number
+          metadata: Json
+          organization_id: string
+          pay_period_id: string
+          sent_at: string | null
+          supersedes_export_id: string | null
+          total_amount: number | null
+          total_hours: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledgement_ref?: string | null
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          artifact_file_id?: string | null
+          artifact_sha256?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_state?: string
+          export_format: string
+          export_version?: number
+          failure_reason?: string | null
+          generated_at?: string
+          id?: string
+          idempotency_key: string
+          includes_adjustment_ids?: string[]
+          line_count?: number
+          metadata?: Json
+          organization_id: string
+          pay_period_id: string
+          sent_at?: string | null
+          supersedes_export_id?: string | null
+          total_amount?: number | null
+          total_hours?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledgement_ref?: string | null
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          artifact_file_id?: string | null
+          artifact_sha256?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_state?: string
+          export_format?: string
+          export_version?: number
+          failure_reason?: string | null
+          generated_at?: string
+          id?: string
+          idempotency_key?: string
+          includes_adjustment_ids?: string[]
+          line_count?: number
+          metadata?: Json
+          organization_id?: string
+          pay_period_id?: string
+          sent_at?: string | null
+          supersedes_export_id?: string | null
+          total_amount?: number | null
+          total_hours?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_export_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_export_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_export_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "payroll_export_pay_period_id_fkey"
+            columns: ["pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_period"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_export_supersedes_fk"
+            columns: ["supersedes_export_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_export"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_export_line: {
+        Row: {
+          amount: number | null
+          calc: Json
+          computed_at: string
+          created_at: string
+          created_by: string | null
+          earning_code: string
+          employee_number: string
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          external_earning_code: string | null
+          external_employee_id: string | null
+          hours: number
+          hours_category: string
+          id: string
+          job_title_snapshot: string | null
+          jurisdiction_key: string
+          metadata: Json
+          organization_id: string
+          original_pay_period_id: string | null
+          payroll_export_id: string
+          position_assignment_id: string | null
+          rate: number | null
+          rule_version_ids: string[]
+          source_version: number
+          source_work_interval_ids: string[]
+          updated_at: string
+          updated_by: string | null
+          version: number
+          work_date: string
+        }
+        Insert: {
+          amount?: number | null
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          earning_code: string
+          employee_number: string
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          external_earning_code?: string | null
+          external_employee_id?: string | null
+          hours?: number
+          hours_category: string
+          id?: string
+          job_title_snapshot?: string | null
+          jurisdiction_key: string
+          metadata?: Json
+          organization_id: string
+          original_pay_period_id?: string | null
+          payroll_export_id: string
+          position_assignment_id?: string | null
+          rate?: number | null
+          rule_version_ids?: string[]
+          source_version: number
+          source_work_interval_ids?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          work_date: string
+        }
+        Update: {
+          amount?: number | null
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          earning_code?: string
+          employee_number?: string
+          employment_id?: string
+          engine_key?: string
+          engine_version?: string
+          external_earning_code?: string | null
+          external_employee_id?: string | null
+          hours?: number
+          hours_category?: string
+          id?: string
+          job_title_snapshot?: string | null
+          jurisdiction_key?: string
+          metadata?: Json
+          organization_id?: string
+          original_pay_period_id?: string | null
+          payroll_export_id?: string
+          position_assignment_id?: string | null
+          rate?: number | null
+          rule_version_ids?: string[]
+          source_version?: number
+          source_work_interval_ids?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          work_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_export_line_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_export_line_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "payroll_export_line_original_pay_period_id_fkey"
+            columns: ["original_pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_period"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_export_line_payroll_export_id_fkey"
+            columns: ["payroll_export_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_export"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_export_line_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "position_assignment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_export_line_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_position_current"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      position_assignment: {
+        Row: {
+          change_reason_category_id: string | null
+          cost_center: string | null
+          created_at: string
+          created_by: string | null
+          crew_id: string | null
+          custom: Json
+          deleted_at: string | null
+          department_id: string
+          eeo1_job_category: string | null
+          effective_from: string
+          effective_range: unknown
+          effective_to: string | null
+          employment_id: string
+          flsa_exemption_basis: string | null
+          flsa_status: string
+          fte: number
+          id: string
+          is_primary: boolean
+          is_supervisor: boolean
+          job_title_id: string
+          location_id: string
+          manager_employment_id: string | null
+          metadata: Json
+          organization_id: string
+          pay_basis: string
+          recorded_at: string
+          requisition_id: string | null
+          schedule_class: string
+          standard_hours_per_week: number | null
+          supersedes_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          worker_class: string
+        }
+        Insert: {
+          change_reason_category_id?: string | null
+          cost_center?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          department_id: string
+          eeo1_job_category?: string | null
+          effective_from: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id: string
+          flsa_exemption_basis?: string | null
+          flsa_status: string
+          fte?: number
+          id?: string
+          is_primary?: boolean
+          is_supervisor?: boolean
+          job_title_id: string
+          location_id: string
+          manager_employment_id?: string | null
+          metadata?: Json
+          organization_id: string
+          pay_basis: string
+          recorded_at?: string
+          requisition_id?: string | null
+          schedule_class: string
+          standard_hours_per_week?: number | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          worker_class: string
+        }
+        Update: {
+          change_reason_category_id?: string | null
+          cost_center?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          department_id?: string
+          eeo1_job_category?: string | null
+          effective_from?: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id?: string
+          flsa_exemption_basis?: string | null
+          flsa_status?: string
+          fte?: number
+          id?: string
+          is_primary?: boolean
+          is_supervisor?: boolean
+          job_title_id?: string
+          location_id?: string
+          manager_employment_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          pay_basis?: string
+          recorded_at?: string
+          requisition_id?: string | null
+          schedule_class?: string
+          standard_hours_per_week?: number | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          worker_class?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "position_assignment_crew_fk"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "position_assignment_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "job_title"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "position_assignment_requisition_fk"
+            columns: ["requisition_id"]
+            isOneToOne: false
+            referencedRelation: "requisition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "position_assignment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "v_position_current"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posting: {
+        Row: {
+          accommodation_notice: string | null
+          ai_use_notice: string | null
+          allow_widget: boolean
+          application_form: Json
+          apply_url: string | null
+          channels: Json
+          closes_at: string | null
+          collects_eeo_self_id: boolean
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description_html: string | null
+          employment_type_display: string | null
+          id: string
+          is_remote: boolean
+          list_on_portal: boolean
+          location_display: string | null
+          metadata: Json
+          organization_id: string
+          pay_range_display: string | null
+          pay_transparency_required: boolean
+          published_at: string | null
+          requisition_id: string
+          slug: string
+          state: string
+          summary: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          view_count: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          accommodation_notice?: string | null
+          ai_use_notice?: string | null
+          allow_widget?: boolean
+          application_form?: Json
+          apply_url?: string | null
+          channels?: Json
+          closes_at?: string | null
+          collects_eeo_self_id?: boolean
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description_html?: string | null
+          employment_type_display?: string | null
+          id?: string
+          is_remote?: boolean
+          list_on_portal?: boolean
+          location_display?: string | null
+          metadata?: Json
+          organization_id: string
+          pay_range_display?: string | null
+          pay_transparency_required?: boolean
+          published_at?: string | null
+          requisition_id: string
+          slug: string
+          state?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          view_count?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          accommodation_notice?: string | null
+          ai_use_notice?: string | null
+          allow_widget?: boolean
+          application_form?: Json
+          apply_url?: string | null
+          channels?: Json
+          closes_at?: string | null
+          collects_eeo_self_id?: boolean
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description_html?: string | null
+          employment_type_display?: string | null
+          id?: string
+          is_remote?: boolean
+          list_on_portal?: boolean
+          location_display?: string | null
+          metadata?: Json
+          organization_id?: string
+          pay_range_display?: string | null
+          pay_transparency_required?: boolean
+          published_at?: string | null
+          requisition_id?: string
+          slug?: string
+          state?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          view_count?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posting_requisition_id_fkey"
+            columns: ["requisition_id"]
+            isOneToOne: false
+            referencedRelation: "requisition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posting_publication: {
+        Row: {
+          application_count: number
+          apply_start_count: number
+          careers_portal_id: string | null
+          channel: string
+          channel_ref: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_at: string | null
+          external_posting_id: string | null
+          external_url: string | null
+          failure_reason: string | null
+          id: string
+          last_synced_at: string | null
+          metadata: Json
+          organization_id: string
+          posting_id: string
+          published_at: string | null
+          removed_at: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          view_count: number
+        }
+        Insert: {
+          application_count?: number
+          apply_start_count?: number
+          careers_portal_id?: string | null
+          channel: string
+          channel_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          external_posting_id?: string | null
+          external_url?: string | null
+          failure_reason?: string | null
+          id?: string
+          last_synced_at?: string | null
+          metadata?: Json
+          organization_id: string
+          posting_id: string
+          published_at?: string | null
+          removed_at?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          view_count?: number
+        }
+        Update: {
+          application_count?: number
+          apply_start_count?: number
+          careers_portal_id?: string | null
+          channel?: string
+          channel_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          external_posting_id?: string | null
+          external_url?: string | null
+          failure_reason?: string | null
+          id?: string
+          last_synced_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          posting_id?: string
+          published_at?: string | null
+          removed_at?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posting_publication_careers_portal_id_fkey"
+            columns: ["careers_portal_id"]
+            isOneToOne: false
+            referencedRelation: "careers_portal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posting_publication_posting_id_fkey"
+            columns: ["posting_id"]
+            isOneToOne: false
+            referencedRelation: "posting"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provisioning_result: {
+        Row: {
+          account_ref: string | null
+          action: string
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          checklist_item_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          employment_id: string
+          evidence: Json
+          failure_reason: string | null
+          id: string
+          immediacy: string | null
+          metadata: Json
+          organization_id: string
+          outcome: string
+          requested_at: string
+          retry_count: number
+          scheduled_for: string | null
+          system_display_name: string | null
+          system_key: string
+          updated_at: string
+          updated_by: string | null
+          verification_method: string | null
+          verified_at: string | null
+          version: number
+        }
+        Insert: {
+          account_ref?: string | null
+          action: string
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          checklist_item_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          employment_id: string
+          evidence?: Json
+          failure_reason?: string | null
+          id?: string
+          immediacy?: string | null
+          metadata?: Json
+          organization_id: string
+          outcome?: string
+          requested_at?: string
+          retry_count?: number
+          scheduled_for?: string | null
+          system_display_name?: string | null
+          system_key: string
+          updated_at?: string
+          updated_by?: string | null
+          verification_method?: string | null
+          verified_at?: string | null
+          version?: number
+        }
+        Update: {
+          account_ref?: string | null
+          action?: string
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          checklist_item_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          employment_id?: string
+          evidence?: Json
+          failure_reason?: string | null
+          id?: string
+          immediacy?: string | null
+          metadata?: Json
+          organization_id?: string
+          outcome?: string
+          requested_at?: string
+          retry_count?: number
+          scheduled_for?: string | null
+          system_display_name?: string | null
+          system_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          verification_method?: string | null
+          verified_at?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provisioning_result_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provisioning_result_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provisioning_result_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "provisioning_result_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provisioning_result_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provisioning_result_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      punch: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          attestation_kind: string | null
+          attestation_response: Json
+          break_paid: boolean | null
+          clock_skew_applied_seconds: number
+          created_at: string
+          created_by: string | null
+          device_reported_at: string | null
+          employment_id: string
+          entered_reason: string | null
+          geo_accuracy_m: number | null
+          geo_lat: number | null
+          geo_lng: number | null
+          id: string
+          idempotency_key: string
+          jurisdiction_id: string
+          local_work_date: string
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          original_values: Json
+          photo_file_id: string | null
+          position_assignment_id: string | null
+          punch_kind: string
+          server_received_at: string
+          shift_id: string | null
+          source: string
+          source_ip: unknown
+          tz: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          voided_at: string | null
+          voided_by_punch_id: string | null
+          voided_reason: string | null
+          work_location_id: string
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          attestation_kind?: string | null
+          attestation_response?: Json
+          break_paid?: boolean | null
+          clock_skew_applied_seconds?: number
+          created_at?: string
+          created_by?: string | null
+          device_reported_at?: string | null
+          employment_id: string
+          entered_reason?: string | null
+          geo_accuracy_m?: number | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          id?: string
+          idempotency_key: string
+          jurisdiction_id: string
+          local_work_date: string
+          metadata?: Json
+          occurred_at: string
+          organization_id: string
+          original_values?: Json
+          photo_file_id?: string | null
+          position_assignment_id?: string | null
+          punch_kind: string
+          server_received_at?: string
+          shift_id?: string | null
+          source: string
+          source_ip?: unknown
+          tz: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          voided_at?: string | null
+          voided_by_punch_id?: string | null
+          voided_reason?: string | null
+          work_location_id: string
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          attestation_kind?: string | null
+          attestation_response?: Json
+          break_paid?: boolean | null
+          clock_skew_applied_seconds?: number
+          created_at?: string
+          created_by?: string | null
+          device_reported_at?: string | null
+          employment_id?: string
+          entered_reason?: string | null
+          geo_accuracy_m?: number | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          id?: string
+          idempotency_key?: string
+          jurisdiction_id?: string
+          local_work_date?: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          original_values?: Json
+          photo_file_id?: string | null
+          position_assignment_id?: string | null
+          punch_kind?: string
+          server_received_at?: string
+          shift_id?: string | null
+          source?: string
+          source_ip?: unknown
+          tz?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          voided_at?: string | null
+          voided_by_punch_id?: string | null
+          voided_reason?: string | null
+          work_location_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "punch_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "punch_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "punch_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "position_assignment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_position_current"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_shift_fk"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shift"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_shift_fk"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "v_my_week"
+            referencedColumns: ["shift_id"]
+          },
+          {
+            foreignKeyName: "punch_voided_fk"
+            columns: ["voided_by_punch_id"]
+            isOneToOne: false
+            referencedRelation: "punch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_work_location_id_fkey"
+            columns: ["work_location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recalculation_batch: {
+        Row: {
+          adjustments_created: number
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          reason: string
+          scope: Json
+          snapshots_superseded: number
+          state: string
+          trigger: string
+          triggering_rule_id: string | null
+          triggering_rule_version: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          adjustments_created?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          reason: string
+          scope?: Json
+          snapshots_superseded?: number
+          state?: string
+          trigger: string
+          triggering_rule_id?: string | null
+          triggering_rule_version?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          adjustments_created?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          reason?: string
+          scope?: Json
+          snapshots_superseded?: number
+          state?: string
+          trigger?: string
+          triggering_rule_id?: string | null
+          triggering_rule_version?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recalculation_batch_triggering_rule_id_fkey"
+            columns: ["triggering_rule_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      record_class: {
+        Row: {
+          class_key: string
+          created_at: string
+          created_by: string | null
+          default_retention_months: number | null
+          deleted_at: string | null
+          description: string | null
+          entity_tokens: string[]
+          export_representation: string | null
+          hard_delete_blocked: boolean
+          id: string
+          is_active: boolean
+          label: string
+          metadata: Json
+          organization_id: string
+          sensitivity_tier: string
+          separate_storage_required: boolean
+          storage_note: string | null
+          trigger_event: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          class_key: string
+          created_at?: string
+          created_by?: string | null
+          default_retention_months?: number | null
+          deleted_at?: string | null
+          description?: string | null
+          entity_tokens?: string[]
+          export_representation?: string | null
+          hard_delete_blocked?: boolean
+          id?: string
+          is_active?: boolean
+          label: string
+          metadata?: Json
+          organization_id: string
+          sensitivity_tier: string
+          separate_storage_required?: boolean
+          storage_note?: string | null
+          trigger_event: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          class_key?: string
+          created_at?: string
+          created_by?: string | null
+          default_retention_months?: number | null
+          deleted_at?: string | null
+          description?: string | null
+          entity_tokens?: string[]
+          export_representation?: string | null
+          hard_delete_blocked?: boolean
+          id?: string
+          is_active?: boolean
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          sensitivity_tier?: string
+          separate_storage_required?: boolean
+          storage_note?: string | null
+          trigger_event?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      records_request: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          delivered_at: string | null
+          delivered_file_id: string | null
+          delivery_method: string | null
+          denial_basis: string | null
+          due_on: string
+          employee_id: string | null
+          employment_id: string | null
+          id: string
+          jurisdiction_id: string | null
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          outsider_token_ref: string | null
+          record_class_key: string
+          requested_at: string
+          requester_email: string | null
+          requester_kind: string
+          requester_name: string
+          requester_verified_at: string | null
+          retention_trigger_at: string | null
+          rule_version_id: string | null
+          scope: string
+          scope_detail: Json
+          state: string
+          statutory_basis: string | null
+          updated_at: string
+          updated_by: string | null
+          verification_method: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivered_file_id?: string | null
+          delivery_method?: string | null
+          denial_basis?: string | null
+          due_on: string
+          employee_id?: string | null
+          employment_id?: string | null
+          id?: string
+          jurisdiction_id?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id: string
+          outsider_token_ref?: string | null
+          record_class_key?: string
+          requested_at?: string
+          requester_email?: string | null
+          requester_kind: string
+          requester_name: string
+          requester_verified_at?: string | null
+          retention_trigger_at?: string | null
+          rule_version_id?: string | null
+          scope: string
+          scope_detail?: Json
+          state?: string
+          statutory_basis?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_method?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivered_file_id?: string | null
+          delivery_method?: string | null
+          denial_basis?: string | null
+          due_on?: string
+          employee_id?: string | null
+          employment_id?: string | null
+          id?: string
+          jurisdiction_id?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id?: string
+          outsider_token_ref?: string | null
+          record_class_key?: string
+          requested_at?: string
+          requester_email?: string | null
+          requester_kind?: string
+          requester_name?: string
+          requester_verified_at?: string | null
+          retention_trigger_at?: string | null
+          rule_version_id?: string | null
+          scope?: string
+          scope_detail?: Json
+          state?: string
+          statutory_basis?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_method?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "records_request_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "records_request_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "records_request_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "records_request_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "records_request_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "records_request_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "records_request_rule_version_id_fkey"
+            columns: ["rule_version_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reference_check: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          application_id: string
+          candidate_consent_at: string | null
+          candidate_consent_evidence: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          last_reminder_at: string | null
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          outsider_token_ref: string | null
+          questions: Json
+          record_class_key: string
+          referee_company: string | null
+          referee_email: string | null
+          referee_name: string
+          referee_phone: string | null
+          referee_relationship: string | null
+          reminder_count: number
+          requested_at: string | null
+          responded_at: string | null
+          response_channel: string | null
+          responses: Json
+          restricted_note_id: string | null
+          retention_trigger_at: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          application_id: string
+          candidate_consent_at?: string | null
+          candidate_consent_evidence?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id: string
+          outsider_token_ref?: string | null
+          questions?: Json
+          record_class_key?: string
+          referee_company?: string | null
+          referee_email?: string | null
+          referee_name: string
+          referee_phone?: string | null
+          referee_relationship?: string | null
+          reminder_count?: number
+          requested_at?: string | null
+          responded_at?: string | null
+          response_channel?: string | null
+          responses?: Json
+          restricted_note_id?: string | null
+          retention_trigger_at?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          application_id?: string
+          candidate_consent_at?: string | null
+          candidate_consent_evidence?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id?: string
+          outsider_token_ref?: string | null
+          questions?: Json
+          record_class_key?: string
+          referee_company?: string | null
+          referee_email?: string | null
+          referee_name?: string
+          referee_phone?: string | null
+          referee_relationship?: string | null
+          reminder_count?: number
+          requested_at?: string | null
+          responded_at?: string | null
+          response_channel?: string | null
+          responses?: Json
+          restricted_note_id?: string | null
+          retention_trigger_at?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_check_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_check_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_check_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "reference_check_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_check_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "reference_check_restricted_note_id_fkey"
+            columns: ["restricted_note_id"]
+            isOneToOne: false
+            referencedRelation: "restricted_note"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reporting_line: {
+        Row: {
+          change_reason_category_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          effective_from: string
+          effective_range: unknown
+          effective_to: string | null
+          employment_id: string
+          id: string
+          line_kind: string
+          manager_employment_id: string
+          metadata: Json
+          organization_id: string
+          recorded_at: string
+          scope_note: string | null
+          supersedes_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          change_reason_category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_from: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id: string
+          id?: string
+          line_kind: string
+          manager_employment_id: string
+          metadata?: Json
+          organization_id: string
+          recorded_at?: string
+          scope_note?: string | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          change_reason_category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_from?: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id?: string
+          id?: string
+          line_kind?: string
+          manager_employment_id?: string
+          metadata?: Json
+          organization_id?: string
+          recorded_at?: string
+          scope_note?: string | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reporting_line_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reporting_line_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "reporting_line_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reporting_line_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "reporting_line_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "reporting_line"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      requisition: {
+        Row: {
+          approved_at: string | null
+          approved_by_employment_id: string | null
+          approved_headcount: number
+          budget_amount: number | null
+          closed_at: string | null
+          cost_center: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          department_id: string
+          filled_count: number
+          hiring_manager_employment_id: string | null
+          id: string
+          is_replacement: boolean
+          job_title_id: string
+          legal_hold_count: number
+          location_id: string | null
+          metadata: Json
+          organization_id: string
+          pay_basis: string | null
+          pay_range_max: number | null
+          pay_range_min: number | null
+          record_class_key: string
+          recruiter_employment_id: string | null
+          replacing_employment_id: string | null
+          requisition_number: string
+          retention_trigger_at: string | null
+          state: string
+          state_reason_category_id: string | null
+          state_reason_note: string | null
+          target_start_on: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          worker_class: string
+          workflow_instance_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          approved_headcount?: number
+          budget_amount?: number | null
+          closed_at?: string | null
+          cost_center?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          department_id: string
+          filled_count?: number
+          hiring_manager_employment_id?: string | null
+          id?: string
+          is_replacement?: boolean
+          job_title_id: string
+          legal_hold_count?: number
+          location_id?: string | null
+          metadata?: Json
+          organization_id: string
+          pay_basis?: string | null
+          pay_range_max?: number | null
+          pay_range_min?: number | null
+          record_class_key?: string
+          recruiter_employment_id?: string | null
+          replacing_employment_id?: string | null
+          requisition_number: string
+          retention_trigger_at?: string | null
+          state?: string
+          state_reason_category_id?: string | null
+          state_reason_note?: string | null
+          target_start_on?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          worker_class?: string
+          workflow_instance_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          approved_headcount?: number
+          budget_amount?: number | null
+          closed_at?: string | null
+          cost_center?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          department_id?: string
+          filled_count?: number
+          hiring_manager_employment_id?: string | null
+          id?: string
+          is_replacement?: boolean
+          job_title_id?: string
+          legal_hold_count?: number
+          location_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          pay_basis?: string | null
+          pay_range_max?: number | null
+          pay_range_min?: number | null
+          record_class_key?: string
+          recruiter_employment_id?: string | null
+          replacing_employment_id?: string | null
+          requisition_number?: string
+          retention_trigger_at?: string | null
+          state?: string
+          state_reason_category_id?: string | null
+          state_reason_note?: string | null
+          target_start_on?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          worker_class?: string
+          workflow_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requisition_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisition_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "requisition_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisition_hiring_manager_employment_id_fkey"
+            columns: ["hiring_manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisition_hiring_manager_employment_id_fkey"
+            columns: ["hiring_manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "requisition_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "job_title"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisition_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisition_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "requisition_recruiter_employment_id_fkey"
+            columns: ["recruiter_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisition_recruiter_employment_id_fkey"
+            columns: ["recruiter_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "requisition_replacing_employment_id_fkey"
+            columns: ["replacing_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisition_replacing_employment_id_fkey"
+            columns: ["replacing_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      restricted_note: {
+        Row: {
+          author_employment_id: string | null
+          body: string | null
+          body_file_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          legal_hold_count: number
+          metadata: Json
+          note_kind: string
+          occurred_at: string | null
+          organization_id: string
+          record_class_key: string
+          redacted_summary: string | null
+          retention_trigger_at: string | null
+          subject_id: string
+          subject_token: string
+          title: string | null
+          transferred_at: string | null
+          transferred_from: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          author_employment_id?: string | null
+          body?: string | null
+          body_file_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          legal_hold_count?: number
+          metadata?: Json
+          note_kind: string
+          occurred_at?: string | null
+          organization_id: string
+          record_class_key?: string
+          redacted_summary?: string | null
+          retention_trigger_at?: string | null
+          subject_id: string
+          subject_token: string
+          title?: string | null
+          transferred_at?: string | null
+          transferred_from?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          author_employment_id?: string | null
+          body?: string | null
+          body_file_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          legal_hold_count?: number
+          metadata?: Json
+          note_kind?: string
+          occurred_at?: string | null
+          organization_id?: string
+          record_class_key?: string
+          redacted_summary?: string | null
+          retention_trigger_at?: string | null
+          subject_id?: string
+          subject_token?: string
+          title?: string | null
+          transferred_at?: string | null
+          transferred_from?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restricted_note_author_employment_id_fkey"
+            columns: ["author_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restricted_note_author_employment_id_fkey"
+            columns: ["author_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "restricted_note_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+        ]
+      }
+      retention_rule: {
+        Row: {
+          authority: string
+          class_key: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          effective_from: string
+          effective_range: unknown
+          effective_to: string | null
+          id: string
+          jurisdiction_id: string | null
+          metadata: Json
+          minimum_wins: boolean
+          notes: string | null
+          organization_id: string
+          retention_expression: string | null
+          retention_months: number | null
+          source_citation: string
+          source_url: string | null
+          supersedes_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          authority: string
+          class_key: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_from: string
+          effective_range?: unknown
+          effective_to?: string | null
+          id?: string
+          jurisdiction_id?: string | null
+          metadata?: Json
+          minimum_wins?: boolean
+          notes?: string | null
+          organization_id: string
+          retention_expression?: string | null
+          retention_months?: number | null
+          source_citation: string
+          source_url?: string | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          authority?: string
+          class_key?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          effective_from?: string
+          effective_range?: unknown
+          effective_to?: string | null
+          id?: string
+          jurisdiction_id?: string | null
+          metadata?: Json
+          minimum_wins?: boolean
+          notes?: string | null
+          organization_id?: string
+          retention_expression?: string | null
+          retention_months?: number | null
+          source_citation?: string
+          source_url?: string | null
+          supersedes_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retention_rule_class_key_fkey"
+            columns: ["class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "retention_rule_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retention_rule_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "retention_rule"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      role_assignment: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_to: string | null
+          employment_id: string
+          granted_by_employment_id: string | null
+          granted_by_user_id: string | null
+          id: string
+          is_active: boolean
+          metadata: Json
+          organization_id: string
+          reason: string | null
+          revoked_at: string | null
+          revoked_reason: string | null
+          role_key: string
+          scope_employment_ids: string[]
+          scope_id: string | null
+          scope_kind: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          employment_id: string
+          granted_by_employment_id?: string | null
+          granted_by_user_id?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          organization_id: string
+          reason?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          role_key: string
+          scope_employment_ids?: string[]
+          scope_id?: string | null
+          scope_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          employment_id?: string
+          granted_by_employment_id?: string | null
+          granted_by_user_id?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          organization_id?: string
+          reason?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          role_key?: string
+          scope_employment_ids?: string[]
+          scope_id?: string | null
+          scope_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_assignment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_assignment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "role_assignment_granted_by_employment_id_fkey"
+            columns: ["granted_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_assignment_granted_by_employment_id_fkey"
+            columns: ["granted_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      schedule: {
+        Row: {
+          advance_notice_days: number | null
+          ai_draft_evidence_id: string | null
+          baseline: Json
+          baseline_sha256: string | null
+          created_at: string
+          created_by: string | null
+          crew_id: string | null
+          custom: Json
+          deleted_at: string | null
+          department_id: string | null
+          display_tz: string
+          fair_workweek_rule_version_id: string | null
+          horizon_label: string | null
+          id: string
+          labor_budget_amount: number | null
+          labor_target_percent: number | null
+          metadata: Json
+          name: string | null
+          organization_id: string
+          period_end_on: string
+          period_start_on: string
+          primary_location_id: string | null
+          projected_labor_amount: number | null
+          published_at: string | null
+          published_by_employment_id: string | null
+          schedule_kind: string
+          source_template_id: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          advance_notice_days?: number | null
+          ai_draft_evidence_id?: string | null
+          baseline?: Json
+          baseline_sha256?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          department_id?: string | null
+          display_tz: string
+          fair_workweek_rule_version_id?: string | null
+          horizon_label?: string | null
+          id?: string
+          labor_budget_amount?: number | null
+          labor_target_percent?: number | null
+          metadata?: Json
+          name?: string | null
+          organization_id: string
+          period_end_on: string
+          period_start_on: string
+          primary_location_id?: string | null
+          projected_labor_amount?: number | null
+          published_at?: string | null
+          published_by_employment_id?: string | null
+          schedule_kind?: string
+          source_template_id?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          advance_notice_days?: number | null
+          ai_draft_evidence_id?: string | null
+          baseline?: Json
+          baseline_sha256?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          department_id?: string | null
+          display_tz?: string
+          fair_workweek_rule_version_id?: string | null
+          horizon_label?: string | null
+          id?: string
+          labor_budget_amount?: number | null
+          labor_target_percent?: number | null
+          metadata?: Json
+          name?: string | null
+          organization_id?: string
+          period_end_on?: string
+          period_start_on?: string
+          primary_location_id?: string | null
+          projected_labor_amount?: number | null
+          published_at?: string | null
+          published_by_employment_id?: string | null
+          schedule_kind?: string
+          source_template_id?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_fair_workweek_rule_version_id_fkey"
+            columns: ["fair_workweek_rule_version_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_primary_location_id_fkey"
+            columns: ["primary_location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_published_by_employment_id_fkey"
+            columns: ["published_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_published_by_employment_id_fkey"
+            columns: ["published_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      schedule_change: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          affected_hours: number | null
+          after_values: Json
+          before_values: Json
+          calc: Json
+          change_kind: string
+          computed_at: string
+          created_at: string
+          created_by: string | null
+          delivered_at: string | null
+          employee_consent_at: string | null
+          employee_consent_state: string | null
+          employment_id: string | null
+          engine_key: string
+          engine_version: string
+          id: string
+          is_employer_driven: boolean
+          metadata: Json
+          notice_minutes: number | null
+          notification_id: string | null
+          occurred_at: string
+          organization_id: string
+          premium_amount: number | null
+          premium_earning_code_id: string | null
+          read_at: string | null
+          reason_category_id: string | null
+          reason_note: string | null
+          rule_version_ids: string[]
+          schedule_id: string
+          shift_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          affected_hours?: number | null
+          after_values?: Json
+          before_values?: Json
+          calc?: Json
+          change_kind: string
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          employee_consent_at?: string | null
+          employee_consent_state?: string | null
+          employment_id?: string | null
+          engine_key: string
+          engine_version: string
+          id?: string
+          is_employer_driven: boolean
+          metadata?: Json
+          notice_minutes?: number | null
+          notification_id?: string | null
+          occurred_at?: string
+          organization_id: string
+          premium_amount?: number | null
+          premium_earning_code_id?: string | null
+          read_at?: string | null
+          reason_category_id?: string | null
+          reason_note?: string | null
+          rule_version_ids?: string[]
+          schedule_id: string
+          shift_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          affected_hours?: number | null
+          after_values?: Json
+          before_values?: Json
+          calc?: Json
+          change_kind?: string
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          employee_consent_at?: string | null
+          employee_consent_state?: string | null
+          employment_id?: string | null
+          engine_key?: string
+          engine_version?: string
+          id?: string
+          is_employer_driven?: boolean
+          metadata?: Json
+          notice_minutes?: number | null
+          notification_id?: string | null
+          occurred_at?: string
+          organization_id?: string
+          premium_amount?: number | null
+          premium_earning_code_id?: string | null
+          read_at?: string | null
+          reason_category_id?: string | null
+          reason_note?: string | null
+          rule_version_ids?: string[]
+          schedule_id?: string
+          shift_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_change_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_change_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_change_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "schedule_change_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_change_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "schedule_change_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_notice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_change_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_notice"
+            referencedColumns: ["notification_id"]
+          },
+          {
+            foreignKeyName: "schedule_change_premium_earning_code_id_fkey"
+            columns: ["premium_earning_code_id"]
+            isOneToOne: false
+            referencedRelation: "earning_code"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_change_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_change_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shift"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_change_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "v_my_week"
+            referencedColumns: ["shift_id"]
+          },
+        ]
+      }
+      schedule_guidance: {
+        Row: {
+          applies_from: string | null
+          applies_to: string | null
+          author_employment_id: string | null
+          body: string
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          guidance_kind: string
+          guidance_level: string
+          id: string
+          include_in_ai_provision: boolean
+          is_active: boolean
+          is_hard_constraint: boolean
+          metadata: Json
+          organization_id: string
+          priority: number
+          scope_id: string | null
+          sensitivity_ceiling: string
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          applies_from?: string | null
+          applies_to?: string | null
+          author_employment_id?: string | null
+          body: string
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          guidance_kind?: string
+          guidance_level: string
+          id?: string
+          include_in_ai_provision?: boolean
+          is_active?: boolean
+          is_hard_constraint?: boolean
+          metadata?: Json
+          organization_id: string
+          priority?: number
+          scope_id?: string | null
+          sensitivity_ceiling?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          applies_from?: string | null
+          applies_to?: string | null
+          author_employment_id?: string | null
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          guidance_kind?: string
+          guidance_level?: string
+          id?: string
+          include_in_ai_provision?: boolean
+          is_active?: boolean
+          is_hard_constraint?: boolean
+          metadata?: Json
+          organization_id?: string
+          priority?: number
+          scope_id?: string | null
+          sensitivity_ceiling?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_guidance_author_employment_id_fkey"
+            columns: ["author_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_guidance_author_employment_id_fkey"
+            columns: ["author_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      schedule_template: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          department_id: string | null
+          id: string
+          is_active: boolean
+          location_id: string | null
+          metadata: Json
+          name: string
+          organization_id: string
+          pattern_kind: string
+          rotation_weeks: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          department_id?: string | null
+          id?: string
+          is_active?: boolean
+          location_id?: string | null
+          metadata?: Json
+          name: string
+          organization_id: string
+          pattern_kind?: string
+          rotation_weeks?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          department_id?: string | null
+          id?: string
+          is_active?: boolean
+          location_id?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          pattern_kind?: string
+          rotation_weeks?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_template_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_template_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_template_shift: {
+        Row: {
+          break_plan: Json
+          created_at: string
+          created_by: string | null
+          crosses_midnight: boolean
+          day_of_week: number
+          default_employment_id: string | null
+          deleted_at: string | null
+          ends_at_local: string
+          headcount: number
+          id: string
+          is_on_call: boolean
+          job_title_id: string | null
+          metadata: Json
+          organization_id: string
+          position: number | null
+          rotation_week: number
+          schedule_template_id: string
+          starts_at_local: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          break_plan?: Json
+          created_at?: string
+          created_by?: string | null
+          crosses_midnight?: boolean
+          day_of_week: number
+          default_employment_id?: string | null
+          deleted_at?: string | null
+          ends_at_local: string
+          headcount?: number
+          id?: string
+          is_on_call?: boolean
+          job_title_id?: string | null
+          metadata?: Json
+          organization_id: string
+          position?: number | null
+          rotation_week?: number
+          schedule_template_id: string
+          starts_at_local: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          break_plan?: Json
+          created_at?: string
+          created_by?: string | null
+          crosses_midnight?: boolean
+          day_of_week?: number
+          default_employment_id?: string | null
+          deleted_at?: string | null
+          ends_at_local?: string
+          headcount?: number
+          id?: string
+          is_on_call?: boolean
+          job_title_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          position?: number | null
+          rotation_week?: number
+          schedule_template_id?: string
+          starts_at_local?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_template_shift_default_employment_id_fkey"
+            columns: ["default_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_template_shift_default_employment_id_fkey"
+            columns: ["default_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "schedule_template_shift_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "job_title"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_template_shift_schedule_template_id_fkey"
+            columns: ["schedule_template_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_template"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scorecard: {
+        Row: {
+          concerns: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          interview_id: string
+          interviewer_employment_id: string
+          is_draft: boolean
+          kit_version: string | null
+          metadata: Json
+          organization_id: string
+          overall_rating: string | null
+          recommendation: string | null
+          responses: Json
+          strengths: string | null
+          submitted_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          concerns?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          interview_id: string
+          interviewer_employment_id: string
+          is_draft?: boolean
+          kit_version?: string | null
+          metadata?: Json
+          organization_id: string
+          overall_rating?: string | null
+          recommendation?: string | null
+          responses?: Json
+          strengths?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          concerns?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          interview_id?: string
+          interviewer_employment_id?: string
+          is_draft?: boolean
+          kit_version?: string | null
+          metadata?: Json
+          organization_id?: string
+          overall_rating?: string | null
+          recommendation?: string | null
+          responses?: Json
+          strengths?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scorecard_interview_id_fkey"
+            columns: ["interview_id"]
+            isOneToOne: false
+            referencedRelation: "interview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scorecard_interviewer_employment_id_fkey"
+            columns: ["interviewer_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scorecard_interviewer_employment_id_fkey"
+            columns: ["interviewer_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      separation: {
+        Row: {
+          beneficiary_contact: Json
+          benefits_end_on: string | null
+          cobra_qualifying_event_kind: string | null
+          cobra_qualifying_event_on: string | null
+          corrective_action_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          employment_id: string
+          exit_interview_completed_at: string | null
+          final_pay_due_at: string | null
+          final_pay_rule_version_id: string | null
+          id: string
+          initiated_by_employment_id: string | null
+          initiator: string
+          is_deceased: boolean
+          last_day_worked: string
+          layoff_batch_id: string | null
+          legal_hold_count: number
+          metadata: Json
+          notice_given_on: string | null
+          organization_id: string
+          pto_payout_required: boolean | null
+          pto_payout_rule_version_id: string | null
+          reason_category_id: string
+          record_class_key: string
+          rehire_eligible: boolean | null
+          rehire_eligible_note: string | null
+          retention_trigger_at: string | null
+          separation_category: string
+          termination_date: string
+          unemployment_response: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          beneficiary_contact?: Json
+          benefits_end_on?: string | null
+          cobra_qualifying_event_kind?: string | null
+          cobra_qualifying_event_on?: string | null
+          corrective_action_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employment_id: string
+          exit_interview_completed_at?: string | null
+          final_pay_due_at?: string | null
+          final_pay_rule_version_id?: string | null
+          id?: string
+          initiated_by_employment_id?: string | null
+          initiator: string
+          is_deceased?: boolean
+          last_day_worked: string
+          layoff_batch_id?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          notice_given_on?: string | null
+          organization_id: string
+          pto_payout_required?: boolean | null
+          pto_payout_rule_version_id?: string | null
+          reason_category_id: string
+          record_class_key?: string
+          rehire_eligible?: boolean | null
+          rehire_eligible_note?: string | null
+          retention_trigger_at?: string | null
+          separation_category: string
+          termination_date: string
+          unemployment_response?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          beneficiary_contact?: Json
+          benefits_end_on?: string | null
+          cobra_qualifying_event_kind?: string | null
+          cobra_qualifying_event_on?: string | null
+          corrective_action_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employment_id?: string
+          exit_interview_completed_at?: string | null
+          final_pay_due_at?: string | null
+          final_pay_rule_version_id?: string | null
+          id?: string
+          initiated_by_employment_id?: string | null
+          initiator?: string
+          is_deceased?: boolean
+          last_day_worked?: string
+          layoff_batch_id?: string | null
+          legal_hold_count?: number
+          metadata?: Json
+          notice_given_on?: string | null
+          organization_id?: string
+          pto_payout_required?: boolean | null
+          pto_payout_rule_version_id?: string | null
+          reason_category_id?: string
+          record_class_key?: string
+          rehire_eligible?: boolean | null
+          rehire_eligible_note?: string | null
+          retention_trigger_at?: string | null
+          separation_category?: string
+          termination_date?: string
+          unemployment_response?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "separation_corrective_action_fk"
+            columns: ["corrective_action_id"]
+            isOneToOne: false
+            referencedRelation: "corrective_action"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "separation_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: true
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "separation_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: true
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "separation_final_pay_rule_version_id_fkey"
+            columns: ["final_pay_rule_version_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "separation_initiated_by_employment_id_fkey"
+            columns: ["initiated_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "separation_initiated_by_employment_id_fkey"
+            columns: ["initiated_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "separation_pto_payout_rule_version_id_fkey"
+            columns: ["pto_payout_rule_version_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "separation_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+        ]
+      }
+      shift: {
+        Row: {
+          baseline_shift_id: string | null
+          break_plan: Json
+          created_at: string
+          created_by: string | null
+          crew_id: string | null
+          crosses_midnight: boolean
+          custom: Json
+          deleted_at: string | null
+          department_id: string | null
+          dst_transition: boolean
+          employment_id: string | null
+          ends_at: string
+          id: string
+          is_on_call: boolean
+          is_open: boolean
+          is_split_shift: boolean
+          job_title_id: string | null
+          jurisdiction_id: string
+          local_start_date: string
+          local_work_date: string
+          metadata: Json
+          note: string | null
+          organization_id: string
+          position_assignment_id: string | null
+          premium_earning_code_id: string | null
+          published_ends_at: string | null
+          published_starts_at: string | null
+          required_credential_ids: string[]
+          schedule_id: string
+          scheduled_hours: number
+          split_group_key: string | null
+          starts_at: string
+          status: string
+          tz: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          work_location_id: string
+        }
+        Insert: {
+          baseline_shift_id?: string | null
+          break_plan?: Json
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          crosses_midnight?: boolean
+          custom?: Json
+          deleted_at?: string | null
+          department_id?: string | null
+          dst_transition?: boolean
+          employment_id?: string | null
+          ends_at: string
+          id?: string
+          is_on_call?: boolean
+          is_open?: boolean
+          is_split_shift?: boolean
+          job_title_id?: string | null
+          jurisdiction_id: string
+          local_start_date: string
+          local_work_date: string
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          position_assignment_id?: string | null
+          premium_earning_code_id?: string | null
+          published_ends_at?: string | null
+          published_starts_at?: string | null
+          required_credential_ids?: string[]
+          schedule_id: string
+          scheduled_hours: number
+          split_group_key?: string | null
+          starts_at: string
+          status?: string
+          tz: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          work_location_id: string
+        }
+        Update: {
+          baseline_shift_id?: string | null
+          break_plan?: Json
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          crosses_midnight?: boolean
+          custom?: Json
+          deleted_at?: string | null
+          department_id?: string | null
+          dst_transition?: boolean
+          employment_id?: string | null
+          ends_at?: string
+          id?: string
+          is_on_call?: boolean
+          is_open?: boolean
+          is_split_shift?: boolean
+          job_title_id?: string | null
+          jurisdiction_id?: string
+          local_start_date?: string
+          local_work_date?: string
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          position_assignment_id?: string | null
+          premium_earning_code_id?: string | null
+          published_ends_at?: string | null
+          published_starts_at?: string | null
+          required_credential_ids?: string[]
+          schedule_id?: string
+          scheduled_hours?: number
+          split_group_key?: string | null
+          starts_at?: string
+          status?: string
+          tz?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          work_location_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "shift_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "job_title"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "position_assignment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_position_current"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_premium_earning_code_id_fkey"
+            columns: ["premium_earning_code_id"]
+            isOneToOne: false
+            referencedRelation: "earning_code"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_work_location_id_fkey"
+            columns: ["work_location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_claim: {
+        Row: {
+          attendance_exception_id: string | null
+          calc: Json
+          computed_at: string
+          conflict_check: Json
+          conflict_state: string
+          counterparty_employment_id: string | null
+          counterparty_shift_id: string | null
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by_employment_id: string | null
+          deleted_at: string | null
+          engine_key: string
+          engine_version: string
+          expires_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          reason_category_id: string | null
+          reason_note: string | null
+          replacement_shift_id: string | null
+          request_kind: string
+          requester_employment_id: string
+          rule_version_ids: string[]
+          shift_id: string
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workflow_instance_id: string | null
+        }
+        Insert: {
+          attendance_exception_id?: string | null
+          calc?: Json
+          computed_at?: string
+          conflict_check?: Json
+          conflict_state?: string
+          counterparty_employment_id?: string | null
+          counterparty_shift_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by_employment_id?: string | null
+          deleted_at?: string | null
+          engine_key: string
+          engine_version: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          reason_category_id?: string | null
+          reason_note?: string | null
+          replacement_shift_id?: string | null
+          request_kind: string
+          requester_employment_id: string
+          rule_version_ids?: string[]
+          shift_id: string
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string | null
+        }
+        Update: {
+          attendance_exception_id?: string | null
+          calc?: Json
+          computed_at?: string
+          conflict_check?: Json
+          conflict_state?: string
+          counterparty_employment_id?: string | null
+          counterparty_shift_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by_employment_id?: string | null
+          deleted_at?: string | null
+          engine_key?: string
+          engine_version?: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          reason_category_id?: string | null
+          reason_note?: string | null
+          replacement_shift_id?: string | null
+          request_kind?: string
+          requester_employment_id?: string
+          rule_version_ids?: string[]
+          shift_id?: string
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_claim_attendance_exception_id_fkey"
+            columns: ["attendance_exception_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_exception"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_claim_counterparty_employment_id_fkey"
+            columns: ["counterparty_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_claim_counterparty_employment_id_fkey"
+            columns: ["counterparty_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "shift_claim_counterparty_shift_id_fkey"
+            columns: ["counterparty_shift_id"]
+            isOneToOne: false
+            referencedRelation: "shift"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_claim_counterparty_shift_id_fkey"
+            columns: ["counterparty_shift_id"]
+            isOneToOne: false
+            referencedRelation: "v_my_week"
+            referencedColumns: ["shift_id"]
+          },
+          {
+            foreignKeyName: "shift_claim_decided_by_employment_id_fkey"
+            columns: ["decided_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_claim_decided_by_employment_id_fkey"
+            columns: ["decided_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "shift_claim_replacement_shift_id_fkey"
+            columns: ["replacement_shift_id"]
+            isOneToOne: false
+            referencedRelation: "shift"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_claim_replacement_shift_id_fkey"
+            columns: ["replacement_shift_id"]
+            isOneToOne: false
+            referencedRelation: "v_my_week"
+            referencedColumns: ["shift_id"]
+          },
+          {
+            foreignKeyName: "shift_claim_requester_employment_id_fkey"
+            columns: ["requester_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_claim_requester_employment_id_fkey"
+            columns: ["requester_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "shift_claim_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shift"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_claim_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "v_my_week"
+            referencedColumns: ["shift_id"]
+          },
+        ]
+      }
+      staffing_requirement: {
+        Row: {
+          change_reason_category_id: string | null
+          created_at: string
+          created_by: string | null
+          crew_id: string | null
+          day_of_week: number | null
+          deleted_at: string | null
+          demand_basis: Json
+          department_id: string | null
+          effective_from: string
+          effective_range: unknown
+          effective_to: string | null
+          headcount: number
+          id: string
+          interval_end: string
+          interval_start: string
+          is_template: boolean
+          job_title_id: string | null
+          location_id: string
+          max_headcount: number | null
+          metadata: Json
+          min_headcount: number | null
+          organization_id: string
+          recorded_at: string
+          required_credential_ids: string[]
+          specific_date: string | null
+          supersedes_id: string | null
+          template_name: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          change_reason_category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          day_of_week?: number | null
+          deleted_at?: string | null
+          demand_basis?: Json
+          department_id?: string | null
+          effective_from: string
+          effective_range?: unknown
+          effective_to?: string | null
+          headcount: number
+          id?: string
+          interval_end: string
+          interval_start: string
+          is_template?: boolean
+          job_title_id?: string | null
+          location_id: string
+          max_headcount?: number | null
+          metadata?: Json
+          min_headcount?: number | null
+          organization_id: string
+          recorded_at?: string
+          required_credential_ids?: string[]
+          specific_date?: string | null
+          supersedes_id?: string | null
+          template_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          change_reason_category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          day_of_week?: number | null
+          deleted_at?: string | null
+          demand_basis?: Json
+          department_id?: string | null
+          effective_from?: string
+          effective_range?: unknown
+          effective_to?: string | null
+          headcount?: number
+          id?: string
+          interval_end?: string
+          interval_start?: string
+          is_template?: boolean
+          job_title_id?: string | null
+          location_id?: string
+          max_headcount?: number | null
+          metadata?: Json
+          min_headcount?: number | null
+          organization_id?: string
+          recorded_at?: string
+          required_credential_ids?: string[]
+          specific_date?: string | null
+          supersedes_id?: string | null
+          template_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staffing_requirement_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staffing_requirement_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staffing_requirement_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "job_title"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staffing_requirement_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staffing_requirement_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "staffing_requirement"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey: {
+        Row: {
+          allow_outsider_response: boolean
+          anonymity_threshold: number
+          category_id: string | null
+          closing_text: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          description: string | null
+          due_offset_days: number
+          id: string
+          intro_text: string | null
+          is_anonymous: boolean
+          metadata: Json
+          name: string
+          organization_id: string
+          published_at: string | null
+          reminder_offsets_days: number[]
+          retired_at: string | null
+          state: string
+          survey_kind: string
+          trigger_kind: string
+          trigger_offset_days: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          allow_outsider_response?: boolean
+          anonymity_threshold?: number
+          category_id?: string | null
+          closing_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          description?: string | null
+          due_offset_days?: number
+          id?: string
+          intro_text?: string | null
+          is_anonymous?: boolean
+          metadata?: Json
+          name: string
+          organization_id: string
+          published_at?: string | null
+          reminder_offsets_days?: number[]
+          retired_at?: string | null
+          state?: string
+          survey_kind: string
+          trigger_kind?: string
+          trigger_offset_days?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          allow_outsider_response?: boolean
+          anonymity_threshold?: number
+          category_id?: string | null
+          closing_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          description?: string | null
+          due_offset_days?: number
+          id?: string
+          intro_text?: string | null
+          is_anonymous?: boolean
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          published_at?: string | null
+          reminder_offsets_days?: number[]
+          retired_at?: string | null
+          state?: string
+          survey_kind?: string
+          trigger_kind?: string
+          trigger_offset_days?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      survey_invitation: {
+        Row: {
+          checklist_item_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          declined_reason: string | null
+          deleted_at: string | null
+          delivery_address: string | null
+          delivery_channel: string
+          due_on: string | null
+          employee_id: string | null
+          employment_id: string | null
+          id: string
+          invited_at: string
+          last_reminder_at: string | null
+          metadata: Json
+          notification_id: string | null
+          opened_at: string | null
+          organization_id: string
+          outsider_token_ref: string | null
+          reminder_count: number
+          separation_id: string | null
+          state: string
+          survey_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          checklist_item_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          declined_reason?: string | null
+          deleted_at?: string | null
+          delivery_address?: string | null
+          delivery_channel?: string
+          due_on?: string | null
+          employee_id?: string | null
+          employment_id?: string | null
+          id?: string
+          invited_at?: string
+          last_reminder_at?: string | null
+          metadata?: Json
+          notification_id?: string | null
+          opened_at?: string | null
+          organization_id: string
+          outsider_token_ref?: string | null
+          reminder_count?: number
+          separation_id?: string | null
+          state?: string
+          survey_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          checklist_item_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          declined_reason?: string | null
+          deleted_at?: string | null
+          delivery_address?: string | null
+          delivery_channel?: string
+          due_on?: string | null
+          employee_id?: string | null
+          employment_id?: string | null
+          id?: string
+          invited_at?: string
+          last_reminder_at?: string | null
+          metadata?: Json
+          notification_id?: string | null
+          opened_at?: string | null
+          organization_id?: string
+          outsider_token_ref?: string | null
+          reminder_count?: number
+          separation_id?: string | null
+          state?: string
+          survey_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_invitation_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_invitation_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_invitation_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "survey_invitation_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_invitation_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "survey_invitation_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_notice"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_invitation_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_notice"
+            referencedColumns: ["notification_id"]
+          },
+          {
+            foreignKeyName: "survey_invitation_separation_id_fkey"
+            columns: ["separation_id"]
+            isOneToOne: false
+            referencedRelation: "separation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_invitation_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "survey"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_question: {
+        Row: {
+          category_key: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          help_text: string | null
+          id: string
+          is_required: boolean
+          metadata: Json
+          options: Json
+          organization_id: string
+          position: number
+          prompt: string
+          question_kind: string
+          scale_max: number | null
+          scale_min: number | null
+          show_if: Json
+          survey_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          category_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          help_text?: string | null
+          id?: string
+          is_required?: boolean
+          metadata?: Json
+          options?: Json
+          organization_id: string
+          position: number
+          prompt: string
+          question_kind: string
+          scale_max?: number | null
+          scale_min?: number | null
+          show_if?: Json
+          survey_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          category_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          help_text?: string | null
+          id?: string
+          is_required?: boolean
+          metadata?: Json
+          options?: Json
+          organization_id?: string
+          position?: number
+          prompt?: string
+          question_kind?: string
+          scale_max?: number | null
+          scale_min?: number | null
+          show_if?: Json
+          survey_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_question_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "survey"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_response: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          answer_boolean: boolean | null
+          answer_number: number | null
+          answer_option_keys: string[]
+          answer_text: string | null
+          answered_at: string
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          skipped: boolean
+          survey_invitation_id: string
+          survey_question_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          answer_boolean?: boolean | null
+          answer_number?: number | null
+          answer_option_keys?: string[]
+          answer_text?: string | null
+          answered_at?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          skipped?: boolean
+          survey_invitation_id: string
+          survey_question_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          answer_boolean?: boolean | null
+          answer_number?: number | null
+          answer_option_keys?: string[]
+          answer_text?: string | null
+          answered_at?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          skipped?: boolean
+          survey_invitation_id?: string
+          survey_question_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_response_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_response_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_response_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "survey_response_survey_invitation_id_fkey"
+            columns: ["survey_invitation_id"]
+            isOneToOne: false
+            referencedRelation: "survey_invitation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_response_survey_question_id_fkey"
+            columns: ["survey_question_id"]
+            isOneToOne: false
+            referencedRelation: "survey_question"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_registration: {
+        Row: {
+          account_number: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          employer_profile_id: string
+          id: string
+          jurisdiction_id: string
+          metadata: Json
+          new_hire_report_endpoint: string | null
+          organization_id: string
+          rate: number | null
+          rate_effective_on: string | null
+          registered_on: string | null
+          registration_kind: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          account_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employer_profile_id: string
+          id?: string
+          jurisdiction_id: string
+          metadata?: Json
+          new_hire_report_endpoint?: string | null
+          organization_id: string
+          rate?: number | null
+          rate_effective_on?: string | null
+          registered_on?: string | null
+          registration_kind: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          account_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          employer_profile_id?: string
+          id?: string
+          jurisdiction_id?: string
+          metadata?: Json
+          new_hire_report_endpoint?: string | null
+          organization_id?: string
+          rate?: number | null
+          rate_effective_on?: string | null
+          registered_on?: string | null
+          registration_kind?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_registration_employer_profile_id_fkey"
+            columns: ["employer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_registration_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_withholding: {
+        Row: {
+          allowances: number | null
+          change_reason_category_id: string | null
+          created_at: string
+          created_by: string | null
+          deductions_amount: number | null
+          deleted_at: string | null
+          dependents_amount: number | null
+          effective_from: string
+          effective_range: unknown
+          effective_to: string | null
+          employment_id: string
+          esign_request_id: string | null
+          exempt: boolean
+          exempt_expires_on: string | null
+          extra_withholding_amount: number | null
+          filing_status: string | null
+          form_code: string | null
+          form_kind: string
+          form_version: string
+          id: string
+          jurisdiction_id: string
+          legal_hold_count: number
+          metadata: Json
+          multiple_jobs: boolean | null
+          organization_id: string
+          other_income_amount: number | null
+          payload: Json
+          payload_kind: string
+          record_class_key: string
+          recorded_at: string
+          retention_trigger_at: string | null
+          signed_at: string | null
+          signed_document_file_id: string | null
+          supersedes_id: string | null
+          tax_year: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          allowances?: number | null
+          change_reason_category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deductions_amount?: number | null
+          deleted_at?: string | null
+          dependents_amount?: number | null
+          effective_from: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id: string
+          esign_request_id?: string | null
+          exempt?: boolean
+          exempt_expires_on?: string | null
+          extra_withholding_amount?: number | null
+          filing_status?: string | null
+          form_code?: string | null
+          form_kind: string
+          form_version: string
+          id?: string
+          jurisdiction_id: string
+          legal_hold_count?: number
+          metadata?: Json
+          multiple_jobs?: boolean | null
+          organization_id: string
+          other_income_amount?: number | null
+          payload?: Json
+          payload_kind: string
+          record_class_key?: string
+          recorded_at?: string
+          retention_trigger_at?: string | null
+          signed_at?: string | null
+          signed_document_file_id?: string | null
+          supersedes_id?: string | null
+          tax_year: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          allowances?: number | null
+          change_reason_category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deductions_amount?: number | null
+          deleted_at?: string | null
+          dependents_amount?: number | null
+          effective_from?: string
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id?: string
+          esign_request_id?: string | null
+          exempt?: boolean
+          exempt_expires_on?: string | null
+          extra_withholding_amount?: number | null
+          filing_status?: string | null
+          form_code?: string | null
+          form_kind?: string
+          form_version?: string
+          id?: string
+          jurisdiction_id?: string
+          legal_hold_count?: number
+          metadata?: Json
+          multiple_jobs?: boolean | null
+          organization_id?: string
+          other_income_amount?: number | null
+          payload?: Json
+          payload_kind?: string
+          record_class_key?: string
+          recorded_at?: string
+          retention_trigger_at?: string | null
+          signed_at?: string | null
+          signed_document_file_id?: string | null
+          supersedes_id?: string | null
+          tax_year?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_withholding_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_withholding_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "tax_withholding_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_withholding_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "tax_withholding_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "tax_withholding"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_adjustment: {
+        Row: {
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          amount_delta: number
+          approved_at: string | null
+          approved_by_employment_id: string | null
+          calc: Json
+          computed_at: string
+          created_at: string
+          created_by: string | null
+          earning_code_id: string
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          exported_at: string | null
+          hours_delta: number
+          id: string
+          jurisdiction_id: string
+          local_work_date: string
+          metadata: Json
+          organization_id: string
+          original_pay_period_id: string
+          rate: number | null
+          reason_category_id: string | null
+          reason_note: string
+          rule_version_ids: string[]
+          target_pay_period_id: string | null
+          tz: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          work_date: string
+          work_interval_id: string | null
+          work_location_id: string
+          workflow_instance_id: string | null
+        }
+        Insert: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          amount_delta?: number
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          earning_code_id: string
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          exported_at?: string | null
+          hours_delta?: number
+          id?: string
+          jurisdiction_id: string
+          local_work_date: string
+          metadata?: Json
+          organization_id: string
+          original_pay_period_id: string
+          rate?: number | null
+          reason_category_id?: string | null
+          reason_note: string
+          rule_version_ids?: string[]
+          target_pay_period_id?: string | null
+          tz: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          work_date: string
+          work_interval_id?: string | null
+          work_location_id: string
+          workflow_instance_id?: string | null
+        }
+        Update: {
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          amount_delta?: number
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          earning_code_id?: string
+          employment_id?: string
+          engine_key?: string
+          engine_version?: string
+          exported_at?: string | null
+          hours_delta?: number
+          id?: string
+          jurisdiction_id?: string
+          local_work_date?: string
+          metadata?: Json
+          organization_id?: string
+          original_pay_period_id?: string
+          rate?: number | null
+          reason_category_id?: string | null
+          reason_note?: string
+          rule_version_ids?: string[]
+          target_pay_period_id?: string | null
+          tz?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          work_date?: string
+          work_interval_id?: string | null
+          work_location_id?: string
+          workflow_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_adjustment_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_adjustment_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_adjustment_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "time_adjustment_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_adjustment_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "time_adjustment_earning_code_id_fkey"
+            columns: ["earning_code_id"]
+            isOneToOne: false
+            referencedRelation: "earning_code"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_adjustment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_adjustment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "time_adjustment_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_adjustment_original_pay_period_id_fkey"
+            columns: ["original_pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_period"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_adjustment_target_pay_period_id_fkey"
+            columns: ["target_pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_period"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_adjustment_work_location_id_fkey"
+            columns: ["work_location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_assignment: {
+        Row: {
+          assigned_by_employment_id: string | null
+          assigned_on: string
+          assignment_reason: string
+          attempt_count: number
+          best_score: number | null
+          calc: Json
+          completed_at: string | null
+          computed_at: string
+          course_id: string
+          course_version_id: string
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          due_on: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          id: string
+          mandate_cycle_key: string | null
+          metadata: Json
+          organization_id: string
+          override_by_employment_id: string | null
+          override_note: string | null
+          recert_window_opens_on: string | null
+          rule_version_id: string | null
+          rule_version_ids: string[]
+          source_credential_id: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          waived_at: string | null
+          waived_by_employment_id: string | null
+          waiver_reason: string | null
+        }
+        Insert: {
+          assigned_by_employment_id?: string | null
+          assigned_on?: string
+          assignment_reason: string
+          attempt_count?: number
+          best_score?: number | null
+          calc?: Json
+          completed_at?: string | null
+          computed_at?: string
+          course_id: string
+          course_version_id: string
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          due_on?: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          id?: string
+          mandate_cycle_key?: string | null
+          metadata?: Json
+          organization_id: string
+          override_by_employment_id?: string | null
+          override_note?: string | null
+          recert_window_opens_on?: string | null
+          rule_version_id?: string | null
+          rule_version_ids?: string[]
+          source_credential_id?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          waived_at?: string | null
+          waived_by_employment_id?: string | null
+          waiver_reason?: string | null
+        }
+        Update: {
+          assigned_by_employment_id?: string | null
+          assigned_on?: string
+          assignment_reason?: string
+          attempt_count?: number
+          best_score?: number | null
+          calc?: Json
+          completed_at?: string | null
+          computed_at?: string
+          course_id?: string
+          course_version_id?: string
+          created_at?: string
+          created_by?: string | null
+          custom?: Json
+          deleted_at?: string | null
+          due_on?: string | null
+          employment_id?: string
+          engine_key?: string
+          engine_version?: string
+          id?: string
+          mandate_cycle_key?: string | null
+          metadata?: Json
+          organization_id?: string
+          override_by_employment_id?: string | null
+          override_note?: string | null
+          recert_window_opens_on?: string | null
+          rule_version_id?: string | null
+          rule_version_ids?: string[]
+          source_credential_id?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          waived_at?: string | null
+          waived_by_employment_id?: string | null
+          waiver_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_assignment_assigned_by_employment_id_fkey"
+            columns: ["assigned_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assignment_assigned_by_employment_id_fkey"
+            columns: ["assigned_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "training_assignment_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "course"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assignment_course_version_id_fkey"
+            columns: ["course_version_id"]
+            isOneToOne: false
+            referencedRelation: "course_version"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assignment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assignment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "training_assignment_override_by_employment_id_fkey"
+            columns: ["override_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assignment_override_by_employment_id_fkey"
+            columns: ["override_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "training_assignment_rule_version_id_fkey"
+            columns: ["rule_version_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assignment_source_credential_id_fkey"
+            columns: ["source_credential_id"]
+            isOneToOne: false
+            referencedRelation: "credential"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assignment_waived_by_employment_id_fkey"
+            columns: ["waived_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assignment_waived_by_employment_id_fkey"
+            columns: ["waived_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      training_attempt: {
+        Row: {
+          attempt_number: number
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          passed: boolean | null
+          proctoring_evidence: Json
+          responses: Json
+          score: number | null
+          started_at: string
+          submitted_at: string | null
+          time_spent_minutes: number | null
+          training_assignment_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          attempt_number: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          passed?: boolean | null
+          proctoring_evidence?: Json
+          responses?: Json
+          score?: number | null
+          started_at?: string
+          submitted_at?: string | null
+          time_spent_minutes?: number | null
+          training_assignment_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          attempt_number?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          passed?: boolean | null
+          proctoring_evidence?: Json
+          responses?: Json
+          score?: number | null
+          started_at?: string
+          submitted_at?: string | null
+          time_spent_minutes?: number | null
+          training_assignment_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_attempt_training_assignment_id_fkey"
+            columns: ["training_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "training_assignment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transcript_entry: {
+        Row: {
+          assigned_on: string | null
+          assignment_reason: string
+          attempts: number
+          certificate_file_id: string | null
+          completed_at: string
+          content_sha256_snapshot: string | null
+          course_id: string | null
+          course_title_snapshot: string
+          course_version_id: string | null
+          course_version_label_snapshot: string | null
+          created_at: string
+          created_by: string | null
+          credential_id: string | null
+          due_on: string | null
+          employee_id: string
+          employment_id: string
+          evidence: Json
+          id: string
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          override_by_employment_id: string | null
+          override_note: string | null
+          passed: boolean
+          record_class_key: string
+          retention_trigger_at: string | null
+          rule_version_id: string | null
+          score: number | null
+          training_assignment_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          assigned_on?: string | null
+          assignment_reason: string
+          attempts?: number
+          certificate_file_id?: string | null
+          completed_at: string
+          content_sha256_snapshot?: string | null
+          course_id?: string | null
+          course_title_snapshot: string
+          course_version_id?: string | null
+          course_version_label_snapshot?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_id?: string | null
+          due_on?: string | null
+          employee_id: string
+          employment_id: string
+          evidence?: Json
+          id?: string
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id: string
+          override_by_employment_id?: string | null
+          override_note?: string | null
+          passed: boolean
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          rule_version_id?: string | null
+          score?: number | null
+          training_assignment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          assigned_on?: string | null
+          assignment_reason?: string
+          attempts?: number
+          certificate_file_id?: string | null
+          completed_at?: string
+          content_sha256_snapshot?: string | null
+          course_id?: string | null
+          course_title_snapshot?: string
+          course_version_id?: string | null
+          course_version_label_snapshot?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_id?: string | null
+          due_on?: string | null
+          employee_id?: string
+          employment_id?: string
+          evidence?: Json
+          id?: string
+          legal_hold_count?: number
+          metadata?: Json
+          organization_id?: string
+          override_by_employment_id?: string | null
+          override_note?: string | null
+          passed?: boolean
+          record_class_key?: string
+          retention_trigger_at?: string | null
+          rule_version_id?: string | null
+          score?: number | null
+          training_assignment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcript_entry_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "course"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transcript_entry_course_version_id_fkey"
+            columns: ["course_version_id"]
+            isOneToOne: false
+            referencedRelation: "course_version"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transcript_entry_credential_id_fkey"
+            columns: ["credential_id"]
+            isOneToOne: false
+            referencedRelation: "credential"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transcript_entry_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transcript_entry_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "transcript_entry_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transcript_entry_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "transcript_entry_override_by_employment_id_fkey"
+            columns: ["override_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transcript_entry_override_by_employment_id_fkey"
+            columns: ["override_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "transcript_entry_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "transcript_entry_rule_version_id_fkey"
+            columns: ["rule_version_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transcript_entry_training_assignment_id_fkey"
+            columns: ["training_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "training_assignment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verification_letter_request: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          delivered_at: string | null
+          delivery_method: string | null
+          employee_consent_at: string | null
+          employee_consent_evidence: Json
+          employment_id: string
+          generated_at: string | null
+          id: string
+          includes_compensation: boolean
+          legal_hold_count: number
+          letter_file_id: string | null
+          metadata: Json
+          organization_id: string
+          outsider_token_ref: string | null
+          record_class_key: string
+          request_source: string
+          requested_at: string
+          requester_email: string | null
+          requester_name: string | null
+          requester_organization: string | null
+          retention_trigger_at: string | null
+          snapshot: Json
+          state: string
+          updated_at: string
+          updated_by: string | null
+          verification_kind: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivery_method?: string | null
+          employee_consent_at?: string | null
+          employee_consent_evidence?: Json
+          employment_id: string
+          generated_at?: string | null
+          id?: string
+          includes_compensation?: boolean
+          legal_hold_count?: number
+          letter_file_id?: string | null
+          metadata?: Json
+          organization_id: string
+          outsider_token_ref?: string | null
+          record_class_key?: string
+          request_source: string
+          requested_at?: string
+          requester_email?: string | null
+          requester_name?: string | null
+          requester_organization?: string | null
+          retention_trigger_at?: string | null
+          snapshot?: Json
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          verification_kind: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivery_method?: string | null
+          employee_consent_at?: string | null
+          employee_consent_evidence?: Json
+          employment_id?: string
+          generated_at?: string | null
+          id?: string
+          includes_compensation?: boolean
+          legal_hold_count?: number
+          letter_file_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          outsider_token_ref?: string | null
+          record_class_key?: string
+          request_source?: string
+          requested_at?: string
+          requester_email?: string | null
+          requester_name?: string | null
+          requester_organization?: string | null
+          retention_trigger_at?: string | null
+          snapshot?: Json
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          verification_kind?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_letter_request_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verification_letter_request_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "verification_letter_request_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+        ]
+      }
+      work_interval: {
+        Row: {
+          amount: number | null
+          calc: Json
+          computed_at: string
+          created_at: string
+          created_by: string | null
+          earning_code_id: string
+          employment_id: string
+          ended_at: string | null
+          engine_key: string
+          engine_version: string
+          holiday_id: string | null
+          hours: number
+          hours_category: string
+          id: string
+          interval_kind: string
+          is_current: boolean
+          is_overtime: boolean
+          jurisdiction_id: string
+          leave_request_id: string | null
+          local_work_date: string
+          metadata: Json
+          organization_id: string
+          pay_period_id: string | null
+          position_assignment_id: string | null
+          rate: number | null
+          rounding_applied_minutes: number
+          rule_version_ids: string[]
+          shift_id: string | null
+          source_punch_ids: string[]
+          started_at: string | null
+          superseded_by_id: string | null
+          tz: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          work_location_id: string
+          workweek_id: string
+        }
+        Insert: {
+          amount?: number | null
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          earning_code_id: string
+          employment_id: string
+          ended_at?: string | null
+          engine_key: string
+          engine_version: string
+          holiday_id?: string | null
+          hours: number
+          hours_category: string
+          id?: string
+          interval_kind: string
+          is_current?: boolean
+          is_overtime?: boolean
+          jurisdiction_id: string
+          leave_request_id?: string | null
+          local_work_date: string
+          metadata?: Json
+          organization_id: string
+          pay_period_id?: string | null
+          position_assignment_id?: string | null
+          rate?: number | null
+          rounding_applied_minutes?: number
+          rule_version_ids?: string[]
+          shift_id?: string | null
+          source_punch_ids?: string[]
+          started_at?: string | null
+          superseded_by_id?: string | null
+          tz: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          work_location_id: string
+          workweek_id: string
+        }
+        Update: {
+          amount?: number | null
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          earning_code_id?: string
+          employment_id?: string
+          ended_at?: string | null
+          engine_key?: string
+          engine_version?: string
+          holiday_id?: string | null
+          hours?: number
+          hours_category?: string
+          id?: string
+          interval_kind?: string
+          is_current?: boolean
+          is_overtime?: boolean
+          jurisdiction_id?: string
+          leave_request_id?: string | null
+          local_work_date?: string
+          metadata?: Json
+          organization_id?: string
+          pay_period_id?: string | null
+          position_assignment_id?: string | null
+          rate?: number | null
+          rounding_applied_minutes?: number
+          rule_version_ids?: string[]
+          shift_id?: string | null
+          source_punch_ids?: string[]
+          started_at?: string | null
+          superseded_by_id?: string | null
+          tz?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          work_location_id?: string
+          workweek_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_interval_earning_code_id_fkey"
+            columns: ["earning_code_id"]
+            isOneToOne: false
+            referencedRelation: "earning_code"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_interval_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_interval_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "work_interval_holiday_id_fkey"
+            columns: ["holiday_id"]
+            isOneToOne: false
+            referencedRelation: "holiday"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_interval_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_interval_leave_request_fk"
+            columns: ["leave_request_id"]
+            isOneToOne: false
+            referencedRelation: "leave_request"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_interval_pay_period_id_fkey"
+            columns: ["pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_period"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_interval_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "position_assignment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_interval_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_position_current"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_interval_shift_fk"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shift"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_interval_shift_fk"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "v_my_week"
+            referencedColumns: ["shift_id"]
+          },
+          {
+            foreignKeyName: "work_interval_superseded_fk"
+            columns: ["superseded_by_id"]
+            isOneToOne: false
+            referencedRelation: "work_interval"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_interval_work_location_id_fkey"
+            columns: ["work_location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_interval_workweek_id_fkey"
+            columns: ["workweek_id"]
+            isOneToOne: false
+            referencedRelation: "workweek"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_binding: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          exclusive: boolean
+          flow_key: string
+          id: string
+          is_open: boolean
+          metadata: Json
+          organization_id: string
+          target_id: string
+          target_token: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workflow_instance_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          exclusive?: boolean
+          flow_key: string
+          id?: string
+          is_open?: boolean
+          metadata?: Json
+          organization_id: string
+          target_id: string
+          target_token: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          exclusive?: boolean
+          flow_key?: string
+          id?: string
+          is_open?: boolean
+          metadata?: Json
+          organization_id?: string
+          target_id?: string
+          target_token?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_binding_workflow_instance_id_fkey"
+            columns: ["workflow_instance_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_instance"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_decision: {
+        Row: {
+          actor_agent_key: string | null
+          actor_agent_version: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          approval_basis: string | null
+          authority_id: string | null
+          autonomy_mode: number
+          calculation_snapshot: Json
+          client_context: Json
+          created_at: string
+          created_by: string | null
+          decided_at: string
+          decision: string
+          delegation_id: string | null
+          id: string
+          metadata: Json
+          on_behalf_of_employment_id: string | null
+          organization_id: string
+          overrode_recommendation: boolean
+          reason: string | null
+          reason_category_id: string | null
+          recommendation_snapshot: Json
+          rule_key: string | null
+          rule_version: string | null
+          step_key: string
+          superseded_by_target_change: boolean
+          target_digest: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workflow_instance_id: string
+          workflow_step_id: string
+        }
+        Insert: {
+          actor_agent_key?: string | null
+          actor_agent_version?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_type: string
+          actor_user_id?: string | null
+          approval_basis?: string | null
+          authority_id?: string | null
+          autonomy_mode?: number
+          calculation_snapshot?: Json
+          client_context?: Json
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string
+          decision: string
+          delegation_id?: string | null
+          id?: string
+          metadata?: Json
+          on_behalf_of_employment_id?: string | null
+          organization_id: string
+          overrode_recommendation?: boolean
+          reason?: string | null
+          reason_category_id?: string | null
+          recommendation_snapshot?: Json
+          rule_key?: string | null
+          rule_version?: string | null
+          step_key: string
+          superseded_by_target_change?: boolean
+          target_digest?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id: string
+          workflow_step_id: string
+        }
+        Update: {
+          actor_agent_key?: string | null
+          actor_agent_version?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          approval_basis?: string | null
+          authority_id?: string | null
+          autonomy_mode?: number
+          calculation_snapshot?: Json
+          client_context?: Json
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string
+          decision?: string
+          delegation_id?: string | null
+          id?: string
+          metadata?: Json
+          on_behalf_of_employment_id?: string | null
+          organization_id?: string
+          overrode_recommendation?: boolean
+          reason?: string | null
+          reason_category_id?: string | null
+          recommendation_snapshot?: Json
+          rule_key?: string | null
+          rule_version?: string | null
+          step_key?: string
+          superseded_by_target_change?: boolean
+          target_digest?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string
+          workflow_step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_decision_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_decision_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "workflow_decision_on_behalf_of_employment_id_fkey"
+            columns: ["on_behalf_of_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_decision_on_behalf_of_employment_id_fkey"
+            columns: ["on_behalf_of_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      workflow_definition: {
+        Row: {
+          allow_bulk_decide: boolean
+          created_at: string
+          created_by: string | null
+          definition_version: number
+          deleted_at: string | null
+          effective_from: string | null
+          effective_to: string | null
+          flow_key: string
+          id: string
+          metadata: Json
+          name: string
+          notes: string | null
+          on_expiry: string
+          organization_id: string
+          published_at: string | null
+          reminder_cadence_hours: number
+          reminder_max: number
+          retired_at: string | null
+          skip_absent_approver: boolean
+          sla_hours: number | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          allow_bulk_decide?: boolean
+          created_at?: string
+          created_by?: string | null
+          definition_version?: number
+          deleted_at?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          flow_key: string
+          id?: string
+          metadata?: Json
+          name: string
+          notes?: string | null
+          on_expiry?: string
+          organization_id: string
+          published_at?: string | null
+          reminder_cadence_hours?: number
+          reminder_max?: number
+          retired_at?: string | null
+          skip_absent_approver?: boolean
+          sla_hours?: number | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          allow_bulk_decide?: boolean
+          created_at?: string
+          created_by?: string | null
+          definition_version?: number
+          deleted_at?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          flow_key?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          on_expiry?: string
+          organization_id?: string
+          published_at?: string | null
+          reminder_cadence_hours?: number
+          reminder_max?: number
+          retired_at?: string | null
+          skip_absent_approver?: boolean
+          sla_hours?: number | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      workflow_event: {
+        Row: {
+          actor_agent_key: string | null
+          actor_employment_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          created_at: string
+          created_by: string | null
+          detail: Json
+          event_kind: string
+          from_state: string | null
+          id: string
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          to_state: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workflow_instance_id: string
+          workflow_step_id: string | null
+        }
+        Insert: {
+          actor_agent_key?: string | null
+          actor_employment_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail?: Json
+          event_kind: string
+          from_state?: string | null
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+          to_state?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id: string
+          workflow_step_id?: string | null
+        }
+        Update: {
+          actor_agent_key?: string | null
+          actor_employment_id?: string | null
+          actor_type?: string
+          actor_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail?: Json
+          event_kind?: string
+          from_state?: string | null
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          to_state?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string
+          workflow_step_id?: string | null
+        }
+        Relationships: []
+      }
+      workflow_failure: {
+        Row: {
+          assigned_employment_id: string | null
+          attempt_count: number
+          created_at: string
+          created_by: string | null
+          detail: Json
+          failure_class: string
+          id: string
+          metadata: Json
+          next_retry_at: string | null
+          occurred_at: string
+          organization_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workflow_instance_id: string
+          workflow_step_id: string | null
+        }
+        Insert: {
+          assigned_employment_id?: string | null
+          attempt_count?: number
+          created_at?: string
+          created_by?: string | null
+          detail?: Json
+          failure_class: string
+          id?: string
+          metadata?: Json
+          next_retry_at?: string | null
+          occurred_at?: string
+          organization_id: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id: string
+          workflow_step_id?: string | null
+        }
+        Update: {
+          assigned_employment_id?: string | null
+          attempt_count?: number
+          created_at?: string
+          created_by?: string | null
+          detail?: Json
+          failure_class?: string
+          id?: string
+          metadata?: Json
+          next_retry_at?: string | null
+          occurred_at?: string
+          organization_id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string
+          workflow_step_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_failure_assigned_employment_id_fkey"
+            columns: ["assigned_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_failure_assigned_employment_id_fkey"
+            columns: ["assigned_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "workflow_failure_workflow_instance_id_fkey"
+            columns: ["workflow_instance_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_instance"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_flow_type: {
+        Row: {
+          ai_ceiling: string
+          allows_resubmit: boolean
+          allows_withdraw: boolean
+          apply_fn: unknown
+          channel_policy: Json
+          compensate_fn: unknown
+          conflict_fn: unknown
+          created_at: string
+          created_by: string | null
+          default_definition_id: string | null
+          deleted_at: string | null
+          description: string
+          digest_fn: unknown
+          flow_key: string
+          id: string
+          inactive_reason: string | null
+          is_active: boolean
+          label: string
+          metadata: Json
+          on_reject: string
+          on_target_change: string
+          organization_id: string
+          requester_is_interested_party: boolean
+          requester_kind: string
+          requires_reason_on_approve: boolean
+          result_fn: unknown
+          sensitivity_tier: string
+          target_token: string
+          updated_at: string
+          updated_by: string | null
+          validate_fn: unknown
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          ai_ceiling?: string
+          allows_resubmit?: boolean
+          allows_withdraw?: boolean
+          apply_fn: unknown
+          channel_policy?: Json
+          compensate_fn?: unknown
+          conflict_fn?: unknown
+          created_at?: string
+          created_by?: string | null
+          default_definition_id?: string | null
+          deleted_at?: string | null
+          description?: string
+          digest_fn: unknown
+          flow_key: string
+          id?: string
+          inactive_reason?: string | null
+          is_active?: boolean
+          label: string
+          metadata?: Json
+          on_reject?: string
+          on_target_change?: string
+          organization_id: string
+          requester_is_interested_party?: boolean
+          requester_kind?: string
+          requires_reason_on_approve?: boolean
+          result_fn?: unknown
+          sensitivity_tier?: string
+          target_token: string
+          updated_at?: string
+          updated_by?: string | null
+          validate_fn?: unknown
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          ai_ceiling?: string
+          allows_resubmit?: boolean
+          allows_withdraw?: boolean
+          apply_fn?: unknown
+          channel_policy?: Json
+          compensate_fn?: unknown
+          conflict_fn?: unknown
+          created_at?: string
+          created_by?: string | null
+          default_definition_id?: string | null
+          deleted_at?: string | null
+          description?: string
+          digest_fn?: unknown
+          flow_key?: string
+          id?: string
+          inactive_reason?: string | null
+          is_active?: boolean
+          label?: string
+          metadata?: Json
+          on_reject?: string
+          on_target_change?: string
+          organization_id?: string
+          requester_is_interested_party?: boolean
+          requester_kind?: string
+          requires_reason_on_approve?: boolean
+          result_fn?: unknown
+          sensitivity_tier?: string
+          target_token?: string
+          updated_at?: string
+          updated_by?: string | null
+          validate_fn?: unknown
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      workflow_instance: {
+        Row: {
+          applied_at: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          current_step_order: number | null
+          decided_at: string | null
+          definition_version: number
+          deleted_at: string | null
+          due_at: string | null
+          flow_key: string
+          id: string
+          idempotency_key: string | null
+          metadata: Json
+          organization_id: string
+          outsider_token_id: string | null
+          payload: Json
+          priority: string
+          requester_actor_type: string
+          requester_employment_id: string | null
+          rule_snapshot: Json
+          sensitivity_tier: string
+          state: string
+          state_reason: string | null
+          subject_employment_id: string | null
+          submitted_at: string | null
+          superseded_by_instance_id: string | null
+          supersedes_instance_id: string | null
+          target_digest: string | null
+          target_id: string
+          target_token: string
+          target_version: number | null
+          updated_at: string
+          updated_by: string | null
+          validation_findings: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          workflow_definition_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_step_order?: number | null
+          decided_at?: string | null
+          definition_version: number
+          deleted_at?: string | null
+          due_at?: string | null
+          flow_key: string
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json
+          organization_id: string
+          outsider_token_id?: string | null
+          payload?: Json
+          priority?: string
+          requester_actor_type?: string
+          requester_employment_id?: string | null
+          rule_snapshot?: Json
+          sensitivity_tier?: string
+          state?: string
+          state_reason?: string | null
+          subject_employment_id?: string | null
+          submitted_at?: string | null
+          superseded_by_instance_id?: string | null
+          supersedes_instance_id?: string | null
+          target_digest?: string | null
+          target_id: string
+          target_token: string
+          target_version?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          validation_findings?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_definition_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_step_order?: number | null
+          decided_at?: string | null
+          definition_version?: number
+          deleted_at?: string | null
+          due_at?: string | null
+          flow_key?: string
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json
+          organization_id?: string
+          outsider_token_id?: string | null
+          payload?: Json
+          priority?: string
+          requester_actor_type?: string
+          requester_employment_id?: string | null
+          rule_snapshot?: Json
+          sensitivity_tier?: string
+          state?: string
+          state_reason?: string | null
+          subject_employment_id?: string | null
+          submitted_at?: string | null
+          superseded_by_instance_id?: string | null
+          supersedes_instance_id?: string | null
+          target_digest?: string | null
+          target_id?: string
+          target_token?: string
+          target_version?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          validation_findings?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_definition_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_instance_requester_employment_id_fkey"
+            columns: ["requester_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_instance_requester_employment_id_fkey"
+            columns: ["requester_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "workflow_instance_subject_employment_id_fkey"
+            columns: ["subject_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_instance_subject_employment_id_fkey"
+            columns: ["subject_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "workflow_instance_superseded_by_instance_id_fkey"
+            columns: ["superseded_by_instance_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_instance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_instance_supersedes_instance_id_fkey"
+            columns: ["supersedes_instance_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_instance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_instance_workflow_definition_id_fkey"
+            columns: ["workflow_definition_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_step: {
+        Row: {
+          activated_at: string | null
+          approvals_needed: number
+          approvals_received: number
+          autonomy_mode: number
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          escalated_at: string | null
+          escalated_from_employment_id: string | null
+          first_viewed_at: string | null
+          id: string
+          last_reminder_at: string | null
+          metadata: Json
+          organization_id: string
+          parallel_group: string | null
+          quorum_kind: string
+          quorum_n: number | null
+          recommendation: Json
+          reminders_sent: number
+          resolution_evidence: Json
+          resolution_path: string | null
+          resolved_approver_ids: string[]
+          resolved_user_ids: string[]
+          result_due_at: string | null
+          result_evidence: Json
+          result_verified_at: string | null
+          state: string
+          state_reason: string | null
+          step_definition_id: string
+          step_key: string
+          step_order: number
+          timeout_at: string | null
+          timeout_warned_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workflow_instance_id: string
+          workspace_task_id: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          approvals_needed?: number
+          approvals_received?: number
+          autonomy_mode?: number
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          escalated_at?: string | null
+          escalated_from_employment_id?: string | null
+          first_viewed_at?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          metadata?: Json
+          organization_id: string
+          parallel_group?: string | null
+          quorum_kind?: string
+          quorum_n?: number | null
+          recommendation?: Json
+          reminders_sent?: number
+          resolution_evidence?: Json
+          resolution_path?: string | null
+          resolved_approver_ids?: string[]
+          resolved_user_ids?: string[]
+          result_due_at?: string | null
+          result_evidence?: Json
+          result_verified_at?: string | null
+          state?: string
+          state_reason?: string | null
+          step_definition_id: string
+          step_key: string
+          step_order: number
+          timeout_at?: string | null
+          timeout_warned_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id: string
+          workspace_task_id?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          approvals_needed?: number
+          approvals_received?: number
+          autonomy_mode?: number
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          escalated_at?: string | null
+          escalated_from_employment_id?: string | null
+          first_viewed_at?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          parallel_group?: string | null
+          quorum_kind?: string
+          quorum_n?: number | null
+          recommendation?: Json
+          reminders_sent?: number
+          resolution_evidence?: Json
+          resolution_path?: string | null
+          resolved_approver_ids?: string[]
+          resolved_user_ids?: string[]
+          result_due_at?: string | null
+          result_evidence?: Json
+          result_verified_at?: string | null
+          state?: string
+          state_reason?: string | null
+          step_definition_id?: string
+          step_key?: string
+          step_order?: number
+          timeout_at?: string | null
+          timeout_warned_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_instance_id?: string
+          workspace_task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_step_escalated_from_employment_id_fkey"
+            columns: ["escalated_from_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_step_escalated_from_employment_id_fkey"
+            columns: ["escalated_from_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "workflow_step_step_definition_id_fkey"
+            columns: ["step_definition_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_step_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_step_workflow_instance_id_fkey"
+            columns: ["workflow_instance_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_instance"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_step_definition: {
+        Row: {
+          allows_self: boolean
+          authority_action: string | null
+          auto_decide_rule: Json
+          auto_decide_rule_version: string | null
+          autonomy_mode: number
+          condition: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          escalate_after_hours: number | null
+          escalation_config: Json
+          escalation_resolver_kind: string | null
+          fallback_chain: string[]
+          id: string
+          is_optional: boolean
+          label: string
+          metadata: Json
+          organization_id: string
+          parallel_group: string | null
+          quorum_kind: string
+          quorum_n: number | null
+          recommend_mandate_key: string | null
+          reminder_cadence_hours: number | null
+          requires_reason: boolean
+          resolver_config: Json
+          resolver_kind: string
+          result_window_hours: number | null
+          sla_hours: number | null
+          step_key: string
+          step_order: number
+          timeout_action: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workflow_definition_id: string
+        }
+        Insert: {
+          allows_self?: boolean
+          authority_action?: string | null
+          auto_decide_rule?: Json
+          auto_decide_rule_version?: string | null
+          autonomy_mode?: number
+          condition?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          escalate_after_hours?: number | null
+          escalation_config?: Json
+          escalation_resolver_kind?: string | null
+          fallback_chain?: string[]
+          id?: string
+          is_optional?: boolean
+          label: string
+          metadata?: Json
+          organization_id: string
+          parallel_group?: string | null
+          quorum_kind?: string
+          quorum_n?: number | null
+          recommend_mandate_key?: string | null
+          reminder_cadence_hours?: number | null
+          requires_reason?: boolean
+          resolver_config?: Json
+          resolver_kind: string
+          result_window_hours?: number | null
+          sla_hours?: number | null
+          step_key: string
+          step_order: number
+          timeout_action?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_definition_id: string
+        }
+        Update: {
+          allows_self?: boolean
+          authority_action?: string | null
+          auto_decide_rule?: Json
+          auto_decide_rule_version?: string | null
+          autonomy_mode?: number
+          condition?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          escalate_after_hours?: number | null
+          escalation_config?: Json
+          escalation_resolver_kind?: string | null
+          fallback_chain?: string[]
+          id?: string
+          is_optional?: boolean
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          parallel_group?: string | null
+          quorum_kind?: string
+          quorum_n?: number | null
+          recommend_mandate_key?: string | null
+          reminder_cadence_hours?: number | null
+          requires_reason?: boolean
+          resolver_config?: Json
+          resolver_kind?: string
+          result_window_hours?: number | null
+          sla_hours?: number | null
+          step_key?: string
+          step_order?: number
+          timeout_action?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workflow_definition_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_step_definition_workflow_definition_id_fkey"
+            columns: ["workflow_definition_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workweek: {
+        Row: {
+          calc: Json
+          computed_at: string
+          created_at: string
+          created_by: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          hours_doubletime: number
+          hours_holiday: number
+          hours_of_service: number
+          hours_on_call: number
+          hours_overtime: number
+          hours_paid_leave: number
+          hours_regular: number
+          hours_unpaid_leave: number
+          hours_worked: number
+          id: string
+          is_final: boolean
+          jurisdiction_id: string
+          metadata: Json
+          organization_id: string
+          pay_group_id: string
+          rule_version_ids: string[]
+          tz: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          week_end_at: string
+          week_start_at: string
+          week_start_dow: number
+          week_start_local_date: string
+          week_start_time: string
+          weighted_average_regular_rate: number | null
+        }
+        Insert: {
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          hours_doubletime?: number
+          hours_holiday?: number
+          hours_of_service?: number
+          hours_on_call?: number
+          hours_overtime?: number
+          hours_paid_leave?: number
+          hours_regular?: number
+          hours_unpaid_leave?: number
+          hours_worked?: number
+          id?: string
+          is_final?: boolean
+          jurisdiction_id: string
+          metadata?: Json
+          organization_id: string
+          pay_group_id: string
+          rule_version_ids?: string[]
+          tz: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          week_end_at: string
+          week_start_at: string
+          week_start_dow: number
+          week_start_local_date: string
+          week_start_time: string
+          weighted_average_regular_rate?: number | null
+        }
+        Update: {
+          calc?: Json
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          employment_id?: string
+          engine_key?: string
+          engine_version?: string
+          hours_doubletime?: number
+          hours_holiday?: number
+          hours_of_service?: number
+          hours_on_call?: number
+          hours_overtime?: number
+          hours_paid_leave?: number
+          hours_regular?: number
+          hours_unpaid_leave?: number
+          hours_worked?: number
+          id?: string
+          is_final?: boolean
+          jurisdiction_id?: string
+          metadata?: Json
+          organization_id?: string
+          pay_group_id?: string
+          rule_version_ids?: string[]
+          tz?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          week_end_at?: string
+          week_start_at?: string
+          week_start_dow?: number
+          week_start_local_date?: string
+          week_start_time?: string
+          weighted_average_regular_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workweek_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workweek_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "workweek_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workweek_pay_group_id_fkey"
+            columns: ["pay_group_id"]
+            isOneToOne: false
+            referencedRelation: "pay_group"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      v_access_audit: {
+        Row: {
+          access_role_key: string | null
+          action: string | null
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string | null
+          actor_user_id: string | null
+          basis: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          denial_reason: string | null
+          field_key: string | null
+          granted: boolean | null
+          id: string | null
+          is_break_glass: boolean | null
+          is_self_access: boolean | null
+          justification: string | null
+          metadata: Json | null
+          occurred_at: string | null
+          organization_id: string | null
+          purpose: string | null
+          record_class_key: string | null
+          request_context: Json | null
+          request_ref: string | null
+          row_count: number | null
+          sensitivity_tier: string | null
+          subject_employment_id: string | null
+          target_ids: string[] | null
+          target_token: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Insert: {
+          access_role_key?: string | null
+          action?: string | null
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string | null
+          actor_user_id?: string | null
+          basis?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          denial_reason?: string | null
+          field_key?: string | null
+          granted?: boolean | null
+          id?: string | null
+          is_break_glass?: boolean | null
+          is_self_access?: boolean | null
+          justification?: string | null
+          metadata?: Json | null
+          occurred_at?: string | null
+          organization_id?: string | null
+          purpose?: string | null
+          record_class_key?: string | null
+          request_context?: Json | null
+          request_ref?: string | null
+          row_count?: number | null
+          sensitivity_tier?: string | null
+          subject_employment_id?: string | null
+          target_ids?: string[] | null
+          target_token?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Update: {
+          access_role_key?: string | null
+          action?: string | null
+          actor_agent_id?: string | null
+          actor_device_id?: string | null
+          actor_employment_id?: string | null
+          actor_external_ref?: string | null
+          actor_note?: string | null
+          actor_token_id?: string | null
+          actor_type?: string | null
+          actor_user_id?: string | null
+          basis?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          denial_reason?: string | null
+          field_key?: string | null
+          granted?: boolean | null
+          id?: string | null
+          is_break_glass?: boolean | null
+          is_self_access?: boolean | null
+          justification?: string | null
+          metadata?: Json | null
+          occurred_at?: string | null
+          organization_id?: string | null
+          purpose?: string | null
+          record_class_key?: string | null
+          request_context?: Json | null
+          request_ref?: string | null
+          row_count?: number | null
+          sensitivity_tier?: string | null
+          subject_employment_id?: string | null
+          target_ids?: string[] | null
+          target_token?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_audit_actor_device_id_fkey"
+            columns: ["actor_device_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_actor_employment_id_fkey"
+            columns: ["actor_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "access_audit_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "access_audit_subject_employment_id_fkey"
+            columns: ["subject_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_subject_employment_id_fkey"
+            columns: ["subject_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      v_compensation_current: {
+        Row: {
+          amount: number | null
+          annualized_amount: number | null
+          approved_at: string | null
+          approved_by_employment_id: string | null
+          change_reason_category_id: string | null
+          component_kind: string | null
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          deleted_at: string | null
+          earning_code_id: string | null
+          effective_from: string | null
+          effective_range: unknown
+          effective_to: string | null
+          employment_id: string | null
+          fte: number | null
+          id: string | null
+          legal_hold_count: number | null
+          metadata: Json | null
+          organization_id: string | null
+          pay_basis: string | null
+          pay_range_max: number | null
+          pay_range_min: number | null
+          per_unit: string | null
+          position_assignment_id: string | null
+          record_class_key: string | null
+          recorded_at: string | null
+          retention_trigger_at: string | null
+          supersedes_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+          variable_plan_ref: string | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+          workflow_instance_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          annualized_amount?: number | null
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          change_reason_category_id?: string | null
+          component_kind?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          deleted_at?: string | null
+          earning_code_id?: string | null
+          effective_from?: string | null
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id?: string | null
+          fte?: number | null
+          id?: string | null
+          legal_hold_count?: number | null
+          metadata?: Json | null
+          organization_id?: string | null
+          pay_basis?: string | null
+          pay_range_max?: number | null
+          pay_range_min?: number | null
+          per_unit?: string | null
+          position_assignment_id?: string | null
+          record_class_key?: string | null
+          recorded_at?: string | null
+          retention_trigger_at?: string | null
+          supersedes_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          variable_plan_ref?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+          workflow_instance_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          annualized_amount?: number | null
+          approved_at?: string | null
+          approved_by_employment_id?: string | null
+          change_reason_category_id?: string | null
+          component_kind?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          deleted_at?: string | null
+          earning_code_id?: string | null
+          effective_from?: string | null
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id?: string | null
+          fte?: number | null
+          id?: string | null
+          legal_hold_count?: number | null
+          metadata?: Json | null
+          organization_id?: string | null
+          pay_basis?: string | null
+          pay_range_max?: number | null
+          pay_range_min?: number | null
+          per_unit?: string | null
+          position_assignment_id?: string | null
+          record_class_key?: string | null
+          recorded_at?: string | null
+          retention_trigger_at?: string | null
+          supersedes_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          variable_plan_ref?: string | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+          workflow_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compensation_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_approved_by_employment_id_fkey"
+            columns: ["approved_by_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "compensation_earning_code_id_fkey"
+            columns: ["earning_code_id"]
+            isOneToOne: false
+            referencedRelation: "earning_code"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "compensation_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "position_assignment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_position_assignment_id_fkey"
+            columns: ["position_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_position_current"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_record_class_key_fkey"
+            columns: ["record_class_key"]
+            isOneToOne: false
+            referencedRelation: "record_class"
+            referencedColumns: ["class_key"]
+          },
+          {
+            foreignKeyName: "compensation_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "compensation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "v_compensation_current"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_my_week: {
+        Row: {
+          crew_id: string | null
+          crosses_midnight: boolean | null
+          employment_id: string | null
+          ends_at: string | null
+          is_on_call: boolean | null
+          job_title_id: string | null
+          jurisdiction_id: string | null
+          local_work_date: string | null
+          location_name: string | null
+          schedule_id: string | null
+          schedule_kind: string | null
+          scheduled_hours: number | null
+          shift_id: string | null
+          starts_at: string | null
+          status: string | null
+          tz: string | null
+          work_location_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "shift_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "job_title"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_work_location_id_fkey"
+            columns: ["work_location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_org_chart_current: {
+        Row: {
+          department_id: string | null
+          display_name: string | null
+          employee_id: string | null
+          employment_id: string | null
+          fte: number | null
+          job_title_id: string | null
+          location_id: string | null
+          manager_employment_id: string | null
+          organization_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "position_assignment_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "job_title"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+        ]
+      }
+      v_position_current: {
+        Row: {
+          change_reason_category_id: string | null
+          cost_center: string | null
+          created_at: string | null
+          created_by: string | null
+          crew_id: string | null
+          custom: Json | null
+          deleted_at: string | null
+          department_id: string | null
+          eeo1_job_category: string | null
+          effective_from: string | null
+          effective_range: unknown
+          effective_to: string | null
+          employment_id: string | null
+          flsa_exemption_basis: string | null
+          flsa_status: string | null
+          fte: number | null
+          id: string | null
+          is_primary: boolean | null
+          is_supervisor: boolean | null
+          job_title_id: string | null
+          location_id: string | null
+          manager_employment_id: string | null
+          metadata: Json | null
+          organization_id: string | null
+          pay_basis: string | null
+          recorded_at: string | null
+          requisition_id: string | null
+          schedule_class: string | null
+          standard_hours_per_week: number | null
+          supersedes_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+          worker_class: string | null
+        }
+        Insert: {
+          change_reason_category_id?: string | null
+          cost_center?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          crew_id?: string | null
+          custom?: Json | null
+          deleted_at?: string | null
+          department_id?: string | null
+          eeo1_job_category?: string | null
+          effective_from?: string | null
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id?: string | null
+          flsa_exemption_basis?: string | null
+          flsa_status?: string | null
+          fte?: number | null
+          id?: string | null
+          is_primary?: boolean | null
+          is_supervisor?: boolean | null
+          job_title_id?: string | null
+          location_id?: string | null
+          manager_employment_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          pay_basis?: string | null
+          recorded_at?: string | null
+          requisition_id?: string | null
+          schedule_class?: string | null
+          standard_hours_per_week?: number | null
+          supersedes_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          worker_class?: string | null
+        }
+        Update: {
+          change_reason_category_id?: string | null
+          cost_center?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          crew_id?: string | null
+          custom?: Json | null
+          deleted_at?: string | null
+          department_id?: string | null
+          eeo1_job_category?: string | null
+          effective_from?: string | null
+          effective_range?: unknown
+          effective_to?: string | null
+          employment_id?: string | null
+          flsa_exemption_basis?: string | null
+          flsa_status?: string | null
+          fte?: number | null
+          id?: string | null
+          is_primary?: boolean | null
+          is_supervisor?: boolean | null
+          job_title_id?: string | null
+          location_id?: string | null
+          manager_employment_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          pay_basis?: string | null
+          recorded_at?: string | null
+          requisition_id?: string | null
+          schedule_class?: string | null
+          standard_hours_per_week?: number | null
+          supersedes_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+          worker_class?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "position_assignment_crew_fk"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crew"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "department"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_employment_id_fkey"
+            columns: ["employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "position_assignment_job_title_id_fkey"
+            columns: ["job_title_id"]
+            isOneToOne: false
+            referencedRelation: "job_title"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "employment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_assignment_manager_employment_id_fkey"
+            columns: ["manager_employment_id"]
+            isOneToOne: false
+            referencedRelation: "v_org_chart_current"
+            referencedColumns: ["employment_id"]
+          },
+          {
+            foreignKeyName: "position_assignment_requisition_fk"
+            columns: ["requisition_id"]
+            isOneToOne: false
+            referencedRelation: "requisition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "position_assignment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "position_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "v_position_current"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_notice: {
+        Row: {
+          acted_at: string | null
+          attempt_count: number | null
+          channel: string | null
+          deep_link: string | null
+          delivered_at: string | null
+          error_code: string | null
+          error_message: string | null
+          event_key: string | null
+          failure_reason: string | null
+          flow_key: string | null
+          id: string | null
+          notice_kind: string | null
+          notification_id: string | null
+          organization_id: string | null
+          outcome: string | null
+          read_at: string | null
+          recipient_employment_id: string | null
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: string | null
+          workflow_instance_id: string | null
+          workflow_step_id: string | null
+        }
+        Insert: {
+          acted_at?: string | null
+          attempt_count?: number | null
+          channel?: string | null
+          deep_link?: string | null
+          delivered_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          event_key?: string | null
+          failure_reason?: never
+          flow_key?: never
+          id?: string | null
+          notice_kind?: never
+          notification_id?: string | null
+          organization_id?: string | null
+          outcome?: string | null
+          read_at?: string | null
+          recipient_employment_id?: never
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          workflow_instance_id?: never
+          workflow_step_id?: string | null
+        }
+        Update: {
+          acted_at?: string | null
+          attempt_count?: number | null
+          channel?: string | null
+          deep_link?: string | null
+          delivered_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          event_key?: string | null
+          failure_reason?: never
+          flow_key?: never
+          id?: string | null
+          notice_kind?: never
+          notification_id?: string | null
+          organization_id?: string | null
+          outcome?: string | null
+          read_at?: string | null
+          recipient_employment_id?: never
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          workflow_instance_id?: never
+          workflow_step_id?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      _add_business_days: {
+        Args: {
+          p_day_zero_counts?: boolean
+          p_days: number
+          p_holidays?: string[]
+          p_start: string
+        }
+        Returns: string
+      }
+      _applicability_verdict: {
+        Args: { p_applicability: Json; p_facts: Json }
+        Returns: Json
+      }
+      _approval_subject: {
+        Args: { p_target_id: string; p_target_table: string }
+        Returns: string
+      }
+      _break_glass_active: {
+        Args: { p_id: string; p_token: string; p_user: string }
+        Returns: boolean
+      }
+      _desired_grants_for_employment: {
+        Args: { p_at?: string; p_employment_id: string }
+        Returns: {
+          basis_id: string
+          basis_kind: string
+          expires_at: string
+          grantee_organization_id: string
+          grantee_user_id: string
+          permission_level: string
+          reason: string
+          resource_id: string
+          resource_type: string
+          subject_employment_id: string
+        }[]
+      }
+      _desired_grants_for_requisition: {
+        Args: { p_at?: string; p_requisition_id: string }
+        Returns: {
+          basis_id: string
+          basis_kind: string
+          expires_at: string
+          grantee_organization_id: string
+          grantee_user_id: string
+          permission_level: string
+          reason: string
+          resource_id: string
+          resource_type: string
+          subject_employment_id: string
+        }[]
+      }
+      _door_get: {
+        Args: {
+          p_break_glass: boolean
+          p_expect_tier: string
+          p_id: string
+          p_justification: string
+          p_purpose: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      _door_list: {
+        Args: {
+          p_cursor: string
+          p_expect_tier: string
+          p_filter: Json
+          p_limit: number
+          p_purpose: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      _door_spec: {
+        Args: { p_token: string }
+        Returns: {
+          allows_break_glass: boolean
+          caps: string[]
+          no_door_reason: string
+          tier: string
+        }[]
+      }
+      _door_verdict: {
+        Args: {
+          p_break_glass?: boolean
+          p_id: string
+          p_token: string
+          p_user: string
+        }
+        Returns: Json
+      }
+      _employment_expiry: { Args: { p_employment_id: string }; Returns: string }
+      _governance_refusal: {
+        Args: {
+          p_org: string
+          p_reason: string
+          p_reason_code: string
+          p_subject_employment?: string
+          p_target_ids?: string[]
+          p_target_token: string
+        }
+        Returns: Json
+      }
+      _knob: { Args: { p_feature: string; p_key: string }; Returns: Json }
+      _leave_policy_probe: { Args: { p_case: string }; Returns: Json }
+      _legality_envelope: {
+        Args: { p_class: string; p_rules: Json }
+        Returns: Json
+      }
+      _limits_satisfied: {
+        Args: { p_limits: Json; p_target_id: string; p_target_table: string }
+        Returns: boolean
+      }
+      _note_kind_caps: {
+        Args: { p_note_kind: string }
+        Returns: {
+          allows_break_glass: boolean
+          caps: string[]
+          veto_applies: boolean
+        }[]
+      }
+      _org_row_less_protective: {
+        Args: { p_class: string; p_org: Json; p_sys: Json }
+        Returns: Json
+      }
+      _project_row: {
+        Args: {
+          p_id: string
+          p_schema: string
+          p_table: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      _reconcile_grants: {
+        Args: { p_at: string; p_scope_id: string; p_scope_kind: string }
+        Returns: Json
+      }
+      _record_access_audit: {
+        Args: {
+          p_access_role_key?: string
+          p_action: string
+          p_actor_employment_id?: string
+          p_actor_type?: string
+          p_basis: string
+          p_denial_reason?: string
+          p_field_key?: string
+          p_granted: boolean
+          p_is_break_glass?: boolean
+          p_is_self_access?: boolean
+          p_justification?: string
+          p_organization_id: string
+          p_purpose: string
+          p_record_class_key?: string
+          p_request_context?: Json
+          p_request_ref?: string
+          p_row_count?: number
+          p_sensitivity_tier?: string
+          p_subject_employment_id?: string
+          p_target_ids?: string[]
+          p_target_token: string
+        }
+        Returns: string
+      }
+      _run_fixture_probe: {
+        Args: { p_input: Json; p_probe: string }
+        Returns: Json
+      }
+      _subject_jurisdiction_key: {
+        Args: { p_subject_id: string; p_subject_type: string }
+        Returns: string
+      }
+      _wf_absent: {
+        Args: { p_at?: string; p_employment_id: string }
+        Returns: boolean
+      }
+      _wf_apply: { Args: { p_instance: string }; Returns: Json }
+      _wf_auto_decide: { Args: { p_ctx: Json; p_step: string }; Returns: Json }
+      _wf_call_digest: {
+        Args: {
+          p_flow_key: string
+          p_org: string
+          p_target_id: string
+          p_target_token: string
+        }
+        Returns: string
+      }
+      _wf_call_hook: { Args: { p_arg: string; p_fn: unknown }; Returns: Json }
+      _wf_close_instance: {
+        Args: { p_instance: string; p_reason?: string; p_state: string }
+        Returns: Json
+      }
+      _wf_close_step: {
+        Args: { p_reason?: string; p_state: string; p_step: string }
+        Returns: Json
+      }
+      _wf_condition_met: {
+        Args: { p_condition: Json; p_ctx: Json }
+        Returns: boolean
+      }
+      _wf_event: {
+        Args: {
+          p_actor_emp?: string
+          p_actor_type?: string
+          p_actor_user?: string
+          p_detail?: Json
+          p_from?: string
+          p_instance: string
+          p_kind: string
+          p_step: string
+          p_to?: string
+        }
+        Returns: string
+      }
+      _wf_failure: {
+        Args: {
+          p_class: string
+          p_detail?: Json
+          p_instance: string
+          p_step: string
+        }
+        Returns: string
+      }
+      _wf_grant_step: { Args: { p_step: string }; Returns: number }
+      _wf_holder_employments: {
+        Args: {
+          p_at: string
+          p_holder_id: string
+          p_holder_kind: string
+          p_org: string
+        }
+        Returns: string[]
+      }
+      _wf_join: { Args: { p_instance: string }; Returns: Json }
+      _wf_login_of: { Args: { p_employment_id: string }; Returns: string }
+      _wf_notify: {
+        Args: {
+          p_employment: string
+          p_event_key: string
+          p_extra?: Json
+          p_instance: string
+          p_notice_kind: string
+          p_step: string
+          p_user: string
+        }
+        Returns: number
+      }
+      _wf_notify_delegation: {
+        Args: {
+          p_delegate: string
+          p_delegation: string
+          p_delegator: string
+          p_org: string
+        }
+        Returns: number
+      }
+      _wf_project_step: { Args: { p_step: string }; Returns: number }
+      _wf_revoke_step: { Args: { p_step: string }; Returns: number }
+      _wf_route: { Args: { p_instance: string }; Returns: Json }
+      _wf_target_changed: {
+        Args: { p_instance: string; p_new_digest: string }
+        Returns: Json
+      }
+      _wf_target_table: { Args: { p_token: string }; Returns: string }
+      _wf_unproject_step: {
+        Args: { p_outcome?: string; p_step: string }
+        Returns: number
+      }
+      access_audit_page: {
+        Args: {
+          p_cursor?: string
+          p_from?: string
+          p_include_self?: boolean
+          p_limit?: number
+          p_subject_token?: string
+          p_to?: string
+        }
+        Returns: {
+          access_role_key: string | null
+          action: string
+          actor_agent_id: string | null
+          actor_device_id: string | null
+          actor_employment_id: string | null
+          actor_external_ref: string | null
+          actor_note: string | null
+          actor_token_id: string | null
+          actor_type: string
+          actor_user_id: string | null
+          basis: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          denial_reason: string | null
+          field_key: string | null
+          granted: boolean
+          id: string
+          is_break_glass: boolean
+          is_self_access: boolean
+          justification: string | null
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          purpose: string
+          record_class_key: string | null
+          request_context: Json
+          request_ref: string | null
+          row_count: number | null
+          sensitivity_tier: string
+          subject_employment_id: string | null
+          target_ids: string[]
+          target_token: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "access_audit"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      access_explain: {
+        Args: { p_id: string; p_token: string; p_user: string }
+        Returns: Json
+      }
+      alert_recipients: {
+        Args: {
+          p_alert_family: string
+          p_event_key?: string
+          p_organization_id: string
+          p_scope_id?: string
+          p_scope_kind?: string
+          p_tier?: string
+        }
+        Returns: {
+          channels: string[]
+          escalate_after_minutes: number
+          escalate_to_role_keys: string[]
+          include_line_manager: boolean
+          recipient_employment_ids: string[]
+          recipient_role_keys: string[]
+          rule_id: string
+        }[]
+      }
+      arm_write: { Args: never; Returns: undefined }
+      can_approve: {
+        Args: {
+          p_action_type: string
+          p_at?: string
+          p_target_id: string
+          p_target_table: string
+          p_user: string
+        }
+        Returns: boolean
+      }
+      capability: {
+        Args: {
+          p_at?: string
+          p_capability: string
+          p_subject_employment?: string
+          p_user: string
+        }
+        Returns: boolean
+      }
+      compensation_as_of: {
+        Args: { p_employment_id: string; p_on: string }
+        Returns: {
+          amount: number
+          annualized_amount: number | null
+          approved_at: string | null
+          approved_by_employment_id: string | null
+          change_reason_category_id: string | null
+          component_kind: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          deleted_at: string | null
+          earning_code_id: string | null
+          effective_from: string
+          effective_range: unknown
+          effective_to: string | null
+          employment_id: string
+          fte: number | null
+          id: string
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          pay_basis: string
+          pay_range_max: number | null
+          pay_range_min: number | null
+          per_unit: string | null
+          position_assignment_id: string | null
+          record_class_key: string
+          recorded_at: string
+          retention_trigger_at: string | null
+          supersedes_id: string | null
+          updated_at: string
+          updated_by: string | null
+          variable_plan_ref: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          workflow_instance_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "compensation"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      derive_grants_bulk: {
+        Args: { p_at?: string; p_employment_ids: string[] }
+        Returns: Json
+      }
+      derive_grants_due: { Args: { p_window?: string }; Returns: Json }
+      derive_grants_for_actor: {
+        Args: { p_at?: string; p_user_id: string }
+        Returns: Json
+      }
+      derive_grants_for_employment: {
+        Args: { p_at?: string; p_employment_id: string }
+        Returns: Json
+      }
+      derive_grants_for_requisition: {
+        Args: { p_at?: string; p_requisition_id: string }
+        Returns: Json
+      }
+      dispose_records: {
+        Args: { p_as_of?: string; p_class_key: string; p_dry_run?: boolean }
+        Returns: {
+          disposed: boolean
+          eligible_on: string
+          subject_id: string
+          subject_token: string
+        }[]
+      }
+      eeo_aggregate: {
+        Args: { p_as_of?: string; p_dimension: string; p_population?: Json }
+        Returns: {
+          bucket_id: string
+          headcount: number
+          suppressed: boolean
+        }[]
+      }
+      elapsed_hours: {
+        Args: { p_end_local: string; p_start_local: string; p_tz: string }
+        Returns: number
+      }
+      employment_as_of: {
+        Args: { p_employee_id: string; p_on: string }
+        Returns: {
+          adjusted_service_date: string | null
+          created_at: string
+          created_by: string | null
+          current_manager_employment_id: string | null
+          current_position_assignment_id: string | null
+          custom: Json
+          deleted_at: string | null
+          employee_id: string
+          employer_profile_id: string
+          hire_date: string
+          id: string
+          is_rehire: boolean
+          last_day_worked: string | null
+          legal_hold_count: number
+          metadata: Json
+          organization_id: string
+          original_hire_date: string | null
+          pay_group_id: string | null
+          prior_employment_id: string | null
+          probation_end_date: string | null
+          record_class_key: string
+          retention_trigger_at: string | null
+          scheduled_last_day: string | null
+          separation_id: string | null
+          spell_number: number
+          status: string
+          termination_date: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "employment"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      employments_of: {
+        Args: { p_at?: string; p_user: string }
+        Returns: string[]
+      }
+      grant_drift: {
+        Args: never
+        Returns: {
+          detail: string
+          grantee_organization_id: string
+          grantee_user_id: string
+          kind: string
+          resource_id: string
+          resource_type: string
+        }[]
+      }
+      heal_grant_drift: { Args: never; Returns: Json }
+      incident_excluded: {
+        Args: { p_incident: string; p_user: string }
+        Returns: boolean
+      }
+      jurisdiction_chain: { Args: { p_key: string }; Returns: Json }
+      jurisdiction_evaluate: {
+        Args: {
+          p_as_of: string
+          p_facts: Json
+          p_input: Json
+          p_jurisdiction_key: string
+          p_kind: string
+          p_organization_id: string
+          p_subject_id?: string
+          p_subject_type?: string
+        }
+        Returns: Json
+      }
+      manager_as_of: {
+        Args: { p_employment_id: string; p_on: string }
+        Returns: string
+      }
+      manager_chain: {
+        Args: { p_at?: string; p_employment_id: string }
+        Returns: {
+          depth: number
+          manager_employment_id: string
+        }[]
+      }
+      org_chart_as_of: {
+        Args: { p_on: string; p_organization_id: string }
+        Returns: {
+          department_id: string
+          display_name: string
+          employee_id: string
+          employment_id: string
+          fte: number
+          job_title_id: string
+          location_id: string
+          manager_employment_id: string
+        }[]
+      }
+      population_contains: {
+        Args: {
+          p_at?: string
+          p_employment_id: string
+          p_holder_employment_id?: string
+          p_scope_employment_ids?: string[]
+          p_scope_id: string
+          p_scope_kind: string
+        }
+        Returns: boolean
+      }
+      position_as_of: {
+        Args: { p_employment_id: string; p_on: string }
+        Returns: {
+          change_reason_category_id: string | null
+          cost_center: string | null
+          created_at: string
+          created_by: string | null
+          crew_id: string | null
+          custom: Json
+          deleted_at: string | null
+          department_id: string
+          eeo1_job_category: string | null
+          effective_from: string
+          effective_range: unknown
+          effective_to: string | null
+          employment_id: string
+          flsa_exemption_basis: string | null
+          flsa_status: string
+          fte: number
+          id: string
+          is_primary: boolean
+          is_supervisor: boolean
+          job_title_id: string
+          location_id: string
+          manager_employment_id: string | null
+          metadata: Json
+          organization_id: string
+          pay_basis: string
+          recorded_at: string
+          requisition_id: string | null
+          schedule_class: string
+          standard_hours_per_week: number | null
+          supersedes_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          worker_class: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "position_assignment"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      position_subtree: {
+        Args: { p_at?: string; p_holder_employment_id: string }
+        Returns: {
+          depth: number
+          employment_id: string
+        }[]
+      }
+      primary_position_as_of: {
+        Args: { p_employment_id: string; p_on: string }
+        Returns: {
+          change_reason_category_id: string | null
+          cost_center: string | null
+          created_at: string
+          created_by: string | null
+          crew_id: string | null
+          custom: Json
+          deleted_at: string | null
+          department_id: string
+          eeo1_job_category: string | null
+          effective_from: string
+          effective_range: unknown
+          effective_to: string | null
+          employment_id: string
+          flsa_exemption_basis: string | null
+          flsa_status: string
+          fte: number
+          id: string
+          is_primary: boolean
+          is_supervisor: boolean
+          job_title_id: string
+          location_id: string
+          manager_employment_id: string | null
+          metadata: Json
+          organization_id: string
+          pay_basis: string
+          recorded_at: string
+          requisition_id: string | null
+          schedule_class: string
+          standard_hours_per_week: number | null
+          supersedes_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          worker_class: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "position_assignment"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      raise_compliance_exception: {
+        Args: {
+          p_class: string
+          p_code: string
+          p_jurisdiction_key: string
+          p_message: string
+          p_org_config_ref?: Json
+          p_organization_id: string
+          p_rule_id: string
+          p_rule_version: number
+        }
+        Returns: string
+      }
+      read_confidential: {
+        Args: {
+          p_break_glass?: boolean
+          p_id: string
+          p_justification?: string
+          p_purpose: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      resolve_rules: {
+        Args: {
+          p_as_of: string
+          p_classes: string[]
+          p_facts: Json
+          p_jurisdiction_key?: string
+          p_organization_id: string
+          p_subject_id: string
+          p_subject_type: string
+        }
+        Returns: Json
+      }
+      retention_due_on: {
+        Args: { p_id: string; p_token: string }
+        Returns: string
+      }
+      reveal_ssn: {
+        Args: {
+          p_employee_id: string
+          p_justification?: string
+          p_purpose: string
+        }
+        Returns: Json
+      }
+      rpc_calculation_snapshot_get: {
+        Args: { p_snapshot_id: string }
+        Returns: Json
+      }
+      run_rule_fixtures: { Args: { p_codes?: string[] }; Returns: Json }
+      stamp_retention_triggers: {
+        Args: { p_employment_id: string }
+        Returns: number
+      }
+      transfer_restricted_note: {
+        Args: { p_id: string; p_new_owner: string }
+        Returns: {
+          author_employment_id: string | null
+          body: string | null
+          body_file_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          legal_hold_count: number
+          metadata: Json
+          note_kind: string
+          occurred_at: string | null
+          organization_id: string
+          record_class_key: string
+          redacted_summary: string | null
+          retention_trigger_at: string | null
+          subject_id: string
+          subject_token: string
+          title: string | null
+          transferred_at: string | null
+          transferred_from: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "restricted_note"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      validate_org_config: {
+        Args: {
+          p_as_of?: string
+          p_class: string
+          p_jurisdiction_keys?: string[]
+          p_organization_id: string
+          p_parameters: Json
+        }
+        Returns: Json
+      }
+      verify_employment_pin: {
+        Args: { p_employment_id: string; p_pin: string }
+        Returns: Json
+      }
+      wf_activate_step: {
+        Args: { p_exclude?: string[]; p_step: string }
+        Returns: Json
+      }
+      wf_apply_unimplemented: { Args: { p_instance_id: string }; Returns: Json }
+      wf_bulk_decide: {
+        Args: { p_decision: string; p_reason?: string; p_step_ids: string[] }
+        Returns: Json
+      }
+      wf_cancel: {
+        Args: { p_instance_id: string; p_reason: string }
+        Returns: Json
+      }
+      wf_decide: {
+        Args: {
+          p_decision: string
+          p_payload?: Json
+          p_reason?: string
+          p_step_id: string
+        }
+        Returns: Json
+      }
+      wf_delegate: {
+        Args: {
+          p_action_type?: string
+          p_ends_at?: string
+          p_reason?: string
+          p_scope_id?: string
+          p_starts_at?: string
+          p_to_holder_id: string
+          p_to_holder_kind: string
+        }
+        Returns: Json
+      }
+      wf_digest_whole_row: {
+        Args: { p_target_id: string; p_target_token: string }
+        Returns: string
+      }
+      wf_escalate: {
+        Args: { p_reason: string; p_step_id: string }
+        Returns: Json
+      }
+      wf_for_target: {
+        Args: { p_target_id: string; p_target_token: string }
+        Returns: Json
+      }
+      wf_instance: { Args: { p_instance_id: string }; Returns: Json }
+      wf_pending: {
+        Args: { p_employment_id?: string; p_filters?: Json }
+        Returns: Json
+      }
+      wf_publish_definition: {
+        Args: { p_definition_id: string }
+        Returns: Json
+      }
+      wf_reassign_step: {
+        Args: {
+          p_reason: string
+          p_step_id: string
+          p_to_employment_id: string
+        }
+        Returns: Json
+      }
+      wf_record_result: {
+        Args: { p_result: Json; p_step_id: string; p_verified: boolean }
+        Returns: Json
+      }
+      wf_request: {
+        Args: {
+          p_as_draft?: boolean
+          p_flow_key: string
+          p_idempotency_key?: string
+          p_organization_id: string
+          p_payload?: Json
+          p_subject_employment_id?: string
+          p_target_id: string
+          p_target_token: string
+        }
+        Returns: Json
+      }
+      wf_resolve_approvers: {
+        Args: { p_exclude_employment_ids?: string[]; p_step_id: string }
+        Returns: Json
+      }
+      wf_resolve_failure: {
+        Args: { p_action: string; p_failure_id: string; p_note: string }
+        Returns: Json
+      }
+      wf_resubmit: {
+        Args: { p_instance_id: string; p_payload?: Json }
+        Returns: Json
+      }
+      wf_result_unimplemented: { Args: { p_step_id: string }; Returns: Json }
+      wf_submit: { Args: { p_instance_id: string }; Returns: Json }
+      wf_tick: { Args: never; Returns: Json }
+      wf_withdraw: {
+        Args: { p_instance_id: string; p_reason?: string }
+        Returns: Json
+      }
+      write_calculation_snapshot: {
+        Args: {
+          p_actor_id?: string
+          p_actor_type: string
+          p_applicability_facts: Json
+          p_as_of: string
+          p_calculation_kind: string
+          p_clamps?: Json
+          p_employment_id?: string
+          p_engine_key: string
+          p_engine_version: string
+          p_inputs: Json
+          p_jurisdiction_key: string
+          p_organization_id: string
+          p_outputs: Json
+          p_prospective?: boolean
+          p_recalculation_batch_id?: string
+          p_resolution: Json
+          p_subject_id: string
+          p_subject_type: string
+          p_supersedes_id?: string
+        }
+        Returns: string
       }
     }
     Enums: {
@@ -33585,6 +52545,10 @@ export type Database = {
       _lifecycle_partition_guard: {
         Args: { p_partition: string }
         Returns: string
+      }
+      _outsider_parent_matches: {
+        Args: { p_id: string; p_parent: string; p_resource: string }
+        Returns: boolean
       }
       _policy_overlap_run_probe: {
         Args: {
@@ -69728,6 +88692,9 @@ export const Constants = {
   education: {
     Enums: {},
   },
+  esign: {
+    Enums: {},
+  },
   extend: {
     Enums: {},
   },
@@ -69744,6 +88711,9 @@ export const Constants = {
     Enums: {},
   },
   history: {
+    Enums: {},
+  },
+  hr: {
     Enums: {},
   },
   iam: {
