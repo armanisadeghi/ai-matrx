@@ -94,12 +94,18 @@
 -- one of them. Bumping the constant would falsely assert the kernel itself was
 -- re-read. Live == expected before and after; asserted at the end of this file.
 --
--- ── TWO THINGS THIS FILE DOES NOT FIX, NAMED SO THEY ARE NOT MISTAKEN FOR DONE ─
---   * `files.analysis` and `transcripts.studio_session_settings` are registered
---     components with NO `id` column, so `iam.apply_rls(…,'component')` fails on
---     them outright and they still run bespoke hand-written policies. Neither is a
---     `created_by` offender, so the law holds on them today; they are named in the
---     sweep so a third failure stops this migration instead of vanishing.
+-- ── WHAT THIS FILE DOES NOT FIX, NAMED SO IT IS NOT MISTAKEN FOR DONE ────────
+--   * THREE registered components cannot be regenerated at all, and the sweep
+--     names each one so a FOURTH failure stops this migration rather than
+--     vanishing into a silent skip. All three are already clean of `created_by`,
+--     so the law holds on them today — but each is its own structural defect:
+--       - `files.analysis`, `transcripts.studio_session_settings` — no `id`
+--         column, so `iam.apply_rls(…,'component')` dies outright; both still run
+--         bespoke hand-written policies and have never seen the generator.
+--       - `legal.wc_impairment_definition` — a 215-row global REFERENCE table with
+--         no owner, org or visibility column and ZERO composition parents,
+--         registered as a `component`. It is misclassified; the fix is the
+--         VARIANT (§6d-1's corollary), not the policy.
 --   * The shipped gate greps `created_by` only. `files.entities` and `files.pages`
 --     carried the SAME defect keyed on `owner_id` and were invisible to it; this
 --     change removes those two arms as well (the guard below is deliberately wider
@@ -513,7 +519,7 @@ DECLARE
   r record;
   v_done int := 0;
   v_failed text[] := '{}';
-  -- THE TWO NAMED EXCEPTIONS, and they are NOT skips-for-convenience. Both are
+  -- THE THREE NAMED EXCEPTIONS, and they are NOT skips-for-convenience. Each is
   -- registered `component` tables that have NO `id` column, so they have never
   -- been through the generator at all: they still carry bespoke, hand-written
   -- policies, and `iam.apply_rls(...,'component')` fails on them with
@@ -522,10 +528,19 @@ DECLARE
   -- COMPONENT OWNERSHIP LAW offender today — the gate scans their policies and
   -- finds no `created_by` — so this change leaves them exactly as conformant as
   -- it found them. They are filed as their own defect (a registered entity
-  -- without `id` violates §2) and named here so that a THIRD failure, or either
+  -- without `id` violates §2) and named here so that a FOURTH failure, or any
   -- of these failing for a DIFFERENT reason, stops this migration instead of
   -- disappearing into a silent skip.
-  v_expected_failures text[] := array['files.analysis', 'transcripts.studio_session_settings'];
+  --
+  --   legal.wc_impairment_definition -- a registered `component` with ZERO
+  --     composition parents, so `apply_rls` refuses it by design ("a component
+  --     with no parent is not a component"). It is a 215-row global REFERENCE
+  --     table (impairment_number, fec_rank, name, ...) carrying no `created_by`,
+  --     no `owner_id`, no `organization_id` and no `visibility`, read by every
+  --     signed-in user through a bespoke `auth_read`. It is not a component at
+  --     all -- it is misclassified, and the fix is the VARIANT, not the policy.
+  v_expected_failures text[] := array[
+    'files.analysis', 'transcripts.studio_session_settings', 'legal.wc_impairment_definition'];
   v_unexpected text[];
 BEGIN
   FOR r IN
