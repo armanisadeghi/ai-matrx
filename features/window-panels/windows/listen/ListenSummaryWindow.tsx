@@ -21,7 +21,7 @@
  *   - Ephemeral window: a live stream cannot be restored across reloads.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Pause, Play, RotateCcw, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -212,9 +212,7 @@ function ListenSummaryWindowInner({
     : isSpeaking
       ? isActive
         ? "Speaking as it writes"
-        : hasPlayed && summaryDone
-          ? "Speaking"
-          : "Speaking"
+        : "Speaking"
       : isPaused
         ? "Paused"
         : isAudioLoading

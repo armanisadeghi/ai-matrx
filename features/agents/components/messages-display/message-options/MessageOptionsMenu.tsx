@@ -30,6 +30,14 @@ import {
 import type { PrimingMessageRole } from "@/features/agents/types/agent-message-types";
 import type { AssistantEditTarget } from "./resolveAssistantEditTarget";
 import { useOpenQuickMessageTemplateSaveWindow } from "@/features/overlays/openers/quickMessageTemplateSaveWindow";
+import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+
+/**
+ * The surface whose `spoken_summary` role powers the listening actions —
+ * the same binding the assistant-message context menu resolves
+ * (features/surfaces/manifests/assistant-message.manifest.ts).
+ */
+const ASSISTANT_MESSAGE_SURFACE = "matrx-user/assistant-message";
 
 export interface MessageOptionsMenuProps {
   isOpen: boolean;
@@ -111,6 +119,19 @@ export function MessageOptionsMenu({
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const openMessageTemplateSave = useOpenQuickMessageTemplateSaveWindow();
 
+  // Effective `spoken_summary` agent — powers the two listening actions
+  // (Summarize for listening / Summarize & listen). Null hides them.
+  const { roles: surfaceAgentRoles } = useSurfaceAgentRoles(
+    ASSISTANT_MESSAGE_SURFACE,
+  );
+  const spokenSummaryRole = surfaceAgentRoles.spoken_summary;
+  const spokenSummaryAgent = spokenSummaryRole?.effectiveAgentId
+    ? {
+        agentId: spokenSummaryRole.effectiveAgentId,
+        label: spokenSummaryRole.role.label ?? null,
+      }
+    : null;
+
   // ── Creator detection — conversation → agent → isConfirmedOwner ──────────
   // `agentId` sits on the execution instance (cx_conversation.agent_id mirrored
   // locally). `selectAgentIsConfirmedOwner` only returns true once the agent
@@ -174,6 +195,7 @@ export function MessageOptionsMenu({
     isAdmin,
     onRequestConvert,
     openMessageTemplateSave,
+    spokenSummaryAgent,
   };
 
   const menuItems =
