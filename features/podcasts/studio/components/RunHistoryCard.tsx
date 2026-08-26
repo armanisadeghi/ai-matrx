@@ -9,6 +9,7 @@
 // opens the run detail / recovery page.
 
 import Link from "next/link";
+import { useRef } from "react";
 import {
   Mic,
   CheckCircle2,
@@ -23,6 +24,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { CompactConfirmAnchorPoint } from "@/components/ui/compact-confirm-popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,8 +96,9 @@ export function RunHistoryCard({
 }: {
   run: RunSummary;
   deleting?: boolean;
-  onDelete: (run: RunSummary) => void;
+  onDelete: (run: RunSummary, anchorPoint: CompactConfirmAnchorPoint) => void;
 }) {
+  const deleteAnchorRef = useRef<CompactConfirmAnchorPoint | null>(null);
   // Completed + published → straight to the episode (most useful). Otherwise the
   // run detail / recovery page (Wave 2 makes interrupted runs resumable there).
   // TRUE status (runs/run-truth.ts) — a finished run whose status column was
@@ -151,6 +154,13 @@ export function RunHistoryCard({
             size="icon"
             disabled={deleting}
             aria-label={`${title} actions`}
+            onPointerDown={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              deleteAnchorRef.current = {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+              };
+            }}
             className="absolute left-1 top-1 z-20 h-11 w-11 rounded-full bg-black/45 text-white backdrop-blur hover:bg-black/65 hover:text-white"
           >
             <MoreHorizontal className="h-4 w-4" />
@@ -172,7 +182,10 @@ export function RunHistoryCard({
           <DropdownMenuSeparator />
           <DropdownMenuItem
             disabled={deleting}
-            onSelect={() => onDelete(run)}
+            onSelect={() => {
+              const anchorPoint = deleteAnchorRef.current;
+              if (anchorPoint) onDelete(run, anchorPoint);
+            }}
             className="text-destructive focus:text-destructive"
           >
             <Trash2 className="mr-2 h-4 w-4" />

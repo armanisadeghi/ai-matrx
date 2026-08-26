@@ -18,8 +18,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  CompactConfirmPopover,
+  type CompactConfirmAnchorPoint,
+} from "@/components/ui/compact-confirm-popover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   CONTEXT_MENU_ENTITY_KEY,
@@ -68,6 +71,11 @@ function matches(run: RunSummary, key: FilterKey): boolean {
 
 const RUN_DOM_ATTR = "data-podcast-run-id";
 
+interface DeleteRequest {
+  run: RunSummary;
+  anchorPoint: CompactConfirmAnchorPoint;
+}
+
 function runContext(run: RunSummary): string {
   const status = trueSummaryLiveness(run);
   const title = run.title || "Untitled episode";
@@ -87,8 +95,13 @@ export function RunsManageView({
   const { runs, loading, error, refresh } = useStudioRuns();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [deletingRunId, setDeletingRunId] = useState<string | null>(null);
+  const [deleteRequest, setDeleteRequest] = useState<DeleteRequest | null>(
+    null,
+  );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [menuRun, setMenuRun] = useState<RunSummary | null>(null);
   const menuRunRef = useRef<RunSummary | null>(null);
+  const menuAnchorRef = useRef<CompactConfirmAnchorPoint | null>(null);
 
   const counts = useMemo(() => {
     const c: Record<FilterKey, number> = {
@@ -113,27 +126,37 @@ export function RunsManageView({
     [runs, filter],
   );
 
-  const handleDeleteRun = async (run: RunSummary) => {
-    const title = run.title || "Untitled episode";
-    const ok = await confirm({
-      title: "Delete this run?",
-      description: `“${title}” will be removed from Studio history. A published episode, if one exists, stays available.`,
-      confirmLabel: "Delete run",
-      variant: "destructive",
-    });
-    if (!ok) return;
+  const requestDeleteRun = (
+    run: RunSummary,
+    anchorPoint: CompactConfirmAnchorPoint,
+  ) => {
+    // Both action entry points live inside dismissing menus. Let that menu
+    // finish its close gesture before mounting the non-modal confirmation,
+    // otherwise the same outside-pointer event closes the new popover too.
+    window.setTimeout(() => {
+      setDeleteError(null);
+      setDeleteRequest({ run, anchorPoint });
+    }, 120);
+  };
 
+  const handleDeleteRun = async () => {
+    const request = deleteRequest;
+    if (!request) return;
+    const { run } = request;
     setDeletingRunId(run.run_id);
+    setDeleteError(null);
     try {
       await deletePodcastRun(run.run_id);
+      setDeleteRequest(null);
       await refresh();
-      toast.success("Run deleted");
+      toast.success("Run removed from Studio");
     } catch (deleteError) {
-      toast.error(
+      const message =
         deleteError instanceof Error
           ? deleteError.message
-          : "Couldn’t delete the run",
-      );
+          : "Couldn’t delete the run";
+      setDeleteError(message);
+      toast.error(message);
     } finally {
       setDeletingRunId(null);
     }
@@ -148,6 +171,17 @@ export function RunsManageView({
     const run = runId
       ? (runs.find((item) => item.run_id === runId) ?? null)
       : null;
+    if (run) {
+      const card = target?.closest?.(`[${RUN_DOM_ATTR}]`);
+      const rect = card?.getBoundingClientRect();
+      const anchor = menuAnchorRef.current;
+      if ((!anchor || (anchor.x === 0 && anchor.y === 0)) && rect) {
+        menuAnchorRef.current = {
+          x: rect.left + Math.min(rect.width / 2, 80),
+          y: rect.top + Math.min(rect.height / 2, 80),
+        };
+      }
+    }
     menuRunRef.current = run;
     setMenuRun(run);
     if (!run) return null;
@@ -194,7 +228,10 @@ export function RunsManageView({
               icon: Trash2,
               destructive: true,
               disabled: deletingRunId === menuRun.run_id,
-              onSelect: () => void handleDeleteRun(menuRun),
+              onSelect: () => {
+                const anchorPoint = menuAnchorRef.current;
+                if (anchorPoint) requestDeleteRun(menuRun, anchorPoint);
+              },
             },
           ],
         },
@@ -275,7 +312,16 @@ export function RunsManageView({
         }}
         extraSections={menuSections}
       >
-        <div>
+        <div
+          onContextMenuCapture={(event) => {
+            menuAnchorRef.current = { x: event.clientX, y: event.clientY };
+          }}
+          onPointerDownCapture={(event) => {
+            if (event.pointerType === "touch") {
+              menuAnchorRef.current = { x: event.clientX, y: event.clientY };
+            }
+          }}
+        >
           {loading ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -316,13 +362,35 @@ export function RunsManageView({
                   key={run.run_id}
                   run={run}
                   deleting={deletingRunId === run.run_id}
-                  onDelete={(selectedRun) => void handleDeleteRun(selectedRun)}
+                  onDelete={requestDeleteRun}
                 />
               ))}
             </div>
           )}
         </div>
       </NonEditableContextMenu>
+
+      {deleteRequest ? (
+        <CompactConfirmPopover
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeleteRequest(null);
+              setDeleteError(null);
+            }
+          }}
+          anchorPoint={deleteRequest.anchorPoint}
+          title="Delete this run?"
+          itemLabel={deleteRequest.run.title || "Untitled episode"}
+          description="It will disappear from Studio history."
+          reassurance="A published episode stays available."
+          confirmLabel="Delete run"
+          variant="destructive"
+          busy={deletingRunId === deleteRequest.run.run_id}
+          error={deleteError}
+          onConfirm={handleDeleteRun}
+        />
+      ) : null}
     </section>
   );
 }
