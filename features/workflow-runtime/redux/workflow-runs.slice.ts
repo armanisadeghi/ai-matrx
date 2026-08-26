@@ -663,10 +663,10 @@ function applyEvent(
       // `structured_document` in its SPEC, invisible in the definition's
       // `data`). Knowing it from the first frame is what lets the readout
       // show the promised shape's silhouette instead of raw streaming JSON.
-      // Optional on the wire — absent from pre-upgrade servers, and the
-      // completed handler remains the authoritative setter.
-      const announcedKind = (event as { output_kind?: string | null })
-        .output_kind;
+      // Typed on the wire since aidream 88904b8b4; still guarded because a
+      // pre-upgrade server simply omits it, and the completed handler remains
+      // the authoritative setter.
+      const announcedKind = event.output_kind;
       if (typeof announcedKind === "string" && announcedKind.length > 0) {
         invocation.outputKindDeclared = announcedKind;
         invocation.outputKind = invocation.outputKind ?? announcedKind;

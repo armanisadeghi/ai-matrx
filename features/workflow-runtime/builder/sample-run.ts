@@ -179,7 +179,7 @@ export function sampleRunFrames(
     const info = byId.get(nodeId);
     if (!info) return;
     const base = nodeEventBase(runId, i + 1, info, specById.get(nodeId) ?? "");
-    events.push({ ...base, event: "node_started", inputs: {} });
+    events.push({ ...base, event: "node_started", inputs: {}, output_kind: null });
     emitStream(
       nodeId,
       "Sample output.",
@@ -207,6 +207,7 @@ export function sampleRunFrames(
         ...nodeEventBase(runId, finishedCount + 1, info, specById.get(runningId) ?? ""),
         event: "node_started",
         inputs: {},
+        output_kind: null,
       });
       emitStream(
         runningId,
