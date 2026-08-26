@@ -14,6 +14,21 @@
 import type { ComingSoonEntry } from "./types";
 
 export const COMING_SOON: Record<string, ComingSoonEntry> = {
+  "mandates.workflow-holder": {
+    id: "mandates.workflow-holder",
+    label: "Fulfil with a Workflow",
+    owner: "agents",
+    promise:
+      "Bind a whole Workflow (not just a single agent) as the Holder that fulfils a mandate.",
+    stage: "blocked",
+    // The wire shape exists (agent.mandate_binding.holder_type='workflow'),
+    // but aidream's resolve_mandate refuses workflow Holders this wave — a
+    // stored workflow binding would break the mandate for the user. Enable
+    // the moment the runtime executes workflow Holders.
+    blockedBy:
+      "The mandate runtime executes agent Holders only; workflow execution behind a mandate is not wired yet (aidream services/mandates).",
+    surfaces: ["/agents/mandates/[mandateKey] override flow — Holder step"],
+  },
   "presentations.google-slides-export": {
     id: "presentations.google-slides-export",
     label: "Create Google Slides",
