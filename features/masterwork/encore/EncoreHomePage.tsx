@@ -11,9 +11,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Play, Theater } from "lucide-react";
+import { BookOpen, Clock3, Play, Theater } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 import { AuditionProof } from "./AuditionProof";
 import {
   listEncoreShelves,
@@ -30,36 +32,56 @@ const SHELF_TITLES: Record<EncoreShelf["scope"], string> = {
 function EncoreCard({ masterwork }: { masterwork: EncoreMasterwork }) {
   return (
     <div className="flex flex-col rounded-lg border border-border bg-card p-4">
-      <Link
-        href={`/masterwork/encore/${masterwork.id}`}
-        className="font-medium text-foreground hover:underline"
-      >
-        {masterwork.name}
-      </Link>
-      {masterwork.rulebook ? (
-        <Link
-          href={`/masterwork/${masterwork.rulebook.id}`}
-          className="mt-0.5 w-fit text-xs text-muted-foreground hover:text-foreground hover:underline"
-        >
-          By {masterwork.rulebook.expert}
-        </Link>
-      ) : null}
-      {masterwork.description ? (
-        <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
-          {masterwork.description}
-        </p>
-      ) : null}
-      {/* THE PROOF — the Audition score, in Operator words. Absent when this
-          Masterwork has never been auditioned; never faked. */}
-      <AuditionProof score={masterwork.auditionScore} />
-      <div className="mt-auto pt-3">
-        <Button asChild size="sm" className="w-full sm:w-auto">
-          <Link href={`/masterwork/encore/${masterwork.id}`}>
-            <Play className="mr-1 h-4 w-4" />
-            Run
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+        <div className="min-w-0">
+          <Link
+            href={`/masterwork/encore/${masterwork.id}`}
+            className="font-medium text-foreground hover:text-primary hover:underline hover:underline-offset-2"
+          >
+            {masterwork.name}
+          </Link>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            {masterwork.rulebook ? (
+              <Link
+                href={`/masterwork/${masterwork.rulebook.id}`}
+                className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+              >
+                By {masterwork.rulebook.expert}
+              </Link>
+            ) : null}
+            {masterwork.rule_count !== null ? (
+              <Badge
+                variant="outline"
+                className="px-1.5 py-0 text-[10px] text-muted-foreground"
+              >
+                {masterwork.rule_count} rules
+              </Badge>
+            ) : null}
+            <span
+              className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"
+              title={`Last updated ${formatAbsoluteDate(masterwork.updated_at)}`}
+            >
+              <Clock3 className="h-3 w-3" />
+              {formatRelativeTime(masterwork.updated_at)}
+            </span>
+          </div>
+        </div>
+        <Button asChild size="icon" className="h-8 w-8" title="Run">
+          <Link
+            href={`/masterwork/encore/${masterwork.id}`}
+            aria-label={`Run ${masterwork.name}`}
+          >
+            <Play className="h-4 w-4" />
           </Link>
         </Button>
       </div>
+      {masterwork.deliverable ? (
+        <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+          <span className="text-foreground">Creates: </span>
+          {masterwork.deliverable}
+        </p>
+      ) : null}
+      <AuditionProof score={masterwork.auditionScore} className="mt-2" />
     </div>
   );
 }
@@ -94,8 +116,9 @@ export function EncoreHomePage() {
   }
   if (shelves === null) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
         <LoadingSpinner />
+        <span>Loading Encore…</span>
       </div>
     );
   }
@@ -117,11 +140,7 @@ export function EncoreHomePage() {
     );
   }
   return (
-    <div className="mx-auto max-w-4xl space-y-6 px-4 pb-8 sm:px-6">
-      <p className="text-sm text-muted-foreground">
-        Each of these runs with a real expert&apos;s judgment built in — pick
-        one and press Run.
-      </p>
+    <div className="mx-auto max-w-4xl space-y-5 px-4 pb-8 sm:px-6">
       {shelves.map((shelf) => (
         <section key={shelf.scope}>
           <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">

@@ -14,12 +14,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Wrench } from "lucide-react";
+import { Clock3, ExternalLink, Wrench } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
+import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
@@ -103,8 +105,9 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
         <LoadingSpinner />
+        <span>Loading Masterwork…</span>
       </div>
     );
   }
@@ -135,8 +138,8 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm text-muted-foreground">
-          This one isn&apos;t ready to run yet — the expert behind it hasn&apos;t
-          released it.
+          This one isn&apos;t ready to run yet — the expert behind it
+          hasn&apos;t released it.
         </p>
         {ownsRulebook && masterwork.rulebook ? (
           <Button asChild variant="outline" size="sm">
@@ -155,83 +158,112 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 px-4 pb-8 sm:px-6">
+    <div className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
       <div className="rounded-lg border border-border bg-card p-4">
-        <h2 className="text-base font-semibold text-foreground">
-          {masterwork.name}
-        </h2>
-        {masterwork.rulebook ? (
-          <Link
-            href={`/masterwork/${masterwork.rulebook.id}`}
-            className="mt-0.5 inline-block text-xs text-muted-foreground hover:text-foreground hover:underline"
-          >
-            By {masterwork.rulebook.expert}
-          </Link>
-        ) : null}
-        {masterwork.description ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            {masterwork.description}
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-foreground">
+              {masterwork.name}
+            </h2>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {masterwork.rulebook ? (
+                <Link
+                  href={`/masterwork/${masterwork.rulebook.id}`}
+                  className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  By {masterwork.rulebook.expert}
+                </Link>
+              ) : null}
+              {masterwork.rule_count !== null ? (
+                <Badge
+                  variant="outline"
+                  className="px-1.5 py-0 text-[10px] text-muted-foreground"
+                >
+                  {masterwork.rule_count} rules
+                </Badge>
+              ) : null}
+              <span
+                className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"
+                title={`Last updated ${formatAbsoluteDate(masterwork.updated_at)}`}
+              >
+                <Clock3 className="h-3 w-3" />
+                {formatRelativeTime(masterwork.updated_at)}
+              </span>
+            </div>
+          </div>
+          {ownsRulebook && masterwork.rulebook ? (
+            <Button
+              asChild
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              title="Open in Studio"
+            >
+              <Link
+                href={`/masterwork/${masterwork.rulebook.id}/masterworks`}
+                aria-label="Open in Studio"
+              >
+                <Wrench className="h-4 w-4" />
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+        {masterwork.deliverable ? (
+          <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+            <span className="text-foreground">Creates: </span>
+            {masterwork.deliverable}
           </p>
         ) : null}
-        {/* THE PROOF — how this Masterwork scored against the expert's real
-            published work, and (when the three-way harness ran) against a
-            plain AI given the same job. */}
         <AuditionProof
           variant="panel"
           score={masterwork.auditionScore}
           verdict={masterwork.auditionVerdict}
           auditionedAt={masterwork.auditionedAt}
         />
-        {ownsRulebook && masterwork.rulebook ? (
-          <p className="mt-2">
-            <Link
-              href={`/masterwork/${masterwork.rulebook.id}/masterworks`}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
-            >
-              <Wrench className="h-3 w-3" />
-              Open in Studio
-            </Link>
-          </p>
+
+        <div className="mt-4 border-t border-border pt-4">
+          <TryMasterworkBox
+            masterworkId={masterwork.id}
+            masterworkKind={masterwork.masterwork_kind}
+            submitLabel={masterwork.submit_label}
+            fieldLabels={
+              masterwork.masterwork_kind === "edit"
+                ? ["Your text", "Key facts"]
+                : undefined
+            }
+            onRunFinished={refreshRuns}
+          />
+        </div>
+
+        {runs.length > 0 ? (
+          <div className="mt-4 border-t border-border pt-3">
+            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Your recent runs
+            </h3>
+            <div className="mt-2">
+              {runs.map((run) => (
+                <a
+                  key={run.id}
+                  href={`${WORKFLOWS_APP_URL}/runs/${run.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                >
+                  <span
+                    className={cn(
+                      "h-1.5 w-1.5 shrink-0 rounded-full",
+                      RUN_STATUS_STYLES[run.status] ?? "bg-muted-foreground/50",
+                    )}
+                  />
+                  <span>{RUN_STATUS_LABELS[run.status] ?? run.status}</span>
+                  <span>· {runWhen(run)}</span>
+                  <ExternalLink className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                </a>
+              ))}
+            </div>
+          </div>
         ) : null}
       </div>
-
-      <div className="rounded-lg border border-border bg-card p-4">
-        <TryMasterworkBox
-          masterworkId={masterwork.id}
-          masterworkKind={masterwork.masterwork_kind}
-          submitLabel={masterwork.submit_label}
-          onRunFinished={refreshRuns}
-        />
-      </div>
-
-      {runs.length > 0 ? (
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Your recent runs
-          </h3>
-          <div className="mt-2">
-            {runs.map((run) => (
-              <a
-                key={run.id}
-                href={`${WORKFLOWS_APP_URL}/runs/${run.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center gap-2 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-              >
-                <span
-                  className={cn(
-                    "h-1.5 w-1.5 shrink-0 rounded-full",
-                    RUN_STATUS_STYLES[run.status] ?? "bg-muted-foreground/50",
-                  )}
-                />
-                <span>{RUN_STATUS_LABELS[run.status] ?? run.status}</span>
-                <span>· {runWhen(run)}</span>
-                <ExternalLink className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
-              </a>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
