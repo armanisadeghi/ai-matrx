@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "e1a9adb5655a";
+export const KIND_REGISTRY_FINGERPRINT = "9be2765565c2";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5947,7 +5947,7 @@ export interface BulkResult {
 /**
  * One supplementary learning layer attached to a flashcard.
  *  *
- *  * Kind `card_detail` (registry v5).
+ *  * Kind `card_detail` (registry v7).
  */
 export interface CardDetail {
   /**

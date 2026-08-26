@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 560 active entity tokens. A token here is FK-valid for
+// 564 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -382,7 +382,11 @@ export type EntityTypeToken =
   | "plan_node_artifact"
   | "plan_node_step"
   | "plan_profile"
+  | "platform_actor_session"
+  | "platform_actor_token"
+  | "platform_actor_token_event"
   | "platform_outcome_event"
+  | "platform_outsider_consumer"
   | "platform_saved_view"
   | "podcast_race"
   | "processed_document"
@@ -1305,7 +1309,11 @@ export type ScopeableEntityToken =
   | "plan_node_artifact"
   | "plan_node_step"
   | "plan_profile"
+  | "platform_actor_session"
+  | "platform_actor_token"
+  | "platform_actor_token_event"
   | "platform_outcome_event"
+  | "platform_outsider_consumer"
   | "platform_saved_view"
   | "podcast_race"
   | "processed_document"
@@ -1947,7 +1955,11 @@ export const ENTITY_TYPE_METADATA = {
   "plan_node_artifact": { token: "plan_node_artifact", schema: "plan", table: "node_artifact", label: "Plan Node Artifact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "plan_node_step": { token: "plan_node_step", schema: "plan", table: "node_step", label: "Plan Node Step", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "plan_profile": { token: "plan_profile", schema: "plan", table: "profile", label: "Plan Vertical Profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "vertical", contentRole: null, referenceCategory: null },
+  "platform_actor_session": { token: "platform_actor_session", schema: "platform", table: "actor_session", label: "Actor session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "platform_actor_token": { token: "platform_actor_token", schema: "platform", table: "actor_token", label: "Actor token", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "platform_actor_token_event": { token: "platform_actor_token_event", schema: "platform", table: "actor_token_event", label: "Actor token event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "platform_outcome_event": { token: "platform_outcome_event", schema: "platform", table: "outcome_event", label: "Outcome Event", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "platform_outsider_consumer": { token: "platform_outsider_consumer", schema: "platform", table: "outsider_consumer", label: "Outsider consumer", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "platform_saved_view": { token: "platform_saved_view", schema: "platform", table: "saved_view", label: "Saved view", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "podcast_race": { token: "podcast_race", schema: "podcast", table: "pc_race", label: "Podcast Race Episode", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "processed_document": { token: "processed_document", schema: "docproc", table: "processed_documents", label: "Processed document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
@@ -2511,7 +2523,11 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "plan_node_artifact",
   "plan_node_step",
   "plan_profile",
+  "platform_actor_session",
+  "platform_actor_token",
+  "platform_actor_token_event",
   "platform_outcome_event",
+  "platform_outsider_consumer",
   "platform_saved_view",
   "podcast_race",
   "processed_document",
