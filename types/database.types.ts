@@ -11159,6 +11159,81 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_channel_preference: {
+        Row: {
+          channel: string
+          contact_point_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          digest_at: string | null
+          digest_enabled: boolean
+          enabled: boolean
+          id: string
+          max_per_day: number
+          max_per_hour: number
+          metadata: Json
+          organization_id: string
+          quiet_hours_enabled: boolean
+          quiet_hours_end: string
+          quiet_hours_start: string
+          timezone: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          channel: string
+          contact_point_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          digest_at?: string | null
+          digest_enabled?: boolean
+          enabled?: boolean
+          id?: string
+          max_per_day?: number
+          max_per_hour?: number
+          metadata?: Json
+          organization_id: string
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string
+          quiet_hours_start?: string
+          timezone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          channel?: string
+          contact_point_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          digest_at?: string | null
+          digest_enabled?: boolean
+          enabled?: boolean
+          id?: string
+          max_per_day?: number
+          max_per_hour?: number
+          metadata?: Json
+          organization_id?: string
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string
+          quiet_hours_start?: string
+          timezone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       notification_event_override: {
         Row: {
           config_patch: Json
