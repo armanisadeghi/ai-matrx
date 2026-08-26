@@ -60,7 +60,7 @@ const SPEEDS: Array<{ label: string; charsPerTick: number }> = [
   { label: "Fast", charsPerTick: 140 },
 ];
 
-type RunState = "idle" | "playing" | "done";
+type RunState = "idle" | "playing" | "done" | "error";
 
 const noop = () => {};
 
@@ -132,7 +132,8 @@ export default function ShapeStreamTab({
   const play = useCallback(() => {
     if (!canonical) return;
     const data = canonical.data as Json;
-    if (typeof data !== "object" || data === null || Array.isArray(data)) return;
+    if (typeof data !== "object" || data === null || Array.isArray(data))
+      return;
 
     if (timerRef.current) clearInterval(timerRef.current);
     recordsRef.current = [];
@@ -156,9 +157,7 @@ export default function ShapeStreamTab({
       return payload;
     });
     const publish = () => {
-      setBlocks(
-        [...byId.values()].sort((a, b) => a.blockIndex - b.blockIndex),
-      );
+      setBlocks([...byId.values()].sort((a, b) => a.blockIndex - b.blockIndex));
       setVerdicts(deriveStreamVerdicts(recordsRef.current, kind));
       setProgress({ chunk: chunkNo, total: chunks.length });
     };
@@ -180,6 +179,13 @@ export default function ShapeStreamTab({
     }, TICK_MS);
   }, [canonical, kind, mode, speedIdx]);
 
+  const interrupt = useCallback(() => {
+    if (runState !== "playing") return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+    setRunState("error");
+  }, [runState]);
+
   const partialReady = isPartialReadyKind(kind);
   // What the RUNTIME will actually render for this kind — declared, derived,
   // or generic — from the one module the render path uses.
@@ -195,7 +201,7 @@ export default function ShapeStreamTab({
             type="button"
             onClick={play}
             disabled={!canonical || runState === "playing"}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="inline-flex h-11 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {runState === "done" ? (
               <RotateCcw className="h-3.5 w-3.5" />
@@ -204,11 +210,21 @@ export default function ShapeStreamTab({
             )}
             {runState === "done" ? "Replay stream" : "Play stream"}
           </button>
+          {runState === "playing" ? (
+            <button
+              type="button"
+              onClick={interrupt}
+              className="inline-flex h-11 items-center gap-1.5 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+            >
+              <CircleX className="h-3.5 w-3.5" />
+              Simulate interruption
+            </button>
+          ) : null}
           <select
             value={mode}
             onChange={(e) => setMode(e.target.value as WireMode)}
             disabled={runState === "playing"}
-            className="rounded-md border border-border bg-card px-2 py-1.5 text-xs text-foreground"
+            className="h-11 rounded-md border border-border bg-card px-2 text-base text-foreground sm:text-xs"
             aria-label="Wire mode"
           >
             {(Object.keys(WIRE_MODE_LABEL) as WireMode[]).map((m) => (
@@ -221,7 +237,7 @@ export default function ShapeStreamTab({
             value={speedIdx}
             onChange={(e) => setSpeedIdx(Number(e.target.value))}
             disabled={runState === "playing"}
-            className="rounded-md border border-border bg-card px-2 py-1.5 text-xs text-foreground"
+            className="h-11 rounded-md border border-border bg-card px-2 text-base text-foreground sm:text-xs"
             aria-label="Stream speed"
           >
             {SPEEDS.map((s, i) => (
@@ -237,6 +253,16 @@ export default function ShapeStreamTab({
             </span>
           )}
         </div>
+
+        {runState === "error" ? (
+          <div
+            role="alert"
+            className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+          >
+            Simulated stream interruption. No data was written. The last valid
+            partial render stays visible below with streaming disabled.
+          </div>
+        ) : null}
 
         <div className="rounded-lg border border-border bg-card p-4">
           {examples.status === "error" && (

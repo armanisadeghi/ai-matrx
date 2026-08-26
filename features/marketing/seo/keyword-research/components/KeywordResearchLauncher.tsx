@@ -188,7 +188,7 @@ export default function KeywordResearchLauncher({
           `items-start` because KeywordInput renders a metrics/status line
           BELOW its field — centering the row pushed the Research button out of
           alignment with the input it belongs to. */}
-      <div className="flex flex-wrap items-start gap-2">
+      <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-start">
         <KeywordInput
           value={primaryInput}
           onChange={(value) => {
@@ -199,14 +199,14 @@ export default function KeywordResearchLauncher({
           scope={{ organizationId }}
           placeholder="Research a primary keyword (e.g. botox cost)"
           disabled={run.status === "running"}
-          className="min-w-0 max-w-2xl flex-1"
+          className="w-full min-w-0 max-w-2xl sm:min-w-72 sm:flex-1"
         />
         <button
           type="button"
           onClick={handleRun}
           disabled={run.status === "running" || !primaryInput.trim() || !siteId}
           title={siteId ? undefined : "Select a site before running research"}
-          className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto"
         >
           {run.status === "running" ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -216,7 +216,9 @@ export default function KeywordResearchLauncher({
           Research
         </button>
         {actions ? (
-          <div className="ml-auto flex items-center gap-2">{actions}</div>
+          <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+            {actions}
+          </div>
         ) : null}
       </div>
       {!siteId ? (

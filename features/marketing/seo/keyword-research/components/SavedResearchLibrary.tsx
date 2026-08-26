@@ -47,7 +47,9 @@ export default function SavedResearchLibrary({
   const saved = useQuery({
     queryKey: savedKeywordResearchListQueryKey(siteId),
     queryFn: ({ signal }) =>
-      siteId ? listSavedKeywordResearch(siteId, { signal }) : Promise.resolve([]),
+      siteId
+        ? listSavedKeywordResearch(siteId, { signal })
+        : Promise.resolve([]),
     enabled: Boolean(siteId),
   });
 
@@ -64,7 +66,7 @@ export default function SavedResearchLibrary({
         <Button
           variant="outline"
           size="sm"
-          className="h-9 gap-1.5"
+          className="h-11 gap-1.5"
           disabled={!siteId}
           title={siteId ? undefined : "Select a site to see its saved research"}
         >
@@ -84,8 +86,8 @@ export default function SavedResearchLibrary({
               Saved keyword research
             </p>
             <p className="text-[11px] text-muted-foreground">
-              Every run saved for this site. Open the report or share it with
-              a client.
+              Every run saved for this site. Open the report or share it with a
+              client.
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -95,14 +97,14 @@ export default function SavedResearchLibrary({
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search primary keyword…"
-                className="h-8 pl-7 text-xs"
+                className="h-11 pl-7 text-base"
               />
             </div>
             {cleanedSearch ? (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 shrink-0"
+                className="h-11 w-11 shrink-0"
                 onClick={() => setSearch("")}
                 aria-label="Clear search"
               >
@@ -126,8 +128,8 @@ export default function SavedResearchLibrary({
             </p>
           ) : !saved.data?.length ? (
             <p className="px-3 py-4 text-xs text-muted-foreground">
-              No saved research is linked to this site yet. Run research
-              above, or copy keywords from another site.
+              No saved research is linked to this site yet. Run research above,
+              or copy keywords from another site.
             </p>
           ) : !filtered.length ? (
             <p className="px-3 py-4 text-xs text-muted-foreground">

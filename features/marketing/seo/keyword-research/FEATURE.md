@@ -213,6 +213,10 @@ before adding any keyword field or per-keyword display anywhere.
   anywhere: `useOpenKeywordResearchWindow({ primaryKeyword, autoRun })` in
   `features/overlays/openers/keywordResearchWindow.tsx`; `?panels=keyword_research`).
   `autoRun` only on an explicit user gesture — a run is a paid pipeline.
+  Its super-admin **Non-writing render replay** links both output kinds to the
+  canonical Shape stream simulator. That simulator exercises partial and
+  complete rendering through the real accumulator/renderer and can interrupt
+  the stream to prove the error state without creating a research artifact.
 - `components/KeywordMetrics.tsx` — the shared presentation primitives. Now also
   `KeywordIntentChip` (THE one way `intent_class` renders anywhere) and
   `KeywordConfidenceMeter`. **No surface hand-rolls an intent string, competition
@@ -276,6 +280,13 @@ and the same block renders read-only in chat.
 - No barrel files; import from source.
 
 ## Change Log
+
+- 2026-08-25 — **Deterministic non-writing replay and touch-safe launcher.** The
+  super-admin workbench links both keyword output kinds to the canonical Shape
+  stream simulator; its interruption control preserves the last partial
+  render, disables streaming, and shows a loud error without any write. The
+  shared keyword input, site picker, Research, and saved-research controls are
+  44px minimum, and the phone launcher stacks instead of collapsing the input.
 
 - 2026-08-25 — **Keyword library mobile cards.** Replaced the phone-only
   11-column scroller with MatrxDataTable's existing `mobileCards` seam. Cards

@@ -151,7 +151,7 @@ export function KeywordInput({
           disabled={disabled}
           placeholder={placeholder}
           autoComplete="off"
-          className={showIntelButton ? "pr-9" : undefined}
+          className={cn("h-11 text-base", showIntelButton && "pr-12")}
           onChange={(event) => {
             onChange(event.target.value);
             setHighlight(-1);
@@ -186,7 +186,7 @@ export function KeywordInput({
             disabled={disabled || !value.trim()}
             aria-label="Open Keyword Intelligence"
             title="Open Keyword Intelligence — market data, relationships, rankings, SERP"
-            className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+            className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
           >
             <BrainCircuit className="h-4 w-4" />
           </button>
@@ -206,7 +206,7 @@ export function KeywordInput({
                     pick(item.phrase);
                   }}
                   className={cn(
-                    "flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-accent",
+                    "flex min-h-11 w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-accent",
                     index === highlight && "bg-accent",
                   )}
                 >
@@ -262,7 +262,7 @@ export function KeywordInput({
             <button
               type="button"
               onClick={openIntel}
-              className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground transition-colors hover:text-primary"
+              className="inline-flex min-h-11 items-center gap-1.5 text-left text-[11px] text-muted-foreground transition-colors hover:text-primary"
             >
               <Database className="h-3 w-3" />
               Not in the keyword library yet — open Keyword Intelligence to

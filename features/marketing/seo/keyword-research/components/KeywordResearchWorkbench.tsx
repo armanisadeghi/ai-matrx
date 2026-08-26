@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   Archive,
   ArrowDownRight,
@@ -18,6 +19,7 @@ import {
   Loader2,
   MoreVertical,
   RefreshCw,
+  TestTube2,
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -78,6 +80,8 @@ import {
 } from "./KeywordMetrics";
 import { keywordLibraryCopyRow } from "../format";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 
 function usMarket(row: KeywordWithMarket): KeywordMarketRow | null {
   return (
@@ -173,6 +177,7 @@ function DossierCompletenessCell({
 }
 
 export default function KeywordResearchWorkbench() {
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   // `?keyword=` pre-fills the launcher — the return door from a saved report
   // ("Open workbench"). Read once; the launcher owns the input from then on.
   const searchParams = useSearchParams();
@@ -815,13 +820,13 @@ export default function KeywordResearchWorkbench() {
         {/* Site picker — MSR-26: research belongs to a site, never the org.
           Required before Research can run or the saved library can show
           anything; `?site=` mirrors the front-door deep-link pattern. */}
-        <div className="flex items-center gap-2 border-b border-border px-4 py-2">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2">
           <Globe2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <Select
             value={selectedSiteId ?? undefined}
             onValueChange={setPickedSiteId}
           >
-            <SelectTrigger className="h-8 w-64 text-xs">
+            <SelectTrigger className="h-11 w-full text-base sm:w-64">
               <SelectValue placeholder="Select a site to research" />
             </SelectTrigger>
             <SelectContent>
@@ -832,6 +837,26 @@ export default function KeywordResearchWorkbench() {
               ))}
             </SelectContent>
           </Select>
+          {isSuperAdmin ? (
+            <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+              <span className="inline-flex h-11 items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <TestTube2 className="h-4 w-4" />
+                Non-writing render replay
+              </span>
+              <Link
+                href="/shapes/keyword_relationship_research/stream"
+                className="inline-flex h-11 items-center justify-center rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                Relationships
+              </Link>
+              <Link
+                href="/shapes/keyword_classification_batch_v1/stream"
+                className="inline-flex h-11 items-center justify-center rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                Classification
+              </Link>
+            </div>
+          ) : null}
         </div>
 
         {/* Research launcher — the canonical shared component (also hosted by
