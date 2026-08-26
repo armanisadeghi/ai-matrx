@@ -19,21 +19,10 @@ import type { PcShow } from "@/features/podcasts/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createPodcastScope,
-  type PodcastHubShowEntry,
+  podcastEpisodeEntry,
+  podcastShowEntry,
 } from "@/features/surfaces/manifests/podcast.manifest";
 import { PodcastGrid } from "./PodcastGrid";
-
-/** Surface values are ids + titles only — never a cover/audio URL (they expire). */
-function showEntry(s: PcShow): PodcastHubShowEntry {
-  return {
-    id: s.id,
-    slug: s.slug,
-    title: s.title,
-    description: s.description,
-    author: s.author,
-    is_published: s.is_published,
-  };
-}
 
 export function PodcastIndexClient({ published }: { published: PcShow[] }) {
   const userId = useAppSelector(selectUserId);
@@ -49,19 +38,10 @@ export function PodcastIndexClient({ published }: { published: PcShow[] }) {
       my_episode_count: episodes.length,
       library_loading: loading,
       published_show_count: browse.length,
-      my_shows: myShows.map(showEntry),
-      my_episodes: episodes.map((e) => ({
-        id: e.id,
-        slug: e.slug,
-        title: e.title,
-        show_id: e.show_id,
-        episode_number: e.episode_number,
-        duration_seconds: e.duration_seconds,
-        host_count: e.host_count,
-        is_published: e.is_published,
-      })),
+      my_shows: myShows.map(podcastShowEntry),
+      my_episodes: episodes.map(podcastEpisodeEntry),
       library_error: error ?? undefined,
-      published_shows: browse.map(showEntry),
+      published_shows: browse.map(podcastShowEntry),
       selection: window.getSelection()?.toString() || undefined,
     });
 
@@ -71,72 +51,72 @@ export function PodcastIndexClient({ published }: { published: PcShow[] }) {
       getScope={getSurfaceScope}
       isEditable={false}
     >
-    <div className="h-full w-full overflow-y-auto overscroll-contain bg-background">
-      {/* Hero — semantic tokens only, so it reads correctly in both themes
+      <div className="h-full w-full overflow-y-auto overscroll-contain bg-background">
+        {/* Hero — semantic tokens only, so it reads correctly in both themes
           (a hardcoded dark slab here was invisible-text city in light mode). */}
-      {/* No <h1>Podcasts</h1> here — the shell header already names the route,
+        {/* No <h1>Podcasts</h1> here — the shell header already names the route,
           and a second giant title ate half the mobile viewport before the user
           reached any content. The hero earns its space with the CTAs. */}
-      {/* Static top content must CLEAR the transparent header rather than
+        {/* Static top content must CLEAR the transparent header rather than
           scroll behind it — hence the token, never a hardcoded pt-*. */}
-      <div className="relative overflow-hidden border-b border-border px-4 pb-7 pt-[calc(var(--shell-header-h)+1.25rem)]">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-transparent pointer-events-none" />
-        <div className="relative z-10 max-w-3xl mx-auto text-center">
-          <p className="text-muted-foreground text-sm">
-            Listen to shows on the platform — or generate a fully produced
-            episode of your own in minutes.
-          </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Button asChild className="gap-2 shadow-md">
-              <Link href="/podcast/studio/create">
-                <AudioLines className="h-4 w-4" />
-                Create a podcast
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="gap-2">
-              <Link href="/podcast/studio">
-                <Mic className="h-4 w-4" />
-                Open Studio
-              </Link>
-            </Button>
+        <div className="relative overflow-hidden border-b border-border px-4 pb-7 pt-[calc(var(--shell-header-h)+1.25rem)]">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-transparent pointer-events-none" />
+          <div className="relative z-10 max-w-3xl mx-auto text-center">
+            <p className="text-muted-foreground text-sm">
+              Listen to shows on the platform — or generate a fully produced
+              episode of your own in minutes.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <Button asChild className="gap-2 shadow-md">
+                <Link href="/podcast/studio/create">
+                  <AudioLines className="h-4 w-4" />
+                  Create a podcast
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="gap-2">
+                <Link href="/podcast/studio">
+                  <Mic className="h-4 w-4" />
+                  Open Studio
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="w-full px-4 sm:px-6 py-6 space-y-8">
-        {/* The signed-in user's library — includes drafts, with manage links. */}
-        {userId && (loading || myShows.length > 0) && (
+        <div className="w-full px-4 sm:px-6 py-6 space-y-8">
+          {/* The signed-in user's library — includes drafts, with manage links. */}
+          {userId && (loading || myShows.length > 0) && (
+            <section>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Your podcasts
+              </h2>
+              {loading && myShows.length === 0 ? (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+                  {Array.from({ length: 3 }, (_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-[4/5] animate-pulse rounded-2xl border border-border bg-muted/50"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <PodcastGrid shows={myShows} manage />
+              )}
+            </section>
+          )}
+
+          {/* Everything published on the platform (minus the user's own). */}
           <section>
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Your podcasts
+              On the platform
             </h2>
-            {loading && myShows.length === 0 ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-                {Array.from({ length: 3 }, (_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-[4/5] animate-pulse rounded-2xl border border-border bg-muted/50"
-                  />
-                ))}
-              </div>
-            ) : (
-              <PodcastGrid shows={myShows} manage />
-            )}
+            <PodcastGrid
+              shows={browse}
+              emptyLabel="No shows published yet. Be the first — create one in the Studio."
+            />
           </section>
-        )}
-
-        {/* Everything published on the platform (minus the user's own). */}
-        <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            On the platform
-          </h2>
-          <PodcastGrid
-            shows={browse}
-            emptyLabel="No shows published yet. Be the first — create one in the Studio."
-          />
-        </section>
+        </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

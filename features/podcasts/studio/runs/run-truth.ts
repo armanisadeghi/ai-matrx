@@ -57,22 +57,19 @@ function nonEmpty(value: string | null | undefined): boolean {
  */
 export function trueLiveness(detail: RunDetail): RunLiveness {
   if (USER_TERMINAL.has(detail.liveness)) return detail.liveness;
-  if (detail.liveness === "completed") return "completed";
-  return hasDeliverable(detail) ? "completed" : detail.liveness;
+  if (hasDeliverable(detail)) return "completed";
+  return detail.liveness === "completed" ? "failed" : detail.liveness;
 }
 
 /**
- * The list-view equivalent. Summaries carry no `audio_url`, so the evidence is
- * an episode id, or every stage having finished with none failed — a run whose
- * stages all completed is not "active" no matter what the status column says.
+ * The list-view equivalent. The repository projects exact deliverable evidence
+ * from create_audio.output / episode_id into `has_deliverable`; stage counts
+ * are never proof because failed pipelines can have every recorded row done.
  */
 export function trueSummaryLiveness(run: RunSummary): RunLiveness {
   if (USER_TERMINAL.has(run.liveness)) return run.liveness;
-  if (run.liveness === "completed") return "completed";
-  if (run.episode_id) return "completed";
-  const { done, failed, total } = run.stage_progress;
-  if (total > 0 && failed === 0 && done >= total) return "completed";
-  return run.liveness;
+  if (run.has_deliverable) return "completed";
+  return run.liveness === "completed" ? "failed" : run.liveness;
 }
 
 /**

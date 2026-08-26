@@ -272,6 +272,7 @@ function toSummary(run: AgentRunRaw, now: number): RunSummary {
   const status = run.status ?? "processing";
   const lastAct = lastActivity(run, stages);
   const cover = firstImage(byKey);
+  const audioUrl = stageOutput(byKey.get(AUDIO_STAGE));
   return {
     run_id: run.id,
     status,
@@ -282,12 +283,34 @@ function toSummary(run: AgentRunRaw, now: number): RunSummary {
     cover_url: cover.url,
     cover_file_id: cover.fileId,
     stage_progress: stageProgress(stages),
+    has_deliverable:
+      (typeof audioUrl === "string" && audioUrl.trim().length > 0) ||
+      (typeof run.episode_id === "string" && run.episode_id.trim().length > 0),
     episode_id: run.episode_id ?? null,
     episode_slug: episodeSlugFromResult(run.result),
     created_at: run.created_at,
     updated_at: run.updated_at,
     last_activity_at: lastAct != null ? new Date(lastAct).toISOString() : null,
   };
+}
+
+/** Hide a run from Studio history without deleting a published episode. */
+export async function deletePodcastRun(runId: string): Promise<void> {
+  const { data, error } = await supabase
+    .schema("chat")
+    .from("agent_run")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", runId)
+    .eq("kind", "podcast")
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) {
+    throw new Error(
+      "Podcast run was not found or you do not have permission to delete it.",
+    );
+  }
 }
 
 // ── public reads (direct Supabase) ─────────────────────────────────────────────
@@ -305,7 +328,8 @@ export async function fetchPodcastRuns({
 }: ListRunsParams = {}): Promise<RunSummary[]> {
   const now = Date.now();
   let query = supabase
-    .schema("chat").from("agent_run")
+    .schema("chat")
+    .from("agent_run")
     .select(RUN_SELECT)
     .is("deleted_at", null)
     .eq("kind", "podcast")
@@ -325,7 +349,8 @@ export async function fetchPodcastRunDetail(
 ): Promise<RunDetail | null> {
   const now = Date.now();
   const { data, error } = await supabase
-    .schema("chat").from("agent_run")
+    .schema("chat")
+    .from("agent_run")
     .select(RUN_SELECT)
     .is("deleted_at", null)
     .eq("id", runId)
@@ -341,7 +366,8 @@ export async function fetchPodcastRunDetail(
   // their owning exposed schemas (and therefore their own RLS policies), then
   // compose the detail DTO here.
   const { data: assetData, error: assetError } = await supabase
-    .schema("podcast").from("pc_studio_run_assets")
+    .schema("podcast")
+    .from("pc_studio_run_assets")
     .select(ASSET_SELECT)
     .eq("run_id", runId);
   if (assetError) throw assetError;
@@ -406,7 +432,8 @@ export async function fetchPodcastRunStatus(
 ): Promise<RunStatusDto | null> {
   const now = Date.now();
   const { data, error } = await supabase
-    .schema("chat").from("agent_run")
+    .schema("chat")
+    .from("agent_run")
     .select(
       "id,status,episode_id,last_heartbeat_at,updated_at,created_at,agent_run_stage(status,started_at,finished_at)",
     )

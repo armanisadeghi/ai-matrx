@@ -178,6 +178,36 @@ export interface PodcastHubEpisodeEntry {
   is_published: boolean;
 }
 
+/** Strip a show to the durable, URL-free values the podcast surface exposes. */
+export function podcastShowEntry(
+  show: PodcastHubShowEntry,
+): PodcastHubShowEntry {
+  return {
+    id: show.id,
+    slug: show.slug,
+    title: show.title,
+    description: show.description,
+    author: show.author,
+    is_published: show.is_published,
+  };
+}
+
+/** Strip an episode to the durable, URL-free values the surface exposes. */
+export function podcastEpisodeEntry(
+  episode: PodcastHubEpisodeEntry,
+): PodcastHubEpisodeEntry {
+  return {
+    id: episode.id,
+    slug: episode.slug,
+    title: episode.title,
+    show_id: episode.show_id,
+    episode_number: episode.episode_number,
+    duration_seconds: episode.duration_seconds,
+    host_count: episode.host_count,
+    is_published: episode.is_published,
+  };
+}
+
 /**
  * Type-safe payload helper — the "a UI cannot lie" enforcement.
  * Required keys ↔ every `alwaysAvailable: true` value above.

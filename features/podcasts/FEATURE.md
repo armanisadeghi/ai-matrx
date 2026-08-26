@@ -108,6 +108,18 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-26 — **Studio run cards now expose actions, and Ready means a real
+  deliverable.** The route header owns the single left-aligned “Podcast Studio”
+  title with a back door to `/podcast`; the compact hero keeps its introduction
+  above the actions instead of splitting the tablet viewport into columns.
+  Every run card now has Open / Edit-or-Review / Delete actions plus the one
+  delegated v3 right-click and mobile long-press menu for the whole grid.
+  Delete is a confirmed soft-delete of `chat.agent_run` and never deletes a
+  published episode. The list repository now emits `has_deliverable` only from
+  a non-empty `create_audio.output` or `episode_id`; completed stage counts can
+  no longer launder a failed partial pipeline into “Ready,” and a completed row
+  with neither deliverable is shown as Failed.
+
 - 2026-08-26 — **A missing reconcile target stays inside the recovery boundary.**
   `reconcileRun` owns the expected 404 and returns `null`; its `postJson` call
   now uses `captureErrors: false`, and the shared POST transport honors that

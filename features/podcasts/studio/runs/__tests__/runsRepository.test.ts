@@ -4,7 +4,11 @@ jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema },
 }));
 
-import { fetchPodcastRunDetail } from "../runsRepository";
+import {
+  deletePodcastRun,
+  fetchPodcastRunDetail,
+  fetchPodcastRuns,
+} from "../runsRepository";
 
 function chain(methods: string[]): Record<string, jest.Mock> {
   const query: Record<string, jest.Mock> = {};
@@ -102,5 +106,102 @@ describe("fetchPodcastRunDetail", () => {
     await expect(fetchPodcastRunDetail("missing")).resolves.toBeNull();
     expect(schema).toHaveBeenCalledTimes(1);
     expect(schema).toHaveBeenCalledWith("chat");
+  });
+});
+
+describe("fetchPodcastRuns", () => {
+  beforeEach(() => {
+    schema.mockReset();
+  });
+
+  it("derives deliverable truth from audio output, not completed stage counts", async () => {
+    const query = chain(["select", "is", "eq", "order"]);
+    query.limit = jest.fn().mockResolvedValue({
+      data: [
+        {
+          id: "failed-run",
+          status: "failed",
+          request: {},
+          result: null,
+          episode_id: null,
+          last_heartbeat_at: null,
+          created_at: null,
+          updated_at: null,
+          agent_run_stage: [
+            {
+              stage_key: "generate_metadata",
+              status: "completed",
+              output: { output: "{}" },
+              error: null,
+              started_at: null,
+              finished_at: null,
+            },
+          ],
+        },
+        {
+          id: "audio-run",
+          status: "failed",
+          request: {},
+          result: null,
+          episode_id: null,
+          last_heartbeat_at: null,
+          created_at: null,
+          updated_at: null,
+          agent_run_stage: [
+            {
+              stage_key: "create_audio",
+              status: "completed",
+              output: { output: "https://cdn.example.com/episode.mp3" },
+              error: null,
+              started_at: null,
+              finished_at: null,
+            },
+          ],
+        },
+      ],
+      error: null,
+    });
+    schema.mockReturnValue({ from: () => query });
+
+    const summaries = await fetchPodcastRuns();
+
+    expect(summaries.map((run) => run.has_deliverable)).toEqual([false, true]);
+  });
+});
+
+describe("deletePodcastRun", () => {
+  beforeEach(() => {
+    schema.mockReset();
+  });
+
+  it("soft-deletes only the selected podcast run", async () => {
+    const query = chain(["update", "eq", "is", "select"]);
+    query.maybeSingle = jest.fn().mockResolvedValue({
+      data: { id: "run-1" },
+      error: null,
+    });
+    schema.mockReturnValue({ from: () => query });
+
+    await expect(deletePodcastRun("run-1")).resolves.toBeUndefined();
+
+    expect(schema).toHaveBeenCalledWith("chat");
+    expect(query.update).toHaveBeenCalledWith(
+      expect.objectContaining({ deleted_at: expect.any(String) }),
+    );
+    expect(query.eq).toHaveBeenCalledWith("id", "run-1");
+    expect(query.eq).toHaveBeenCalledWith("kind", "podcast");
+    expect(query.is).toHaveBeenCalledWith("deleted_at", null);
+  });
+
+  it("rejects a missing or unauthorized run instead of claiming success", async () => {
+    const query = chain(["update", "eq", "is", "select"]);
+    query.maybeSingle = jest
+      .fn()
+      .mockResolvedValue({ data: null, error: null });
+    schema.mockReturnValue({ from: () => query });
+
+    await expect(deletePodcastRun("missing")).rejects.toThrow(
+      "not found or you do not have permission",
+    );
   });
 });

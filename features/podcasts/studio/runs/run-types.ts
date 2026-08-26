@@ -12,12 +12,7 @@
 /** Computed run liveness — distinguishes "alive" (recent heartbeat) from a
  *  silently-dead "stalled" run, so the UI never claims "queued" without a pulse. */
 export type RunLiveness =
-  | "alive"
-  | "stalled"
-  | "failed"
-  | "completed"
-  | "draft"
-  | "cancelled";
+  "alive" | "stalled" | "failed" | "completed" | "draft" | "cancelled";
 
 export type RunAssetKind = "image" | "video";
 
@@ -62,6 +57,8 @@ export interface RunSummary {
   cover_url: string | null;
   cover_file_id: string | null;
   stage_progress: StageProgress;
+  /** Exact output evidence: a non-empty create_audio output or episode id. */
+  has_deliverable: boolean;
   episode_id: string | null;
   episode_slug: string | null;
   created_at: string | null;

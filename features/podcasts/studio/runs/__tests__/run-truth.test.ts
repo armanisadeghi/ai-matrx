@@ -31,6 +31,7 @@ const detail = (over: Partial<RunDetail>): RunDetail =>
     cover_url: null,
     cover_file_id: null,
     stage_progress: { done: 14, failed: 0, total: 14 },
+    has_deliverable: false,
     episode_id: null,
     episode_slug: null,
     created_at: null,
@@ -62,6 +63,7 @@ const summary = (over: Partial<RunSummary>): RunSummary =>
     cover_url: null,
     cover_file_id: null,
     stage_progress: { done: 14, failed: 0, total: 14 },
+    has_deliverable: false,
     episode_id: null,
     episode_slug: null,
     created_at: null,
@@ -142,19 +144,26 @@ describe("detailToRunState", () => {
 });
 
 describe("trueSummaryLiveness", () => {
-  it("counts a run whose stages all finished as completed", () => {
-    expect(trueSummaryLiveness(summary({}))).toBe("completed");
+  it("does not treat all recorded stages as a deliverable", () => {
+    expect(trueSummaryLiveness(summary({ liveness: "failed" }))).toBe("failed");
   });
 
-  it("counts a published run as completed", () => {
+  it("counts exact audio or episode evidence as completed", () => {
     expect(
       trueSummaryLiveness(
         summary({
+          has_deliverable: true,
           episode_id: "e1",
           stage_progress: { done: 3, failed: 0, total: 14 },
         }),
       ),
     ).toBe("completed");
+  });
+
+  it("treats completed-without-a-deliverable as failed", () => {
+    expect(trueSummaryLiveness(summary({ liveness: "completed" }))).toBe(
+      "failed",
+    );
   });
 
   it("leaves a mid-flight run active", () => {
