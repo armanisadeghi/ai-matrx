@@ -499,6 +499,31 @@ async def main():  # noqa: C901
         rec("E outsider", "§8.3(13) the freshly minted secret is nowhere at rest in the token table",
             stored_anywhere == 0, stored_anywhere)
 
+        # §4.3(3) — a session that never passed its factor, refused by the SHARED helper.
+        # Forged directly as the owner, because `outsider_verify` always stamps verified_at: the
+        # only way to test the check is to build the row it exists to refuse.
+        unver_secret = "hrb011-unverified-session-probe"
+        await conn.execute(
+            "insert into platform.actor_session (organization_id, actor_token_id, session_hash,"
+            " expires_at, verified_at, ip) values"
+            " ((select organization_id from platform.actor_token where id=$1), $1,"
+            "  encode(extensions.digest($2,'sha256'),'hex'), now() + interval '30 minutes', null, null)",
+            tok["id"], unver_secret)
+        await as_anon()
+        unver = await j("select public.esign_signer_load($1,$2::inet,$3)", unver_secret, IP_A, UA)
+        rec("E outsider", "§4.3(3) an UNVERIFIED session cannot act — enforced in the shared helper",
+            unver.get("granted") is False and unver["reason"] == "link_no_longer_valid", unver)
+        unver_ev = await sysval(
+            "select detail ->> 'true_reason' from platform.actor_token_event"
+            " where actor_token_id=$1 and event_type='replay_rejected' order by occurred_at desc limit 1",
+            tok["id"])
+        rec("E outsider", "…and the TRUE reason went to the token ledger, never to the caller",
+            unver_ev == "session_not_verified" and "true_reason" not in unver, unver_ev)
+        await as_owner()
+        await conn.execute(
+            "delete from platform.actor_session where session_hash = encode(extensions.digest($1,'sha256'),'hex')",
+            unver_secret)
+
         # position 2 cannot act yet
         jack_ctx = await sysval("select esign._can_act($1)", sid_jack)
         rec("E outsider", "§8.4(24) position 2 cannot act while position 1 is unsigned",
@@ -531,8 +556,18 @@ async def main():  # noqa: C901
             ver_res["ok"] and uc2 == 1, f"use_count {uc}→{uc2}")
 
         moved = await j("select public.esign_signer_load($1,$2::inet,$3)", session, IP_B, UA)
-        rec("E outsider", "§5.7(6) the same session from a DIFFERENT IP is refused (this lane enforces it)",
+        rec("E outsider", "§5.7(6) the same session from a DIFFERENT IP is refused — in the shared helper",
             moved.get("granted") is False and moved["reason"] == "link_no_longer_valid", moved)
+        unprovable = await j("select public.esign_signer_load($1,null,$2)", session, UA)
+        rec("E outsider", "§5.7(6) FAIL-CLOSED — a pinned session whose caller supplies NO IP is refused",
+            unprovable.get("granted") is False and unprovable["reason"] == "link_no_longer_valid",
+            unprovable)
+        pin_ev = await sysval(
+            "select detail ->> 'true_reason' from platform.actor_token_event"
+            " where actor_token_id=$1 and event_type='replay_rejected'"
+            "   and detail ->> 'true_reason' = 'session_ip_unprovable' limit 1", tok["id"])
+        rec("E outsider", "…and an unprovable pin is ledgered distinctly from a moved one",
+            pin_ev == "session_ip_unprovable", pin_ev)
 
         kload = await j("select public.esign_signer_load($1,$2::inet,$3)", session, IP_A, UA)
         rec("E outsider", "the outsider loads the envelope and its documents through the RPC door only",
@@ -567,6 +602,11 @@ async def main():  # noqa: C901
         rec("E outsider", "§2.8 a download returns a short-lived TICKET and writes `downloaded`",
             dl.get("granted") and dl["content_file_id"] == str(nda_file) and dl["ticket_expires_at"],
             {k: dl.get(k) for k in ("content_file_id", "ticket_expires_at")})
+
+        dl_bad = await j("select public.esign_signer_download_url($1,$2,$3::inet,$4)",
+                         session, str(doc), IP_A, UA)
+        rec("E outsider", "§5.3(2) the download verb is checked and CAN refuse — another envelope's document",
+            dl_bad.get("granted") is False and dl_bad["reason"] == "link_no_longer_valid", dl_bad)
 
         ksign = await j("select public.esign_signer_sign($1,$2::jsonb,'btn-sign-nda',$3::inet,$4)", session,
                         json.dumps([{"document_id": str(doc2), "content_hash": nda_hash}]), IP_A, UA)

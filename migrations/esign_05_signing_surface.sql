@@ -19,12 +19,15 @@
 --    their `verification_factor` is recorded as `session` on the certificate, because that is
 --    literally how they were authenticated.
 --
--- 2. 🚨 AN UNVERIFIED OUTSIDER SESSION CANNOT SIGN, AND assert_outsider_scope DOES NOT CHECK THAT.
---    Read live: platform.assert_outsider_scope validates the session's existence, expiry and
---    revocation and the scope grant — it never looks at platform.actor_session.verified_at. §4.3
---    condition 3 says "an unverified token can never sign", so this lane checks verified_at itself
---    whenever the token declares a factor other than `none`. Assuming a helper enforces something
---    it does not is how §8.4 case 26 ships broken.
+-- 2. ✅ AN UNVERIFIED OUTSIDER SESSION CANNOT SIGN — AND `platform.assert_outsider_scope` IS THE
+--    ONE PLACE THAT SAYS SO. This lane's probe found the helper checking the scope and nothing
+--    else, so the first form of this file enforced §4.3 condition 3 locally, for the signing family
+--    only, and recorded the gap against the access lane by name. HRB-007 then centralised it
+--    (`hr_c3_09_outsider_session_checks`), which is the right altitude: seven other purposes
+--    inherited neither check and every future purpose would have had to remember both. The local
+--    branch is DELETED here rather than left as unreachable redundancy — a second copy of a rule
+--    that no longer runs is not defence in depth, it is the drift that makes the next reader ask
+--    which one is authoritative. §5.4's "no RPC hand-rolls this check" is now literally true.
 --
 -- 3. 🚨 THE OUTSIDER REGISTRY'S readable_columns ARE REPOINTED AT COLUMNS THAT EXIST. Recorded in
 --    migration 01 decision 2 and paid here, where the projection that consumes them lives:
@@ -43,18 +46,22 @@
 --    cannot still sign, and the delegate is a NEW signer row at the same position — evidence keeps
 --    both, because who was asked and who actually signed are different facts.
 --
--- 7. 🚨 IP PINNING IS RECORDED BY THE LANE AND ENFORCED BY NOBODY, SO THIS FAMILY ENFORCES IT.
---    §5.7 rule 6 says outsider sessions are IP-pinned by default. Read live: `outsider_verify`
---    STORES the issuing IP on platform.actor_session when the purpose declares `ip_pinned`, and
---    `platform.assert_outsider_scope` never compares it to anything — so a stolen session secret
---    works from any address on every purpose in the lane. `esign._ctx_outsider` compares the
---    caller's IP to the session's and refuses on a mismatch, uniformly. This closes it for the
---    signing family only. DEBT, OWNER = the access lane (HRB-007): the comparison belongs in
---    assert_outsider_scope, where all eight purposes get it.
+-- 7. ✅ THE SESSION IP PIN IS ENFORCED BY THE SHARED HELPER, FAIL-CLOSED — AND THAT IS STRICTLY
+--    STRONGER THAN THE LOCAL FORM THIS FILE USED TO CARRY. §5.7 rule 6 pins outsider sessions by
+--    default; the pin was recorded at verification and never read again, on all eight purposes.
+--    HRB-007's centralised check refuses a pinned session whose caller supplies NO IP at all,
+--    where this file's local branch (`ses.ip is not null AND p_ip is not null AND ses.ip <> p_ip`)
+--    let an IP-less caller walk straight past it — an unprovable pin is not a pin. The local branch
+--    and its duplicate `replay_rejected` write are DELETED; the helper writes that event now, once.
+--    What this file still owes the helper is the ARGUMENT: both call sites pass `p_ip` through, and
+--    the assertion block below refuses to install against a helper that cannot accept it.
 --
 -- 8. THE DOWNLOAD DOOR ASSERTS THE `download` VERB ON THE DOCUMENT, not merely `read` on the signer
 --    row. The registry declares `download` on esign_envelope_document for a reason; checking the
---    weaker grant would mean the stronger one is decorative.
+--    weaker grant would mean the stronger one is decorative. 🚨 It checks the helper's `granted`
+--    field: the helper now RETURNS a refusal envelope instead of raising, so the original
+--    `perform`-inside-a-catch form would have discarded the refusal and left this verb check
+--    silently open — a check that cannot fail is worse than no check, because it reads as one.
 --
 -- 6. DOWNLOADS RETURN A TICKET, NOT A URL. §2.8 forbids a new store and a new ACL, and Postgres
 --    cannot mint a signed storage URL. The RPC authorises the download, writes the `downloaded`
@@ -132,16 +139,21 @@ language plpgsql security definer set search_path to 'esign','public' as $fn$
 declare v_ctx jsonb; s esign.envelope_signer%rowtype; t platform.actor_token%rowtype;
         ses platform.actor_session%rowtype; v_token uuid; v_signer uuid;
 begin
-  -- The scope check raises 42501 on refusal. Catching it here turns a raise into the UNIFORM
-  -- client-facing refusal §5.7 rule 2 requires — unknown, expired, revoked, exhausted and
-  -- wrong-consumer are indistinguishable to the caller, and the true reason lives in the token
-  -- ledger the lane already writes.
+  -- THE SINGLE ENFORCEMENT POINT (§5.4, RECORDED DECISIONS 2 and 7). One call decides scope,
+  -- session validity, `verified_at` and the IP pin, writes the true reason to the token ledger, and
+  -- returns ONE uniform envelope. This door adds no second opinion; it resolves who the caller is.
+  -- The `exception` arm remains for a genuine PROGRAMMING error (a malformed scope document, a
+  -- missing session row) — refusal is data and comes back through `granted`, breakage is an
+  -- exception, and neither may reach the caller as anything but the uniform message.
   begin
     select actor_token_id into v_token from platform.actor_session
      where session_hash = encode(extensions.digest(coalesce(p_session,''),'sha256'),'hex');
     select subject_id into v_signer from platform.actor_token
      where id = v_token and consumer_key = 'esign.signer';
-    v_ctx := platform.assert_outsider_scope(p_session, 'esign_envelope_signer', v_signer, p_action);
+    v_ctx := platform.assert_outsider_scope(p_session, 'esign_envelope_signer', v_signer, p_action, p_ip);
+    if not coalesce((v_ctx ->> 'granted')::boolean, false) then
+      return jsonb_build_object('granted', false, 'reason', 'link_no_longer_valid');
+    end if;
   exception when others then
     return jsonb_build_object('granted', false, 'reason', 'link_no_longer_valid');
   end;
@@ -151,21 +163,8 @@ begin
   select * into t from platform.actor_token where id = (v_ctx ->> 'actor_token_id')::uuid;
   select * into ses from platform.actor_session where id = (v_ctx ->> 'session_id')::uuid;
 
-  -- RECORDED DECISION 2 — assert_outsider_scope does NOT check this.
-  if t.verification_factor <> 'none' and ses.verified_at is null then
-    return jsonb_build_object('granted', false, 'reason', 'link_no_longer_valid',
-                              'true_reason', 'session_not_verified');
-  end if;
-
-  -- RECORDED DECISION 7 — nor does it check this. §5.7 rule 6.
-  if ses.ip is not null and p_ip is not null and ses.ip <> p_ip then
-    insert into platform.actor_token_event (organization_id, actor_token_id, session_id, event_type, ip, detail)
-    values (t.organization_id, t.id, ses.id, 'replay_rejected', p_ip,
-            jsonb_build_object('true_reason','session_ip_moved'));
-    return jsonb_build_object('granted', false, 'reason', 'link_no_longer_valid',
-                              'true_reason', 'session_ip_moved');
-  end if;
-
+  -- `verification_passed` below is EVIDENCE, not a gate: it is what the certificate reports about
+  -- how this person was authenticated. The gate lives in the helper, and only in the helper.
   return jsonb_build_object(
     'granted', true, 'signer_id', s.id, 'envelope_id', s.envelope_id,
     'organization_id', s.organization_id,
@@ -698,9 +697,13 @@ returns jsonb language plpgsql security definer set search_path to 'esign','publ
 declare c jsonb; begin
   c := esign._ctx_outsider(p_session, 'read', p_ip, p_ua);
   if not (c ->> 'granted')::boolean then return c - 'true_reason'; end if;
-  -- RECORDED DECISION 8 — the `download` verb, on the document, per §5.3 law 2.
+  -- RECORDED DECISION 8 — the `download` verb, on the document, per §5.3 law 2. The helper RETURNS
+  -- its refusal, so the result is checked; a raise here would be breakage, not refusal.
   begin
-    perform platform.assert_outsider_scope(p_session, 'esign_envelope_document', p_document_id, 'download');
+    if not coalesce((platform.assert_outsider_scope(
+           p_session, 'esign_envelope_document', p_document_id, 'download', p_ip) ->> 'granted')::boolean, false) then
+      return jsonb_build_object('granted', false, 'reason', 'link_no_longer_valid');
+    end if;
   exception when others then
     return jsonb_build_object('granted', false, 'reason', 'link_no_longer_valid');
   end;
@@ -832,6 +835,13 @@ begin
      and has_function_privilege('anon', p.oid, 'EXECUTE');
   if v_n <> 8 then
     raise exception 'esign_05: anon can execute % esign functions; §5.4 names exactly 8', v_n;
+  end if;
+
+  -- 🚨 This file's two doors delegate verification and the IP pin to the shared helper. If the
+  -- helper cannot ACCEPT an IP, delegating to it silently un-enforces §5.7 rule 6 — so this fails
+  -- loudly rather than installing a family that quietly stopped pinning.
+  if to_regprocedure('platform.assert_outsider_scope(text,text,uuid,text,inet)') is null then
+    raise exception 'esign_05: platform.assert_outsider_scope does not accept a caller IP — apply hr_c3_09_outsider_session_checks first (§5.7 rule 6 is enforced there, not here)';
   end if;
 
   foreach f in array ARRAY['esign._act_sign(jsonb,jsonb,text)','esign._act_consent(jsonb,uuid)',
