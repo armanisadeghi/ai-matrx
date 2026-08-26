@@ -56096,6 +56096,32 @@ export type Database = {
           site_local_clicks: number
         }[]
       }
+      keyword_place_status_global: {
+        Args: { p_min_impressions: number }
+        Returns: {
+          areas_empty: number
+          areas_total: number
+          areas_with_places: number
+          demand_window_days: number
+          keywords_explicit_local: number
+          keywords_with_places: number
+          last_scanned_at: string
+          next_phrase: string
+          pending_clicks: number
+          pending_impressions: number
+          queue_clicks: number
+          queue_deferred: number
+          queue_pending: number
+          queue_scanned: number
+          queue_total: number
+          scanned_clicks: number
+          site_clicks: number
+          site_keywords: number
+          site_keywords_local: number
+          site_keywords_scanned: number
+          site_local_clicks: number
+        }[]
+      }
       keyword_placement_resolve: {
         Args: { p_keyword_ids: string[]; p_site_id: string }
         Returns: {
