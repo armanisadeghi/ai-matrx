@@ -15,6 +15,34 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D267 — `assoc_list` with a NULL direction silently returns ZERO rows instead of raising (2026-08-26)
+
+`public.assoc_list(p_type, p_id, p_direction, p_role)` guards with
+`IF p_direction NOT IN ('out','in','both') THEN RAISE`. A NULL `p_direction` makes that predicate
+NULL, so the guard does not fire; the body's `p_direction IN ('out','both')` is then also NULL and
+every branch filters everything out. A caller who passes NULL gets a clean, empty, entirely
+plausible answer for an entity that demonstrably has edges.
+
+Found by HRB-010's tier-2 isolation suite (assertion C4c): the edge existed, `platform.associations`
+had it, and `assoc_list(..., NULL, NULL)` returned 0. Passing `'both'` returns it.
+
+Fix: `IF p_direction IS NULL OR p_direction NOT IN ('out','in','both') THEN RAISE` — or default the
+parameter's NULL to `'out'` explicitly. One line, in the `assoc_*` RPC family. Not HRB-010's to
+change: the association RPCs are platform-wide and a behaviour change there needs its own sweep of
+callers that may be relying on the silent-empty result.
+
+### D268 — `platform.trg_reachability_on_rules` runs a FULL reachability rebuild per statement, including for NON-conveying rules (2026-08-26)
+
+Every INSERT/UPDATE/DELETE on `platform.association_types` fires a statement-level trigger that calls
+`platform.rebuild_reachability()` over the whole platform. Declaring N edge types in N statements
+therefore runs N full rebuilds; HRB-010's `ext_18` timed out at eleven of them and had to be split
+into `ext_18a`/`ext_18b`/`ext_18c` with the writes batched into single statements.
+
+A rule with `container_side = 'none'` contributes NOTHING to reachability, so the rebuild it triggers
+is pure waste — and it is the common case (93 of 205 live rows). Fix: skip the rebuild when no
+affected row has `container_side <> 'none'`, or debounce to one rebuild per transaction. Owner: the
+access/reachability lane.
+
 ### D264 — the COMPONENT OWNERSHIP LAW gate greps `created_by` only, and `files.analysis` still carries an `owner_id` read arm (2026-08-26)
 
 `public.component_created_by_report()` matches `\mcreated_by\M` in `qual`/`with_check`. The law
