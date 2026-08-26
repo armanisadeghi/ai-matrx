@@ -72,6 +72,7 @@ set local lock_timeout = '20s';
 do $$ begin
   if not exists (select 1 from information_schema.columns
                   where table_schema = 'hr' and table_name = 'employment' and column_name = 'visibility') then
+    -- personal-justified: employment is an individual person's root HR record; organization access is conveyed separately by the HR access kernel.
     alter table hr.employment
       add column visibility platform.visibility not null default 'personal'::platform.visibility;
   end if;
