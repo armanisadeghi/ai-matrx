@@ -7,7 +7,7 @@
  *   1. Two state machines, labelled distinctly — `PeriodStatePanel`.
  *   2. The boundary weeks, named and explained in words — `BoundaryWeeksPanel`.
  *   3. The payroll export, with the format registry read from the server and the supersede control
- *      absent once acknowledged — `ExportPanel`.
+ *      unavailable-with-the-reason once acknowledged — L13's `ExportRunPanel` + `ExportRunList`.
  *   4. The post-lock adjustment lane as the only edit door after lock — `PostLockAdjustments`.
  *
  * 🚨 ROLE VARIATIONS (§2.7): manager read-only and only their own reports; HR admin every

@@ -652,11 +652,113 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "Open the separation form — last day worked, termination date, reason, initiator, rehire eligibility — and hand off to the offboarding run once it is approved.",
     stage: "blocked",
     blockedBy:
-      "hr_separation_record is an agreed signature that does not exist in the database yet (verified against pg_proc 2026-08-26). The action is capability-gated and absent for anyone who could not use it anyway.",
+      "public.hr_separation_record IS live (verified against pg_proc 2026-08-26); what is missing is the separation FORM and the offboarding run it hands off to (routes 50/51), owned by the Onboarding & Offboarding lane. The directory offers the verb because SPEC-EMPLOYEES §2.2 puts it on the row.",
     surfaces: [
       "/hr/people — row menu",
       "/hr/people/[employeeId]/job — spell actions",
     ],
+  },
+  "hr.people.corrective-action": {
+    id: "hr.people.corrective-action",
+    label: "Start a corrective action",
+    owner: "hr",
+    promise:
+      "Record a corrective action the person can actually read, respond to, and keep their own words beside — with the ladder, the policy cited, the improvement expected, and an acknowledgment they sign.",
+    stage: "blocked",
+    blockedBy:
+      "public.hr_corrective_action_issue IS live; the issuance form and the case surface (routes 15/16) belong to the Employee Relations lane and are not built. The door is offered at the notes compose box because that is where a manager reaches for the wrong tool.",
+    surfaces: [
+      "/hr/people/[employeeId]/notes — compose box",
+      "/hr/people/[employeeId]/relations",
+    ],
+  },
+  "hr.people.compensation-history": {
+    id: "hr.people.compensation-history",
+    label: "Pay components and their history",
+    owner: "hr",
+    promise:
+      "Every pay component in force — base, differentials, allowances — each with its own effective window, its change reason, and who approved it. Never a single made-up rate that summed things that are not the same thing.",
+    stage: "blocked",
+    blockedBy:
+      "There is no per-employee compensation read door. hr_confidential_list('hr_compensation') filters only by organization_id and returns up to 500 org-wide rows, so using it for one person's tab would record a whole-org audited list read for a single-person purpose. The L1 server lane owes a per-employment door.",
+    surfaces: ["/hr/people/[employeeId]/compensation"],
+  },
+  "hr.people.emergency-contacts": {
+    id: "hr.people.emergency-contacts",
+    label: "Emergency contacts",
+    owner: "hr",
+    promise:
+      "Who to call, in the order you would call them — editable by the person themselves, and reachable by HR when it matters.",
+    stage: "blocked",
+    blockedBy:
+      "hr_emergency_contact_upsert and _remove are live, but there is no per-employee READ door (hr_confidential_list filters only by organization_id). An add form with no way to see what is already there would create duplicates.",
+    surfaces: ["/hr/people/[employeeId]/emergency"],
+  },
+  "hr.people.documents": {
+    id: "hr.people.documents",
+    label: "This person's documents",
+    owner: "hr",
+    promise:
+      "Their document file — offer letters, signed policies, certificates — through the platform's own file viewer, with retention clocks and legal holds shown on the row.",
+    stage: "blocked",
+    blockedBy:
+      "Documents reuse features/files end to end; the association between an hr.employee and files.files rows is not wired, and HR must not build its own file storage. I-9s are deliberately NOT here — they live in the segregated register at /hr/documents/i9.",
+    surfaces: ["/hr/people/[employeeId]/documents"],
+  },
+  "hr.people.notes": {
+    id: "hr.people.notes",
+    label: "Notes about this person",
+    owner: "hr",
+    promise:
+      "Your own running notes on someone you manage — visible to you and to HR, never to them, and never mistaken for a disciplinary record.",
+    stage: "blocked",
+    blockedBy:
+      "Notes are platform.comments on the employee with an author-scoped lane; the comments surface for an hr_employee target is not wired. The corrective-action door is shown regardless, because that is the flow a manager usually actually wants.",
+    surfaces: ["/hr/people/[employeeId]/notes"],
+  },
+  "hr.people.tab-time-off": {
+    id: "hr.people.tab-time-off",
+    label: "Time off on the profile",
+    owner: "hr",
+    promise:
+      "Their balances, requests and leave cases, in the profile, without leaving the person you are looking at.",
+    stage: "planned",
+    blockedBy:
+      "Owned by the Leave & PTO lane. This profile hosts the panel and hands it employment_id and the viewer persona; it never re-resolves identity and never renders its own header.",
+    surfaces: ["/hr/people/[employeeId]/time-off"],
+  },
+  "hr.people.tab-time": {
+    id: "hr.people.tab-time",
+    label: "Time & schedule on the profile",
+    owner: "hr",
+    promise:
+      "Their current timesheet, punches and published shifts, in the profile.",
+    stage: "planned",
+    blockedBy:
+      "Owned by the Time & Attendance and Scheduling lanes. The profile hosts the panel with employment_id and the viewer persona.",
+    surfaces: ["/hr/people/[employeeId]/time"],
+  },
+  "hr.people.tab-performance": {
+    id: "hr.people.tab-performance",
+    label: "Performance on the profile",
+    owner: "hr",
+    promise:
+      "Their review cycles and outcomes, rendered by the Reviews feature itself — never a second reviews UI.",
+    stage: "planned",
+    blockedBy:
+      "Owned by the Employee Performance Reviews feature. SPEC-UI-IA route 62 is explicit that this must not fork a second reviews UI, so the profile waits for that feature's own component.",
+    surfaces: ["/hr/people/[employeeId]/performance"],
+  },
+  "hr.people.tab-training": {
+    id: "hr.people.tab-training",
+    label: "Training on the profile",
+    owner: "hr",
+    promise:
+      "Their assignments, due dates, certifications and immutable transcript, in the profile.",
+    stage: "planned",
+    blockedBy:
+      "Owned by the Training lane (routes 57–61).",
+    surfaces: ["/hr/people/[employeeId]/training"],
   },
   "hr.people.org-chart-query": {
     id: "hr.people.org-chart-query",

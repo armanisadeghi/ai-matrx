@@ -15,10 +15,13 @@
  *     identical module the surfaces import. Not a copy, not a stub, not a re-declared fetch.
  *   • **The real HTTP fixture transport**, `serveFromFixtures`, over the nine frozen export
  *     operations and the overtime evaluator.
- *   • **Every decision function the surfaces make**, asserting the LAWS rather than the shapes: an
- *     acknowledged export offers no supersede, an advisory rule leaves money absent rather than
- *     zero, a run with `failed_units` is never a success, unapproved overtime is never described
- *     with a payment word, and the default export format is not QuickBooks.
+ *   • **Every decision function THIS LANE owns**, asserting the LAWS rather than the shapes: approval
+ *     is refused with an open timecard and permitted over a disagreement, reopen states it does not
+ *     re-pay, and unapproved overtime is never described with a payment word.
+ *   • **The export laws AT THE CONTRACT**, since the export components are lane L13's: the 409 that
+ *     refuses to supersede an acknowledged file, the 422 that refuses a whole run over an advisory
+ *     rule, the 400 that blocks unmapped identifiers before generation, and the `partial` run whose
+ *     `failed_units` mean it is not a success.
  *
  * A shape assertion would pass on a UI that renders the right fields with the wrong meaning. These
  * are the meanings.
@@ -55,15 +58,16 @@ async function main(): Promise<void> {
     rowProgressSentence,
     REOPEN_NOTICE,
   } = await import("@/features/hr/time/periods/periodStateMachine");
-  const {
-    partitionFormats,
-    defaultFormatKey,
-    supersedeAvailability,
-    acknowledgeAvailability,
-    failAvailability,
-    classifyRun,
-    amountDisplay,
-  } = await import("@/features/hr/time/exports/exportPresentation");
+  // 🚨 The export half is lane L13's (HRB-025) and this lane owns no copy of it — the coordinator
+  // ruled that seam on 2026-08-26 and `features/hr/time/exports/` was DELETED, not deprecated.
+  // What is asserted below is therefore the CONTRACT the mounted components stand on: that the
+  // frozen fixture set actually carries each law, so a surface built against it cannot be built
+  // against a fiction.
+  //
+  // L13's components themselves are deliberately NOT imported here. They are `.tsx` and pull in the
+  // design system, which has no Node `exports` entry — importing one would drag a rendering stack
+  // into a headless proof and defeat the point of it. That is not a gap: T-14 asks whether the
+  // CONTRACTS work without the web shell, and a React component is the web shell.
   const { OT_STATE_LABEL, DENIAL_DOES_NOT_WITHHOLD_PAY, NO_DECISION_ESCALATES } = await import(
     "@/features/hr/time/overtime/overtimeVocabulary"
   );
@@ -142,96 +146,81 @@ async function main(): Promise<void> {
   section("3. THE LAWS — asserted on meaning, not on shape");
   // ═══════════════════════════════════════════════════════════════════════════════════════════
 
-  // ── Law: an acknowledged export can NEVER be superseded, regenerated or re-sent. ─────────────
-  const acknowledgedRow = {
-    export_id: "e1",
-    delivery_state: "acknowledged" as const,
-    acknowledgement_ref: "QBO-2026-03-IMPORT-4471",
-    total_amount: "241880.12",
-    export_format: "generic_csv",
-  };
-  const ackSupersede = supersedeAvailability(acknowledgedRow as never);
-  ok("acknowledged export offers NO supersede", ackSupersede.offered === false);
+  // ── Law: the CONTRACT refuses to supersede an acknowledged export. ──────────────────────────
+  const supersedeEdge = serveFromFixtures(
+    "POST",
+    "/hr/exports/00000000-0000-4000-8000-000000000001/supersede",
+    "edge",
+  );
+  const supersedeBody = supersedeEdge?.body as { error?: string; details?: Record<string, unknown> };
+  ok("supersede has a 409 fixture", supersedeEdge?.status === 409);
   ok(
-    "…and says why, in words",
-    typeof ackSupersede.reason === "string" && ackSupersede.reason.length > 40,
+    "…and it is hr_export_already_acknowledged, the one rule that prevents double payment",
+    supersedeBody?.error === "hr_export_already_acknowledged",
   );
   ok(
-    "…naming the double-payment consequence",
-    (ackSupersede.reason ?? "").toLowerCase().includes("twice"),
+    "…naming the adjustment path as the only correction after acknowledgement",
+    String(supersedeBody?.details?.correction_path ?? "").includes("time_adjustment"),
   );
-  ok(
-    "acknowledged export offers NO second acknowledgement",
-    acknowledgeAvailability(acknowledgedRow as never).offered === false,
-  );
-  ok(
-    "acknowledged export cannot be retroactively failed",
-    failAvailability(acknowledgedRow as never).offered === false,
-  );
-  const generatedRow = { ...acknowledgedRow, delivery_state: "generated" as const };
-  ok("a generated export CAN be superseded", supersedeAvailability(generatedRow as never).offered);
-  const failedRow = { ...acknowledgedRow, delivery_state: "failed" as const };
-  ok("a failed export CAN be superseded", supersedeAvailability(failedRow as never).offered);
 
-  // ── Law: money is ABSENT when there is none — never a zero, never a dash. ────────────────────
-  const noMoney = amountDisplay({ total_amount: null, export_format: "generic_csv" } as never);
-  ok("a null amount renders as a sentence, not a figure", noMoney.present === false);
+  // ── Law: an advisory rule refuses the WHOLE RUN — it does not omit a line. ───────────────────
+  const advisoryEdge = serveFromFixtures("POST", "/hr/exports/payroll", "edge");
+  const advisoryBody = advisoryEdge?.body as { error?: string };
+  ok("generate refuses 422 on an advisory money rule", advisoryEdge?.status === 422);
   ok(
-    "…and the sentence is not '0' or '—'",
-    noMoney.present === false && !/^[\s0—–-]*$/.test(noMoney.sentence),
+    "…as hr_advisory_rule_blocks_money, not as a 200 with a missing line",
+    advisoryBody?.error === "hr_advisory_rule_blocks_money",
   );
-  const withMoney = amountDisplay({
-    total_amount: "241880.12",
-    export_format: "generic_csv",
-  } as never);
+
+  // ── Law: unmapped identifiers block BEFORE generation, naming the codes. ────────────────────
+  const unmappedEdge = serveFromFixtures("POST", "/hr/exports/payroll", "edge2");
+  const unmappedBody = unmappedEdge?.body as { error?: string; details?: { unmapped?: unknown[] } };
+  ok("an unmapped identifier is a 400, not a file with blanks", unmappedEdge?.status === 400);
+  ok("…carrying details.unmapped[]", (unmappedBody?.details?.unmapped ?? []).length === 2);
+
+  // ── Law: money crosses the wire as a DECIMAL STRING, never a float. ─────────────────────────
+  // 241880.12 has no exact binary representation. If the contract handed a client a JSON number the
+  // corruption would already have happened before any component could avoid it, so the guarantee
+  // has to hold at the fixture, not at the renderer.
+  const exportRead = serveFromFixtures("GET", "/hr/exports/00000000-0000-4000-8000-000000000001", "happy");
+  const exportBody = exportRead?.body as { total_hours?: unknown; total_amount?: unknown };
+  ok("total_hours is a decimal STRING, not a number", typeof exportBody?.total_hours === "string");
+  ok("total_amount is a decimal STRING, not a number", typeof exportBody?.total_amount === "string");
+  const previewRead = serveFromFixtures("POST", "/hr/exports/payroll/preview", "happy");
+  const previewBody = previewRead?.body as {
+    total_hours?: unknown;
+    by_earning_code?: Array<Record<string, unknown>>;
+  };
+  ok("the preview's totals are strings too", typeof previewBody?.total_hours === "string");
   ok(
-    "a decimal string is carried VERBATIM (never re-formatted through a float)",
-    withMoney.present && withMoney.decimalString === "241880.12",
+    "…and so is every per-earning-code line",
+    (previewBody?.by_earning_code ?? []).every((line) => typeof line.hours === "string"),
   );
 
   // ── Law: `partial` / failed_units is NEVER a success (FREEZE §4 D-13). ──────────────────────
   const recompute = serveFromFixtures("POST", "/hr/time/recompute", "edge");
-  const recomputeBody = recompute?.body as { status?: string; result?: unknown };
-  ok("the recompute edge fixture carries status 'partial'", recomputeBody?.status === "partial");
-  const partialVerdict = classifyRun(recomputeBody as never);
-  ok("…and classifies as partial, not succeeded", partialVerdict.kind === "partial");
-  ok(
-    "…listing every failed unit individually",
-    partialVerdict.kind === "partial" && partialVerdict.failedUnits.length === 2,
-  );
-  // The harder half of D-13: a spine that says "completed" does not override the failures.
-  const lyingEnvelope = {
-    status: "completed",
-    result: { failed_units: [{ workweek_id: "w1", error: "hr_incomplete_facts" }] },
+  const recomputeBody = recompute?.body as {
+    status?: string;
+    result?: { failed_units?: unknown[] };
   };
+  ok("the recompute edge fixture carries status 'partial'", recomputeBody?.status === "partial");
   ok(
-    "a run reported COMPLETE with failed_units is still not a success",
-    classifyRun(lyingEnvelope).kind === "partial",
+    "…AND a populated failed_units[], so a surface cannot render it as clean",
+    (recomputeBody?.result?.failed_units ?? []).length === 2,
   );
-  ok("a clean completed run is a success", classifyRun({ status: "completed" }).kind === "succeeded");
 
-  // ── Law: the format list is the server's, the default is generic_csv, unavailable is visible. ─
+  // ── Law: the format registry is the SERVER's, and it carries an availability flag. ───────────
   const formatsFixture = serveFromFixtures("GET", "/hr/exports/formats", "happy");
-  const serverFormats = (formatsFixture?.body as { formats: unknown[] }).formats;
+  const serverFormats = (formatsFixture?.body as { formats: Array<Record<string, unknown>> })
+    .formats;
   ok("the format list comes from the server", Array.isArray(serverFormats));
-  const syntheticRegistry = [
-    { key: "generic_csv", label: "Generic CSV", delivery: ["file"], media_type: "text/csv", requires_mapping: [], available: true, notes: null },
-    { key: "quickbooks_online", label: "QuickBooks Online", delivery: ["file"], media_type: "text/csv", requires_mapping: ["external_employee_id"], available: false, notes: "Intuit has not published the column list." },
-  ];
-  const partition = partitionFormats(syntheticRegistry as never);
-  ok("an unavailable format is NOT a choice", partition.available.length === 1);
-  ok("…it is listed as unavailable", partition.unavailable.length === 1);
   ok(
-    "…with the server's reason attached",
-    partition.unavailable[0].reason.includes("Intuit"),
+    "…and every entry declares `available`, so a client never has to guess",
+    serverFormats.every((f) => typeof f.available === "boolean"),
   );
   ok(
-    "the default is generic_csv, NOT QuickBooks",
-    defaultFormatKey(syntheticRegistry as never) === "generic_csv",
-  );
-  ok(
-    "no format is pre-selected when none is available",
-    defaultFormatKey([syntheticRegistry[1]] as never) === null,
+    "…and declares which identifiers it requires mapped",
+    serverFormats.every((f) => Array.isArray(f.requires_mapping)),
   );
 
   // ── Law: unapproved overtime is PAID. No payment word may appear in this vocabulary. ─────────

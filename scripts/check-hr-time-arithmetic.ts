@@ -208,6 +208,23 @@ function walk(dir: string): void {
 }
 
 /**
+ * Blank the CONTENTS of single- and double-quoted strings, keeping the quotes and the line length.
+ *
+ * Without this the gate reports itself into uselessness on its very first real run: a fixture line
+ * reading `coversFrom: "2026-03-19T00:00:00Z", coversTo: "2026-03-20T00:00:00Z"` matches the
+ * field-minus-field rule, because the hyphen inside an ISO DATE is a minus sign as far as a regex is
+ * concerned. Ten such false positives is how a gate becomes noise somebody learns to skip, and a
+ * gate people skip is worse than no gate at all.
+ *
+ * Backticks are deliberately left alone: a template literal can contain real `${a - b}` code.
+ */
+function blankStringLiterals(line: string): string {
+  return line.replace(/(['"])(?:\\.|(?!\1)[^\\])*\1/g, (match) =>
+    `${match[0]}${" ".repeat(Math.max(0, match.length - 2))}${match[match.length - 1]}`,
+  );
+}
+
+/**
  * A line that only TALKS about the defect is not the defect. Every doc block in this lane quotes
  * `ended_at − started_at` on purpose — the law is written down beside the code it binds — so a gate
  * that reported those would report the very comments that keep the rule alive.
@@ -242,10 +259,12 @@ function scanFile(fullPath: string): void {
 
     const marker = ALLOW_MARKER.exec(line);
     const hasReason = Boolean(marker?.[1]?.trim());
+    // Patterns run against CODE, not against string contents. The reported text stays the original.
+    const code = blankStringLiterals(line);
 
     for (const rule of RULES) {
-      if (rule.exempt?.test(line)) continue;
-      if (!rule.pattern.test(line)) continue;
+      if (rule.exempt?.test(code)) continue;
+      if (!rule.pattern.test(code)) continue;
 
       const finding: Finding = {
         file: rel,

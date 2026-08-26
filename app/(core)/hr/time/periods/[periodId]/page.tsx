@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { createRouteMetadata } from "@/utils/route-metadata";
 import { PeriodDetailPage } from "@/features/hr/time/periods/components/PeriodDetailPage";
 
 /**
@@ -8,8 +9,17 @@ import { PeriodDetailPage } from "@/features/hr/time/periods/components/PeriodDe
  *
  * One period: approval progress across two distinct state machines, the boundary-weeks panel, the
  * payroll-export runs with their delivery states, and the post-lock adjustment lane.
+ *
+ * The period id is not in the tab title on purpose: a uuid is not a word anyone recognises, and the
+ * period's own dates are not known until the client read resolves. "Pay period | Time" is honest and
+ * findable; `createDynamicRouteMetadata` would only add a uuid.
  */
-export const metadata = { title: "Pay period" };
+export const metadata = createRouteMetadata("/hr/time/periods", {
+    titlePrefix: "Pay period",
+    title: "Time",
+    description:
+        "One pay period: approval progress, its payroll export runs and their delivery states, and the corrections tagged to it after lock.",
+});
 
 export default async function HrTimePeriodRoute({
     params,

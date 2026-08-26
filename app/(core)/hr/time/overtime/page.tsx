@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { createRouteMetadata } from "@/utils/route-metadata";
 import { OvertimeQueuePage } from "@/features/hr/time/overtime/components/OvertimePages";
 
 /**
@@ -9,7 +10,12 @@ import { OvertimeQueuePage } from "@/features/hr/time/overtime/components/Overti
  * The pre-approval queue and the approaching-overtime watchlist. Unapproved overtime is still PAID:
  * it renders as flagged for review, never as unpaid or withheld.
  */
-export const metadata = { title: "Overtime pre-approval" };
+export const metadata = createRouteMetadata("/hr/time/overtime", {
+    titlePrefix: "Overtime",
+    title: "Time",
+    description:
+        "Overtime awaiting a decision, and who is close to crossing a threshold. Pre-approval decides whether overtime is worked, never whether it is paid.",
+});
 
 export default function HrTimeOvertimeRoute() {
     return (
