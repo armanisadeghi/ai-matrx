@@ -57,6 +57,15 @@ const UTILITY_ONLY = new Set([
 const RAW_IMPORT_CLAUSE =
   /import\s+(?!type\b)([^;]*?)\s+from\s+["']@\/lib\/python-client["']/g;
 
+function isFileNotFound(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "ENOENT"
+  );
+}
+
 function importsRawVerb(src: string): boolean {
   RAW_IMPORT_CLAUSE.lastIndex = 0;
   let m: RegExpExecArray | null;
@@ -89,7 +98,14 @@ function walk(dir: string, out: string[]): void {
   for (const name of entries) {
     if (name === "node_modules" || name.startsWith(".next")) continue;
     const full = join(dir, name);
-    const st = statSync(full);
+    let st: ReturnType<typeof statSync>;
+    try {
+      st = statSync(full);
+    } catch (error) {
+      // Shared-checkout integrations can remove a file between readdir and stat.
+      if (isFileNotFound(error)) continue;
+      throw error;
+    }
     if (st.isDirectory()) walk(full, out);
     else if (/\.(ts|tsx)$/.test(name)) out.push(full);
   }
@@ -103,7 +119,14 @@ function currentOffenders(): string[] {
     const rel = relative(ROOT, f).replace(/\\/g, "/");
     if (ALLOWED.some((a) => rel.startsWith(a) || rel === a.replace(/\/$/, "")))
       continue;
-    const src = readFileSync(f, "utf8");
+    let src: string;
+    try {
+      src = readFileSync(f, "utf8");
+    } catch (error) {
+      // A removed baseline offender is a ratchet improvement, not a scan error.
+      if (isFileNotFound(error)) continue;
+      throw error;
+    }
     if (importsRawVerb(src)) hits.push(rel);
   }
   return hits.sort();
