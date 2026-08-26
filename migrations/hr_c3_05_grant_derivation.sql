@@ -339,12 +339,19 @@ begin
   end loop;
 
   -- ---------- retire every mapping that is no longer desired
+  -- 🚨 THE PARENTHESES ARE LOAD-BEARING AND A PROBE CAUGHT THEM MISSING. `and` binds tighter than
+  -- `or`, so without the outer brackets the first disjunct carried NO `not exists` guard and the
+  -- reconcile DELETED every row it had just written — the first live run reported
+  -- `inserted=2, deleted=2` and left nothing behind. A reconciler that silently undoes itself
+  -- passes any test that only asserts "the wrong person cannot read", which is exactly why the
+  -- idempotency assertion (§9 T-31) is written as "the second run performs ZERO writes".
   for d in
     select dg.id, dg.permission_id
       from hr.derived_grant dg
-     where (p_scope_kind = 'employment' and dg.subject_employment_id = p_scope_id
-            and dg.reason <> 'break_glass')
-        or (p_scope_kind = 'requisition' and dg.basis_kind = 'requisition' and dg.basis_id = p_scope_id)
+     where ( (p_scope_kind = 'employment' and dg.subject_employment_id = p_scope_id
+              and dg.reason <> 'break_glass')
+             or (p_scope_kind = 'requisition' and dg.basis_kind = 'requisition'
+                 and dg.basis_id = p_scope_id) )
        and not exists (
          select 1 from _hr_desired x
           where x.resource_type = dg.resource_type and x.resource_id = dg.resource_id
