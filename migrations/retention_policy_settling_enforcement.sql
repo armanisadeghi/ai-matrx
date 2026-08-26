@@ -1,6 +1,6 @@
--- Retention policy settling period — ENFORCED, not merely defaulted — 2026-08-24
+-- Retention policy settling period — ENFORCED, not merely defaulted — 2026-08-26
 --
--- THE HOLE (adversarial review F7 / THE_PLAN AR-9, verified open 2026-08-24)
+-- THE HOLE (adversarial review F7 / THE_PLAN AR-9, verified open 2026-08-26)
 -- `platform.retention_policy.effective_from` is the settling period: the resolver
 -- (`platform.resolve_retention_policy`) only considers rows where
 -- `effective_from <= now()`, so a newly-armed policy cannot destroy anything until it
@@ -150,7 +150,7 @@ BEGIN
 END $function$;
 
 COMMENT ON FUNCTION platform.enforce_retention_policy_settling() IS
-  'Standing guard (2026-08-24): a retention_policy change that can destroy data must sit one settling interval in the future. Safety-increasing changes are exempt and instant. Closes the one-UPDATE global-purge hole (review F7 / THE_PLAN AR-9).';
+  'Standing guard (2026-08-26): a retention_policy change that can destroy data must sit one settling interval in the future. Safety-increasing changes are exempt and instant. Closes the one-UPDATE global-purge hole (review F7 / THE_PLAN AR-9).';
 
 DROP TRIGGER IF EXISTS _enforce_settling ON platform.retention_policy;
 CREATE TRIGGER _enforce_settling
