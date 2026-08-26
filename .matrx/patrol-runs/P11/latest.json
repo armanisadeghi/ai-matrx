@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "2026-08-26T161415Z",
-  "state": "discovered",
-  "updatedAt": "2026-08-26T16:14:15Z",
-  "summary": "First recorded P11 run: full static scan plus Education route-family browser rotation",
+  "state": "closed",
+  "updatedAt": "2026-08-26T16:24:38Z",
+  "summary": "Closed clean P11 Education family rotation: 0 findings, 0 fixes, 0 approvals, no mutation batch",
   "source": "2026-08-26T161415Z.json",
-  "eventHash": "f91dc45bc74d5778f70c289177ce8e3408c821673948247c0f1e518d621947a2"
+  "eventHash": "4b72af68aa9df373097218284a506db3cdbc03ef063c9fafe311cb39e3dde796"
 }

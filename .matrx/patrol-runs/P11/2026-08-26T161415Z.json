@@ -17,6 +17,24 @@
       ],
       "previousEventHash": null,
       "eventHash": "f91dc45bc74d5778f70c289177ce8e3408c821673948247c0f1e518d621947a2"
+    },
+    {
+      "sequence": 2,
+      "state": "closed",
+      "at": "2026-08-26T16:24:38Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Closed clean P11 Education family rotation: 0 findings, 0 fixes, 0 approvals, no mutation batch",
+      "evidence": [
+        "P11 prompt matches canonical manifest id, tier M/R, recipe, cadence, and run instruction",
+        "pnpm type-check PASS; pnpm check:scroll-chain:strict PASS; check:page-headers reports 0 core findings and 7 unchanged out-of-scope dev/public warnings",
+        "Education source scan: no banned viewport-minus-header wrappers; shared layout owns shell clearance via h-full and var(--shell-header-h)",
+        "Live browser rotation passed Overview, Fastfire, Fastfire Capture Test, Grade Work, Spoken Practice, Quick Math list, and Quick Math detail at 1280x800, 800x800, and 375x812; Overview also passed light and dark",
+        "All measured headers were 44px, center slots ended before avatar x, shell main matched viewport height, and document scrollWidth equaled clientWidth",
+        "Exact-worktree preview lease was occupied by the canonical checkout and was not reused or stopped; no candidate diff existed, so independent certification was not applicable",
+        "Findings 0; fixed 0; certifier verdict NOT APPLICABLE; approvals 0; degradation 0"
+      ],
+      "previousEventHash": "f91dc45bc74d5778f70c289177ce8e3408c821673948247c0f1e518d621947a2",
+      "eventHash": "4b72af68aa9df373097218284a506db3cdbc03ef063c9fafe311cb39e3dde796"
     }
   ]
 }
