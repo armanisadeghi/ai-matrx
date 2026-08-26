@@ -29,6 +29,7 @@ import {
   parseHttpErrorBody,
   BackendApiError,
 } from "@/lib/api/errors";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 import { supabase } from "@/utils/supabase/client";
 import { getStore } from "@/lib/redux/store-singleton";
@@ -336,6 +337,19 @@ export interface RequestOptions {
    */
   idempotencyKey?: string;
   /**
+   * The organization this request is made in, sent as `X-Organization-Id`.
+   *
+   * Bound through the ONE fail-closed kernel (`lib/api/organization-context.ts`) — the same
+   * one `callApi` uses — so a transport can never invent, default, or normalize scope on the
+   * caller's behalf: a missing or malformed value throws `OrganizationContextError` BEFORE any
+   * networking happens. Omit it for endpoints that are not org-scoped.
+   *
+   * `callApi` resolves org from Redux itself; this option exists for the transports that do NOT
+   * go through `callApi` (the HR contract client, whose every `/hr/*` operation declares the
+   * header REQUIRED) so they bind the same value the same way instead of forking a header path.
+   */
+  organizationId?: string;
+  /**
    * Sent as `X-Cloud-Files-Bypass`. Must equal the backend's
    * `CLOUD_FILES_BYPASS_SECRET`. Use ONLY for trusted internal callers
    * (importers, bulk-loaders) that legitimately need to write past the
@@ -377,7 +391,7 @@ export async function buildHeaders(
   }
 
   const requestId = opts.requestId ?? newRequestId();
-  const headers: Record<string, string> = {
+  let headers: Record<string, string> = {
     "X-Request-Id": requestId,
     Accept: "application/json",
   };
@@ -387,6 +401,11 @@ export async function buildHeaders(
   if (opts.cloudFilesBypass)
     headers["X-Cloud-Files-Bypass"] = opts.cloudFilesBypass;
   if (includeContentType) headers["Content-Type"] = "application/json";
+  // Bound LAST and through the shared kernel, so the org header is validated and normalized
+  // exactly as `callApi` does it — never assembled by hand in a second place.
+  if (opts.organizationId !== undefined) {
+    headers = applyOrganizationContextHeader(headers, opts.organizationId);
+  }
 
   return { headers, requestId };
 }

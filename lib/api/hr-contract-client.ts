@@ -25,6 +25,7 @@
 
 import type { paths } from "@/types/python-generated/hr-contracts.api-types";
 import { getJson, postJson, type RequestOptions, type ResponseMeta } from "@/lib/python-client";
+import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import {
   HR_MOCK_ENABLED,
   serveFromFixtures,
@@ -78,6 +79,28 @@ export interface HrRequestOptions extends RequestOptions {
   mockCase?: HrFixtureCase;
 }
 
+/**
+ * 🚨 EVERY `/hr/*` AND `/esign/*` OPERATION DECLARES `X-Organization-Id` REQUIRED (§1.2), AND
+ * NOTHING ELSE IN THIS MODULE'S TRANSPORT CHAIN SENDS IT.
+ *
+ * `lib/api/organization-context.ts` is the platform's fail-closed kernel for that header, but it
+ * was only ever wired into the generic `callApi` path — this client goes straight to
+ * `getJson`/`postJson`, which knew nothing about org. Every HR call this lane makes would have
+ * gone out unscoped and been refused by the server the day the real handlers land, and in the
+ * meantime mock mode would have hidden it completely.
+ *
+ * So the resolution happens HERE, once, for every HR call: the caller's explicit
+ * `organizationId` if it passed one, otherwise the user's explicitly-SELECTED org — never a
+ * personal-org fallback, which would make the transport invent scope instead of carrying it.
+ * `requireSelectedOrgId` throws before any networking when there is no selection, and
+ * `applyOrganizationContextHeader` (inside `buildHeaders`) validates and normalizes the value.
+ */
+function hrRequestOptions<O extends HrRequestOptions>(opts: O | undefined): O {
+  const resolved = { ...(opts ?? ({} as O)) };
+  resolved.organizationId = opts?.organizationId ?? requireSelectedOrgId();
+  return resolved;
+}
+
 /** Fill a path template's `{param}` slots while keeping the template's literal type. */
 export function hrBuildPath<P extends keyof paths>(
   template: P,
@@ -127,23 +150,40 @@ function tryMock<T>(
   return { data: served.body as T, meta: { ...MOCK_META, status: served.status } };
 }
 
-/** GET an HR/e-sign contract path. Response derived from the stub, never asserted. */
-export function hrApiGet<P extends HrPathWith<"get">>(
+/**
+ * GET an HR/e-sign contract path. Response derived from the stub, never asserted.
+ *
+ * `async` so that a refusal raised BEFORE the request — an error fixture, or a missing
+ * organization context — arrives as a rejected promise like every other failure, instead of
+ * throwing synchronously past a caller's `.catch()`.
+ */
+export async function hrApiGet<P extends HrPathWith<"get">>(
   path: P,
   opts?: HrRequestOptions,
 ): HrEnvelope<HrGetResult<P>> {
   const mocked = tryMock<HrGetResult<P>>("GET", path as string, opts);
-  if (mocked) return Promise.resolve(mocked);
-  return getJson<HrGetResult<P>>(path as string, opts);
+  if (mocked) return mocked;
+  return getJson<HrGetResult<P>>(path as string, hrRequestOptions(opts));
 }
 
-/** POST an HR/e-sign contract path. Body AND response derived from the stub. */
-export function hrApiPost<P extends HrPathWith<"post">>(
+/**
+ * POST an HR/e-sign contract path. Body AND response derived from the stub.
+ *
+ * 🚨 `opts.idempotencyKey` IS NOT OPTIONAL IN PRACTICE. §1.4 requires `X-Idempotency-Key` on
+ * every mutating POST, and the key must be minted once per USER INTENT and reused across every
+ * retry of that intent. A fresh key on retry is not a smaller version of idempotency — it is
+ * none, and on this family it is how a payroll file gets generated twice.
+ */
+export async function hrApiPost<P extends HrPathWith<"post">>(
   path: P,
   body: HrPostBody<P>,
   opts?: HrRequestOptions,
 ): HrEnvelope<HrPostResult<P>> {
   const mocked = tryMock<HrPostResult<P>>("POST", path as string, opts);
-  if (mocked) return Promise.resolve(mocked);
-  return postJson<HrPostResult<P>, HrPostBody<P>>(path as string, body, opts);
+  if (mocked) return mocked;
+  return postJson<HrPostResult<P>, HrPostBody<P>>(
+    path as string,
+    body,
+    hrRequestOptions(opts),
+  );
 }
