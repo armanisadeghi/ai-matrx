@@ -25203,15 +25203,6 @@ export type Database = {
         }
         Returns: string
       }
-      entity_read_expr__pre_cbfix: {
-        Args: {
-          p_schema: string
-          p_table: string
-          p_token: string
-          p_variant?: string
-        }
-        Returns: string
-      }
       entity_read_kernel_expected: { Args: never; Returns: string }
       entity_read_kernel_fingerprint: { Args: never; Returns: string }
       entity_read_lane_correct: {
@@ -34392,27 +34383,6 @@ export type Database = {
       }
     }
     Views: {
-      _cbfix_universe: {
-        Row: {
-          schema_name: string | null
-          table_name: string | null
-          token: string | null
-          variant: string | null
-        }
-        Insert: {
-          schema_name?: string | null
-          table_name?: string | null
-          token?: string | null
-          variant?: never
-        }
-        Update: {
-          schema_name?: string | null
-          table_name?: string | null
-          token?: string | null
-          variant?: never
-        }
-        Relationships: []
-      }
       current_user_is_admin: {
         Row: {
           admin_level: Database["public"]["Enums"]["admin_level"] | null
@@ -55783,6 +55753,19 @@ export type Database = {
           impressions: number
           keywords: number
           root_type: string
+        }[]
+      }
+      gsc_topic_placement_diff: {
+        Args: { p_limit?: number; p_site_id: string }
+        Returns: {
+          changed_at: string
+          keyword_id: string
+          new_topic_id: string
+          new_topic_name: string
+          old_topic_id: string
+          old_topic_name: string
+          phrase: string
+          scope_tier: string
         }[]
       }
       gsc_topic_proposed_keywords: {
