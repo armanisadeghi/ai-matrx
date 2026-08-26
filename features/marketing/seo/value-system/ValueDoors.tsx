@@ -26,6 +26,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BadgeCheck, BookOpenCheck, Library } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { Button } from "@/components/ui/button";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { getFacetDimensionCatalog } from "@/features/marketing/seo/value-system/dimensions/data";
 import { dimensionValueHref } from "@/features/marketing/seo/value-system/reason-links";
@@ -52,38 +53,56 @@ export function ValueDoors({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <Link
-        href={marketingRoutes.site(brandId, siteId, "/value/guidelines")}
-        className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        title="The prose this site's expert wrote about what it sells and who it serves. Every AI classification and valuation run reads it first."
+      <Button
+        asChild
+        size="sm"
+        variant="outline"
+        className="h-8 gap-1.5 text-xs"
       >
-        <BookOpenCheck className="h-3 w-3" />
-        Business guidelines
-      </Link>
-      {brandValue ? (
         <Link
-          href={dimensionValueHref(
-            { brandId, siteId },
-            "traffic_class",
-            brandValue.value_id,
-            "1",
-          )}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title="Every name, misspelling and legal form that classifies a search as your brand — edited as matchers on the Brand value."
+          href={marketingRoutes.site(brandId, siteId, "/value/guidelines")}
+          title="The prose this site's expert wrote about what it sells and who it serves. Every AI classification and valuation run reads it first."
         >
-          <BadgeCheck className="h-3 w-3" />
-          Brand identity
+          <BookOpenCheck className="h-3.5 w-3.5" />
+          Business guidelines
         </Link>
+      </Button>
+      {brandValue ? (
+        <Button
+          asChild
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1.5 text-xs"
+        >
+          <Link
+            href={dimensionValueHref(
+              { brandId, siteId },
+              "traffic_class",
+              brandValue.value_id,
+              "1",
+            )}
+            title="Every name, misspelling and legal form that classifies a search as your brand — edited as matchers on the Brand value."
+          >
+            <BadgeCheck className="h-3.5 w-3.5" />
+            Brand identity
+          </Link>
+        </Button>
       ) : null}
       {isSuperAdmin ? (
-        <Link
-          href="/administration/knowledge/seo-facets"
-          className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title="Platform facet registry — the universal vocabularies every tenant shares. Super admins only."
+        <Button
+          asChild
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1.5 text-xs"
         >
-          <Library className="h-3 w-3" />
-          Facet registry
-        </Link>
+          <Link
+            href="/administration/knowledge/seo-facets"
+            title="Platform facet registry — the universal vocabularies every tenant shares. Super admins only."
+          >
+            <Library className="h-3.5 w-3.5" />
+            Facet registry
+          </Link>
+        </Button>
       ) : null}
     </div>
   );

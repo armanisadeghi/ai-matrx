@@ -593,6 +593,13 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-26 — Codex: **Keyword Value uses the canonical site header once.**
+  The padded in-body title/domain bar was removed; the shared
+  `EntityModeHeader` remains the sole site identity and value-family navigation,
+  including its canonical responsive Scores control. Page-specific doors stay
+  as a compact tool row directly beneath the shell without a second top inset,
+  and all four use the same official small-button geometry.
+
 - 2026-08-26 — Codex: **Quick Answers now fits the five-answer workflow.** The
   floating panel opens at a wider, near-viewport-height working size, removes the dimension
   essay from its header, keeps each row's answer choices on one line, and uses

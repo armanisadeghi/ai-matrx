@@ -133,7 +133,6 @@ import {
   buildKpis,
   buildVerdict,
   formatScore,
-  formatWindowLabel,
   humanizeSlug,
   reviewWindow,
   type BandMeta,
@@ -349,7 +348,7 @@ export function ValueWorkbench() {
    * The doors other screens open onto this one (reason-links.ts):
    *   ?kw=<text>    a receipt's "change or clear your ruling"
    *   ?band=<slug>  a level row in the Traffic quality decomposition
-     * Applied once, then the reader owns the view — re-applying on every render
+   * Applied once, then the reader owns the view — re-applying on every render
    * would fight every filter they change afterwards.
    */
   const searchParams = useSearchParams();
@@ -1027,35 +1026,22 @@ export function ValueWorkbench() {
       One scroll surface, at natural height, is what the rest of this family
       does (topics, rules, packs) and what a 50-row page wants.
     */}
-      <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-textured p-3 sm:p-4">
-        {/* HEADER — one line. The window used to be spelled out in a
-          sentence under the title; it is a fact, so it is a chip. */}
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 pr-14">
-          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <CircleDollarSign className="h-4 w-4 text-primary" />
-              Keyword value
-            </h1>
-            <span
-              className="truncate text-xs text-muted-foreground"
-              title={`What ${site.domain}'s search traffic is actually worth. Every number on this page covers ${window.start} to ${window.end}, compared with the 28 days before it.`}
-            >
-              {site.domain} · {formatWindowLabel(window)} vs prior 28 days
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <ValueDoors brandId={brandId} siteId={siteId} />
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-8 gap-1.5 text-xs"
-              onClick={() => setMeaningOpen((open) => !open)}
-            >
-              <BookOpenText className="h-3.5 w-3.5" />
-              How value is computed
-            </Button>
-          </div>
+      <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-textured px-3 pb-3 sm:px-4 sm:pb-4">
+        {/* The shared EntityModeHeader already owns site identity and the
+          canonical Scores mode control. These are page tools, not a second
+          title bar. */}
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+          <ValueDoors brandId={brandId} siteId={siteId} />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5 text-xs"
+            onClick={() => setMeaningOpen((open) => !open)}
+          >
+            <BookOpenText className="h-3.5 w-3.5" />
+            How value is computed
+          </Button>
         </div>
 
         {/* THE KPI BAND — first, always. The numbers a person came for, and the
@@ -1151,7 +1137,11 @@ export function ValueWorkbench() {
           is about to draw a conclusion from, with a door into the keywords
           that question has no answer for. Same server read as the Dimensions
           screen's full panel — never a second, differently-computed summary. */}
-        <DimensionCoverage siteId={siteId} brandId={brandId} variant="compact" />
+        <DimensionCoverage
+          siteId={siteId}
+          brandId={brandId}
+          variant="compact"
+        />
 
         <ReadyDefaultsBanner />
 
