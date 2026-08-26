@@ -33578,6 +33578,10 @@ export type Database = {
       _cf_str_array: { Args: { p_value: Json }; Returns: string[] }
       _cf_valid_date: { Args: { p_value: string }; Returns: boolean }
       _cf_valid_datetime: { Args: { p_value: string }; Returns: boolean }
+      _drop_custom_field_index: {
+        Args: { p_definition_id: string }
+        Returns: boolean
+      }
       _lifecycle_partition_guard: {
         Args: { p_partition: string }
         Returns: string
@@ -33654,6 +33658,7 @@ export type Database = {
         Args: {
           p_action: string
           p_id: string
+          p_ip?: unknown
           p_resource: string
           p_session: string
         }
@@ -33729,6 +33734,14 @@ export type Database = {
         Args: { p_definition_id: string }
         Returns: string
       }
+      custom_reference_source: {
+        Args: { p_token: string }
+        Returns: {
+          label_column: string
+          schema_name: string
+          table_name: string
+        }[]
+      }
       custom_reference_validity: {
         Args: { p_definitions: Json; p_organization_id: string; p_values: Json }
         Returns: Json
@@ -33788,6 +33801,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      declare_custom_record_edge: {
+        Args: { p_target_token: string }
+        Returns: Json
       }
       demote_custom_field_index: {
         Args: { p_definition_id: string }
