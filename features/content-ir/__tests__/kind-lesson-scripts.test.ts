@@ -214,7 +214,10 @@ describe("study_pack_set — streaming delegation bridge", () => {
     expect(keys).not.toContain("lessons");
 
     const notes = serverData?.children.find((child) => child.key === "notes");
-    expect(notes?.kind).toBe("study_notes");
+    // The notes member routes to the kind whose shape the payload ACTUALLY
+    // has (the old `study_notes` label was a lifelong mislabel — different
+    // registered shape, wrong component).
+    expect(notes?.kind).toBe("study_notes_document");
     // The subtree is handed over UNTOUCHED for delegation.
     expect(notes?.value.title).toBe("Plate tectonics notes");
     session.dispose();
@@ -237,7 +240,7 @@ describe("study_pack_set — streaming delegation bridge", () => {
       "lessons",
     ]);
     expect(serverData?.children.map((child) => child.kind)).toEqual([
-      "study_notes",
+      "study_notes_document",
       "flashcard_set",
       "quiz_set",
       "lesson_script_set",
