@@ -1,9 +1,8 @@
 // features/scopes/components/associations/AssociationPicker.tsx
 //
-// The token-driven "pick a record to associate" surface. Adaptive: a
-// NON-BLOCKING draggable/resizable `WindowPanel` on desktop (the page behind
-// stays interactive — never a blocking Sheet), a bottom Drawer on mobile
-// (project rule — never a Dialog on mobile).
+// The token-driven "pick a record to associate" surface. Adaptive through the
+// ONE AssociationWindow shell: a draggable/resizable WindowPanel on desktop
+// and a non-modal card on mobile. The page behind stays interactive everywhere.
 //
 // Two jobs, both ALWAYS available (the create-then-associate contract in the
 // association-entity-select skill):
@@ -24,7 +23,6 @@
 import { useState, type ReactNode } from "react";
 import { Check, Loader2, Plus, Search, X } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useAssociationCandidates } from "@/features/scopes/hooks/useAssociationCandidates";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { createEntityRow } from "@/features/scopes/service/entityRows";
@@ -33,13 +31,6 @@ import {
   type FileSelection,
 } from "@/features/resource-manager/resource-picker/FilesResourcePicker";
 import dynamic from "next/dynamic";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/utils/cn";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
@@ -83,7 +74,6 @@ export interface AssociationPickerProps {
 }
 
 export function AssociationPicker(props: AssociationPickerProps) {
-  const isMobile = useIsMobile();
   const info = getEntityInfo(props.token);
 
   // Files never open a blocking sheet — the ONE canonical picker in a
@@ -156,27 +146,7 @@ export function AssociationPicker(props: AssociationPickerProps) {
     />
   );
 
-  if (isMobile) {
-    return (
-      <Drawer open={props.open} onOpenChange={props.onOpenChange}>
-        <DrawerContent className="max-h-[85dvh] flex flex-col pb-safe">
-          <DrawerHeader className="text-left">
-            <DrawerTitle className="flex items-center gap-2">
-              <info.Icon className="h-4 w-4 text-muted-foreground" />
-              {title}
-            </DrawerTitle>
-            <DrawerDescription>{subtitle}</DrawerDescription>
-          </DrawerHeader>
-          <div className="flex-1 min-h-0 px-4 pb-4 flex flex-col overflow-y-auto">
-            {body}
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
-  // Desktop: non-blocking draggable window. Gated on `open` so the window
-  // chunk only loads on first use.
+  // Gated on `open` so the window chunk only loads on first use.
   if (!props.open) return null;
   return (
     <AssociationWindow
@@ -327,7 +297,7 @@ function EntityCandidateList({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={`Search ${info.labelPlural.toLowerCase()}…`}
-          className="pl-8 text-base"
+          className="h-11 pl-8 text-base md:h-9"
           style={{ fontSize: 16 }}
         />
       </div>
@@ -368,7 +338,7 @@ function EntityCandidateList({
                     disabled={busy}
                     onClick={() => toggle(c.id, c.title)}
                     className={cn(
-                      "group w-full flex items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors",
+                      "group flex min-h-11 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors md:min-h-0",
                       "hover:bg-accent disabled:opacity-50",
                       attached && "bg-accent/40",
                     )}
@@ -483,7 +453,7 @@ function CreateAndAttachFooter({
           setName(seed);
           setEditing(true);
         }}
-        className="mt-2 flex w-full shrink-0 items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground"
+        className="mt-2 flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/60 hover:text-foreground md:min-h-0"
       >
         <Plus className="h-4 w-4" />
         New {info.label}
@@ -511,14 +481,14 @@ function CreateAndAttachFooter({
         }}
         placeholder={`New ${info.label.toLowerCase()} name…`}
         disabled={busy}
-        className="h-8 flex-1 text-base"
+        className="h-11 flex-1 text-base md:h-8"
         style={{ fontSize: 16 }}
       />
       <button
         type="button"
         disabled={busy || !name.trim()}
         onClick={() => void submit()}
-        className="flex h-8 items-center gap-1 rounded-md bg-primary px-2.5 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50"
+        className="flex h-11 items-center gap-1 rounded-md bg-primary px-2.5 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50 md:h-8"
       >
         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create"}
       </button>
@@ -530,7 +500,7 @@ function CreateAndAttachFooter({
           setName("");
         }}
         title="Cancel"
-        className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+        className="flex h-11 w-11 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50 md:h-8 md:w-8"
       >
         <X className="h-4 w-4" />
       </button>

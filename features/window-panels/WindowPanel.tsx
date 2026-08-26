@@ -66,6 +66,7 @@ import {
   clearOverlayRender,
 } from "./diagnostics/overlayRenderWatchdog";
 import type { OverlayId } from "./registry/overlay-ids";
+import type { MobilePresentation } from "./registry/windowRegistryTypes";
 import MobileDrawerSurface from "./mobile/MobileDrawerSurface";
 import MobileCardSurface from "./mobile/MobileCardSurface";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
@@ -216,6 +217,12 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
   actionsRight?: React.ReactNode;
   bodyClassName?: string;
   className?: string;
+  /**
+   * Rare escape hatch for page-local windows that have no overlay id/registry
+   * entry but still need an explicit mobile surface. Registered overlays keep
+   * their presentation in windowRegistryMetadata.
+   */
+  mobilePresentationOverride?: MobilePresentation;
   /**
    * Keep the full body mounted offscreen while the window is minimized.
    * Opt in for live/stateful surfaces whose hooks, drafts, streams, or local
@@ -379,6 +386,7 @@ export function WindowPanel({
   onClose,
   bodyClassName,
   className,
+  mobilePresentationOverride,
   minWidth,
   minHeight,
   urlSyncKey,
@@ -1084,9 +1092,7 @@ export function WindowPanel({
       // number no screen ever had. Skip — the next real measurement clamps.
       const { vw, vh, degenerate } = safeViewportDims();
       if (degenerate) return;
-      dispatch(
-        clampWindowRect({ id, viewportWidth: vw, viewportHeight: vh }),
-      );
+      dispatch(clampWindowRect({ id, viewportWidth: vw, viewportHeight: vh }));
     }
   }, [dispatch, id, windowState, popoutMode]);
 
@@ -1267,7 +1273,10 @@ export function WindowPanel({
     const regEntry = overlayId
       ? getStaticEntryByOverlayId(overlayId)
       : undefined;
-    const mobilePresentation = regEntry?.mobilePresentation ?? "fullscreen";
+    const mobilePresentation =
+      mobilePresentationOverride ??
+      regEntry?.mobilePresentation ??
+      "fullscreen";
     const mobileSidebarAs = regEntry?.mobileSidebarAs ?? "drawer";
 
     if (mobilePresentation === "hidden") {

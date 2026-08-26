@@ -1,7 +1,7 @@
 // features/scopes/components/associations/AssociationWindow.tsx
 //
-// The non-blocking shell for association surfaces on desktop: a draggable,
-// resizable `WindowPanel` (same pattern as the canonical `FilePickerWindow`).
+// The non-blocking shell for association surfaces at every breakpoint: a
+// draggable/resizable `WindowPanel` on desktop and a non-modal card on mobile.
 // The page behind stays fully interactive — never a blocking Sheet/Dialog.
 //
 // IMPORT LAZILY. `WindowPanel` asserts it was parsed in a lazy chunk
@@ -60,6 +60,7 @@ export function AssociationWindow({
         ) : undefined
       }
       onClose={onClose}
+      mobilePresentationOverride="card"
       // The window portals to <body>. Radix surfaces set
       // `pointer-events: none` on <body> while open and can leave it set for
       // a tick after closing — re-assert for our own subtree.

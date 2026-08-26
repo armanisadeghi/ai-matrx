@@ -11,8 +11,8 @@
 // they resolve through the access gate (`UnresolvedEntityRef`) instead of this
 // surface guessing why.
 //
-// Adaptive per project rule: a NON-BLOCKING draggable `WindowPanel` on
-// desktop (the page behind stays interactive), bottom Drawer on mobile.
+// Adaptive through the ONE AssociationWindow shell: a NON-BLOCKING draggable
+// WindowPanel on desktop and a non-modal card on mobile.
 //
 // THE DOOR LAW: every attached item's name is an `EntityRef` — open, new tab,
 // and (where a peek is registered) a quick look without leaving this window.
@@ -29,18 +29,10 @@ import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAccessStates } from "@/features/access-gate/hooks/useAccessStates";
 import { UnresolvedEntityRef } from "@/features/access-gate/components/UnresolvedEntityRef";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { fetchEntityTitles } from "@/features/sharing/service/accessSummary";
 import type { ContainerLink } from "@/features/scopes/hooks/useContainerLinks";
 import type { PrimaryEntity } from "@/features/scopes/components/associations/PrimaryEntityContext";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-} from "@/components/ui/drawer";
 import { cn } from "@/utils/cn";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
@@ -48,9 +40,9 @@ import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 // (features/window-panels FEATURE.md → Bundle invariant).
 const AssociationWindow = dynamic(
   () =>
-    import(
-      "@/features/scopes/components/associations/AssociationWindow"
-    ).then((m) => ({ default: m.AssociationWindow })),
+    import("@/features/scopes/components/associations/AssociationWindow").then(
+      (m) => ({ default: m.AssociationWindow }),
+    ),
   { ssr: false, loading: () => null },
 );
 
@@ -72,7 +64,6 @@ export interface AttachedItemsSheetProps {
 }
 
 export function AttachedItemsSheet(props: AttachedItemsSheetProps) {
-  const isMobile = useIsMobile();
   const info = getEntityInfo(props.token);
 
   const title = info.labelPlural;
@@ -103,31 +94,7 @@ export function AttachedItemsSheet(props: AttachedItemsSheetProps) {
     />
   );
 
-  if (isMobile) {
-    return (
-      <Drawer open={props.open} onOpenChange={props.onOpenChange}>
-        <DrawerContent className="max-h-[85dvh] flex flex-col pb-safe">
-          <DrawerHeader className="text-left">
-            <DrawerTitle className="flex items-center gap-2">
-              <info.Icon className="h-4 w-4 text-muted-foreground" />
-              {title}
-            </DrawerTitle>
-            {/* asChild → a <div>, not a <p>: the subtitle now carries an
-                EntityRef whose peek may render block content. */}
-            <DrawerDescription asChild>
-              <div className="text-sm text-muted-foreground">{subtitle}</div>
-            </DrawerDescription>
-          </DrawerHeader>
-          <div className="flex-1 min-h-0 px-4 pb-4 flex flex-col overflow-y-auto">
-            {body}
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
-  // Desktop: non-blocking draggable window. Gated on `open` so the window
-  // chunk only loads on first use.
+  // Gated on `open` so the window chunk only loads on first use.
   if (!props.open) return null;
   return (
     <AssociationWindow

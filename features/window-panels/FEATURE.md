@@ -99,6 +99,8 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
+- 2026-08-26 — **Page-local windows may opt into a mobile surface explicitly.** `WindowPanel.mobilePresentationOverride` is the narrow escape hatch for inline windows without an overlay id; registered overlays remain registry-owned. The canonical association picker uses `"card"` so it stays non-modal and leaves the host page usable on phones.
+
 - 2026-08-26 — **Added `listenSummaryWindow` ("Listen") — the summarize-for-listening player.** New singleton, ephemeral window (`windows/listen/ListenSummaryWindow.tsx`, 460×560) opened by the "Summarize for listening" / "Summarize & listen" actions (assistant context menu + action-bar ⋯ menu). Launches the surface's `spoken_summary` agent headlessly (`useLiveAgentRun`, `expect: "text"`), renders the streaming summary through the canonical `LiveRunDisplay variant="bare"`, and pins a glass audio transport (play/pause/stop/replay + live equalizer) driven by the audio session registry. The `autoPlay` mode is stream-to-stream: speech starts while the summary is still being written, via the app-root speaker (`voicePlaybackBus` request with `includeActive: true`). Registered the canonical 5 ways (`overlay-ids.ts`, `catalogue.ts`, `windowRegistryMetadata.ts` ephemeral + `mobilePresentation: "card"`, `OverlayController.tsx`, opener `features/overlays/openers/listenSummaryWindow.tsx`).
 
 - 2026-08-26 — **Fullscreen mobile window chrome is touch-safe.** Close,
@@ -314,7 +316,7 @@ Parallel subsystems that read the registry:
 
 - **WindowPersistenceManager** — hydrates the current tab/identity workspace from localStorage + IndexedDB, stages lazy restores, and runs the idle overlay GC sweep.
 - **UrlPanelManager** — currently unmounted. Its `?panels=` hydrators and registry metadata are dormant until the manager is deliberately re-enabled and tested.
-- **WindowPanel** — looks up its own registry entry by `overlayId` to resolve `mobilePresentation`, `mobileSidebarAs`, and `urlSync.key`.
+- **WindowPanel** — looks up its own registry entry by `overlayId` to resolve `mobilePresentation`, `mobileSidebarAs`, and `urlSync.key`; a page-local window without an overlay id may pass `mobilePresentationOverride`.
 
 ---
 
@@ -527,7 +529,7 @@ Never derive window geometry from a raw `window.innerWidth/innerHeight` read.
 
 ## Mobile presentation
 
-Every `kind: "window"` declares `mobilePresentation`:
+Every registered `kind: "window"` declares `mobilePresentation`. Page-local windows without an overlay id default to fullscreen unless they pass the narrow `mobilePresentationOverride` escape hatch:
 
 Mobile has no minimized tray. Fullscreen mobile chrome therefore does not expose minimize, drawer/card surfaces never expose it, and a desktop-minimized window is restored automatically if the viewport crosses into mobile. This prevents a minimized window from becoming invisible and unrecoverable.
 

@@ -82,7 +82,7 @@ export default function MobileCardSurface({
             type="button"
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-11 w-11"
             aria-label="Close"
             onClick={onClose}
           >
