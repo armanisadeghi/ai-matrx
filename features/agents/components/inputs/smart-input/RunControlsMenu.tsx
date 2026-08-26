@@ -159,7 +159,7 @@ export function RunControlsMenu({
       }
       className={cn(
         "relative flex items-center justify-center rounded-full transition-colors",
-        variant === "plus" ? "h-9 w-9" : "h-8 w-8",
+        variant === "plus" ? "h-11 w-11" : "h-8 w-8",
         "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60",
       )}
     >

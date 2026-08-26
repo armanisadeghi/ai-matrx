@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { ArrowUp, CircleStop } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { Button } from "@/components/ui/button";
+import {
+  ArrowUpTapButton,
+  StopTapButton,
+} from "@/components/icons/tap-buttons";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { usePasteImageResource } from "@/features/agents/components/inputs/resources/usePasteImageResource";
 import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart-input/AgentMicrophoneButton";
@@ -139,21 +141,24 @@ export function NewChatLandingInput({
   // when the field is emptied. `isExpanded` is a dep so we re-measure at the
   // NEW width immediately after switching (no stale blank line).
   useLayoutEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "0px";
-    const next = Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT);
-    el.style.height = `${next}px`;
-    if (visibleText.trim().length === 0) {
-      setIsExpanded(false);
-    } else if (next > 36) {
-      // Threshold: one line of text-base + leading-7 ≈ 28px. Small buffer so
-      // expansion kicks in only on a real second line.
-      setIsExpanded(true);
-    }
+    const frame = requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.style.height = "0px";
+      const next = Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT);
+      el.style.height = `${next}px`;
+      if (visibleText.trim().length === 0) {
+        setIsExpanded(false);
+      } else if (next > 36) {
+        // Threshold: one line of text-base + leading-7 ≈ 28px. Small buffer so
+        // expansion kicks in only on a real second line.
+        setIsExpanded(true);
+      }
+    });
+    return () => cancelAnimationFrame(frame);
   }, [visibleText, isExpanded]);
 
-  const rawSubmit = useCallback(() => {
+  const rawSubmit = () => {
     if (
       voiceBusy ||
       !allResourcesResolved ||
@@ -164,19 +169,11 @@ export function NewChatLandingInput({
     // it queues the text via the Turn-Boundary Inbox instead of starting a
     // colliding second turn. Stop is its own button below.
     dispatch(smartExecute({ conversationId, surfaceKey }));
-  }, [
-    dispatch,
-    conversationId,
-    surfaceKey,
-    voiceBusy,
-    allResourcesResolved,
-    charCount,
-    hasResources,
-  ]);
+  };
 
-  const stopRun = useCallback(() => {
+  const stopRun = () => {
     dispatch(cancelExecution(conversationId));
-  }, [dispatch, conversationId]);
+  };
 
   // Guests send like everyone else — the platform is public. Guest identity
   // rides as X-Fingerprint-ID (see GlobalAuthSync); the server resolves it to
@@ -341,58 +338,53 @@ export function NewChatLandingInput({
 
         {/* Trailing — mic + send */}
         <div
-          className="[grid-area:trailing] flex items-center gap-1"
+          className="[grid-area:trailing] flex items-center"
           onClick={(e) => e.stopPropagation()}
         >
           <AgentMicrophoneButton
             conversationId={conversationId}
-            size="md"
+            size="lg"
+            className="h-11 w-11"
             onRecordingStateChange={(state) =>
               setVoiceBusy(state.isRecording || state.isTranscribing)
             }
           />
 
           {isExecuting && (
-            <Button
+            <StopTapButton
               onClick={stopRun}
-              className="h-9 w-9 p-0 rounded-full bg-muted text-foreground hover:bg-destructive/15 hover:text-destructive"
-              title="Stop the run (everything streamed so far is kept)"
-              aria-label="Stop the run"
-            >
-              <CircleStop className="w-4 h-4" />
-            </Button>
+              variant="transparent"
+              ariaLabel="Stop the run"
+              tooltip="Stop the run (everything streamed so far is kept)"
+            />
           )}
 
-          <Button
+          <ArrowUpTapButton
             onClick={submit}
             disabled={!canSend}
-            className={cn(
-              "h-9 w-9 p-0 rounded-full",
-              "bg-foreground text-background hover:bg-foreground/90",
-              "shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]",
-              "disabled:opacity-25 disabled:cursor-not-allowed disabled:shadow-none",
-            )}
-            title={
+            variant="solid"
+            bgColor="bg-foreground"
+            iconColor="text-background"
+            hoverBgColor="hover:bg-foreground/90"
+            tooltip={
               isExecuting
                 ? "Queue message — sends when the agent finishes"
                 : voiceBusy
                   ? "Finish recording to send"
                   : !allResourcesResolved
                     ? "Wait for attachments to finish uploading"
-                  : "Send"
+                    : "Send"
             }
-            aria-label={
+            ariaLabel={
               isExecuting
                 ? "Queue message"
                 : voiceBusy
                   ? "Finish recording to send"
                   : !allResourcesResolved
                     ? "Wait for attachments to finish uploading"
-                  : "Send"
+                    : "Send"
             }
-          >
-            <ArrowUp className="w-5 h-5" />
-          </Button>
+          />
         </div>
       </div>
     </SmartInputFileDropTarget>

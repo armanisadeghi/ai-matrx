@@ -23,6 +23,8 @@ interface NewChatGreetingProps {
   sourceConversationId: string | null;
   /** Surface key forwarded to the landing input's smartExecute dispatch. */
   surfaceKey: string;
+  /** Runtime disclosure for every Mandate this landing can launch. */
+  agentDisclosure: React.ReactNode;
 }
 
 /**
@@ -54,6 +56,7 @@ const OPTIONAL_QUICK_ACTION_KEYS: readonly string[] = ["chat.quick_org_chart"];
 export function NewChatGreeting({
   sourceConversationId,
   surfaceKey,
+  agentDisclosure,
 }: NewChatGreetingProps) {
   const router = useRouter();
   const store = useAppStore();
@@ -122,7 +125,7 @@ export function NewChatGreeting({
                   "group inline-flex items-center gap-1.5 cursor-pointer",
                   "disabled:cursor-not-allowed",
                   chip.unavailable && "opacity-50",
-                  "h-10 rounded-full border border-border/80 bg-card",
+                  "min-h-11 rounded-full border border-border/80 bg-card",
                   "px-4 text-sm text-foreground/90",
                   "shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset,0_1px_2px_0_rgba(0,0,0,0.06)]",
                   "dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
@@ -176,7 +179,7 @@ export function NewChatGreeting({
                   "inline-flex items-center cursor-pointer border border-border/70 bg-card/60",
                   "disabled:cursor-not-allowed",
                   chip.unavailable && "opacity-50",
-                  "rounded-full px-3 py-1.5 text-xs",
+                  "min-h-11 rounded-full px-3 py-1.5 text-xs",
                   "shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_1px_1px_0_rgba(0,0,0,0.04)]",
                   "dark:shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_1px_1px_0_rgba(0,0,0,0.3)]",
                   "text-muted-foreground hover:text-foreground hover:bg-accent",
@@ -189,6 +192,8 @@ export function NewChatGreeting({
             );
           })}
         </section>
+
+        <div className="w-full">{agentDisclosure}</div>
       </div>
     </div>
   );
@@ -206,17 +211,17 @@ function NewChatLandingInputShell() {
       aria-hidden
     >
       <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-1.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground/70">
+        <div className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground/70">
           <Plus className="h-5 w-5" />
         </div>
-        <div className="min-h-9 px-2 py-1 text-base leading-7 text-muted-foreground/60">
+        <div className="min-h-11 px-2 py-2 text-base leading-7 text-muted-foreground/60">
           Ask anything
         </div>
-        <div className="flex items-center gap-1">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground/70">
+        <div className="flex items-center">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground/70">
             <Mic className="h-4 w-4" />
           </div>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground/20 text-background">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-foreground/20 text-background">
             <ArrowUp className="h-5 w-5" />
           </div>
         </div>

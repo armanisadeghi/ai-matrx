@@ -85,7 +85,7 @@ export function PageAgents({
               })
             }
             title={`${agent.does} — open this agent's instructions and settings here`}
-            className="inline-flex items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:border-primary/50 hover:text-primary"
+            className="inline-flex min-h-11 items-center gap-1 rounded border border-border bg-card px-2 py-1.5 text-[10px] text-foreground transition-colors hover:border-primary/50 hover:text-primary sm:min-h-0 sm:px-1.5 sm:py-0.5"
           >
             <span className="font-medium">{agent.mandateKey}</span>
             <span className="text-muted-foreground">· {agent.does}</span>

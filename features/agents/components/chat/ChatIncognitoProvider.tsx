@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-} from "react";
+import { createContext, useContext, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -65,18 +59,15 @@ export function ChatIncognitoProvider({
     };
   }, [canUseIncognito, isIncognito]);
 
-  const toggleIncognito = useCallback(() => {
+  const toggleIncognitoMode = () => {
     dispatch(toggleChatIncognito());
-  }, [dispatch]);
+  };
 
-  const value = useMemo(
-    () => ({
-      isIncognito: canUseIncognito && isIncognito,
-      toggleIncognito,
-      canUseIncognito,
-    }),
-    [isIncognito, toggleIncognito, canUseIncognito],
-  );
+  const value = {
+    isIncognito: canUseIncognito && isIncognito,
+    toggleIncognito: toggleIncognitoMode,
+    canUseIncognito,
+  };
 
   return (
     <ChatIncognitoContext.Provider value={value}>

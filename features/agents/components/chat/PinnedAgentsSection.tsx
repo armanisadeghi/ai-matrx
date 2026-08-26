@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ interface PinnedAgentsSectionProps {
 const CONSUMER_ID = "chat-sidebar-pinned";
 /** Collapsed pin list length before "Show all" appears. */
 const PINNED_COLLAPSED_LIMIT = 5;
+const selectPinnedAgents = makeSelectFilteredAgents(CONSUMER_ID);
 
 function pinnedAgentHref(agentId: string): string {
   return `/chat/a/${encodeURIComponent(agentId)}`;
@@ -67,11 +68,7 @@ export function PinnedAgentsSection({
     if (consumer.favFilter !== "yes") consumer.setFavFilter("yes");
   }, [consumer]);
 
-  const selectFiltered = useMemo(
-    () => makeSelectFilteredAgents(CONSUMER_ID),
-    [],
-  );
-  const pinned = useAppSelector(selectFiltered);
+  const pinned = useAppSelector(selectPinnedAgents);
 
   const [open, setOpen] = useState(true);
   const [showAll, setShowAll] = useState(false);
@@ -124,7 +121,7 @@ export function PinnedAgentsSection({
                     {agent.name || "Untitled agent"}
                   </span>
                   <span
-                    className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
