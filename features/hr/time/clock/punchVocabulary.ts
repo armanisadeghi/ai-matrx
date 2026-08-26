@@ -6,6 +6,14 @@
  * tablet and out on their phone should not meet two vocabularies for one act.
  *
  * 🚨 **No cell prints a type name** (LAW 3a). `clock_in` is never rendered; *Clock in* is.
+ *
+ * ♻️ **NOT A DUPLICATE OF `../shared/vocabulary.ts`, and do not merge them.** That module's
+ * `PUNCH_KIND_LABELS` is the **noun** register for evidence tables and filters — *"Break start"*,
+ * the name of a row. This module is the **imperative** register for controls — *"Start break"*, the
+ * name of an act — plus the icon, the past tense for a confirmation, and which act is primary in
+ * the current state. Collapsing the two produces either buttons that read *"Break start"* or a
+ * punch-register column that reads *"Start break"*, and both are wrong. The overlap is one word per
+ * kind; the semantics are not the same register.
  */
 
 import {
