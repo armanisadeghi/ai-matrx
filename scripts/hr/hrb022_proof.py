@@ -67,10 +67,31 @@ async def main():
             "select set_config('request.jwt.claims', $1, true)",
             json.dumps({"sub": str(uid), "role": "authenticated"}))
 
+    async def arm():
+        """Re-arm the legacy write-guard literal for the NEXT statement.
+
+        🚨 MEASURED, not assumed (probe below records it as an assertion): C3's hardened guard
+        (migrations/hr_c3_00_write_guard.sql) added a statement-scoped token lane, and some hr
+        writers now call `hr.arm_write()` mid-statement — `hr.employment`'s `_zzz_derive_grants`
+        trigger does. That OVERWRITES the transaction-scoped `'on'` literal with a token keyed to
+        `statement_timestamp()`, so the very next top-level statement sees a STALE token, matches
+        neither lane, and is refused. Any fixture that writes hr.employment more than once in one
+        transaction hits it. So every owner-side write re-arms immediately before it runs.
+        """
+        await conn.execute("select set_config('hr.privileged_write','on',true)")
+
     async def as_owner():
         await conn.execute("reset role")
         await conn.execute("select set_config('request.jwt.claims', '', true)")
-        await conn.execute("select set_config('hr.privileged_write','on',true)")
+        await arm()
+
+    async def own(q, *a):
+        await arm()
+        return await conn.fetchval(q, *a)
+
+    async def own_exec(q, *a):
+        await arm()
+        return await conn.execute(q, *a)
 
     async def j(q, *a):
         v = await conn.fetchval(q, *a)
@@ -94,6 +115,7 @@ async def main():
     n_emp_before = await conn.fetchval("select count(*) from hr.employment")
     n_notif_before = await conn.fetchval("select count(*) from communication.notification")
     org = None
+    n_obj_seen = [-1]     # how many event types were the wrong shape when the run started
 
     try:
         # ============================================================ A. THE DOORS
@@ -119,62 +141,90 @@ async def main():
             rec("A doors", f"public.{name} exists and authenticated holds EXECUTE",
                 row is not None and row["ex"] is True,
                 "missing" if row is None else f"execute={row['ex']}")
-        rec("A doors", "exactly 13 public.hr_wf_* doors are executable by authenticated — no more, no fewer",
-            await conn.fetchval(
-                "select count(*) = 13 from pg_proc p join pg_namespace n on n.oid = p.pronamespace "
-                "where n.nspname = 'public' and p.proname like 'hr\\_wf\\_%' "
-                "and has_function_privilege('authenticated', p.oid, 'EXECUTE')"),
-            await conn.fetchval(
-                "select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace "
-                "where n.nspname = 'public' and p.proname like 'hr\\_wf\\_%' "
-                "and has_function_privilege('authenticated', p.oid, 'EXECUTE')"))
+        # NOT an exact count of the family: sibling lanes legitimately add doors (hr_wf_request and
+        # hr_wf_submit appeared mid-session). The stable invariant is that no door is left exposed
+        # without the grant — an unreachable door is the failure this file exists to prevent.
+        ungranted = [r["proname"] for r in await conn.fetch(
+            "select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace "
+            "where n.nspname = 'public' and p.proname like 'hr\\_wf\\_%' "
+            "and not has_function_privilege('authenticated', p.oid, 'EXECUTE')")]
+        total_doors = await conn.fetchval(
+            "select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace "
+            "where n.nspname = 'public' and p.proname like 'hr\\_wf\\_%'")
+        rec("A doors", "no public.hr_wf_* door is exposed WITHOUT authenticated EXECUTE",
+            not ungranted, f"{total_doors} doors live, ungranted={ungranted}")
 
         # ============================================================ FIXTURES — real identities
-        org = await conn.fetchval(
+        org = await own(
             "insert into iam.organizations (name, slug, abbreviation) "
             "values ('HRB-022 Proof Org','hrb022-proof-'||substr(gen_random_uuid()::text,1,8),'HRB') returning id")
 
         people = {}
         for key, first, last in [("alice", "Alice", "Requester"), ("bob", "Bob", "Manager"),
                                  ("carol", "Carol", "Owner"), ("dave", "Dave", "Outsider")]:
-            uid = await conn.fetchval(
+            uid = await own(
                 "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
                 "email_confirmed_at, created_at, updated_at) values "
                 "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
                 "$1,'x',now(),now(),now()) returning id", f"{key}.hrb022@example.invalid")
-            await conn.execute(
+            await own_exec(
                 "insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) "
                 "values ($1,'organization',$1,$2,$3,'active')", org, uid,
                 'owner' if key == 'carol' else 'member')
-            party = await conn.fetchval(
+            party = await own(
                 "insert into crm.party (organization_id, party_kind, display_name) "
                 "values ($1,'person',$2) returning id", org, f"{first} {last}")
-            emp = await conn.fetchval(
+            emp = await own(
                 "insert into hr.employee (organization_id, party_id, login_user_id, employee_number, "
                 "legal_first_name, legal_last_name, display_name) values ($1,$2,$3,$4,$5,$6,$7) returning id",
                 org, party, uid, f"EMP-{key}", first, last, f"{first} {last}")
             people[key] = {"uid": uid, "employee": emp, "name": f"{first} {last}"}
 
-        er = await conn.fetchval(
+        er = await own(
             "insert into hr.employer_profile (organization_id, legal_name, ein) "
             "values ($1,'HRB022 Proof Employer','00-0000000') returning id", org)
         jur = await conn.fetchval(
             "select id from hr.jurisdiction where deleted_at is null order by level, key limit 1")
-        loc = await conn.fetchval(
+        loc = await own(
             "insert into hr.location (organization_id, name, tz, jurisdiction_id) "
             "values ($1,'HQ','America/Los_Angeles',$2) returning id", org, jur)
-        dept = await conn.fetchval(
+        dept = await own(
             "insert into hr.department (organization_id, name) values ($1,'Operations') returning id", org)
-        jt = await conn.fetchval(
+        jt = await own(
             "insert into hr.job_title (organization_id, title, eeo1_job_category) "
             "values ($1,'Associate','professionals') returning id", org)
-        pg = await conn.fetchval(
+        pg = await own(
             "insert into hr.pay_group (organization_id, employer_profile_id, name, pay_frequency, "
             "first_period_start_on, workweek_effective_from) "
             "values ($1,$2,'Biweekly','biweekly',current_date - 30, current_date - 30) returning id", org, er)
 
-        for key in people:
-            people[key]["employment"] = await conn.fetchval(
+        # 🚨 the finding the harness had to be built around, measured rather than asserted from
+        # a comment: writing hr.employment leaves the write-guard flag holding a STALE
+        # statement-scoped token, so a second hr.* write in the same transaction is refused
+        # unless the caller re-arms. Recorded here as evidence for the C3/C4 guard owners.
+        people["alice"]["employment"] = await own(
+            "insert into hr.employment (organization_id, employee_id, employer_profile_id, "
+            "pay_group_id, hire_date, status) values ($1,$2,$3,$4,current_date - 365,'active') returning id",
+            org, people["alice"]["employee"], er, pg)
+        flag_after = await conn.fetchval("select current_setting('hr.privileged_write', true)")
+        stale_refused = False
+        sp_probe = conn.transaction()
+        await sp_probe.start()
+        try:
+            await conn.execute(
+                "insert into hr.department (organization_id, name) values ($1,'Probe')", org)
+        except Exception:
+            stale_refused = True
+        await sp_probe.rollback()
+        rec("FINDING", "writing hr.employment overwrites the transaction-scoped write-guard literal "
+                       "with a STALE statement-scoped token, refusing the next hr.* write until re-armed",
+            flag_after not in ("on", "true", "1", "yes") and stale_refused,
+            f"flag after the write = {flag_after!r}; next unarmed hr write refused = {stale_refused}. "
+            "hr.employment's _zzz_derive_grants trigger calls hr.arm_write() (C3 hr_c3_00_write_guard.sql); "
+            "any fixture writing hr.employment twice in one transaction hits it. Owned by the C3 access lane.")
+
+        for key in ("bob", "carol", "dave"):
+            people[key]["employment"] = await own(
                 "insert into hr.employment (organization_id, employee_id, employer_profile_id, "
                 "pay_group_id, hire_date, status) values ($1,$2,$3,$4,current_date - 365,'active') returning id",
                 org, people[key]["employee"], er, pg)
@@ -182,14 +232,14 @@ async def main():
         # the chart: alice -> bob -> carol ; dave -> carol (deliberately OUTSIDE bob's chain)
         pos = {}
         for key, mgr in [("alice", "bob"), ("bob", "carol"), ("dave", "carol")]:
-            pos[key] = await conn.fetchval(
+            pos[key] = await own(
                 "insert into hr.position_assignment (organization_id, employment_id, job_title_id, "
                 "department_id, location_id, worker_class, flsa_status, pay_basis, schedule_class, "
                 "effective_from, manager_employment_id) "
                 "values ($1,$2,$3,$4,$5,'employee','nonexempt','hourly','full_time',current_date - 365,$6) "
                 "returning id",
                 org, people[key]["employment"], jt, dept, loc, people[mgr]["employment"])
-        pos["carol"] = await conn.fetchval(
+        pos["carol"] = await own(
             "insert into hr.position_assignment (organization_id, employment_id, job_title_id, "
             "department_id, location_id, worker_class, flsa_status, pay_basis, schedule_class, effective_from) "
             "values ($1,$2,$3,$4,$5,'employee','nonexempt','salary','full_time',current_date - 365) returning id",
@@ -197,11 +247,11 @@ async def main():
 
         # carol is the HR owner (the `hr_owner` builtin is what carries workflow.view_queue);
         # bob holds leave/timecard authority over his direct reports only.
-        await conn.execute(
+        await own_exec(
             "insert into hr.role_assignment (organization_id, employment_id, role_key, scope_kind) "
             "values ($1,$2,'hr_owner','org')", org, people["carol"]["employment"])
         for act in ["leave_approve", "timecard_approve", "timecard_attest"]:
-            await conn.execute(
+            await own_exec(
                 "insert into hr.approval_authority (organization_id, holder_kind, holder_id, action_type, "
                 "scope_kind, rank, effective_from) values ($1,'employment',$2,$3,'direct_reports',10,current_date - 300)",
                 org, str(people["bob"]["employment"]), act)
@@ -209,20 +259,20 @@ async def main():
             "select slug from platform.categories where dimension='hr_approval_action' "
             "and deleted_at is null order by slug")]
         for act in acts:
-            await conn.execute(
+            await own_exec(
                 "insert into hr.approval_authority (organization_id, holder_kind, holder_id, action_type, "
                 "scope_kind, rank, effective_from) values ($1,'employment',$2,$3,'org',90,current_date - 300)",
                 org, str(people["carol"]["employment"]), act)
 
-        lp = await conn.fetchval(
+        lp = await own(
             "insert into hr.leave_policy (organization_id, name, leave_kind, accrual_method, accrual_rate) "
             "values ($1,'PTO','pto','unlimited',null) returning id", org)
 
         async def leave_row(emp, day):
-            return await conn.fetchval(
+            return await own(
                 "insert into hr.leave_request (organization_id, employment_id, leave_policy_id, starts_on, "
                 "ends_on, requested_hours, state, engine_key, engine_version) "
-                "values ($1,$2,$3,current_date + $4, current_date + $4, 8,'submitted','proof','1') returning id",
+                "values ($1,$2,$3,current_date + $4::integer, current_date + $4::integer, 8,'submitted','proof','1') returning id",
                 org, emp, lp, day)
 
         lr1 = await leave_row(people["alice"]["employment"], 30)
@@ -231,6 +281,28 @@ async def main():
         lr_dave = await leave_row(people["dave"]["employment"], 45)
         rec("fixtures", "org, 4 real logins, chart, hr_owner role, authorities and targets created",
             True, f"org={org}")
+
+        # ============================================== CROSS-LANE PRECONDITION, MEASURED
+        # `communication.notification_event_type.default_channels` is a JSON OBJECT
+        # ({"in_app": true}) and a CHECK constraint enforces that shape. hr._wf_notify originally
+        # read it with `jsonb_array_elements_text`, which requires an ARRAY, so every hr.wf_submit
+        # raised 22023 and the whole C4 engine was dead on submit — found by this suite at 23:27 and
+        # fixed at source by the owning lane in hr_l10_02_notify_channel_readers.sql (23:33), which
+        # routes every reader through hr._notify_channels(event_key, org) -> text[]. Asserted here
+        # because the inbox's notice evidence depends on it: if it ever regresses, this goes red
+        # BEFORE the inbox assertions confuse anyone about why.
+        n_obj = await conn.fetchval(
+            "select count(*) from communication.notification_event_type "
+            "where deleted_at is null and jsonb_typeof(default_channels) = 'object'")
+        n_obj_seen[0] = n_obj
+        notify_src = await conn.fetchval(
+            "select pg_get_functiondef('hr._wf_notify(uuid,uuid,text,text,uuid,uuid,jsonb)'::regprocedure)")
+        rec("precondition", "hr._wf_notify reads default_channels in the OBJECT shape the column "
+                            "actually holds — not the stale array reader that killed every submit",
+            "jsonb_array_elements_text(v_channels)" not in notify_src
+            and "_notify_channels" in notify_src,
+            f"{n_obj} event types hold the object shape; reader = "
+            + ("hr._notify_channels()" if "_notify_channels" in notify_src else "STALE ARRAY READER"))
 
         # the roster is read LIVE — no flow key or target token is invented here
         restricted = await conn.fetchrow(

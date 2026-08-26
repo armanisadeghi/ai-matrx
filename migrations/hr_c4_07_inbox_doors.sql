@@ -475,12 +475,29 @@ begin
     raise exception 'hr_c4_07: _wf_project_step still carries its own copy of the contentless title';
   end if;
 
-  -- every public door exists and is reachable by a browser client
+  -- Every door THIS FILE ships exists and is reachable by a browser client.
+  -- 🚨 Asserted BY NAME, never as a count of the `public.hr_wf_*` family. This assertion used to
+  -- read `<> 13` and it broke the moment a sibling lane added `hr_wf_request` / `hr_wf_submit`:
+  -- an exact family count makes one lane's legitimate growth another lane's failed re-apply.
+  -- What this file is responsible for is that ITS 13 doors are present and executable.
+  select count(*) into v_n
+    from unnest(ARRAY['hr_wf_inbox','hr_wf_instance','hr_wf_for_target','hr_wf_decide',
+                      'hr_wf_bulk_decide','hr_wf_escalate','hr_wf_reassign_step','hr_wf_withdraw',
+                      'hr_wf_cancel','hr_wf_resubmit','hr_wf_record_result','hr_wf_resolve_failure',
+                      'hr_wf_delegate']) d(name)
+   where exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                  where n.nspname = 'public' and p.proname = d.name
+                    and has_function_privilege('authenticated', p.oid, 'EXECUTE'));
+  if v_n <> 13 then
+    raise exception 'hr_c4_07: only % of this file''s 13 public.hr_wf_* doors are executable by authenticated', v_n;
+  end if;
+
+  -- and no door in the family is left exposed without the grant, whoever added it
   select count(*) into v_n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public' and p.proname like 'hr\_wf\_%'
-     and has_function_privilege('authenticated', p.oid, 'EXECUTE');
-  if v_n <> 13 then
-    raise exception 'hr_c4_07: expected 13 executable public.hr_wf_* doors, found %', v_n;
+     and not has_function_privilege('authenticated', p.oid, 'EXECUTE');
+  if v_n > 0 then
+    raise exception 'hr_c4_07: % public.hr_wf_* door(s) exist that authenticated cannot execute', v_n;
   end if;
 
   -- the doors exist BECAUSE hr is not on PostgREST; if that ever changes, this note should be read
