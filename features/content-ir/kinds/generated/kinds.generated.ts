@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 482 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 483 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "9be2765565c2";
+export const KIND_REGISTRY_FINGERPRINT = "7ab794226df7";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -11821,6 +11821,48 @@ export interface ResearchTagSuggestions {
 }
 
 /**
+ * Kind `resellresearchreport` (registry v2).
+ */
+export interface Resellresearchreport {
+  __kind: "resellresearchreport";
+  product_name: string;
+  product_images?: ({
+    url?: string;
+    __kind: "ProductImage";
+    source?: string;
+  })[];
+  market_listings?: ({
+    notes?: string;
+    __kind: "MarketListing";
+    platform?: string;
+    example_url?: string;
+    price_range?: string;
+    listing_type?: string;
+    average_price?: string;
+  })[];
+  resell_analysis?: {
+    __kind: "ResellAnalysis";
+    verdict?: string;
+    reasoning?: string;
+    confidence?: string;
+    watch_out_for?: string[];
+    best_platform_to_sell?: string;
+    estimated_profit_margin?: string;
+  };
+  research_summary?: string;
+  follow_up_questions?: ({
+    __kind: "FollowUpQuestion";
+    question?: string;
+    why_it_matters?: string;
+  })[];
+  key_product_knowledge?: ({
+    topic?: string;
+    __kind: "ProductKnowledgeItem";
+    detail?: string;
+  })[];
+}
+
+/**
  * Kind `resource_collection` (registry v5).
  */
 export interface ResourceCollection {
@@ -19022,6 +19064,7 @@ export type GeneratedKindSlug =
   | "research_report"
   | "research_setup_suggestion"
   | "research_tag_suggestions"
+  | "resellresearchreport"
   | "resource_collection"
   | "retrieved_chunk"
   | "reviewer_result_card"
@@ -19507,6 +19550,7 @@ export interface KindPayloadBySlug {
   "research_report": ResearchReport;
   "research_setup_suggestion": ResearchSetupSuggestion;
   "research_tag_suggestions": ResearchTagSuggestions;
+  "resellresearchreport": Resellresearchreport;
   "resource_collection": ResourceCollection;
   "retrieved_chunk": RetrievedChunk;
   "reviewer_result_card": ReviewerResultCard;
@@ -19996,6 +20040,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "research_report",
   "research_setup_suggestion",
   "research_tag_suggestions",
+  "resellresearchreport",
   "resource_collection",
   "retrieved_chunk",
   "reviewer_result_card",
