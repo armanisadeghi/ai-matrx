@@ -82,6 +82,10 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-26 — Files certification no longer asks for an invented agent binding.** The
+  `matrx-user/files` readiness note now states the actual disclosure boundary: Files runs no fixed
+  AI job, so its remaining browser certification covers the responsive surface itself and must not
+  create an agent role or binding merely to manufacture proof.
 - **2026-08-26 — Durable file URL contract adopted.** The universal file handler now resolves
   private and public bytes from the live `FileRecord.url` / `download_url` contract instead of the
   retired `/files/{file_id}/url` signed-URL endpoint. Existing compatibility helpers retain their
