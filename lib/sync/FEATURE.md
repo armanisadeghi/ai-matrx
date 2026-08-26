@@ -14,6 +14,10 @@ effect. The passive boundary is load-bearing: it runs after descendant
 hydration and layout work, so synchronous local-storage rehydration cannot
 change a streamed or selectively hydrated subtree underneath React.
 
+The store-owned `boot()` promise includes warm-cache IDB hydration. A
+write-time resolver that depends on hydrated context joins that promise before
+declaring the context missing; `ensureOrgId` is the canonical example.
+
 **Never move sync boot** into store creation, render, `useLayoutEffect`, or an
 inline script. Preferences that genuinely must apply before paint may mutate
 DOM attributes/classes only through `SyncBootScript`; they must not dispatch
@@ -27,6 +31,8 @@ descendant layout effect with no recoverable hydration errors.
 
 ## Change log
 
+- 2026-08-26 — `boot()` now resolves after warm-cache IDB hydration, and
+  `ensureOrgId` joins it before firing the loud personal-org fallback.
 - 2026-08-20 — `remote.cacheSatisfies` now also guards the cache-warm after a
   `remote.fetch`: an insufficient fetch result is dispatched to Redux (the
   reducer decides what to accept) but never persisted over the cached record.

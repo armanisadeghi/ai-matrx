@@ -110,7 +110,19 @@ export async function ensureOrgId(
   orgId: string | null | undefined,
 ): Promise<string> {
   if (orgId) return orgId;
-  const activeOrgId = getActiveOrgId();
+  let activeOrgId = getActiveOrgId();
+  if (activeOrgId) return activeOrgId;
+
+  // Descendant passive effects can write in the same commit that starts
+  // SyncBootstrap. Join its store-owned warm-cache hydration before treating
+  // missing organization context as a defect.
+  const store = getStoreSingleton() as
+    | (ReturnType<typeof getStoreSingleton> & {
+        _sync?: { boot: () => Promise<void> };
+      })
+    | null;
+  await store?._sync?.boot();
+  activeOrgId = getActiveOrgId();
   if (activeOrgId) return activeOrgId;
 
   // ── LOUD last-resort fallback ────────────────────────────────────────────

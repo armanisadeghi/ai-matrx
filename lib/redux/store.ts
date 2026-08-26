@@ -249,7 +249,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         // opening a second channel or re-running persisted hydration.
         getIdentity: () => syncContext.getIdentity(),
       })
-        .then(() => {
+        .then(async (result) => {
           // Auth is not always present when the store is built: a page that
           // rendered anonymous gets its real user from `usePublicAuthSync`
           // ~100ms later, and a module-level store singleton outlives that
@@ -269,6 +269,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
               getIdentity: () => syncContext.getIdentity(),
             });
           });
+          await result.idbHydration;
         })
         .catch((error: unknown) => {
           // Loud recovery: allow a later mount to retry a failed bootstrap.

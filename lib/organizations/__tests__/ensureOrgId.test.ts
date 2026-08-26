@@ -27,6 +27,7 @@ type AppContext = {
 };
 
 let state: { appContext: AppContext };
+const boot = jest.fn<() => Promise<void>>();
 const dispatch = jest.fn((action: { type: string; payload: unknown }) => {
   if (action.type === "appContext/setPersonalOrganization") {
     state.appContext.personal_organization_id = action.payload as string;
@@ -35,7 +36,7 @@ const dispatch = jest.fn((action: { type: string; payload: unknown }) => {
 });
 
 jest.mock("@/lib/redux/store-singleton", () => ({
-  getStoreSingleton: () => ({ getState: () => state, dispatch }),
+  getStoreSingleton: () => ({ getState: () => state, dispatch, _sync: { boot } }),
 }));
 
 // The real slice is heavy (sync policy graph); the repair only needs the
@@ -60,6 +61,8 @@ describe("ensureOrgId", () => {
   beforeEach(() => {
     clearPersonalOrgIdCache();
     rpc.mockReset();
+    boot.mockReset();
+    boot.mockResolvedValue(undefined);
     dispatch.mockClear();
     (captureError as jest.Mock).mockClear();
     state = { appContext: { organization_id: null, personal_organization_id: null } };
@@ -85,6 +88,18 @@ describe("ensureOrgId", () => {
     await expect(ensureOrgId(undefined)).resolves.toBe(PERSONAL);
     expect(rpc).not.toHaveBeenCalled();
     expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it("waits for warm-cache hydration before declaring org context missing", async () => {
+    boot.mockImplementation(async () => {
+      state.appContext.organization_id = SELECTED;
+    });
+
+    await expect(ensureOrgId(undefined)).resolves.toBe(SELECTED);
+    expect(boot).toHaveBeenCalledTimes(1);
+    expect(rpc).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(captureError).not.toHaveBeenCalled();
   });
 
   it("screams AND repairs Redux when no org is present, so later writes are clean", async () => {
