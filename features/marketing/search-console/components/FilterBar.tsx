@@ -186,11 +186,29 @@ interface Chip {
   remove: () => void;
 }
 
+/**
+ * A filter key whose value is empty (or whitespace) is not a filter — it is a
+ * chip that says nothing and a table that blanks itself. NOTHING in this bar
+ * may hand one to the surface, whichever path it took to get here.
+ * (2026-08-25 surface test: an empty "Location" chip blanked Queries to "No
+ * query data" with no clicks and no impressions until a hard reload.)
+ */
+function pruneBlankFilters(filters: GscFilters): GscFilters {
+  const next: GscFilters = {};
+  for (const [key, value] of Object.entries(filters) as Array<
+    [GscFilterKey, string | undefined]
+  >) {
+    if (typeof value === "string" && value.trim() !== "") next[key] = value;
+  }
+  return next;
+}
+
 export function FilterBar({
   filters,
   onChange,
   allowedKeys,
   siteId,
+  brandId,
 }: {
   filters: GscFilters;
   onChange: (next: GscFilters) => void;
@@ -198,6 +216,13 @@ export function FilterBar({
   allowedKeys?: readonly GscFilterKey[];
   /** Needed for the Dimension / Level pickers (vocabularies are per site). */
   siteId?: string | null;
+  /**
+   * Needed for the Location picker — business locations hang off the BRAND.
+   * Without it the Location filter is not offered at all, because the only
+   * thing it could then be is a free-text box demanding a uuid, which is a
+   * dead end wearing a filter's clothes.
+   */
+  brandId?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [draftKey, setDraftKey] = useState<FilterMenuKey>("query_contains");
@@ -207,10 +232,26 @@ export function FilterBar({
   const [draftDimension, setDraftDimension] = useState<string>("");
   const [draftStampValue, setDraftStampValue] = useState<string>("");
   const [draftLevel, setDraftLevel] = useState<string>("");
+  const [draftLocation, setDraftLocation] = useState<string>("");
   // P23 — what was typed into a picker when nothing matched.
   const [newDimensionDraft, setNewDimensionDraft] = useState<string | null>(null);
   const [newLevelDraft, setNewLevelDraft] = useState<string | null>(null);
   const { quickAdd } = useQuickAdd(siteId ?? "");
+  /**
+   * Throw away a half-entered filter. Escape, a click outside, and the Cancel
+   * button all land here — leaving a draft behind is how the person came back
+   * to a control already holding an answer they had abandoned.
+   */
+  const discardDraft = () => {
+    setDraftValue("");
+    setDraftMin("");
+    setDraftMax("");
+    setDraftStampValue("");
+    setDraftLevel("");
+    setDraftLocation("");
+  };
+  /** The ONE way this component writes a filter bag out. */
+  const emit = (next: GscFilters) => onChange(pruneBlankFilters(next));
   // P23 — the person may always type one that does not exist yet.
   const queryClient = useQueryClient();
 
@@ -284,19 +325,19 @@ export function FilterBar({
   const removeKey = (key: GscFilterKey) => {
     const next = { ...filters };
     delete next[key];
-    onChange(next);
+    emit(next);
   };
   const setStamps = (pairs: { dimension: string; value: string }[]) => {
     const next = { ...filters };
     if (pairs.length === 0) delete next.stamps;
     else next.stamps = encodeStampFilter(pairs);
-    onChange(next);
+    emit(next);
   };
   const setLevels = (levels: string[]) => {
     const next = { ...filters };
     if (levels.length === 0) delete next.levels;
     else next.levels = encodeLevelFilter(levels);
-    onChange(next);
+    emit(next);
   };
 
   const chips: Chip[] = [];
@@ -348,7 +389,7 @@ export function FilterBar({
         const next = { ...filters };
         delete next[spec.min];
         delete next[spec.max];
-        onChange(next);
+        emit(next);
       },
     });
   }
@@ -373,7 +414,7 @@ export function FilterBar({
       const max = draftMax.trim();
       if (min !== "" && Number.isFinite(Number(min))) next[rangeSpec.min] = min;
       if (max !== "" && Number.isFinite(Number(max))) next[rangeSpec.max] = max;
-      onChange(next);
+      emit(next);
       setDraftMin("");
       setDraftMax("");
       setOpen(false);
@@ -401,7 +442,7 @@ export function FilterBar({
       return;
     }
     if (!draftValue.trim()) return;
-    onChange({ ...filters, [effectiveKey]: draftValue.trim() });
+    emit({ ...filters, [effectiveKey]: draftValue.trim() });
     setDraftValue("");
     setOpen(false);
   };
