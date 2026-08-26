@@ -15,6 +15,41 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D269 — `client_excluded_columns` is still emitted into `database.types.ts` for 4 non-HR tables (2026-08-26)
+
+`platform.entity_types.client_excluded_columns` was a registry declaration with NO mechanism behind
+it: `supabase gen types` reads the live catalog and knows nothing about the registry, so every
+declared-excluded column was being emitted into `types/database.types.ts` verbatim. Found by
+`scripts/hr/hrb012_type_proof.py` while landing the HR/e-sign contract freeze — 30 columns across
+16 registered tables in 6 schemas, 3 occurrences each (Row/Insert/Update).
+
+**Half fixed.** `scripts/strip-client-excluded-columns.ts` now runs last in `pnpm db-types` and
+removes them, reading the registry through `public.entity_client_excluded_columns()` (migration
+`hr_c8_01_entity_client_excluded_columns_rpc`). It is **scoped to `hr` and `esign`** by the
+`FROZEN_SCHEMAS` allowlist at the top of that file.
+
+**The open remainder — 8 columns in 4 tables, all pre-dating HR:**
+
+- `files.files.storage_uri`, `files.file_versions.storage_uri`
+- `platform.actor_session.session_hash`
+- `platform.actor_token.token_hash`, `.verification_code_hash`, `.verification_target`
+- `rag.library_docs.storage_uri`
+- `docproc.processed_documents.storage_uri`
+
+**Why it was not fixed in the same pass:** stripping them is a repo-wide breaking change owned by
+those features. `storage_uri` alone is referenced by **27 files**; `token_hash` by 6. The HR
+contract-freeze lane had no standing to break the files/RAG/outsider-token surfaces, and a
+half-migrated type file is worse than a consistent one.
+
+**The fix:** the owner of each area adds its schema to `FROZEN_SCHEMAS`, runs `pnpm db-types`, and
+resolves the `pnpm type-check` fallout in the same change — a client reading `storage_uri` is
+reading a column the registry says clients never read, so each site is either a legitimate
+server-side path that belongs elsewhere or a real leak. Verify with
+`uv run python scripts/hr/hrb012_type_proof.py --self-test` (its group E prints the remaining set).
+
+**Note:** this is a **projection convention, not a security boundary** (SPEC-ACCESS §4.6). The
+boundary is RLS and column grants; nothing here is an exposure on its own.
+
 ### D267 — `assoc_list` with a NULL direction silently returns ZERO rows instead of raising (2026-08-26)
 
 `public.assoc_list(p_type, p_id, p_direction, p_role)` guards with
