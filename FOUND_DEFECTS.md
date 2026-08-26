@@ -15,6 +15,71 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D262 — seven `organization_id NOT NULL` tables have NO org backstop: an org-forgetting write returns 500 (2026-08-26)
+
+Found by the docs-steward's daily `platform.ddl_guard_log` read (skill step 7c), triaged live
+against the database, not against docs.
+
+All seven have `organization_id` **NOT NULL, no column default, and no `_stamp_org_default` /
+`inherit_org_from_parent` trigger** (verified 2026-08-26 via `information_schema.columns` +
+`pg_trigger` join `pg_proc`, non-internal triggers only):
+
+| Table | Triggers it does have |
+|---|---|
+| `agent.prompt_remediation` | governance/actor/touch/version only |
+| `seo.engine_schedule` | `fn_engine_schedule_target_guard` |
+| `seo.site_keyword_offering` | `validate_site_offering_fact_scope` |
+| `seo.site_offering_value` | `validate_site_offering_fact_scope` |
+| `web.brand_offering` | `validate_brand_offering_scope` |
+| `web.offering_template` | `validate_offering_template_scope` |
+| `web.site_offering` | `validate_site_offering_scope` |
+
+**The scope guards are not backstops.** Each of those five `validate_*` functions was read live
+(`pg_proc.prosrc`): none assigns `NEW.organization_id`. They REJECT a mismatched scope; they never
+supply a missing one. So a caller that omits `organization_id` still hits the NOT NULL and the
+write 500s — exactly the failure `org_not_null_no_backstop` exists to prevent.
+
+This is NOT the D241 false positive (fixed 2026-08-21, OID comparison) and NOT the `iam` org-keyed
+residue D241 names — those four are correctly un-backstopped because `organization_id` is their row
+identity. These seven inherit their org from a parent (site, brand, mandate) and should stamp it.
+
+**Fix:** attach `inherit_org_from_parent` (or `_stamp_org_default` where there is no parent) in a
+migration per table, then re-run `pnpm check:ddl-guard-log`. The `seo.*`/`web.*` offering tables
+were created 2026-08-25/26 and are in-flight — fix them in the branch that is building them.
+
+Guard rows acked 2026-08-26 with `p_reason` citing this entry; they will re-fire on the next DDL
+touch until the triggers exist.
+
+### D263 — nine kill-list columns nobody is tracking: `is_public` x5, `is_deleted` x3, `org_id` x1 (2026-08-26)
+
+Found by the docs-steward's daily `platform.ddl_guard_log` read (skill step 7c). The
+`kill_list_columns` rule has 18 live objects; **D238** covers `canvas.canvas_items` +
+`legal.wc_claim` and **D236** covers the seven `workbench.udt_*`. These nine were on no queue at
+all. Every column below was confirmed present live 2026-08-26 (`information_schema.columns`) —
+none is a stale warning.
+
+| Table | Column | Canonical replacement | Owner |
+|---|---|---|---|
+| `billing.plan` | `is_public` | `visibility` enum | matrx-frontend |
+| `billing.subscription` | `org_id` | `organization_id` | matrx-frontend |
+| `iam.permissions` | `is_public` | `visibility` enum | matrx-frontend |
+| `scraper.scrape_domain` | `is_public` | `visibility` enum | aidream (scraper service) |
+| `scraper.scrape_parsed_page` | `is_public` | `visibility` enum | aidream (scraper service) |
+| `scraper.scrape_path_pattern` | `is_public` | `visibility` enum | aidream (scraper service) |
+| `extend.wbx_demo` | `is_deleted` | `deleted_at timestamptz` | matrx-extend |
+| `extend.wbx_guidance` | `is_deleted` | `deleted_at timestamptz` | matrx-extend |
+| `extend.wbx_highlight` | `is_deleted` | `deleted_at timestamptz` | matrx-extend |
+
+`billing.subscription.org_id` is the sharpest one: the canonical name is `organization_id`
+everywhere else, so every new billing caller learns the wrong column — the same alias-spreading
+failure the file-layer `owner_id` item on the attention board is about.
+
+**Fix per table:** add the canonical column, backfill, move readers/writers and RLS, drop the old
+column, `pnpm db-types`. Follow D238's shape (bridge trigger while both exist) for anything with
+live consumers. `extend.*` needs a matrx-extend session; `scraper.*` an aidream one.
+
+Guard rows acked 2026-08-26 citing this entry.
+
 ### D260 — Any org member can author a `seo.engine_schedule` row that spends ANOTHER org's money (2026-08-25)
 
 `seo.engine_schedule` carries an OWNER column (`organization_id`) and TARGET columns
