@@ -777,24 +777,34 @@ export default function KeywordResearchWorkbench() {
       },
       header: "Sites",
       filter: "select",
+      width: 170,
       cell: (row) => {
         const ids = siteMemberships?.get(row.id) ?? [];
         if (ids.length === 0)
           return (
             <span className="text-xs text-muted-foreground/60">Unassigned</span>
           );
+        // NEVER WRAP THE PRIMARY DATA (Arman): a site name breaking across two
+        // lines makes every row taller and the column unreadable. One line,
+        // truncated with the full list on hover; extra sites collapse to a
+        // count rather than stacking.
+        const [first, ...rest] = ids;
         return (
-          <div className="flex flex-wrap items-center gap-1">
-            {ids.map((id) => (
-              <span
-                key={id}
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-1.5 py-0.5 text-[11px]"
-                title={siteNameById.get(id) ?? id}
-              >
-                <Globe2 className="h-2.5 w-2.5 text-muted-foreground" />
-                {siteNameById.get(id) ?? "Unknown site"}
+          <div className="flex min-w-0 items-center gap-1">
+            <span
+              className="inline-flex min-w-0 items-center gap-1 rounded-full border border-border bg-card px-1.5 py-0.5 text-[11px]"
+              title={ids.map((id) => siteNameById.get(id) ?? id).join(", ")}
+            >
+              <Globe2 className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+              <span className="truncate">
+                {siteNameById.get(first) ?? "Unknown site"}
               </span>
-            ))}
+            </span>
+            {rest.length > 0 ? (
+              <span className="shrink-0 text-[11px] text-muted-foreground">
+                +{rest.length}
+              </span>
+            ) : null}
           </div>
         );
       },
