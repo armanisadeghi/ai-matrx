@@ -45,6 +45,14 @@
 --    no entrance, and §9 T-21 requires the whole accept→materialise→expire path to be provable
 --    today. It is built here, minimally and audited, and ROUTED to HRB-008 to absorb or replace.
 --
+-- 5. 🚨 A RELATIVE SCOPE IS RESOLVED AT MATERIALISATION, NOT COPIED. Found by probe: an authority
+--    scoped `direct_reports` and delegated verbatim re-points at the DELEGATE's own reports —
+--    an empty set for a delegate who manages nobody — so the delegation grants nothing and the
+--    approval stalls with no visible cause. Relative scopes are frozen into an explicit
+--    `employment_set` of the DELEGATOR's population as of the delegation's start: never wider,
+--    stable for the window, and auditable afterwards. Full reasoning at the call site.
+--    OWED: §1.3b owes one sentence distinguishing absolute from relative scopes on delegation.
+--
 -- 4. ACTIVATION SETS `created_by` ON THE EMPLOYMENT TO THE NOMINEE'S LOGIN, NOT THE CALLER'S.
 --    §2.1 makes `created_by` the subject's `hr.employee.login_user_id` so the kernel's owner arm
 --    answers a self-read first and costs nothing. `platform._stamp_actor` uses
@@ -466,7 +474,7 @@ language plpgsql security definer set search_path = hr, public
 as $fn$
 declare
   v_uid uuid := auth.uid(); d hr.approval_delegation%rowtype; a hr.approval_authority%rowtype;
-  v_new uuid; v_audit uuid;
+  v_new uuid; v_audit uuid; v_scope_kind text; v_scope_ids uuid[];
 begin
   if v_uid is null then
     raise exception 'hr_authority_delegate: no authenticated caller' using errcode = '42501';
@@ -489,14 +497,37 @@ begin
   end if;
 
   perform set_config('hr.privileged_write','on',true);
-  -- scope, limits and rank are inherited or LEAST()'d — a delegation is never wider than the
-  -- authority it substitutes for, and its expiry is mandatory.
+
+  -- 🚨 A RELATIVE SCOPE IS RESOLVED AT MATERIALISATION, NEVER COPIED — and a probe caught the
+  -- copy. §1.3b says scope is "inherited from the delegator's row — never wider", and for an
+  -- ABSOLUTE scope (org, department, location, pay_group, crew, employment_set) copying is exactly
+  -- that. But `direct_reports` and `position_subtree` are relative TO THE HOLDER: copied onto the
+  -- delegate they silently re-point at the DELEGATE's own reports, which is a different population
+  -- and, for a delegate who manages nobody, an EMPTY one. The delegation then grants nothing and
+  -- the approval stalls with no visible cause — the canonical over-tightening bug §1.3b names.
+  -- So a relative scope is frozen into an explicit `employment_set` of the DELEGATOR's population
+  -- as of the delegation's start. That is never wider (it is precisely the delegator's set) and it
+  -- is stable for the window, which is also what makes the delegation auditable after the fact.
+  v_scope_kind := a.scope_kind;
+  v_scope_ids  := a.scope_employment_ids;
+  if a.scope_kind in ('direct_reports','position_subtree') then
+    select coalesce(array_agg(distinct em.id), '{}'::uuid[]) into v_scope_ids
+      from hr.employment em
+     where em.organization_id = a.organization_id and em.deleted_at is null
+       and hr.population_contains(a.scope_kind, a.scope_id, em.id, d.effective_from,
+                                  d.delegator_employment_id, a.scope_employment_ids);
+    v_scope_kind := 'employment_set';
+  end if;
+
+  -- limits and rank are inherited or LEAST()'d — a delegation is never wider than the authority it
+  -- substitutes for — and its expiry is mandatory.
   insert into hr.approval_authority
     (organization_id, holder_kind, holder_id, action_type, scope_kind, scope_id,
      scope_employment_ids, limits, rank, effective_from, effective_to, source,
      delegated_from_id, delegation_id, granted_by_user_id, reason)
   values (a.organization_id, 'employment', d.delegate_employment_id::text, a.action_type,
-          a.scope_kind, a.scope_id, a.scope_employment_ids, a.limits,
+          v_scope_kind, case when v_scope_kind = 'employment_set' then null else a.scope_id end,
+          v_scope_ids, a.limits,
           greatest(a.rank, 100), d.effective_from,
           least(d.effective_to, coalesce(a.effective_to, d.effective_to)), 'delegated',
           a.id, d.id, v_uid, d.reason)

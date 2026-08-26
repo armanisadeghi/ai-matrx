@@ -208,20 +208,26 @@ begin
       using errcode = '22023',
             hint = 'Add it to hr._door_spec with the capability set that opens it. An unlisted token is refused by construction.';
   end if;
-  if d.caps is null then
-    return jsonb_build_object('allowed', false, 'basis', 'no_door', 'reason', d.no_door_reason,
-                              'tier', d.tier);
-  end if;
-
+  -- 🚨 THE ORG IS RESOLVED BEFORE ANY EARLY RETURN, AND A PROBE CAUGHT IT BEING RESOLVED AFTER.
+  -- The doorless branch below used to return first, so a refusal on hr_eeo_response reached
+  -- hr._record_access_audit with a NULL organization_id and died on the NOT NULL constraint —
+  -- turning a clean, auditable refusal into a raise, which is exactly the failure mode the
+  -- refusal-envelope law exists to prevent. Resolving first also preserves tranche 4's finding:
+  -- a MISSING subject raises P0002 and writes NO phantom audit row, because nothing was reached
+  -- and there is nothing to attribute.
   select e.schema_name, e.table_name into v_schema, v_table
     from platform.entity_types e where e.token = p_token;
 
   execute format('select organization_id from %I.%I where id = $1', v_schema, v_table)
      into v_org using p_id;
   if v_org is null then
-    -- nothing was reached, so there is nothing to attribute and no audit row can exist:
-    -- hr.access_audit.organization_id is NOT NULL by its own contract.
     raise exception 'hr audited door: no % row with id %', p_token, p_id using errcode = 'P0002';
+  end if;
+
+  if d.caps is null then
+    return jsonb_build_object('allowed', false, 'basis', 'no_door', 'reason', d.no_door_reason,
+                              'tier', d.tier, 'organization_id', v_org,
+                              'schema', v_schema, 'table', v_table);
   end if;
 
   -- the subject of the row, where the token has one
@@ -251,6 +257,33 @@ begin
   end;
   v_is_self := (v_owner is not null and v_owner = p_user)
                or (v_subject is not null and v_subject = any(hr.employments_of(p_user)));
+
+  -- 🚨 §5's VETO IS EVALUATED BEFORE EVERY ALLOW LANE FOR THE TOKENS IT COVERS, INCLUDING THE SELF
+  -- LANE — and a probe caught it being evaluated after. §5 says the veto is checked "after every
+  -- allow lane" because it must OVERRIDE them; implementing that as a late check let the SELF
+  -- short-circuit answer first, and the subject of a harassment case read the case about
+  -- themselves (granted=true, basis=self). §3.2 is unambiguous: Employee (self) × hr.incident is
+  -- "— (veto)" EVEN WHEN THEY ARE THE REPORTER. Overriding everything and being checked first are
+  -- the same thing for an absolute veto; being checked first is the one that cannot be
+  -- accidentally bypassed by a lane added later.
+  if p_token in ('hr_incident','hr_incident_party')
+     or (p_token = 'hr_restricted_note'
+         and (select rn.subject_token from hr.restricted_note rn where rn.id = p_id) = 'hr_incident')
+  then
+    declare v_inc0 uuid;
+    begin
+      v_inc0 := case
+        when p_token = 'hr_incident' then p_id
+        when p_token = 'hr_incident_party' then (select incident_id from hr.incident_party where id = p_id)
+        else (select rn.subject_id from hr.restricted_note rn where rn.id = p_id) end;
+      if v_inc0 is not null and hr.incident_excluded(p_user, v_inc0) then
+        return jsonb_build_object('allowed', false, 'basis', 'subject_excluded',
+          'reason', 'SPEC-ACCESS §5: the caller is the subject of, or an accused party to, this investigation. The veto overrides incident.read, it overrides hr_owner, it overrides the self lane, and it overrides break-glass.',
+          'organization_id', v_org, 'subject_employment_id', v_subject, 'tier', d.tier,
+          'schema', v_schema, 'table', v_table);
+      end if;
+    end;
+  end if;
 
   if v_is_self then
     return jsonb_build_object('allowed', true, 'basis', 'self', 'is_self', true,

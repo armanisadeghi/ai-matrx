@@ -321,11 +321,28 @@ create or replace function hr.incident_excluded(p_user uuid, p_incident uuid)
 returns boolean
 language sql stable security definer set search_path = hr, public
 as $fn$
+  -- 🚨 THE MATERIALISED ARRAY IS WIDER THAN §5's VETO, AND THE DIFFERENCE IS THE REPORTER.
+  -- hr._incident_excluded_actors_refresh (HRB-006 file 09) materialises subject + REPORTER +
+  -- every `accused` party + each of their managers. §5's veto is "the subject_employment_id or a
+  -- respondent party" — the reporter is NOT in it, and must not be: §5 gives the identified
+  -- reporter hr_incident_status by name, and a probe caught this function refusing the reporter
+  -- their own case status. So the fast array-membership test is kept (§5 requires it: "an array
+  -- membership test, not a join") and the reporter is subtracted UNLESS they are also the subject
+  -- or an accused party. Everyone else the trigger adds — the parties' managers — stays vetoed,
+  -- which is correct and wider than the spec text: a party's own manager is the classic leak in a
+  -- complaint about a manager.
   select exists (
-    select 1 from hr.incident i
+    select 1
+      from hr.incident i,
+           lateral unnest(i.excluded_actor_ids) x
      where i.id = p_incident
        and i.deleted_at is null
-       and hr.employments_of(p_user, coalesce(i.occurred_at::date, current_date)) && i.excluded_actor_ids);
+       and x = any(hr.employments_of(p_user, coalesce(i.occurred_at::date, current_date)))
+       and ( x is distinct from i.reporter_employment_id
+             or x = i.subject_employment_id
+             or exists (select 1 from hr.incident_party ip
+                         where ip.incident_id = i.id and ip.employment_id = x
+                           and ip.party_role = 'accused' and ip.deleted_at is null) ));
 $fn$;
 
 comment on function hr.incident_excluded is
