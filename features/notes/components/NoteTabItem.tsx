@@ -129,6 +129,10 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const [tabMenuOpen, setTabMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [titleFocused, setTitleFocused] = useState(false);
+  // Edit INTENT, not focus: right-click also focuses the input, and a focused
+  // live input makes the v3 menu yield to the native one — so readOnly must
+  // survive focus and lift only on a left click (or Enter) in the field.
+  const [titleEditing, setTitleEditing] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [contentCopied, setContentCopied] = useState(false);
   const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -207,6 +211,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   // Redux→local sync re-arms.
   const handleTitleBlur = useCallback(() => {
     setTitleFocused(false);
+    setTitleEditing(false);
     setNoteLabelEditing(noteId, false);
     if (labelTimerRef.current) {
       clearTimeout(labelTimerRef.current);
@@ -551,12 +556,16 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
             // that always started a rename) lifts readOnly, so typing works
             // exactly as before — and while actually renaming, right-click
             // correctly yields to the native text menu.
-            readOnly={!titleFocused}
+            readOnly={!titleEditing}
             value={localLabel}
             onChange={handleTitleChange}
             onClick={(e) => {
               e.stopPropagation();
+              setTitleEditing(true);
               bumpTabInteraction();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") setTitleEditing(true);
             }}
             onFocus={handleTitleFocus}
             onBlur={handleTitleBlur}
