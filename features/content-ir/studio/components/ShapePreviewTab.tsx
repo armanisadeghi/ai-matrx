@@ -4,10 +4,12 @@
 // production kind route (shared engine, same one the admin page uses).
 
 import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { FlaskConical } from "lucide-react";
 import Link from "next/link";
 import KindExamplePreview from "@/features/content-ir/studio/components/KindExamplePreview";
 import ShapeOwnerEditor from "@/features/content-ir/studio/components/ShapeOwnerEditor";
+import ShapeRenderStatusStrip from "@/features/content-ir/studio/components/ShapeRenderStatusStrip";
 import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import { shapeTestHref } from "@/features/content-ir/studio/constants";
 import type { Json } from "@/types/database.types";
@@ -24,6 +26,7 @@ interface ShapePreviewTabProps {
   loadingComponent: string | null;
   emittedJsonSchema: Json | null;
   isActive: boolean;
+  dataOnly: boolean;
   isOwnedByViewer: boolean;
   /** Definition version — surface value only (display lives in the header). */
   kindVersion: number;
@@ -42,11 +45,13 @@ export default function ShapePreviewTab({
   loadingComponent,
   emittedJsonSchema,
   isActive,
+  dataOnly,
   isOwnedByViewer,
   kindVersion,
   updatedAt,
   fieldData,
 }: ShapePreviewTabProps) {
+  const router = useRouter();
   const [examplesRevision, setExamplesRevision] = useState(0);
   const examples = useKindExamples(kindDefinitionId, examplesRevision);
   // The dual-gate verdict is fetched ONCE, inside ShapeActivationControl
@@ -119,6 +124,18 @@ export default function ShapePreviewTab({
       getScope={getSurfaceScope}
       isEditable={false}
     >
+      <div className="mx-auto max-w-4xl">
+        <ShapeRenderStatusStrip
+          kind={kind}
+          kindDefinitionId={kindDefinitionId}
+          label={label}
+          kindIsActive={isActive}
+          dataOnly={dataOnly}
+          isOwnedByViewer={isOwnedByViewer}
+          emittedJsonSchema={emittedJsonSchema}
+          onDataOnlyCleared={() => router.refresh()}
+        />
+      </div>
       {isOwnedByViewer && (
         <ShapeOwnerEditor
           kind={kind}
@@ -129,6 +146,7 @@ export default function ShapePreviewTab({
           loadingComponent={loadingComponent}
           emittedJsonSchema={emittedJsonSchema}
           isActive={isActive}
+          dataOnly={dataOnly}
           examples={examples}
           onExamplesChanged={() =>
             setExamplesRevision((revision) => revision + 1)

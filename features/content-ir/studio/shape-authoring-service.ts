@@ -12,6 +12,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/types/database.types";
 import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
 
 export type ShapeWriteClient = SupabaseClient<Database>;
 export type ShapeVisibility = Database["platform"]["Enums"]["visibility"];
@@ -71,6 +72,19 @@ function isJsonObject(
   value: Json,
 ): value is { [key: string]: Json | undefined } {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Clear `metadata.data_only`, preserving every other key. The flag hides
+ * component tooling and monitoring on the theory that the shape's render leg
+ * is n/a — wrong the moment the shape actually has an active component.
+ */
+export function removeDataOnlyFlag(metadata: Json): Json {
+  const next: { [key: string]: Json | undefined } = isJsonObject(metadata)
+    ? { ...metadata }
+    : {};
+  delete next.data_only;
+  return next;
 }
 
 /** Merge only user-editable metadata keys while preserving every other key. */
@@ -584,4 +598,220 @@ export async function setShapeActivation(
     wasActive: row.was_active,
     gated: row.gated,
   };
+}
+
+/**
+ * Remove `metadata.data_only`. Same version-bump-and-write path as
+ * `updateOwnedShapeProfile` uses for its own metadata keys, kept separate
+ * because this write is not part of the Details form — it is the one-click
+ * fix on the render-status strip and the activation banner for a kind whose
+ * flag turned out to be wrong.
+ */
+export async function clearShapeDataOnlyFlag(
+  client: ShapeWriteClient,
+  definitionId: string,
+  mode: ShapeAuthMode = "owner",
+): Promise<void> {
+  const userId = await requireCurrentUserId(client);
+  const current = await fetchWritableDefinition(client, definitionId, userId, mode);
+  const metadata = removeDataOnlyFlag(current.metadata);
+  let updateQuery = client
+    .schema("content_ir")
+    .from("kind_definition")
+    .update({ metadata, updated_by: userId, version: current.version + 1 })
+    .eq("id", current.id)
+    .eq("version", current.version);
+  if (mode === "owner") updateQuery = updateQuery.eq("created_by", userId);
+  const { data, error } = await updateQuery.select("id").maybeSingle();
+  if (error) {
+    throw new Error(`Failed to clear the data-only flag: ${error.message}`);
+  }
+  if (!data) {
+    throw new Error(
+      "The Shape changed while you were editing it. Refresh the page and try again.",
+    );
+  }
+}
+
+// ─── Component switching ───────────────────────────────────────────────────
+//
+// `content_ir.kind_component` allows exactly one `is_default = true` row per
+// (kind_definition_id, platform, role) — enforced live by the unique index
+// `kind_component_default_unique`. Switching the default is therefore always
+// two writes: clear whatever else currently holds the flag in that same
+// group, then set it on the target row. `planShapeComponentDefaultSwitch` is
+// the pure invariant (unit-tested); the write function below is a thin
+// executor over it so the invariant can never drift from what actually runs.
+
+export interface ShapeComponentCandidate {
+  id: string;
+  platform: string;
+  role: string;
+  componentKey: string;
+  source: string;
+  isActive: boolean;
+  isDefault: boolean;
+}
+
+/**
+ * Pure plan for "make `targetId` the default" — which sibling rows (same
+ * kind, platform, role as the target) must be cleared, and which id gets set.
+ * Scoped by platform+role: two different (platform, role) groups on the same
+ * kind each keep their own default, and this never touches the other group.
+ */
+export function planShapeComponentDefaultSwitch(
+  rows: readonly ShapeComponentCandidate[],
+  targetId: string,
+): { clearIds: string[]; setId: string } {
+  const target = rows.find((row) => row.id === targetId);
+  if (!target) {
+    throw new Error(
+      "That component row is not one of this Shape's registered components.",
+    );
+  }
+  const clearIds = rows
+    .filter(
+      (row) =>
+        row.id !== targetId &&
+        row.isDefault &&
+        row.platform === target.platform &&
+        row.role === target.role,
+    )
+    .map((row) => row.id);
+  return { clearIds, setId: targetId };
+}
+
+function componentCandidateResult(row: {
+  id: string;
+  platform: string;
+  role: string;
+  component_key: string;
+  source: string;
+  is_active: boolean;
+  is_default: boolean;
+}): ShapeComponentCandidate {
+  return {
+    id: row.id,
+    platform: row.platform,
+    role: row.role,
+    componentKey: row.component_key,
+    source: row.source,
+    isActive: row.is_active,
+    isDefault: row.is_default,
+  };
+}
+
+/**
+ * Every output-role `kind_component` row for this Shape's definition, across
+ * both sources (`db` and `bundled`) — the candidate list the switch-default
+ * control offers. Non-owners get the same read (RLS-scoped) so the list is
+ * never hidden, only the write is gated.
+ */
+export async function listShapeComponentCandidates(
+  client: ShapeWriteClient,
+  definitionId: string,
+  platform = "web",
+  role = "output",
+): Promise<ShapeComponentCandidate[]> {
+  const { data, error } = await client
+    .schema("content_ir")
+    .from("kind_component")
+    .select("id,platform,role,component_key,source,is_active,is_default,sort_order,created_at")
+    .eq("kind_definition_id", definitionId)
+    .eq("platform", platform)
+    .eq("role", role)
+    .is("deleted_at", null)
+    .order("is_default", { ascending: false })
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (error) {
+    throw new Error(`Failed to load this Shape's components: ${error.message}`);
+  }
+  return (data ?? []).map(componentCandidateResult);
+}
+
+/**
+ * Flip which component row is the default for (kind, platform, role). Owner
+ * mode belts the RLS write with the same `created_by` check every other
+ * owner mutation uses; admin mode relies on canonical RLS editor access.
+ */
+export async function setDefaultShapeComponent(
+  client: ShapeWriteClient,
+  definitionId: string,
+  targetId: string,
+  mode: ShapeAuthMode = "owner",
+): Promise<ShapeComponentCandidate[]> {
+  const userId = await requireCurrentUserId(client);
+  await fetchWritableDefinition(client, definitionId, userId, mode);
+
+  const target = await client
+    .schema("content_ir")
+    .from("kind_component")
+    .select("id,platform,role,component_key,source,is_active,is_default")
+    .eq("id", targetId)
+    .eq("kind_definition_id", definitionId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (target.error) {
+    throw new Error(`Failed to load the target component: ${target.error.message}`);
+  }
+  if (!target.data) {
+    throw new Error("That component row no longer exists on this Shape.");
+  }
+  if (target.data.component_key === GENERIC_STRUCTURED_COMPONENT_KEY) {
+    // The DB enforces this too (trigger zzz_demote_generic_fallback +
+    // constraint kind_component_fallback_is_never_default — "a fallback must
+    // never outrank a real component"), which would silently demote the
+    // write below and leave the group with ZERO defaults. Refuse here with a
+    // sentence the owner can act on, rather than a false-success toast.
+    throw new Error(
+      "The generic viewer can never be the default component — deactivate the real component instead if you want this Shape to fall back to it.",
+    );
+  }
+
+  const rows = await listShapeComponentCandidates(
+    client,
+    definitionId,
+    target.data.platform,
+    target.data.role,
+  );
+  const plan = planShapeComponentDefaultSwitch(rows, targetId);
+
+  if (plan.clearIds.length > 0) {
+    const { error } = await client
+      .schema("content_ir")
+      .from("kind_component")
+      .update({ is_default: false, updated_by: userId })
+      .in("id", plan.clearIds);
+    if (error) {
+      throw new Error(
+        `Failed to clear the previous default component: ${error.message}`,
+      );
+    }
+  }
+
+  const { error: setError } = await client
+    .schema("content_ir")
+    .from("kind_component")
+    .update({ is_default: true, updated_by: userId })
+    .eq("id", plan.setId);
+  if (setError) {
+    // Best-effort rollback so a mid-switch failure never leaves the group
+    // with zero defaults.
+    if (plan.clearIds.length > 0) {
+      await client
+        .schema("content_ir")
+        .from("kind_component")
+        .update({ is_default: true, updated_by: userId })
+        .in("id", plan.clearIds);
+    }
+    throw new Error(`Failed to set the new default component: ${setError.message}`);
+  }
+
+  return listShapeComponentCandidates(
+    client,
+    definitionId,
+    target.data.platform,
+    target.data.role,
+  );
 }

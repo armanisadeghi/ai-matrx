@@ -24,8 +24,20 @@ export interface ShapeDetail {
   titleKey: string | null;
   /** `metadata.loading_component` — loading-library slug (or null/generic). */
   loadingComponent: string | null;
+  /** `metadata.data_only === true` — hides component tooling; see FEATURE incident notes. */
+  dataOnly: boolean;
   /** True only when `created_by` is the viewer; grants do not imply ownership. */
   isOwnedByViewer: boolean;
+}
+
+function metadataBool(metadata: Json, key: string): boolean {
+  const record =
+    typeof metadata === "object" &&
+    metadata !== null &&
+    !Array.isArray(metadata)
+      ? (metadata as Record<string, unknown>)
+      : null;
+  return record?.[key] === true || record?.[key] === "true";
 }
 
 function metadataString(metadata: Json, key: string): string | null {
@@ -80,6 +92,7 @@ export async function getShapeDetail(
     emittedJsonSchema: data.emitted_json_schema,
     titleKey: kindTitleKeyFromMetadata(data.metadata),
     loadingComponent: metadataString(data.metadata, "loading_component"),
+    dataOnly: metadataBool(data.metadata, "data_only"),
     isOwnedByViewer: Boolean(auth.user && data.created_by === auth.user.id),
   };
 }

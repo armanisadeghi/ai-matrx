@@ -12,16 +12,26 @@
  * they could never read through RLS directly.
  */
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Check,
   ExternalLink,
+  Loader2,
   Minus,
   Pencil,
   TriangleAlert,
   X,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
+import {
+  resolveComponent,
+  componentRegistry,
+} from "@/features/content-ir/registry/component-registry";
+import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
+import { setDefaultShapeComponent } from "@/features/content-ir/studio/shape-authoring-service";
 import {
   ASSET_COLUMNS,
   type AssetColumn,
@@ -151,12 +161,69 @@ interface KindAssetsTabProps {
   onOpenExamples: () => void;
 }
 
+/** Per-source, per-row honesty — never "hardcoded". */
+function componentSourceExplainer(source: string): string {
+  return source === "db"
+    ? "Custom component, stored in the database — editable live, no release needed."
+    : "Built-in component, compiled into the app build — changing it requires a release.";
+}
+
 export default function KindAssetsTab({
   detail,
   canonicalExampleData,
   onOpenExamples,
 }: KindAssetsTabProps) {
   const router = useRouter();
+  const [components, setComponents] = useState(detail.components);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
+  // Which row the resolver ACTUALLY picks right now — computed client-side
+  // from the same registry the app renders with, so this table can never
+  // claim a winner the render path disagrees with.
+  const [winnerKey, setWinnerKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    setComponents(detail.components);
+  }, [detail.components]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void componentRegistry
+      .ensureWarm()
+      .catch(() => undefined)
+      .then(() => {
+        if (cancelled) return;
+        const resolution = resolveComponent(detail.kind, "web", "output");
+        setWinnerKey(resolution?.componentKey ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [detail.kind]);
+
+  async function makeDefault(componentId: string): Promise<void> {
+    setSwitchingId(componentId);
+    try {
+      const rows = await setDefaultShapeComponent(
+        supabase,
+        detail.id,
+        componentId,
+        "admin",
+      );
+      setComponents((prev) =>
+        prev.map((row) => {
+          const updated = rows.find((r) => r.id === row.id);
+          return updated ? { ...row, isDefault: updated.isDefault } : row;
+        }),
+      );
+      toast.success("Default component updated.");
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error("Failed to switch the default component", { description: message });
+    } finally {
+      setSwitchingId(null);
+    }
+  }
 
   const storeContentBlock = async (
     block: GeneratedContentBlock,
@@ -350,7 +417,7 @@ export default function KindAssetsTab({
       {/* Components */}
       <ListSection
         title="kind_component rows"
-        count={detail.components.length}
+        count={components.length}
         actions={
           <KindAgentButton
             kind={detail.kind}
@@ -363,51 +430,100 @@ export default function KindAssetsTab({
           </KindAgentButton>
         }
       >
-        {detail.components.length === 0 ? (
+        {components.length === 0 ? (
           <p className="px-3 py-2.5 text-xs text-muted-foreground">
             No kind_component rows — compiled/legacy render paths (if any) are
             noted in the doctor cell above.
           </p>
         ) : (
-          <div
-            className="overflow-x-auto overscroll-x-contain"
-            role="region"
-            aria-label="Kind component rows"
-            tabIndex={0}
-          >
-            <table className={cn("p-2 text-xs", MOBILE_TABLE, MOBILE_TABLE_NOWRAP_CELLS)}>
-              <thead>
-                <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                  <th className="px-2 py-1 font-medium">Platform</th>
-                  <th className="px-2 py-1 font-medium">Role</th>
-                  <th className={cn("px-2 py-1 font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[9rem]")}>Component key</th>
-                  <th className="px-2 py-1 font-medium">Source</th>
-                  <th className="px-2 py-1 font-medium">Active</th>
-                  <th className="px-2 py-1 font-medium">Default</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detail.components.map((c) => (
-                  <tr key={c.id} className="border-t border-border/60">
-                    <td className="px-2 py-1 text-foreground">{c.platform}</td>
-                    <td className="px-2 py-1 text-foreground">{c.role}</td>
-                    <td className={cn("px-2 py-1 font-mono text-foreground", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[9rem]")}>
-                      {c.componentKey}
-                    </td>
-                    <td className="px-2 py-1 text-muted-foreground">
-                      {c.source}
-                    </td>
-                    <td className="px-2 py-1 text-muted-foreground">
-                      {c.isActive ? "yes" : "no"}
-                    </td>
-                    <td className="px-2 py-1 text-muted-foreground">
-                      {c.isDefault ? "yes" : "no"}
-                    </td>
+          <>
+            <div
+              className="overflow-x-auto overscroll-x-contain"
+              role="region"
+              aria-label="Kind component rows"
+              tabIndex={0}
+            >
+              <table className={cn("p-2 text-xs", MOBILE_TABLE, MOBILE_TABLE_NOWRAP_CELLS)}>
+                <thead>
+                  <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <th className="px-2 py-1 font-medium">Platform</th>
+                    <th className="px-2 py-1 font-medium">Role</th>
+                    <th className={cn("px-2 py-1 font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[9rem]")}>Component key</th>
+                    <th className="px-2 py-1 font-medium">Source</th>
+                    <th className="px-2 py-1 font-medium">Active</th>
+                    <th className="px-2 py-1 font-medium">Default</th>
+                    <th className="px-2 py-1 font-medium">Renders now?</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {components.map((c) => {
+                    const isWinner =
+                      winnerKey !== null &&
+                      c.componentKey === winnerKey &&
+                      c.platform === "web" &&
+                      c.role === "output";
+                    const canSwitch =
+                      c.platform === "web" &&
+                      c.role === "output" &&
+                      !c.isDefault &&
+                      c.componentKey !== GENERIC_STRUCTURED_COMPONENT_KEY;
+                    return (
+                      <tr key={c.id} className="border-t border-border/60">
+                        <td className="px-2 py-1 text-foreground">{c.platform}</td>
+                        <td className="px-2 py-1 text-foreground">{c.role}</td>
+                        <td className={cn("px-2 py-1 font-mono text-foreground", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[9rem]")}>
+                          {c.componentKey}
+                        </td>
+                        <td className="px-2 py-1 text-muted-foreground">
+                          {c.source}
+                        </td>
+                        <td className="px-2 py-1 text-muted-foreground">
+                          {c.isActive ? "yes" : "no"}
+                        </td>
+                        <td className="px-2 py-1 text-muted-foreground">
+                          {c.isDefault ? (
+                            "yes"
+                          ) : canSwitch ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-[11px]"
+                              disabled={switchingId === c.id}
+                              onClick={() => void makeDefault(c.id)}
+                            >
+                              {switchingId === c.id ? (
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              ) : null}
+                              Make default
+                            </Button>
+                          ) : (
+                            "no"
+                          )}
+                        </td>
+                        <td className="px-2 py-1">
+                          {isWinner ? (
+                            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                              winner
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="px-3 py-2 text-[11px] text-muted-foreground">
+              &quot;Renders now?&quot; is the live resolver's own answer
+              (source='db' overrides source='bundled'; among rows of the same
+              source, the default row wins). Per-source meaning:{" "}
+              {componentSourceExplainer("db")}{" "}
+              {componentSourceExplainer("bundled")}
+            </p>
+          </>
         )}
       </ListSection>
 

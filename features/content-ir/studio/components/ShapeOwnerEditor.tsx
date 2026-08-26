@@ -63,6 +63,8 @@ interface ShapeOwnerEditorProps {
   emittedJsonSchema: Json | null;
   /** The live dual-gate verdict — drives the activation control's state. */
   isActive: boolean;
+  /** `metadata.data_only === true` — drives the activation banner's cause and remove-flag action. */
+  dataOnly: boolean;
   examples: ExamplesState;
   onExamplesChanged: () => void;
   /** Forwarded from the activation control so the Shape Studio surface
@@ -97,6 +99,7 @@ export default function ShapeOwnerEditor({
   loadingComponent: initialLoadingComponent,
   emittedJsonSchema,
   isActive,
+  dataOnly,
   examples,
   onExamplesChanged,
   onActivationVerdict,
@@ -239,9 +242,11 @@ export default function ShapeOwnerEditor({
           kind={kind}
           kindDefinitionId={kindDefinitionId}
           isActive={isActive}
+          dataOnly={dataOnly}
           label={label}
           emittedJsonSchema={emittedJsonSchema}
           onActivationChanged={() => router.refresh()}
+          onDataOnlyCleared={() => router.refresh()}
           onVerdict={onActivationVerdict}
         />
       </div>

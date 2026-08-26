@@ -35,6 +35,7 @@ export default async function ShapePreviewPage({ params }: PageProps) {
             loadingComponent={detail.loadingComponent}
             emittedJsonSchema={detail.emittedJsonSchema}
             isActive={detail.isActive}
+            dataOnly={detail.dataOnly}
             isOwnedByViewer={detail.isOwnedByViewer}
             kindVersion={detail.version}
             updatedAt={detail.updatedAt}

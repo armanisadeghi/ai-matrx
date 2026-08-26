@@ -4,7 +4,12 @@
  * save so unrelated system metadata can never be clobbered by the editor.
  */
 
-import { mergeEditableShapeMetadata } from "../studio/shape-authoring-service";
+import {
+  mergeEditableShapeMetadata,
+  planShapeComponentDefaultSwitch,
+  removeDataOnlyFlag,
+  type ShapeComponentCandidate,
+} from "../studio/shape-authoring-service";
 
 describe("mergeEditableShapeMetadata", () => {
   it("updates authorable keys while preserving unrelated metadata", () => {
@@ -50,5 +55,94 @@ describe("mergeEditableShapeMetadata", () => {
         loadingComponent: null,
       }),
     ).toEqual({ title_key: "title" });
+  });
+});
+
+describe("removeDataOnlyFlag", () => {
+  it("drops data_only while preserving unrelated metadata", () => {
+    expect(
+      removeDataOnlyFlag({ data_only: true, family: "seo_contract", title_key: "x" }),
+    ).toEqual({ family: "seo_contract", title_key: "x" });
+  });
+
+  it("is a no-op on metadata without the flag", () => {
+    expect(removeDataOnlyFlag({ title_key: "x" })).toEqual({ title_key: "x" });
+  });
+
+  it("recovers loudly-safe from non-object metadata", () => {
+    expect(removeDataOnlyFlag("not an object" as unknown as never)).toEqual({});
+  });
+});
+
+describe("planShapeComponentDefaultSwitch — exactly-one-default invariant", () => {
+  const rows: ShapeComponentCandidate[] = [
+    {
+      id: "generic-row",
+      platform: "web",
+      role: "output",
+      componentKey: "generic_structured",
+      source: "bundled",
+      isActive: true,
+      isDefault: false,
+    },
+    {
+      id: "old-default",
+      platform: "web",
+      role: "output",
+      componentKey: "old_component",
+      source: "db",
+      isActive: true,
+      isDefault: true,
+    },
+    {
+      id: "new-target",
+      platform: "web",
+      role: "output",
+      componentKey: "new_component",
+      source: "db",
+      isActive: true,
+      isDefault: false,
+    },
+    // Different role — must never be touched by an "output" switch.
+    {
+      id: "input-default",
+      platform: "web",
+      role: "input",
+      componentKey: "some_input",
+      source: "db",
+      isActive: true,
+      isDefault: true,
+    },
+  ];
+
+  it("clears the current default and sets the target, scoped to (platform, role)", () => {
+    expect(planShapeComponentDefaultSwitch(rows, "new-target")).toEqual({
+      clearIds: ["old-default"],
+      setId: "new-target",
+    });
+  });
+
+  it("is a no-op clear when the target is already the default", () => {
+    expect(planShapeComponentDefaultSwitch(rows, "old-default")).toEqual({
+      clearIds: [],
+      setId: "old-default",
+    });
+  });
+
+  it("clears every other default when more than one row wrongly carries the flag", () => {
+    const dirty: ShapeComponentCandidate[] = [
+      ...rows.slice(0, 2),
+      { ...rows[2], isDefault: true },
+    ];
+    expect(planShapeComponentDefaultSwitch(dirty, "generic-row")).toEqual({
+      clearIds: ["old-default", "new-target"],
+      setId: "generic-row",
+    });
+  });
+
+  it("throws when the target id is not among the candidate rows", () => {
+    expect(() => planShapeComponentDefaultSwitch(rows, "missing")).toThrow(
+      /not one of this Shape's registered components/,
+    );
   });
 });

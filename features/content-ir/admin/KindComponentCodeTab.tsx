@@ -275,11 +275,15 @@ export default function KindComponentCodeTab({
           <div className="flex min-h-80 items-start gap-3 p-5">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <div>
-              <p className="font-medium text-foreground">Bundled component</p>
+              <p className="font-medium text-foreground">Built-in component</p>
               <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                This row points to component code compiled into the frontend
-                repository, so it has no database source body to edit here.
-                DB-authored component rows are fully editable in this tab.
+                This row is compiled into the app build, not stored in the
+                database — changing it requires editing the source and
+                shipping a release, so there is no source body to edit here.
+                Switch to a custom (database-stored) component below to get a
+                live-editable one, or edit any other{" "}
+                <span className="font-medium">db</span>-sourced row in this
+                selector — those save instantly, no release required.
               </p>
             </div>
           </div>
