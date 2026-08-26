@@ -167,6 +167,32 @@ function int(value: unknown): number | null {
  * string is never parsed into a number to make it sort "nicely", which is the
  * same guess the cell renderer refuses to make.
  */
+/**
+ * Why THIS surface cannot ask for the missing rows — said precisely, per
+ * origin (LAW 3 / A-9: when there genuinely is no way out, the banner must
+ * say the true reason, not a generic shrug). The refetchable case never
+ * reaches this text: `DataTableBlockWithMore` mounts a provider for it.
+ */
+function cannotRefetchReason(
+  source: { origin?: string | null } | null | undefined,
+): string {
+  switch (source?.origin ?? null) {
+    case "csv":
+      return "The rest were left in the file this table was parsed from — this view cannot re-read the file. Run the parse again to get them.";
+    case "pdf":
+      return "The rest were left on the PDF page this table was lifted from — this view cannot re-extract the page. Run the extraction again to get them.";
+    case "data_table":
+      return "The rest were left at the source — this view cannot re-run the lookup. Open the data table itself to see every row.";
+    case "sql":
+      // Refetchable bare reads get a provider upstream; reaching this text
+      // means the producing query was filtered or joined, which a bare
+      // re-read could not faithfully reproduce.
+      return "The rest were left at the source, and this view cannot faithfully re-run the query that produced this table — re-run it to get them.";
+    default:
+      return "The rest were left at the source, and this view cannot ask for them — re-run the query that produced this table to get them.";
+  }
+}
+
 function compareCells(a: unknown, b: unknown): number {
   if (typeof a === "number" && typeof b === "number") return a - b;
   return cellToText(a).localeCompare(cellToText(b));
@@ -509,10 +535,7 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
               ) : null}
             </>
           ) : (
-            <span className="opacity-80">
-              The rest were left at the source, and this view cannot ask for
-              them — re-run the query that produced this table to get them.
-            </span>
+            <span className="opacity-80">{cannotRefetchReason(source)}</span>
           )}
         </div>
       )}

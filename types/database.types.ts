@@ -39298,6 +39298,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      hr_access_audit_query: {
+        Args: {
+          p_from?: string
+          p_include_self?: boolean
+          p_limit?: number
+          p_organization_id?: string
+          p_target_token?: string
+          p_to?: string
+        }
+        Returns: Json
+      }
+      hr_access_explain: {
+        Args: { p_id: string; p_token: string; p_user: string }
+        Returns: Json
+      }
       hr_activate_employer: { Args: { p_payload: Json }; Returns: Json }
       hr_authority_delegate: {
         Args: { p_delegation_id: string }
@@ -39336,6 +39351,49 @@ export type Database = {
       }
       hr_authority_revoke: {
         Args: { p_authority_id: string; p_reason: string }
+        Returns: Json
+      }
+      hr_break_glass: {
+        Args: {
+          p_id: string
+          p_justification: string
+          p_purpose: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      hr_confidential_get: {
+        Args: { p_id: string; p_purpose?: string; p_token: string }
+        Returns: Json
+      }
+      hr_confidential_list: {
+        Args: {
+          p_cursor?: string
+          p_filter?: Json
+          p_limit?: number
+          p_purpose?: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      hr_incident_status: { Args: { p_incident_id: string }; Returns: Json }
+      hr_restricted_get: {
+        Args: {
+          p_id: string
+          p_justification?: string
+          p_purpose: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      hr_restricted_list: {
+        Args: {
+          p_cursor?: string
+          p_filter?: Json
+          p_limit?: number
+          p_purpose?: string
+          p_token: string
+        }
         Returns: Json
       }
       hr_role_assign: {
