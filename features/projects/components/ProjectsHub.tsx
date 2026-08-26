@@ -534,7 +534,7 @@ export function ProjectsHub({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search projects…"
-                    className="h-11 w-full pl-8 text-base sm:h-9 sm:w-44 sm:text-sm"
+                    className="h-11 w-full pl-8 text-base sm:w-44 lg:h-9 lg:text-sm"
                   />
                 </div>
                 <div
@@ -546,7 +546,7 @@ export function ProjectsHub({
                     onClick={() => setView("cards")}
                     aria-label="Card view"
                     aria-pressed={view === "cards"}
-                    className={`flex h-11 w-11 items-center justify-center rounded-md transition-colors sm:h-7 sm:w-7 ${view === "cards" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-md transition-colors lg:h-7 lg:w-7 ${view === "cards" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                     title="Card view"
                   >
                     <LayoutGrid className="h-4 w-4" />
@@ -556,7 +556,7 @@ export function ProjectsHub({
                     onClick={() => setView("table")}
                     aria-label="Table view"
                     aria-pressed={view === "table"}
-                    className={`flex h-11 w-11 items-center justify-center rounded-md transition-colors sm:h-7 sm:w-7 ${view === "table" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-md transition-colors lg:h-7 lg:w-7 ${view === "table" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                     title="Table view"
                   >
                     <TableIcon className="h-4 w-4" />
@@ -567,7 +567,7 @@ export function ProjectsHub({
                     referenceType="project"
                     records={filtered.map((p) => ({ id: p.id, label: p.name }))}
                     toastLabel={`${filtered.length} project${filtered.length === 1 ? "" : "s"}`}
-                    className="h-11 w-11 sm:h-6 sm:w-6"
+                    className="h-11 w-11 lg:h-6 lg:w-6"
                   />
                 )}
               </div>
@@ -592,7 +592,7 @@ export function ProjectsHub({
                     <button
                       type="button"
                       aria-label="Remove organization filter"
-                      className="-my-2 flex h-11 w-11 items-center justify-center rounded hover:bg-accent sm:h-7 sm:w-7"
+                      className="-my-2 flex h-11 w-11 items-center justify-center rounded hover:bg-accent lg:h-7 lg:w-7"
                       onClick={clearFilter}
                     >
                       <X className="h-3 w-3" />
@@ -608,7 +608,7 @@ export function ProjectsHub({
                     <button
                       type="button"
                       aria-label="Remove scope filter"
-                      className="-my-2 flex h-11 w-11 items-center justify-center rounded hover:bg-accent sm:h-7 sm:w-7"
+                      className="-my-2 flex h-11 w-11 items-center justify-center rounded hover:bg-accent lg:h-7 lg:w-7"
                       onClick={clearFilter}
                     >
                       <X className="h-3 w-3" />
@@ -618,7 +618,7 @@ export function ProjectsHub({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-auto h-11 px-3 text-xs sm:h-7"
+                  className="ml-auto h-11 px-3 text-xs lg:h-7"
                   onClick={clearFilter}
                 >
                   Show all projects
@@ -666,7 +666,7 @@ export function ProjectsHub({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-11 sm:h-8"
+                      className="h-11 lg:h-8"
                       onClick={clearFilter}
                     >
                       <Filter className="h-4 w-4 mr-1.5" />
@@ -675,7 +675,7 @@ export function ProjectsHub({
                   )}
                   <Button
                     size="sm"
-                    className="h-11 sm:h-8"
+                    className="h-11 lg:h-8"
                     onClick={handleCreate}
                   >
                     <Plus className="h-4 w-4 mr-1.5" />
@@ -945,7 +945,7 @@ function ColumnFilterButton({
           title={`Filter ${label}`}
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "flex h-11 w-11 items-center justify-center rounded transition-colors sm:h-5 sm:w-5",
+            "flex h-11 w-11 items-center justify-center rounded transition-colors lg:h-5 lg:w-5",
             active
               ? "text-primary hover:text-primary/80"
               : "text-muted-foreground/40 hover:text-muted-foreground",
@@ -986,7 +986,7 @@ function TextColumnFilter({
         {value.trim().length > 0 && (
           <button
             type="button"
-            className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground sm:min-h-0 sm:px-0"
+            className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground lg:min-h-0 lg:px-0"
             onClick={() => onChange("")}
           >
             clear
@@ -997,7 +997,7 @@ function TextColumnFilter({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-11 text-base sm:h-8 sm:text-sm"
+        className="h-11 text-base lg:h-8 lg:text-sm"
       />
     </div>
   );
@@ -1041,7 +1041,7 @@ function NumberRangeColumnFilter({
         {hasFilter && (
           <button
             type="button"
-            className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground sm:min-h-0 sm:px-0"
+            className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground lg:min-h-0 lg:px-0"
             onClick={() => {
               setMinText("");
               setMaxText("");
@@ -1061,7 +1061,7 @@ function NumberRangeColumnFilter({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           placeholder="min"
-          className="h-11 w-[80px] text-base tabular-nums sm:h-7 sm:text-xs"
+          className="h-11 w-[80px] text-base tabular-nums lg:h-7 lg:text-xs"
         />
         <span className="text-xs text-muted-foreground">–</span>
         <Input
@@ -1072,7 +1072,7 @@ function NumberRangeColumnFilter({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           placeholder="max"
-          className="h-11 w-[80px] text-base tabular-nums sm:h-7 sm:text-xs"
+          className="h-11 w-[80px] text-base tabular-nums lg:h-7 lg:text-xs"
         />
       </div>
     </div>
@@ -1098,7 +1098,7 @@ function UpdatedColumnFilter({
             type="button"
             onClick={() => onChange(opt.value)}
             className={cn(
-              "min-h-11 rounded px-2 py-1 text-left text-xs hover:bg-accent sm:min-h-0",
+              "min-h-11 rounded px-2 py-1 text-left text-xs hover:bg-accent lg:min-h-0",
               value === opt.value && "bg-accent font-medium",
             )}
           >
@@ -1141,7 +1141,7 @@ function ProjectsColumnHead({
           type="button"
           onClick={() => onSort(k)}
           className={cn(
-            "inline-flex min-h-11 items-center gap-1 px-2 -mx-2 hover:text-foreground transition-colors sm:min-h-0 sm:px-0 sm:mx-0",
+            "inline-flex min-h-11 items-center gap-1 px-2 -mx-2 hover:text-foreground transition-colors lg:min-h-0 lg:px-0 lg:mx-0",
             align === "right" && "justify-end",
           )}
         >
@@ -1271,7 +1271,7 @@ function ProjectsTable({
           <Button
             variant="ghost"
             size="sm"
-            className="h-11 px-3 text-xs sm:h-7"
+            className="h-11 px-3 text-xs lg:h-7"
             onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
           >
             Clear all
@@ -1321,7 +1321,7 @@ function ProjectsTable({
                       {columnFilters.organizationId.length > 0 && (
                         <button
                           type="button"
-                          className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground sm:min-h-0 sm:px-0"
+                          className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground lg:min-h-0 lg:px-0"
                           onClick={() => patchFilters({ organizationId: "" })}
                         >
                           clear
@@ -1336,7 +1336,7 @@ function ProjectsTable({
                         })
                       }
                     >
-                      <SelectTrigger className="h-11 text-base sm:h-8 sm:text-sm">
+                      <SelectTrigger className="h-11 text-base lg:h-8 lg:text-sm">
                         <SelectValue placeholder="All organizations" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1472,7 +1472,7 @@ function ProjectsTable({
                         id={p.id}
                         name={p.name}
                         showIcon={false}
-                        className="inline-flex min-h-11 items-center font-medium text-foreground sm:min-h-0"
+                        className="inline-flex min-h-11 items-center font-medium text-foreground lg:min-h-0"
                       />
                     </div>
                   </TableCell>
@@ -1490,7 +1490,7 @@ function ProjectsTable({
                         // EntityRef already degrades to a truncated id, which
                         // is true and still opens.
                         name={orgEntry(p)?.name ?? null}
-                        className="inline-flex min-h-11 items-center text-sm text-muted-foreground sm:min-h-0"
+                        className="inline-flex min-h-11 items-center text-sm text-muted-foreground lg:min-h-0"
                       />
                     ) : (
                       <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -1510,7 +1510,7 @@ function ProjectsTable({
                         title={`Open ${p.name} — ${s?.open ?? 0} open task${
                           (s?.open ?? 0) === 1 ? "" : "s"
                         }`}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 hover:bg-accent hover:underline sm:min-h-0 sm:min-w-0"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 hover:bg-accent hover:underline lg:min-h-0 lg:min-w-0"
                       >
                         {s?.open ?? 0}
                       </Link>
@@ -1530,7 +1530,7 @@ function ProjectsTable({
                         title={`Open ${p.name} — ${s?.done ?? 0} completed task${
                           (s?.done ?? 0) === 1 ? "" : "s"
                         }`}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 hover:bg-accent hover:underline sm:min-h-0 sm:min-w-0"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 hover:bg-accent hover:underline lg:min-h-0 lg:min-w-0"
                       >
                         {s?.done ?? 0}
                       </Link>
@@ -1551,7 +1551,7 @@ function ProjectsTable({
                         projectName={p.name}
                         location="Projects — hub table"
                         size="icon"
-                        className="h-11 w-11 sm:h-7 sm:w-7"
+                        className="h-11 w-11 lg:h-7 lg:w-7"
                       />
                       {/* An anchor, like the Settings button beside it — an
                           onClick-only Open cannot be cmd- or middle-clicked,
@@ -1561,7 +1561,7 @@ function ProjectsTable({
                         asChild
                         size="sm"
                         variant="ghost"
-                        className="h-11 sm:h-8"
+                        className="h-11 lg:h-8"
                       >
                         <Link href={`/projects/${p.id}`}>Open</Link>
                       </Button>
@@ -1569,7 +1569,7 @@ function ProjectsTable({
                         asChild
                         size="sm"
                         variant="ghost"
-                        className="h-11 w-11 text-muted-foreground sm:h-8 sm:w-auto"
+                        className="h-11 w-11 text-muted-foreground lg:h-8 lg:w-auto"
                       >
                         <Link
                           href={`/projects/${p.id}/settings`}
@@ -1633,7 +1633,7 @@ function ProjectHubCard({
             <h3 className="font-semibold text-base">
               <Link
                 href={href}
-                className="flex min-h-11 max-w-full items-center truncate transition-colors hover:text-primary sm:min-h-0"
+                className="flex min-h-11 max-w-full items-center truncate transition-colors hover:text-primary lg:min-h-0"
               >
                 {project.name}
               </Link>
@@ -1646,7 +1646,7 @@ function ProjectHubCard({
                   // Same as the table cell: never invent the name. EntityRef
                   // falls back to a truncated id, which is honest.
                   name={org?.name ?? null}
-                  className="inline-flex min-h-11 items-center sm:min-h-0"
+                  className="inline-flex min-h-11 items-center lg:min-h-0"
                 />
               ) : (
                 <>
@@ -1695,7 +1695,7 @@ function ProjectHubCard({
                     id={t.id}
                     name={t.title}
                     showIcon={false}
-                    className="inline-flex min-h-11 items-center sm:min-h-0"
+                    className="inline-flex min-h-11 items-center lg:min-h-0"
                   />
                 </li>
               ))}
@@ -1703,7 +1703,7 @@ function ProjectHubCard({
                 <li className="text-[11px] text-muted-foreground/70 px-1 pt-0.5">
                   <Link
                     href={href}
-                    className="inline-flex min-h-11 items-center hover:text-foreground hover:underline sm:min-h-0"
+                    className="inline-flex min-h-11 items-center hover:text-foreground hover:underline lg:min-h-0"
                   >
                     +{open - preview.length} more
                   </Link>
@@ -1720,7 +1720,7 @@ function ProjectHubCard({
             <Link
               href={href}
               title={`Open ${project.name} — ${open} open task${open === 1 ? "" : "s"}`}
-              className="flex min-h-11 items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors sm:min-h-0"
+              className="flex min-h-11 items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors lg:min-h-0"
             >
               <Circle className="h-3.5 w-3.5" />
               <span className="font-semibold text-foreground tabular-nums">
@@ -1733,7 +1733,7 @@ function ProjectHubCard({
               // link would hide the very tasks this count names.
               href={`${href}?done=1`}
               title={`Open ${project.name} — ${done} completed task${done === 1 ? "" : "s"}`}
-              className="flex min-h-11 items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors sm:min-h-0"
+              className="flex min-h-11 items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors lg:min-h-0"
             >
               <CircleCheck className="h-3.5 w-3.5" />
               <span className="font-semibold text-foreground tabular-nums">
@@ -1753,15 +1753,15 @@ function ProjectHubCard({
           projectName={project.name}
           location="Projects — hub cards"
           size="icon"
-          className="h-11 w-11 shrink-0 sm:h-8 sm:w-8"
+          className="h-11 w-11 shrink-0 lg:h-8 lg:w-8"
         />
-        <Button asChild size="sm" className="h-11 flex-1 sm:h-8">
+        <Button asChild size="sm" className="h-11 flex-1 lg:h-8">
           <Link href={href}>
             Open
             <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
           </Link>
         </Button>
-        <Button asChild size="sm" variant="outline" className="h-11 sm:h-8">
+        <Button asChild size="sm" variant="outline" className="h-11 lg:h-8">
           <Link href={`/projects/${project.id}/settings`}>
             <Settings className="h-3.5 w-3.5 mr-1.5" />
             Manage
