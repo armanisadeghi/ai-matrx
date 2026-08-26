@@ -412,6 +412,31 @@ export class StreamBlockAccumulator {
       this.processLine(rawLine, dispatch);
     }
 
+    // A SIMPLE tag's closing tag buried in a newline-less fragment with
+    // content after it (`…</reasoning>{"__kind":…` — a schema-bound agent
+    // closing its reasoning and emitting minified JSON with no newline
+    // between) never completes a line, so the region stayed open and the
+    // JSON stayed invisible until finalize. Promote everything through the
+    // closing tag to a line of its own — the xml_tag handler closes the
+    // region and re-processes nothing (the line ends at the tag) — leaving
+    // the JSON as the live fragment for the opener below. Only when
+    // something FOLLOWS the tag: a bare `…</reasoning>` fragment keeps its
+    // existing wait-for-the-newline timing.
+    if (this.subState.kind === "xml_tag" && !this.subState.isAttrXml) {
+      const closeIdx = this.pendingLineFragment.indexOf(
+        this.subState.closingTag,
+      );
+      if (closeIdx !== -1) {
+        const upto = closeIdx + this.subState.closingTag.length;
+        const rest = this.pendingLineFragment.slice(upto);
+        if (rest.trimStart().length > 0) {
+          const tagLine = this.pendingLineFragment.slice(0, upto);
+          this.pendingLineFragment = rest;
+          this.processLine(tagLine, dispatch);
+        }
+      }
+    }
+
     // A newline-less minified JSON object never completes a line during the
     // stream, so processLine never opens its region — it would project as raw
     // text until finalize. Detect the object's start in the trailing fragment
@@ -859,10 +884,42 @@ export class StreamBlockAccumulator {
    */
   private maybeOpenBareJsonFromFragment(dispatch: DispatchFn): void {
     if (this.subState.kind !== "none") return;
-    // Only when the current block has no committed text: the fragment is the
-    // whole current line. Leading prose on the same line (`Here: {"a":1}`) is
-    // left as text — matching processLine's `trimmed.startsWith("{")` gate.
-    if (this.currentBlockContent) return;
+    // The fragment always begins at a LINE BOUNDARY (it is everything since
+    // the last newline), so the regex below is exactly processLine's
+    // `trimmed.startsWith("{")` gate: same-line prose (`Here: {"a":1}`) fails
+    // it because the prose is part of the fragment. Earlier text lines in the
+    // current block are NO reason to refuse — an agent that narrates for a
+    // few lines and then emits minified JSON ends with the entire payload in
+    // this fragment, and refusing meant the kind went undetected until
+    // settlement while the reader stared at raw JSON (live-caught on a Study
+    // Pack run, 2026-08-26). processLine happily opens a region after prose
+    // lines; this opener now matches it.
+
+    // A NEWLINE-LESS stream of `<tag>…</tag>{"__kind":…}` (a schema-bound
+    // agent that reasons and then emits minified JSON, no newline anywhere)
+    // never completes a line, so the whole thing sat in this fragment and
+    // NOTHING opened until finalize — reasoning invisible, kind undetected,
+    // raw JSON on screen. When the fragment holds one COMPLETE simple tag
+    // followed by a JSON start, promote the tag portion to a line of its own
+    // (processLine opens and closes it properly, remainder-aware), leaving
+    // the JSON as the live fragment for the opener below.
+    const completeTag = /^\s*<([A-Za-z][\w-]*)>[\s\S]*?<\/\1>/.exec(
+      this.pendingLineFragment,
+    );
+    if (
+      completeTag &&
+      this.pendingLineFragment
+        .slice(completeTag[0].length)
+        .trimStart()
+        .startsWith("{")
+    ) {
+      this.pendingLineFragment = this.pendingLineFragment.slice(
+        completeTag[0].length,
+      );
+      this.processLine(completeTag[0], dispatch);
+      if (this.subState.kind !== "none" || this.currentBlockContent) return;
+    }
+
     const frag = this.pendingLineFragment;
     if (!BARE_JSON_OPEN_RE.test(frag.trimStart())) return;
 
@@ -952,16 +1009,23 @@ export class StreamBlockAccumulator {
         // Attribute-XML blocks (decision/artifact/editor_*) keep the tag in
         // place — their `rawXml` metadata must match the original source
         // verbatim for replaceBlockContent round-tripping.
+        // 🚨 THE REMAINDER IS A NEW LINE, NEVER TAG CONTENT — same rule as
+        // openXmlTagBlock: content after the closing tag on the same line
+        // (a schema-bound agent's `</reasoning>{"__kind":…}`) re-enters
+        // processLine below, so a JSON payload opens its region live instead
+        // of being baked invisibly into the tag block.
+        const closingIdxRaw = rawLine.indexOf(closingTag);
+        const remainder =
+          closingIdxRaw === -1
+            ? ""
+            : rawLine.slice(closingIdxRaw + closingTag.length);
         let lineToAppend = rawLine;
-        if (!isAttrXml) {
-          const closingIdx = lineToAppend.indexOf(closingTag);
-          if (closingIdx !== -1) {
-            lineToAppend =
-              lineToAppend.slice(0, closingIdx) +
-              lineToAppend.slice(closingIdx + closingTag.length);
-          }
+        if (closingIdxRaw !== -1) {
+          lineToAppend = isAttrXml
+            ? rawLine.slice(0, closingIdxRaw + closingTag.length)
+            : rawLine.slice(0, closingIdxRaw);
         }
-        const isClosingLine = trimmed.includes(closingTag);
+        const isClosingLine = closingIdxRaw !== -1;
         // Wrapped-payload class: an attr-XML body that is JSON feeds the kind
         // parser, so the block carries `metadata.__ir` like any other JSON
         // region. The closing-tag line is chrome, never region content.
@@ -981,6 +1045,9 @@ export class StreamBlockAccumulator {
           this.closeCurrentBlock(dispatch);
           this.subState = { kind: "none" };
           this.openBlock("text", dispatch);
+          if (remainder.length > 0) {
+            this.processLine(remainder, dispatch);
+          }
         }
         return;
       }
@@ -1079,6 +1146,19 @@ export class StreamBlockAccumulator {
     // is the streaming path's twin of the fix in processSubStateLine's
     // "xml_tag" case below — together they stop `<reasoning>` / `</reasoning>`
     // (and friends) from ever being baked into the block's rendered content.
+    //
+    // 🚨 THE REMAINDER IS A NEW LINE, NEVER TAG CONTENT. Anything after the
+    // closing tag on the same line (`</reasoning>{"__kind":…}` — exactly how
+    // schema-bound agents stream: reasoning, then the JSON payload with no
+    // newline between) used to be appended INTO the tag block, so the JSON
+    // region never opened, its `__kind` never parsed, and the reader watched
+    // raw JSON until settlement (live-caught on a Study Pack run,
+    // 2026-08-26). The remainder now re-enters processLine as its own line.
+    const closingIdxRaw = rawLine.indexOf(closingTag);
+    const remainder =
+      closingIdxRaw === -1
+        ? ""
+        : rawLine.slice(closingIdxRaw + closingTag.length);
     let lineToAppend = rawLine;
     if (!isAttrXml) {
       const openIdx = rawLine.indexOf(openingTagText);
@@ -1089,17 +1169,20 @@ export class StreamBlockAccumulator {
       }
       const closingIdx = lineToAppend.indexOf(closingTag);
       if (closingIdx !== -1) {
-        lineToAppend =
-          lineToAppend.slice(0, closingIdx) +
-          lineToAppend.slice(closingIdx + closingTag.length);
+        lineToAppend = lineToAppend.slice(0, closingIdx);
       }
+    } else if (closingIdxRaw !== -1) {
+      lineToAppend = rawLine.slice(0, closingIdxRaw + closingTag.length);
     }
 
     this.appendToCurrentBlock(lineToAppend);
-    if (trimmed.includes(closingTag)) {
+    if (closingIdxRaw !== -1) {
       this.closeCurrentBlock(dispatch);
       this.subState = { kind: "none" };
       this.openBlock("text", dispatch);
+      if (remainder.length > 0) {
+        this.processLine(remainder, dispatch);
+      }
     }
   }
 
