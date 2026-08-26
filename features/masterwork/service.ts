@@ -422,6 +422,12 @@ export async function listRecentRunsForMasterworks(
 }
 
 export interface MasterworkRunVerdict {
+  /** The winning deliverable itself (generate shape, 2026-08-25+ graphs). */
+  resultText?: string | null;
+  /** The winning variant's named approach, when the graph carried one. */
+  resultApproach?: string | null;
+  /** The ruling as routed to `show` (new graphs); older runs use chiefText. */
+  verdictText?: string | null;
   status: string;
   /** The chief's ruling (edit + generate shapes both end on node "chief"). */
   chiefText: string | null;
@@ -496,7 +502,7 @@ export async function getMasterworkRunVerdict(
         .from("node_outcome")
         .select("node_id, output")
         .eq("run_id", runId)
-        .in("node_id", ["chief", "editor", "understudy"])
+        .in("node_id", ["chief", "editor", "understudy", "show"])
         .returns<{ node_id: string; output: Record<string, unknown> | null }[]>(),
     ]);
   if (runError) throw runError;
@@ -512,8 +518,21 @@ export async function getMasterworkRunVerdict(
       readAgentRunOutput(o.output)?.finalText ?? null,
     ]),
   );
+  // THE HANDOVER (2026-08-25, run beaf6a28): a generate Masterwork's `show`
+  // node now receives the WINNING WORK (`result`) beside the ruling
+  // (`verdict`) — the old graphs sent only prose about the work. Read both
+  // when present; older runs simply have neither key.
+  const showOutput =
+    (outcomes ?? []).find((o) => o.node_id === "show")?.output ?? null;
+  const showString = (key: string): string | null => {
+    const v = showOutput?.[key];
+    return typeof v === "string" && v.trim() ? v : null;
+  };
   return {
     status: String(run.status),
+    resultText: showString("result"),
+    resultApproach: showString("approach"),
+    verdictText: showString("verdict"),
     chiefText: byNode.get("chief") ?? null,
     editorText: correctedProse(byNode.get("editor") ?? null),
     understudyText: byNode.get("understudy") ?? null,

@@ -197,6 +197,20 @@ export function TryMasterworkBox({
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [phase, setPhase] = useState<Phase>("idle");
   const [stages, setStages] = useState<StageRow[]>([]);
+  /**
+   * Live token deltas from the node currently talking (Arman, 2026-08-25, on
+   * run beaf6a28: the chief burned 112 of 141 seconds behind one spinner and
+   * everything "appeared instantly" — the SERVER streamed the whole time; this
+   * box just dropped every `node_stream` frame on the floor). Keyed to one
+   * node at a time: a new streaming node replaces the previous node's text.
+   */
+  const [liveText, setLiveText] = useState<{ nodeId: string; text: string } | null>(
+    null,
+  );
+  const liveTailRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    liveTailRef.current?.scrollIntoView({ block: "nearest" });
+  }, [liveText]);
   const [verdict, setVerdict] = useState<MasterworkRunVerdict | null>(null);
   const [failure, setFailure] = useState<RunFailureExplanation | null>(null);
   /** True while showing a run recovered on mount rather than started here. */
@@ -307,6 +321,25 @@ export function TryMasterworkBox({
       event.node_id ?? "",
     );
     const nodeId = typeof event.node_id === "string" ? event.node_id : null;
+    if (
+      nodeId &&
+      event.event === "node_stream" &&
+      typeof event.delta === "string" &&
+      event.delta
+    ) {
+      // Text kinds only — structured/blocks frames carry their own kinds and
+      // would render as JSON soup here.
+      const kind = typeof event.kind === "string" ? event.kind : "chunk";
+      if (kind === "chunk" || kind === "text") {
+        const delta = event.delta;
+        setLiveText((prev) =>
+          prev && prev.nodeId === nodeId
+            ? { nodeId, text: prev.text + delta }
+            : { nodeId, text: delta },
+        );
+      }
+      return;
+    }
     if (nodeId && event.event === "node_started") {
       setStages((prev) =>
         prev.some((s) => s.nodeId === nodeId)
@@ -328,6 +361,7 @@ export function TryMasterworkBox({
             : s,
         ),
       );
+      setLiveText((prev) => (prev?.nodeId === nodeId ? null : prev));
     }
     if (TERMINAL_RUN_EVENTS.has(event.event)) {
       const runId = runIdRef.current;
@@ -427,7 +461,10 @@ export function TryMasterworkBox({
   /** What a finished run produced — the Audition's candidate, when there is one. */
   const candidateText =
     phase === "done" && verdict
-      ? (verdict.editorText ?? verdict.chiefText ?? verdict.understudyText)
+      ? (verdict.resultText ??
+        verdict.editorText ??
+        verdict.chiefText ??
+        verdict.understudyText)
       : null;
 
   const start = async () => {
@@ -616,6 +653,21 @@ export function TryMasterworkBox({
         </ul>
       ) : null}
 
+      {/* THE WATCHABLE WAIT (run beaf6a28): the currently talking step's own
+          words, streaming live, auto-following the tail. This replaces the
+          "one small spinner for several minutes, then everything at once". */}
+      {liveText && phase === "running" ? (
+        <div className="max-h-56 overflow-y-auto rounded-md border border-border/60 bg-muted/30 p-2.5">
+          <p className="mb-1 text-[11px] font-medium text-muted-foreground">
+            {stageLabel(liveText.nodeId)} — live
+          </p>
+          <pre className="whitespace-pre-wrap break-words font-sans text-xs text-foreground">
+            {liveText.text}
+          </pre>
+          <div ref={liveTailRef} />
+        </div>
+      ) : null}
+
       {/* A stopped run is never a bare red line: what stopped, why in plain
           words, what to do next — and the technical cause kept reachable
           rather than hidden or promoted to the headline. */}
@@ -647,6 +699,26 @@ export function TryMasterworkBox({
               This finished while you were away — here&apos;s what it decided.
             </p>
           ) : null}
+          {/* THE DELIVERABLE FIRST (run beaf6a28): the winning work itself,
+              when the graph handed it over. The ruling renders after it. */}
+          {verdict.resultText ? (
+            <div>
+              <h4 className="mb-1 text-xs font-semibold text-foreground">
+                Your result
+                {verdict.resultApproach ? (
+                  <span className="ml-1.5 font-normal text-muted-foreground">
+                    — {verdict.resultApproach}
+                  </span>
+                ) : null}
+              </h4>
+              <RichDocument
+                content={verdict.resultText}
+                source={{ type: "raw" }}
+                hideCopyButton
+                contentClassName="text-sm"
+              />
+            </div>
+          ) : null}
           {verdict.editorText ? (
             <div>
               <h4 className="mb-1 text-xs font-semibold text-foreground">
@@ -666,12 +738,14 @@ export function TryMasterworkBox({
               Understudy run report "no ruling text came back" (2026-08-18). */}
           <div>
             <h4 className="mb-1 text-xs font-semibold text-foreground">
-              {verdict.chiefText ? "The ruling" : "The first cut"}
+              {(verdict.verdictText ?? verdict.chiefText) ? "The ruling" : "The first cut"}
             </h4>
-            {(verdict.chiefText ?? verdict.understudyText) ? (
+            {(verdict.verdictText ?? verdict.chiefText ?? verdict.understudyText) ? (
               <RichDocument
                 content={
-                  (verdict.chiefText ?? verdict.understudyText) as string
+                  (verdict.verdictText ??
+                    verdict.chiefText ??
+                    verdict.understudyText) as string
                 }
                 source={{ type: "raw" }}
                 hideCopyButton
