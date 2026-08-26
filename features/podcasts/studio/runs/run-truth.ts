@@ -74,3 +74,24 @@ export function trueSummaryLiveness(run: RunSummary): RunLiveness {
   if (total > 0 && failed === 0 && done >= total) return "completed";
   return run.liveness;
 }
+
+/**
+ * A client scratch row can retain a backend_run_id after the durable server
+ * record has disappeared or was never committed. That id is not proof that a
+ * resumable run exists: only a successful durable-detail read is. Never send
+ * reconcile/resume requests for a known-missing record; the saved source is
+ * the only honest recovery path.
+ */
+export function isOrphanedServerRun(input: {
+  hasClientRow: boolean;
+  clientStatus: string | null | undefined;
+  hasServerDetail: boolean;
+  hasPendingStart: boolean;
+}): boolean {
+  return (
+    input.hasClientRow &&
+    !input.hasServerDetail &&
+    !input.hasPendingStart &&
+    (input.clientStatus === "running" || input.clientStatus === "failed")
+  );
+}

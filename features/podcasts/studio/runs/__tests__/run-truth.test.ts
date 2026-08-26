@@ -2,7 +2,11 @@ import { describe, expect, it } from "@jest/globals";
 
 import { deriveRecoveryState } from "../recovery";
 import { detailToRunState } from "../mapping";
-import { trueLiveness, trueSummaryLiveness } from "../run-truth";
+import {
+  isOrphanedServerRun,
+  trueLiveness,
+  trueSummaryLiveness,
+} from "../run-truth";
 import { isEpisodeSettled, mergeAncillarySlots } from "../reconcile";
 import type { RunDetail, RunSummary } from "../run-types";
 
@@ -100,9 +104,9 @@ describe("trueLiveness", () => {
     expect(
       trueLiveness(detail({ liveness: "cancelled", audio_url: "https://c/a" })),
     ).toBe("cancelled");
-    expect(
-      trueLiveness(detail({ liveness: "draft", episode_id: "e1" })),
-    ).toBe("draft");
+    expect(trueLiveness(detail({ liveness: "draft", episode_id: "e1" }))).toBe(
+      "draft",
+    );
   });
 });
 
@@ -145,7 +149,10 @@ describe("trueSummaryLiveness", () => {
   it("counts a published run as completed", () => {
     expect(
       trueSummaryLiveness(
-        summary({ episode_id: "e1", stage_progress: { done: 3, failed: 0, total: 14 } }),
+        summary({
+          episode_id: "e1",
+          stage_progress: { done: 3, failed: 0, total: 14 },
+        }),
       ),
     ).toBe("completed");
   });
@@ -167,6 +174,41 @@ describe("trueSummaryLiveness", () => {
   });
 });
 
+describe("isOrphanedServerRun", () => {
+  it("treats a stale backend id with no server record as orphaned", () => {
+    expect(
+      isOrphanedServerRun({
+        hasClientRow: true,
+        clientStatus: "failed",
+        hasServerDetail: false,
+        hasPendingStart: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not orphan a fresh run whose stream has not started yet", () => {
+    expect(
+      isOrphanedServerRun({
+        hasClientRow: true,
+        clientStatus: "running",
+        hasServerDetail: false,
+        hasPendingStart: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("trusts a durable server record over a stale client status", () => {
+    expect(
+      isOrphanedServerRun({
+        hasClientRow: true,
+        clientStatus: "failed",
+        hasServerDetail: true,
+        hasPendingStart: false,
+      }),
+    ).toBe(false);
+  });
+});
+
 describe("mergeAncillarySlots", () => {
   const slot = (index: number, url: string | null, status: string) => ({
     index,
@@ -180,8 +222,20 @@ describe("mergeAncillarySlots", () => {
     const merged = mergeAncillarySlots(
       [slot(0, "https://cdn/a.jpg", "done")],
       [
-        { stage_key: "image_1", kind: "image", slot: 1, status: "pending", action: "none" },
-        { stage_key: "image_2", kind: "image", slot: 2, status: "failed", action: "regenerate" },
+        {
+          stage_key: "image_1",
+          kind: "image",
+          slot: 1,
+          status: "pending",
+          action: "none",
+        },
+        {
+          stage_key: "image_2",
+          kind: "image",
+          slot: 2,
+          status: "failed",
+          action: "regenerate",
+        },
       ],
       "image",
     );
@@ -195,7 +249,15 @@ describe("mergeAncillarySlots", () => {
   it("never downgrades a slot the user can already see", () => {
     const merged = mergeAncillarySlots(
       [slot(1, "https://cdn/b.jpg", "done")],
-      [{ stage_key: "image_1", kind: "image", slot: 1, status: "pending", action: "none" }],
+      [
+        {
+          stage_key: "image_1",
+          kind: "image",
+          slot: 1,
+          status: "pending",
+          action: "none",
+        },
+      ],
       "image",
     );
     expect(merged[0].status).toBe("done");
@@ -207,7 +269,15 @@ describe("mergeAncillarySlots", () => {
     expect(
       mergeAncillarySlots(
         existing,
-        [{ stage_key: "video_0", kind: "video", slot: 0, status: "failed", action: "regenerate" }],
+        [
+          {
+            stage_key: "video_0",
+            kind: "video",
+            slot: 0,
+            status: "failed",
+            action: "regenerate",
+          },
+        ],
         "image",
       ),
     ).toBe(existing);
@@ -221,7 +291,11 @@ describe("isEpisodeSettled", () => {
       outcome: "completed",
       status: "completed",
       reason: "",
-      essential: { script: "completed", audio: "completed", episode: "completed" },
+      essential: {
+        script: "completed",
+        audio: "completed",
+        episode: "completed",
+      },
       audio_url: "https://cdn/a.mp3",
       script: "x",
       episode_id: "e1",
@@ -243,7 +317,11 @@ describe("isEpisodeSettled", () => {
     expect(
       isEpisodeSettled(
         rec({
-          essential: { script: "completed", audio: "completed", episode: "pending" },
+          essential: {
+            script: "completed",
+            audio: "completed",
+            episode: "pending",
+          },
           episode_id: null,
         }),
       ),
@@ -254,7 +332,11 @@ describe("isEpisodeSettled", () => {
     expect(
       isEpisodeSettled(
         rec({
-          essential: { script: "completed", audio: "completed", episode: "pending" },
+          essential: {
+            script: "completed",
+            audio: "completed",
+            episode: "pending",
+          },
           episode_id: "e1",
         }),
       ),

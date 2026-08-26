@@ -12,7 +12,7 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 | Public index               | `/podcast`                                              | `app/(core)/podcast/page.tsx` → `PodcastIndexClient.tsx` → `PodcastGrid.tsx` — Studio/create CTAs + "Your podcasts" (owned via `useMyPodcasts`, incl. drafts, Manage links) vs "On the platform" (published, minus yours) |
 | Public episode/show        | `/podcast/[slug]` (slug or UUID)                        | `app/(core)/podcast/[slug]/page.tsx` → `features/podcasts/components/player/{PodcastEpisodePage,PodcastShowPage}.tsx`                                                                                                     |
 | RSS feed (show)            | `/podcast/[slug]/feed.xml`                              | `app/(core)/podcast/[slug]/feed.xml/route.ts` — iTunes RSS 2.0 + `<podcast:chapters>` per item that has markers                                                                                                           |
-| JSON chapters (episode)    | `/podcast/[slug]/chapters.json`                         | `app/(core)/podcast/[slug]/chapters.json/route.ts` → `features/podcasts/chapters-json.ts` — Podcasting 2.0 JSON Chapters 1.2.0; 404 when the episode has none                                                            |
+| JSON chapters (episode)    | `/podcast/[slug]/chapters.json`                         | `app/(core)/podcast/[slug]/chapters.json/route.ts` → `features/podcasts/chapters-json.ts` — Podcasting 2.0 JSON Chapters 1.2.0; 404 when the episode has none                                                             |
 | Studio dashboard           | `/podcast/studio`                                       | `features/podcasts/studio/components/StudioDashboard.tsx`                                                                                                                                                                 |
 | Create                     | `/podcast/studio/create`                                | `CreateView.tsx` → `generator/components/GeneratorForm.tsx`                                                                                                                                                               |
 | Entryway prefill           | `/podcast/studio/create?topic=...&format=...&agent=...` | Used by `/demos/matrx-entry`; pre-fills the source topic, format, and selected agent profile note before run creation                                                                                                     |
@@ -108,6 +108,13 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-25 — **A stale `backend_run_id` no longer triggers impossible
+  reconcile/resume calls.** The durable-detail lookup, not the scratch row's
+  cached id, proves that a server run exists. A running/failed
+  `pc_studio_runs` row whose `agent_run` is missing is now classified as
+  orphaned immediately, skips `/podcast/runs/{id}/reconcile` and
+  `/podcast/resume/{id}`, and offers only the saved-source re-run.
+
 - 2026-08-25 — **Chapters stopped being write-only — the listener and the RSS
   feed both read them now (agent-manifest campaign, RULING B).** The
   `podcast.chapter_marker` agent had been persisting markers to
@@ -130,7 +137,7 @@ is easy to fill in.
   Podcasting 2.0 chapters** — new `app/(core)/podcast/[slug]/chapters.json`
   Route Handler serves the JSON Chapters 1.2.0 document, and `feed.xml`
   declares `xmlns:podcast` and emits `<podcast:chapters url= type=
-  "application/json+chapters"/>` per item that has them. Linked JSON, NOT
+"application/json+chapters"/>` per item that has them. Linked JSON, NOT
   inline PSC: it is what modern apps read, it keeps the feed small with an
   independent cache lifetime, and it is one more Route Handler rather than
   XML-building a natively-JSON payload (rationale in
@@ -207,7 +214,7 @@ is easy to fill in.
   preview supplies genders), which is why every persisted row looks correct and
   this stayed invisible. Fix, in `podcast_generator.py`: gender now resolves
   through a deterministic chain — `request.speakers` → the agent's
-  `<speaker_settings>` → a name table (`_GENDER_BY_NAME`) — *before* any voice
+  `<speaker_settings>` → a name table (`_GENDER_BY_NAME`) — _before_ any voice
   is drawn, so a resumed run in a new worker re-derives the identical cast; an
   unresolved name still falls through to neutral but now says so loudly.
   `_verify_cast_genders` is the last line before the paid TTS call: it repairs
@@ -295,7 +302,7 @@ is easy to fill in.
   route until the run is over.** The prompt asking for it first did NOT fix
   it; moving `__kind` to the front of `properties` did. **Verified end to end
   ON PRODUCTION** (v0.4.460, the same episode): Generate opened a `position:
-  fixed` window titled "Marking chapters" — the page did not move — chapters
+fixed` window titled "Marking chapters" — the page did not move — chapters
   rendered as `MediaChaptersBlock` rows with mono offset chips and never as
   raw JSON, the save landed on `metadata.chapters` with `__kind` stripped to
   the three `PcEpisodeChapter` fields, and after a reload the panel shows the
@@ -377,7 +384,7 @@ is easy to fill in.
   the `cost` column set (gap = 0), 38 runs carry a non-zero `total_cost`, and
   the column sum equals the payload sum exactly ($13.6126). Both halves are
   proven independently — the backfill settled the history, and runs generated
-  *after* the deploy (`ee295ea3`, `55850645`) recorded their cost through the
+  _after_ the deploy (`ee295ea3`, `55850645`) recorded their cost through the
   live path with no backfill involved. The run this section names, `7f237d93`,
   now reads **$0.669998** instead of `0`. The reconciliation sweep is not merely
   registered but **scheduled and firing**: `scheduler.sch_task` +

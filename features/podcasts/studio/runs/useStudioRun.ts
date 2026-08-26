@@ -54,7 +54,7 @@ import {
 } from "./runsApi";
 import { fetchPodcastRunDetail } from "./runsRepository";
 import { deriveRecoveryState, type RecoveryState } from "./recovery";
-import { trueLiveness } from "./run-truth";
+import { isOrphanedServerRun, trueLiveness } from "./run-truth";
 import {
   hasDeliverableEpisode,
   isEpisodeSettled,
@@ -103,8 +103,9 @@ export interface UseStudioRun {
   backgroundWorking: boolean;
   /** True when the run is interrupted and resumable from a checkpoint. */
   canReconnect: boolean;
-  /** The run never got a durable server record (no backend_run_id, no
-   *  agent_run), so there is nothing to attach to or resume — only re-run.
+  /** The run has no durable server record (including a stale backend_run_id
+   *  whose agent_run no longer exists), so there is nothing to attach to or
+   *  resume — only re-run.
    *  This is a SERVER fault, never the user's; name it instead of leaving the
    *  page sitting on a run that looks alive forever. Root cause of the
    *  2026-08-01→04 outage: the DB refused writes, so no run row was created.
@@ -562,8 +563,12 @@ export function useStudioRun(runId: string): UseStudioRun {
               // Stopping here would leave the page without an episode id, and
               // every post-run tool keys off that. Keep observing until it
               // lands, at the server's cadence.
-              const settled = rec.outcome !== "completed" || isEpisodeSettled(rec);
-              if (settled && (rec.outcome === "completed" || rec.outcome === "failed")) {
+              const settled =
+                rec.outcome !== "completed" || isEpisodeSettled(rec);
+              if (
+                settled &&
+                (rec.outcome === "completed" || rec.outcome === "failed")
+              ) {
                 completedRef.current = true;
                 setBackgroundWorking(false);
                 return;
@@ -937,16 +942,18 @@ export function useStudioRun(runId: string): UseStudioRun {
       // branch render first, which is the exact opposite of the truth. A queued
       // live start means the run is about to stream, so it is not orphaned;
       // `hasPendingStart` peeks without consuming the single take below.
-      const isOrphaned =
-        !runDetail &&
-        row?.status === "running" &&
-        !backendRunIdRef.current &&
-        !hasPendingStart(runId);
+      const isOrphaned = isOrphanedServerRun({
+        hasClientRow: Boolean(row),
+        clientStatus: row?.status,
+        hasServerDetail: Boolean(runDetail),
+        hasPendingStart: hasPendingStart(runId),
+      });
       setOrphaned(isOrphaned);
       if (isOrphaned) {
         console.error(
           `[studio-run] run ${runId} has no durable server record ` +
-            `(backend_run_id is null and no agent_run exists). The generation ` +
+            `(no agent_run exists, even if the scratch row retained a stale ` +
+            `backend_run_id). The generation ` +
             `could not be saved or resumed — this is a server-side fault.`,
         );
       }
@@ -986,6 +993,11 @@ export function useStudioRun(runId: string): UseStudioRun {
       // page must never do is invite a re-run of an episode that exists.
       const liveness = runDetail ? trueLiveness(runDetail) : undefined;
       const delivered = liveness === "completed";
+      // The detail lookup already proved this server record does not exist.
+      // Reconcile and Resume would only manufacture actionable 404 incidents
+      // and leave the user retrying an impossible checkpoint. The orphan
+      // banner offers the saved-source re-run instead.
+      if (isOrphaned) return;
       if (
         pending &&
         (row?.status === "running" || liveness === "alive" || !runDetail)
