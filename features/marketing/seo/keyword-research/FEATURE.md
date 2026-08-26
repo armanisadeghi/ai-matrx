@@ -112,13 +112,13 @@ Management (the ruling's other half — autosave must not become clutter):
   (detach-from-page chips, pre-existing). All archives confirm first
   (`confirm()` dialog) and toast an Undo that calls restore.
 
-The workbench explorer keeps the canonical table on desktop and uses
-MatrxDataTable's `mobileCards` seam below `lg`, covering phones and portrait
-tablets. Each card keeps the full keyword readable (including long multilingual
-phrases), exposes Source, Volume, Intent, Trajectory, and Dossier as the
-priority summary, and keeps both selection and the shared Keyword Intelligence
-/ Archive menu in 44px targets. The same selection state drives the canonical
-bulk bar, so Archive selected is never hidden behind horizontal scrolling.
+The workbench explorer keeps the canonical table from `sm` upward and uses
+MatrxDataTable's phone-card seam below `sm`. Each card keeps the full keyword
+readable (including long multilingual phrases), exposes Source, Volume, Intent,
+Trajectory, and Dossier as the priority summary, and keeps both selection and
+the shared Keyword Intelligence / Archive menu in 44px targets. The same
+selection state drives the canonical bulk bar, so Archive selected is never
+hidden behind horizontal scrolling.
 
 **Every keyword row opens the same door, and offers the same actions.** On the
 Performance tab a row click opens the shared Keyword Intelligence dossier and a
@@ -281,10 +281,10 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
-- 2026-08-25 — **Keyword cards now cover portrait tablets.** The workbench
-  opts the canonical `mobileCardsBreakpoint="lg"` seam into its complete card
-  summary through 1023px; desktop keeps the full table and every width shares
-  one query, toolbar, selection state, and action path.
+- 2026-08-26 — **Keyword cards are phone-only.** The workbench uses the default
+  `mobileCardsBreakpoint="sm"`; 768px portrait tablets retain the canonical
+  table while phones keep the complete card summary. Every width shares one
+  query, toolbar, selection state, and action path.
 
 - 2026-08-25 — **Deterministic non-writing replay and touch-safe launcher.** The
   super-admin workbench links both keyword output kinds to the canonical Shape

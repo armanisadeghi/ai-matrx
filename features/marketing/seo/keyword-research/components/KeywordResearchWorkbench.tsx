@@ -937,7 +937,6 @@ export default function KeywordResearchWorkbench() {
               columns={columns}
               getRowId={(row) => row.id}
               mobileCards={renderMobileKeywordCard}
-              mobileCardsBreakpoint="lg"
               isLoading={loading}
               toolbar={toolbar}
               copy={{
