@@ -841,13 +841,28 @@ comment on function hr.alert_recipients is
 -- SPEC-ACCESS's DERIVED HR ROLE GRANT, and HRB-007 has not built hr.access_role /
 -- hr.derived_grant. A door with no lock is worse than no door: both functions write the denial
 -- audit row §14.6 requires and then refuse.
+-- 🚨 BUILD-PROVEN CORRECTION (core tranche 4, applied as hr_13b + hr_13c and folded back here).
+-- The first form of these doors wrote a granted=false audit row and then RAISEd — and a raise
+-- ABORTS THE TRANSACTION, taking the audit row with it. A probe confirmed it: the refusal fired
+-- 42501 and hr.access_audit gained nothing. §14.6 requires the opposite ("a refused break-glass
+-- attempt is exactly the event a compliance officer wants to see"), and a denial log that records
+-- only the denials which did not happen is worse than none, because it reads as evidence.
+-- Postgres has no autonomous transactions, so for a raising function "refuse atomically" and
+-- "record durably" genuinely conflict. §14.6's own wording settles it — each door "writes a row
+-- here BEFORE RETURNING DATA, including on denial" — so both RETURN a refusal envelope and the
+-- audit row commits with the caller's transaction.
+--   refused: {"granted": false, "reason": "...", "audit_id": "..."}  -- NO row payload, ever
+-- hr.reveal_ssn returns jsonb rather than text for the same reason: a text return would let a
+-- refusal string be rendered where an SSN was expected.
+-- A missing subject still RAISES: nothing was reached, and an audit row with a null
+-- organization_id cannot exist by the table's own contract.
 create or replace function hr.read_confidential(p_token text, p_id uuid, p_purpose text,
                                                 p_break_glass boolean default false,
                                                 p_justification text default null)
 returns jsonb
 language plpgsql security definer set search_path = hr, public
 as $fn$
-declare v_schema text; v_table text; v_org uuid;
+declare v_schema text; v_table text; v_org uuid; v_audit uuid;
 begin
   select e.schema_name, e.table_name into v_schema, v_table
     from platform.entity_types e where e.token = p_token;
@@ -857,44 +872,57 @@ begin
 
   execute format('select organization_id from %I.%I where id = $1', v_schema, v_table)
      into v_org using p_id;
+  if v_org is null then
+    raise exception 'hr.read_confidential: no % row with id %', p_token, p_id using errcode = 'P0002';
+  end if;
 
-  perform hr._record_access_audit(
+  v_audit := hr._record_access_audit(
     p_organization_id => v_org, p_action => 'denied', p_target_token => p_token,
     p_purpose => coalesce(p_purpose, '(none given)'), p_basis => 'refused', p_granted => false,
     p_target_ids => ARRAY[p_id], p_sensitivity_tier => 'restricted',
     p_is_break_glass => p_break_glass, p_justification => p_justification,
     p_denial_reason => 'derived HR role grants are not built (HRB-007 / SPEC-ACCESS); the door refuses rather than admitting an unchecked read');
 
-  raise exception
-    'hr.read_confidential: SPEC-ACCESS derived HR role grants are not built yet (HRB-007). The read was refused and audited rather than admitted unchecked.'
-    using errcode = '42501';
+  return jsonb_build_object(
+    'granted', false,
+    'reason', 'SPEC-ACCESS derived HR role grants are not built yet (HRB-007). The read was refused and audited rather than admitted unchecked.',
+    'audit_id', v_audit);
 end
 $fn$;
 
 comment on function hr.read_confidential is
-  'SPEC-DATA-MODEL 1.4 / 14.6: the audited read path for every CONF table. FAIL-CLOSED pending HRB-007 — it writes the granted=false audit row and refuses, because a door whose lock does not exist yet must not open. HRB-007 replaces the body with the derived-role check; the signature is frozen.';
+  'SPEC-DATA-MODEL 1.4 / 14.6: the audited read path for every CONF table. Returns a refusal ENVELOPE rather than raising, because a raise rolls back the audit row that justifies the refusal (proven live, tranche 4). Refused envelopes carry no row payload. FAIL-CLOSED pending HRB-007.';
 
-create or replace function hr.reveal_ssn(p_employee_id uuid, p_purpose text,
-                                         p_justification text default null)
-returns text
+drop function if exists hr.reveal_ssn(uuid, text, text);
+
+create function hr.reveal_ssn(p_employee_id uuid, p_purpose text,
+                              p_justification text default null)
+returns jsonb
 language plpgsql security definer set search_path = hr, public
 as $fn$
-declare v_org uuid;
+declare v_org uuid; v_audit uuid;
 begin
   select organization_id into v_org from hr.employee where id = p_employee_id;
+  if v_org is null then
+    raise exception 'hr.reveal_ssn: no hr.employee row with id %', p_employee_id using errcode = 'P0002';
+  end if;
 
-  perform hr._record_access_audit(
+  v_audit := hr._record_access_audit(
     p_organization_id => v_org, p_action => 'denied', p_target_token => 'hr_employee_private',
     p_purpose => coalesce(p_purpose, '(none given)'), p_basis => 'refused', p_granted => false,
     p_target_ids => ARRAY[p_employee_id], p_sensitivity_tier => 'restricted',
     p_field_key => 'ssn', p_justification => p_justification,
     p_denial_reason => 'derived HR role grants (HRB-007) and the aidream-held pgcrypto envelope key (AR 1.18) are both absent');
 
-  raise exception
-    'hr.reveal_ssn: refused and audited. Needs HRB-007''s derived role grants AND the aidream-held envelope key; neither is a database-only concern.'
-    using errcode = '42501';
+  return jsonb_build_object(
+    'granted', false,
+    'reason', 'Refused and audited. Needs HRB-007 derived role grants AND the aidream-held envelope key; neither is a database-only concern.',
+    'audit_id', v_audit);
 end
 $fn$;
+
+comment on function hr.reveal_ssn(uuid, text, text) is
+  'SPEC-DATA-MODEL 4.2 / 14.6. Returns jsonb, not text, so a refusal can never be rendered where an SSN was expected. Refusal is RETURNED so the audit row survives.';
 
 revoke all on function hr.read_confidential(text, uuid, text, boolean, text) from public;
 grant execute on function hr.read_confidential(text, uuid, text, boolean, text) to authenticated, service_role;
