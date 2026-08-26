@@ -217,8 +217,12 @@ export function MandateAgentPicker({
                 : null,
               // The server REPLACES consumption_map with what is sent —
               // re-send the binding's current map so a quick agent swap never
-              // silently wipes the consumption choices.
-              consumptionMap: parseBindingWave1(data.myBinding).consumptionMap,
+              // silently wipes the consumption choices. LEGACY mandates (no
+              // provision) must send NO map at all — the server 422s on any
+              // non-null map there, {} included.
+              ...(parseMandateWave1(data.mandate).provisionKey
+                ? { consumptionMap: parseBindingWave1(data.myBinding).consumptionMap }
+                : {}),
             },
           );
         }
@@ -272,6 +276,11 @@ export function MandateAgentPicker({
           {
             agentId: candidateId,
             configOverrides,
+            // Same map re-send + legacy guard as the fast-path write above —
+            // this site shipped without it and silently wiped maps on swap.
+            ...(parseMandateWave1(data.mandate).provisionKey
+              ? { consumptionMap: parseBindingWave1(data.myBinding).consumptionMap }
+              : {}),
           },
         );
       }
