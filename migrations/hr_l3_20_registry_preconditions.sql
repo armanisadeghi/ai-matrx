@@ -208,8 +208,12 @@ begin
   select count(*) into v_n from hr.earning_code
    where organization_id = '39c38960-d30c-4840-b0c1-c9960de95582'::uuid
      and is_seeded and deleted_at is null;
-  if v_n <> 23 then
-    raise exception 'hr_l3_20: the earning-code template holds % rows, expected 23 (SPEC-DATA-MODEL §6.10)', v_n;
+  -- 24, not 23: `hr_l3_24` adds `UNPAID`, because §6.10's 23 codes leave `hours_category =
+  -- 'unpaid_leave'` with no code while `hr.work_interval.earning_code_id` is NOT NULL — an
+  -- unpaid-leave interval was literally unwritable. Same lane, same file, updated in place rather
+  -- than left as a landmine for a re-apply.
+  if v_n < 23 then
+    raise exception 'hr_l3_20: the earning-code template holds % rows, expected at least 23 (SPEC-DATA-MODEL §6.10)', v_n;
   end if;
   select string_agg(code, ', ') into v_bad from hr.earning_code
    where organization_id = '39c38960-d30c-4840-b0c1-c9960de95582'::uuid
