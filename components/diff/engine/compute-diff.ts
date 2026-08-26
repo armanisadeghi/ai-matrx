@@ -245,7 +245,11 @@ function diffObjects(
   const nodes: DiffNode[] = [];
 
   for (const key of allKeys) {
-    if (options.skipUnderscorePrefix !== false && key.startsWith("_")) continue;
+    // Structured values are lossless by default. Prefix-based suppression is
+    // an opt-in presentation rule for consumers that explicitly own it (notes
+    // do); making it the default hid schema-significant keys such as `__kind`
+    // and allowed an agent version comparison to report "No changes".
+    if (options.skipUnderscorePrefix === true && key.startsWith("_")) continue;
     if (options.excludePaths?.has(key)) continue;
 
     const fullPath = [...path, key];

@@ -399,6 +399,7 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-25` — **Agent version comparison, capture, restore, copy, and sync now share the full portable field contract.** The false “No changes” verdict on Growth Loop Collection Quality Judge v4→v5 was caused by the shared diff engine hiding the schema's added `__kind`; agent diffs now retain every underscore-prefixed contract key. The field audit also found `default_rag_boost`, `rag_awareness_mode`, and the new `input_kind` absent from historical version storage, plus newer configuration fields absent from `promote_version`. `agent_version_diff_field_parity.sql` is applied and ledgered: it versions/projects/restores all fields, extends linked sync and both duplicate paths, backfills the 5,473 existing RAG snapshots plus the 178 current input-kind snapshots, and contains live function-parity assertions. Rollback-only canaries proved create/update snapshots, promote, linked sync, duplicate-agent, and duplicate-version.
 - `2026-08-25` — `DocumentsWorkspace` no longer renders its 240px document rail beside the editor on mobile. The list becomes a full-width workspace state, selecting a document returns to the full-width editor, and the existing list/collapse controls remain the navigation—fixing the crushed Working document canvas across Chat, context drawers, panels, and windows.
 - `2026-08-25` — Smart Input context rails now support an `overflow-only` presentation: every
   attached context item stays available to execution while the composer renders only the

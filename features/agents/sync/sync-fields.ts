@@ -136,6 +136,12 @@ export const AGENT_SYNC_FIELDS: readonly AgentSyncField[] = [
     label: "Context kill switch",
     group: "behavior",
   },
+  {
+    column: "input_kind",
+    field: "inputKind",
+    label: "Input kind",
+    group: "behavior",
+  },
 ] as const;
 
 /**

@@ -31,5 +31,7 @@ export const AGENT_IDENTITY_KEYS: Record<string, string> = {
 export const AGENT_DIFF_OPTIONS: DiffOptions = {
   excludePaths: AGENT_EXCLUDE_PATHS,
   identityKeys: AGENT_IDENTITY_KEYS,
-  skipUnderscorePrefix: true,
+  // Agent configuration is executable data. `_`/`__` keys (especially
+  // output-schema `__kind`) are contract fields, never hidden metadata.
+  skipUnderscorePrefix: false,
 };

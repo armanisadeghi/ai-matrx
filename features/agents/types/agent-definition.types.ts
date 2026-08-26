@@ -290,6 +290,14 @@ export interface AgentDefinition {
    */
   autoContextDisabled: boolean;
 
+  /**
+   * Registered Content IR kind accepted at the agent input boundary. Null means
+   * the agent still uses its inline variable contract. This declaration is
+   * executable behavior, so it participates in diff, sync, snapshot, restore,
+   * and duplication exactly like outputSchema.
+   */
+  inputKind: string | null;
+
   modelTiers: ModelTiers | null;
   outputSchema: OutputSchema | null;
   customTools: CustomToolDefinition[];
@@ -492,7 +500,9 @@ export interface AgentExecutionFull {
   // FE-only model-gated UI flags — projected so the chat/execution path can gate
   // attachment inputs (previously read from settings before the 2026-06 move).
   ui_gates: UiGates;
-  rag_awareness_mode?: string;
+  default_rag_boost: number;
+  rag_awareness_mode: string;
+  input_kind: string | null;
 }
 
 // AgentDriftItem / AgentReference / AcceptVersionResult were removed when the
@@ -581,7 +591,11 @@ export interface AgentVersionSnapshot {
   skill_config: AgentDefinition["skillConfig"] | null;
   matrx_actions: MatrxDirectivesConfig;
   ui_gates: UiGates;
-  rag_awareness_mode?: string;
+  default_rag_boost: number;
+  rag_awareness_mode: string;
+  // Supabase models RETURNS TABLE text as non-null even though historical rows
+  // can return SQL NULL. The converter normalizes that runtime case to null.
+  input_kind: string;
 }
 
 /**

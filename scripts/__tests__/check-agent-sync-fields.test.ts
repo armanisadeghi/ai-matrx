@@ -22,6 +22,15 @@ const REAL_DEFINITION = (
   JSON.parse(readFileSync(SNAPSHOT_PATH, "utf8")) as { definition: string }
 ).definition;
 
+function mutateDefinition(
+  pattern: string | RegExp,
+  replacement: string,
+): string {
+  const mutated = REAL_DEFINITION.replace(pattern, replacement);
+  expect(mutated).not.toBe(REAL_DEFINITION);
+  return mutated;
+}
+
 describe("parseSyncSetClause — the real live function", () => {
   it("reads every synced column out of the sync UPDATE", () => {
     const parsed = parseSyncSetClause(REAL_DEFINITION);
@@ -48,6 +57,7 @@ describe("parseSyncSetClause — the real live function", () => {
       "ui_gates",
       "default_rag_boost",
       "rag_awareness_mode",
+      "input_kind",
     ]);
   });
 
@@ -55,7 +65,7 @@ describe("parseSyncSetClause — the real live function", () => {
     const parsed = parseSyncSetClause(REAL_DEFINITION);
     const identity = parsed.columns.filter((c) => c.group === "identity").map((c) => c.column);
     expect(identity).toEqual(["name", "description", "category", "tags"]);
-    expect(parsed.columns.filter((c) => c.group === "behavior")).toHaveLength(17);
+    expect(parsed.columns.filter((c) => c.group === "behavior")).toHaveLength(18);
   });
 
   it("ignores the bookkeeping assignment and the second, unrelated UPDATE", () => {
@@ -73,9 +83,9 @@ describe("parseSyncSetClause — the real live function", () => {
 
 describe("diffSyncFields — mutated function definitions", () => {
   it("reports a column the RPC gained but TS does not list", () => {
-    const mutated = REAL_DEFINITION.replace(
-      "    tools                 = v_from.tools,",
-      "    tools                 = v_from.tools,\n    surprise_config      = v_from.surprise_config,",
+    const mutated = mutateDefinition(
+      "    tools = v_from.tools,",
+      "    tools = v_from.tools,\n    surprise_config = v_from.surprise_config,",
     );
     const parsed = parseSyncSetClause(mutated);
     expect(parsed.problems).toEqual([]);
@@ -89,7 +99,7 @@ describe("diffSyncFields — mutated function definitions", () => {
   });
 
   it("reports a column TS lists that the RPC stopped writing", () => {
-    const mutated = REAL_DEFINITION.replace("    skill_config          = v_from.skill_config,\n", "");
+    const mutated = mutateDefinition("    skill_config = v_from.skill_config,\n", "");
     const parsed = parseSyncSetClause(mutated);
     expect(parsed.problems).toEqual([]);
     expect(parsed.columns.map((c) => c.column)).not.toContain("skill_config");
@@ -102,9 +112,9 @@ describe("diffSyncFields — mutated function definitions", () => {
   });
 
   it("reports a group flip when an identity column becomes unconditional", () => {
-    const mutated = REAL_DEFINITION.replace(
-      "    tags                  = CASE WHEN v_identity THEN v_from.tags        ELSE tags        END,",
-      "    tags                  = v_from.tags,",
+    const mutated = mutateDefinition(
+      "    tags = CASE WHEN v_identity THEN v_from.tags ELSE tags END,",
+      "    tags = v_from.tags,",
     );
     const parsed = parseSyncSetClause(mutated);
     expect(parsed.problems).toEqual([]);
@@ -117,9 +127,9 @@ describe("diffSyncFields — mutated function definitions", () => {
   });
 
   it("screams instead of guessing when an assignment shape is unrecognized", () => {
-    const mutated = REAL_DEFINITION.replace(
-      "    settings              = v_from.settings,",
-      "    settings              = COALESCE(v_from.settings, settings),",
+    const mutated = mutateDefinition(
+      "    settings = v_from.settings,",
+      "    settings = COALESCE(v_from.settings, settings),",
     );
     const parsed = parseSyncSetClause(mutated);
     expect(parsed.problems).toHaveLength(1);
@@ -128,7 +138,7 @@ describe("diffSyncFields — mutated function definitions", () => {
   });
 
   it("screams when the sync UPDATE itself is gone", () => {
-    const mutated = REAL_DEFINITION.replace(/UPDATE agent\.definition SET\n[\s\S]*?WHERE id = v_to\.id;/, "");
+    const mutated = mutateDefinition(/UPDATE agent\.definition SET\n[\s\S]*?WHERE id = v_to\.id;/, "");
     const parsed = parseSyncSetClause(mutated);
     expect(parsed.columns).toEqual([]);
     expect(parsed.problems.join(" ")).toContain("no \"UPDATE agent.definition SET");
@@ -139,9 +149,9 @@ describe("diffSyncFields — mutated function definitions", () => {
     // It reads neither v_from nor v_identity, so an "any constant is fine"
     // bucket would swallow it and the gate would stay green while sync started
     // wiping the target agent's messages.
-    const mutated = REAL_DEFINITION.replace(
-      "    updated_at            = now()\n",
-      "    messages_backup      = '[]'::jsonb,\n    updated_at            = now()\n",
+    const mutated = mutateDefinition(
+      "    updated_at = now()\n",
+      "    messages_backup = '[]'::jsonb,\n    updated_at = now()\n",
     );
     const parsed = parseSyncSetClause(mutated);
     expect(parsed.ignored).toEqual(["updated_at = now()"]);
@@ -152,9 +162,9 @@ describe("diffSyncFields — mutated function definitions", () => {
   });
 
   it("screams at a constant assigned to a real synced column", () => {
-    const mutated = REAL_DEFINITION.replace(
-      "    messages              = v_from.messages,",
-      "    messages              = '[]'::jsonb,",
+    const mutated = mutateDefinition(
+      "    messages = v_from.messages,",
+      "    messages = '[]'::jsonb,",
     );
     const parsed = parseSyncSetClause(mutated);
     expect(parsed.columns.map((c) => c.column)).not.toContain("messages");
@@ -166,9 +176,9 @@ describe("diffSyncFields — mutated function definitions", () => {
   });
 
   it("still ignores the whitelisted bookkeeping columns", () => {
-    const mutated = REAL_DEFINITION.replace(
-      "    updated_at            = now()\n",
-      "    updated_at            = now(),\n    source_snapshot_at   = now()\n",
+    const mutated = mutateDefinition(
+      "    updated_at = now()\n",
+      "    updated_at = now(),\n    source_snapshot_at = now()\n",
     );
     const parsed = parseSyncSetClause(mutated);
     expect(parsed.problems).toEqual([]);
@@ -176,9 +186,9 @@ describe("diffSyncFields — mutated function definitions", () => {
   });
 
   it("catches a cross-column copy (col = v_from.other_col)", () => {
-    const mutated = REAL_DEFINITION.replace(
-      "    model_id              = v_from.model_id,",
-      "    model_id              = v_from.model_tiers,",
+    const mutated = mutateDefinition(
+      "    model_id = v_from.model_id,",
+      "    model_id = v_from.model_tiers,",
     );
     const parsed = parseSyncSetClause(mutated);
     expect(parsed.problems).toHaveLength(1);

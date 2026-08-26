@@ -70,5 +70,10 @@ export interface DiffOptions {
   excludePaths?: Set<string>;
   identityKeys?: Record<string, string | IdentityKeyFn>;
   maxDepth?: number;
+  /**
+   * Opt-in presentation filter for consumers whose underscore-prefixed keys
+   * are known metadata. Defaults false: structured comparisons must not hide
+   * contract keys such as `__kind`.
+   */
   skipUnderscorePrefix?: boolean;
 }

@@ -189,6 +189,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     contextPolicies:
       (row.context_policies as unknown as AgentDefinition["contextPolicies"]) ?? [],
     autoContextDisabled: row.auto_context_disabled === true,
+    inputKind: row.input_kind ?? null,
 
     modelTiers:
       (row.model_tiers as unknown as AgentDefinition["modelTiers"]) ?? null,
@@ -275,6 +276,7 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     context_policies:
       agent.contextPolicies as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["context_policies"],
     auto_context_disabled: agent.autoContextDisabled,
+    input_kind: agent.inputKind,
 
     model_tiers:
       agent.modelTiers as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["model_tiers"],
@@ -355,6 +357,7 @@ export function agentDefinitionToUpdate(
 
   if (partial.autoContextDisabled !== undefined)
     update.auto_context_disabled = partial.autoContextDisabled;
+  if (partial.inputKind !== undefined) update.input_kind = partial.inputKind;
 
   if (partial.modelTiers !== undefined)
     update.model_tiers =
@@ -450,6 +453,7 @@ export function versionSnapshotRowToAgentDefinition(
     tools: row.tools ?? [],
     contextPolicies: row.context_policies ?? [],
     autoContextDisabled: row.auto_context_disabled === true,
+    inputKind: row.input_kind ?? null,
     modelTiers: row.model_tiers,
     outputSchema: row.output_schema,
     customTools: row.custom_tools ?? [],
@@ -469,11 +473,7 @@ export function versionSnapshotRowToAgentDefinition(
     isOwner: null,
     accessLevel: null,
     sharedByEmail: null,
-    // Version snapshots predate the dedup-pyramid column. Default to 0
-    // (no boost) for snapshots that don't carry it; live agents read
-    // the real value via dbRowToAgentDefinition.
-    defaultRagBoost:
-      (row as unknown as { default_rag_boost?: number }).default_rag_boost ?? 0,
-    ragAwarenessMode: row.rag_awareness_mode ?? "none",
+    defaultRagBoost: row.default_rag_boost,
+    ragAwarenessMode: row.rag_awareness_mode,
   };
 }

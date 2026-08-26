@@ -80,3 +80,39 @@ describe("computeDiff — array-of-primitives reorder detection", () => {
     expect(result.hasChanges).toBe(true);
   });
 });
+
+describe("computeDiff — underscore-prefixed contract keys", () => {
+  const before = {
+    outputSchema: {
+      type: "object",
+      properties: { title: { type: "string" } },
+    },
+  };
+  const after = {
+    outputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        __kind: { type: "string" },
+      },
+    },
+  };
+
+  it("reports nested __kind changes by default", () => {
+    const result = computeDiff(before, after);
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.root[0]?.changeType).toBe("modified");
+    expect(
+      result.root[0]?.children?.[1]?.children?.some(
+        (node) => node.key === "__kind" && node.changeType === "added",
+      ),
+    ).toBe(true);
+  });
+
+  it("still supports an explicit metadata-only underscore filter", () => {
+    const result = computeDiff(before, after, { skipUnderscorePrefix: true });
+
+    expect(result.hasChanges).toBe(false);
+  });
+});

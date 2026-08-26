@@ -596,9 +596,11 @@ export type Database = {
           created_by_system: string | null
           created_by_tier: string | null
           custom_tools: Json | null
+          default_rag_boost: number
           deleted_at: string | null
           description: string | null
           id: string
+          input_kind: string | null
           is_active: boolean | null
           matrx_actions: Json
           mcp_servers: string[]
@@ -609,6 +611,7 @@ export type Database = {
           name: string | null
           organization_id: string
           output_schema: Json | null
+          rag_awareness_mode: string
           settings: Json | null
           skill_config: Json
           tags: string[] | null
@@ -634,9 +637,11 @@ export type Database = {
           created_by_system?: string | null
           created_by_tier?: string | null
           custom_tools?: Json | null
+          default_rag_boost?: number
           deleted_at?: string | null
           description?: string | null
           id?: string
+          input_kind?: string | null
           is_active?: boolean | null
           matrx_actions?: Json
           mcp_servers?: string[]
@@ -647,6 +652,7 @@ export type Database = {
           name?: string | null
           organization_id: string
           output_schema?: Json | null
+          rag_awareness_mode?: string
           settings?: Json | null
           skill_config?: Json
           tags?: string[] | null
@@ -672,9 +678,11 @@ export type Database = {
           created_by_system?: string | null
           created_by_tier?: string | null
           custom_tools?: Json | null
+          default_rag_boost?: number
           deleted_at?: string | null
           description?: string | null
           id?: string
+          input_kind?: string | null
           is_active?: boolean | null
           matrx_actions?: Json
           mcp_servers?: string[]
@@ -685,6 +693,7 @@ export type Database = {
           name?: string | null
           organization_id?: string
           output_schema?: Json | null
+          rag_awareness_mode?: string
           settings?: Json | null
           skill_config?: Json
           tags?: string[] | null
@@ -35470,7 +35479,9 @@ export type Database = {
           changed_at: string
           context_policies: Json
           custom_tools: Json
+          default_rag_boost: number
           description: string
+          input_kind: string
           is_active: boolean
           matrx_actions: Json
           mcp_servers: string[]
@@ -35479,6 +35490,7 @@ export type Database = {
           model_tiers: Json
           name: string
           output_schema: Json
+          rag_awareness_mode: string
           settings: Json
           skill_config: Json
           tags: string[]

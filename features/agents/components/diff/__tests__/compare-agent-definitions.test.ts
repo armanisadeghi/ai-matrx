@@ -26,6 +26,43 @@ describe("compareAgentDefinitions", () => {
     ]);
   });
 
+  it("reports a schema change whose only new field is __kind", () => {
+    const result = compareAgentDefinitions(
+      {
+        outputSchema: {
+          name: "Result",
+          schema: {
+            type: "object",
+            properties: { verdict: { type: "string" } },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        outputSchema: {
+          name: "Result",
+          schema: {
+            type: "object",
+            properties: {
+              verdict: { type: "string" },
+              __kind: {
+                type: "string",
+                description:
+                  "The registered kind this payload is an instance of, when it is one.",
+              },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+    );
+
+    expect(result.diffResult.hasChanges).toBe(true);
+    expect(result.behaviorFields.map((field) => field.key)).toEqual([
+      "outputSchema",
+    ]);
+  });
+
   it("ignores lineage, timestamps, ids, and version counters", () => {
     const result = compareAgentDefinitions(
       {
@@ -65,6 +102,7 @@ describe("compareAgentDefinitions", () => {
         uiGates: {},
         defaultRagBoost: 0,
         ragAwarenessMode: "none",
+        inputKind: null,
       },
       {
         messages: [{ role: "system", content: [{ type: "text", text: "Changed" }] }],
@@ -94,6 +132,7 @@ describe("compareAgentDefinitions", () => {
         uiGates: { image_urls: true },
         defaultRagBoost: 10,
         ragAwarenessMode: "full",
+        inputKind: "seo.keyword_request",
       },
     );
 
@@ -114,6 +153,7 @@ describe("compareAgentDefinitions", () => {
       "uiGates",
       "defaultRagBoost",
       "ragAwarenessMode",
+      "inputKind",
     ]);
   });
 
