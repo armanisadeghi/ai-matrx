@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 564 active entity tokens. A token here is FK-valid for
+// 573 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -322,6 +322,15 @@ export type EntityTypeToken =
   | "hr_transcript_entry"
   | "hr_verification_letter_request"
   | "hr_work_interval"
+  | "hr_workflow_binding"
+  | "hr_workflow_decision"
+  | "hr_workflow_definition"
+  | "hr_workflow_event"
+  | "hr_workflow_failure"
+  | "hr_workflow_flow_type"
+  | "hr_workflow_instance"
+  | "hr_workflow_step"
+  | "hr_workflow_step_definition"
   | "hr_workweek"
   | "industry_curator"
   | "interview_document_revision"
@@ -851,6 +860,10 @@ export type ComponentEntityToken =
   | "hr_training_attempt"
   | "hr_transcript_entry"
   | "hr_work_interval"
+  | "hr_workflow_binding"
+  | "hr_workflow_failure"
+  | "hr_workflow_step"
+  | "hr_workflow_step_definition"
   | "hr_workweek"
   | "interview_document_revision"
   | "interview_hole"
@@ -1249,6 +1262,15 @@ export type ScopeableEntityToken =
   | "hr_transcript_entry"
   | "hr_verification_letter_request"
   | "hr_work_interval"
+  | "hr_workflow_binding"
+  | "hr_workflow_decision"
+  | "hr_workflow_definition"
+  | "hr_workflow_event"
+  | "hr_workflow_failure"
+  | "hr_workflow_flow_type"
+  | "hr_workflow_instance"
+  | "hr_workflow_step"
+  | "hr_workflow_step_definition"
   | "hr_workweek"
   | "industry_curator"
   | "interview_document_revision"
@@ -1579,6 +1601,9 @@ export type ListedEntityToken =
   | "hr_schedule_guidance"
   | "hr_schedule_template"
   | "hr_survey"
+  | "hr_workflow_definition"
+  | "hr_workflow_flow_type"
+  | "hr_workflow_instance"
   | "interview_session"
   | "learn_doc"
   | "mandate"
@@ -1895,6 +1920,15 @@ export const ENTITY_TYPE_METADATA = {
   "hr_transcript_entry": { token: "hr_transcript_entry", schema: "hr", table: "transcript_entry", label: "Transcript entry", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_verification_letter_request": { token: "hr_verification_letter_request", schema: "hr", table: "verification_letter_request", label: "Verification letter request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_work_interval": { token: "hr_work_interval", schema: "hr", table: "work_interval", label: "Work interval", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_workflow_binding": { token: "hr_workflow_binding", schema: "hr", table: "workflow_binding", label: "HR Workflow Binding", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_workflow_decision": { token: "hr_workflow_decision", schema: "hr", table: "workflow_decision", label: "HR Workflow Decision", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_workflow_definition": { token: "hr_workflow_definition", schema: "hr", table: "workflow_definition", label: "HR Workflow Definition", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_workflow_event": { token: "hr_workflow_event", schema: "hr", table: "workflow_event", label: "HR Workflow Event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_workflow_failure": { token: "hr_workflow_failure", schema: "hr", table: "workflow_failure", label: "HR Workflow Failure", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_workflow_flow_type": { token: "hr_workflow_flow_type", schema: "hr", table: "workflow_flow_type", label: "HR Workflow Flow Type", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_workflow_instance": { token: "hr_workflow_instance", schema: "hr", table: "workflow_instance", label: "HR Workflow Instance", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_workflow_step": { token: "hr_workflow_step", schema: "hr", table: "workflow_step", label: "HR Workflow Step", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_workflow_step_definition": { token: "hr_workflow_step_definition", schema: "hr", table: "workflow_step_definition", label: "HR Workflow Step Definition", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_workweek": { token: "hr_workweek", schema: "hr", table: "workweek", label: "Workweek", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "industry_curator": { token: "industry_curator", schema: "iam", table: "industry_curators", label: "Industry Curator", baseTier: 2, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "interview_document_revision": { token: "interview_document_revision", schema: "interview", table: "document_revision", label: "Interview Document Revision", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2463,6 +2497,15 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hr_transcript_entry",
   "hr_verification_letter_request",
   "hr_work_interval",
+  "hr_workflow_binding",
+  "hr_workflow_decision",
+  "hr_workflow_definition",
+  "hr_workflow_event",
+  "hr_workflow_failure",
+  "hr_workflow_flow_type",
+  "hr_workflow_instance",
+  "hr_workflow_step",
+  "hr_workflow_step_definition",
   "hr_workweek",
   "industry_curator",
   "interview_document_revision",
