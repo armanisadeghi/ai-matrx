@@ -167,14 +167,46 @@ function classify(path: string, src: string): Population | null {
  * a div in the wrapper is cheap; passing the props that make the menu act on
  * the right record is the actual job.
  */
+/**
+ * A slot can be legitimately EMPTY. An image viewer for a plain URL has no
+ * record to attach; an ad hoc markdown table has no id threaded through any
+ * caller. Counting those as shells does one of two harmful things: it sends
+ * agents back to files that are already correct, or — worse — it pressures
+ * them to invent a fake entity to satisfy a counter, which is the same defect
+ * wearing a new coat.
+ *
+ * So a slot may be waived IN THE FILE, next to the code, with a reason:
+ *
+ *   // context-menu-exempt: entity — external Unsplash photos, not app records
+ *
+ * The reason is mandatory (the regex requires text after the dash) — an
+ * allowlist without a reason is how a law rots into a formality, and this file
+ * already says so about its SKIP list. A waiver is a claim a reviewer can
+ * check, not a silence.
+ */
+const EXEMPT_RE =
+  /context-menu-exempt:\s*(surfaceName|contentSource|entity|extraSections)\s*—\s*\S+/g;
+
+function exemptSlots(src: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of src.matchAll(EXEMPT_RE)) out.add(m[1]);
+  return out;
+}
+
 function gradeMenu(src: string): string {
   const has = (re: RegExp) => (re.test(src) ? 1 : 0);
+  const waived = exemptSlots(src);
   const parts: string[] = [];
-  if (!has(/surfaceName[=:]/)) parts.push("no surfaceName");
-  if (!has(/contentSource[=:]/)) parts.push("no contentSource");
-  if (!has(/entity[=:]|CONTEXT_MENU_ENTITY_KEY/)) parts.push("no entity");
-  if (!has(/extraSections[=:]/)) parts.push("no extraSections");
-  return parts.length === 0 ? "wired" : `shell — ${parts.join(", ")}`;
+  const need = (slot: string, present: number) => {
+    if (present || waived.has(slot)) return;
+    parts.push(`no ${slot}`);
+  };
+  need("surfaceName", has(/surfaceName[=:]/));
+  need("contentSource", has(/contentSource[=:]/));
+  need("entity", has(/entity[=:]|CONTEXT_MENU_ENTITY_KEY/));
+  need("extraSections", has(/extraSections[=:]/));
+  if (parts.length === 0) return waived.size ? "wired (with waivers)" : "wired";
+  return `shell — ${parts.join(", ")}`;
 }
 
 /**

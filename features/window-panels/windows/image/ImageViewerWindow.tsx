@@ -48,6 +48,7 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { toast } from "@/lib/toast";
+// context-menu-exempt: entity — the fallback viewer for a PLAIN URL image — a durable file_id routes to openFilePreview instead, so a record here does not exist
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

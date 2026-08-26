@@ -28,6 +28,7 @@ import {
   GALLERY_SURFACE_NAME,
   createGalleryScope,
 } from "@/features/surfaces/manifests/gallery.manifest";
+// context-menu-exempt: entity — results are external Unsplash photos, not app-owned records
 
 interface GalleryWindowProps {
   isOpen: boolean;

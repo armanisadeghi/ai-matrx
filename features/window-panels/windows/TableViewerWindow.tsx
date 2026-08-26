@@ -47,6 +47,7 @@ import {
   TABLE_VIEWER_SURFACE_NAME,
   createTableViewerScope,
 } from "@/features/surfaces/manifests/table-viewer.manifest";
+// context-menu-exempt: entity — renders an ad hoc markdown table string; no id is threaded through any caller, so there is no record to attach
 
 const StreamingTableRenderer = lazy(() =>
   import("@/components/mardown-display/blocks/table/StreamingTableRenderer").then(
