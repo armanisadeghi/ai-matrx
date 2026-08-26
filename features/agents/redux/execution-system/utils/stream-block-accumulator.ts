@@ -60,6 +60,30 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 type DispatchFn = (action: unknown) => unknown;
 
+/** Count JSON object braces while treating string content as opaque. */
+function countStructuralObjectBraces(source: string): {
+  opens: number;
+  closes: number;
+} {
+  let opens = 0;
+  let closes = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (const char of source) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === "{") opens++;
+    else if (char === "}") closes++;
+  }
+  return { opens, closes };
+}
+
 type BlockSubState =
   | { kind: "none" }
   | {
@@ -814,8 +838,8 @@ export class StreamBlockAccumulator {
     // A model sometimes outputs {"key": ...} directly. We track brace
     // depth across lines so the block closes when the object is complete.
     if (hasCandidate(flags, Candidate.BARE_JSON) && trimmed.startsWith("{")) {
-      const openCount = (trimmed.match(/\{/g) || []).length;
-      const closeCount = (trimmed.match(/\}/g) || []).length;
+      const { opens: openCount, closes: closeCount } =
+        countStructuralObjectBraces(trimmed);
       // A balanced single-line {…} is only a JSON block if it actually parses
       // as JSON (V2 does the same). Otherwise it's ordinary prose — e.g. an
       // indented "{ some code }" — and must stay in the text flow rather than
@@ -1071,8 +1095,8 @@ export class StreamBlockAccumulator {
       }
 
       case "bare_json": {
-        const lineOpens = (trimmed.match(/\{/g) || []).length;
-        const lineCloses = (trimmed.match(/\}/g) || []).length;
+        const { opens: lineOpens, closes: lineCloses } =
+          countStructuralObjectBraces(trimmed);
         const willBalance =
           this.subState.openBraces + lineOpens ===
             this.subState.closeBraces + lineCloses &&

@@ -162,6 +162,10 @@ The user-facing Shape System surface (route family `app/(core)/shapes/`, all URL
 Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator shadow · 3 splitter parity · 4 flashcards render flip · **Track 2 A/B artifacts generalization** (any-surface `(source_system, source_id)` identity + structured kind persistence — see `features/artifacts/FEATURE.md` Materialization) · **the 8 `JSON_BLOCK_PATTERNS` successor kinds registered** (quiz_set, presentation_deck, decision_tree, comparison_set, diagram_spec, math_problem, item_presentation, schema_proposal — `kinds/*.ts` bridges + flexible_data rows; legacy root-key detection stays for OLD payloads only) · **5 persistence spine** (part-level `IrEnvelopeCache` + inbound `engine:"py-block-detector"` envelopes — `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/PYTHON_ENVELOPE_CONTRACT.md`). Next: XML fold-in via `discriminator.ts` (Phase 6) → delete the mirrored brace/fence state machines, parser becomes end oracle (Phase 7). Agent `__kind` injection (C2) tracked in the same plan.
 
 ## Change Log
+- 2026-08-26 — **Bare-JSON block boundaries ignore braces inside JSON strings.**
+  `StreamBlockAccumulator` now counts only structural object braces, so prose-like Shape fields
+  cannot close a valid kind payload early and trigger false stream-parity failures.
+
 - 2026-08-26 — **Kind Directives adversarial A-10.3/A-10.4 closed.** `directives/legacyShell.ts`'s
   `isLegacyShell` now requires a retired directive `kind`, not the bare `matrx_version` sentinel —
   a non-directive object carrying that key decodes to null instead of throwing a user-visible
