@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "0a03269f3bdc";
+export const KIND_REGISTRY_FINGERPRINT = "29dc96f9472e";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -8203,13 +8203,13 @@ export interface JsonPathResult {
 }
 
 /**
- * Kind `keyword_classification_batch_v1` (registry v6).
+ * Kind `keyword_classification_batch_v1` (registry v7).
  */
 export interface KeywordClassificationBatchV1 {
   /**
    * Always keyword_classification_batch_v1
    */
-  __kind: string;
+  __kind?: string;
   /**
    * One result per input keyword
    */
@@ -8223,35 +8223,75 @@ export interface KeywordClassificationBatchV1 {
      */
     __kind: string;
     phrase: string;
-    urgency: "immediate" | "time_sensitive" | "none";
     /**
-     * Exact standards named by the query when compliance_framing is not none
+     * Time pressure in the query
+     */
+    urgency: "immediate" | "none" | "time_sensitive";
+    /**
+     * Exact standards named by the query when a compliance dimension is not none
      */
     standards: string[];
     /**
      * The keyword_id copied verbatim from the input
      */
     keyword_id: string;
-    query_form: "question" | "phrase" | "command";
-    specificity: "head" | "mid" | "long_tail";
-    funnel_stage: "problem_aware" | "solution_aware" | "vendor_evaluation" | "purchase_ready";
-    intent_class: "informational" | "commercial_investigation" | "transactional" | "navigational";
+    /**
+     * Grammatical shape of the query
+     */
+    query_form: "command" | "phrase" | "question";
+    /**
+     * Values for this site's OWN dimensions, keyed by dimension slug. Only the dimensions named as this site's own in the prompt; omit or null when the run has none.
+     */
+    site_facets?: Record<string, string | null> | null;
+    /**
+     * Head term vs long tail
+     */
+    specificity: "head" | "long_tail" | "mid";
+    /**
+     * How far along the buying journey
+     */
+    funnel_stage: "not_clear" | "problem_aware" | "purchase_ready" | "solution_aware" | "vendor_evaluation";
+    /**
+     * What the searcher fundamentally wants
+     */
+    intent_class: "commercial_investigation" | "informational" | "navigational" | "transactional";
+    /**
+     * Whether the search is location-bound
+     */
     local_intent: "explicit_local" | "implicit_local" | "non_local";
-    audience_type: "consumer" | "business" | "practitioner" | "ambiguous";
-    brand_presence: "unbranded" | "branded" | "product_branded";
-    fulfillment_mode: "diy" | "done_for_you" | "ambiguous";
-    comparison_intent: "brand_vs_brand" | "category_best" | "alternatives_seeking" | "none";
-    price_sensitivity: "cost_research" | "budget_seeking" | "free_seeking" | "none";
-    compliance_framing: "regulated" | "certification_seeking" | "none";
+    /**
+     * Who is searching
+     */
+    audience_type: "ambiguous" | "business" | "consumer" | "practitioner";
+    /**
+     * WHO is behind the query -- a buyer, a vendor pitching you, a competitor doing research, a job seeker. Distinct from Audience, which is which SEGMENT they belong to.
+     */
+    searcher_role: "competitor_research" | "existing_customer" | "job_seeker" | "unknown" | "press_analyst" | "prospective_customer" | "student_researcher" | "vendor_soliciting";
+    /**
+     * Whether a brand is named
+     */
+    brand_presence: "not_clear" | "branded" | "product_branded" | "unbranded";
+    /**
+     * Do it themselves vs have it done
+     */
+    fulfillment_mode: "ambiguous" | "diy" | "done_for_you";
+    /**
+     * Weighing options against each other
+     */
+    comparison_intent: "alternatives_seeking" | "brand_vs_brand" | "category_best" | "none";
+    /**
+     * Cost focus in the query
+     */
+    price_sensitivity: "budget_seeking" | "cost_research" | "free_seeking" | "none";
+    /**
+     * Regulatory / certification signals
+     */
+    compliance_framing: "certification_seeking" | "none" | "regulated";
     /**
      * 0-100 confidence in the dominant interpretation
      */
     overall_confidence: number;
     per_fact_confidence: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
     urgency: number;
     query_form: number;
     specificity: number;
@@ -8259,6 +8299,7 @@ export interface KeywordClassificationBatchV1 {
     intent_class: number;
     local_intent: number;
     audience_type: number;
+    searcher_role: number;
     brand_presence: number;
     fulfillment_mode: number;
     comparison_intent: number;
@@ -8266,15 +8307,14 @@ export interface KeywordClassificationBatchV1 {
     compliance_framing: number;
     transaction_direction: number;
   };
-    transaction_direction: "searcher_pays" | "searcher_gets_paid" | "free_expected" | "none";
+    /**
+     * Who pays whom
+     */
+    transaction_direction: "free_expected" | "none" | "searcher_gets_paid" | "searcher_pays";
     /**
      * Runner-up value per dimension; null where there is no real rival reading
      */
     secondary_interpretation: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
     urgency?: string | null;
     query_form?: string | null;
     specificity?: string | null;
@@ -8282,6 +8322,7 @@ export interface KeywordClassificationBatchV1 {
     intent_class?: string | null;
     local_intent?: string | null;
     audience_type?: string | null;
+    searcher_role?: string | null;
     brand_presence?: string | null;
     fulfillment_mode?: string | null;
     comparison_intent?: string | null;

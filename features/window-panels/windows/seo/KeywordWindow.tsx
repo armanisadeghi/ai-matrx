@@ -88,7 +88,7 @@ function KeywordWindowInner({
       return [phrase];
     });
   });
-  const lastExternalOpenRef = useRef({
+  const [lastExternalOpen, setLastExternalOpen] = useState({
     phraseKey: normalizeKeywordPhrase(initialPhrase ?? ""),
     activeTab: normalizeKeywordIntelTab(initialTab),
   });
@@ -97,21 +97,20 @@ function KeywordWindowInner({
   // already mounted. Treat every changed external open as the same action as a
   // dossier drill: keep the original target pinned, append the new phrase once,
   // and select it in the existing workspace instead of leaving stale content.
-  useEffect(() => {
-    const nextPhrase = initialPhrase?.trim() ?? "";
-    const nextPhraseKey = normalizeKeywordPhrase(nextPhrase);
-    if (!nextPhraseKey) return;
+  const nextPhrase = initialPhrase?.trim() ?? "";
+  const nextPhraseKey = normalizeKeywordPhrase(nextPhrase);
+  const nextTab = normalizeKeywordIntelTab(initialTab);
+  const phraseChanged = nextPhraseKey !== lastExternalOpen.phraseKey;
+  const tabChanged = nextTab !== lastExternalOpen.activeTab;
 
-    const nextTab = normalizeKeywordIntelTab(initialTab);
-    const phraseChanged =
-      nextPhraseKey !== lastExternalOpenRef.current.phraseKey;
-    const tabChanged = nextTab !== lastExternalOpenRef.current.activeTab;
-    if (!phraseChanged && !tabChanged) return;
-
-    lastExternalOpenRef.current = {
+  // React's supported "adjust state while rendering" pattern keeps this
+  // prop-driven singleton update atomic. An effect would first paint the stale
+  // dossier and then cascade through three synchronous state updates.
+  if (nextPhraseKey && (phraseChanged || tabChanged)) {
+    setLastExternalOpen({
       phraseKey: nextPhraseKey,
       activeTab: nextTab,
-    };
+    });
 
     if (phraseChanged) {
       const targetKey = normalizeKeywordPhrase(targetPhrase);
@@ -128,7 +127,7 @@ function KeywordWindowInner({
     }
 
     setPanelState({ phrase: nextPhrase, activeTab: nextTab });
-  }, [initialPhrase, initialTab, targetPhrase]);
+  }
 
   // Debounced state mirror for persistence. State (not a ref) because the
   // WindowPanel save effect keys on the collector's identity — a ref-backed
