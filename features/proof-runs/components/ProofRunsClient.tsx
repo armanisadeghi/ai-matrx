@@ -17,10 +17,14 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Coins,
+  FlaskConical,
   History,
+  Pencil,
+  Plus,
   PlayCircle,
   RefreshCw,
   ShieldCheck,
+  Trash2,
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,25 +41,34 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { extractErrorMessage } from "@/utils/errors";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import {
+  deleteScenario,
+  fetchMandateCatalog,
   fetchProofChecks,
   fetchProofRun,
   fetchProofRuns,
+  fetchScenarios,
   runProofCheck,
 } from "@/features/proof-runs/api";
 import {
   attestationFromRun,
+  emptyScenario,
   PROOF_ATTESTATION_KIND,
   PROOF_CHECK_STATUS_KIND,
+  type ExpectationRuleHelp,
+  type MandateOption,
   type ProofCheckStatus,
   type ProofRunDetail,
   type ProofRunMode,
   type ProofRunSummary,
+  type ProofScenario,
 } from "@/features/proof-runs/types";
 import {
   EMPTY_CONSOLE,
   ProofRunConsole,
   type ProofRunConsoleState,
 } from "@/features/proof-runs/components/ProofRunConsole";
+import { ScenarioEditor } from "@/features/proof-runs/components/ScenarioEditor";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const MODES: { value: ProofRunMode; label: string; hint: string }[] = [
   {
@@ -93,15 +106,34 @@ export default function ProofRunsClient() {
   const [mode, setMode] = useState<ProofRunMode>("auto");
   const [console_, setConsole] = useState<ProofRunConsoleState>(EMPTY_CONSOLE);
   const [runningSlug, setRunningSlug] = useState<string | null>(null);
+  const [scenarios, setScenarios] = useState<ProofScenario[]>([]);
+  const [mandates, setMandates] = useState<MandateOption[]>([]);
+  const [ruleHelp, setRuleHelp] = useState<ExpectationRuleHelp[]>([]);
+  const [editing, setEditing] = useState<ProofScenario | null>(null);
+  const [selected, setSelected] = useState<string>("");
 
   const refresh = useCallback(async () => {
     setLoadError(null);
     try {
-      const [checksResponse, runsResponse] = await Promise.all([
-        fetchProofChecks(),
-        fetchProofRuns({ limit: 25 }),
-      ]);
+      const [checksResponse, runsResponse, scenarioResponse, catalog] =
+        await Promise.all([
+          fetchProofChecks(),
+          fetchProofRuns({ limit: 25 }),
+          fetchScenarios(),
+          fetchMandateCatalog(),
+        ]);
       setChecks(checksResponse.checks ?? []);
+      setScenarios(scenarioResponse.scenarios ?? []);
+      setMandates(catalog.mandates ?? []);
+      setRuleHelp(catalog.rules ?? []);
+      setSelected((current) => {
+        const available = (checksResponse.checks ?? [])
+          .map((c) => c.slug ?? "")
+          .filter(Boolean);
+        return current && available.includes(current)
+          ? current
+          : (available[0] ?? "");
+      });
       setSpend({
         mtd: checksResponse.month_to_date_usd ?? 0,
         ceiling: checksResponse.monthly_ceiling_usd ?? 0,
@@ -189,6 +221,21 @@ export default function ProofRunsClient() {
     }
   }, []);
 
+  const removeScenario = useCallback(
+    async (slug: string) => {
+      try {
+        await deleteScenario(slug);
+        toast.success(`Deleted ${slug}`);
+        void refresh();
+      } catch (err) {
+        toast.error("Could not delete that scenario", {
+          description: extractErrorMessage(err),
+        });
+      }
+    },
+    [refresh],
+  );
+
   const budgetPct =
     spend.ceiling > 0
       ? Math.min(100, Math.round((spend.mtd / spend.ceiling) * 100))
@@ -238,30 +285,81 @@ export default function ProofRunsClient() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground">
-          Run mode
-        </span>
-        {MODES.map((option) => (
-          <Button
-            key={option.value}
-            size="sm"
-            variant={mode === option.value ? "default" : "outline"}
-            onClick={() => setMode(option.value)}
-            title={option.hint}
-            className="h-7 px-2 text-xs"
-          >
-            {option.label}
-          </Button>
-        ))}
-        <span className="text-xs text-muted-foreground">
-          {MODES.find((m) => m.value === mode)?.hint}
-        </span>
-      </div>
+      {/* THE TRIGGER. One bar, always visible, that answers "how do I run
+          something?" without reading anything else on the page. */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="space-y-2 p-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="min-w-[260px] flex-1 space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">
+                Check to run
+              </span>
+              <Select value={selected} onValueChange={setSelected}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Pick a check" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {checks.map((check) => (
+                    <SelectItem key={check.slug} value={check.slug ?? ""}>
+                      {check.label || check.slug}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">
+                Mode
+              </span>
+              <div className="flex items-center gap-1">
+                {MODES.map((option) => (
+                  <Button
+                    key={option.value}
+                    size="sm"
+                    variant={mode === option.value ? "default" : "outline"}
+                    onClick={() => setMode(option.value)}
+                    title={option.hint}
+                    className="h-9 px-3 text-xs"
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <Button
+              size="lg"
+              onClick={() => void run(selected)}
+              disabled={runningSlug !== null || !selected}
+              className="h-9"
+            >
+              {runningSlug ? (
+                <>
+                  <Zap className="mr-2 h-4 w-4 animate-pulse" />
+                  Running…
+                </>
+              ) : (
+                <>
+                  <PlayCircle className="mr-2 h-4 w-4" />
+                  Run this check
+                </>
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {MODES.find((m) => m.value === mode)?.hint}
+          </p>
+        </CardContent>
+      </Card>
 
       {loadError ? (
-        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
-          {loadError}
+        <div className="space-y-1 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
+          <p className="font-medium">The proof-run API did not answer.</p>
+          <p className="text-xs">{loadError}</p>
+          <p className="text-xs opacity-80">
+            If this says 404, the server has the page but not yet the endpoints —
+            they ship with the next aidream deploy. Nothing here is broken;
+            there is just nothing to talk to yet.
+          </p>
         </div>
       ) : null}
 
@@ -339,6 +437,117 @@ export default function ProofRunsClient() {
           </CardContent>
         </Card>
       </div>
+
+      {/* SCENARIOS — verification authored here, no deploy. Each one becomes a
+          check with the same receipts as a code check. */}
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FlaskConical className="h-4 w-4" />
+              Scenarios
+            </CardTitle>
+            <CardDescription>
+              Traps you author: a fictional world with planted markers, where the
+              right answer is knowable in advance and unreachable by guessing.
+            </CardDescription>
+          </div>
+          {!editing ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEditing(emptyScenario())}
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              New scenario
+            </Button>
+          ) : null}
+        </CardHeader>
+        <CardContent>
+          {editing ? (
+            <ScenarioEditor
+              scenario={editing}
+              mandates={mandates}
+              rules={ruleHelp}
+              onSaved={(saved) => {
+                setEditing(null);
+                setSelected(saved.check_slug);
+                void refresh();
+              }}
+              onCancel={() => setEditing(null)}
+            />
+          ) : scenarios.length === 0 ? (
+            <p className="py-4 text-sm text-muted-foreground">
+              No saved scenarios yet. A scenario names a mandate, hands it facts
+              you wrote, and lists what a correct answer must look like — then
+              runs with the same receipts as any other check.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {scenarios.map((scenario) => (
+                <li
+                  key={scenario.slug}
+                  className="flex flex-wrap items-start justify-between gap-2 rounded-md border border-border p-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-foreground">
+                        {scenario.label}
+                      </span>
+                      <code className="rounded bg-muted px-1 py-px font-mono text-[10px] text-muted-foreground">
+                        {scenario.mandate_key}
+                      </code>
+                      {!scenario.is_active ? (
+                        <span className="rounded-full border border-border bg-muted px-1.5 py-px text-[10px] text-muted-foreground">
+                          inactive
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {scenario.description}
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {scenario.expectations.length} rule(s) ·{" "}
+                      {scenario.allowed_routes.length} route(s) in the universe ·
+                      live every {Math.round(scenario.live_every_seconds / 3600)}h
+                      · ${scenario.max_cost_usd.toFixed(2)}/run
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      onClick={() => void run(scenario.check_slug)}
+                      disabled={runningSlug !== null}
+                      className="h-7 px-2 text-xs"
+                    >
+                      <PlayCircle className="mr-1 h-3.5 w-3.5" />
+                      Run
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditing(scenario)}
+                      className="h-7 px-2 text-xs"
+                    >
+                      <Pencil className="mr-1 h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => void removeScenario(scenario.slug)}
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+                      aria-label={`Delete ${scenario.slug}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-2">

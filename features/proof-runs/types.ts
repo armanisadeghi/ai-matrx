@@ -90,3 +90,110 @@ export function attestationFromRun(run: ProofRunDetail): ProofAttestation {
     proofs,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Saved scenarios — verification authored in the UI, no deploy
+//
+// These endpoints are newer than this repo's OpenAPI snapshot, so their shapes
+// are declared here and will be superseded by `components["schemas"][...]` on
+// the next `pnpm update-api-types` (the server is the author of both).
+// ---------------------------------------------------------------------------
+
+/** The rule vocabulary the expectation engine implements. */
+export type ExpectationRule =
+  | "contains_marker"
+  | "excludes_marker"
+  | "routes_exist"
+  | "path_present"
+  | "path_absent"
+  | "path_equals"
+  | "min_items"
+  | "max_items"
+  | "matches"
+  | "judge";
+
+/** One typed rule about the agent's output. */
+export interface Expectation {
+  id: string;
+  rule: ExpectationRule;
+  title?: string;
+  /** Why this rule proves work happened — shown on the pass AND the fail. */
+  proves?: string;
+  /** Dotted path into the artifact; empty means the whole output as text. */
+  path?: string;
+  /** Marker NAME (not its value) — resolved per run from `{{marker:NAME}}`. */
+  marker?: string;
+  value?: unknown;
+  count?: number;
+  rubric?: string;
+  required?: boolean;
+}
+
+export interface ProofScenario {
+  slug: string;
+  label: string;
+  description: string;
+  mandate_key: string;
+  variables: Record<string, unknown>;
+  allowed_routes: string[];
+  expectations: Expectation[];
+  user_input: string | null;
+  is_active: boolean;
+  live_every_seconds: number;
+  max_cost_usd: number;
+  /** The check slug this scenario runs as — `scenario:<slug>`. */
+  check_slug: string;
+}
+
+export interface ScenariosResponse {
+  scenarios: ProofScenario[];
+}
+
+/** One offered value a mandate's call site really delivers. */
+export interface MandateOfferedValue {
+  name: string;
+  kind: string;
+  guaranteed: boolean;
+  description: string;
+}
+
+export interface MandateOption {
+  mandate_key: string;
+  label: string;
+  description: string;
+  output_kind: string | null;
+  required_output_keys: string[];
+  accepts_user_input: boolean;
+  provision: string | null;
+  offered_values: MandateOfferedValue[];
+}
+
+export interface ExpectationRuleHelp {
+  rule: ExpectationRule;
+  label: string;
+  needs: string[];
+  help: string;
+}
+
+export interface MandateCatalogResponse {
+  mandates: MandateOption[];
+  rules: ExpectationRuleHelp[];
+}
+
+/** A blank scenario, pre-filled with the shape a good one has. */
+export function emptyScenario(): ProofScenario {
+  return {
+    slug: "",
+    label: "",
+    description: "",
+    mandate_key: "",
+    variables: {},
+    allowed_routes: [],
+    expectations: [],
+    user_input: null,
+    is_active: true,
+    live_every_seconds: 21600,
+    max_cost_usd: 0.75,
+    check_slug: "",
+  };
+}

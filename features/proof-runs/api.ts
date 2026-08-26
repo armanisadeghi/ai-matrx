@@ -12,7 +12,7 @@
  * module only narrows the typed data events it cares about.
  */
 
-import { getJson, postNdjson } from "@/lib/python-client";
+import { del, getJson, postNdjson, putJson } from "@/lib/python-client";
 import type {
   ProofEvaluatedData,
   ProofRunCompletedData,
@@ -21,10 +21,13 @@ import type {
   ProofRunStepData,
 } from "@/types/python-generated/stream-events";
 import type {
+  MandateCatalogResponse,
   ProofChecksResponse,
   ProofRunDetail,
   ProofRunMode,
   ProofRunsResponse,
+  ProofScenario,
+  ScenariosResponse,
 } from "@/features/proof-runs/types";
 
 const BASE = "/proof-runs";
@@ -148,4 +151,46 @@ export async function* runProofCheck(
       yield { kind: "skipped", data: skipped };
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Saved scenarios
+// ---------------------------------------------------------------------------
+
+export async function fetchScenarios(
+  signal?: AbortSignal,
+): Promise<ScenariosResponse> {
+  const { data } = await getJson<ScenariosResponse>(`${BASE}/scenarios`, {
+    signal,
+  });
+  return data;
+}
+
+export async function saveScenario(
+  scenario: ProofScenario,
+  signal?: AbortSignal,
+): Promise<ProofScenario> {
+  // `check_slug` is derived by the server from the slug — sending it back would
+  // be a second authority on the same fact.
+  const { check_slug: _derived, ...payload } = scenario;
+  const { data } = await putJson<ProofScenario, typeof payload>(
+    `${BASE}/scenarios/${scenario.slug}`,
+    payload,
+    { signal },
+  );
+  return data;
+}
+
+export async function deleteScenario(slug: string): Promise<void> {
+  await del(`${BASE}/scenarios/${slug}`);
+}
+
+export async function fetchMandateCatalog(
+  signal?: AbortSignal,
+): Promise<MandateCatalogResponse> {
+  const { data } = await getJson<MandateCatalogResponse>(
+    `${BASE}/mandate-catalog`,
+    { signal },
+  );
+  return data;
 }
