@@ -290,7 +290,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_project_ids",
     label: "Selected project IDs",
     description:
-      "Array of UUIDs of multi-selected projects. Only populated by list-level mounts with multi-select; the single-project workspace never emits it. Empty array when nothing is multi-selected.",
+      "Array of UUIDs selected by a list-level mount. The current Projects hub has no multi-select and emits an empty array; the single-project workspace omits it.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 360,
@@ -306,6 +306,51 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 5,
     sortOrder: 510,
+    group: "list_context",
+  },
+  {
+    name: "project_list",
+    label: "Project list",
+    description:
+      "Array of projects visible after the hub's route and search filters, including identity, organization, lifecycle fields, and open/done task counts. Empty array when nothing matches; omitted on a single-project workspace.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 5000,
+    autoContext: false,
+    sortOrder: 520,
+    group: "list_context",
+  },
+  {
+    name: "project_search_query",
+    label: "Project search query",
+    description:
+      "Current text in the Projects hub search field. Empty string when no search is active; omitted on a single-project workspace.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 80,
+    sortOrder: 530,
+    group: "list_context",
+  },
+  {
+    name: "project_list_view",
+    label: "Project list view",
+    description:
+      'Current Projects hub presentation: "cards" or "table". Omitted on a single-project workspace.',
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 8,
+    sortOrder: 540,
+    group: "list_context",
+  },
+  {
+    name: "project_list_filters",
+    label: "Project list filters",
+    description:
+      "Composite hub filter object: { organization_id, organization_name, scope_id, search_query }. Values are empty when their filter is inactive; omitted on a single-project workspace.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 220,
+    sortOrder: 550,
     group: "list_context",
   },
 ];
@@ -399,13 +444,15 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const projectsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/projects",
-  readiness: "verified",
+  readiness: "partial",
+  readinessNote:
+    "List/runtime contract repaired statically; desktop/mobile and light/dark live certification is pending because the isolated in-app Browser is unavailable.",
   label: "Projects",
   urlPattern: "/projects",
   intro: `<surface_intro>
 You are on the Projects surface: the user's project workspaces and project list. The primary mount is a single project's workspace — the active_project_* values describe the ONE project the user has open, with its people (members, viewer_role), its activity (open/done task counts, attached resource counts), and its organization context.
 The baseline content value is the project's description — the primary body the user reads and edits here; selection is whatever page text the user has highlighted.
-is_personal_project distinguishes personal-space projects from organization projects. List-level values (selected_project_ids) only appear on list mounts — when absent, you are on a single project workspace.
+is_personal_project distinguishes personal-space projects from organization projects. On the list mount, project_list carries the visible rows and project_list_filters explains how they were selected; when those values are absent, you are on a single project workspace.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -449,6 +496,10 @@ export function createProjectsScope(values: {
   active_organization_name?: string;
   selected_project_ids?: string[];
   project_count?: number;
+  project_list?: Array<Record<string, unknown>>;
+  project_search_query?: string;
+  project_list_view?: "cards" | "table";
+  project_list_filters?: Record<string, unknown>;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

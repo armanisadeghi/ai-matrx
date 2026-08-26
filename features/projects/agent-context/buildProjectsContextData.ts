@@ -92,6 +92,90 @@ export interface BuildProjectsContextDataArgs {
   selectionText?: string;
 }
 
+export interface ProjectsListContextProject {
+  id: string;
+  name: string;
+  slug?: string | null;
+  description?: string | null;
+  organizationId?: string | null;
+  organizationName?: string | null;
+  status?: string | null;
+  priority?: string | null;
+  startDate?: string | null;
+  targetDate?: string | null;
+  updatedAt?: string | null;
+  openTaskCount: number;
+  doneTaskCount: number;
+}
+
+export interface BuildProjectsListContextDataArgs {
+  projects: ProjectsListContextProject[];
+  searchQuery: string;
+  view: "cards" | "table";
+  organizationFilterId?: string | null;
+  organizationFilterName?: string | null;
+  scopeFilterId?: string | null;
+  selectionText?: string;
+}
+
+/** Pure context contract for the `/projects` list mount. */
+export function buildProjectsListContextData({
+  projects,
+  searchQuery,
+  view,
+  organizationFilterId = null,
+  organizationFilterName = null,
+  scopeFilterId = null,
+  selectionText = "",
+}: BuildProjectsListContextDataArgs): Record<string, unknown> {
+  const projectList = projects.map((project) => ({
+    id: project.id,
+    name: project.name,
+    slug: project.slug || undefined,
+    description: project.description || undefined,
+    organization_id: project.organizationId || undefined,
+    organization_name: project.organizationName || undefined,
+    status: project.status || undefined,
+    priority: project.priority || undefined,
+    start_date: project.startDate || undefined,
+    target_date: project.targetDate || undefined,
+    updated_at: project.updatedAt || undefined,
+    open_task_count: project.openTaskCount,
+    done_task_count: project.doneTaskCount,
+  }));
+  const projectListFilters = {
+    organization_id: organizationFilterId || undefined,
+    organization_name: organizationFilterName || undefined,
+    scope_id: scopeFilterId || undefined,
+    search_query: searchQuery,
+  };
+  const content = projects
+    .map(
+      (project) =>
+        `${project.name}: ${project.description?.trim() || "No description"}`,
+    )
+    .join("\n");
+
+  return createProjectsScope({
+    selection: selectionText || undefined,
+    content: content || undefined,
+    context: {
+      surface_mode: "list",
+      project_count: projects.length,
+      list_view: view,
+      filters: projectListFilters,
+    },
+    active_organization_id: organizationFilterId || undefined,
+    active_organization_name: organizationFilterName || undefined,
+    selected_project_ids: [],
+    project_count: projects.length,
+    project_list: projectList,
+    project_search_query: searchQuery,
+    project_list_view: view,
+    project_list_filters: projectListFilters,
+  }) as Record<string, unknown>;
+}
+
 /**
  * Canonical `contextData` for `matrx-user/projects`.
  *
@@ -189,8 +273,12 @@ export function buildProjectsContextData(
     active_project_id: projectOpen ? project.id : undefined,
     active_project_name: projectOpen ? project.name || undefined : undefined,
     active_project_slug: projectOpen ? project.slug || undefined : undefined,
-    active_project_description: projectOpen ? description || undefined : undefined,
-    active_project_status: projectOpen ? project.status || undefined : undefined,
+    active_project_description: projectOpen
+      ? description || undefined
+      : undefined,
+    active_project_status: projectOpen
+      ? project.status || undefined
+      : undefined,
     active_project_priority: project?.priority || undefined,
     active_project_start_date: project?.startDate || undefined,
     active_project_target_date: project?.targetDate || undefined,
