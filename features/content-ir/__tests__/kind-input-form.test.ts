@@ -156,9 +156,9 @@ describe("input-path coverage", () => {
     }
   });
 
-  it("data-only generated contract kinds do NOT resolve — non-interactive by classification", () => {
-    // Representative generated-contract slugs (tool_io / action_io / agent_io
-    // families) — no compiled floor entry, no DB input rows by design.
+  it("kinds with no input rows and no data-only flag refuse (registry gap, loud)", () => {
+    // Post-eviction: machine contracts never reach this resolver, so a null
+    // resolution without dataOnly is a real registry gap and stays a refusal.
     for (const kind of ["tool_web_search_input", "action_http_get_output"]) {
       expect(resolveComponent(kind, "web", "input")).toBeNull();
       expect(decideKindInputPath(kind, null, null)).toMatchObject({
@@ -212,17 +212,33 @@ describe("decideKindInputPath — the routing law", () => {
     }
   });
 
-  it("a planted input binding on a data-only machine contract refuses BEFORE any rendering path (enforced invariant, not data hygiene)", () => {
-    const path = decideKindInputPath(
-      "tool_io_web_search_a1b2c3d4_input",
+  it("data-only is a NOTE, not a quarantine (post-eviction 2026-08-24): the test bench renders, annotated", () => {
+    // The 2026-07-15 hard refusal guarded against the 986 machine contracts
+    // that then lived in this registry. They were evicted to io_contract and
+    // never reach the resolver; surviving data_only rows are REAL machine-
+    // produced kinds (SEO/research agent outputs), and a human on the shapes
+    // test bench may construct an instance to exercise the component.
+    const withBinding = decideKindInputPath(
+      "topic_assignment_batch_v1",
       active(GENERIC_INPUT_COMPONENT_KEY),
       fieldSchema,
       true,
     );
-    expect(path.mode).toBe("refused");
-    if (path.mode === "refused") {
-      expect(path.reason).toContain("data-only machine contract");
-      expect(path.reason).toContain("registry defect");
+    expect(withBinding.mode).toBe("bridged-form");
+    if (withBinding.mode === "bridged-form") {
+      expect(withBinding.note).toContain("machine-produced");
+    }
+    // Even with NO input row, a data-only kind falls back to the instance-JSON
+    // editor instead of dead-ending — annotated, never blocking.
+    const withoutBinding = decideKindInputPath(
+      "topic_assignment_batch_v1",
+      null,
+      fieldSchema,
+      true,
+    );
+    expect(withoutBinding.mode).toBe("instance-json");
+    if (withoutBinding.mode === "instance-json") {
+      expect(withoutBinding.note).toContain("machine-produced");
     }
   });
 

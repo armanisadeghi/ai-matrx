@@ -26,14 +26,18 @@
  *       beats silently substituting the generic form for a binding that
  *       promised something better.
  *
- * NON-INTERACTIVE BY CLASSIFICATION: the generated data-only contract
- * families (`action_io` / `tool_io` / `agent_io` and the generated
- * `workflow_io` contracts) carry NO input rows on purpose — machines fill
- * them, humans never do. They resolve null here, and that null is correct.
- * The absence of rows is NOT the guarantee, though — `dataOnly` (from the
- * kind's own metadata) refuses FIRST, so a stray input-role row planted on a
- * machine contract can never render a form (enforced invariant, per the
- * 2026-07-15 adversarial review).
+ * DATA-ONLY IS A NOTE, NOT A QUARANTINE (post-eviction, 2026-08-24).
+ * The hard refusal here dated from 2026-07-15, when 986 machine-minted
+ * contracts lived in this registry and `data_only` was their marker.
+ * Since the contract-artifact eviction, machine contracts reside in
+ * `content_ir.io_contract` and NEVER reach this resolver — every kind that
+ * gets here is a real shape. The surviving `data_only: true` rows are
+ * hand-seeded, machine-PRODUCED data kinds (SEO/research agent outputs):
+ * humans don't author them in production flows, but a human on the shapes
+ * TEST BENCH absolutely may construct an instance to exercise the
+ * component. So `dataOnly` now annotates the resolved path instead of
+ * refusing it; the refusal that guarded against contract rows is enforced
+ * upstream by residence, not here.
  */
 
 import type { ComponentResolution } from "../registry/component-registry";
@@ -47,9 +51,14 @@ import type { KindSchema } from "@ai-matrx/content-ir";
 export const GENERIC_INPUT_COMPONENT_KEY = "generic_structured";
 
 export type KindInputPath =
-  | { mode: "bridged-form" }
-  | { mode: "instance-json" }
+  | { mode: "bridged-form"; note?: string }
+  | { mode: "instance-json"; note?: string }
   | { mode: "refused"; reason: string };
+
+/** Shown beside the form for machine-produced kinds — informative, never blocking. */
+export function dataOnlyNote(kind: string): string {
+  return `"${kind}" is a machine-produced kind — in production flows an agent or pipeline fills it, not a person. This form exists so you can construct a test instance and exercise the component.`;
+}
 
 export function decideKindInputPath(
   kind: string,
@@ -57,16 +66,16 @@ export function decideKindInputPath(
   schema: KindSchema | null,
   dataOnly = false,
 ): KindInputPath {
-  if (dataOnly) {
-    return {
-      mode: "refused",
-      reason: `Kind "${kind}" is a generated data-only machine contract (action_io / tool_io / workflow_io / agent_io) — machines fill it, humans never do. Refused by classification regardless of any registered input binding; a stray input-role kind_component row on this kind is a registry defect, not a license to render.`,
-    };
-  }
   if (resolution === null) {
+    // A data-only kind with no input row still gets the honest fallback: the
+    // instance-JSON editor (schema permitting), annotated — the test bench
+    // must never dead-end on a real shape.
+    if (dataOnly) {
+      return { mode: "instance-json", note: dataOnlyNote(kind) };
+    }
     return {
       mode: "refused",
-      reason: `No input component is registered for kind "${kind}" (resolver returned null for role "input"). Data-only contract kinds are non-interactive by classification; anything else missing here is a registry gap — add the kind_component row, never a guessed form.`,
+      reason: `No input component is registered for kind "${kind}" (resolver returned null for role "input") — a registry gap: add the kind_component row, never a guessed form.`,
     };
   }
   if (!resolution.isActive) {
@@ -82,5 +91,6 @@ export function decideKindInputPath(
     };
   }
   const hasFields = schema !== null && Object.keys(schema.fields).length > 0;
-  return hasFields ? { mode: "bridged-form" } : { mode: "instance-json" };
+  const note = dataOnly ? dataOnlyNote(kind) : undefined;
+  return hasFields ? { mode: "bridged-form", note } : { mode: "instance-json", note };
 }

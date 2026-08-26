@@ -152,15 +152,12 @@ export default function KindInputForm({
           contract.dataOnly,
         );
         if (path.mode === "refused") {
-          // A generated machine contract is expected to have no human-input
-          // path. Keep the visible refusal as defence in depth, but do not
-          // persist expected classification as a production incident.
-          if (!contract.dataOnly) {
-            captureError({
-              source: "content-ir",
-              message: refusalMessage(kind, path.reason),
-            });
-          }
+          // Post-eviction, dataOnly no longer refuses (it annotates), so every
+          // refusal reaching here is a real registry gap — always incident it.
+          captureError({
+            source: "content-ir",
+            message: refusalMessage(kind, path.reason),
+          });
           setState({ status: "refused", reason: path.reason });
           return;
         }
@@ -242,6 +239,9 @@ export default function KindInputForm({
 
   const { path, emittedJsonSchema, pairs, emptyStringFields } = state;
   const schemaMissing = emittedJsonSchema === null;
+  // Machine-produced kinds carry an informational note (post-eviction:
+  // data_only annotates, never blocks) — shown once, above the form.
+  const pathNote = "note" in path ? path.note : undefined;
 
   async function emit(instance: unknown): Promise<void> {
     const leg = validateStructuralLeg(instance, emittedJsonSchema);
@@ -301,6 +301,13 @@ export default function KindInputForm({
           : submitInstanceJson());
       }}
     >
+      {pathNote && (
+        <div className="flex items-start gap-2 rounded-md border border-sky-500/30 bg-sky-500/5 px-3 py-2 text-xs text-sky-800 dark:text-sky-200">
+          <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {pathNote}
+        </div>
+      )}
+
       {schemaMissing && (
         <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
           <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
