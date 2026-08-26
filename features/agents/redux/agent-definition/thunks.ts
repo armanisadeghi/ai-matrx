@@ -441,6 +441,10 @@ export interface AgentVersionHistoryItem {
   name: string;
   changed_at: string;
   change_note: string;
+  contract_change: string;
+  contract_break_declared: string;
+  input_contract_hash: string;
+  output_contract_hash: string;
 }
 type _Check_AgentVersionHistoryItem =
   AgentVersionHistoryItem extends DbRpcRow<"agx_get_version_history">
