@@ -71,4 +71,18 @@ describe("Projects list surface context", () => {
     });
     expect(context).not.toHaveProperty("active_project_id");
   });
+
+  it("omits task counts when the summary read is unavailable", () => {
+    const context = buildProjectsListContextData({
+      projects: [{ id: "project-1", name: "Surface campaign" }],
+      searchQuery: "",
+      view: "cards",
+    });
+
+    expect(context).toMatchObject({
+      project_list: [{ id: "project-1", name: "Surface campaign" }],
+    });
+    expect(context).not.toHaveProperty("project_list.0.open_task_count");
+    expect(context).not.toHaveProperty("project_list.0.done_task_count");
+  });
 });

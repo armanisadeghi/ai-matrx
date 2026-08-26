@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import {
   Table,
@@ -169,6 +170,7 @@ export function ProjectsHub({
   // Projects (RLS-filtered, nav-tree-independent).
   const [projects, setProjects] = React.useState<ProjectWithRole[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [projectsReadFailed, setProjectsReadFailed] = React.useState(false);
   const [reloadTick, setReloadTick] = React.useState(0);
   const refresh = () => setReloadTick((tick) => tick + 1);
 
@@ -189,6 +191,7 @@ export function ProjectsHub({
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setProjectsReadFailed(false);
       const { data, error } = await workspaceDb(supabase)
         .from("projects")
         .select(
@@ -199,7 +202,7 @@ export function ProjectsHub({
       if (cancelled) return;
       if (error) {
         console.error("[ProjectsHub] load failed:", error);
-        setProjects([]);
+        setProjectsReadFailed(true);
       } else {
         type Row = {
           id: string;
@@ -245,6 +248,7 @@ export function ProjectsHub({
 
   // Batched task stats for every visible project — one query, not N.
   const [stats, setStats] = React.useState<Map<string, Stat>>(new Map());
+  const [statsReadFailed, setStatsReadFailed] = React.useState(false);
   React.useEffect(() => {
     let cancelled = false;
     const ids = projects.map((p) => p.id);
@@ -252,12 +256,18 @@ export function ProjectsHub({
       return undefined;
     }
     (async () => {
-      const { data } = await workspaceDb(supabase)
+      setStatsReadFailed(false);
+      const { data, error } = await workspaceDb(supabase)
         .from("tasks")
         .select("id, project_id, status, parent_task_id, title")
         .is("deleted_at", null)
         .in("project_id", ids);
       if (cancelled) return;
+      if (error) {
+        console.error("[ProjectsHub] task summary load failed:", error);
+        setStatsReadFailed(true);
+        return;
+      }
       const m = new Map<string, Stat>();
       for (const id of ids) m.set(id, { open: 0, done: 0, preview: [] });
       for (const row of (data ?? []) as Array<{
@@ -387,8 +397,8 @@ export function ProjectsHub({
     organizationName: project.organizationId
       ? (orgMap.get(project.organizationId)?.name ?? null)
       : null,
-    openTaskCount: stats.get(project.id)?.open ?? 0,
-    doneTaskCount: stats.get(project.id)?.done ?? 0,
+    openTaskCount: statsReadFailed ? undefined : stats.get(project.id)?.open,
+    doneTaskCount: statsReadFailed ? undefined : stats.get(project.id)?.done,
   }));
 
   const buildListContextData = () =>
@@ -430,7 +440,10 @@ export function ProjectsHub({
         org: organization
           ? { name: organization.name, isPersonal: organization.isPersonal }
           : null,
-        taskCounts: { open: stat?.open ?? 0, done: stat?.done ?? 0 },
+        taskCounts:
+          stat && !statsReadFailed
+            ? { open: stat.open, done: stat.done }
+            : undefined,
         projectCount: filtered.length,
         selectionText: window.getSelection?.()?.toString() ?? "",
       }),
@@ -504,7 +517,7 @@ export function ProjectsHub({
                   <p className="text-sm text-muted-foreground">{subtitle}</p>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                 <span
                   className="text-xs text-muted-foreground tabular-nums"
                   data-surface-value="project_count"
@@ -513,7 +526,7 @@ export function ProjectsHub({
                   {filtered.length === 1 ? "project" : "projects"}
                 </span>
                 <div
-                  className="relative"
+                  className="relative min-w-0 flex-1 sm:flex-none"
                   data-surface-value="project_search_query"
                 >
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -521,7 +534,7 @@ export function ProjectsHub({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search projects…"
-                    className="pl-8 h-9 w-44"
+                    className="h-11 w-full pl-8 text-base sm:h-9 sm:w-44 sm:text-sm"
                   />
                 </div>
                 <div
@@ -529,15 +542,21 @@ export function ProjectsHub({
                   data-surface-value="project_list_view"
                 >
                   <button
+                    type="button"
                     onClick={() => setView("cards")}
-                    className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors ${view === "cards" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    aria-label="Card view"
+                    aria-pressed={view === "cards"}
+                    className={`flex h-11 w-11 items-center justify-center rounded-md transition-colors sm:h-7 sm:w-7 ${view === "cards" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                     title="Card view"
                   >
                     <LayoutGrid className="h-4 w-4" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => setView("table")}
-                    className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors ${view === "table" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    aria-label="Table view"
+                    aria-pressed={view === "table"}
+                    className={`flex h-11 w-11 items-center justify-center rounded-md transition-colors sm:h-7 sm:w-7 ${view === "table" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                     title="Table view"
                   >
                     <TableIcon className="h-4 w-4" />
@@ -548,6 +567,7 @@ export function ProjectsHub({
                     referenceType="project"
                     records={filtered.map((p) => ({ id: p.id, label: p.name }))}
                     toastLabel={`${filtered.length} project${filtered.length === 1 ? "" : "s"}`}
+                    className="h-11 w-11 sm:h-6 sm:w-6"
                   />
                 )}
               </div>
@@ -572,7 +592,7 @@ export function ProjectsHub({
                     <button
                       type="button"
                       aria-label="Remove organization filter"
-                      className="rounded hover:bg-accent p-0.5"
+                      className="-my-2 flex h-11 w-11 items-center justify-center rounded hover:bg-accent sm:h-7 sm:w-7"
                       onClick={clearFilter}
                     >
                       <X className="h-3 w-3" />
@@ -588,7 +608,7 @@ export function ProjectsHub({
                     <button
                       type="button"
                       aria-label="Remove scope filter"
-                      className="rounded hover:bg-accent p-0.5"
+                      className="-my-2 flex h-11 w-11 items-center justify-center rounded hover:bg-accent sm:h-7 sm:w-7"
                       onClick={clearFilter}
                     >
                       <X className="h-3 w-3" />
@@ -598,7 +618,7 @@ export function ProjectsHub({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-xs ml-auto"
+                  className="ml-auto h-11 px-3 text-xs sm:h-7"
                   onClick={clearFilter}
                 >
                   Show all projects
@@ -606,13 +626,32 @@ export function ProjectsHub({
               </div>
             )}
 
+            {projectsReadFailed && (
+              <StaleDataNotice
+                hasData={projects.length > 0}
+                what="projects"
+                onRetry={refresh}
+                retrying={loading}
+              />
+            )}
+
+            {!projectsReadFailed && projects.length > 0 && statsReadFailed && (
+              <StaleDataNotice
+                hasData={stats.size > 0}
+                what="project task summaries"
+                onRetry={refresh}
+                retrying={loading}
+              />
+            )}
+
             {loading ? (
               <ProjectsHubSkeleton
                 view={view}
                 useThreeColumns={isFiltered || query.trim().length > 0}
               />
-            ) : filtered.length === 0 ? (
-              <Card className="p-12 text-center">
+            ) : projectsReadFailed &&
+              projects.length === 0 ? null : filtered.length === 0 ? (
+              <Card className="p-6 text-center sm:p-12">
                 <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                   <FolderKanban className="h-7 w-7 text-muted-foreground" />
                 </div>
@@ -622,14 +661,23 @@ export function ProjectsHub({
                     ? "Nothing matches your filters."
                     : "Create a project to organize tasks, resources, and context."}
                 </p>
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex flex-wrap items-center justify-center gap-2">
                   {isFiltered && (
-                    <Button size="sm" variant="outline" onClick={clearFilter}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-11 sm:h-8"
+                      onClick={clearFilter}
+                    >
                       <Filter className="h-4 w-4 mr-1.5" />
                       Show all projects
                     </Button>
                   )}
-                  <Button size="sm" onClick={handleCreate}>
+                  <Button
+                    size="sm"
+                    className="h-11 sm:h-8"
+                    onClick={handleCreate}
+                  >
                     <Plus className="h-4 w-4 mr-1.5" />
                     New project
                   </Button>
@@ -640,6 +688,7 @@ export function ProjectsHub({
                 projects={filtered}
                 stats={stats}
                 orgMap={orgMap}
+                statsReadFailed={statsReadFailed}
               />
             ) : isFiltered || query ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -649,6 +698,7 @@ export function ProjectsHub({
                     project={p}
                     stat={stats.get(p.id)}
                     orgMap={orgMap}
+                    statsReadFailed={statsReadFailed}
                   />
                 ))}
               </div>
@@ -662,6 +712,7 @@ export function ProjectsHub({
                         project={p}
                         stat={stats.get(p.id)}
                         orgMap={orgMap}
+                        statsReadFailed={statsReadFailed}
                       />
                     ))}
                   </Section>
@@ -674,6 +725,7 @@ export function ProjectsHub({
                         project={p}
                         stat={stats.get(p.id)}
                         orgMap={orgMap}
+                        statsReadFailed={statsReadFailed}
                       />
                     ))}
                   </Section>
@@ -893,7 +945,7 @@ function ColumnFilterButton({
           title={`Filter ${label}`}
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "rounded p-0.5 transition-colors",
+            "flex h-11 w-11 items-center justify-center rounded transition-colors sm:h-5 sm:w-5",
             active
               ? "text-primary hover:text-primary/80"
               : "text-muted-foreground/40 hover:text-muted-foreground",
@@ -934,7 +986,7 @@ function TextColumnFilter({
         {value.trim().length > 0 && (
           <button
             type="button"
-            className="text-xs text-muted-foreground hover:text-foreground"
+            className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground sm:min-h-0 sm:px-0"
             onClick={() => onChange("")}
           >
             clear
@@ -945,7 +997,7 @@ function TextColumnFilter({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-8 text-sm"
+        className="h-11 text-base sm:h-8 sm:text-sm"
       />
     </div>
   );
@@ -989,7 +1041,7 @@ function NumberRangeColumnFilter({
         {hasFilter && (
           <button
             type="button"
-            className="text-xs text-muted-foreground hover:text-foreground"
+            className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground sm:min-h-0 sm:px-0"
             onClick={() => {
               setMinText("");
               setMaxText("");
@@ -1009,7 +1061,7 @@ function NumberRangeColumnFilter({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           placeholder="min"
-          className="h-7 text-xs w-[80px] tabular-nums"
+          className="h-11 w-[80px] text-base tabular-nums sm:h-7 sm:text-xs"
         />
         <span className="text-xs text-muted-foreground">–</span>
         <Input
@@ -1020,7 +1072,7 @@ function NumberRangeColumnFilter({
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           placeholder="max"
-          className="h-7 text-xs w-[80px] tabular-nums"
+          className="h-11 w-[80px] text-base tabular-nums sm:h-7 sm:text-xs"
         />
       </div>
     </div>
@@ -1046,7 +1098,7 @@ function UpdatedColumnFilter({
             type="button"
             onClick={() => onChange(opt.value)}
             className={cn(
-              "rounded px-2 py-1 text-left text-xs hover:bg-accent",
+              "min-h-11 rounded px-2 py-1 text-left text-xs hover:bg-accent sm:min-h-0",
               value === opt.value && "bg-accent font-medium",
             )}
           >
@@ -1089,7 +1141,7 @@ function ProjectsColumnHead({
           type="button"
           onClick={() => onSort(k)}
           className={cn(
-            "inline-flex items-center gap-1 hover:text-foreground transition-colors",
+            "inline-flex min-h-11 items-center gap-1 px-2 -mx-2 hover:text-foreground transition-colors sm:min-h-0 sm:px-0 sm:mx-0",
             align === "right" && "justify-end",
           )}
         >
@@ -1114,10 +1166,12 @@ function ProjectsTable({
   projects,
   stats,
   orgMap,
+  statsReadFailed,
 }: {
   projects: ProjectWithRole[];
   stats: Map<string, Stat>;
   orgMap: OrgMap;
+  statsReadFailed: boolean;
 }) {
   const router = useRouter();
   const [sortKey, setSortKey] = React.useState<SortKey>("updated");
@@ -1217,7 +1271,7 @@ function ProjectsTable({
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 px-2 text-xs"
+            className="h-11 px-3 text-xs sm:h-7"
             onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
           >
             Clear all
@@ -1267,7 +1321,7 @@ function ProjectsTable({
                       {columnFilters.organizationId.length > 0 && (
                         <button
                           type="button"
-                          className="text-xs text-muted-foreground hover:text-foreground"
+                          className="min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground sm:min-h-0 sm:px-0"
                           onClick={() => patchFilters({ organizationId: "" })}
                         >
                           clear
@@ -1282,7 +1336,7 @@ function ProjectsTable({
                         })
                       }
                     >
-                      <SelectTrigger className="h-8 text-sm">
+                      <SelectTrigger className="h-11 text-base sm:h-8 sm:text-sm">
                         <SelectValue placeholder="All organizations" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1407,7 +1461,7 @@ function ProjectsTable({
                 >
                   <TableCell className="py-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                         <FolderKanban className="h-4 w-4" />
                       </span>
                       {/* THE DOOR LAW: the whole-row click is a mouse
@@ -1418,7 +1472,7 @@ function ProjectsTable({
                         id={p.id}
                         name={p.name}
                         showIcon={false}
-                        className="font-medium text-foreground"
+                        className="inline-flex min-h-11 items-center font-medium text-foreground sm:min-h-0"
                       />
                     </div>
                   </TableCell>
@@ -1436,7 +1490,7 @@ function ProjectsTable({
                         // EntityRef already degrades to a truncated id, which
                         // is true and still opens.
                         name={orgEntry(p)?.name ?? null}
-                        className="text-sm text-muted-foreground"
+                        className="inline-flex min-h-11 items-center text-sm text-muted-foreground sm:min-h-0"
                       />
                     ) : (
                       <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -1447,32 +1501,40 @@ function ProjectsTable({
                   {/* A COUNT IS A DOOR: /projects/[id] lists this project's
                       tasks grouped Open / Done (ProjectTaskList). */}
                   <TableCell className="py-2 text-right tabular-nums">
-                    <Link
-                      href={`/projects/${p.id}`}
-                      onClick={(e) => e.stopPropagation()}
-                      title={`Open ${p.name} — ${s?.open ?? 0} open task${
-                        (s?.open ?? 0) === 1 ? "" : "s"
-                      }`}
-                      className="rounded px-1 hover:bg-accent hover:underline"
-                    >
-                      {s?.open ?? 0}
-                    </Link>
+                    {!s && statsReadFailed ? (
+                      <span title="Task summary unavailable">—</span>
+                    ) : (
+                      <Link
+                        href={`/projects/${p.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        title={`Open ${p.name} — ${s?.open ?? 0} open task${
+                          (s?.open ?? 0) === 1 ? "" : "s"
+                        }`}
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 hover:bg-accent hover:underline sm:min-h-0 sm:min-w-0"
+                      >
+                        {s?.open ?? 0}
+                      </Link>
+                    )}
                   </TableCell>
                   <TableCell className="py-2 text-right tabular-nums text-muted-foreground">
-                    <Link
-                      // `?done=1` expands the Done group on arrival — that
-                      // section is collapsed by default, so a bare link would
-                      // land the user on a page where the tasks this number
-                      // counts are still hidden.
-                      href={`/projects/${p.id}?done=1`}
-                      onClick={(e) => e.stopPropagation()}
-                      title={`Open ${p.name} — ${s?.done ?? 0} completed task${
-                        (s?.done ?? 0) === 1 ? "" : "s"
-                      }`}
-                      className="rounded px-1 hover:bg-accent hover:underline"
-                    >
-                      {s?.done ?? 0}
-                    </Link>
+                    {!s && statsReadFailed ? (
+                      <span title="Task summary unavailable">—</span>
+                    ) : (
+                      <Link
+                        // `?done=1` expands the Done group on arrival — that
+                        // section is collapsed by default, so a bare link would
+                        // land the user on a page where the tasks this number
+                        // counts are still hidden.
+                        href={`/projects/${p.id}?done=1`}
+                        onClick={(e) => e.stopPropagation()}
+                        title={`Open ${p.name} — ${s?.done ?? 0} completed task${
+                          (s?.done ?? 0) === 1 ? "" : "s"
+                        }`}
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 hover:bg-accent hover:underline sm:min-h-0 sm:min-w-0"
+                      >
+                        {s?.done ?? 0}
+                      </Link>
+                    )}
                   </TableCell>
                   <TableCell className="py-2 text-sm text-muted-foreground whitespace-nowrap">
                     <span title={formatAbsoluteDate(p.updatedAt)}>
@@ -1489,22 +1551,31 @@ function ProjectsTable({
                         projectName={p.name}
                         location="Projects — hub table"
                         size="icon"
-                        className="h-7 w-7"
+                        className="h-11 w-11 sm:h-7 sm:w-7"
                       />
                       {/* An anchor, like the Settings button beside it — an
                           onClick-only Open cannot be cmd- or middle-clicked,
                           so the row's own "open in a new tab" door died at the
                           one control most likely to be used for it. */}
-                      <Button asChild size="sm" variant="ghost">
+                      <Button
+                        asChild
+                        size="sm"
+                        variant="ghost"
+                        className="h-11 sm:h-8"
+                      >
                         <Link href={`/projects/${p.id}`}>Open</Link>
                       </Button>
                       <Button
                         asChild
                         size="sm"
                         variant="ghost"
-                        className="text-muted-foreground"
+                        className="h-11 w-11 text-muted-foreground sm:h-8 sm:w-auto"
                       >
-                        <Link href={`/projects/${p.id}/settings`}>
+                        <Link
+                          href={`/projects/${p.id}/settings`}
+                          aria-label={`Manage ${p.name}`}
+                          title={`Manage ${p.name}`}
+                        >
                           <Settings className="h-3.5 w-3.5" />
                         </Link>
                       </Button>
@@ -1524,10 +1595,12 @@ function ProjectHubCard({
   project,
   stat,
   orgMap,
+  statsReadFailed,
 }: {
   project: ProjectWithRole;
   stat?: Stat;
   orgMap: OrgMap;
+  statsReadFailed: boolean;
 }) {
   const router = useRouter();
   const preview = stat?.preview ?? [];
@@ -1543,12 +1616,14 @@ function ProjectHubCard({
       data-project-row-id={project.id}
       className="group/entity-ref relative overflow-hidden flex flex-col hover:border-primary/40 hover:shadow-sm transition-all"
     >
-      <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500 opacity-80" />
+      <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/70 to-primary/40 opacity-80" />
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-start gap-3">
           <button
+            type="button"
             onClick={() => router.push(href)}
-            className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+            aria-label={`Open ${project.name}`}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
           >
             <FolderKanban className="h-5 w-5" />
           </button>
@@ -1558,7 +1633,7 @@ function ProjectHubCard({
             <h3 className="font-semibold text-base">
               <Link
                 href={href}
-                className="block max-w-full truncate hover:text-primary transition-colors"
+                className="flex min-h-11 max-w-full items-center truncate transition-colors hover:text-primary sm:min-h-0"
               >
                 {project.name}
               </Link>
@@ -1571,6 +1646,7 @@ function ProjectHubCard({
                   // Same as the table cell: never invent the name. EntityRef
                   // falls back to a truncated id, which is honest.
                   name={org?.name ?? null}
+                  className="inline-flex min-h-11 items-center sm:min-h-0"
                 />
               ) : (
                 <>
@@ -1588,7 +1664,11 @@ function ProjectHubCard({
         )}
 
         <div className="rounded-lg border border-border bg-muted/20 p-2.5 flex-1">
-          {!stat ? (
+          {!stat && statsReadFailed ? (
+            <p className="px-1 py-1 text-[11px] text-muted-foreground">
+              Task summary unavailable.
+            </p>
+          ) : !stat ? (
             <div
               className="space-y-2 px-1 py-1.5"
               aria-label={`Loading tasks for ${project.name}`}
@@ -1615,6 +1695,7 @@ function ProjectHubCard({
                     id={t.id}
                     name={t.title}
                     showIcon={false}
+                    className="inline-flex min-h-11 items-center sm:min-h-0"
                   />
                 </li>
               ))}
@@ -1622,7 +1703,7 @@ function ProjectHubCard({
                 <li className="text-[11px] text-muted-foreground/70 px-1 pt-0.5">
                   <Link
                     href={href}
-                    className="hover:text-foreground hover:underline"
+                    className="inline-flex min-h-11 items-center hover:text-foreground hover:underline sm:min-h-0"
                   >
                     +{open - preview.length} more
                   </Link>
@@ -1634,32 +1715,36 @@ function ProjectHubCard({
 
         {/* A COUNT IS A DOOR: /projects/[id] lists this project's tasks
             grouped Open / Done (ProjectTaskList). */}
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <Link
-            href={href}
-            title={`Open ${project.name} — ${open} open task${open === 1 ? "" : "s"}`}
-            className="flex items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors"
-          >
-            <Circle className="h-3.5 w-3.5" />
-            <span className="font-semibold text-foreground tabular-nums">
-              {open}
-            </span>{" "}
-            open
-          </Link>
-          <Link
-            // `?done=1` — the Done group is collapsed by default, so a bare
-            // link would hide the very tasks this count names.
-            href={`${href}?done=1`}
-            title={`Open ${project.name} — ${done} completed task${done === 1 ? "" : "s"}`}
-            className="flex items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors"
-          >
-            <CircleCheck className="h-3.5 w-3.5" />
-            <span className="font-semibold text-foreground tabular-nums">
-              {done}
-            </span>{" "}
-            done
-          </Link>
-        </div>
+        {stat || !statsReadFailed ? (
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <Link
+              href={href}
+              title={`Open ${project.name} — ${open} open task${open === 1 ? "" : "s"}`}
+              className="flex min-h-11 items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors sm:min-h-0"
+            >
+              <Circle className="h-3.5 w-3.5" />
+              <span className="font-semibold text-foreground tabular-nums">
+                {open}
+              </span>{" "}
+              open
+            </Link>
+            <Link
+              // `?done=1` — the Done group is collapsed by default, so a bare
+              // link would hide the very tasks this count names.
+              href={`${href}?done=1`}
+              title={`Open ${project.name} — ${done} completed task${done === 1 ? "" : "s"}`}
+              className="flex min-h-11 items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors sm:min-h-0"
+            >
+              <CircleCheck className="h-3.5 w-3.5" />
+              <span className="font-semibold text-foreground tabular-nums">
+                {done}
+              </span>{" "}
+              done
+            </Link>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Counts unavailable</p>
+        )}
       </div>
 
       <div className="flex items-center gap-2 px-5 py-3 border-t border-border bg-card">
@@ -1668,15 +1753,15 @@ function ProjectHubCard({
           projectName={project.name}
           location="Projects — hub cards"
           size="icon"
-          className="h-8 w-8 shrink-0"
+          className="h-11 w-11 shrink-0 sm:h-8 sm:w-8"
         />
-        <Button asChild size="sm" className="flex-1">
+        <Button asChild size="sm" className="h-11 flex-1 sm:h-8">
           <Link href={href}>
             Open
             <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
           </Link>
         </Button>
-        <Button asChild size="sm" variant="outline">
+        <Button asChild size="sm" variant="outline" className="h-11 sm:h-8">
           <Link href={`/projects/${project.id}/settings`}>
             <Settings className="h-3.5 w-3.5 mr-1.5" />
             Manage

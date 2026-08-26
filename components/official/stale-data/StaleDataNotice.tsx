@@ -96,7 +96,7 @@ export function StaleDataNotice({
         variant="outline"
         onClick={onRetry}
         disabled={retrying}
-        className="h-7 shrink-0 gap-1.5"
+        className="h-11 shrink-0 gap-1.5 sm:h-7"
       >
         <RefreshCw className={cn("h-3.5 w-3.5", retrying && "animate-spin")} />
         {retrying ? "Retrying…" : "Try again"}

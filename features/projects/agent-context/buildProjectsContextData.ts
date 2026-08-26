@@ -104,8 +104,10 @@ export interface ProjectsListContextProject {
   startDate?: string | null;
   targetDate?: string | null;
   updatedAt?: string | null;
-  openTaskCount: number;
-  doneTaskCount: number;
+  /** Omitted when the task-summary read failed or is still loading. */
+  openTaskCount?: number;
+  /** Omitted when the task-summary read failed or is still loading. */
+  doneTaskCount?: number;
 }
 
 export interface BuildProjectsListContextDataArgs {
@@ -140,8 +142,12 @@ export function buildProjectsListContextData({
     start_date: project.startDate || undefined,
     target_date: project.targetDate || undefined,
     updated_at: project.updatedAt || undefined,
-    open_task_count: project.openTaskCount,
-    done_task_count: project.doneTaskCount,
+    ...(project.openTaskCount === undefined
+      ? {}
+      : { open_task_count: project.openTaskCount }),
+    ...(project.doneTaskCount === undefined
+      ? {}
+      : { done_task_count: project.doneTaskCount }),
   }));
   const projectListFilters = {
     organization_id: organizationFilterId || undefined,
