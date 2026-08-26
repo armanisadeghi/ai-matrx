@@ -35,6 +35,18 @@ export interface VoicePlaybackRequest {
   conversationId: string | null;
   /** When false, the owner is dormant for this conversation (no speaking). */
   enabled: boolean;
+  /**
+   * Speak the request that is ALREADY live when the owner first binds.
+   *
+   * Default (false) keeps the historical baseline: only turns that start
+   * streaming AFTER the owner engages are auto-spoken — right for a toggle a
+   * user flips mid-conversation (Scribe). A surface that launches a run and
+   * enables read-aloud in the same gesture (the Listen panel's stream-to-
+   * stream mode) passes true, because the owner may mount AFTER the run's
+   * request exists (lazy audio chunk) and would otherwise baseline the very
+   * turn it was asked to speak into silence.
+   */
+  includeActive?: boolean;
 }
 
 let state: VoicePlaybackState = { active: false, playing: false };
@@ -110,7 +122,8 @@ export function subscribeVoicePlayback(cb: () => void): () => void {
 export function requestVoicePlayback(next: VoicePlaybackRequest): void {
   if (
     next.conversationId === request.conversationId &&
-    next.enabled === request.enabled
+    next.enabled === request.enabled &&
+    (next.includeActive ?? false) === (request.includeActive ?? false)
   ) {
     return;
   }

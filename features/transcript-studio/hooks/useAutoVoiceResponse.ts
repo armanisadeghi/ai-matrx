@@ -68,6 +68,7 @@ export function useAutoVoiceResponse() {
   );
   const conversationId = request.conversationId;
   const enabled = request.enabled;
+  const includeActive = request.includeActive ?? false;
 
   // Requests already fully handled (spoken, or skipped because they predate us
   // / arrived complete). Keyed by request id.
@@ -107,15 +108,27 @@ export function useAutoVoiceResponse() {
     handledIdRef.current = new Set();
     activeIdRef.current = null;
     const current = selectPrimaryRequest(conversationId)(store.getState());
-    if (current?.requestId) handledIdRef.current.add(current.requestId);
+    // An `includeActive` requester launched its run and enabled read-aloud in
+    // the same gesture: a request that is still LIVE at bind time is the very
+    // turn it asked to hear, so it must not be baselined-out (the lazy audio
+    // chunk can mount after the run's request already exists). Terminal
+    // requests are always baselined — history is never auto-replayed.
+    const currentLive =
+      current?.status === "pending" ||
+      current?.status === "connecting" ||
+      current?.status === "streaming" ||
+      current?.status === "awaiting-tools";
+    if (current?.requestId && !(includeActive && currentLive)) {
+      handledIdRef.current.add(current.requestId);
+    }
     // Proof-of-decision log (twin of the speaker's [tts-stream] logs): what the
     // baseline captured. If a turn that should speak stays silent, this line
     // says whether it was baselined-out (owner mounted after the stream began).
     // eslint-disable-next-line no-console
     console.log(
-      `[auto-voice] baseline conv=${conversationId} handled=${current?.requestId ?? "none"} status=${current?.status ?? "-"}`,
+      `[auto-voice] baseline conv=${conversationId} current=${current?.requestId ?? "none"} status=${current?.status ?? "-"} includeActive=${includeActive} handled=${current?.requestId ? String(!(includeActive && currentLive)) : "n/a"}`,
     );
-  }, [enabled, conversationId, store]);
+  }, [enabled, conversationId, includeActive, store]);
 
   useEffect(() => {
     if (!enabled || !conversationId || !requestId) return;

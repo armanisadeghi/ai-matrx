@@ -116,7 +116,14 @@ function ListenSummaryWindowInner({
       onConversationCreated: (cid) => {
         conversationRef.current = cid;
         if (autoPlay) {
-          requestVoicePlayback({ conversationId: cid, enabled: true });
+          // includeActive: the run and the read-aloud request are ONE gesture;
+          // the app-root speaker must speak this turn even when it mounts
+          // after the request already exists (lazy audio chunk).
+          requestVoicePlayback({
+            conversationId: cid,
+            enabled: true,
+            includeActive: true,
+          });
         }
       },
     }).catch(() => {
@@ -178,6 +185,31 @@ function ListenSummaryWindowInner({
   useEffect(() => {
     if (isSpeaking) setHasPlayed(true);
   }, [isSpeaking]);
+
+  // Auto-play fallback: the user asked to LISTEN. If the summary settles and
+  // the live stream-to-stream leg never engaged (the run can finish before the
+  // lazy app-root speaker binds), play the finished summary through the queue.
+  // Grace-delayed so a live leg that is still connecting can claim first.
+  const summaryTextRef = useRef(summaryText);
+  const liveSessionRef = useRef(session);
+  const hasPlayedRef = useRef(hasPlayed);
+  useEffect(() => {
+    summaryTextRef.current = summaryText;
+    liveSessionRef.current = session;
+    hasPlayedRef.current = hasPlayed;
+  });
+  const autoFallbackFiredRef = useRef(false);
+  useEffect(() => {
+    if (!autoPlay || !summaryReady || autoFallbackFiredRef.current) return;
+    const timer = setTimeout(() => {
+      if (autoFallbackFiredRef.current) return;
+      if (hasPlayedRef.current || liveSessionRef.current) return;
+      autoFallbackFiredRef.current = true;
+      speak({ text: summaryTextRef.current, label: "Listening summary" });
+      setAudioEngaged(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [autoPlay, summaryReady]);
 
   const handlePlay = useCallback(() => {
     if (!summaryText.trim()) return;
