@@ -223,7 +223,9 @@ how that savior page gets built.
 - 2026-08-25 — Moved context-menu ownership from N desktop-only table-row
   wrappers to one delegated pane menu. Table, alternate cards, and dense rows
   now resolve the same row registry at open time; mobile long-press and desktop
-  right-click share actions, per-row entity, and live surface values.
+  right-click share actions, per-row entity, and live surface values. The
+  toolbar refresh indicator now names its operation for assistive technology,
+  and fetch failures use the canonical toast façade.
 
 - 2026-08-25 — Added the generic `config.mobileCards` forwarding seam so a
   feature-entry list can expose its essential phone context while retaining the

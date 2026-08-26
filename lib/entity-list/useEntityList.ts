@@ -11,7 +11,7 @@
 // types fast on a slow connection and the list settles on the wrong results.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { useUrlSearchParams } from "@/lib/url-state/useUrlState";
 import type { EntityListController, EntityListService } from "./config";
@@ -66,7 +66,10 @@ export interface UseEntityListArgs<TRow> {
 function useQueryState(
   urlState: boolean,
   defaults: EntityListQuery,
-): [EntityListQuery, (updater: (prev: EntityListQuery) => EntityListQuery) => void] {
+): [
+  EntityListQuery,
+  (updater: (prev: EntityListQuery) => EntityListQuery) => void,
+] {
   const [localQuery, setLocalQuery] = useState<EntityListQuery>(defaults);
   const searchParams = useUrlSearchParams();
 
