@@ -703,6 +703,12 @@ begin
 
   perform set_config('hr.privileged_write', 'on', true);
 
+  -- 🚨 BOTH columns, not just record_class_key. hr.access_audit and hr.legal_hold_item carry a
+  -- record_class_key REFERENCE without a {{RETAIN}} block, and an earlier form of this loop
+  -- selected on record_class_key alone and then read legal_hold_count off them — proven live by
+  -- a probe, which failed with `column "legal_hold_count" does not exist` on hr.access_audit.
+  -- The {{RETAIN}}-bearing set IS the retention-governed set: a table with no retention block is
+  -- not something this sweep may destroy.
   for t in
     select e.token, e.schema_name, e.table_name
       from platform.entity_types e
@@ -710,6 +716,12 @@ begin
        and exists (select 1 from information_schema.columns c
                     where c.table_schema=e.schema_name and c.table_name=e.table_name
                       and c.column_name='record_class_key')
+       and exists (select 1 from information_schema.columns c
+                    where c.table_schema=e.schema_name and c.table_name=e.table_name
+                      and c.column_name='legal_hold_count')
+       and exists (select 1 from information_schema.columns c
+                    where c.table_schema=e.schema_name and c.table_name=e.table_name
+                      and c.column_name='retention_trigger_at')
   loop
     for r in execute format(
       'select id, organization_id, legal_hold_count, to_jsonb(x) as row_json from %I.%I x
