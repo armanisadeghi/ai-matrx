@@ -513,4 +513,62 @@ describe("classifyTier", () => {
       expect(c.tier).toBe("red");
     },
   );
+
+  it("keeps a handled web-site delete denial out of the repair queue", () => {
+    const c = classifyTier(
+      captured({
+        source: "supabase-postgrest",
+        route: "/marketing/sites",
+        schema: "web",
+        relation: "site",
+        operation: "update",
+        code: "42501",
+        status: 403,
+        message: "Edit access does not include deleting this web_site.",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("web-site-governed-delete-denial");
+  });
+
+  it.each([
+    [
+      "public",
+      "site",
+      "update",
+      "Edit access does not include deleting this web_site.",
+    ],
+    [
+      "web",
+      "page",
+      "update",
+      "Edit access does not include deleting this web_site.",
+    ],
+    [
+      "web",
+      "site",
+      "delete",
+      "Edit access does not include deleting this web_site.",
+    ],
+    ["web", "site", "update", "permission denied for schema web"],
+  ])(
+    "keeps unrelated 42501 failures red (%s.%s %s)",
+    (schema, relation, operation, message) => {
+      const c = classifyTier(
+        captured({
+          source: "supabase-postgrest",
+          route: "/marketing/sites",
+          schema,
+          relation,
+          operation: operation as CapturedError["operation"],
+          code: "42501",
+          status: 403,
+          message,
+        }),
+      );
+
+      expect(c.tier).toBe("red");
+    },
+  );
 });

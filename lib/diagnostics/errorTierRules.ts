@@ -354,6 +354,22 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "web-site-governed-delete-denial",
+    tier: "yellow",
+    reason:
+      "The web.site authorization trigger intentionally reserves deletion for full-access users or the creator, and every site-delete surface converts this exact denial into GovernedActionDialog. Keep the handled refusal visible locally without filing a repair-queue failure; unrelated 42501 errors stay red.",
+    addedAt: "2026-08-26",
+    match: {
+      source: "supabase-postgrest",
+      schema: "web",
+      relation: "site",
+      operation: "update",
+      code: "42501",
+      status: 403,
+      messageIncludes: "Edit access does not include deleting this web_site.",
+    },
+  },
+  {
     id: "tool-error-normal-operation",
     tier: "yellow",
     reason:
