@@ -394,6 +394,20 @@ begin
   end if;
   v_org := v_em.organization_id;
 
+  -- 🚨 REPLAY DOOR 1 (hr_l3_02c): resolved BEFORE every gate, because the second tap of a double
+  -- tap arrives against the clock state the FIRST tap created, and the state gate would refuse it.
+  -- The caught unique_violation at step 10 remains the authority for the concurrent race; this
+  -- door exists so a replay is never evaluated against a state the original punch itself made.
+  select p.id into v_punch_id from hr.punch p
+   where p.organization_id = v_org and p.idempotency_key = p_idempotency_key;
+  if v_punch_id is not null then
+    return jsonb_build_object(
+      'ok', true, 'replayed', true,
+      'punch', (select to_jsonb(pp) from hr.punch pp where pp.id = v_punch_id),
+      'clock_state', hr.clock_state(p_employment_id),
+      'exceptions', '[]'::jsonb);
+  end if;
+
   ---------------------------------------------------------------- 2. {{JURIS}} (never now(), never an IP)
   v_juris := hr._punch_resolve_juris(p_employment_id, p_occurred_at);
   if not (v_juris ->> 'ok')::boolean then
@@ -553,9 +567,12 @@ begin
     v_allowlist := hr._punch_knob('web_punch_ip_allowlist', '[]'::jsonb);
 
     -- 🚨 an EMPTY allowlist never blocks anything: unconfigured is not "deny all"
+    -- `<<=` is "contained within OR equals", which covers a CIDR block and a bare host address in
+    -- one operator. `<<` alone is STRICT containment and would never match a single-host entry.
+    -- (Corrected by hr_l3_02b after execution caught `host(text) does not exist`; see that file.)
     if v_ip_mode in ('warn','block') and jsonb_array_length(v_allowlist) > 0 and v_ip is not null
        and not exists (select 1 from jsonb_array_elements_text(v_allowlist) c
-                        where v_ip << c::inet or v_ip = host(c)::inet) then
+                        where v_ip <<= c::inet) then
       if v_ip_mode = 'block' then
         -- refuse BEFORE inserting, and record the attempt as access, not as a phantom punch (§7.1)
         perform hr.arm_write();
