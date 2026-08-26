@@ -231,6 +231,14 @@ if $STRICT; then
         # allowlist is a reason-required ratchet whose count only goes down.
         "URL state written outside the canonical primitive|pnpm check:url-state"
         "Retired-database project id handed to agents|pnpm check:retired-db-ref"
+        # HR TIME & ATTENDANCE — NO CLIENT COMPUTES HOURS (SPEC-TIME §9.2, L3-75).
+        # BLOCKING on --strict, deliberately: the lane is greenfield and stands at
+        # ZERO findings today, so a strict gate stalls nobody and catches the first
+        # regression. Subtracting ended_at − started_at in a browser returns 8 hours
+        # for a spring-forward night shift that was 7 (fixture OT-DST-01).
+        # Falsifiability proven 2026-08-27: a planted known-bad line reported both
+        # findings and --strict exited 1.
+        "HR time: client-side hours arithmetic|pnpm check:hr-time-arithmetic:strict"
         "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
         # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md
         # row X4). Baseline ratchet: exits 1 only on a NEW site; advisory here.
@@ -409,6 +417,7 @@ else
         # allowlist is a reason-required ratchet whose count only goes down.
         "URL state written outside the canonical primitive|pnpm check:url-state"
         "Retired-database project id handed to agents|pnpm check:retired-db-ref"
+        "HR time: client-side hours arithmetic|pnpm check:hr-time-arithmetic"
         "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
         # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md
         # row X4). Baseline ratchet: exits 1 only on a NEW site; advisory here.
