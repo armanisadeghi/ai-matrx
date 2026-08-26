@@ -67,8 +67,17 @@ export interface DiffTemporalMetadata {
 export type IdentityKeyFn = (item: unknown, index: number) => string;
 
 export interface DiffOptions {
+  /**
+   * Paths excluded from the comparison. Bare names apply only to root fields;
+   * use a dotted path (for example `settings.internalId`) for a nested field.
+   */
   excludePaths?: Set<string>;
   identityKeys?: Record<string, string | IdentityKeyFn>;
+  /**
+   * Object paths whose authored key order is significant. Each entry applies
+   * to that object and every object nested below it.
+   */
+  orderSensitiveObjectPaths?: Set<string>;
   maxDepth?: number;
   /**
    * Opt-in presentation filter for consumers whose underscore-prefixed keys

@@ -31,6 +31,9 @@ export const AGENT_IDENTITY_KEYS: Record<string, string> = {
 export const AGENT_DIFF_OPTIONS: DiffOptions = {
   excludePaths: AGENT_EXCLUDE_PATHS,
   identityKeys: AGENT_IDENTITY_KEYS,
+  // Output-schema property order is authored behavior: model providers often
+  // emit fields in schema order, so a reorder must be visible in version diffs.
+  orderSensitiveObjectPaths: new Set(["outputSchema"]),
   // Agent configuration is executable data. `_`/`__` keys (especially
   // output-schema `__kind`) are contract fields, never hidden metadata.
   skipUnderscorePrefix: false,

@@ -216,8 +216,11 @@ compare/merge), agent-emittable `matrx-diff` block, 3-way merge, since-last-seen
   longer silently drops `_`/`__`-prefixed keys unless a consumer explicitly
   opts into that presentation filter. This closes the production false-negative
   where an agent output schema added `properties.__kind` but the version viewer
-  rendered “No changes.” Regression coverage pins both the lossless default and
-  the notes-only explicit filter.
+  rendered “No changes.” Root metadata exclusions are now path-scoped so a
+  nested configuration field with the same name remains visible; agent output
+  schemas preserve authored object-key order; identity-keyed arrays report
+  reorders and fall back losslessly when identities collide. Regression coverage
+  pins every false-negative class plus the notes-only explicit underscore filter.
 - 2026-08-16 — **Structured comparisons can carry version and field-change
   dates.** `DiffViewerShell` accepts optional `DiffTemporalMetadata` and renders
   exact local date/time (with timezone), relative age, and version number in

@@ -64,6 +64,74 @@ describe("compareAgentDefinitions", () => {
     ]);
   });
 
+  it("reports output-schema property order changes", () => {
+    const result = compareAgentDefinitions(
+      {
+        outputSchema: {
+          name: "Result",
+          schema: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              score: { type: "number" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        outputSchema: {
+          name: "Result",
+          schema: {
+            type: "object",
+            properties: {
+              score: { type: "number" },
+              title: { type: "string" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+    );
+
+    expect(result.behaviorFields.map((field) => field.key)).toEqual([
+      "outputSchema",
+    ]);
+  });
+
+  it("does not let root metadata exclusions hide nested configuration", () => {
+    const result = compareAgentDefinitions(
+      {
+        outputSchema: {
+          name: "Result",
+          schema: {
+            type: "object",
+            properties: {
+              version: { type: "string", description: "Schema A version" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        outputSchema: {
+          name: "Result",
+          schema: {
+            type: "object",
+            properties: {
+              version: { type: "string", description: "Schema B version" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+    );
+
+    expect(result.behaviorFields.map((field) => field.key)).toEqual([
+      "outputSchema",
+    ]);
+  });
+
   it("ignores top-level Redux bookkeeping without hiding nested __kind", () => {
     const before = {
       outputSchema: {

@@ -116,3 +116,85 @@ describe("computeDiff — underscore-prefixed contract keys", () => {
     expect(result.hasChanges).toBe(false);
   });
 });
+
+describe("computeDiff — exclusions are path-scoped", () => {
+  it("applies a bare exclusion only to the root field", () => {
+    const result = computeDiff(
+      { id: "record-a", settings: { id: "provider-a" } },
+      { id: "record-b", settings: { id: "provider-b" } },
+      { excludePaths: new Set(["id"]) },
+    );
+
+    expect(result.root.map((node) => node.key)).toEqual(["settings"]);
+    expect(result.hasChanges).toBe(true);
+  });
+
+  it("supports an explicit dotted nested exclusion", () => {
+    const result = computeDiff(
+      { settings: { id: "provider-a" } },
+      { settings: { id: "provider-b" } },
+      { excludePaths: new Set(["settings.id"]) },
+    );
+
+    expect(result.hasChanges).toBe(false);
+  });
+});
+
+describe("computeDiff — order-sensitive object paths", () => {
+  it("reports a nested authored-key reorder under a configured path", () => {
+    const result = computeDiff(
+      {
+        outputSchema: {
+          type: "object",
+          properties: { title: { type: "string" }, score: { type: "number" } },
+        },
+      },
+      {
+        outputSchema: {
+          type: "object",
+          properties: { score: { type: "number" }, title: { type: "string" } },
+        },
+      },
+      { orderSensitiveObjectPaths: new Set(["outputSchema"]) },
+    );
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.root[0]?.changeType).toBe("modified");
+  });
+
+  it("continues to ignore object-key order outside configured paths", () => {
+    const result = computeDiff(
+      { settings: { alpha: 1, beta: 2 } },
+      { settings: { beta: 2, alpha: 1 } },
+    );
+
+    expect(result.hasChanges).toBe(false);
+  });
+});
+
+describe("computeDiff — identity-keyed arrays are lossless", () => {
+  const options = { identityKeys: { items: "name" } };
+
+  it("reports a pure reorder of identity-matched objects", () => {
+    const result = computeDiff(
+      { items: [{ name: "a" }, { name: "b" }] },
+      { items: [{ name: "b" }, { name: "a" }] },
+      options,
+    );
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.root[0]?.children?.every((node) => node.changeType === "reordered")).toBe(true);
+  });
+
+  it("does not collapse changed items when configured identities collide", () => {
+    const result = computeDiff(
+      { items: [{ name: "same", value: 1 }, { name: "same", value: 2 }] },
+      { items: [{ name: "same", value: 1 }, { name: "same", value: 3 }] },
+      options,
+    );
+
+    expect(result.hasChanges).toBe(true);
+    expect(result.root[0]?.children).toHaveLength(2);
+    expect(result.root[0]?.children?.[1]?.changeType).toBe("modified");
+  });
+});

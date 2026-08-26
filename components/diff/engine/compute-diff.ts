@@ -38,6 +38,46 @@ function isPlainObject(value: unknown): boolean {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function pathStartsWith(path: string[], prefix: string): boolean {
+  const prefixParts = prefix.split(".");
+  return (
+    prefixParts.length <= path.length &&
+    prefixParts.every((part, index) => path[index] === part)
+  );
+}
+
+function isObjectOrderSensitive(path: string[], options: DiffOptions): boolean {
+  return Array.from(options.orderSensitiveObjectPaths ?? []).some((prefix) =>
+    pathStartsWith(path, prefix),
+  );
+}
+
+function hasObjectKeyOrderChange(a: unknown, b: unknown): boolean {
+  if (!isPlainObject(a) || !isPlainObject(b)) return false;
+
+  const aObj = a as Record<string, unknown>;
+  const bObj = b as Record<string, unknown>;
+  const aKeys = Object.keys(aObj);
+  const bKeys = Object.keys(bObj);
+  if (
+    aKeys.length === bKeys.length &&
+    aKeys.some((key, index) => key !== bKeys[index])
+  ) {
+    return true;
+  }
+
+  for (const key of aKeys) {
+    if (
+      Object.prototype.hasOwnProperty.call(bObj, key) &&
+      hasObjectKeyOrderChange(aObj[key], bObj[key])
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function getIdentityKey(
   config: string | IdentityKeyFn | undefined,
   item: unknown,
@@ -112,16 +152,34 @@ function diffArrayOfObjects(
   options: DiffOptions,
   depth: number,
 ): DiffNode[] {
+  let effectiveIdentityConfig = identityConfig;
+  if (identityConfig) {
+    const oldKeys = oldArr.map((item, index) =>
+      getIdentityKey(identityConfig, item, index),
+    );
+    const newKeys = newArr.map((item, index) =>
+      getIdentityKey(identityConfig, item, index),
+    );
+    const hasDuplicateIdentity =
+      new Set(oldKeys).size !== oldKeys.length ||
+      new Set(newKeys).size !== newKeys.length;
+
+    // A Map would overwrite duplicate identities and silently discard a real
+    // item. Positional matching is lossless when a consumer's configured
+    // identity is not actually unique in either version.
+    if (hasDuplicateIdentity) effectiveIdentityConfig = undefined;
+  }
+
   const oldByKey = new Map<string, { item: unknown; index: number }>();
   const newByKey = new Map<string, { item: unknown; index: number }>();
 
   for (let i = 0; i < oldArr.length; i++) {
-    const key = getIdentityKey(identityConfig, oldArr[i], i);
+    const key = getIdentityKey(effectiveIdentityConfig, oldArr[i], i);
     oldByKey.set(key, { item: oldArr[i], index: i });
   }
 
   for (let i = 0; i < newArr.length; i++) {
-    const key = getIdentityKey(identityConfig, newArr[i], i);
+    const key = getIdentityKey(effectiveIdentityConfig, newArr[i], i);
     newByKey.set(key, { item: newArr[i], index: i });
   }
 
@@ -144,7 +202,8 @@ function diffArrayOfObjects(
         nodes.push({
           path: [...path, String(newEntry.index)],
           key,
-          changeType: "unchanged",
+          changeType:
+            oldIdx === newEntry.index ? "unchanged" : "reordered",
           oldValue: oldItem,
           newValue: newEntry.item,
         });
@@ -250,11 +309,21 @@ function diffObjects(
     // do); making it the default hid schema-significant keys such as `__kind`
     // and allowed an agent version comparison to report "No changes".
     if (options.skipUnderscorePrefix === true && key.startsWith("_")) continue;
-    if (options.excludePaths?.has(key)) continue;
 
     const fullPath = [...path, key];
+    const dottedPath = fullPath.join(".");
+    if (
+      options.excludePaths?.has(dottedPath) ||
+      (path.length === 0 && options.excludePaths?.has(key))
+    ) {
+      continue;
+    }
+
     const oldVal = oldObj[key];
     const newVal = newObj[key];
+    const objectOrderChanged =
+      isObjectOrderSensitive(fullPath, options) &&
+      hasObjectKeyOrderChange(oldVal, newVal);
 
     if (!(key in oldObj)) {
       nodes.push({
@@ -272,7 +341,7 @@ function diffObjects(
         oldValue: oldVal,
         newValue: undefined,
       });
-    } else if (deepEqual(oldVal, newVal)) {
+    } else if (deepEqual(oldVal, newVal) && !objectOrderChanged) {
       nodes.push({
         path: fullPath,
         key,
@@ -286,7 +355,8 @@ function diffObjects(
       nodes.push({
         path: fullPath,
         key,
-        changeType: hasChanges ? "modified" : "unchanged",
+        changeType:
+          hasChanges || objectOrderChanged ? "modified" : "unchanged",
         oldValue: oldVal,
         newValue: newVal,
         children,
@@ -310,7 +380,8 @@ function diffObjects(
       nodes.push({
         path: fullPath,
         key,
-        changeType: hasChanges ? "modified" : "unchanged",
+        changeType:
+          hasChanges || objectOrderChanged ? "modified" : "unchanged",
         oldValue: oldVal,
         newValue: newVal,
         children,
