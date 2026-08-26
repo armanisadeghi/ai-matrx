@@ -65,6 +65,21 @@ const DISCLOSURE_SIGNALS: RegExp[] = [
 const FORBIDDEN_INLINE_DISCLOSURE = /\bPageAgents\b/;
 
 /**
+ * Disclosure is surface-exact. The menu may not expand a surface into its
+ * ancestry, children, siblings, or family merely because those jobs are
+ * related. Only fixed jobs this exact surface already runs belong there.
+ */
+const SURFACE_MANDATES_SECTION = join(
+  ROOT,
+  "features/surfaces/components/chrome/SurfaceMandatesSection.tsx",
+);
+const FORBIDDEN_SCOPE_EXPANSION: RegExp[] = [
+  /\bfamilySurfaceNames\b/,
+  /\bgetRelatedSurfaces\b/,
+  /\b(?:ancestry|children)\b/,
+];
+
+/**
  * Paths with no fixed surface worker. Each entry is a prefix plus the reason it
  * is exempt — never add one without the reason.
  */
@@ -162,6 +177,11 @@ function main(): void {
   let disclosed = 0;
   let exempt = 0;
 
+  const mandateSectionSource = readFileSync(SURFACE_MANDATES_SECTION, "utf8");
+  const crossSurfaceExpansion = FORBIDDEN_SCOPE_EXPANSION.filter((rx) =>
+    rx.test(mandateSectionSource),
+  );
+
   for (const file of files) {
     const rel = relative(ROOT, file);
     const source = readFileSync(file, "utf8");
@@ -196,6 +216,16 @@ function main(): void {
         "   only in the top Agents menu via agentRoles or useDeclaredSurfaceMandates.\n",
     );
     for (const file of forbiddenInline) console.error(`  ${file}`);
+    process.exit(1);
+  }
+
+  if (crossSurfaceExpansion.length > 0) {
+    console.error(
+      "\n🚨 FORBIDDEN CROSS-SURFACE AGENT DISCLOSURE: the top menu may list only fixed jobs\n" +
+        "   this exact surface already runs. Never import mandates from parent, child, sibling,\n" +
+        "   family, catalog, suggested, default, public, organization, or user-agent rosters.\n",
+    );
+    for (const rx of crossSurfaceExpansion) console.error(`  ${rx.source}`);
     process.exit(1);
   }
 

@@ -106,8 +106,8 @@ The rule, and why it is not a style preference:
   `MandateOverridePanel` + `MandateResolutionRibbon` — principal chips, agent swap, settings
   overrides, consumption map, copy & customize — with `MandateNotesPanel` beside it for
   admins; **Admin** (super-admin) is `MandateDetailView`, the console drawer entire (health
-  verdict and its fix, pinned agent, test bench, notes, bindings). It opens on the surface's
-  own + family mandates and loads only those rows, and stamps the surface onto notes written
+  verdict and its fix, pinned agent, test bench, notes, bindings). It opens on fixed jobs this
+  exact surface actually runs and loads only those rows, and stamps the surface onto notes written
   there. Registered the full way (overlay id, metadata + `urlSync: "mandate"`, catalogue,
   controller mount, Tools grid tile). Selection is DERIVED, not synced in an effect.
 

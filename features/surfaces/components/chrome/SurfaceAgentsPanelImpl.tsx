@@ -79,12 +79,6 @@ export default function SurfaceAgentsPanelImpl({
 
   // Synchronous, registry-backed — no fetch, no race, no error state.
   const related = getRelatedSurfaces(primaryName);
-  // THE FAMILY, for the mandates section: standing on a podcast screen has to
-  // show the podcast family's jobs, not only this leaf's own.
-  const familySurfaceNames = [...related.ancestry, ...related.children].map(
-    (ref) => ref.name,
-  );
-
   // Which surface's agents are listed. Defaults to the page's own surface.
   const [activeSurface, setActiveSurface] = useState<string | null>(null);
   const activeName = activeSurface ?? primaryName;
@@ -201,7 +195,6 @@ export default function SurfaceAgentsPanelImpl({
         {/* An UNREGISTERED page can still be running agents — disclose them. */}
         <SurfaceMandatesSection
           primarySurfaceName={null}
-          familySurfaceNames={[]}
           isAdmin={isAdmin}
           onOpened={() => onRequestClose?.()}
         />
@@ -228,7 +221,6 @@ export default function SurfaceAgentsPanelImpl({
 
       <SurfaceMandatesSection
         primarySurfaceName={primaryName}
-        familySurfaceNames={familySurfaceNames}
         isAdmin={isAdmin}
         onOpened={() => onRequestClose?.()}
       />

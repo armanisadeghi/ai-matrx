@@ -5,18 +5,10 @@
  *
  * 🚨 THE DISCLOSURE LAW (Arman, 2026-08-25): "on any surface where an agent is
  * actually being assigned but built into the physical UI … we also add that
- * agent to the list of available agents at the top", and "for any mandates
- * that are declared and related to the page, we're also going to include those
- * in here … especially because of the parent-child relationship. So that if
- * I'm in the podcast system, I should be able to see somewhere in that drop
- * down that there are mandates related to podcasts, and clicking them should
- * take me there."
+ * agent to the list of available agents at the top".
  *
  * Two sources, one list, no third registry:
- *   • DECLARED — `SurfaceManifest.agentRoles[].mandateKey` on this surface AND
- *     on its family (ancestry + children, the same registry walk that draws the
- *     breadcrumb above). This is why standing anywhere in podcast shows the
- *     podcast family's mandates.
+ *   • DECLARED — `SurfaceManifest.agentRoles[].mandateKey` on THIS surface.
  *   • LIVE — what the page registered through UI-free
  *     `useDeclaredSurfaceMandates`, for surfaces that pick an existing fixed
  *     job from live state (the run console runs a different one per engine).
@@ -43,7 +35,6 @@ import {
 
 import { cn } from "@/lib/utils";
 import { getManifest } from "@/features/surfaces/manifests/registry";
-import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { useLiveSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 import {
   fetchMandateIdentities,
@@ -55,8 +46,6 @@ import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow"
 export interface SurfaceMandatesSectionProps {
   /** The surface the user is standing on. */
   primarySurfaceName: string | null;
-  /** Family surface names — ancestry + children, from the registry. */
-  familySurfaceNames: readonly string[];
   isAdmin: boolean;
   /** Called after a mandate window opens, so the host popover can close. */
   onOpened?: () => void;
@@ -67,65 +56,49 @@ interface MandateRow {
   mandateKey: string;
   /** What it does HERE — the role's label, or the page's own wording. */
   does: string;
-  /** `self` = runs on this page. `family` = a related surface's job. */
-  relation: "self" | "family";
-  /** For family rows: which surface declares it. */
-  fromSurfaceName: string | null;
 }
 
 function collectRows(
   primarySurfaceName: string | null,
-  familySurfaceNames: readonly string[],
   live: readonly { mandateKey: string; does: string }[],
 ): MandateRow[] {
   const byKey = new Map<string, MandateRow>();
 
-  const addRolesOf = (surfaceName: string, relation: "self" | "family") => {
+  const addRolesOf = (surfaceName: string) => {
     const manifest = getManifest(surfaceName);
     for (const role of manifest?.agentRoles ?? []) {
       if (!role.mandateKey) continue;
-      const existing = byKey.get(role.mandateKey);
-      // A job that runs HERE always outranks the same job listed as family.
-      if (existing && !(existing.relation === "family" && relation === "self"))
-        continue;
       byKey.set(role.mandateKey, {
         mandateKey: role.mandateKey,
         does: role.label,
-        relation,
-        fromSurfaceName: relation === "family" ? surfaceName : null,
       });
     }
   };
 
-  if (primarySurfaceName) addRolesOf(primarySurfaceName, "self");
-  for (const name of familySurfaceNames) addRolesOf(name, "family");
+  if (primarySurfaceName) addRolesOf(primarySurfaceName);
 
   // Live disclosure wins the wording — the page said what it actually runs.
   for (const ref of live) {
     byKey.set(ref.mandateKey, {
       mandateKey: ref.mandateKey,
       does: ref.does,
-      relation: "self",
-      fromSurfaceName: null,
     });
   }
 
-  return [...byKey.values()].sort((a, b) => {
-    if (a.relation !== b.relation) return a.relation === "self" ? -1 : 1;
-    return a.mandateKey.localeCompare(b.mandateKey);
-  });
+  return [...byKey.values()].sort((a, b) =>
+    a.mandateKey.localeCompare(b.mandateKey),
+  );
 }
 
 export function SurfaceMandatesSection({
   primarySurfaceName,
-  familySurfaceNames,
   isAdmin,
   onOpened,
   className,
 }: SurfaceMandatesSectionProps) {
   const live = useLiveSurfaceMandates();
   const openMandate = useOpenMandateWindow();
-  const rows = collectRows(primarySurfaceName, familySurfaceNames, live);
+  const rows = collectRows(primarySurfaceName, live);
   const [identities, setIdentities] = useState<
     Record<string, MandateIdentity>
   >({});
@@ -188,11 +161,6 @@ export function SurfaceMandatesSection({
                     <span className="truncate text-xs font-medium text-foreground">
                       {identity?.label ?? row.mandateKey}
                     </span>
-                    {row.relation === "family" && row.fromSurfaceName && (
-                      <span className="shrink-0 rounded border border-border px-1 text-[9px] text-muted-foreground">
-                        {getSurfaceDisplayLabel(row.fromSurfaceName)}
-                      </span>
-                    )}
                     {identity && !identity.isEnabled && (
                       <span className="shrink-0 rounded border border-amber-500/40 px-1 text-[9px] text-amber-600 dark:text-amber-400">
                         off

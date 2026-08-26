@@ -26,8 +26,8 @@
  * selected, which pane shows, and one scoped data load for all of it.
  *
  * WHAT THE WINDOW ADDS over the route it replaces:
- *   • it opens on the mandates of the SURFACE you are standing on (its own and
- *     its family's), so the list is the handful that matter here, not 365;
+ *   • it opens on the fixed jobs the SURFACE actually runs, so the list is the
+ *     handful that matter here, not 365 or a related surface's jobs;
  *   • it loads only those rows (`fetchMandateConsoleData({ mandateKeys })`);
  *   • the user pane is first for everyone — a non-admin gets a real editor for
  *     their own binding instead of an admin console they cannot use;
@@ -68,8 +68,8 @@ export interface MandateWindowProps {
   /** The mandate to select on open. */
   initialMandateKey?: string;
   /**
-   * The mandates in scope — normally the surface's own + its family's. Empty
-   * or omitted loads every mandate (the Tools-grid entry point).
+   * The mandates in scope — normally fixed jobs this surface actually runs.
+   * Empty or omitted loads every mandate (the Tools-grid entry point).
    */
   mandateKeys?: string[];
   /** Where this was opened from. Stamped on notes; shown as the window's context. */

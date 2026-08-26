@@ -8,8 +8,8 @@
  * `<Link>` to `/agents/mandates` or `/administration/agents/mandates`, which
  * costs the user the surface they were standing on.
  *
- * Pass the surface's mandate keys as `mandateKeys` so the window opens on the
- * handful that matter here (and loads only those rows), and `surfaceName` so a
+ * Pass the surface's own fixed-job mandate keys as `mandateKeys` so the window
+ * opens on the handful that actually run here (and loads only those rows), and `surfaceName` so a
  * note written there records where it came from.
  */
 
@@ -29,7 +29,7 @@ export type MandateWindowView = "yours" | "admin";
 export interface OpenMandateWindowOptions {
   /** The mandate to select on open. */
   initialMandateKey?: string;
-  /** The mandates in scope — the surface's own plus its family's. */
+  /** The mandates in scope — fixed jobs this surface actually runs. */
   mandateKeys?: string[];
   /** The surface the window was opened from. Stamped onto notes written there. */
   surfaceName?: string | null;
