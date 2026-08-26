@@ -13,8 +13,8 @@ export default async function AgentAppsListPage() {
         <AgentAppsListHeader />
       </PageHeader>
 
-      <div className="w-full">
-        <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 max-w-[1800px]">
+      <div className="h-full overflow-y-auto bg-textured">
+        <div className="container mx-auto max-w-[1800px] px-4 pb-6 pt-[calc(var(--shell-header-h)+1rem)] sm:px-6 md:px-8 lg:px-12">
           <AgentAppsGrid consumerId="apps-main" />
         </div>
       </div>

@@ -461,14 +461,15 @@ const writeTargets: SurfaceWriteTarget[] = [
 export const agentAppsManifest: SurfaceManifest = {
   surfaceName: AGENT_APPS_SURFACE_NAME,
   readiness: "partial",
-  readinessNote: "Hub catalog values declared but the server-rendered grid has no emitter yet",
+  readinessNote:
+    "Hub and per-app runtime emitters are implemented; full browser certification is pending",
   label: "Agent Apps",
   urlPattern: "/agent-apps",
   intro: `<surface_intro>
 You are on Agent Apps: the user's workspace for shareable AI mini-apps — each app wraps one agent in a custom UI (a shell kind plus optional custom component code) and can be published publicly at /p/[slug].
 When app_id is present the user has one app open in its workspace; active_view tells you which UI they are on (overview, run, code, settings, versions). When app_id is absent the user is on the hub grid — only the catalog values apply.
 Read app_identity for what the app is, app_content for what it is made of (shell, code, variables, config), and run_state for the active view plus usage evidence. Code-editing work targets component_code; configuration work targets shell_config and variable_schema — never invent usage statistics.
-You can also WRITE the open app's storefront copy through apply_surface_write — its name, tagline, description, category and tags. Name, tagline and description stage into the Settings > Identity inputs for the user to Save; category and tags save to the database as soon as the user approves. Those five are the only writable fields: the slug, publish status, public sharing, agent binding and code are not agent-writable, so propose those in words instead. Writing requires an app to be open (app_id present) and the user to be on the Settings tab — on the hub grid or another sub-route there is nothing to write into.
+You can also WRITE the open app's storefront copy through apply_surface_write — its name, tagline, description, category and tags. Name, tagline and description stage into the Settings > Identity inputs for the user to Save and are available only on that tab; category and tags save to the database as soon as the user approves and remain available on every per-app sub-route. Those five are the only writable fields: the slug, publish status, public sharing, agent binding and code are not agent-writable, so propose those in words instead. Every write requires an app to be open (app_id present); the hub grid has no writable app.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -513,12 +514,7 @@ export function createAgentAppsScope(values: {
   shell_config?: Record<string, unknown>;
   slot_overrides?: Record<string, unknown>;
   active_view?:
-    | "overview"
-    | "run"
-    | "code"
-    | "settings"
-    | "versions"
-    | "version_detail";
+    "overview" | "run" | "code" | "settings" | "versions" | "version_detail";
   usage_stats?: Record<string, unknown>;
   listed_app_count?: number;
   listed_apps_summary?: AgentAppsListedEntry[];

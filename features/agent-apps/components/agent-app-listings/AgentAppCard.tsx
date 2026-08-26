@@ -8,28 +8,22 @@
  * the parent's `makeSelectAppCards` selector so the same model is computed
  * once per render rather than re-resolved per card.
  *
- * Hover actions: View (public URL), Edit (manage page), Duplicate, Delete,
- * Copy URL. The action handlers are lifted to the parent so it can manage
- * busy state, route transitions, and confirmation dialogs centrally.
+ * Footer actions use the canonical 44px tap-target controls. Mutating action
+ * handlers are lifted to the parent so it can manage busy state, route
+ * transitions, and confirmation dialogs centrally.
  */
 
-import Link from "next/link";
 import {
   isPubliclyVisible,
   visibilityLabelShort,
 } from "@/lib/visibility/labels";
 import {
   AppWindow,
-  Code,
   Copy,
-  ExternalLink,
   Globe,
-  History,
   Link as LinkIcon,
   Loader2,
   Lock,
-  Pencil,
-  Settings as SettingsIcon,
   Trash2,
 } from "lucide-react";
 import IconButton from "@/components/official/IconButton";
@@ -42,10 +36,16 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { formatNumber, humanAgentApp } from "@/features/agent-apps/format";
+import {
+  BuildTapButton,
+  ExternalLinkTapButton,
+  HistoryTapButton,
+  PencilTapButton,
+  SettingsTapButton,
+} from "@/components/icons/tap-buttons";
 
 interface AgentAppCardProps {
   app: AgentAppCardModel;
-  onView: (app: AgentAppCardModel) => void;
   onEdit: (app: AgentAppCardModel) => void;
   onDuplicate: (app: AgentAppCardModel) => void;
   onDelete: (app: AgentAppCardModel) => void;
@@ -66,7 +66,6 @@ const STATUS_PILL_STYLES: Record<AgentAppCardModel["status"], string> = {
 
 export function AgentAppCard({
   app,
-  onView,
   onEdit,
   onDuplicate,
   onDelete,
@@ -106,8 +105,13 @@ export function AgentAppCard({
       title={isDisabled ? "Please wait..." : "Click to manage"}
     >
       {isNavigating && (
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-20 flex items-center justify-center">
+        <div
+          role="status"
+          aria-label={`Opening ${app.name}`}
+          className="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-background/80 text-sm font-medium text-foreground backdrop-blur-sm"
+        >
           <Loader2 className="w-7 h-7 text-primary animate-spin" />
+          Opening…
         </div>
       )}
 
@@ -194,90 +198,50 @@ export function AgentAppCard({
         className="border-t border-border py-1 px-3 bg-card rounded-b-lg min-h-[34px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex gap-1 justify-between items-center">
-          <Link
+        <div className="flex flex-wrap items-center justify-between gap-1">
+          <ExternalLinkTapButton
             href={viewHref}
             target="_blank"
-            tabIndex={-1}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <IconButton
-              icon={ExternalLink}
-              tooltip="Open public URL"
-              size="sm"
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              disabled={isDisabled}
-              onClick={() => onView(app)}
-            />
-          </Link>
-          <Link
+            ariaLabel={`Open public page for ${app.name}`}
+            tooltip="Open public URL"
+            variant="transparent"
+            disabled={isDisabled}
+          />
+          <PencilTapButton
             href={manageHref}
-            tabIndex={-1}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (e.metaKey || e.ctrlKey) return;
-              onEdit(app);
-            }}
-          >
-            <IconButton
-              icon={Pencil}
-              tooltip="Manage"
-              size="sm"
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              disabled={isDisabled}
-            />
-          </Link>
-          <Link
+            ariaLabel={`Manage ${app.name}`}
+            tooltip="Manage"
+            variant="transparent"
+            disabled={isDisabled}
+          />
+          <BuildTapButton
             href={codeHref}
-            tabIndex={-1}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <IconButton
-              icon={Code}
-              tooltip="Edit code"
-              size="sm"
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              disabled={isDisabled}
-            />
-          </Link>
-          <Link
+            ariaLabel={`Edit code for ${app.name}`}
+            tooltip="Edit code"
+            variant="transparent"
+            disabled={isDisabled}
+          />
+          <HistoryTapButton
             href={versionsHref}
-            tabIndex={-1}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <IconButton
-              icon={History}
-              tooltip="Versions"
-              size="sm"
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              disabled={isDisabled}
-            />
-          </Link>
-          <Link
+            ariaLabel={`View versions of ${app.name}`}
+            tooltip="Versions"
+            variant="transparent"
+            disabled={isDisabled}
+          />
+          <SettingsTapButton
             href={settingsHref}
-            tabIndex={-1}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <IconButton
-              icon={SettingsIcon}
-              tooltip="Settings"
-              size="sm"
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              disabled={isDisabled}
-            />
-          </Link>
+            ariaLabel={`Open settings for ${app.name}`}
+            tooltip="Settings"
+            variant="transparent"
+            disabled={isDisabled}
+          />
           <IconButton
             icon={isDuplicating ? Loader2 : Copy}
+            aria-label={
+              isDuplicating
+                ? `Duplicating ${app.name}`
+                : `Duplicate ${app.name}`
+            }
             tooltip={isDuplicating ? "Duplicating…" : "Duplicate"}
             size="sm"
             variant="ghost"
@@ -289,6 +253,7 @@ export function AgentAppCard({
           />
           <IconButton
             icon={LinkIcon}
+            aria-label={`Copy public URL for ${app.name}`}
             tooltip="Copy public URL"
             size="sm"
             variant="ghost"
@@ -310,6 +275,9 @@ export function AgentAppCard({
           )}
           <IconButton
             icon={isDeleting ? Loader2 : Trash2}
+            aria-label={
+              isDeleting ? `Deleting ${app.name}` : `Delete ${app.name}`
+            }
             tooltip={isDeleting ? "Deleting…" : "Delete"}
             size="sm"
             variant="ghost"

@@ -2,7 +2,7 @@
 
 **Status:** `🟢 green-light for prompt_apps deletion` — 61/61 prompt_apps rows migrated to `aga_apps`. Public dual-path resolver in `/p/[slug]` prefers agent path. User-facing route family mirrors `/agents/[id]`: `/agent-apps`, `/agent-apps/new`, `/agent-apps/[id]` (overview), `/agent-apps/[id]/code`, `/agent-apps/[id]/settings`, `/agent-apps/[id]/versions`, `/agent-apps/[id]/v/[version]`, `/agent-apps/[id]/run`, `/agent-apps/templates`. List page is Redux-driven (consumer namespace + memoized selectors) with 7 filter dimensions and 8 sort options including agent-name. AutoCreate AI flow, admin tabs (Dashboard/Apps/Categories/Executions/Analytics/Rate Limits), `/agents/[id]/apps`, and `/org/[slug]/agent-apps` placeholder all live. Redux thunks wired to real Supabase queries. See [MIGRATION-STATUS.md](MIGRATION-STATUS.md) for the full ledger and remaining manual smoke checklist.
 **Tier:** `1`
-**Last updated:** `2026-08-15`
+**Last updated:** `2026-08-25`
 
 ---
 
@@ -171,6 +171,8 @@ and admin/user route families are live. Remaining migration work is tracked in:
 ---
 
 ## Change log
+
+- `2026-08-25` — codex: **completed the authenticated `/agent-apps` hub's static surface contract.** The Redux-backed grid now mounts `matrx-user/agent-apps`, emits the honest filtered `listed_app_count` / `listed_apps_summary` only after a successful load, exposes both values to Locate, and uses the canonical read-only context menu with that same live scope. The route's generic spinner became a geometry-preserving catalog skeleton, a failed catalog read now renders a retryable error instead of the false “Create your first app” empty state, and the responsive control subtree enforces the 44 px coarse-pointer floor. The manifest remains `partial` until an independent verifier completes localhost desktop/mobile, light/dark, context-menu, console, and Error Inspector proof.
 
 - `2026-08-23` — **Allowlist: kind-kit added.** [`utils/allowed-imports.ts`](utils/allowed-imports.ts) registers `@/components/kind-kit/{SortableList,KindPanelGrid,KindPanel,KindHeaderBar,StreamingSkeleton,TagList}` (explicit named exports) — pure presentation primitives over react/lucide/shadcn/`cn`/`CopyButtons` for DB kind components; contracts in `components/kind-kit/README.md`.
 
