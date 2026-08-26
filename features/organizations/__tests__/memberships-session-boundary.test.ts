@@ -51,10 +51,15 @@ describe("membership read session boundary", () => {
         error: null,
         status: 200,
       });
-    mockGetSession.mockResolvedValue({
-      data: { session: { access_token: "recovered-token" } },
-      error: null,
-    });
+    mockGetSession
+      .mockResolvedValueOnce({
+        data: { session: { access_token: "initial-token" } },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: { session: { access_token: "recovered-token" } },
+        error: null,
+      });
 
     const result = await membershipsService.forUser("organization");
 
@@ -75,13 +80,17 @@ describe("membership read session boundary", () => {
       },
     });
     expect(mockRpc).toHaveBeenCalledTimes(2);
-    expect(mockGetSession).toHaveBeenCalledTimes(1);
+    expect(mockGetSession).toHaveBeenCalledTimes(2);
     expect(consoleError).toHaveBeenCalledWith(
       expect.stringContaining("recovery firing"),
     );
   });
 
   it("does not retry an authenticated 403 execute-grant defect", async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: "authenticated-token" } },
+      error: null,
+    });
     mockRpc.mockResolvedValue({
       data: null,
       error: {
@@ -98,6 +107,19 @@ describe("membership read session boundary", () => {
       error: { code: "forbidden_org", message: "Permission denied" },
     });
     expect(mockRpc).toHaveBeenCalledTimes(1);
-    expect(mockGetSession).not.toHaveBeenCalled();
+    expect(mockGetSession).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call the membership RPC after the browser session is gone", async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null }, error: null });
+
+    const result = await membershipsService.forUser("organization");
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: { code: "unauthorized", message: "Your session expired" },
+    });
+    expect(mockRpc).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
   });
 });

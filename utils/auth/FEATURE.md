@@ -111,7 +111,9 @@ sales page after signing in.
   [`AuthSessionWatcher.tsx`](../../components/layout/AuthSessionWatcher.tsx)
   dispatches `clearUserAuth()` on `SIGNED_OUT` or a booted tab's empty
   `INITIAL_SESSION`; identity-scoped islands must unmount before they can call
-  PostgREST as `anon`.
+  PostgREST as `anon`. Idempotent operations using
+  [`runWithSessionRetry`](../../lib/supabase/authRetry.ts) also preflight the
+  browser session at the database boundary, closing the event-to-effect race.
 - **External app redirects are registered capabilities, not user input.**
   [`trusted-app-redirect.ts`](./trusted-app-redirect.ts) requires an exact
   first-party origin and the exact `/oauth/callback` path before any access or
@@ -134,6 +136,10 @@ links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
 the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-08-26** — Session-retry operations now stop before PostgREST when the
+  browser session is already absent, so the auth-event/React-effect race cannot
+  emit a guaranteed anonymous 401.
 
 - **2026-08-25** — Session loss now clears Redux auth authority before global
   product islands can fan one expiry into unrelated anonymous database calls.

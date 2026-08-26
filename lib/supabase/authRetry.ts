@@ -30,6 +30,15 @@ export interface AuthRetryableResult<T> {
   status?: number;
 }
 
+class SessionUnavailableError extends Error {
+  readonly code = "PGRST301";
+
+  constructor() {
+    super("Your session expired");
+    this.name = "SessionUnavailableError";
+  }
+}
+
 /**
  * True when the DB refused because the request carried no authenticated user.
  * `28000` is the SQLSTATE the canvas write RPCs raise; the message tests cover
@@ -69,6 +78,18 @@ export async function runWithSessionRetry<T>(
 ): Promise<
   AuthRetryableResult<T> & { retried: boolean; sessionRecovered: boolean }
 > {
+  // Stop before PostgREST when the browser already knows the session is gone.
+  // AuthSessionWatcher clears Redux authority as soon as its event arrives, but
+  // a query can race that React effect. Executing during the gap creates a
+  // guaranteed anonymous 401 and turns ordinary session expiry into a product
+  // error. This cookie read is local/refresh-aware and is the final guard at
+  // the database boundary.
+  const { data: initialSession, error: initialSessionError } =
+    await supabase.auth.getSession();
+  if (!initialSession.session?.access_token || initialSessionError) {
+    throw new SessionUnavailableError();
+  }
+
   const first = await run();
   if (!isMissingSessionError(first.error, first.status)) {
     return { ...first, retried: false, sessionRecovered: false };
