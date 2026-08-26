@@ -83,7 +83,10 @@ import { RecordingOriginRef } from "./RecordingOriginRef";
 // throw into a loud, readable envelope the agent gets back and can retry from.
 // Never coerce: a wrong value is the agent's error to hear about.
 
-function asWriteObject(value: unknown, target: string): Record<string, unknown> {
+function asWriteObject(
+  value: unknown,
+  target: string,
+): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new Error(
       `${target} expects an object, received ${Array.isArray(value) ? "an array" : typeof value}.`,
@@ -521,7 +524,9 @@ export function TranscriptViewer() {
         );
       }
       const updatedSegments = activeTranscript.segments.map((segment) =>
-        segment.speaker?.trim() === from ? { ...segment, speaker: to } : segment,
+        segment.speaker?.trim() === from
+          ? { ...segment, speaker: to }
+          : segment,
       );
       await updateTranscript(activeTranscript.id, {
         segments: updatedSegments,
@@ -614,7 +619,9 @@ export function TranscriptViewer() {
                 {/* THE DOOR LAW — a recording that knows what it belongs to
                     must be able to open it. Renders nothing when there is no
                     origin (every recording made before 2026-08-17). */}
-                <RecordingOriginRef origin={activeTranscript.metadata?.origin} />
+                <RecordingOriginRef
+                  origin={activeTranscript.metadata?.origin}
+                />
                 <div className="flex gap-2 mt-2">
                   {activeTranscript.tags.map((tag) => (
                     <span
@@ -1011,15 +1018,22 @@ export function TranscriptViewer() {
                 onTextInsertAfter={(text) => insertEditContent(text, "after")}
                 extraSections={transcriptExtraSections}
                 contextData={surfaceScope as unknown as Record<string, unknown>}
+                contentSource={{ type: "raw" }}
+                entity={{
+                  type: "transcript",
+                  id: activeTranscript.id,
+                  title: activeTranscript.title,
+                  resourceType: "transcript",
+                }}
               >
                 <ProTextarea
                   ref={editContentRef}
                   surfaceName={TRANSCRIPTS_CONTEXT_MENU_PROPS.surfaceName}
                   getApplicationScope={getEditorApplicationScope}
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                enableTextStats
-                rows={16}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  enableTextStats
+                  rows={16}
                   className="text-sm leading-relaxed min-h-[40dvh] resize-y"
                   disabled={contentSaveBusy}
                   // ProTextarea has no built-in iOS 16px guard; keep ≥16px so iOS
@@ -1063,6 +1077,13 @@ export function TranscriptViewer() {
               // here either way — surface values flow through the index
               // signature — so widen at the boundary.
               contextData={surfaceScope as unknown as Record<string, unknown>}
+              contentSource={{ type: "raw" }}
+              entity={{
+                type: "transcript",
+                id: activeTranscript.id,
+                title: activeTranscript.title,
+                resourceType: "transcript",
+              }}
             >
               <Card className="border-0 shadow-none bg-transparent">
                 <CardContent className="p-0">

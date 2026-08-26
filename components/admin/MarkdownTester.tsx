@@ -2,7 +2,10 @@
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
+import {
+  ADMIN_UTILITIES_SURFACE_NAME,
+  createAdminUtilitiesScope,
+} from "@/features/surfaces/manifests/admin-utilities.manifest";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -995,9 +998,7 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
           );
           if (!res.ok) {
             const d: unknown = await res.json().catch(() => ({}));
-            throw new Error(
-              extractApiErrorMessage(d, `HTTP ${res.status}`),
-            );
+            throw new Error(extractApiErrorMessage(d, `HTTP ${res.status}`));
           }
           const text = await res.text();
           rawApiDataRef.current = text;
@@ -1035,9 +1036,7 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
           );
           if (!res.ok) {
             const d: unknown = await res.json().catch(() => ({}));
-            throw new Error(
-              extractApiErrorMessage(d, `HTTP ${res.status}`),
-            );
+            throw new Error(extractApiErrorMessage(d, `HTTP ${res.status}`));
           }
           const { events } = parseNdjsonStream(res, controller.signal);
           const acc: TypedStreamEvent[] = [];
@@ -1205,509 +1204,539 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_UTILITIES_SURFACE_NAME}
-      getScope={() => createAdminUtilitiesScope({
-        utilities_section: "markdown_tester",
-        markdown_tester_input: inputContent,
-        markdown_tester_extraction_config: {
-          activeTab,
-          showPreview,
-          isAutoMode,
-          strictServerData,
-          syncScroll,
-        },
-      })}
+      getScope={() =>
+        createAdminUtilitiesScope({
+          utilities_section: "markdown_tester",
+          markdown_tester_input: inputContent,
+          markdown_tester_extraction_config: {
+            activeTab,
+            showPreview,
+            isAutoMode,
+            strictServerData,
+            syncScroll,
+          },
+        })
+      }
     >
-    <>
-      {isFullScreen && (
-        <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
-      )}
+      <>
+        {isFullScreen && (
+          <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
+        )}
 
-      <div className={containerClasses} style={{ height: availableHeight }}>
-        {/* Fixed Header Section */}
-        <div className="flex-shrink-0 bg-textured border-b border-border px-4 py-2">
-          {/* Title and Main Controls */}
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-base font-semibold flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Markdown Content Tester
-            </h1>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPreview(!showPreview)}
-                className="h-7 px-2"
-              >
-                {showPreview ? (
-                  <EyeOff className="h-3.5 w-3.5" />
-                ) : (
-                  <Eye className="h-3.5 w-3.5" />
-                )}
-                <span className="ml-1.5 text-xs">
-                  {showPreview ? "Hide" : "Show"}
-                </span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsFullScreen(!isFullScreen)}
-                className="h-7 px-2"
-              >
-                {isFullScreen ? (
-                  <Minimize2 className="h-3.5 w-3.5" />
-                ) : (
-                  <Maximize2 className="h-3.5 w-3.5" />
-                )}
-                <span className="ml-1.5 text-xs">
-                  {isFullScreen ? "Exit" : "Fullscreen"}
-                </span>
-              </Button>
+        <div className={containerClasses} style={{ height: availableHeight }}>
+          {/* Fixed Header Section */}
+          <div className="flex-shrink-0 bg-textured border-b border-border px-4 py-2">
+            {/* Title and Main Controls */}
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-base font-semibold flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Markdown Content Tester
+              </h1>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="h-7 px-2"
+                >
+                  {showPreview ? (
+                    <EyeOff className="h-3.5 w-3.5" />
+                  ) : (
+                    <Eye className="h-3.5 w-3.5" />
+                  )}
+                  <span className="ml-1.5 text-xs">
+                    {showPreview ? "Hide" : "Show"}
+                  </span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsFullScreen(!isFullScreen)}
+                  className="h-7 px-2"
+                >
+                  {isFullScreen ? (
+                    <Minimize2 className="h-3.5 w-3.5" />
+                  ) : (
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  )}
+                  <span className="ml-1.5 text-xs">
+                    {isFullScreen ? "Exit" : "Fullscreen"}
+                  </span>
+                </Button>
+              </div>
             </div>
-          </div>
 
-          {/* Action Controls */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {/* Update Mode Toggle */}
-            <Button
-              variant={isAutoMode ? "default" : "outline"}
-              size="sm"
-              onClick={toggleUpdateMode}
-              className="h-7 px-2.5 text-xs"
-            >
-              {isAutoMode ? (
-                <>
-                  <Zap className="h-3.5 w-3.5 mr-1.5" />
-                  Auto
-                </>
-              ) : (
-                <>
-                  <Hand className="h-3.5 w-3.5 mr-1.5" />
-                  Manual
-                </>
-              )}
-            </Button>
-
-            {/* Manual Update Button - only show in manual mode */}
-            {!isAutoMode && (
+            {/* Action Controls */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Update Mode Toggle */}
               <Button
-                onClick={handleManualUpdate}
-                disabled={isUpdating}
+                variant={isAutoMode ? "default" : "outline"}
                 size="sm"
+                onClick={toggleUpdateMode}
                 className="h-7 px-2.5 text-xs"
               >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 mr-1.5 ${isUpdating ? "animate-spin" : ""}`}
-                />
-                {isUpdating ? "Updating..." : "Update"}
-              </Button>
-            )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyInput}
-              className="h-7 px-2.5 text-xs"
-            >
-              <Copy className="h-3.5 w-3.5 mr-1.5" />
-              Copy
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClear}
-              className="h-7 px-2.5 text-xs"
-            >
-              Clear
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAudioModalOpen(true)}
-              className="h-7 px-2.5 text-xs"
-            >
-              <Volume2 className="h-3.5 w-3.5 mr-1.5" />
-              Test Audio
-            </Button>
-
-            <SampleManager
-              currentContent={inputContent}
-              loadedSampleId={loadedSampleId}
-              onLoad={handleLoadSample}
-              onLoadAutosave={handleLoadAutosave}
-            />
-
-            {showPreview && activeTab === "enhanced-markdown" && (
-              <div className="flex items-center gap-1.5 border rounded-md px-2 py-0.5 bg-muted/50">
-                {syncScroll ? (
-                  <Link className="h-3 w-3 text-primary" />
+                {isAutoMode ? (
+                  <>
+                    <Zap className="h-3.5 w-3.5 mr-1.5" />
+                    Auto
+                  </>
                 ) : (
-                  <Unlink className="h-3 w-3 text-muted-foreground" />
+                  <>
+                    <Hand className="h-3.5 w-3.5 mr-1.5" />
+                    Manual
+                  </>
                 )}
-                <Label
-                  htmlFor="sync-scroll"
-                  className="text-xs cursor-pointer select-none"
+              </Button>
+
+              {/* Manual Update Button - only show in manual mode */}
+              {!isAutoMode && (
+                <Button
+                  onClick={handleManualUpdate}
+                  disabled={isUpdating}
+                  size="sm"
+                  className="h-7 px-2.5 text-xs"
                 >
-                  Sync Scroll
-                </Label>
-                <Switch
-                  id="sync-scroll"
-                  checked={syncScroll}
-                  onCheckedChange={setSyncScroll}
-                />
-              </div>
-            )}
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 mr-1.5 ${isUpdating ? "animate-spin" : ""}`}
+                  />
+                  {isUpdating ? "Updating..." : "Update"}
+                </Button>
+              )}
 
-            <div className="ml-auto flex items-center gap-1.5">
-              <Badge variant="secondary" className="text-xs h-6">
-                {inputContent.length} chars
-              </Badge>
-              <Badge variant="secondary" className="text-xs h-6">
-                {inputContent.split("\n").length} lines
-              </Badge>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content Area with Independent Scrolling */}
-        <div
-          className={`flex-1 flex gap-3 p-3 min-h-0 ${showPreview ? "" : "justify-center"}`}
-        >
-          {/* Input Column */}
-          <div
-            className={`flex flex-col min-h-0 ${showPreview ? "w-1/2" : "w-full max-w-4xl"}`}
-          >
-            <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-              <h3 className="text-sm font-medium">Input Content</h3>
-              <Badge variant="outline" className="text-xs">
-                Markdown/JSON
-              </Badge>
-            </div>
-
-            <div className="flex-1 min-h-0 border rounded-lg bg-textured border-gray-200 dark:border-gray-700 overflow-hidden">
-              <EditableContextMenu
-                sourceFeature="documents"
-                getTextarea={getTextarea}
-                onContentInserted={handleContentInserted}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyInput}
+                className="h-7 px-2.5 text-xs"
               >
-                <textarea
-                  ref={textareaRef}
-                  value={inputContent}
-                  onChange={(e) => setInputContent(e.target.value)}
-                  className="w-full h-full p-3 font-mono text-sm resize-none focus:outline-none bg-transparent text-gray-900 dark:text-gray-100 border-0 overflow-y-auto"
-                  placeholder="Enter your markdown, JSON, or mixed content here... Right-click for content blocks and AI actions."
-                  spellCheck={false}
-                />
-              </EditableContextMenu>
+                <Copy className="h-3.5 w-3.5 mr-1.5" />
+                Copy
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClear}
+                className="h-7 px-2.5 text-xs"
+              >
+                Clear
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAudioModalOpen(true)}
+                className="h-7 px-2.5 text-xs"
+              >
+                <Volume2 className="h-3.5 w-3.5 mr-1.5" />
+                Test Audio
+              </Button>
+
+              <SampleManager
+                currentContent={inputContent}
+                loadedSampleId={loadedSampleId}
+                onLoad={handleLoadSample}
+                onLoadAutosave={handleLoadAutosave}
+              />
+
+              {showPreview && activeTab === "enhanced-markdown" && (
+                <div className="flex items-center gap-1.5 border rounded-md px-2 py-0.5 bg-muted/50">
+                  {syncScroll ? (
+                    <Link className="h-3 w-3 text-primary" />
+                  ) : (
+                    <Unlink className="h-3 w-3 text-muted-foreground" />
+                  )}
+                  <Label
+                    htmlFor="sync-scroll"
+                    className="text-xs cursor-pointer select-none"
+                  >
+                    Sync Scroll
+                  </Label>
+                  <Switch
+                    id="sync-scroll"
+                    checked={syncScroll}
+                    onCheckedChange={setSyncScroll}
+                  />
+                </div>
+              )}
+
+              <div className="ml-auto flex items-center gap-1.5">
+                <Badge variant="secondary" className="text-xs h-6">
+                  {inputContent.length} chars
+                </Badge>
+                <Badge variant="secondary" className="text-xs h-6">
+                  {inputContent.split("\n").length} lines
+                </Badge>
+              </div>
             </div>
           </div>
 
-          {/* Preview Column */}
-          {showPreview && (
-            <>
-              <Separator orientation="vertical" className="self-stretch" />
-              <div className="flex flex-col min-h-0 w-1/2">
-                <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-                  <h3 className="text-sm font-medium">Rendered Output</h3>
-                  <Tabs
-                    value={activeTab}
-                    onValueChange={handleTabChange}
-                    className="flex-1"
-                  >
-                    <div className="flex items-center gap-2">
-                      <TabsList className="h-7">
-                        <TabsTrigger
-                          value="enhanced-markdown"
-                          className="text-xs h-6 px-2.5"
-                        >
-                          Markdown
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="speech-text"
-                          className="text-xs h-6 px-2.5"
-                        >
-                          Speech
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="json"
-                          className="text-xs h-6 px-2.5 flex items-center gap-1"
-                        >
-                          <Cpu className="h-3 w-3" />
-                          JSON
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="stream"
-                          className="text-xs h-6 px-2.5 flex items-center gap-1"
-                        >
-                          <Waves className="h-3 w-3" />
-                          Stream
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="json-extract"
-                          className="text-xs h-6 px-2.5 flex items-center gap-1"
-                        >
-                          <Braces className="h-3 w-3" />
-                          JSON Extract
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="analysis"
-                          className="text-xs h-6 px-2.5 flex items-center gap-1"
-                        >
-                          <GitCompare className="h-3 w-3" />
-                          Analysis
-                        </TabsTrigger>
-                      </TabsList>
-                      {(activeTab === "json" || activeTab === "stream") && (
-                        <Button
-                          size="sm"
-                          variant={strictServerData ? "destructive" : "outline"}
-                          className="h-6 px-2 text-[10px] shrink-0 font-mono"
-                          onClick={() => setStrictServerData((v) => !v)}
-                          title={
-                            strictServerData
-                              ? "Strict mode ON — client fallback disabled"
-                              : "Strict mode OFF — click to enable"
-                          }
-                        >
-                          {strictServerData ? "STRICT" : "strict"}
-                        </Button>
-                      )}
-                      <div className="ml-auto flex items-center gap-1.5">
-                        <Badge variant="outline" className="text-xs h-5">
-                          {isAutoMode ? "Auto" : "Manual"}
-                        </Badge>
-                      </div>
-                    </div>
-                  </Tabs>
-                </div>
-
-                <div className="flex-1 border rounded-lg bg-textured border-gray-200 dark:border-gray-700 min-h-0 flex flex-col overflow-hidden">
-                  {activeTab === "enhanced-markdown" && (
-                    <div
-                      className="flex-1 overflow-auto p-3"
-                      ref={previewScrollRef}
-                    >
-                      <MarkdownStream
-                        content={renderedContent}
-                        isStreamActive={false}
-                        hideCopyButton={true}
-                        allowFullScreenEditor={true}
-                      />
-                    </div>
-                  )}
-
-                  {activeTab === "speech-text" && (
-                    <div className="flex-1 overflow-auto p-3">
-                      <div className="flex items-center gap-2 mb-3">
-                        <SpeakerGroup text={renderedContent} />
-                        <Badge variant="secondary" className="text-xs">
-                          {parseMarkdownToText(renderedContent).length} speech
-                          chars
-                        </Badge>
-                      </div>
-                      <div className="font-mono text-sm whitespace-pre-wrap break-words bg-textured text-gray-900 dark:text-gray-100">
-                        {parseMarkdownToText(renderedContent)}
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === "json" && (
-                    <div className="flex-1 overflow-auto p-3">
-                      {isProcessing && processedEvents.length === 0 && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Processing blocks...
-                        </div>
-                      )}
-                      {processError && (
-                        <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-xs text-destructive">
-                          {processError}
-                        </div>
-                      )}
-                      {!isProcessing &&
-                        !processError &&
-                        processedEvents.length === 0 && (
-                          <div className="flex flex-col items-center gap-2 py-8 text-xs text-muted-foreground">
-                            <p>
-                              No output — click Re-run or update the content.
-                            </p>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 px-2.5 text-xs"
-                              onClick={() =>
-                                runBlockProcessing("json", renderedContent)
-                              }
-                              disabled={!renderedContent.trim()}
-                            >
-                              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                              Re-run
-                            </Button>
-                          </div>
-                        )}
-                      {processedEvents.length > 0 && (
-                        <>
-                          <div className="flex justify-end gap-1 mb-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2 text-xs"
-                              onClick={copyRawApiData}
-                            >
-                              {rawCopied ? (
-                                <>
-                                  <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" />
-                                  Copied!
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="h-3 w-3 mr-1" />
-                                  Copy raw
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2 text-xs"
-                              onClick={() =>
-                                runBlockProcessing("json", renderedContent)
-                              }
-                              disabled={isProcessing || !renderedContent.trim()}
-                            >
-                              {isProcessing ? (
-                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                              ) : (
-                                <RefreshCw className="h-3 w-3 mr-1" />
-                              )}
-                              Re-run
-                            </Button>
-                          </div>
-                          <MarkdownStream
-                            content=""
-                            events={processedEvents}
-                            className="bg-textured"
-                            isStreamActive={false}
-                            hideCopyButton={true}
-                            allowFullScreenEditor={true}
-                            strictServerData={strictServerData}
-                          />
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === "stream" && (
-                    <div className="flex-1 overflow-auto p-3">
-                      {isProcessing && processedEvents.length === 0 && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Streaming blocks...
-                        </div>
-                      )}
-                      {processError && (
-                        <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-xs text-destructive">
-                          {processError}
-                        </div>
-                      )}
-                      {!isProcessing &&
-                        !processError &&
-                        processedEvents.length === 0 && (
-                          <div className="flex flex-col items-center gap-2 py-8 text-xs text-muted-foreground">
-                            <p>
-                              No output — click Re-run or update the content.
-                            </p>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 px-2.5 text-xs"
-                              onClick={() =>
-                                runBlockProcessing("stream", renderedContent)
-                              }
-                              disabled={!renderedContent.trim()}
-                            >
-                              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                              Re-run
-                            </Button>
-                          </div>
-                        )}
-                      {processedEvents.length > 0 && (
-                        <>
-                          <div className="flex justify-end gap-1 mb-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2 text-xs"
-                              onClick={copyRawApiData}
-                            >
-                              {rawCopied ? (
-                                <>
-                                  <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" />
-                                  Copied!
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="h-3 w-3 mr-1" />
-                                  Copy raw
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2 text-xs"
-                              onClick={() =>
-                                runBlockProcessing("stream", renderedContent)
-                              }
-                              disabled={isProcessing || !renderedContent.trim()}
-                            >
-                              {isProcessing ? (
-                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                              ) : (
-                                <RefreshCw className="h-3 w-3 mr-1" />
-                              )}
-                              Re-run
-                            </Button>
-                          </div>
-                          <MarkdownStream
-                            content=""
-                            events={processedEvents}
-                            className="bg-textured"
-                            isStreamActive={isProcessing}
-                            hideCopyButton={true}
-                            allowFullScreenEditor={true}
-                            strictServerData={strictServerData}
-                          />
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === "json-extract" && (
-                    <JsonExtractionPanel content={renderedContent} />
-                  )}
-
-                  {activeTab === "analysis" && (
-                    <BlockParserComparison
-                      currentContent={renderedContent}
-                      loadedSampleId={loadedSampleId}
-                    />
-                  )}
-                </div>
+          {/* Main Content Area with Independent Scrolling */}
+          <div
+            className={`flex-1 flex gap-3 p-3 min-h-0 ${showPreview ? "" : "justify-center"}`}
+          >
+            {/* Input Column */}
+            <div
+              className={`flex flex-col min-h-0 ${showPreview ? "w-1/2" : "w-full max-w-4xl"}`}
+            >
+              <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+                <h3 className="text-sm font-medium">Input Content</h3>
+                <Badge variant="outline" className="text-xs">
+                  Markdown/JSON
+                </Badge>
               </div>
-            </>
-          )}
-        </div>
-      </div>
 
-      {/* Audio Test Modal */}
-      <AudioTestModal
-        open={audioModalOpen}
-        onOpenChange={setAudioModalOpen}
-        markdownContent={renderedContent}
-      />
-    </>
+              <div className="flex-1 min-h-0 border rounded-lg bg-textured border-gray-200 dark:border-gray-700 overflow-hidden">
+                <EditableContextMenu
+                  sourceFeature="documents"
+                  surfaceName={ADMIN_UTILITIES_SURFACE_NAME}
+                  contentSource={{ type: "raw" }}
+                  getApplicationScope={() =>
+                    createAdminUtilitiesScope({
+                      utilities_section: "markdown_tester",
+                      markdown_tester_input: inputContent,
+                      markdown_tester_extraction_config: {
+                        activeTab,
+                        showPreview,
+                        isAutoMode,
+                        strictServerData,
+                        syncScroll,
+                      },
+                    })
+                  }
+                  getTextarea={getTextarea}
+                  onContentInserted={handleContentInserted}
+                  onTextReplace={(text) => setInputContent(text)}
+                  onTextInsertBefore={(text) =>
+                    setInputContent(`${text}${inputContent}`)
+                  }
+                  onTextInsertAfter={(text) =>
+                    setInputContent(`${inputContent}${text}`)
+                  }
+                >
+                  <textarea
+                    ref={textareaRef}
+                    value={inputContent}
+                    onChange={(e) => setInputContent(e.target.value)}
+                    className="w-full h-full p-3 font-mono text-sm resize-none focus:outline-none bg-transparent text-gray-900 dark:text-gray-100 border-0 overflow-y-auto"
+                    placeholder="Enter your markdown, JSON, or mixed content here... Right-click for content blocks and AI actions."
+                    spellCheck={false}
+                  />
+                </EditableContextMenu>
+              </div>
+            </div>
+
+            {/* Preview Column */}
+            {showPreview && (
+              <>
+                <Separator orientation="vertical" className="self-stretch" />
+                <div className="flex flex-col min-h-0 w-1/2">
+                  <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+                    <h3 className="text-sm font-medium">Rendered Output</h3>
+                    <Tabs
+                      value={activeTab}
+                      onValueChange={handleTabChange}
+                      className="flex-1"
+                    >
+                      <div className="flex items-center gap-2">
+                        <TabsList className="h-7">
+                          <TabsTrigger
+                            value="enhanced-markdown"
+                            className="text-xs h-6 px-2.5"
+                          >
+                            Markdown
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="speech-text"
+                            className="text-xs h-6 px-2.5"
+                          >
+                            Speech
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="json"
+                            className="text-xs h-6 px-2.5 flex items-center gap-1"
+                          >
+                            <Cpu className="h-3 w-3" />
+                            JSON
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="stream"
+                            className="text-xs h-6 px-2.5 flex items-center gap-1"
+                          >
+                            <Waves className="h-3 w-3" />
+                            Stream
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="json-extract"
+                            className="text-xs h-6 px-2.5 flex items-center gap-1"
+                          >
+                            <Braces className="h-3 w-3" />
+                            JSON Extract
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="analysis"
+                            className="text-xs h-6 px-2.5 flex items-center gap-1"
+                          >
+                            <GitCompare className="h-3 w-3" />
+                            Analysis
+                          </TabsTrigger>
+                        </TabsList>
+                        {(activeTab === "json" || activeTab === "stream") && (
+                          <Button
+                            size="sm"
+                            variant={
+                              strictServerData ? "destructive" : "outline"
+                            }
+                            className="h-6 px-2 text-[10px] shrink-0 font-mono"
+                            onClick={() => setStrictServerData((v) => !v)}
+                            title={
+                              strictServerData
+                                ? "Strict mode ON — client fallback disabled"
+                                : "Strict mode OFF — click to enable"
+                            }
+                          >
+                            {strictServerData ? "STRICT" : "strict"}
+                          </Button>
+                        )}
+                        <div className="ml-auto flex items-center gap-1.5">
+                          <Badge variant="outline" className="text-xs h-5">
+                            {isAutoMode ? "Auto" : "Manual"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </Tabs>
+                  </div>
+
+                  <div className="flex-1 border rounded-lg bg-textured border-gray-200 dark:border-gray-700 min-h-0 flex flex-col overflow-hidden">
+                    {activeTab === "enhanced-markdown" && (
+                      <div
+                        className="flex-1 overflow-auto p-3"
+                        ref={previewScrollRef}
+                      >
+                        <MarkdownStream
+                          content={renderedContent}
+                          isStreamActive={false}
+                          hideCopyButton={true}
+                          allowFullScreenEditor={true}
+                        />
+                      </div>
+                    )}
+
+                    {activeTab === "speech-text" && (
+                      <div className="flex-1 overflow-auto p-3">
+                        <div className="flex items-center gap-2 mb-3">
+                          <SpeakerGroup text={renderedContent} />
+                          <Badge variant="secondary" className="text-xs">
+                            {parseMarkdownToText(renderedContent).length} speech
+                            chars
+                          </Badge>
+                        </div>
+                        <div className="font-mono text-sm whitespace-pre-wrap break-words bg-textured text-gray-900 dark:text-gray-100">
+                          {parseMarkdownToText(renderedContent)}
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === "json" && (
+                      <div className="flex-1 overflow-auto p-3">
+                        {isProcessing && processedEvents.length === 0 && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Processing blocks...
+                          </div>
+                        )}
+                        {processError && (
+                          <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-xs text-destructive">
+                            {processError}
+                          </div>
+                        )}
+                        {!isProcessing &&
+                          !processError &&
+                          processedEvents.length === 0 && (
+                            <div className="flex flex-col items-center gap-2 py-8 text-xs text-muted-foreground">
+                              <p>
+                                No output — click Re-run or update the content.
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2.5 text-xs"
+                                onClick={() =>
+                                  runBlockProcessing("json", renderedContent)
+                                }
+                                disabled={!renderedContent.trim()}
+                              >
+                                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                                Re-run
+                              </Button>
+                            </div>
+                          )}
+                        {processedEvents.length > 0 && (
+                          <>
+                            <div className="flex justify-end gap-1 mb-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-xs"
+                                onClick={copyRawApiData}
+                              >
+                                {rawCopied ? (
+                                  <>
+                                    <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" />
+                                    Copied!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-3 w-3 mr-1" />
+                                    Copy raw
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-xs"
+                                onClick={() =>
+                                  runBlockProcessing("json", renderedContent)
+                                }
+                                disabled={
+                                  isProcessing || !renderedContent.trim()
+                                }
+                              >
+                                {isProcessing ? (
+                                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                ) : (
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                )}
+                                Re-run
+                              </Button>
+                            </div>
+                            <MarkdownStream
+                              content=""
+                              events={processedEvents}
+                              className="bg-textured"
+                              isStreamActive={false}
+                              hideCopyButton={true}
+                              allowFullScreenEditor={true}
+                              strictServerData={strictServerData}
+                            />
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {activeTab === "stream" && (
+                      <div className="flex-1 overflow-auto p-3">
+                        {isProcessing && processedEvents.length === 0 && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Streaming blocks...
+                          </div>
+                        )}
+                        {processError && (
+                          <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-xs text-destructive">
+                            {processError}
+                          </div>
+                        )}
+                        {!isProcessing &&
+                          !processError &&
+                          processedEvents.length === 0 && (
+                            <div className="flex flex-col items-center gap-2 py-8 text-xs text-muted-foreground">
+                              <p>
+                                No output — click Re-run or update the content.
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2.5 text-xs"
+                                onClick={() =>
+                                  runBlockProcessing("stream", renderedContent)
+                                }
+                                disabled={!renderedContent.trim()}
+                              >
+                                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                                Re-run
+                              </Button>
+                            </div>
+                          )}
+                        {processedEvents.length > 0 && (
+                          <>
+                            <div className="flex justify-end gap-1 mb-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-xs"
+                                onClick={copyRawApiData}
+                              >
+                                {rawCopied ? (
+                                  <>
+                                    <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" />
+                                    Copied!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-3 w-3 mr-1" />
+                                    Copy raw
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-xs"
+                                onClick={() =>
+                                  runBlockProcessing("stream", renderedContent)
+                                }
+                                disabled={
+                                  isProcessing || !renderedContent.trim()
+                                }
+                              >
+                                {isProcessing ? (
+                                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                ) : (
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                )}
+                                Re-run
+                              </Button>
+                            </div>
+                            <MarkdownStream
+                              content=""
+                              events={processedEvents}
+                              className="bg-textured"
+                              isStreamActive={isProcessing}
+                              hideCopyButton={true}
+                              allowFullScreenEditor={true}
+                              strictServerData={strictServerData}
+                            />
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {activeTab === "json-extract" && (
+                      <JsonExtractionPanel content={renderedContent} />
+                    )}
+
+                    {activeTab === "analysis" && (
+                      <BlockParserComparison
+                        currentContent={renderedContent}
+                        loadedSampleId={loadedSampleId}
+                      />
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Audio Test Modal */}
+        <AudioTestModal
+          open={audioModalOpen}
+          onOpenChange={setAudioModalOpen}
+          markdownContent={renderedContent}
+        />
+      </>
     </SurfaceRuntimeProvider>
   );
 };

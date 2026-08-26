@@ -14,6 +14,7 @@ import {
   cmsLocation,
   siteBrief,
   siteCounts,
+  siteSummary,
   sitesListSummary,
   SITE_CSV_COLUMNS,
 } from "@/features/cms/copy";
@@ -278,238 +279,247 @@ export default function SitesListPage() {
         getScope={buildSurfaceScope}
         getWriteHandlers={getSurfaceWriteHandlers}
       >
-      <NonEditableContextMenu
-        {...CMS_HUB_CONTEXT_MENU_PROPS}
-        extraSections={hubExtraSections}
-        contextData={buildSurfaceScope() as Record<string, unknown>}
-      >
-        <div className="h-full flex flex-col overflow-hidden">
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create New Site</DialogTitle>
-                <DialogDescription>
-                  Set up a new site to manage its pages, components, and
-                  content.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div>
-                  <label className="text-sm font-medium block mb-1.5">
-                    Site Name
-                  </label>
-                  <Input
-                    value={newName}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder="My Website"
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1.5">
-                    Slug
-                  </label>
-                  <Input
-                    value={newSlug}
-                    onChange={(e) => setNewSlug(e.target.value)}
-                    placeholder="my-website"
-                    className="text-sm font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    URL identifier — lowercase letters, numbers, and hyphens
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1.5">
-                    Domain (optional)
-                  </label>
-                  <Input
-                    value={newDomain}
-                    onChange={(e) => setNewDomain(e.target.value)}
-                    placeholder="www.example.com"
-                    className="text-sm"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setDialogOpen(false)}
-                  disabled={isCreating}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreate}
-                  disabled={isCreating || !newName || !newSlug}
-                  className="gap-1.5"
-                >
-                  {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Create Site
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* ── Sites grid ──────────────────────────────────────────── */}
-          <div className="flex-1 overflow-auto px-4 sm:px-6 pb-6 pt-[calc(var(--shell-header-h)+0.75rem)]">
-            {sites.length > 0 && (
-              <div className="flex items-center justify-end gap-1 pb-2">
-                <CopyButtons
-                  size="sm"
-                  label="CMS sites"
-                  human={() => sitesListSummary(sites)}
-                  agent={() => ({
-                    kind: "cms-sites",
-                    location: cmsLocation("Sites"),
-                    description:
-                      "Every CMS site on the hub, as the list renders them.",
-                    data: {
-                      counts: siteCounts(sites),
-                      sites: sites.map(siteBrief),
-                    },
-                    summary: sitesListSummary(sites),
-                    attributes: siteCounts(sites),
-                  })}
-                  json={() => sites.map(siteBrief)}
-                />
-                <ExportMenu
-                  label="CMS sites"
-                  items={[
-                    jsonExportItem(() => ({
-                      counts: siteCounts(sites),
-                      sites: sites.map(siteBrief),
-                    })),
-                    csvExportItem(
-                      () => sites.map(siteBrief),
-                      "CSV (all sites)",
-                      SITE_CSV_COLUMNS,
-                    ),
-                  ]}
-                />
-              </div>
-            )}
-            {sites.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="flex flex-col items-center gap-4 text-muted-foreground max-w-md text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <Globe className="h-8 w-8 text-primary" />
+        <NonEditableContextMenu
+          {...CMS_HUB_CONTEXT_MENU_PROPS}
+          extraSections={hubExtraSections}
+          contextData={{
+            ...(buildSurfaceScope() as Record<string, unknown>),
+            content: sitesListSummary(sites),
+          }}
+          contentSource={{ type: "raw" }}
+        >
+          <div className="h-full flex flex-col overflow-hidden">
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create New Site</DialogTitle>
+                  <DialogDescription>
+                    Set up a new site to manage its pages, components, and
+                    content.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">
+                      Site Name
+                    </label>
+                    <Input
+                      value={newName}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      placeholder="My Website"
+                      className="text-sm"
+                    />
                   </div>
-                  <h2 className="text-xl font-bold text-foreground">
-                    No sites yet
-                  </h2>
-                  <p className="text-sm">
-                    Create your first website to start managing pages,
-                    components, and content.
-                  </p>
-                  <Button onClick={() => setDialogOpen(true)} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Your First Site
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-                {/* Standalone published HTML pages (html_pages table) */}
-                <button
-                  type="button"
-                  onClick={() => router.push("/cms/html-pages")}
-                  className="group text-left rounded-xl border border-border bg-card p-5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 cursor-pointer active:scale-[0.97] active:transition-none"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileCode className="h-5 w-5 text-primary" />
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">
+                      Slug
+                    </label>
+                    <Input
+                      value={newSlug}
+                      onChange={(e) => setNewSlug(e.target.value)}
+                      placeholder="my-website"
+                      className="text-sm font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      URL identifier — lowercase letters, numbers, and hyphens
+                    </p>
                   </div>
-                  <h3 className="text-base font-semibold text-foreground mb-1">
-                    Published Pages
-                  </h3>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Standalone HTML pages from chat, code, and presentations
-                  </p>
-                </button>
-
-                {sites.map((site) => (
-                  <NonEditableContextMenu
-                    key={site.id}
-                    {...CMS_HUB_CONTEXT_MENU_PROPS}
-                    extraSections={hubExtraSections}
-                    contextData={
-                      buildCmsHubContextData({
-                        sites,
-                        selectedSiteId: site.id,
-                        newSiteDraft: {
-                          name: newName,
-                          slug: newSlug,
-                          domain: newDomain,
-                        },
-                        loadError: error,
-                      }) as Record<string, unknown>
-                    }
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">
+                      Domain (optional)
+                    </label>
+                    <Input
+                      value={newDomain}
+                      onChange={(e) => setNewDomain(e.target.value)}
+                      placeholder="www.example.com"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setDialogOpen(false)}
+                    disabled={isCreating}
                   >
-                    {/* A CMS site is a real record with its own page, so the
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreate}
+                    disabled={isCreating || !newName || !newSlug}
+                    className="gap-1.5"
+                  >
+                    {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Create Site
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* ── Sites grid ──────────────────────────────────────────── */}
+            <div className="flex-1 overflow-auto px-4 sm:px-6 pb-6 pt-[calc(var(--shell-header-h)+0.75rem)]">
+              {sites.length > 0 && (
+                <div className="flex items-center justify-end gap-1 pb-2">
+                  <CopyButtons
+                    size="sm"
+                    label="CMS sites"
+                    human={() => sitesListSummary(sites)}
+                    agent={() => ({
+                      kind: "cms-sites",
+                      location: cmsLocation("Sites"),
+                      description:
+                        "Every CMS site on the hub, as the list renders them.",
+                      data: {
+                        counts: siteCounts(sites),
+                        sites: sites.map(siteBrief),
+                      },
+                      summary: sitesListSummary(sites),
+                      attributes: siteCounts(sites),
+                    })}
+                    json={() => sites.map(siteBrief)}
+                  />
+                  <ExportMenu
+                    label="CMS sites"
+                    items={[
+                      jsonExportItem(() => ({
+                        counts: siteCounts(sites),
+                        sites: sites.map(siteBrief),
+                      })),
+                      csvExportItem(
+                        () => sites.map(siteBrief),
+                        "CSV (all sites)",
+                        SITE_CSV_COLUMNS,
+                      ),
+                    ]}
+                  />
+                </div>
+              )}
+              {sites.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="flex flex-col items-center gap-4 text-muted-foreground max-w-md text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <Globe className="h-8 w-8 text-primary" />
+                    </div>
+                    <h2 className="text-xl font-bold text-foreground">
+                      No sites yet
+                    </h2>
+                    <p className="text-sm">
+                      Create your first website to start managing pages,
+                      components, and content.
+                    </p>
+                    <Button
+                      onClick={() => setDialogOpen(true)}
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Create Your First Site
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+                  {/* Standalone published HTML pages (html_pages table) */}
+                  <button
+                    type="button"
+                    onClick={() => router.push("/cms/html-pages")}
+                    className="group text-left rounded-xl border border-border bg-card p-5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 cursor-pointer active:scale-[0.97] active:transition-none"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <FileCode className="h-5 w-5 text-primary" />
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground mb-1">
+                      Published Pages
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Standalone HTML pages from chat, code, and presentations
+                    </p>
+                  </button>
+
+                  {sites.map((site) => (
+                    <NonEditableContextMenu
+                      key={site.id}
+                      {...CMS_HUB_CONTEXT_MENU_PROPS}
+                      extraSections={hubExtraSections}
+                      contextData={{
+                        ...(buildCmsHubContextData({
+                          sites,
+                          selectedSiteId: site.id,
+                          newSiteDraft: {
+                            name: newName,
+                            slug: newSlug,
+                            domain: newDomain,
+                          },
+                          loadError: error,
+                        }) as Record<string, unknown>),
+                        content: siteSummary(site),
+                      }}
+                      contentSource={{ type: "raw" }}
+                    >
+                      {/* A CMS site is a real record with its own page, so the
                         card is an anchor. As a <button> it navigated on click
                         and nothing else — no cmd-click, no middle-click, no
                         new tab, no destination on hover. */}
-                    <Link
-                      href={`/cms/${site.id}`}
-                      onMouseEnter={() => setHoveredSiteId(site.id)}
-                      className="group block text-left rounded-xl border border-border bg-card p-5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 cursor-pointer active:scale-[0.97] active:transition-none w-full"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Globe className="h-5 w-5 text-primary" />
+                      <Link
+                        href={`/cms/${site.id}`}
+                        onMouseEnter={() => setHoveredSiteId(site.id)}
+                        className="group block text-left rounded-xl border border-border bg-card p-5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 cursor-pointer active:scale-[0.97] active:transition-none w-full"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Globe className="h-5 w-5 text-primary" />
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                      <h3 className="text-base font-semibold text-foreground mb-1">
-                        {site.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground font-mono mb-3">
-                        {site.domain || site.slug}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={site.is_active ? "default" : "secondary"}
-                          className="text-[10px]"
-                        >
-                          {site.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                        {/*
+                        <h3 className="text-base font-semibold text-foreground mb-1">
+                          {site.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground font-mono mb-3">
+                          {site.domain || site.slug}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={site.is_active ? "default" : "secondary"}
+                            className="text-[10px]"
+                          >
+                            {site.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                          {/*
                           A site reached through the organization rather than
                           owned outright. Saying so is the point: a teammate's
                           site that looks identical to your own is how someone
                           renames or unpublishes work that is not theirs.
                         */}
-                        {site.access === "organization" && (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] gap-1"
-                            title="Shared with you through your organization"
-                          >
-                            <Users className="h-3 w-3" />
-                            Team
-                          </Badge>
-                        )}
-                      </div>
-                    </Link>
-                  </NonEditableContextMenu>
-                ))}
+                          {site.access === "organization" && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] gap-1"
+                              title="Shared with you through your organization"
+                            >
+                              <Users className="h-3 w-3" />
+                              Team
+                            </Badge>
+                          )}
+                        </div>
+                      </Link>
+                    </NonEditableContextMenu>
+                  ))}
 
-                {/* Create new card */}
-                <button
-                  onClick={() => setDialogOpen(true)}
-                  className="rounded-xl border border-dashed border-border p-5 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors min-h-[160px] cursor-pointer active:scale-[0.97] active:transition-none"
-                >
-                  <Plus className="h-6 w-6" />
-                  <span className="text-sm font-medium">Add Site</span>
-                </button>
-              </div>
-            )}
+                  {/* Create new card */}
+                  <button
+                    onClick={() => setDialogOpen(true)}
+                    className="rounded-xl border border-dashed border-border p-5 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors min-h-[160px] cursor-pointer active:scale-[0.97] active:transition-none"
+                  >
+                    <Plus className="h-6 w-6" />
+                    <span className="text-sm font-medium">Add Site</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </NonEditableContextMenu>
+        </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
     </>
   );
