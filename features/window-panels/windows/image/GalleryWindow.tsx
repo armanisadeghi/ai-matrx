@@ -190,6 +190,15 @@ function GalleryWindowInner({ onClose }: { onClose: () => void }) {
         <NonEditableContextMenu
           sourceFeature="image-studio"
           surfaceName={GALLERY_SURFACE_NAME}
+          // Raw: this is an Unsplash search widget with no editable document
+          // body — Copy-as/Export/Download-as-Markdown act on the scope's
+          // `content` (gallery state + focused-image description), same as
+          // every other value the menu resolves.
+          contentSource={{ type: "raw" }}
+          // No `entity`: results are external Unsplash photos, not a record
+          // this app owns — there is nothing here for Attach To / Share to
+          // target. (A favorited/inserted image becomes a real file via the
+          // files pipeline elsewhere; this search surface itself never does.)
           getApplicationScope={() => buildScope() as ApplicationScope}
           extraSections={[
             {

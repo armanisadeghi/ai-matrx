@@ -132,9 +132,12 @@ export function ConversationList({
   };
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [internalShowNewConversation, setInternalShowNewConversation] = useState(false);
-  const showNewConversation = newConversationOpen ?? internalShowNewConversation;
-  const setShowNewConversation = onNewConversationOpenChange ?? setInternalShowNewConversation;
+  const [internalShowNewConversation, setInternalShowNewConversation] =
+    useState(false);
+  const showNewConversation =
+    newConversationOpen ?? internalShowNewConversation;
+  const setShowNewConversation =
+    onNewConversationOpenChange ?? setInternalShowNewConversation;
 
   // Filter conversations by search
   const filteredConversations = conversations.filter((conv) => {

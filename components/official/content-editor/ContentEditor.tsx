@@ -32,6 +32,7 @@ import type { TuiEditorContentRef } from "@/components/mardown-display/chat-mark
 import { CopyDropdownButton } from "./CopyDropdownButton.lazy";
 import { ContentManagerMenu } from "./ContentManagerMenu.lazy";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 // Dynamic import for TUI editor
 const TuiEditorContent = dynamic(
@@ -103,6 +104,10 @@ export function ContentEditor({
   placeholder = "Start typing...",
   showModeSelector = true,
   className,
+  sourceFeature = "documents",
+  surfaceName,
+  contentSource,
+  entity,
 }: ContentEditorProps) {
   // Internal state
   const [localContent, setLocalContent] = useState(value);
@@ -421,8 +426,18 @@ export function ContentEditor({
           {/* Plain Text Mode — right-click: universal menu incl. content-block insert */}
           {currentMode === "plain" && (
             <EditableContextMenu
-              sourceFeature="documents"
+              sourceFeature={sourceFeature}
+              surfaceName={surfaceName}
+              contentSource={contentSource}
+              entity={entity}
               getTextarea={() => plainTextareaRef.current}
+              onTextReplace={handleContentChange}
+              onTextInsertBefore={(text) =>
+                handleContentChange(`${text}${localContent}`)
+              }
+              onTextInsertAfter={(text) =>
+                handleContentChange(`${localContent}${text}`)
+              }
             >
               <Textarea
                 ref={plainTextareaRef}
@@ -489,17 +504,25 @@ export function ContentEditor({
 
           {/* Preview Mode */}
           {currentMode === "preview" && (
-            <div className="w-full p-6 bg-textured overflow-visible">
-              {localContent.trim() ? (
-                <div className="overflow-visible">
-                  <MarkdownStream content={localContent} />
-                </div>
-              ) : (
-                <div className="text-center py-12 text-zinc-400 dark:text-zinc-500">
-                  No content to preview
-                </div>
-              )}
-            </div>
+            <NonEditableContextMenu
+              sourceFeature={sourceFeature}
+              surfaceName={surfaceName}
+              contentSource={contentSource}
+              entity={entity}
+              contextData={{ content: localContent }}
+            >
+              <div className="w-full p-6 bg-textured overflow-visible">
+                {localContent.trim() ? (
+                  <div className="overflow-visible">
+                    <MarkdownStream content={localContent} />
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-zinc-400 dark:text-zinc-500">
+                    No content to preview
+                  </div>
+                )}
+              </div>
+            </NonEditableContextMenu>
           )}
 
           {/* Fade overlay + expand affordance when collapsed in fade mode */}
