@@ -42,11 +42,18 @@ describe("bare JSON structural brace tracking", () => {
     accumulator.finalize(dispatch);
 
     const completed = [...blocks.values()].filter(
-      (block) => block.status === "complete" && block.content?.trim(),
+      (block): block is RenderBlockPayload & { content: string } =>
+        block.status === "complete" &&
+        typeof block.content === "string" &&
+        block.content.trim().length > 0,
     );
     expect(completed).toHaveLength(1);
-    expect(JSON.parse(completed[0]!.content!)).toEqual(JSON.parse(source));
-    expect(completed[0]!.metadata?.__ir).toMatchObject({
+    const completedBlock = completed.at(0);
+    if (!completedBlock) {
+      throw new Error("Expected one completed render block");
+    }
+    expect(JSON.parse(completedBlock.content)).toEqual(JSON.parse(source));
+    expect(completedBlock.metadata?.__ir).toMatchObject({
       root: { kind: "competitor_page_autopsy_v1", status: "complete" },
     });
     expect(captureErrorMock).not.toHaveBeenCalled();
