@@ -28722,6 +28722,323 @@ export type Database = {
         }
         Relationships: []
       }
+      actor_session: {
+        Row: {
+          actor_token_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          ip: unknown
+          issued_at: string
+          metadata: Json
+          organization_id: string
+          revoked_at: string | null
+          session_hash: string
+          updated_at: string
+          updated_by: string | null
+          user_agent: string | null
+          verified_at: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          actor_token_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at: string
+          id?: string
+          ip?: unknown
+          issued_at?: string
+          metadata?: Json
+          organization_id: string
+          revoked_at?: string | null
+          session_hash: string
+          updated_at?: string
+          updated_by?: string | null
+          user_agent?: string | null
+          verified_at?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          actor_token_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          ip?: unknown
+          issued_at?: string
+          metadata?: Json
+          organization_id?: string
+          revoked_at?: string | null
+          session_hash?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_agent?: string | null
+          verified_at?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actor_session_actor_token_id_fkey"
+            columns: ["actor_token_id"]
+            isOneToOne: false
+            referencedRelation: "actor_token"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actor_session_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actor_session_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      actor_token: {
+        Row: {
+          consumer_key: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_at: string
+          expiry_anchor: string
+          expiry_anchor_at: string | null
+          id: string
+          is_active: boolean
+          issued_by: string | null
+          issued_by_actor_type: string
+          last_used_at: string | null
+          last_used_ip: unknown
+          max_uses: number | null
+          metadata: Json
+          organization_id: string
+          recipient_email: string | null
+          recipient_name: string | null
+          revoked_at: string | null
+          revoked_reason: string | null
+          scope: Json
+          single_session: boolean
+          subject_id: string
+          subject_type: string
+          token_hash: string
+          token_prefix: string
+          updated_at: string
+          updated_by: string | null
+          use_count: number
+          verification_attempts: number
+          verification_code_expires_at: string | null
+          verification_code_hash: string | null
+          verification_factor: string
+          verification_locked_until: string | null
+          verification_target: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          consumer_key: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at: string
+          expiry_anchor?: string
+          expiry_anchor_at?: string | null
+          id?: string
+          is_active?: boolean
+          issued_by?: string | null
+          issued_by_actor_type?: string
+          last_used_at?: string | null
+          last_used_ip?: unknown
+          max_uses?: number | null
+          metadata?: Json
+          organization_id: string
+          recipient_email?: string | null
+          recipient_name?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          scope?: Json
+          single_session?: boolean
+          subject_id: string
+          subject_type: string
+          token_hash: string
+          token_prefix: string
+          updated_at?: string
+          updated_by?: string | null
+          use_count?: number
+          verification_attempts?: number
+          verification_code_expires_at?: string | null
+          verification_code_hash?: string | null
+          verification_factor?: string
+          verification_locked_until?: string | null
+          verification_target?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          consumer_key?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string
+          expiry_anchor?: string
+          expiry_anchor_at?: string | null
+          id?: string
+          is_active?: boolean
+          issued_by?: string | null
+          issued_by_actor_type?: string
+          last_used_at?: string | null
+          last_used_ip?: unknown
+          max_uses?: number | null
+          metadata?: Json
+          organization_id?: string
+          recipient_email?: string | null
+          recipient_name?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          scope?: Json
+          single_session?: boolean
+          subject_id?: string
+          subject_type?: string
+          token_hash?: string
+          token_prefix?: string
+          updated_at?: string
+          updated_by?: string | null
+          use_count?: number
+          verification_attempts?: number
+          verification_code_expires_at?: string | null
+          verification_code_hash?: string | null
+          verification_factor?: string
+          verification_locked_until?: string | null
+          verification_target?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actor_token_consumer_fk"
+            columns: ["consumer_key", "subject_type"]
+            isOneToOne: false
+            referencedRelation: "outsider_consumer"
+            referencedColumns: ["consumer_key", "resource"]
+          },
+          {
+            foreignKeyName: "actor_token_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actor_token_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actor_token_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      actor_token_event: {
+        Row: {
+          actor_token_id: string | null
+          created_at: string
+          created_by: string | null
+          detail: Json
+          event_type: string
+          id: string
+          ip: unknown
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          session_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_agent: string | null
+          version: number
+        }
+        Insert: {
+          actor_token_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail?: Json
+          event_type: string
+          id?: string
+          ip?: unknown
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+          session_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_agent?: string | null
+          version?: number
+        }
+        Update: {
+          actor_token_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail?: Json
+          event_type?: string
+          id?: string
+          ip?: unknown
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          session_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_agent?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actor_token_event_actor_token_id_fkey"
+            columns: ["actor_token_id"]
+            isOneToOne: false
+            referencedRelation: "actor_token"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actor_token_event_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actor_token_event_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "actor_session"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actor_token_event_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approach: {
         Row: {
           blurb: string
@@ -31436,6 +31753,111 @@ export type Database = {
           },
         ]
       }
+      outsider_consumer: {
+        Row: {
+          allowed_actions: string[]
+          anchor_source_column: string | null
+          consumer_key: string
+          created_at: string
+          created_by: string | null
+          default_expiry_anchor: string
+          default_max_uses: number | null
+          default_single_session: boolean
+          default_ttl: string
+          default_verification_factor: string
+          deleted_at: string | null
+          forbid_recipient_identity: boolean
+          id: string
+          ip_pinned: boolean
+          is_active: boolean
+          is_subject_resource: boolean
+          justification: string | null
+          label: string | null
+          metadata: Json
+          organization_id: string
+          readable_columns: string[]
+          resource: string
+          session_ttl_minutes: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          allowed_actions?: string[]
+          anchor_source_column?: string | null
+          consumer_key: string
+          created_at?: string
+          created_by?: string | null
+          default_expiry_anchor?: string
+          default_max_uses?: number | null
+          default_single_session?: boolean
+          default_ttl?: string
+          default_verification_factor?: string
+          deleted_at?: string | null
+          forbid_recipient_identity?: boolean
+          id?: string
+          ip_pinned?: boolean
+          is_active?: boolean
+          is_subject_resource?: boolean
+          justification?: string | null
+          label?: string | null
+          metadata?: Json
+          organization_id: string
+          readable_columns?: string[]
+          resource: string
+          session_ttl_minutes?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          allowed_actions?: string[]
+          anchor_source_column?: string | null
+          consumer_key?: string
+          created_at?: string
+          created_by?: string | null
+          default_expiry_anchor?: string
+          default_max_uses?: number | null
+          default_single_session?: boolean
+          default_ttl?: string
+          default_verification_factor?: string
+          deleted_at?: string | null
+          forbid_recipient_identity?: boolean
+          id?: string
+          ip_pinned?: boolean
+          is_active?: boolean
+          is_subject_resource?: boolean
+          justification?: string | null
+          label?: string | null
+          metadata?: Json
+          organization_id?: string
+          readable_columns?: string[]
+          resource?: string
+          session_ttl_minutes?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outsider_consumer_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outsider_consumer_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purpose: {
         Row: {
           created_at: string
@@ -32736,6 +33158,15 @@ export type Database = {
         }[]
       }
       assert_admin_access_contract: { Args: never; Returns: undefined }
+      assert_outsider_scope: {
+        Args: {
+          p_action: string
+          p_id: string
+          p_resource: string
+          p_session: string
+        }
+        Returns: Json
+      }
       assist_admission_decision: {
         Args: { p_source_key: string; p_user_id: string }
         Returns: {
@@ -33034,6 +33465,18 @@ export type Database = {
         }
         Returns: Json
       }
+      mint_outsider_token: {
+        Args: {
+          p_consumer_key: string
+          p_organization_id: string
+          p_overrides?: Json
+          p_recipient?: Json
+          p_scope: Json
+          p_subject_id: string
+          p_subject_type: string
+        }
+        Returns: Json
+      }
       module_config: {
         Args: { p_org: string; p_token: string }
         Returns: {
@@ -33118,6 +33561,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      reanchor_outsider_token: { Args: { p_token_id: string }; Returns: Json }
       rebuild_reachability: { Args: never; Returns: number }
       refresh_reachability: {
         Args: { p_container_id: string; p_container_type: string }
@@ -33182,6 +33626,10 @@ export type Database = {
           p_token: string
         }
         Returns: string
+      }
+      revoke_outsider_token: {
+        Args: { p_reason: string; p_token_id: string }
+        Returns: Json
       }
       rulebook_library_catalog: {
         Args: { p_organization_id?: string }
@@ -33311,6 +33759,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      validate_outsider_scope: {
+        Args: { p_consumer_key: string; p_scope: Json }
+        Returns: undefined
       }
     }
     Enums: {
@@ -36485,6 +36937,10 @@ export type Database = {
         Args: { p_mode?: string; p_usage_id: string; p_usage_type: string }
         Returns: Json
       }
+      anonymous_report_open: {
+        Args: { p_ip?: unknown; p_organization_id: string }
+        Returns: Json
+      }
       append_rows_to_user_table: {
         Args: { p_rows: Json; p_table_id: string }
         Returns: number
@@ -39377,6 +39833,44 @@ export type Database = {
         Returns: Json
       }
       hr_incident_status: { Args: { p_incident_id: string }; Returns: Json }
+      hr_kiosk_authenticate: {
+        Args: { p_device_id: string; p_device_secret: string }
+        Returns: Json
+      }
+      hr_kiosk_session_close: {
+        Args: { p_reason?: string; p_session_token: string }
+        Returns: Json
+      }
+      hr_kiosk_session_heartbeat: {
+        Args: { p_session_token: string }
+        Returns: Json
+      }
+      hr_kiosk_session_open: {
+        Args: {
+          p_employee_number: string
+          p_employment_pin: string
+          p_session_token: string
+        }
+        Returns: Json
+      }
+      hr_mint_investigation_token: {
+        Args: {
+          p_incident_id: string
+          p_investigator_email: string
+          p_investigator_name: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      hr_mint_records_request_token: {
+        Args: {
+          p_delivery_address: string
+          p_reason: string
+          p_request_id: string
+          p_scope: string[]
+        }
+        Returns: Json
+      }
       hr_restricted_get: {
         Args: {
           p_id: string
@@ -39411,6 +39905,10 @@ export type Database = {
       }
       hr_role_revoke: {
         Args: { p_assignment_id: string; p_reason: string }
+        Returns: Json
+      }
+      hr_set_employment_pin: {
+        Args: { p_employment_id: string; p_pin: string }
         Returns: Json
       }
       industry_assign_org: {
@@ -40402,6 +40900,13 @@ export type Database = {
         Returns: Json
       }
       outreach_unsubscribe_preview: { Args: { p_token: string }; Returns: Json }
+      outsider_begin: { Args: { p_secret: string }; Returns: Json }
+      outsider_send_code: { Args: { p_secret: string }; Returns: Json }
+      outsider_session_ping: { Args: { p_session: string }; Returns: Json }
+      outsider_verify: {
+        Args: { p_code: string; p_ip?: unknown; p_secret: string }
+        Returns: Json
+      }
       owned_or_org_processed_document_ids: { Args: never; Returns: string[] }
       page_extraction_clear_job_results: {
         Args: { p_job_id: string }

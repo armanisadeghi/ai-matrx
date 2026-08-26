@@ -1012,7 +1012,11 @@ declare d hr.kiosk_device%rowtype; v_ttl int; v_tok text; v_sid uuid;
 begin
   select * into d from hr.kiosk_device where id = p_device_id and deleted_at is null;
   -- uniform failure: a wrong device id and a wrong secret are indistinguishable to the caller
-  if not found or not d.is_active
+  -- 🚨 THE COLUMN IS `trust_state`, NOT §6.3's `is_active`/`trust_level` — caught by probe, not by
+  -- reading. Live it is a four-value CHECK (pending | trusted | suspended | revoked), so a device
+  -- that has been paired but not yet trusted, or has been suspended, authenticates NOTHING. That
+  -- is strictly better than a boolean and it is what shipped. OWED: §6.3's hr.kiosk_device fields.
+  if not found or d.trust_state <> 'trusted'
      or d.device_secret_hash is null
      or d.device_secret_hash <> extensions.crypt(coalesce(p_device_secret,''), d.device_secret_hash) then
     return jsonb_build_object('ok', false, 'reason','device_not_authenticated');

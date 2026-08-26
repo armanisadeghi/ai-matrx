@@ -300,6 +300,7 @@ export function AgentConversationDisplay({
       sourceFeature="chat"
       surfaceName="matrx-user/assistant-message"
       enableFloatingIcon={false}
+      suppressed={isActive}
       // Content blocks are insert-into-an-editor items — meaningless on
       // read-only rendered output, so hide that submenu here.
       placementMode={{ "content-block": "hide" }}
