@@ -165,6 +165,166 @@ function classifyVisibility(
   return { visible: false, legacy: false };
 }
 
+export interface BuildCategoryGroupsArgs {
+  placementTypes: string[];
+  addedContexts?: string[];
+  excludedContexts?: string[];
+  surfaceName?: string | null;
+  shortcuts: AgentShortcutRecord[];
+  categories: AgentShortcutCategoryRecord[];
+  contentBlocks: AgentContentBlockRecord[];
+}
+
+/**
+ * THE grouping function — pure and unit-tested (`__tests__/build-category-groups.test.ts`).
+ * Turns the fetched shortcut/category/content-block rows into the nested
+ * category tree each placement submenu renders. The hook below is a thin
+ * memo wrapper over this; keep ALL grouping behavior here so the tests pin it.
+ *
+ * Guarantees the tests certify:
+ *  - placement fidelity: a row renders under exactly its category's placementType;
+ *  - nested categories nest under their parent, sorted by sortOrder then label;
+ *  - an EMPTY category still returns (with `items: []`) so the UI can render it
+ *    greyed — never silently dropped;
+ *  - an entry with no agent is kept (the renderer disables it as "Not configured");
+ *  - scope precedence dedupe (task > project > user > organization > global).
+ */
+export function buildCategoryGroups(
+  args: BuildCategoryGroupsArgs,
+): AgentMenuCategoryGroup[] {
+  const {
+    placementTypes,
+    addedContexts,
+    excludedContexts,
+    surfaceName = null,
+    shortcuts,
+    categories,
+    contentBlocks,
+  } = args;
+  if (placementTypes.length === 0) return [];
+
+  const placementSet = new Set(placementTypes);
+
+  const scopedCategories = categories
+    .filter((c) => c.isActive !== false && placementSet.has(c.placementType))
+    .map((c) => ({ ...c, scopeLevel: resolveRowScope(c) }));
+  const scopedShortcuts = shortcuts
+    .filter((s) => s.isActive !== false)
+    .map((s) => ({
+      ...s,
+      entryType: "agent_shortcut" as const,
+      scopeLevel: resolveRowScope(s),
+    }));
+  const scopedBlocks = contentBlocks
+    .filter((b) => b.isActive !== false)
+    .map((b) => ({
+      ...b,
+      entryType: "content_block" as const,
+      scopeLevel: resolveRowScope(b),
+    }));
+
+  const allowedContexts = buildAllowedContexts(addedContexts, excludedContexts);
+
+  // Shortcuts: "both" matching (surfaceName OR legacy context), tagging the
+  // legacy-only ones so the menu can render them red.
+  const filteredShortcuts = scopedShortcuts.flatMap((s) => {
+    const { visible, legacy } = classifyVisibility(
+      s,
+      allowedContexts,
+      surfaceName,
+    );
+    return visible ? [{ ...s, legacyMatch: legacy }] : [];
+  });
+  // Content blocks are static insertable text — no surfaceName/enabledFeatures
+  // today, so they always pass through and are never flagged legacy.
+  const filteredBlocks = scopedBlocks.map((b) => ({
+    ...b,
+    legacyMatch: false,
+  }));
+
+  const dedupedShortcuts = dedupeByPrecedence(filteredShortcuts, (s) => {
+    if (s.keyboardShortcut) return `kbd:${s.keyboardShortcut}`;
+    return `label:${s.categoryId}:${s.label}`;
+  });
+
+  const dedupedBlocks = dedupeByPrecedence(
+    filteredBlocks,
+    (b) => `block:${b.categoryId ?? "_none"}:${b.blockId}`,
+  );
+
+  const byCategory = new Map<string, AgentMenuEntry[]>();
+  for (const s of dedupedShortcuts) {
+    if (!byCategory.has(s.categoryId)) byCategory.set(s.categoryId, []);
+    byCategory.get(s.categoryId)!.push(s as AgentMenuEntry);
+  }
+  for (const b of dedupedBlocks) {
+    const cid = b.categoryId;
+    if (!cid) continue;
+    if (!byCategory.has(cid)) byCategory.set(cid, []);
+    byCategory.get(cid)!.push(b as AgentMenuEntry);
+  }
+
+  // Category inclusion: keep a category if it passes the legacy context
+  // allow-set OR it actually holds a visible item (so a surface-matched
+  // shortcut is never orphaned by a category that the context filter would
+  // have dropped). Pull in ancestors so the submenu tree can nest.
+  const catById = new Map(scopedCategories.map((c) => [c.id, c]));
+  const keepCategoryIds = new Set<string>();
+  for (const c of scopedCategories) {
+    if (matchesAllowedContexts(c, allowedContexts)) keepCategoryIds.add(c.id);
+  }
+  for (const cid of byCategory.keys()) {
+    let cur = catById.get(cid);
+    while (cur && !keepCategoryIds.has(cur.id)) {
+      keepCategoryIds.add(cur.id);
+      cur = cur.parentCategoryId
+        ? catById.get(cur.parentCategoryId)
+        : undefined;
+    }
+  }
+  const filteredCategories = scopedCategories.filter((c) =>
+    keepCategoryIds.has(c.id),
+  );
+
+  const dedupedCategories = dedupeByPrecedence(
+    filteredCategories,
+    (c) => `${c.placementType}:${c.parentCategoryId ?? "_root"}:${c.label}`,
+  );
+
+  const nodeMap = new Map<string, AgentMenuCategoryGroup>();
+  for (const cat of dedupedCategories) {
+    nodeMap.set(cat.id, {
+      category: cat,
+      items: (byCategory.get(cat.id) ?? [])
+        .slice()
+        .sort((x, y) => (x.sortOrder ?? 0) - (y.sortOrder ?? 0)),
+      children: [],
+    });
+  }
+
+  const roots: AgentMenuCategoryGroup[] = [];
+  for (const cat of dedupedCategories) {
+    const node = nodeMap.get(cat.id)!;
+    if (cat.parentCategoryId && nodeMap.has(cat.parentCategoryId)) {
+      nodeMap.get(cat.parentCategoryId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  const sortNodes = (nodes: AgentMenuCategoryGroup[]) => {
+    nodes.sort(
+      (a, b) =>
+        (a.category.sortOrder ?? 0) - (b.category.sortOrder ?? 0) ||
+        a.category.label.localeCompare(b.category.label),
+    );
+    for (const n of nodes) sortNodes(n.children);
+  };
+  sortNodes(roots);
+
+  return roots;
+}
+
 export function useUnifiedAgentContextMenu(
   args: UseUnifiedAgentContextMenuArgs,
 ): UseUnifiedAgentContextMenuResult {
@@ -208,131 +368,16 @@ export function useUnifiedAgentContextMenu(
   // rapid opens + multi-mounted menus all resolve to a single HTTP call.
 
   const categoryGroups = useMemo<AgentMenuCategoryGroup[]>(() => {
-    if (!enabled || placementTypes.length === 0) return [];
-
-    const placementSet = new Set(placementTypes);
-
-    const scopedCategories = categories
-      .filter((c) => c.isActive !== false && placementSet.has(c.placementType))
-      .map((c) => ({ ...c, scopeLevel: resolveRowScope(c) }));
-    const scopedShortcuts = shortcuts
-      .filter((s) => s.isActive !== false)
-      .map((s) => ({
-        ...s,
-        entryType: "agent_shortcut" as const,
-        scopeLevel: resolveRowScope(s),
-      }));
-    const scopedBlocks = contentBlocks
-      .filter((b) => b.isActive !== false)
-      .map((b) => ({
-        ...b,
-        entryType: "content_block" as const,
-        scopeLevel: resolveRowScope(b),
-      }));
-
-    const allowedContexts = buildAllowedContexts(
+    if (!enabled) return [];
+    return buildCategoryGroups({
+      placementTypes,
       addedContexts,
       excludedContexts,
-    );
-
-    // Shortcuts: "both" matching (surfaceName OR legacy context), tagging the
-    // legacy-only ones so the menu can render them red.
-    const filteredShortcuts = scopedShortcuts.flatMap((s) => {
-      const { visible, legacy } = classifyVisibility(
-        s,
-        allowedContexts,
-        surfaceName,
-      );
-      return visible ? [{ ...s, legacyMatch: legacy }] : [];
+      surfaceName,
+      shortcuts,
+      categories,
+      contentBlocks,
     });
-    // Content blocks are static insertable text — no surfaceName/enabledFeatures
-    // today, so they always pass through and are never flagged legacy.
-    const filteredBlocks = scopedBlocks.map((b) => ({
-      ...b,
-      legacyMatch: false,
-    }));
-
-    const dedupedShortcuts = dedupeByPrecedence(filteredShortcuts, (s) => {
-      if (s.keyboardShortcut) return `kbd:${s.keyboardShortcut}`;
-      return `label:${s.categoryId}:${s.label}`;
-    });
-
-    const dedupedBlocks = dedupeByPrecedence(
-      filteredBlocks,
-      (b) => `block:${b.categoryId ?? "_none"}:${b.blockId}`,
-    );
-
-    const byCategory = new Map<string, AgentMenuEntry[]>();
-    for (const s of dedupedShortcuts) {
-      if (!byCategory.has(s.categoryId)) byCategory.set(s.categoryId, []);
-      byCategory.get(s.categoryId)!.push(s as AgentMenuEntry);
-    }
-    for (const b of dedupedBlocks) {
-      const cid = b.categoryId;
-      if (!cid) continue;
-      if (!byCategory.has(cid)) byCategory.set(cid, []);
-      byCategory.get(cid)!.push(b as AgentMenuEntry);
-    }
-
-    // Category inclusion: keep a category if it passes the legacy context
-    // allow-set OR it actually holds a visible item (so a surface-matched
-    // shortcut is never orphaned by a category that the context filter would
-    // have dropped). Pull in ancestors so the submenu tree can nest.
-    const catById = new Map(scopedCategories.map((c) => [c.id, c]));
-    const keepCategoryIds = new Set<string>();
-    for (const c of scopedCategories) {
-      if (matchesAllowedContexts(c, allowedContexts)) keepCategoryIds.add(c.id);
-    }
-    for (const cid of byCategory.keys()) {
-      let cur = catById.get(cid);
-      while (cur && !keepCategoryIds.has(cur.id)) {
-        keepCategoryIds.add(cur.id);
-        cur = cur.parentCategoryId
-          ? catById.get(cur.parentCategoryId)
-          : undefined;
-      }
-    }
-    const filteredCategories = scopedCategories.filter((c) =>
-      keepCategoryIds.has(c.id),
-    );
-
-    const dedupedCategories = dedupeByPrecedence(
-      filteredCategories,
-      (c) => `${c.placementType}:${c.parentCategoryId ?? "_root"}:${c.label}`,
-    );
-
-    const nodeMap = new Map<string, AgentMenuCategoryGroup>();
-    for (const cat of dedupedCategories) {
-      nodeMap.set(cat.id, {
-        category: cat,
-        items: (byCategory.get(cat.id) ?? [])
-          .slice()
-          .sort((x, y) => (x.sortOrder ?? 0) - (y.sortOrder ?? 0)),
-        children: [],
-      });
-    }
-
-    const roots: AgentMenuCategoryGroup[] = [];
-    for (const cat of dedupedCategories) {
-      const node = nodeMap.get(cat.id)!;
-      if (cat.parentCategoryId && nodeMap.has(cat.parentCategoryId)) {
-        nodeMap.get(cat.parentCategoryId)!.children.push(node);
-      } else {
-        roots.push(node);
-      }
-    }
-
-    const sortNodes = (nodes: AgentMenuCategoryGroup[]) => {
-      nodes.sort(
-        (a, b) =>
-          (a.category.sortOrder ?? 0) - (b.category.sortOrder ?? 0) ||
-          a.category.label.localeCompare(b.category.label),
-      );
-      for (const n of nodes) sortNodes(n.children);
-    };
-    sortNodes(roots);
-
-    return roots;
   }, [
     enabled,
     placementTypes,
