@@ -14,7 +14,7 @@ Invoke only the skills whose areas the focused surface actually touches, but nev
 ## Surface and agent context
 
 - `surface-authoring` — new, stub, partial, unregistered, drifted, or incompletely wired eligible ordinary product surfaces; includes the former Surface Pro runtime rollout
-- `context-menu-v3` — add, repair, or certify canonical right-click/long-press behavior
+- `context-menu-v3` — add, repair, or certify canonical right-click/long-press behavior. It owns THE DENSITY LAW (labels only, no subtext) and the shared-section registry (`features/context-menu-v3/SECTIONS.md`); read it BEFORE writing any menu item, and never add descriptions to menu rows
 - `agent-disclosure` — REQUIRED only when an eligible ordinary product surface already has a fixed AI worker: register it in the existing top Agents menu through a manifest `agentRole` or UI-free `useDeclaredSurfaceMandates`, and use the mandate window instead of a route link. Disclosure NEVER adds visible page content. Chat, Agents Hub, Agent Apps, Agent Build/Run/Battle, mandate authoring/settings, agent comparison/history, and agent/widget test harnesses are excluded wholesale: no roles, defaults, bindings, bound roster, Bind control, or disclosure additions.
 - `surface-write-targets` — agent-writeable fields and live apply proof
 - `admin-debug-context` — only when the feature needs custom debug data beyond the automatically captured route/viewport/console context
