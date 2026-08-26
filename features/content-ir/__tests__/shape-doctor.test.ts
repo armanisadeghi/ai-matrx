@@ -16,6 +16,7 @@ import {
   runShapeDoctor,
   attributeSkillsToKinds,
   classifyExemption,
+  kindSkillOwner,
   stripKindFromJsonSchema,
   type DoctorKindComponent,
   type DoctorKindDefinition,
@@ -250,6 +251,105 @@ describe("shape doctor", () => {
     );
     expect(report.findings.some((f) => f.code === "duplicate-skill")).toBe(false);
     expect(report.rows[0].assets.skill.status).toBe("ok");
+  });
+
+  // ── THE SKILL-OWNER DECLARATION ────────────────────────────────────────
+  // The admin resolution for `duplicate-skill` is a DECLARATION on the kind
+  // (metadata.skill_owner), never a deletion — a container skill must keep
+  // demonstrating the children it embeds. These four tests pin the whole
+  // contract, including the falsifiability leg: a declaration that stops being
+  // true must bring the red back, or it is a resolution nobody can check.
+
+  it("kindSkillOwner reads both the object form and the bare-string form", () => {
+    expect(
+      kindSkillOwner({ skill_owner: { json: { skill_id: "kind_quiz_set" } } }, "json"),
+    ).toBe("kind_quiz_set");
+    expect(kindSkillOwner({ skill_owner: { json: "kind_quiz_set" } }, "json")).toBe(
+      "kind_quiz_set",
+    );
+    // Wrong syntax, empty values, and junk shapes all decline rather than guess.
+    expect(kindSkillOwner({ skill_owner: { json: "kind_quiz_set" } }, "xml")).toBeNull();
+    expect(kindSkillOwner({ skill_owner: { json: "" } }, "json")).toBeNull();
+    expect(kindSkillOwner({ skill_owner: ["kind_quiz_set"] }, "json")).toBeNull();
+    expect(kindSkillOwner(null, "json")).toBeNull();
+  });
+
+  it("clears the duplicate-skill red once the kind DECLARES which skill owns it", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({
+            id: "k1",
+            kind: "quiz_set",
+            metadata: { skill_owner: { json: { skill_id: "quiz-new" } } },
+          }),
+        ],
+        examples: [
+          { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: goodSample, updatedAt: T0 },
+        ],
+        renderBlockSkills: [
+          { skillId: "quiz-old", label: "Quiz", body: '{"__kind": "quiz_set"}' },
+          { skillId: "quiz-new", label: "Quiz v2", body: 'also {"__kind": "quiz_set"}' },
+        ],
+      }),
+    );
+    expect(report.findings.some((f) => f.code === "duplicate-skill")).toBe(false);
+    expect(report.rows[0].assets.skill.status).toBe("ok");
+    expect(report.rows[0].assets.skill.detail).toContain("quiz-new");
+  });
+
+  it("keeps the red — and says STALE — when the declared owner no longer teaches the kind", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({
+            id: "k1",
+            kind: "quiz_set",
+            // Named skill was renamed/retired; the declaration is now a lie.
+            metadata: { skill_owner: { json: { skill_id: "quiz-retired" } } },
+          }),
+        ],
+        examples: [
+          { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: goodSample, updatedAt: T0 },
+        ],
+        renderBlockSkills: [
+          { skillId: "quiz-old", label: "Quiz", body: '{"__kind": "quiz_set"}' },
+          { skillId: "quiz-new", label: "Quiz v2", body: 'also {"__kind": "quiz_set"}' },
+        ],
+      }),
+    );
+    const red = report.findings.find((f) => f.code === "duplicate-skill");
+    expect(red?.severity).toBe("red");
+    expect(red?.message).toContain("STALE");
+    expect(red?.message).toContain("quiz-retired");
+    expect(report.rows[0].assets.skill.status).toBe("warn");
+  });
+
+  it("a declaration for ONE syntax does not silence a duplicate in the OTHER", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({
+            id: "k1",
+            kind: "quiz_set",
+            metadata: { skill_owner: { json: { skill_id: "quiz-new" } } },
+          }),
+        ],
+        examples: [
+          { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: goodSample, updatedAt: T0 },
+        ],
+        renderBlockSkills: [
+          { skillId: "quiz-old", label: "Quiz", body: '{"__kind": "quiz_set"}' },
+          { skillId: "quiz-new", label: "Quiz v2", body: 'also {"__kind": "quiz_set"}' },
+          { skillId: "kind_quiz_set_xml", label: "Quiz XML", body: null },
+          // Same R9 xml attribution, different row — a real duplicate in xml.
+          { skillId: "kind-quiz-set-xml", label: "Quiz XML legacy", body: null },
+        ],
+      }),
+    );
+    const reds = report.findings.filter((f) => f.code === "duplicate-skill");
+    expect(reds).toHaveLength(1);
+    expect(reds[0].message).toContain("xml");
   });
 
   it("yellows a kind without any example (and marks the cells missing)", () => {
