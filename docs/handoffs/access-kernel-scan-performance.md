@@ -1,6 +1,6 @@
 ---
 status: parked
-updated: 2026-08-21
+updated: 2026-08-25
 repos: [matrx-frontend]
 vision: [/Users/armanisadeghi/code/common-docs/systems/platform/db-rules/FEATURE.md]
 ---
@@ -153,19 +153,58 @@ This is a security-adjacent property of the function that decides who can read
 what, so an agent should not grant it. If yes, it is roughly a day of work plus
 a full equivalence re-proof.
 
-## ATTACHED CAMPAIGN — the bare `auth.uid()` sweep (added 2026-08-22)
+## ATTACHED CAMPAIGN — the bare `auth.uid()` sweep — **DONE** (verified 2026-08-25)
 
 The 2026-08-22 slowness investigation found the repeating shape: a bare
 `auth.uid()` in a SQL function's WHERE is re-evaluated PER ROW and blocks the
 index, so RLS's `iam.has_access` arm fires across whole tables.
 `get_cx_conversation_source_facets` went **2,869 ms → 18 ms** from the one-line
 `(select auth.uid())` fix (`migrations/cx_source_facets_initplan_uid.sql`).
-A live census counts **~270 functions** matching the bare pattern (upper bound —
-plpgsql `v_uid := auth.uid()` assignments are benign). The campaign: classify
-(SQL-in-WHERE vs benign), fix in measured batches (EXPLAIN before/after each),
-never touch SECURITY DEFINER/INVOKER while converting. Same equivalence bar as
-everything in this doc. Also verify new RLS policies keep the InitPlan form —
-`iam.apply_rls` already emits it correctly.
+
+**The sweep is finished.** Applied migrations, all in the ledger:
+
+| migration | applied |
+|---|---|
+| `cx_source_facets_initplan_uid.sql` (exemplar) | 2026-08-22 |
+| `initplan_uid_sweep_batch1.sql` (STABLE read helpers, incl. per-row RLS helpers) | 2026-08-22 |
+| `initplan_uid_sweep_batch2.sql` | 2026-08-22 |
+| `initplan_uid_sweep_batch3.sql` | 2026-08-22 |
+| `rls_initplan_identity_sweep.sql` | 2026-08-24 |
+
+**Re-census 2026-08-25 (live, `pg_proc`).** 507 functions across all app schemas
+mention `auth.uid()`; 246 still contain a lexically bare occurrence. Classified
+line-by-line, **every one of those is benign** and none is the bug class:
+
+| shape | functions | why benign |
+|---|---|---|
+| `v_uid uuid := auth.uid()` (declare/assign) | 144 | evaluated once, into a variable |
+| scalar `IF` / `RAISE` / `RETURN` guard | 38 | no query, no rows |
+| `set updated_by = auth.uid()` (UPDATE SET / INSERT VALUES) | ~10 | a write value, once per statement, never a predicate |
+| `'%created_by = ( SELECT auth.uid()%'` string literal | 1 (`iam.verify_canonical`) | it is the checker *looking for* the InitPlan form |
+
+A targeted predicate search (`auth.uid()` on either side of a comparison inside
+where/and/or/on/join) returns exactly 4 hits — `platform.lifecycle_user_notice`,
+`public.get_dm_conversations_with_details`, `public.guardian_grant`,
+`public.guardian_request_student` — and all 4 are scalar `IF` guards comparing
+against a *parameter or variable*, executed once per call. **Zero true positives.**
+
+**Spot measurements** (`set local role authenticated` + `set local
+request.jwt.claims`, rolled back, `auth.uid()` asserted inside the probe; heaviest
+identity = the account owning 12,690 conversations):
+
+| function | before | now |
+|---|---|---|
+| `public.get_cx_conversation_source_facets` (12,690-conversation identity, 181 rows out) | 2,869 ms | **33 ms** |
+| `public.get_cx_conversation_source_facets` (zero-row identity) | — | 9.6 ms |
+| `public.mbr_for_user('agent')` | — | 1.6 ms |
+
+`pnpm check:migrations` → no unapplied migrations (the 51 `DRIFTED` warnings are
+pre-existing and repo-wide, non-blocking, unrelated to this campaign).
+
+**Standing guard.** New RLS policies must keep the InitPlan form — `iam.apply_rls`
+already emits it correctly. The re-census query above is the regression check;
+re-run it rather than trusting a raw `prosrc ~ 'auth.uid()'` count, which is an
+upper bound dominated by benign declare-block assignments.
 
 ## How to prove any change here
 
