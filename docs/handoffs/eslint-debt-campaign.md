@@ -52,7 +52,7 @@ is a live trap here:
 - **Dev server:** check what is already listening
   (`lsof -nP -iTCP -sTCP:LISTEN | grep node`) and REUSE it. Several sessions run
   concurrently on this box and ports drift (3050/3051/3052 have all been live).
-  Never start a second one. Log in at `/login` — `admin@admin.com` / `Password1234#`.
+  Never start a second one. Log in at `/login` — `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`.
 - **Trap:** do not move or delete files while a scan is running. ESLint
   enumerates the tree up front and reads it after; a file that vanishes in
   between kills the run with a bare `ENOENT`.

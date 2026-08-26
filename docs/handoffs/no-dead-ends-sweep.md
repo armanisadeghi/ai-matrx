@@ -48,7 +48,7 @@ Full doctrine, corollaries and the "done means" checklist:
   `features/organizations/peek/registry.ts` **and** `kinds-list.ts` together.
 - **Reference implementation:** `features/admin/mandates/MandatesConsole.tsx`
   (Agent / Pin / Health columns + the drawer identity card).
-- **Login for verification:** `/login`, `admin@admin.com` / `Password1234#`.
+- **Login for verification:** `/login`, `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`.
 
 ## Remaining work
 

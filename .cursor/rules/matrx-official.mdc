@@ -15,7 +15,7 @@ alwaysApply: true
 
 # Web Access For Testing
 - user: admin@admin.com
-- Password: Password1234#
+- Password: <see AI_ADMIN_PASSWORD in .env>
 
 ## Dev Auto-Login (localhost only)
 

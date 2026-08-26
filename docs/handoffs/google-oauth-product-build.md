@@ -70,7 +70,7 @@ Search Console immediately afterward.
   `TOOL_OUTPUT_VALIDATION_GATE.md`, `TOOL_RESULT_SIZE_GATE.md`.
 - Settings surface shell (for Connected Accounts): `features/settings/pages/IntegrationsSettingsPage.tsx`
   + `features/settings/registry.ts`.
-- Test login: `/login` `admin@admin.com` / `Password1234#` (CLAUDE.md § Web Access).
+- Test login: `/login` `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>` (CLAUDE.md § Web Access).
 
 ## Remaining work (order matters)
 

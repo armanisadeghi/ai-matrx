@@ -30,7 +30,7 @@ repos: [matrx-frontend, aidream]
 ## Resources
 
 - Read first: [`features/sharing/FEATURE.md`](../../features/sharing/FEATURE.md) (Change Log 2026-07-07) + [`features/notes/FEATURE.md`](../../features/notes/FEATURE.md) (2026-07-07/08 shared-notes entry) + [`features/agent-apps/FEATURE.md`](../../features/agent-apps/FEATURE.md) + [`features/agents/components/chat/FEATURE.md`](../../features/agents/components/chat/FEATURE.md).
-- Test login: `/login` with `admin@admin.com` / `Password1234#`.
+- Test login: `/login` with `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`.
 
 **Link sharing core.** `platform.share_links` + `resolve_share_token(p_token)` (anon SECURITY DEFINER, column-allowlisted via `platform.shareable_resource_registry.public_columns` — body `migrations/share_link_policy_and_admin.sql:92-134`). Owner RPCs `create_share_link`/`list_share_links`/`revoke_share_link`. FE `utils/permissions/shareLinks.ts` + `ShareLinkPanel`. Public route `app/(public)/s/[token]/page.tsx` → `SharedResourceView.tsx` (`renderBody` switch — cases: `note`/`content_template`/`code_file`/`fc_card`, else `GenericRenderer`). Admin policy: `/administration/sharing` (`admin_list_share_policies`/`admin_set_share_policy`); `get_share_capabilities(type)` drives owner UI.
 - Agent share allowlist (already safe, `share_link_policy_and_admin.sql:59`): `id, name, description, agent_type, variable_definitions, category, tags, created_at, updated_at`. Excludes `messages/settings/model_id/tools/custom_tools/mcp_servers` — exactly the guest-run allowlist. Reachable ONLY via `resolve_share_token`.

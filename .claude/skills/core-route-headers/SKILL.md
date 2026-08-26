@@ -109,7 +109,7 @@ The center nav MUST degrade **icon + text → icon only → `…` menu**, driven
 
 ## Verify in the browser — mandatory, both viewports
 
-1. Reuse a running dev server (`pnpm dev:status`) or `preview_start`; log in via `/login` with `admin@admin.com` / `Password1234#`.
+1. Reuse a running dev server (`pnpm dev:status`) or `preview_start`; log in via `/login` with `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`.
 2. Navigate to the route. **Desktop (1280×800):** no in-body title bar; actions in the header center; nothing behind the avatar; no dead strip at the bottom; content scrolls behind the glass.
 3. **Intermediate (~700–900px):** the center nav must have already stepped down a stage rather than sitting flush against the shell icons. Skipping this width is how a nav that only ever does full → menu passes review.
 4. **Mobile (375×812 via `resize_window`):** every desktop action reachable (bottom sheet, not vanished); no interactive element floating into the glass header; single scroll area.

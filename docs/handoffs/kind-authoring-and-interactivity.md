@@ -26,7 +26,7 @@ repo. **Read it before touching anything here; it outranks this work order.**
 - **Emit/render shape:** `core/emit-payload.ts` (`withRootKind`/`emitPayloadFence`) — the `{__kind, …}` composer; copy affordance on `studio/components/KindExamplePreview.tsx`.
 - **aidream tools:** `packages/matrx-ai/matrx_ai/tools/implementations/kind_authoring.py` (+ `kind_component.py`). Agent prompts: `internal_agents/kind_creator.md`, `internal_agents/kind_architect.md`.
 - **DB (project `txzxabzwovsujtloxrus`):** activation authority `content_ir.set_kind_activation(p_kind_definition_id, p_active, p_note, p_actor)` (gated; browser `auth.uid()` wins, server passes `p_actor`) + `evaluate_kind_activation`. Menu reads `skill.render_definition` via `agent.context_menu_view` (NOT `public.content_blocks`). System org = `39c38960-d30c-4840-b0c1-c9960de95582`.
-- **Login for testing:** `/login` with `admin@admin.com` / `Password1234#` (per CLAUDE.md). Note: kinds are org-scoped — verify against the org that owns the kind.
+- **Login for testing:** `/login` with `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>` (per CLAUDE.md). Note: kinds are org-scoped — verify against the org that owns the kind.
 
 ## Remaining work (ordered; each independently actionable)
 

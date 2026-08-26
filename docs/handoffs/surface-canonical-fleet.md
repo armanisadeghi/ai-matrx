@@ -21,7 +21,7 @@ vision: []
 - Canonical checklist: `.claude/skills/surface-authoring/SKILL.md`.
 - System doc: `features/surfaces/FEATURE.md`.
 - Exemplars: `marketing-page.manifest.ts`; `admin-database.manifest.ts`; overlay `markdown-editor.manifest.ts`.
-- Managed preview only: `pnpm preview:start` on port 3001. Login: `/login` with `admin@admin.com` / `Password1234#`.
+- Managed preview only: `pnpm preview:start` on port 3001. Login: `/login` with `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`.
 - Sync: `scripts/emit-surface-sync-sql.ts --surface <name>…` → idempotent `migrations/*.sql` → `aidream/.venv/bin/python db/apply_migrations.py --source matrx-frontend`.
 - Gates: `pnpm check:surface-drift`, `pnpm type-check`, and route tests when mappings change.
 

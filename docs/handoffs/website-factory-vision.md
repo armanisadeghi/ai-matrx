@@ -115,7 +115,7 @@ Full detail, with evidence and row counts, in **STATE.md §4.3**. In priority or
 - **Models (Arman's binding, 2026-08-16):** p3_family → Claude Opus (it constrains the writer, the
   builder and every sibling page); p4_write / p5_review / p6_build → Gemini 3.7 Flash. Rebinding is
   a database edit, never a code change.
-- Test login: `/login` `admin@admin.com` / `Password1234#`; plan UI at `/marketing/content-plan`
+- Test login: `/login` `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`; plan UI at `/marketing/content-plan`
 
 ## Done
 

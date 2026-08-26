@@ -32,7 +32,7 @@ Bug-fix policy: "For any issues like these, especially clear-cut fixes, proceed 
 - Files/media: canonical picker `features/files/components/pickers/cloudFilesPickerOpeners.ts`; universal path `features/files/handler/`.
 - CMS push: `features/marketing/lib/push-to-cms.ts` + `cards/PushToCmsCard.tsx`; contract owner is the "CMS" session (message it before changing the seam).
 - DB: `web.page.desired_values` jsonb; `web.page_content`; keyword archive RPCs `seo.fn_archive_keywords`/`fn_restore_keywords`.
-- Test pages (seeded): `/marketing/brands/1b97568e-0c2d-4ecb-9957-8d21f919ceb2/sites/0fdcd5ea-39f9-4273-82cc-7329fd5a4ca7/pages/22a8b6ce-19f7-4227-8a92-a763c92d64a3`; live `https://www.aimatrx.com/marketing/brands/413de36b-13fa-4c8a-aec9-54d0d9b89f9b/sites/f8e332bb-df0e-4772-9288-48b548803afe/pages/f76294ea-db6f-4a9b-8fad-07d988180381`. Login `/login` admin@admin.com / Password1234#.
+- Test pages (seeded): `/marketing/brands/1b97568e-0c2d-4ecb-9957-8d21f919ceb2/sites/0fdcd5ea-39f9-4273-82cc-7329fd5a4ca7/pages/22a8b6ce-19f7-4227-8a92-a763c92d64a3`; live `https://www.aimatrx.com/marketing/brands/413de36b-13fa-4c8a-aec9-54d0d9b89f9b/sites/f8e332bb-df0e-4772-9288-48b548803afe/pages/f76294ea-db6f-4a9b-8fad-07d988180381`. Login `/login` admin@admin.com / <see AI_ADMIN_PASSWORD in .env>.
 - Skills: `surface-authoring`, `canonical-associations`, `ui-refine`, `no-dead-ends`, `type-safety` (desired-value model changes), `handoffs`, `finalize-and-ship`.
 
 ## Rulings (Arman, 2026-08-08 — final, do not re-ask)

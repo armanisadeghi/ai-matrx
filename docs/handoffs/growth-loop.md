@@ -83,7 +83,7 @@ Full detail and evidence in **STATE.md §4.4**. In priority order:
 - **Method:** THE REACHABILITY LADDER — exists → reachable → deployed → exercised → produced
   (`common-docs/policies/unfinished-work-alarm.md`). **If you cannot name the caller, it is not done.**
 - **Auditor:** `common-docs/systems/marketing/growth-loop/CODEX_OPERATOR.md`.
-- Test login: `admin@admin.com` / `Password1234#`. Dev server: `pnpm preview:start` (port 3001).
+- Test login: `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`. Dev server: `pnpm preview:start` (port 3001).
 
 ## Done
 

@@ -27,7 +27,7 @@ The full app OOM'd Vercel's largest build machine; every release was a ~25-minut
 - **Cross-subdomain auth:** `utils/supabase/authCookie.ts` — cookie `sb-matrx-auth`, `Domain=.aimatrx.com` on apex hosts only. ALL FIVE client sites must pass its options: `utils/supabase/client.ts`, `server.ts`, `middleware.ts`, `debugClient.ts`, `app/auth/callback/admin/route.ts`.
 - **Host routing:** `proxy.ts` — `satelliteGate` + main-host handoffs (gated on build-time `NEXT_PUBLIC_MATRX_PROFILE`); `utils/supabase/middleware.ts` `updateSession({ landing })`.
 - **Vercel:** team `team_zWxJHqDHuRr1kpl9Hu9oON3g`. Projects: `ai-matrx` (prj_ZIeMm2FW8RgOAO9BJgQ2YQcXpwrH, slim), `ai-matrx-manage` (admin), `ai-matrx-demos` (demos). All three: `buildMachineType: "turbo"`, env-pinned `MATRX_PROFILE` + `MATRX_BUILD_TARGET` for production/preview/development.
-- **Test:** log in once at `https://www.aimatrx.com/login` (`admin@admin.com` / `Password1234#`), then verify session carries to `https://manage.aimatrx.com/administration/users` and `https://demos.aimatrx.com/demos`. Cross-host bounces: `www…/administration/*` → manage, `www…/demos/*` → demos, satellite `/chat` → www.
+- **Test:** log in once at `https://www.aimatrx.com/login` (`admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`), then verify session carries to `https://manage.aimatrx.com/administration/users` and `https://demos.aimatrx.com/demos`. Cross-host bounces: `www…/administration/*` → manage, `www…/demos/*` → demos, satellite `/chat` → www.
 
 ## Remaining work
 

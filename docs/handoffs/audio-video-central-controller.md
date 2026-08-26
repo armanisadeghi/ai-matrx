@@ -38,7 +38,7 @@ Reliability requirements he raised (both were real bugs, both fixed): the browse
 - Transcripts list state: `features/transcripts/redux/` + `features/transcripts/hooks/useTranscripts.ts` (context deleted).
 - Guards: `audioSystemStaticImportBan` in `eslint.config.mjs`; boot-crash marker `features/audio/audioBootMarker.ts`.
 - Skills to invoke before touching related code: `code-splitting`, `supabase-realtime`, `overlay-system`, `window-panels`, `tts-audio-system`.
-- Test login: `/login` `admin@admin.com` / `Password1234#`. Panel: avatar menu → Media. Review-queue row "Lazy audio system…" at `/administration/users/agent-review` has the manual test scripts.
+- Test login: `/login` `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`. Panel: avatar menu → Media. Review-queue row "Lazy audio system…" at `/administration/users/agent-review` has the manual test scripts.
 
 ## Remaining work
 

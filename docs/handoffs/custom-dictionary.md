@@ -17,7 +17,7 @@ asymmetry to close, then a human listen.
 - aidream: `aidream/aidream/services/dictionary/` (`locators.py`, `sync_engine.py`, `FEATURE.md`); auto-injection in `aidream/aidream/services/conversation_context/dictionary_inject.py`; the one substitution primitive is `DictionaryConfig.coerce` / `apply_aliases` in `packages/matrx-ai/matrx_ai/config/dictionary_config.py`.
 - Podcast path: `packages/matrx-ai/matrx_ai/agent_runners/podcast_generator.py` — `_apply_dictionary_pronunciations` (def `:1812`, called `:1868`) inside `_create_audio` (`:1828`). Request plumbing: `aidream/api/routers/podcast_generator.py:86`, `graph_actions/podcast/generate.py:131`, `services/podcast/generation.py:117`.
 - Provider floor: `apply_tts_dictionary` in `providers/{google,eleven_labs,openai,groq,xai}/*_api.py` + `providers/unified_client.py`.
-- Test routes: `/dictionary/admin`, `/transcripts/cleanup`, and Settings → Voice → Dictionary (registry id `voice.dictionary`, `features/settings/registry.ts:415` → `DictionaryTab`; it is a catch-all route, not an app-dir page). Login admin@admin.com / Password1234#.
+- Test routes: `/dictionary/admin`, `/transcripts/cleanup`, and Settings → Voice → Dictionary (registry id `voice.dictionary`, `features/settings/registry.ts:415` → `DictionaryTab`; it is a catch-all route, not an app-dir page). Login admin@admin.com / <see AI_ADMIN_PASSWORD in .env>.
 
 ## Remaining work
 

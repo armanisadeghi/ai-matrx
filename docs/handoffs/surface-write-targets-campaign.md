@@ -27,7 +27,7 @@ WRITE half: which surfaces still deserve `writeTargets`, and what the campaign h
   selection-and-query reference); `agents-hub.manifest.ts` + `features/agents/components/agent-listings/AgentsGrid.tsx`
   (the ONE-composite-object shape); `useVoicePlaygroundWriteHandlers.ts` (call-time state reads).
 - Every adopter's full reasoning + live-run evidence: the `features/surfaces/FEATURE.md` Change Log.
-- Gates: `pnpm check:surface-drift`, `pnpm type-check`. Test login `/login` admin@admin.com / Password1234#.
+- Gates: `pnpm check:surface-drift`, `pnpm type-check`. Test login `/login` admin@admin.com / <see AI_ADMIN_PASSWORD in .env>.
 - **The definitive "already taken" test** — never trust a prose list:
   `for f in features/surfaces/manifests/*.manifest.ts; do grep -L "writeTargets" "$f"; done`
 

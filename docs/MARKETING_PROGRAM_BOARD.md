@@ -24,7 +24,7 @@ One page that tells any agent (or Arman) what this program is, what's in motion,
 | Copy/Copy-for-AI pattern                           | `features/marketing/lib/copy-payloads.ts` + the `agent-copy` skill; exemplar `components/pages/PageWorkspace.tsx`                |
 | Scraper commands from the browser                  | `features/marketing/crawler/direct-client.ts`                                                                                    |
 | DB                                                 | schema `web`, project `txzxabzwovsujtloxrus`; migrations via Supabase MCP + `public._schema_migrations` ledger + `pnpm db-types` |
-| Test login                                         | `/login` admin@admin.com / Password1234#, or the dev-login URL your session hook prints                                          |
+| Test login                                         | `/login` admin@admin.com / <see AI_ADMIN_PASSWORD in .env>, or the dev-login URL your session hook prints                                          |
 
 **DEV SERVER RULE (non-negotiable):** do NOT start your own `pnpm dev`. Check for a running server first (`lsof -nP -iTCP -sTCP:LISTEN | grep next` — there is usually one on **http://localhost:3050**) and share it. Multiple `.next` build dirs balloon memory and crash the machine. Never kill a server you didn't start.
 

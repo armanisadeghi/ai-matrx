@@ -43,7 +43,7 @@ Use Chrome only when the task explicitly needs Arman's existing Chrome state. Ro
 
 ## Auth
 
-- **Canonical admin credentials:** `AI_ADMIN_USERNAME="admin@admin.com"` and `AI_ADMIN_PASSWORD="Password1234#"`.
+- **Canonical admin credentials:** `AI_ADMIN_USERNAME="admin@admin.com"` and `AI_ADMIN_PASSWORD="<see AI_ADMIN_PASSWORD in .env>"`.
 - **Form login:** open `/login` and use those values. The session persists in that browser profile and hydrates client data pages more reliably.
 - **Dev auto-login (localhost only):** set both admin variables plus `DEV_LOGIN_TOKEN`, then open `http://localhost:<port>/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/<route>`. Redirects 307 when a session exists.
 

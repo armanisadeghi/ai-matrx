@@ -44,7 +44,7 @@ descendant based on `.shell-root` state/attribute, or is a pseudo-element/keyfra
 - **`app/globals.css` STAYS** — it is the Tailwind v4 `@theme`/token/gradient config, not a port target. Bucket A classes port to *element classNames*, referencing globals tokens.
 - Shell is CSS-driven & server-rendered: `features/shell/components/AppShell.tsx` (structure), `Sidebar.tsx`, `header/Header.tsx`. `shell.css` is imported globally by AppShell → wraps every authed page (highest blast radius in the repo).
 - Guard already in place: `styles/__tests__/shell-grid-invariants.test.ts` (`npx jest styles/__tests__` ). Extend it with a similar static assertion whenever a slice lands.
-- Test route: log in at `/login` (`admin@admin.com` / `Password1234#`), then `/chat`. Dev server `next-dev` (port 3001) via preview_start. Reproduce responsive states by resizing the Browser pane + toggling `#shell-sidebar-toggle`.
+- Test route: log in at `/login` (`admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`), then `/chat`. Dev server `next-dev` (port 3001) via preview_start. Reproduce responsive states by resizing the Browser pane + toggling `#shell-sidebar-toggle`.
 - Boy-scout: any leftover `window.confirm/alert/prompt` in shell files → replace per CLAUDE.md.
 
 ## Remaining work

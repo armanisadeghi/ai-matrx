@@ -22,7 +22,7 @@ The agent running this works **interactively with Arman**, feature by feature, f
 ## Resources
 
 - **Test surface:** `/files/f/[fileId]` → Edit tab (`PdfEditTab`) and `/files/f/[fileId]/studio`
-  (Analysis Studio, PDF-only). Login `/login`, admin@admin.com / Password1234#.
+  (Analysis Studio, PDF-only). Login `/login`, admin@admin.com / <see AI_ADMIN_PASSWORD in .env>.
   Fallback bench `/demos/pdf-processing/components` mounts the same production components
   (StudioShell is not in the bench).
 - **Test file:** Bio-Chapter-9.pdf `7e59da76-0548-4f4f-b645-10bb391d48fc` — Canva/PowerPoint-style

@@ -2,7 +2,7 @@
 
 Four features shipped. Each below has: **what it is**, **where to click**, **steps**, and **how you know it works**. Everything is reachable in the UI.
 
-**Log in first:** open `/login` → `admin@admin.com` / `Password1234#`.
+**Log in first:** open `/login` → `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`.
 
 ---
 

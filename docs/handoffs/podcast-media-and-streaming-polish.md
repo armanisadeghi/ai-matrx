@@ -47,7 +47,7 @@ research feed → `/Users/armanisadeghi/code/common-docs/systems/knowledge/resea
 - Defects: `FOUND_DEFECTS.md` D82b (untitled episode), D83 (duration), D85 (concurrency root cause)
 - Deploy: FE `scripts/release.sh` (Vercel → aimatrx.com); aidream auto-deploys from `main`.
   Confirm aidream live by probing `https://server.app.matrxserver.com/openapi.json` for the field you shipped.
-- Test route + login: `/podcast/studio/create` → generate; log in `admin@admin.com` / `Password1234#`
+- Test route + login: `/podcast/studio/create` → generate; log in `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`
 
 ## Remaining work
 

@@ -74,7 +74,7 @@ Feature layout: `features/marketing/` — `lib/routes.ts` (never hand-build a `/
 
 Related reading: `features/marketing/FEATURE.md` (rules + pillar table), `lib/coming-soon/FEATURE.md`, skills `module-landing-pages` + `surface-authoring`, `features/shell/components/header/variants/USAGE.md`, `docs/WEB_SCHEMA_IMPLEMENTED_CONTRACT.md`.
 
-Testing: `/login` admin@admin.com / Password1234#. Dev server ONLY via `pnpm preview:start` (port 3001); check `pnpm dev:status` first.
+Testing: `/login` admin@admin.com / <see AI_ADMIN_PASSWORD in .env>. Dev server ONLY via `pnpm preview:start` (port 3001); check `pnpm dev:status` first.
 
 ## 4. Next steps, in order
 

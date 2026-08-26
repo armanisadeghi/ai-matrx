@@ -22,7 +22,7 @@ vision: []
 - DM channel: `lib/services/system-dm.ts` (sendDm + Matrx System bot) → chips in `features/messaging/actions/messageActionRegistry.tsx` (`task_reminder`, `open_link`).
 - Reminder cron: `app/api/cron/due-date-reminders/route.ts`, scheduled in `vercel.json` (daily 15:00 UTC, main app only; CRON_SECRET set on Vercel prod — activates on next release).
 - DB: `workspace.tasks` (+ lifecycle/provenance/time cols), `workspace.task_user_state`, RPCs `wsp_upsert_system_task` / `wsp_resolve_system_task`, `get_user_full_context` (emits new fields + 90-day closed tasks). aidream models regenerated (aidream commit 0060c9990).
-- Test: `/tasks` (smart views sidebar), `/tasks/[id]` (status/start/repeat/provenance/snooze), `/messages` (Matrx System conversation → chips). Login: `admin@admin.com` / `Password1234#`. Review-queue item pending Arman feedback.
+- Test: `/tasks` (smart views sidebar), `/tasks/[id]` (status/start/repeat/provenance/snooze), `/messages` (Matrx System conversation → chips). Login: `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`. Review-queue item pending Arman feedback.
 
 ## Remaining work
 

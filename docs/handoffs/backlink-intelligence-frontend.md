@@ -68,7 +68,7 @@ ruling/opinion layer. Remaining work is the chips `TASK-BL-*` in
 - **Durable test fixture** (verified alive; the one two reviews died on was a
   false "deleted" error, not a deleted site): All Green Recycling —
   `/marketing/brands/c2db36a1-15b5-4717-b8d6-161600aa5db7/sites/d0aff5b6-0710-4848-8304-164db3c80ab7/backlinks`
-  — 1,000 links, 3,391 dimension rows. Login `admin@admin.com` / `Password1234#`.
+  — 1,000 links, 3,391 dimension rows. Login `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`.
 
 ## Remaining work
 

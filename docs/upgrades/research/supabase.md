@@ -229,7 +229,7 @@ The riskiest surface is **auth/session/cookie handling** (supabase-js 2.107.0 lo
 
 | Area | Test | Why |
 |---|---|---|
-| **Login** | Form login `admin@admin.com` / `Password1234#` at `/login`; dev auto-login route | 2.107.0 removed `navigator.locks` mutex; 2.108.2 changed refresh-failure handling |
+| **Login** | Form login `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>` at `/login`; dev auto-login route | 2.107.0 removed `navigator.locks` mutex; 2.108.2 changed refresh-failure handling |
 | **Logout** | Sign out, confirm cookies cleared, no stale session | Lock rework + cookie changes |
 | **Multi-tab / token refresh** | Open 2 tabs, let token approach expiry, confirm seamless refresh, no deadlock/duplicate refresh | The lock change directly affects concurrent refresh |
 | **Session persistence on refresh failure** | Simulate a failed refresh (offline blip), confirm valid session is preserved, not nuked | [#2436](https://github.com/supabase/supabase-js/pull/2436) |

@@ -140,7 +140,7 @@ surfacing it is new); aggregates over a dynamic filter (count/sum/avg).
   `PicklistBindingEditor` → `structured_list_item` fence via `buildPicklistItemFence`.
 - aidream (static dataset dims already done): `services/references/{__init__,items,resolvers}.py`,
   `user_data/dataset_reference_fetch.py`, `services/directive_catalog/catalog.py`.
-- Test: `/organizations/<org>/scopes/<typeId>/<scopeId>`; login `admin@admin.com` / `Password1234#`.
+- Test: `/organizations/<org>/scopes/<typeId>/<scopeId>`; login `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`.
 
 ## Done
 

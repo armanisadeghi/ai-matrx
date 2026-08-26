@@ -29,7 +29,7 @@ repos: [matrx-frontend, aidream]
   (`/marketing/brands/<id>/sites/<id>/pages/<id>`), targets declared in
   `features/surfaces/manifests/marketing-page.manifest.ts`, handlers in
   `features/marketing/components/pages/MarketingPageWriteTargets.tsx`.
-  Login: `/login` admin@admin.com / Password1234#; run an agent from the
+  Login: `/login` admin@admin.com / <see AI_ADMIN_PASSWORD in .env>; run an agent from the
   header "Agents for this page" popover.
 
 ## Avalanche campaign (Arman's directive, 2026-08-08)

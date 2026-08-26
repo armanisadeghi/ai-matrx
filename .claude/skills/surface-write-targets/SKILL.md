@@ -80,7 +80,7 @@ Handler rules (see the TaskEditorBody block):
 ## Step 3 — verify with a REAL agent run (non-negotiable)
 
 Mock nothing. On a dev server (`pnpm dev:status` for existing ones; login
-`/login` admin@admin.com / Password1234#):
+`/login` admin@admin.com / <see AI_ADMIN_PASSWORD in .env>):
 
 1. Open the page; open the header **Agents** popover ("Agents for this
    page") and Run a bound agent (Badass Agent is globally bound).

@@ -50,7 +50,7 @@ Distilled invariants (hold these when building):
   - Wired in `useAgentConsumer` (so every consumer of the `agent-consumers` slice inherits it). Slice fields: `serverMatchedIds`, `deepSearch`, `isServerSearching`.
   - Selectors respect `serverMatchedIds` so tier-2 hits (which the local scorer can't see) survive the filter: `features/agents/redux/agent-consumers/selectors.ts`.
 - DB project: `txzxabzwovsujtloxrus` (Supabase MCP). Verify RPCs live before trusting any claim here.
-- Test route: `/agents/all`. Log in via `/login` as `admin@admin.com` / `Password1234#`, or the localhost dev-login URL in CLAUDE.md. Repro: search a term that exists ONLY in a prompt (e.g. `mitochondria`) → 0 tier-1 results → click **Prompts** toggle → results appear.
+- Test route: `/agents/all`. Log in via `/login` as `admin@admin.com` / `<see AI_ADMIN_PASSWORD in .env>`, or the localhost dev-login URL in CLAUDE.md. Repro: search a term that exists ONLY in a prompt (e.g. `mitochondria`) → 0 tier-1 results → click **Prompts** toggle → results appear.
 
 ## Remaining work
 
