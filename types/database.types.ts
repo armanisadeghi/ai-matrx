@@ -12467,6 +12467,14 @@ export type Database = {
           sms_conversation_id: string
         }[]
       }
+      enqueue_notification_sms: {
+        Args: { p_notification_id: string; p_program_key?: string }
+        Returns: {
+          outbound_message_id: string
+          refusal: string
+          sms_conversation_id: string
+        }[]
+      }
       enqueue_sms_assistant_test: {
         Args: {
           p_body: string
@@ -12497,6 +12505,7 @@ export type Database = {
           p_error_message: string
           p_id: string
           p_max_attempts?: number
+          p_next_attempt_at?: string
           p_outcome: string
           p_provider: string
           p_provider_message_id: string
@@ -12730,6 +12739,15 @@ export type Database = {
           sms_enabled: boolean
           user_assistant_enabled: boolean
           verified_user_phone: string
+        }[]
+      }
+      sms_notification_gate: {
+        Args: { p_notification_id: string; p_now?: string }
+        Returns: {
+          decision: string
+          defer_until: string
+          refusal: string
+          resolved_timezone: string
         }[]
       }
       voice_call_consent_persistence_readiness: {
