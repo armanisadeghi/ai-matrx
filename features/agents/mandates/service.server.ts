@@ -95,6 +95,7 @@ export async function resolveMandateServer(
   const wave1 = parseMandateWave1(mandate);
   return {
     mandateKey,
+    mandateId: mandate.id,
     agentId,
     configOverrides,
     provenance,

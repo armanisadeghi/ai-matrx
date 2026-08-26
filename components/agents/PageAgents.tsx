@@ -23,6 +23,7 @@
 
 import Link from "next/link";
 import { BrainCircuit, ExternalLink } from "lucide-react";
+import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 
 export interface PageAgentRef {
   /** The mandate key, e.g. `seo.topic_assigner`. */
@@ -31,13 +32,36 @@ export interface PageAgentRef {
   does: string;
 }
 
+/**
+ * ONE declaration, TWO disclosures. Naming the agent inline is half the job —
+ * Arman, 2026-08-25: "on any surface where an agent is actually being assigned
+ * but built into the physical UI … we also add that agent to the list of
+ * available agents at the top." So this component also registers what it names
+ * into the live surface-mandate registry, and the Agents header menu lists it
+ * with its notes and its door. A page that already uses `<PageAgents>` gets
+ * that for free — there is no second thing to remember.
+ *
+ * 🚨 NOT for agent-authoring surfaces (the builder, the mandate console): there
+ * the agent is the page's subject, and giving it context of itself is wrong.
+ */
 export function PageAgents({
   agents,
+  surfaceName,
   className,
 }: {
   agents: PageAgentRef[];
+  /** The `ui_surface.name` these agents run on, when the host knows it. */
+  surfaceName?: string | null;
   className?: string;
 }) {
+  useDeclaredSurfaceMandates(
+    agents.map((agent) => ({
+      mandateKey: agent.mandateKey,
+      does: agent.does,
+      surfaceName: surfaceName ?? null,
+    })),
+  );
+
   if (agents.length === 0) return null;
   return (
     <div className={className}>

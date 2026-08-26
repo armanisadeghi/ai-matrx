@@ -23,6 +23,7 @@ import { getRelatedSurfaces } from "@/features/surfaces/runtime/fetchRelatedSurf
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
+import { SurfaceMandatesSection } from "@/features/surfaces/components/chrome/SurfaceMandatesSection";
 import { Badge } from "@/components/ui/badge";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
@@ -77,6 +78,11 @@ export default function SurfaceAgentsPanelImpl({
 
   // Synchronous, registry-backed — no fetch, no race, no error state.
   const related = getRelatedSurfaces(primaryName);
+  // THE FAMILY, for the mandates section: standing on a podcast screen has to
+  // show the podcast family's jobs, not only this leaf's own.
+  const familySurfaceNames = [...related.ancestry, ...related.children].map(
+    (ref) => ref.name,
+  );
 
   // Which surface's agents are listed. Defaults to the page's own surface.
   const [activeSurface, setActiveSurface] = useState<string | null>(null);
@@ -175,10 +181,10 @@ export default function SurfaceAgentsPanelImpl({
             <ShieldCheck className="h-4 w-4 shrink-0 text-violet-500" />
             <span className="min-w-0">
               <span className="block truncate text-xs font-medium">
-                Surface Context Admin
+                Admin
               </span>
               <span className="block truncate text-[10px] text-muted-foreground">
-                Contract, provenance &amp; settings
+                Contract &amp; provenance
               </span>
             </span>
           </button>
@@ -191,6 +197,12 @@ export default function SurfaceAgentsPanelImpl({
     return (
       <div className={cn("flex flex-col gap-3 p-3", className)}>
         {contextActions}
+        {/* An UNREGISTERED page can still be running agents — disclose them. */}
+        <SurfaceMandatesSection
+          primarySurfaceName={null}
+          familySurfaceNames={[]}
+          isAdmin={isAdmin}
+        />
         <div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
           <p className="font-medium text-foreground">
             No surface registered for this page
@@ -211,6 +223,12 @@ export default function SurfaceAgentsPanelImpl({
   return (
     <div className={cn("flex flex-col gap-2 p-3", className)}>
       {contextActions}
+
+      <SurfaceMandatesSection
+        primarySurfaceName={primaryName}
+        familySurfaceNames={familySurfaceNames}
+        isAdmin={isAdmin}
+      />
 
       {/* Hierarchy breadcrumb — full ancestry, root first, self last. */}
       {breadcrumb.length > 1 && (

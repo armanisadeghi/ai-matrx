@@ -1111,6 +1111,95 @@ export type Database = {
           },
         ]
       }
+      mandate_note: {
+        Row: {
+          body: string
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          mandate_id: string
+          metadata: Json
+          note_kind: string
+          observed_agent_id: string | null
+          observed_agent_version_id: string | null
+          organization_id: string
+          surface_name: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          body: string
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          mandate_id: string
+          metadata?: Json
+          note_kind?: string
+          observed_agent_id?: string | null
+          observed_agent_version_id?: string | null
+          organization_id: string
+          surface_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          body?: string
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          mandate_id?: string
+          metadata?: Json
+          note_kind?: string
+          observed_agent_id?: string | null
+          observed_agent_version_id?: string | null
+          organization_id?: string
+          surface_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mandate_note_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "mandate"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_note_observed_agent_id_fkey"
+            columns: ["observed_agent_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_note_observed_agent_id_fkey"
+            columns: ["observed_agent_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_note_observed_agent_version_id_fkey"
+            columns: ["observed_agent_version_id"]
+            isOneToOne: false
+            referencedRelation: "definition_version"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_template: {
         Row: {
           content: string | null

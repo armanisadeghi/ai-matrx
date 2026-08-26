@@ -41,6 +41,12 @@ import type { JsonObject } from "@/types/json";
 
 export interface ResolvedMandate {
   mandateKey: string;
+  /**
+   * `agent.mandate.id` — the row the JOB is, as opposed to the agent currently
+   * holding it. Consumers that write something ABOUT the mandate (notes,
+   * observations) key on this, never on `agentId`, which moves with the pin.
+   */
+  mandateId: string;
   agentId: string;
   configOverrides: Partial<FeLlmParams> | null;
   provenance: "system" | "user";
@@ -172,6 +178,7 @@ export async function resolveMandate(
   const wave1: MandateWave1Fields = parseMandateWave1(mandate);
   const value: ResolvedMandate = {
     mandateKey,
+    mandateId: mandate.id,
     agentId,
     configOverrides,
     provenance,
@@ -264,6 +271,65 @@ export async function fetchMandatePins(
   }
   for (const key of missing) {
     if (!found.has(key)) {
+      recordUnavailable({
+        entity: "mandate",
+        reason: "unknown",
+        recordId: key,
+        relation: "agent.mandate",
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * IDENTITY of a set of mandates — the row id, the human label, and whether it
+ * is live — in ONE read.
+ *
+ * Chrome that LISTS mandates (the Agents header menu naming what AI runs on
+ * this page) needs the label to render and the id to hang notes off, and it
+ * must not go through `resolveMandate`: that is the RUN path and it throws on
+ * disabled or version-pinned mandates, which is exactly right for running and
+ * exactly wrong for listing. A key with no row is reported (`recordUnavailable`)
+ * and simply absent from the result — a surface that names a mandate the
+ * database does not have is a wiring defect worth seeing.
+ */
+export interface MandateIdentity {
+  mandateKey: string;
+  mandateId: string;
+  label: string;
+  description: string | null;
+  defaultAgentId: string | null;
+  isEnabled: boolean;
+}
+
+export async function fetchMandateIdentities(
+  mandateKeys: readonly string[],
+): Promise<Record<string, MandateIdentity>> {
+  const keys = [...new Set(mandateKeys)].filter(Boolean);
+  const out: Record<string, MandateIdentity> = {};
+  if (keys.length === 0) return out;
+
+  const { data, error } = await createClient()
+    .schema("agent")
+    .from("mandate")
+    .select("id, mandate_key, label, description, default_agent_id, is_enabled")
+    .in("mandate_key", keys)
+    .is("deleted_at", null);
+  if (error) throw error;
+
+  for (const row of data ?? []) {
+    out[row.mandate_key] = {
+      mandateKey: row.mandate_key,
+      mandateId: row.id,
+      label: row.label,
+      description: row.description,
+      defaultAgentId: row.default_agent_id,
+      isEnabled: row.is_enabled ?? true,
+    };
+  }
+  for (const key of keys) {
+    if (!out[key]) {
       recordUnavailable({
         entity: "mandate",
         reason: "unknown",
