@@ -127,8 +127,16 @@ export function pendingStructuredEnvelope(block: {
   const envelope = readEnvelope(block.metadata);
   if (!envelope || envelope.root.status !== "streaming") return null;
   if (envelope.root.kind) {
-    // Identified — hold the silhouette only while the schema cold-fetches.
-    return envelope.root.kindState === "pending_schema" ? envelope : null;
+    // Identified but UNROUTED. This function sees the block AFTER the kind
+    // route ran, so a still-"code" type means the route had nothing to say
+    // yet — the schema is cold-fetching, or the definition/component rows are
+    // still in flight (the ensure-hook's fetches land a beat after the kind
+    // streams in). That beat used to render ONE raw-JSON frame before the
+    // registry repaint swapped the real component in (caught live,
+    // 2026-08-26). Identified + streaming + unrouted → the loader, always;
+    // the window is bounded by the stream, and a COMPLETE unrouted region
+    // still falls through to the code block (the honest final answer).
+    return envelope;
   }
   // No kind yet: give the discriminator a beat to arrive, then concede this
   // region is plain JSON and let the code block below stream it LIVE. The

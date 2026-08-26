@@ -50,7 +50,11 @@ describe("pendingStructuredEnvelope", () => {
     expect(pendingStructuredEnvelope(block({ content: grown }))).toBeNull();
   });
 
-  it("an IDENTIFIED kind holds the loader only while its schema cold-fetches", () => {
+  it("an IDENTIFIED but UNROUTED streaming region holds the loader — never a raw frame", () => {
+    // This gate sees the block AFTER the kind route ran, so type "code" with a
+    // kind means the route had nothing to say yet (schema/component fetches in
+    // flight). Rendering the code block for that beat flashed one frame of raw
+    // JSON before the registry repaint (caught live, 2026-08-26).
     const long = "x".repeat(1000);
     expect(
       pendingStructuredEnvelope(
@@ -59,7 +63,7 @@ describe("pendingStructuredEnvelope", () => {
     ).not.toBeNull();
     expect(
       pendingStructuredEnvelope(block({ kind: "quiz_set", content: long })),
-    ).toBeNull();
+    ).not.toBeNull();
   });
 
   it("never fires for complete regions or non-code blocks", () => {
