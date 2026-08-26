@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { ChevronDown, ChevronRight, MoreHorizontal, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Collapsible,
@@ -14,6 +14,7 @@ import type { ListGroupBookmark } from "../types";
 import { BookmarkCopyButton } from "./BookmarkCopyButton";
 import { ListItem } from "./ListItem";
 import { LIST_GROUP_DOM_ATTR } from "../dom-anchors";
+import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 
 interface GroupSectionProps {
   groupName: string;
@@ -39,6 +40,7 @@ export function GroupSection({
   onDeleteItem,
 }: GroupSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const groupRef = useRef<HTMLDivElement | null>(null);
   const displayName = groupName === "Ungrouped" ? "Ungrouped" : groupName;
 
   const bookmark: ListGroupBookmark = {
@@ -51,6 +53,7 @@ export function GroupSection({
 
   return (
     <Collapsible
+      ref={groupRef}
       open={open}
       onOpenChange={setOpen}
       className="space-y-1"
@@ -89,6 +92,17 @@ export function GroupSection({
             "transition-opacity duration-150",
           )}
         >
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-11 w-11 shrink-0 p-0 text-muted-foreground lg:hidden"
+            aria-label={`Actions for ${displayName}`}
+            aria-haspopup="menu"
+            onClick={() => openContextMenuForElement(groupRef.current)}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
           <BookmarkCopyButton
             bookmark={bookmark}
             label={`"${displayName}" group in ${listName}`}
@@ -123,9 +137,7 @@ export function GroupSection({
               isOwner={isOwner}
               // The group lives in the KEY of items_grouped, not on the item,
               // so this is where it gets attached for the Edit dialog.
-              onEdit={
-                onEditItem ? (i) => onEditItem(i, groupName) : undefined
-              }
+              onEdit={onEditItem ? (i) => onEditItem(i, groupName) : undefined}
               onDelete={onDeleteItem}
             />
           ))}
