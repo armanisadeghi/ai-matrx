@@ -38,6 +38,8 @@ import { SettledOutputBody } from "./SettledOutputBody";
 
 import { useWorkflowRunControls } from "../hooks/useWorkflowRunControls";
 import { StructuredValueTabs } from "@/components/mardown-display/blocks/generic/StructuredValueTabs";
+import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
+import { selectRequestCarriesKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { explainRunFailure } from "../run-failure-explanation";
 import {
   selectRunError,
@@ -236,9 +238,19 @@ export function InvocationBody({
   runId,
   invocation,
   prefer = "live",
+  declaredKind = null,
 }: {
   runId: string;
   invocation: NodeInvocationState;
+  /**
+   * The step's declared `output_kind` from the DEFINITION, when the caller
+   * knows it. While the step streams BARE JSON (no `__kind` in any lane
+   * block), the declared kind's ARRIVING silhouette renders instead of raw
+   * text — the reader was promised a shape, never a JSON dump. A lane whose
+   * blocks DO carry `__kind` always wins: that is the real component
+   * rendering progressively, the best thing this surface can show.
+   */
+  declaredKind?: string | null;
   /**
    * R3 dual-source preference (Readout.prefer): "live" keeps the streaming
    * lane through the RUNNING window; "persisted" renders the settled output
@@ -290,7 +302,26 @@ export function InvocationBody({
   const laneCarriedContent = invocation.chunksReceived > 0;
   const laneRequestId = invocation.laneRequestId;
   const laneOwnsDisplay = laneRequestId !== null && !documentWins;
+  // Kindless-stream guard: hooks run unconditionally (order safety); the
+  // selector is cheap and answers false for a missing request.
+  const laneCarriesKind = useAppSelector(
+    selectRequestCarriesKindEnvelope(laneRequestId ?? ""),
+  );
   if (laneOwnsDisplay && laneCarriedContent) {
+    // A step that DECLARED a kind but streams BARE JSON (no `__kind` in any
+    // block yet) shows the declared kind's arriving silhouette, not raw
+    // text. The moment any block identifies a kind, the lane takes over and
+    // the real component streams — the swap is upgrade-only.
+    if (declaredKind && !laneCarriesKind && working) {
+      return (
+        <KindSlot
+          slotKey={`${runId}:${invocation.invocationKey}:lane`}
+          kind={declaredKind}
+          phase="arriving"
+          chrome="bare"
+        />
+      );
+    }
     return (
       <LiveRunDisplay
         requestId={laneRequestId}
@@ -303,6 +334,21 @@ export function InvocationBody({
   // is the same content routed to a real component. The tail gets its turn
   // only until the document wins.
   if (invocation.textTail && !documentWins) {
+    // The tail twin of the lane guard above (the POLLER path has no lane):
+    // a declared-kind step whose tail is raw JSON shows the arriving
+    // silhouette. Prose tails (an agent narrating) stay visible — covering
+    // live words with a skeleton would be a downgrade.
+    const tailIsJson = /^[[{]/.test(invocation.textTail.trimStart());
+    if (declaredKind && working && tailIsJson) {
+      return (
+        <KindSlot
+          slotKey={`${runId}:${invocation.invocationKey}:tail`}
+          kind={declaredKind}
+          phase="arriving"
+          chrome="bare"
+        />
+      );
+    }
     return (
       <p className="whitespace-pre-wrap text-xs text-muted-foreground">
         {invocation.textTail}

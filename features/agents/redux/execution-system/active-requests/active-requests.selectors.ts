@@ -2095,3 +2095,27 @@ export const selectExtractedJsonCount =
   (requestId: string) =>
   (state: RootState): number =>
     state.activeRequests.byRequestId[requestId]?.extractedJson?.length ?? 0;
+
+/**
+ * Does ANY of this request's render blocks carry an identified kind envelope?
+ *
+ * The workflow readouts use this to decide whether a live lane is the right
+ * thing to show for a step that DECLARES an `output_kind`: a stream whose
+ * blocks carry `__kind` renders real kind components progressively (the good
+ * case — never cover it), while a stream of bare JSON has nothing better than
+ * raw text, and the reader should see the declared kind's ARRIVING silhouette
+ * instead (Arman, 2026-08-25: "if nothing else, it should show a kind
+ * placeholder or loading component" — never raw JSON).
+ */
+export const selectRequestCarriesKindEnvelope = (requestId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlocks,
+    (renderBlocks): boolean => {
+      if (!renderBlocks) return false;
+      for (const block of Object.values(renderBlocks)) {
+        if (readEnvelope(block?.metadata)?.root.kind) return true;
+      }
+      return false;
+    },
+  );

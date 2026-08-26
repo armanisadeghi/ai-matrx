@@ -215,6 +215,10 @@ function NodeReadout({
   const runStatus = useAppSelector(selectRunStatus(runId));
   const terminal = runStatus !== null && TERMINAL_RUN_STATUSES.has(runStatus);
   const { invocations, phase } = aggregate;
+  // The step's promised shape, from the DEFINITION — threaded to every
+  // InvocationBody so a bare-JSON stream shows this kind's arriving
+  // silhouette instead of raw text.
+  const declaredKind = nodeOutputKind(definition, nodeId);
   // Promotion is SINGLE-invocation only: fan-out deltas carry node_id alone
   // and stay in the tracked tier, so a promoted sibling lane could never
   // receive content — a blank pane shadowing the tail (same defect class the
@@ -287,7 +291,12 @@ function NodeReadout({
             {invocations.length} of {invocations.length} — showing the latest
           </p>
         ) : null}
-        <InvocationBody runId={runId} invocation={latest} prefer={prefer} />
+        <InvocationBody
+          runId={runId}
+          invocation={latest}
+          prefer={prefer}
+          declaredKind={declaredKind}
+        />
       </div>
     );
   }
@@ -320,7 +329,12 @@ function NodeReadout({
           {/* The progress message is rendered BY InvocationBody's working
               state — printing it again here put the same sentence on screen
               twice in every step that reports progress. */}
-          <InvocationBody runId={runId} invocation={inv} prefer={prefer} />
+          <InvocationBody
+            runId={runId}
+            invocation={inv}
+            prefer={prefer}
+            declaredKind={declaredKind}
+          />
         </div>
       ))}
     </div>
@@ -331,13 +345,17 @@ function GroupMemberReadout({
   runId,
   nodeId,
   prefer,
+  definition,
 }: {
   runId: string;
   nodeId: string;
   prefer: "live" | "persisted";
+  /** Read for this member's declared `output_kind` (bare-JSON stream guard). */
+  definition?: WorkflowDefinitionLike;
 }) {
   const aggregate = useAppSelector(selectNodeAggregate(runId, nodeId));
   const { phase, invocations, specType } = aggregate;
+  const declaredKind = nodeOutputKind(definition, nodeId);
   const withBody = invocations.filter(invocationHasBody);
   return (
     <div className="space-y-1">
@@ -356,6 +374,7 @@ function GroupMemberReadout({
           runId={runId}
           invocation={inv}
           prefer={prefer}
+          declaredKind={declaredKind}
         />
       ))}
     </div>
@@ -630,6 +649,7 @@ export function ReadoutView({
               runId={runId}
               nodeId={nodeId}
               prefer={prefer}
+              definition={definition}
             />
           ))}
         </div>
