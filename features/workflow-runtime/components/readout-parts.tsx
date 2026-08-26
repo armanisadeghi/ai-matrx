@@ -379,9 +379,17 @@ export function InvocationBody({
     // brace still counts, and so does key-colon density anywhere in the text
     // (two or more `":` markers — prose essentially never has them).
     const tail = invocation.textTail;
+    // Three prongs, because the end-keeping window can land ANYWHERE in the
+    // region: a leading brace (window starts at the JSON), key-colon density
+    // (window spans keys), or ≥2 literal `\n` escape sequences — the window
+    // is INSIDE one long string value, where neither other prong can fire
+    // (caught live on 2026-08-26 run 5: "Structure knowledge" showed
+    // `ontinuously.\n\n**Earthquake swarms:** …` — a body string's innards,
+    // escapes and all). Prose never contains a literal backslash-n.
     const tailIsJson =
       /^[[{]/.test(tail.trimStart()) ||
-      (tail.match(/"\s*:\s*/g)?.length ?? 0) >= 2;
+      (tail.match(/"\s*:\s*/g)?.length ?? 0) >= 2 ||
+      (tail.match(/\\n/g)?.length ?? 0) >= 2;
     if (promisedKind && working && tailIsJson) {
       return (
         <KindSlot
