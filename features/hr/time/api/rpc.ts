@@ -52,9 +52,19 @@ export type HrTimeRpcName =
   // timesheet / period lane (SQL-2)
   | "hr_timesheet_get"
   | "hr_timesheet_period_grid"
+  | "hr_pay_period_list"
+  | "hr_pay_period_get"
   | "hr_pay_period_transition"
   | "hr_time_adjustment_create"
+  | "hr_time_adjustment_list"
   | "hr_attendance_exception_resolve"
+  // overtime pre-approval lane (D24a) — the ROW reads and the create.
+  // 🚨 The DECISION is `hr_wf_decide` below and nothing else: the workflow engine is the only
+  // approval engine (SPEC-TIME §0 law 5). There is no `hr_overtime_preapproval_decide`, and
+  // adding one would be a second approvals path.
+  | "hr_overtime_preapproval_list"
+  | "hr_overtime_preapproval_get"
+  | "hr_overtime_preapproval_create"
   // kiosk lane — anon-callable, the token IS the authorization
   | "hr_kiosk_claim_pairing"
   | "hr_kiosk_authenticate"
