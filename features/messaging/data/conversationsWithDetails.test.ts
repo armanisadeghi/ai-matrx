@@ -27,6 +27,11 @@ function clientReturning(rows: unknown[], onCall: () => void): Client {
 
 describe("fetchConversationsWithDetails", () => {
   beforeEach(() => {
+    jest.clearAllMocks();
+    jest.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { access_token: "authenticated-token" } },
+      error: null,
+    } as never);
     resetConversationsWithDetailsCache();
   });
 
@@ -122,7 +127,9 @@ describe("fetchConversationsWithDetails", () => {
     await expect(
       fetchConversationsWithDetails(client, "user-1"),
     ).resolves.toEqual([{ conversation_id: "c1" }]);
-    expect(getSession).toHaveBeenCalledTimes(1);
+    // One preflight before the RPC and one recovery read after the anonymous
+    // response reaches the authenticated-only function.
+    expect(getSession).toHaveBeenCalledTimes(2);
     expect(calls).toBe(2);
   });
 });
