@@ -45,6 +45,8 @@ import {
   Layers,
   Boxes,
   LayoutTemplate,
+  Headphones,
+  AudioLines,
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import {
@@ -62,6 +64,7 @@ import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openListenSummaryWindowAction } from "@/features/overlays/openers/listenSummaryWindow";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -1582,6 +1585,53 @@ function assistantOnlyItems(ctx: MessageActionContext): MenuItem[] {
   ];
 }
 
+// ── Listening items — the "summarize for listening" family ──────────────────
+// Both open the floating Listen panel (the summary text + audio transport in
+// one window). The live variant is stream-to-stream: the summary agent's
+// tokens are spoken as they arrive, so audio starts before the text finishes.
+// Hidden entirely when no `spoken_summary` agent is bound for the surface.
+function listeningItems(ctx: MessageActionContext): MenuItem[] {
+  const agent = ctx.spokenSummaryAgent;
+  if (!agent) return [];
+  // Listening consumes the whole turn — match what the user reads on screen.
+  const turnText = ctx.turnContent ?? ctx.content;
+  const openListen = (autoPlay: boolean) => {
+    if (!turnText.trim()) return;
+    ctx.dispatch(
+      openListenSummaryWindowAction({
+        agentId: agent.agentId,
+        agentName: agent.label,
+        sourceText: turnText,
+        style: "Extremely Concise Summary",
+        autoPlay,
+      }),
+    );
+    ctx.onClose();
+  };
+  return [
+    {
+      key: "summarize-for-listening",
+      icon: Headphones,
+      iconColor: "text-violet-500 dark:text-violet-400",
+      label: "Summarize for listening",
+      description: "Condense this response into listening-ready prose",
+      action: () => openListen(false),
+      category: "Actions",
+      showToast: false,
+    },
+    {
+      key: "summarize-and-listen",
+      icon: AudioLines,
+      iconColor: "text-violet-500 dark:text-violet-400",
+      label: "Summarize & listen",
+      description: "Starts speaking while the summary is still being written",
+      action: () => openListen(true),
+      category: "Actions",
+      showToast: false,
+    },
+  ];
+}
+
 // ============================================================================
 // SERVER API (TEST) ITEMS — admin-gated, opt-in test surface for the new
 // Python-backed conversation endpoints. Lives next to the legacy
@@ -1922,11 +1972,13 @@ function serverApiTestItems(ctx: MessageActionContext): MenuItem[] {
  *   Save as → Note (window panel)
  *   Copy → plain / Docs / Word / with thinking
  *   Export → HTML preview, Copy HTML page, Email, Print, (Full print)
- *   Actions → Save to Scratch/File, Add to Tasks, Convert to broker, Add to docs
+ *   Actions → Summarize for listening / Summarize & listen (Listen panel),
+ *             Save to Scratch/File, Add to Tasks, Convert to broker, Add to docs
  *   App → Feedback, Announcements, Preferences
  *
- * Audio playback lives on the inline AssistantActionBar (SpeakerButton —
- * play/pause toggle, with markdown cleanup), not in this menu.
+ * Plain read-aloud playback lives on the inline AssistantActionBar
+ * (StreamingSpeakerButton); this menu carries the summarize-for-listening
+ * family, which opens the floating Listen panel.
  */
 export function getAssistantMessageActions(
   ctx: MessageActionContext,
@@ -1943,6 +1995,7 @@ export function getAssistantMessageActions(
     ...assistantOnlyItems(ctx),
     convertMessageItem(ctx),
     saveShapeInstanceItem(ctx),
+    ...listeningItems(ctx),
     ...actionsItems(ctx),
     ...serverApiTestItems(ctx),
     ...appItems(ctx),
