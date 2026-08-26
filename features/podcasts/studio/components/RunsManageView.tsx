@@ -19,9 +19,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  CompactConfirmPopover,
-  type CompactConfirmAnchorPoint,
-} from "@/components/ui/compact-confirm-popover";
+  DeleteConfirmationPopover,
+  type DeleteConfirmationAnchorPoint,
+} from "@/components/ui/delete-confirmation-popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
@@ -73,7 +73,7 @@ const RUN_DOM_ATTR = "data-podcast-run-id";
 
 interface DeleteRequest {
   run: RunSummary;
-  anchorPoint: CompactConfirmAnchorPoint;
+  anchorPoint: DeleteConfirmationAnchorPoint;
 }
 
 function runContext(run: RunSummary): string {
@@ -101,7 +101,7 @@ export function RunsManageView({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [menuRun, setMenuRun] = useState<RunSummary | null>(null);
   const menuRunRef = useRef<RunSummary | null>(null);
-  const menuAnchorRef = useRef<CompactConfirmAnchorPoint | null>(null);
+  const menuAnchorRef = useRef<DeleteConfirmationAnchorPoint | null>(null);
 
   const counts = useMemo(() => {
     const c: Record<FilterKey, number> = {
@@ -128,7 +128,7 @@ export function RunsManageView({
 
   const requestDeleteRun = (
     run: RunSummary,
-    anchorPoint: CompactConfirmAnchorPoint,
+    anchorPoint: DeleteConfirmationAnchorPoint,
   ) => {
     // Both action entry points live inside dismissing menus. Let that menu
     // finish its close gesture before mounting the non-modal confirmation,
@@ -371,7 +371,7 @@ export function RunsManageView({
       </NonEditableContextMenu>
 
       {deleteRequest ? (
-        <CompactConfirmPopover
+        <DeleteConfirmationPopover
           open
           onOpenChange={(open) => {
             if (!open) {
@@ -380,12 +380,11 @@ export function RunsManageView({
             }
           }}
           anchorPoint={deleteRequest.anchorPoint}
-          title="Delete this run?"
+          title="Delete run?"
           itemLabel={deleteRequest.run.title || "Untitled episode"}
-          description="It will disappear from Studio history."
-          reassurance="A published episode stays available."
-          confirmLabel="Delete run"
-          variant="destructive"
+          description="Removed from Studio."
+          reassurance="Published episodes stay live."
+          confirmLabel="Delete"
           busy={deletingRunId === deleteRequest.run.run_id}
           error={deleteError}
           onConfirm={handleDeleteRun}

@@ -108,13 +108,12 @@ is easy to fill in.
 
 ## Change log
 
-- 2026-08-26 — **Deleting a Studio run uses an anchored, non-modal
-  confirmation.** The card action menu and the universal right-click / mobile
-  long-press menu now open the same compact confirmation beside the initiating
-  gesture instead of dimming and blocking the page. It names the run, states
-  that Studio history will change, explicitly preserves any published episode,
-  focuses the safe Cancel action, closes on Escape or outside click, and keeps
-  delete progress or errors inside the card.
+- 2026-08-26 — **Deleting a Studio run uses the canonical anchored, non-modal
+  `DeleteConfirmationPopover`.** Card actions and the universal right-click /
+  mobile long-press menu open the same terse confirmation beside the gesture;
+  no dimmer or focus trap. Delayed menu-trigger focus restoration cannot close
+  it—only Escape, an outside pointer press, Cancel, or successful deletion can.
+  The card owns busy/error feedback and published episodes remain live.
 
 - 2026-08-26 — **Studio run cards now expose actions, and Ready means a real
   deliverable.** The route header owns the single left-aligned “Podcast Studio”

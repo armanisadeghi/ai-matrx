@@ -1446,6 +1446,12 @@
      Deliberately NOT covered:
        - checkbox / radio / switch inputs — a min-height would distort the
          control itself; their LABEL is the tap target and it is a <label>.
+         The exclusion must name `[role="checkbox"|"radio"|"switch"]` and not
+         just `input[type=…]`: Radix renders all three as a <button> carrying
+         the role, so the button branch of this selector caught them and blew
+         a 14px checkbox up to a 44×44 bordered empty box (measured
+         2026-08-25). Give such a control an invisible ::before hit area at
+         the callsite instead — see CHECKBOX_TAP_AREA in MatrxDataTable.
        - inline anchors — prose links must not become 44px blocks. An anchor
          that IS a control opts in with `data-tap-target`.
      A control that must stay small inside an opted-in subtree sets
@@ -1463,7 +1469,9 @@
         [role="menuitem"],
         [role="option"],
         a[data-tap-target]
-      ):not([data-touch-exempt]) {
+      ):not([data-touch-exempt]):not([role="checkbox"]):not([role="radio"]):not(
+        [role="switch"]
+      ) {
       min-height: 2.75rem; /* 44px */
     }
 
@@ -1476,7 +1484,7 @@
     .matrx-touch-targets
       :is(button, [role="button"], a[data-tap-target])[aria-label]:not(
         [data-touch-exempt]
-      ) {
+      ):not([role="checkbox"]):not([role="radio"]):not([role="switch"]) {
       min-width: 2.75rem;
     }
 

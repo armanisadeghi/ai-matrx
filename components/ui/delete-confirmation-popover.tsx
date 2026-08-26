@@ -10,24 +10,22 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
 
-export interface CompactConfirmAnchorPoint {
+export interface DeleteConfirmationAnchorPoint {
   x: number;
   y: number;
 }
 
-export interface CompactConfirmPopoverProps {
+export interface DeleteConfirmationPopoverProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  anchorPoint: CompactConfirmAnchorPoint;
+  anchorPoint: DeleteConfirmationAnchorPoint;
   title: string;
   itemLabel?: string;
   description: string;
   reassurance?: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  variant?: "default" | "destructive";
   busy?: boolean;
   error?: string | null;
   onConfirm: () => void | Promise<void>;
@@ -37,7 +35,7 @@ export interface CompactConfirmPopoverProps {
  * Lightweight, non-modal confirmation beside the action that requested it.
  * Outside-click and Escape cancel; there is no backdrop or focus trap.
  */
-export function CompactConfirmPopover({
+export function DeleteConfirmationPopover({
   open,
   onOpenChange,
   anchorPoint,
@@ -45,13 +43,12 @@ export function CompactConfirmPopover({
   itemLabel,
   description,
   reassurance,
-  confirmLabel = "Confirm",
+  confirmLabel = "Delete",
   cancelLabel = "Cancel",
-  variant = "default",
   busy = false,
   error = null,
   onConfirm,
-}: CompactConfirmPopoverProps) {
+}: DeleteConfirmationPopoverProps) {
   const isMobile = useIsMobile();
   const cancelRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
@@ -85,18 +82,15 @@ export function CompactConfirmPopover({
           window.setTimeout(() => cancelRef.current?.focus(), 0);
         }}
         onCloseAutoFocus={(event) => event.preventDefault()}
+        // A dismissing menu restores focus to its trigger after its close
+        // animation. That focus transition is not a user dismissal. Pointer
+        // presses outside and Escape still close through Radix normally.
+        onFocusOutside={(event) => event.preventDefault()}
         className="w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-border/80 bg-popover/95 p-0 text-popover-foreground shadow-xl backdrop-blur-glass backdrop-saturate-glass"
       >
         <div className="space-y-3 p-4">
           <div className="flex items-start gap-3">
-            <span
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-                variant === "destructive"
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-primary/10 text-primary",
-              )}
-            >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
               <Trash2 className="h-4 w-4" />
             </span>
             <div className="min-w-0 flex-1">
@@ -147,7 +141,7 @@ export function CompactConfirmPopover({
             </Button>
             <Button
               type="button"
-              variant={variant === "destructive" ? "destructive" : "default"}
+              variant="destructive"
               size="sm"
               disabled={busy}
               onClick={() => void onConfirm()}

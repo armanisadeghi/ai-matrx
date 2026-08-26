@@ -24,7 +24,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { CompactConfirmAnchorPoint } from "@/components/ui/compact-confirm-popover";
+import type { DeleteConfirmationAnchorPoint } from "@/components/ui/delete-confirmation-popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,9 +96,12 @@ export function RunHistoryCard({
 }: {
   run: RunSummary;
   deleting?: boolean;
-  onDelete: (run: RunSummary, anchorPoint: CompactConfirmAnchorPoint) => void;
+  onDelete: (
+    run: RunSummary,
+    anchorPoint: DeleteConfirmationAnchorPoint,
+  ) => void;
 }) {
-  const deleteAnchorRef = useRef<CompactConfirmAnchorPoint | null>(null);
+  const deleteAnchorRef = useRef<DeleteConfirmationAnchorPoint | null>(null);
   // Completed + published → straight to the episode (most useful). Otherwise the
   // run detail / recovery page (Wave 2 makes interrupted runs resumable there).
   // TRUE status (runs/run-truth.ts) — a finished run whose status column was
