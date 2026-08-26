@@ -790,10 +790,16 @@ begin
                        'name', rq.requester_name));
 
   perform set_config('hr.privileged_write','on',true);
+  -- 🚨 THE LIVE STATE VOCABULARY HAS NO `approved`, and it does not need one: HR approving the
+  -- request IS minting the token, and the row's next honest state is `preparing`. The live CHECK
+  -- admits received | verifying | preparing | delivered | denied | partially_delivered — a state
+  -- machine about DELIVERY, which is the right grain, so this lane conforms to it rather than
+  -- widening it. `requester_verified_at` is what records that the human approval step happened,
+  -- and §7 is explicit that THAT step *is* the identity verification.
   update hr.records_request
      set outsider_token_ref = (v_out ->> 'actor_token_id')::uuid,
-         state = 'approved', verification_method = 'hr_approved_email_code',
-         requester_verified_at = now()
+         state = 'preparing', verification_method = 'hr_approved_email_code',
+         requester_verified_at = now(), delivery_method = 'token_link'
    where id = p_request_id;
 
   v_audit := hr._record_access_audit(
