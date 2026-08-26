@@ -582,6 +582,109 @@ function parseKeywordCopyResult(value: unknown): KeywordCopyResult {
  * and rolls back, so the preview can never disagree with the write.
  * `keywordIds` omitted copies every keyword the source site tracks.
  */
+/**
+ * Which sites each keyword is tracked on — the ONE real site<->keyword
+ * association (`seo.site_keyword_value`), read in bounded chunks.
+ *
+ * The keyword library itself is deliberately GLOBAL (one row per
+ * phrase+language, shared by every site), so "which site does this keyword
+ * belong to" can only ever be answered here. Without this column the library
+ * reads as one undifferentiated pile — Arman, 2026-08-26: *"I'm seeing a bunch
+ * of things that are from the past, and they're still showing up and creating
+ * confusion."*
+ */
+export async function getKeywordSiteMemberships(
+  keywordIds: string[],
+  signal?: AbortSignal,
+): Promise<Map<string, string[]>> {
+  const result = new Map<string, string[]>();
+  if (keywordIds.length === 0) return result;
+  const abortSignal = signal ?? new AbortController().signal;
+  const ids = Array.from(new Set(keywordIds));
+  const db = await seoDb();
+  await Promise.all(
+    chunk(ids, 150).map((idChunk) =>
+      db
+        .from("site_keyword_value")
+        .select("keyword_id, site_id")
+        .is("deleted_at", null)
+        .in("keyword_id", idChunk)
+        .abortSignal(abortSignal)
+        .then((response) => {
+          if (response.error) throw response.error;
+          for (const row of response.data ?? []) {
+            const existing = result.get(row.keyword_id);
+            if (existing) existing.push(row.site_id);
+            else result.set(row.keyword_id, [row.site_id]);
+          }
+        }),
+    ),
+  );
+  return result;
+}
+
+/**
+ * Track keywords on a site — the bulk path Arman asked for so he can filter
+ * the library himself and assign in batches rather than one row at a time.
+ *
+ * Idempotent by the `(site_id, keyword_id)` unique index: re-assigning an
+ * already-tracked keyword updates nothing and never duplicates. `deleted_at`
+ * is cleared so re-adding a previously removed keyword revives its row (and
+ * with it the site-specific stage/value work already recorded on it) instead
+ * of silently starting over.
+ */
+export async function assignKeywordsToSite(input: {
+  keywordIds: string[];
+  siteId: string;
+  organizationId: string;
+}): Promise<number> {
+  if (input.keywordIds.length === 0) return 0;
+  const db = await seoDb();
+  const ids = Array.from(new Set(input.keywordIds));
+  let written = 0;
+  for (const idChunk of chunk(ids, 200)) {
+    const response = await db
+      .from("site_keyword_value")
+      .upsert(
+        idChunk.map((keywordId) => ({
+          keyword_id: keywordId,
+          site_id: input.siteId,
+          organization_id: input.organizationId,
+          deleted_at: null,
+        })),
+        { onConflict: "site_id,keyword_id" },
+      )
+      .select("id");
+    if (response.error) throw response.error;
+    written += response.data?.length ?? 0;
+  }
+  return written;
+}
+
+/** Stop tracking keywords on a site. A dismissal, never a hard delete — the
+ *  site-specific stage/value work stays recoverable by re-assigning. */
+export async function removeKeywordsFromSite(input: {
+  keywordIds: string[];
+  siteId: string;
+}): Promise<number> {
+  if (input.keywordIds.length === 0) return 0;
+  const db = await seoDb();
+  const ids = Array.from(new Set(input.keywordIds));
+  let removed = 0;
+  for (const idChunk of chunk(ids, 200)) {
+    const response = await db
+      .from("site_keyword_value")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("site_id", input.siteId)
+      .is("deleted_at", null)
+      .in("keyword_id", idChunk)
+      .select("id");
+    if (response.error) throw response.error;
+    removed += response.data?.length ?? 0;
+  }
+  return removed;
+}
+
 export async function copySiteKeywords(input: {
   fromSiteId: string;
   toSiteId: string;

@@ -281,6 +281,20 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-26 — **Sites column + bulk site assignment** (Arman: *"I'm seeing a bunch of things
+  that are from the past, and they're still showing up and creating confusion… if you don't
+  have any simple way of properly associating them with the right site, then you just need to
+  make sure you update the page to properly allow for bulk edits"*). The keyword library is
+  global by design (one row per phrase+language, shared by every site), so the only place a
+  site can live is the `seo.site_keyword_value` association — which the library never showed.
+  Now: a **Sites** column (sorts and filters, with `Unassigned` as a filterable value —
+  filtering to it IS the cleanup workflow), one batched membership read per page rather than
+  per row, and a **Track on a site…** picker in the bulk bar beside Archive that writes the
+  whole selection in one idempotent upsert with undo. Removal is a dismissal (`deleted_at`),
+  so re-assigning revives the site-specific stage/value work instead of restarting it.
+  `data/queries.ts`: `getKeywordSiteMemberships`, `assignKeywordsToSite`,
+  `removeKeywordsFromSite`.
+
 - 2026-08-26 — **The floating Keyword Research window is touch-safe on phones.**
   Its site selector and collapsible library rail now keep 44px targets below
   `sm`; the fullscreen window header supplies the same 44px Close target.

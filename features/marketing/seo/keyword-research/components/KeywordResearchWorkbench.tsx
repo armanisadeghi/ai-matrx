@@ -51,6 +51,9 @@ import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { useKeywordResearch } from "../useKeywordResearch";
 import {
   archiveKeywords,
+  assignKeywordsToSite,
+  getKeywordSiteMemberships,
+  removeKeywordsFromSite,
   fetchResearchDiscoveredKeywordIds,
   getKeywordDossierCompleteness,
   restoreKeywords,
@@ -391,6 +394,101 @@ export default function KeywordResearchWorkbench() {
     // actually changes.
   }, [visibleIdsKey, selectedSiteId, sorted]);
 
+  // WHICH SITES each visible keyword is tracked on. Same batched shape as the
+  // completeness read above — one bounded query for the whole page, never one
+  // per row. Without this the library is one undifferentiated pile (Arman,
+  // 2026-08-26), and there is nowhere else it could come from: the keyword
+  // library is global by design, so the site lives only on the association.
+  const [siteMemberships, setSiteMemberships] = useState<Map<
+    string,
+    string[]
+  > | null>(null);
+  const [assigning, setAssigning] = useState(false);
+  const reloadSiteMemberships = useCallback(
+    async (signal?: AbortSignal) => {
+      // Keep every state transition behind an async boundary so mounting the
+      // effect cannot synchronously cascade another render.
+      await Promise.resolve();
+      const ids = visibleIdsKey ? visibleIdsKey.split(",") : [];
+      if (ids.length === 0) {
+        if (!signal?.aborted) setSiteMemberships(new Map());
+        return;
+      }
+      try {
+        const result = await getKeywordSiteMemberships(ids, signal);
+        if (!signal?.aborted) setSiteMemberships(result);
+      } catch (error) {
+        if (!signal?.aborted) {
+          console.error("Keyword site membership lookup failed:", error);
+          setSiteMemberships(null);
+        }
+      }
+    },
+    [visibleIdsKey],
+  );
+  useEffect(() => {
+    const controller = new AbortController();
+    void reloadSiteMemberships(controller.signal);
+    return () => controller.abort();
+  }, [reloadSiteMemberships]);
+
+  const siteNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const site of siteOptions.data ?? [])
+      map.set(site.id, site.name ?? site.domain ?? "Untitled site");
+    return map;
+  }, [siteOptions.data]);
+
+  /** Track the given keywords on a site — the bulk assign path. */
+  const assignRowsToSite = useCallback(
+    async (rows: { id: string; phrase: string }[], siteId: string) => {
+      if (rows.length === 0 || assigning) return;
+      const site = (siteOptions.data ?? []).find((item) => item.id === siteId);
+      if (!site) return;
+      const siteLabel = site.name ?? site.domain ?? "the site";
+      setAssigning(true);
+      const ids = rows.map((row) => row.id);
+      try {
+        const written = await assignKeywordsToSite({
+          keywordIds: ids,
+          siteId,
+          organizationId: site.organization_id,
+        });
+        setSelectedIds(new Set());
+        reloadSiteMemberships();
+        toast.success(
+          `Tracking ${written} keyword${written === 1 ? "" : "s"} on ${siteLabel}`,
+          {
+            action: {
+              label: "Undo",
+              onClick: () => {
+                void removeKeywordsFromSite({ keywordIds: ids, siteId })
+                  .then((removed) => {
+                    reloadSiteMemberships();
+                    toast.success(
+                      `Removed ${removed} keyword${removed === 1 ? "" : "s"} from ${siteLabel}`,
+                    );
+                  })
+                  .catch((error) => {
+                    toast.error("Could not undo", {
+                      description: extractErrorMessage(error),
+                    });
+                  });
+              },
+            },
+          },
+        );
+      } catch (error) {
+        toast.error("Could not assign these keywords", {
+          description: extractErrorMessage(error),
+        });
+      } finally {
+        setAssigning(false);
+      }
+    },
+    [assigning, siteOptions.data, reloadSiteMemberships],
+  );
+
   /** Archive library rows (bulk or single) with confirm + undo. */
   const archiveRows = useCallback(
     async (rows: { id: string; phrase: string }[]) => {
@@ -652,6 +750,44 @@ export default function KeywordResearchWorkbench() {
           hasClassification={Boolean(row.intent_class)}
         />
       ),
+    },
+    {
+      // WHICH SITE(S) this keyword is tracked on. Sorts and filters like every
+      // other column (a text accessor of the site names, so "Unassigned" is a
+      // filterable value too) — the whole point is filtering the library down
+      // to the unassigned pile and fixing it in bulk.
+      id: "sites",
+      accessorFn: (row) => {
+        const ids = siteMemberships?.get(row.id) ?? [];
+        if (ids.length === 0) return "Unassigned";
+        return ids
+          .map((id) => siteNameById.get(id) ?? "Unknown site")
+          .sort((a, b) => a.localeCompare(b))
+          .join(", ");
+      },
+      header: "Sites",
+      filter: "select",
+      cell: (row) => {
+        const ids = siteMemberships?.get(row.id) ?? [];
+        if (ids.length === 0)
+          return (
+            <span className="text-xs text-muted-foreground/60">Unassigned</span>
+          );
+        return (
+          <div className="flex flex-wrap items-center gap-1">
+            {ids.map((id) => (
+              <span
+                key={id}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-1.5 py-0.5 text-[11px]"
+                title={siteNameById.get(id) ?? id}
+              >
+                <Globe2 className="h-2.5 w-2.5 text-muted-foreground" />
+                {siteNameById.get(id) ?? "Unknown site"}
+              </span>
+            ))}
+          </div>
+        );
+      },
     },
   ];
   const keywordMenuConfig = (row: KeywordWithMarket): ItemMenuConfig => ({
@@ -984,7 +1120,42 @@ export default function KeywordResearchWorkbench() {
                 onSelectedIdsChange: (ids) => setSelectedIds(new Set(ids)),
                 noun: "keyword",
                 actions: (selected) => (
-                  <button
+                  <>
+                    {/* BULK ASSIGN — Arman, 2026-08-26: filter the library
+                        down, select the batch, put it on the right site. One
+                        write for the whole selection, idempotent. */}
+                    <Select
+                      value=""
+                      onValueChange={(siteId) =>
+                        void assignRowsToSite(
+                          selected.map((row) => ({
+                            id: row.id,
+                            phrase: row.phrase,
+                          })),
+                          siteId,
+                        )
+                      }
+                      disabled={assigning}
+                    >
+                      <SelectTrigger className="h-8 w-52 text-xs">
+                        {assigning ? (
+                          <span className="flex items-center gap-1.5">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Assigning…
+                          </span>
+                        ) : (
+                          <SelectValue placeholder="Track on a site…" />
+                        )}
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(siteOptions.data ?? []).map((site) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name ?? site.domain}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <button
                     type="button"
                     onClick={() =>
                       void archiveRows(
@@ -1003,7 +1174,8 @@ export default function KeywordResearchWorkbench() {
                       <Archive className="h-3.5 w-3.5" />
                     )}
                     Archive selected
-                  </button>
+                    </button>
+                  </>
                 ),
               }}
               // A keyword has ONE door: the canonical Keyword Intelligence
