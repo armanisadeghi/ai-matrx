@@ -11,12 +11,17 @@ describe("classifyInboxEnqueueFailure", () => {
       message:
         "This conversation is no longer available. Open a current conversation and try again.",
       reportAsSystemError: false,
+      toastSeverity: "info",
     });
   });
 
   it("keeps unexpected enqueue failures reportable", () => {
     expect(
       classifyInboxEnqueueFailure({ status: 503, message: "Unavailable" }),
-    ).toEqual({ message: "Unavailable", reportAsSystemError: true });
+    ).toEqual({
+      message: "Unavailable",
+      reportAsSystemError: true,
+      toastSeverity: "error",
+    });
   });
 });

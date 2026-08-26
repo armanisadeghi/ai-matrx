@@ -6,6 +6,7 @@ export interface InboxEnqueueError {
 export interface InboxEnqueueFailure {
   message: string;
   reportAsSystemError: boolean;
+  toastSeverity: "error" | "info";
 }
 
 /**
@@ -19,11 +20,13 @@ export function classifyInboxEnqueueFailure(
     return {
       message: "This conversation is no longer available. Open a current conversation and try again.",
       reportAsSystemError: false,
+      toastSeverity: "info",
     };
   }
 
   return {
     message: error.message ?? "The server rejected the queued message.",
     reportAsSystemError: true,
+    toastSeverity: "error",
   };
 }

@@ -167,7 +167,7 @@ export const enqueueInboxMessage = createAsyncThunk<
           error: failure.message,
         }),
       );
-      toast.error("Couldn't queue your message", {
+      toast[failure.toastSeverity]("Couldn't queue your message", {
         description: failure.message,
       });
       return thunkApi.rejectWithValue(failure.message) as never;
