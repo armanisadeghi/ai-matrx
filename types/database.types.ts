@@ -49115,6 +49115,27 @@ export type Database = {
           },
         ]
       }
+      engine_owner_task: {
+        Row: {
+          created_at: string
+          engine_slug: string
+          note: string | null
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          engine_slug: string
+          note?: string | null
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          engine_slug?: string
+          note?: string | null
+          task_id?: string
+        }
+        Relationships: []
+      }
       engine_schedule: {
         Row: {
           cadence: string
@@ -55237,11 +55258,11 @@ export type Database = {
       }
       platform_default_rule_save: {
         Args: {
-          p_amount: number
+          p_amount?: number
           p_dimension_slug: string
           p_effect: string
-          p_exclusions: string[]
-          p_id: string
+          p_exclusions?: string[]
+          p_id?: string
           p_label: string
           p_match_kind: string
           p_notes?: string

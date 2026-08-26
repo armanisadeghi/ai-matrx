@@ -37,16 +37,21 @@ as $$
   order by coalesce(i.sort,0), i.label;
 $$;
 
+-- Optional args carry DEFAULTs so the generated TypeScript lets a caller omit
+-- what does not apply (no p_id on a new rule, no p_amount on a `never` rule).
+drop function if exists seo.platform_default_rule_save(uuid,text,text,text,text,text[],text[],text,numeric,text,integer);
+
 create or replace function seo.platform_default_rule_save(
-  p_id uuid, p_label text, p_dimension_slug text, p_value_slug text,
-  p_match_kind text, p_phrases text[], p_exclusions text[],
-  p_effect text, p_amount numeric, p_notes text default null, p_sort integer default 0
+  p_label text, p_dimension_slug text, p_value_slug text, p_match_kind text,
+  p_phrases text[], p_effect text, p_id uuid default null,
+  p_exclusions text[] default '{}'::text[], p_amount numeric default null,
+  p_notes text default null, p_sort integer default 0
 ) returns uuid
 language plpgsql security definer
 set search_path to 'seo','public','pg_temp'
 as $$
 declare
-  v_pack uuid; v_org uuid; v_id uuid; v_matchers jsonb;
+  v_pack uuid; v_org uuid; v_id uuid; v_matchers jsonb; v_clash uuid;
 begin
   if not public.is_admin() then
     raise exception 'seo_defaults_forbidden: platform defaults are an admin surface.';
@@ -77,6 +82,17 @@ begin
    where slug = 'platform-defaults' and deleted_at is null;
   if v_pack is null then
     raise exception 'seo_defaults_no_pack: the platform-defaults pack row is missing.';
+  end if;
+
+  -- ONE RULE PER ANSWER. The pack enforces (pack, dimension, value) uniquely,
+  -- so a second rule stamping the same answer is a duplicate, not a new rule.
+  -- Said in words here, because the raw constraint error is unreadable.
+  select i.id into v_clash from seo.starter_pack_item i
+   where i.pack_id = v_pack and i.item_kind = 'meaning' and i.deleted_at is null
+     and i.dimension_slug = trim(p_dimension_slug) and i.value = trim(p_value_slug)
+     and (p_id is null or i.id <> p_id);
+  if v_clash is not null then
+    raise exception 'seo_defaults_duplicate: a rule already stamps that answer — edit it and add your phrases there, rather than making a second rule for the same meaning.';
   end if;
 
   -- Every phrase becomes a matcher; the exclusion list rides each one, because
@@ -171,7 +187,7 @@ begin
 end $function$;
 
 grant execute on function seo.platform_default_rules() to authenticated;
-grant execute on function seo.platform_default_rule_save(uuid,text,text,text,text,text[],text[],text,numeric,text,integer) to authenticated;
+grant execute on function seo.platform_default_rule_save(text,text,text,text,text[],text,uuid,text[],numeric,text,integer) to authenticated;
 grant execute on function seo.platform_default_rule_delete(uuid) to authenticated;
 
 notify pgrst, 'reload schema';

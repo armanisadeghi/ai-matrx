@@ -276,6 +276,15 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/knowledge/seo-value-settings"),
         ],
       },
+      {
+        // The word rules themselves — a long list and a different job from
+        // the numbers above, so it gets its own page (Arman, 2026-08-25).
+        name: "Default Word Rules",
+        iconName: "ListChecks",
+        destinations: [
+          destination("/administration/knowledge/seo-default-rules"),
+        ],
+      },
     ],
   },
   {

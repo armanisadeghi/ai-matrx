@@ -712,6 +712,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Default Word Rules",
+        description:
+          "The 80/20 word rules every new site starts from: the phrases, what they mean, what they are worth, and the words that cancel them. Matched in the database — no AI, no cost. Sites may override any of them.",
+        iconName: "ListChecks",
+        link: "/administration/knowledge/seo-default-rules",
+        isNew: true,
+      },
+      {
         title: "Growth Loop Map",
         description:
           "The end-to-end loop — research to plan to pages to live site to crawl to findings to fixes — with every connection scored on the three pipes (code / human / AI) and every open gap.",
