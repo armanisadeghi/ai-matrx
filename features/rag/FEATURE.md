@@ -31,7 +31,9 @@ ruling tracked in the node's HANDOFF §3.
   `shareable_resource_registry` only so reachability recognizes it as a conveying container.
 - **Never build a second pack editor.** `features/admin/shared-knowledge/packs/PackDetail` is
   reused verbatim by `/knowledge/library-curate`; it already branches on `can_author` / `is_admin`.
-  Add no gate here.
+  Add no gate here. `getStarterPackDetail` validates the RPC's complete collection contract before
+  either surface renders it; a rollout-skewed payload must become the query's visible error state,
+  never a route-level render crash.
 - **`takeMode()` in `useLibraryResources.ts` is the single place the subscribe-vs-use decision
   lives.** A `data_store` subscribes (read in place); an `seo_starter_pack` is used on a site. Never
   offer a fake subscribe.

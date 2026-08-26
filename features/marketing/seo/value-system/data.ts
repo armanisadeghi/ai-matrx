@@ -49,7 +49,9 @@ export async function getValueVocabulary(
   kind: "value_band" | "geo_band",
   signal?: AbortSignal,
 ): Promise<ValueBandDef[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_value_vocabulary", { p_site_id: siteId, p_kind: kind })
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error) as ValueBandDef[];
@@ -64,7 +66,9 @@ export async function getValueSummary(
   compareEnd?: string | null,
   signal?: AbortSignal,
 ): Promise<ValueSummaryRow[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_perf_value_summary", {
       p_site_id: siteId,
       p_start: start,
@@ -85,7 +89,9 @@ export async function getValueReview(
   query: ValueReviewQuery = {},
   signal?: AbortSignal,
 ): Promise<{ rows: ValueReviewRow[]; total: number }> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_keyword_value_review", {
       p_site_id: siteId,
       p_start: start,
@@ -109,8 +115,12 @@ export async function setKeywordValue(
   keywordIds: string[],
   tier: string | null,
   notes?: string,
-): Promise<Array<{ keyword_id: string; value_band: string; value_source: string }>> {
-  const response = await (await seoDb()).rpc("gsc_set_keyword_value", {
+): Promise<
+  Array<{ keyword_id: string; value_band: string; value_source: string }>
+> {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_set_keyword_value", {
     p_site_id: siteId,
     p_keyword_ids: keywordIds,
     p_value_tier: tier ?? undefined,
@@ -139,12 +149,7 @@ export async function setKeywordValue(
  *   ok    — working; reported so the screen can be honest about what IS done.
  */
 export type MeaningHealthArea =
-  | "geo"
-  | "rules"
-  | "topics"
-  | "dimensions"
-  | "bands"
-  | "guidelines";
+  "geo" | "rules" | "topics" | "dimensions" | "bands" | "guidelines";
 export type MeaningHealthSeverity = "inert" | "stale" | "gap" | "ok";
 
 export interface MeaningHealthRow {
@@ -159,7 +164,9 @@ export async function getSiteMeaningHealth(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<MeaningHealthRow[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_site_meaning_health", { p_site_id: siteId })
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error) as MeaningHealthRow[];
@@ -167,8 +174,13 @@ export async function getSiteMeaningHealth(
 
 // ── Site meaning tables (small, site-scoped, direct under RLS) ──────────────
 
-export async function listSiteVocabulary(siteId: string, kind: "value_band" | "geo_band") {
-  const response = await (await seoDb())
+export async function listSiteVocabulary(
+  siteId: string,
+  kind: "value_band" | "geo_band",
+) {
+  const response = await (
+    await seoDb()
+  )
     .from("site_vocabulary")
     .select("id, vocab_kind, value, label, description, sort, config, active")
     .eq("site_id", siteId)
@@ -179,7 +191,9 @@ export async function listSiteVocabulary(siteId: string, kind: "value_band" | "g
 }
 
 export async function listGeoAreas(siteId: string): Promise<SiteGeoArea[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .from("site_geo_area")
     .select(
       "id, site_id, label, area_kind, match_tokens, place_ids, location_ids, geo_band, notes, metadata",
@@ -187,20 +201,22 @@ export async function listGeoAreas(siteId: string): Promise<SiteGeoArea[]> {
     .eq("site_id", siteId)
     .is("deleted_at", null)
     .order("label");
-  return (assertData(response.data, response.error) as unknown as SiteGeoArea[]).map(
-    (row) => ({
-      ...row,
-      metadata: row.metadata ?? {},
-      // NULL and "{}" mean the same thing to a reader: not bound to anything.
-      location_ids: row.location_ids ?? [],
-    }),
-  );
+  return (
+    assertData(response.data, response.error) as unknown as SiteGeoArea[]
+  ).map((row) => ({
+    ...row,
+    metadata: row.metadata ?? {},
+    // NULL and "{}" mean the same thing to a reader: not bound to anything.
+    location_ids: row.location_ids ?? [],
+  }));
 }
 
 /** Rules with a value effect (the qualifier ledger). Site rules only — value
  *  rules resolve LIVE, unlike class rules which materialize rulings. */
 export async function listValueRules(siteId: string): Promise<ValueRule[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .from("keyword_class_rule")
     .select(
       "id, name, description, pattern, match_kind, match_facet, match_facet_value, target_class, value_multiplier, site_id, notes, metadata",
@@ -209,7 +225,9 @@ export async function listValueRules(siteId: string): Promise<ValueRule[]> {
     .not("value_multiplier", "is", null)
     .is("deleted_at", null)
     .order("name");
-  return (assertData(response.data, response.error) as unknown as ValueRule[]).map((row) => ({
+  return (
+    assertData(response.data, response.error) as unknown as ValueRule[]
+  ).map((row) => ({
     ...row,
     metadata: row.metadata ?? {},
   }));
@@ -222,10 +240,15 @@ export async function listSiteTopicValues(
   const db = await seoDb();
   const valuesRes = await db
     .from("site_topic_value")
-    .select("id, site_id, topic_id, weight, lead_quality, offering_match, notes")
+    .select(
+      "id, site_id, topic_id, weight, lead_quality, offering_match, notes",
+    )
     .eq("site_id", siteId)
     .is("deleted_at", null);
-  const values = assertData(valuesRes.data, valuesRes.error) as SiteTopicValue[];
+  const values = assertData(
+    valuesRes.data,
+    valuesRes.error,
+  ) as SiteTopicValue[];
   const topicsRes = await db
     .from("topic")
     .select("id, name, slug, node_type, parent_id, description")
@@ -276,11 +299,17 @@ export async function adoptValueVocabulary(
   siteId: string,
   kind: VocabKind,
 ): Promise<ValueBandDef[]> {
-  const response = await (await seoDb()).rpc("gsc_adopt_value_vocabulary", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_adopt_value_vocabulary", {
     p_site_id: siteId,
     p_kind: kind,
   });
-  return assertGoverned(response.data, response.error, "adopt the starter set") as ValueBandDef[];
+  return assertGoverned(
+    response.data,
+    response.error,
+    "adopt the starter set",
+  ) as ValueBandDef[];
 }
 
 /**
@@ -294,13 +323,19 @@ export async function saveValueVocabulary(
   rows: VocabularyDraftRow[],
   reassign: Record<string, string> = {},
 ): Promise<ValueBandDef[]> {
-  const response = await (await seoDb()).rpc("gsc_save_value_vocabulary", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_save_value_vocabulary", {
     p_site_id: siteId,
     p_kind: kind,
     p_rows: rows,
     p_reassign: reassign,
   });
-  return assertGoverned(response.data, response.error, "save that vocabulary") as ValueBandDef[];
+  return assertGoverned(
+    response.data,
+    response.error,
+    "save that vocabulary",
+  ) as ValueBandDef[];
 }
 
 /** Hand the vocabulary back to the platform template. */
@@ -309,12 +344,18 @@ export async function resetValueVocabulary(
   kind: VocabKind,
   reassign: Record<string, string> = {},
 ): Promise<ValueBandDef[]> {
-  const response = await (await seoDb()).rpc("gsc_reset_value_vocabulary", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_reset_value_vocabulary", {
     p_site_id: siteId,
     p_kind: kind,
     p_reassign: reassign,
   });
-  return assertGoverned(response.data, response.error, "restore the platform defaults") as ValueBandDef[];
+  return assertGoverned(
+    response.data,
+    response.error,
+    "restore the platform defaults",
+  ) as ValueBandDef[];
 }
 
 /**
@@ -329,7 +370,9 @@ export async function previewValueBands(
   end: string,
   signal?: AbortSignal,
 ): Promise<BandPreviewRow[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_value_band_preview", {
       p_site_id: siteId,
       p_rows: rows,
@@ -337,7 +380,11 @@ export async function previewValueBands(
       p_end: end,
     })
     .abortSignal(signal ?? new AbortController().signal);
-  return assertGoverned(response.data, response.error, "preview those bands") as BandPreviewRow[];
+  return assertGoverned(
+    response.data,
+    response.error,
+    "preview those bands",
+  ) as BandPreviewRow[];
 }
 
 // ── Platform plane (platform.categories) ────────────────────────────────────
@@ -350,7 +397,9 @@ export async function listVocabularyRegistry(
   dimension: RegistryDimension,
   signal?: AbortSignal,
 ): Promise<RegistryEntry[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("vocabulary_registry_list", { p_dimension: dimension })
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error) as RegistryEntry[];
@@ -360,7 +409,9 @@ export async function listVocabularyRegistry(
 export async function getFacetRegistryUsage(
   signal?: AbortSignal,
 ): Promise<FacetUsageRow[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("facet_registry_usage")
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error) as FacetUsageRow[];
@@ -372,7 +423,9 @@ export async function updateVocabularyRegistryEntry(
   label: string,
   description: string | null,
 ) {
-  const response = await (await seoDb()).rpc("vocabulary_registry_update", {
+  const response = await (
+    await seoDb()
+  ).rpc("vocabulary_registry_update", {
     p_id: id,
     p_label: label,
     p_description: description ?? undefined,
@@ -391,7 +444,9 @@ export async function addFacetRegistryValue(
   label: string,
   description: string | null,
 ) {
-  const response = await (await seoDb()).rpc("facet_registry_add_value", {
+  const response = await (
+    await seoDb()
+  ).rpc("facet_registry_add_value", {
     p_facet: facet,
     p_value: value,
     p_label: label,
@@ -418,7 +473,9 @@ export async function getStarterPackCatalog(
   organizationId?: string | null,
   signal?: AbortSignal,
 ): Promise<StarterPackSummary[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("starter_pack_catalog", {
       p_status: status ?? undefined,
       p_organization_id: organizationId ?? undefined,
@@ -453,7 +510,9 @@ export async function getStarterPackAdoptions(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<StarterPackAdoption[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("starter_pack_site_adoptions", { p_site_id: siteId })
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error) as StarterPackAdoption[];
@@ -465,10 +524,15 @@ export async function getStarterPackSiteStatus(
   packId: string,
   signal?: AbortSignal,
 ): Promise<StarterPackSiteStatus> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("starter_pack_site_status", { p_site_id: siteId, p_pack_id: packId })
     .abortSignal(signal ?? new AbortController().signal);
-  return assertData(response.data, response.error) as unknown as StarterPackSiteStatus;
+  return assertData(
+    response.data,
+    response.error,
+  ) as unknown as StarterPackSiteStatus;
 }
 
 /**
@@ -485,7 +549,9 @@ export async function previewStarterPack(
   itemIds: string[] | null,
   signal?: AbortSignal,
 ): Promise<StarterPackPreview> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("starter_pack_preview", {
       p_site_id: siteId,
       p_pack_id: packId,
@@ -495,17 +561,62 @@ export async function previewStarterPack(
       p_sample: 3,
     })
     .abortSignal(signal ?? new AbortController().signal);
-  return assertData(response.data, response.error) as unknown as StarterPackPreview;
+  return assertData(
+    response.data,
+    response.error,
+  ) as unknown as StarterPackPreview;
 }
 
 export async function getStarterPackDetail(
   packId: string,
   signal?: AbortSignal,
 ): Promise<StarterPackDetail> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("starter_pack_detail", { p_pack_id: packId })
     .abortSignal(signal ?? new AbortController().signal);
-  return assertData(response.data, response.error) as unknown as StarterPackDetail;
+  return assertStarterPackDetail(assertData(response.data, response.error));
+}
+
+const STARTER_PACK_DETAIL_COLLECTIONS = [
+  "topics",
+  "value_bands",
+  "geo_bands",
+  "geo_areas",
+  "meaning",
+] as const;
+
+/**
+ * Keep rollout skew and malformed RPC payloads at the data boundary. The pack
+ * editor renders collection counts immediately, so trusting the JSON cast lets
+ * one missing key crash the whole route instead of reaching React Query's
+ * contained error state.
+ */
+export function assertStarterPackDetail(value: unknown): StarterPackDetail {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("The starter-pack detail response was not an object.");
+  }
+
+  const record = value as Record<string, unknown>;
+  if (
+    !record.pack ||
+    typeof record.pack !== "object" ||
+    Array.isArray(record.pack)
+  ) {
+    throw new Error("The starter-pack detail response did not include a pack.");
+  }
+
+  const missing = STARTER_PACK_DETAIL_COLLECTIONS.filter(
+    (key) => !Array.isArray(record[key]),
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      `The starter-pack detail response is missing required collections: ${missing.join(", ")}.`,
+    );
+  }
+
+  return record as unknown as StarterPackDetail;
 }
 
 /**
@@ -549,7 +660,8 @@ export async function adoptStarterPack(
   packId: string,
   options: AdoptStarterPackOptions = {},
 ): Promise<StarterPackAdoptResult> {
-  const { parts, geoPlaces, geoPlaceIds, itemIds, seedGuidelines, reset } = options;
+  const { parts, geoPlaces, geoPlaceIds, itemIds, seedGuidelines, reset } =
+    options;
   // SUBSCRIBE IS ADOPT (D2, 2026-08-22): the ONE Library write. The RPC records the
   // org subscription on platform.entity_grants (the site's org is derived from the
   // site), checks entitlement (industry opt-in / global / pilot grant), then runs the
@@ -637,11 +749,30 @@ export async function getSuggestedDimensionColumns(
   siteId: string,
   limit = 3,
   signal?: AbortSignal,
-): Promise<Array<{ slug: string; label: string; has_worth: boolean; answered: number; total: number; why: string }>> {
-  const response = await (await seoDb())
-    .rpc("gsc_suggested_dimension_columns", { p_site_id: siteId, p_limit: limit })
+): Promise<
+  Array<{
+    slug: string;
+    label: string;
+    has_worth: boolean;
+    answered: number;
+    total: number;
+    why: string;
+  }>
+> {
+  const response = await (
+    await seoDb()
+  )
+    .rpc("gsc_suggested_dimension_columns", {
+      p_site_id: siteId,
+      p_limit: limit,
+    })
     .abortSignal(signal ?? new AbortController().signal);
   return (assertData(response.data, response.error) ?? []) as Array<{
-    slug: string; label: string; has_worth: boolean; answered: number; total: number; why: string;
+    slug: string;
+    label: string;
+    has_worth: boolean;
+    answered: number;
+    total: number;
+    why: string;
   }>;
 }
