@@ -63,11 +63,15 @@ export async function fetchSeoMandates(): Promise<SeoMandateRow[]> {
     .select(
       "id, mandate_key, label, description, provision_key, output_kind, default_agent_id, default_agent_version_id, contract",
     )
-    .like("mandate_key", "seo.%")
     .is("deleted_at", null)
     .order("mandate_key");
   if (error) throw error;
-  return (data ?? []) as SeoMandateRow[];
+  // Filter client-side — the proven MandatesConsole reads unfiltered and RLS
+  // narrows; a PostgREST `like` pattern containing a dot returned zero rows
+  // in production while the same rows load unfiltered (measured 2026-08-26).
+  return ((data ?? []) as SeoMandateRow[]).filter((row) =>
+    row.mandate_key.startsWith("seo."),
+  );
 }
 
 export async function fetchSeoProvisions(): Promise<SeoProvisionRow[]> {
@@ -78,11 +82,10 @@ export async function fetchSeoProvisions(): Promise<SeoProvisionRow[]> {
     .select(
       "provision_key, label, description, offered_values, code_path",
     )
-    .like("provision_key", "seo.%")
     .is("deleted_at", null)
     .order("provision_key");
   if (error) throw error;
-  return (data ?? []).map((row) => ({
+  return (data ?? []).filter((row) => String(row.provision_key).startsWith("seo.")).map((row) => ({
     key: row.provision_key,
     label: row.label,
     description: row.description,
