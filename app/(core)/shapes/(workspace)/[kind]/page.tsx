@@ -22,7 +22,6 @@ export default async function ShapePreviewPage({ params }: PageProps) {
         label={detail.label}
         isOwnedByViewer={detail.isOwnedByViewer}
         emittedJsonSchema={detail.emittedJsonSchema}
-        dataOnly={detail.dataOnly}
       />
       <div className="px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
         <h1 className="sr-only">{detail.label}</h1>
@@ -40,7 +39,6 @@ export default async function ShapePreviewPage({ params }: PageProps) {
             kindVersion={detail.version}
             updatedAt={detail.updatedAt}
             fieldData={detail.fieldData}
-            dataOnly={detail.dataOnly}
           />
         </div>
       </div>

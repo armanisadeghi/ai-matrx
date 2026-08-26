@@ -31,7 +31,6 @@ interface ShapePreviewTabProps {
   updatedAt: string;
   /** Authored `StoredFieldElement[]` (null for Python-owned kinds). */
   fieldData: Json | null;
-  dataOnly?: boolean;
 }
 
 export default function ShapePreviewTab({
@@ -47,7 +46,6 @@ export default function ShapePreviewTab({
   kindVersion,
   updatedAt,
   fieldData,
-  dataOnly = false,
 }: ShapePreviewTabProps) {
   const [examplesRevision, setExamplesRevision] = useState(0);
   const examples = useKindExamples(kindDefinitionId, examplesRevision);
@@ -147,21 +145,17 @@ export default function ShapePreviewTab({
               No saved examples for this shape yet.
             </p>
             <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-              {dataOnly
-                ? "This is a machine-filled contract. Its schema and streamed output can be inspected, but it has no human input form."
-                : isOwnedByViewer
+              {isOwnedByViewer
                 ? "Add the first canonical sample above, or try the Shape live."
                 : "Try it live instead — fill the form and watch its component render the result."}
             </p>
-            {!dataOnly && (
-              <Link
-                href={shapeTestHref(kind)}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
-              >
-                <FlaskConical className="h-3.5 w-3.5" />
-                Open the Test tab
-              </Link>
-            )}
+            <Link
+              href={shapeTestHref(kind)}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              <FlaskConical className="h-3.5 w-3.5" />
+              Open the Test tab
+            </Link>
           </div>
         }
       />

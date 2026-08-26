@@ -25,7 +25,6 @@ export default async function ShapeInstancesPage({ params }: PageProps) {
         label={detail.label}
         isOwnedByViewer={detail.isOwnedByViewer}
         emittedJsonSchema={detail.emittedJsonSchema}
-        dataOnly={detail.dataOnly}
       />
       <div className="px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
         <div className="mx-auto mt-3 max-w-6xl">
