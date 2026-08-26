@@ -267,8 +267,25 @@ export function TryMasterworkBox({
     forgetRun(masterworkId);
     setRunId(null);
 
+    // AN UNTOUCHED OPTIONAL FIELD IS OMITTED, NEVER SENT AS "" (2026-08-26).
+    // Sending "" for everything is fine for free text and FATAL for a choice:
+    // the engine validates the value against the option list, and "" is not on
+    // it — so a designed dropdown the person simply left alone killed the run
+    // at its first step with `length: '' is not one of [...]`. Caught by
+    // running a real build end to end, not by reading the code. An optional
+    // field the person did not fill has no value to send; the step's own
+    // default applies.
     const nodeInputs = {
-      ask: Object.fromEntries(fields.map((f) => [f.key, values[f.key] ?? ""])),
+      ask: Object.fromEntries(
+        fields
+          .filter((f) => {
+            const v = values[f.key];
+            const blank =
+              v === undefined || v === null || (typeof v === "string" && !v.trim());
+            return f.required || !blank;
+          })
+          .map((f) => [f.key, values[f.key] ?? ""]),
+      ),
     };
     const newRunId = await startRun({ definitionId: masterworkId, nodeInputs });
     if (!newRunId) return; // startRun already explained itself
