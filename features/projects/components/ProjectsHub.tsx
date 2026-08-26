@@ -70,7 +70,7 @@ import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
-import { useOpenCreateProjectWindow } from "@/features/window-panels/windows/projects/useOpenCreateProjectWindow";
+import { useOpenCreateProjectWindow } from "@/features/overlays/openers/createProjectWindow";
 import {
   useListViewPrefs,
   type LegacyListViewImport,
@@ -87,9 +87,20 @@ import {
   formatRelativeTime,
   toEpochMs,
 } from "@/utils/datetime";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import {
+  buildProjectsContextData,
+  buildProjectsListContextData,
+  createProjectsExtraSections,
+  PROJECTS_CONTEXT_MENU_PROPS,
+} from "@/features/projects/agent-context/buildProjectsContextData";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PROJECT_ROW_DOM_ATTR = "data-project-row-id";
 
 /**
  * Style prefs for this surface (synced across devices via `userPreferences`).
@@ -141,31 +152,30 @@ export function ProjectsHub({
   const view: "cards" | "table" = prefs.view === "table" ? "table" : "cards";
   const [query, setQuery] = React.useState("");
 
-  const orgMap = React.useMemo<OrgMap>(() => {
-    const m: OrgMap = new Map();
-    for (const o of organizations)
-      m.set(o.id, { name: o.name, slug: o.slug, isPersonal: o.isPersonal });
-    return m;
-  }, [organizations]);
+  const orgMap: OrgMap = new Map();
+  for (const organization of organizations) {
+    orgMap.set(organization.id, {
+      name: organization.name,
+      slug: organization.slug,
+      isPersonal: organization.isPersonal,
+    });
+  }
 
   // A project is "personal" iff its owning org is the user's personal org.
   // ctx_projects.is_personal no longer exists; personal-ness is org-derived.
-  const isPersonalProject = React.useCallback(
-    (organizationId: string | null) =>
-      !!organizationId && orgMap.get(organizationId)?.isPersonal === true,
-    [orgMap],
-  );
+  const isPersonalProject = (organizationId: string | null) =>
+    !!organizationId && orgMap.get(organizationId)?.isPersonal === true;
 
   // Projects (RLS-filtered, nav-tree-independent).
   const [projects, setProjects] = React.useState<ProjectWithRole[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [reloadTick, setReloadTick] = React.useState(0);
-  const refresh = React.useCallback(() => setReloadTick((t) => t + 1), []);
+  const refresh = () => setReloadTick((tick) => tick + 1);
 
   // Open the app-wide create-project window (Manual + Use AI). Refresh the
   // self-fetched list both on a manual create and when the AI agent creates one
   // server-side (the agent writes directly to the DB).
-  const handleCreate = React.useCallback(() => {
+  const handleCreate = () => {
     console.log(
       "[Track New Project] 1, ProjectsHub.tsx — New project button → handleCreate",
     );
@@ -173,7 +183,7 @@ export function ProjectsHub({
       onCreated: refresh,
       onAiCreated: refresh,
     });
-  }, [openCreateProject, refresh]);
+  };
 
   React.useEffect(() => {
     let cancelled = false;
@@ -239,7 +249,6 @@ export function ProjectsHub({
     let cancelled = false;
     const ids = projects.map((p) => p.id);
     if (ids.length === 0) {
-      setStats(new Map());
       return undefined;
     }
     (async () => {
@@ -276,74 +285,84 @@ export function ProjectsHub({
   }, [projects]);
 
   // ?org=slug|id → org id
-  const [orgFilterId, setOrgFilterId] = React.useState<string | null>(null);
+  const [resolvedOrgFilter, setResolvedOrgFilter] = React.useState<{
+    param: string;
+    id: string | null;
+  } | null>(null);
   React.useEffect(() => {
     let cancelled = false;
-    if (!orgParam) {
-      setOrgFilterId(null);
-      return undefined;
-    }
-    if (UUID_RE.test(orgParam)) {
-      setOrgFilterId(orgParam);
-      return undefined;
-    }
+    if (!orgParam || UUID_RE.test(orgParam)) return undefined;
     getOrganizationBySlugOrId(orgParam).then((o) => {
-      if (!cancelled) setOrgFilterId(o?.id ?? null);
+      if (!cancelled) {
+        setResolvedOrgFilter({ param: orgParam, id: o?.id ?? null });
+      }
     });
     return () => {
       cancelled = true;
     };
   }, [orgParam]);
+  const orgFilterId = !orgParam
+    ? null
+    : UUID_RE.test(orgParam)
+      ? orgParam
+      : resolvedOrgFilter?.param === orgParam
+        ? resolvedOrgFilter.id
+        : null;
 
   // ?scope=id → project ids assigned to that scope
-  const [scopeProjectIds, setScopeProjectIds] =
-    React.useState<Set<string> | null>(null);
+  const [resolvedScopeProjects, setResolvedScopeProjects] = React.useState<{
+    scopeId: string;
+    projectIds: Set<string>;
+  } | null>(null);
   React.useEffect(() => {
     let cancelled = false;
-    if (!scopeParam) {
-      setScopeProjectIds(null);
-      return undefined;
-    }
+    if (!scopeParam) return undefined;
     (async () => {
       const res = await scopesService.listEntitiesByScopes({
         scope_ids: [scopeParam],
         entity_type: "project",
       });
       if (!cancelled) {
-        setScopeProjectIds(
-          new Set(
+        setResolvedScopeProjects({
+          scopeId: scopeParam,
+          projectIds: new Set(
             isScopesRpcErr(res)
               ? []
               : res.data.entities.map((e) => e.entity_id),
           ),
-        );
+        });
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [scopeParam]);
+  const scopeProjectIds = !scopeParam
+    ? null
+    : resolvedScopeProjects?.scopeId === scopeParam
+      ? resolvedScopeProjects.projectIds
+      : new Set<string>();
 
-  const filtered = React.useMemo(() => {
-    let list = projects;
-    if (orgFilterId)
-      list = list.filter((p) => p.organizationId === orgFilterId);
-    if (scopeProjectIds) list = list.filter((p) => scopeProjectIds.has(p.id));
-    const q = query.trim().toLowerCase();
-    if (q)
-      list = list.filter(
-        (p) => p.name.toLowerCase().includes(q) || idMatchesQuery(p, q),
-      );
-    return list;
-  }, [projects, orgFilterId, scopeProjectIds, query]);
+  let filtered = projects;
+  if (orgFilterId) {
+    filtered = filtered.filter((p) => p.organizationId === orgFilterId);
+  }
+  if (scopeProjectIds) {
+    filtered = filtered.filter((p) => scopeProjectIds.has(p.id));
+  }
+  const normalizedQuery = query.trim().toLowerCase();
+  if (normalizedQuery) {
+    filtered = filtered.filter(
+      (project) =>
+        project.name.toLowerCase().includes(normalizedQuery) ||
+        idMatchesQuery(project, normalizedQuery),
+    );
+  }
 
   const isFiltered = Boolean(orgParam || scopeParam);
   // Strips ?org= / ?scope= by navigating to the bare list — the single,
   // discoverable escape hatch out of every filtered view.
-  const clearFilter = React.useCallback(
-    () => router.push("/projects"),
-    [router],
-  );
+  const clearFilter = () => router.push("/projects");
   const filterOrgName = orgFilterId
     ? (orgMap.get(orgFilterId)?.name ?? "this organization")
     : null;
@@ -358,8 +377,95 @@ export function ProjectsHub({
       ? "Projects tagged to this scope"
       : null;
 
+  // ── Surface context + the ONE menu for the list pane ─────────────────
+  const [menuTarget, setMenuTarget] = React.useState<ProjectWithRole | null>(
+    null,
+  );
+
+  const listProjects = filtered.map((project) => ({
+    ...project,
+    organizationName: project.organizationId
+      ? (orgMap.get(project.organizationId)?.name ?? null)
+      : null,
+    openTaskCount: stats.get(project.id)?.open ?? 0,
+    doneTaskCount: stats.get(project.id)?.done ?? 0,
+  }));
+
+  const buildListContextData = () =>
+    buildProjectsListContextData({
+      projects: listProjects,
+      searchQuery: query,
+      view,
+      organizationFilterId: orgFilterId,
+      organizationFilterName: filterOrgName,
+      scopeFilterId: scopeParam,
+      selectionText: window.getSelection?.()?.toString() ?? "",
+    });
+
+  const getListApplicationScope = () =>
+    buildApplicationScopeFromMenuContext({
+      selectedText: window.getSelection?.()?.toString() ?? "",
+      selectionRange: null,
+      contextData: buildListContextData(),
+    });
+
+  const resolveMenuTarget = (target: HTMLElement | null) => {
+    const projectId =
+      target
+        ?.closest?.(`[${PROJECT_ROW_DOM_ATTR}]`)
+        ?.getAttribute(PROJECT_ROW_DOM_ATTR) ?? null;
+    const project = projectId
+      ? (filtered.find((item) => item.id === projectId) ?? null)
+      : null;
+    setMenuTarget(project);
+    if (!project) return null;
+
+    const stat = stats.get(project.id);
+    const organization = project.organizationId
+      ? (orgMap.get(project.organizationId) ?? null)
+      : null;
+    return {
+      ...buildProjectsContextData({
+        project,
+        org: organization
+          ? { name: organization.name, isPersonal: organization.isPersonal }
+          : null,
+        taskCounts: { open: stat?.open ?? 0, done: stat?.done ?? 0 },
+        projectCount: filtered.length,
+        selectionText: window.getSelection?.()?.toString() ?? "",
+      }),
+      [CONTEXT_MENU_ENTITY_KEY]: {
+        type: "project" as const,
+        id: project.id,
+        title: project.name,
+        resourceType: "project" as const,
+      },
+    };
+  };
+
+  const menuSections = menuTarget
+    ? createProjectsExtraSections({
+        onManageSettings: () =>
+          router.push(`/projects/${menuTarget.id}/settings`),
+        onOpenKnowledgeGraph: () => {
+          const organization = menuTarget.organizationId
+            ? orgMap.get(menuTarget.organizationId)
+            : null;
+          router.push(
+            organization
+              ? `/knowledge/graph?org=${encodeURIComponent(organization.slug)}`
+              : "/knowledge/graph",
+          );
+        },
+      })
+    : [];
+
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={PROJECTS_CONTEXT_MENU_PROPS.surfaceName}
+      getScope={getListApplicationScope}
+      isEditable={false}
+    >
       <RouteHeader
         left={
           <span className="flex items-center gap-1.5 px-1.5 min-w-0">
@@ -378,172 +484,205 @@ export function ProjectsHub({
           />
         }
       />
-      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
-        <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-5">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            {subtitle && (
-              <p className="text-sm text-muted-foreground">{subtitle}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search projects…"
-                className="pl-8 h-9 w-44"
-              />
+      <NonEditableContextMenu
+        sourceFeature={PROJECTS_CONTEXT_MENU_PROPS.sourceFeature}
+        surfaceName={PROJECTS_CONTEXT_MENU_PROPS.surfaceName}
+        placementMode={PROJECTS_CONTEXT_MENU_PROPS.placementMode}
+        getApplicationScope={getListApplicationScope}
+        resolveContextOnOpen={resolveMenuTarget}
+        extraSections={menuSections}
+        contentSource={{ type: "raw" }}
+      >
+        <div
+          className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]"
+          data-surface-value="project_list"
+        >
+          <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-5">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                {subtitle && (
+                  <p className="text-sm text-muted-foreground">{subtitle}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-xs text-muted-foreground tabular-nums"
+                  data-surface-value="project_count"
+                >
+                  {filtered.length}{" "}
+                  {filtered.length === 1 ? "project" : "projects"}
+                </span>
+                <div
+                  className="relative"
+                  data-surface-value="project_search_query"
+                >
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search projects…"
+                    className="pl-8 h-9 w-44"
+                  />
+                </div>
+                <div
+                  className="flex items-center rounded-lg border border-border p-0.5"
+                  data-surface-value="project_list_view"
+                >
+                  <button
+                    onClick={() => setView("cards")}
+                    className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors ${view === "cards" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    title="Card view"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setView("table")}
+                    className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors ${view === "table" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    title="Table view"
+                  >
+                    <TableIcon className="h-4 w-4" />
+                  </button>
+                </div>
+                {filtered.length > 0 && (
+                  <ReferencesBulkCopyButton
+                    referenceType="project"
+                    records={filtered.map((p) => ({ id: p.id, label: p.name }))}
+                    toastLabel={`${filtered.length} project${filtered.length === 1 ? "" : "s"}`}
+                  />
+                )}
+              </div>
             </div>
-            <div className="flex items-center rounded-lg border border-border p-0.5">
-              <button
-                onClick={() => setView("cards")}
-                className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors ${view === "cards" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                title="Card view"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setView("table")}
-                className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors ${view === "table" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                title="Table view"
-              >
-                <TableIcon className="h-4 w-4" />
-              </button>
-            </div>
-            {filtered.length > 0 && (
-              <ReferencesBulkCopyButton
-                referenceType="project"
-                records={filtered.map((p) => ({ id: p.id, label: p.name }))}
-                toastLabel={`${filtered.length} project${filtered.length === 1 ? "" : "s"}`}
-              />
-            )}
-          </div>
-        </div>
 
-        {isFiltered && (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Filter className="h-3.5 w-3.5" />
-              Filtered by
-            </span>
-            {orgFilterId && (
-              <Badge
-                variant="outline"
-                className="gap-1 pl-2 pr-1 py-0.5 text-xs"
+            {isFiltered && (
+              <div
+                className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2"
+                data-surface-value="project_list_filters"
               >
-                <Building2 className="h-3 w-3" />
-                <span>Organization: {filterOrgName}</span>
-                <button
-                  type="button"
-                  aria-label="Remove organization filter"
-                  className="rounded hover:bg-accent p-0.5"
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <Filter className="h-3.5 w-3.5" />
+                  Filtered by
+                </span>
+                {orgFilterId && (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 pl-2 pr-1 py-0.5 text-xs"
+                  >
+                    <Building2 className="h-3 w-3" />
+                    <span>Organization: {filterOrgName}</span>
+                    <button
+                      type="button"
+                      aria-label="Remove organization filter"
+                      className="rounded hover:bg-accent p-0.5"
+                      onClick={clearFilter}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+                {scopeParam && (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 pl-2 pr-1 py-0.5 text-xs"
+                  >
+                    <span>Scope</span>
+                    <button
+                      type="button"
+                      aria-label="Remove scope filter"
+                      className="rounded hover:bg-accent p-0.5"
+                      onClick={clearFilter}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs ml-auto"
                   onClick={clearFilter}
                 >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )}
-            {scopeParam && (
-              <Badge
-                variant="outline"
-                className="gap-1 pl-2 pr-1 py-0.5 text-xs"
-              >
-                <span>Scope</span>
-                <button
-                  type="button"
-                  aria-label="Remove scope filter"
-                  className="rounded hover:bg-accent p-0.5"
-                  onClick={clearFilter}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs ml-auto"
-              onClick={clearFilter}
-            >
-              Show all projects
-            </Button>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-7 w-7 animate-spin text-primary" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <Card className="p-12 text-center">
-            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <FolderKanban className="h-7 w-7 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold mb-1">No projects found</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">
-              {query || isFiltered
-                ? "Nothing matches your filters."
-                : "Create a project to organize tasks, resources, and context."}
-            </p>
-            <div className="flex items-center justify-center gap-2">
-              {isFiltered && (
-                <Button size="sm" variant="outline" onClick={clearFilter}>
-                  <Filter className="h-4 w-4 mr-1.5" />
                   Show all projects
                 </Button>
-              )}
-              <Button size="sm" onClick={handleCreate}>
-                <Plus className="h-4 w-4 mr-1.5" />
-                New project
-              </Button>
-            </div>
-          </Card>
-        ) : view === "table" ? (
-          <ProjectsTable projects={filtered} stats={stats} orgMap={orgMap} />
-        ) : isFiltered || query ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filtered.map((p) => (
-              <ProjectHubCard
-                key={p.id}
-                project={p}
-                stat={stats.get(p.id)}
+              </div>
+            )}
+
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-7 w-7 animate-spin text-primary" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <Card className="p-12 text-center">
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                  <FolderKanban className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold mb-1">No projects found</h3>
+                <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">
+                  {query || isFiltered
+                    ? "Nothing matches your filters."
+                    : "Create a project to organize tasks, resources, and context."}
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                  {isFiltered && (
+                    <Button size="sm" variant="outline" onClick={clearFilter}>
+                      <Filter className="h-4 w-4 mr-1.5" />
+                      Show all projects
+                    </Button>
+                  )}
+                  <Button size="sm" onClick={handleCreate}>
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    New project
+                  </Button>
+                </div>
+              </Card>
+            ) : view === "table" ? (
+              <ProjectsTable
+                projects={filtered}
+                stats={stats}
                 orgMap={orgMap}
               />
-            ))}
+            ) : isFiltered || query ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filtered.map((p) => (
+                  <ProjectHubCard
+                    key={p.id}
+                    project={p}
+                    stat={stats.get(p.id)}
+                    orgMap={orgMap}
+                  />
+                ))}
+              </div>
+            ) : (
+              <>
+                {personal.length > 0 && (
+                  <Section title="Personal">
+                    {personal.map((p) => (
+                      <ProjectHubCard
+                        key={p.id}
+                        project={p}
+                        stat={stats.get(p.id)}
+                        orgMap={orgMap}
+                      />
+                    ))}
+                  </Section>
+                )}
+                {teams.length > 0 && (
+                  <Section title="Team projects">
+                    {teams.map((p) => (
+                      <ProjectHubCard
+                        key={p.id}
+                        project={p}
+                        stat={stats.get(p.id)}
+                        orgMap={orgMap}
+                      />
+                    ))}
+                  </Section>
+                )}
+              </>
+            )}
           </div>
-        ) : (
-          <>
-            {personal.length > 0 && (
-              <Section title="Personal">
-                {personal.map((p) => (
-                  <ProjectHubCard
-                    key={p.id}
-                    project={p}
-                    stat={stats.get(p.id)}
-                    orgMap={orgMap}
-                  />
-                ))}
-              </Section>
-            )}
-            {teams.length > 0 && (
-              <Section title="Team projects">
-                {teams.map((p) => (
-                  <ProjectHubCard
-                    key={p.id}
-                    project={p}
-                    stat={stats.get(p.id)}
-                    orgMap={orgMap}
-                  />
-                ))}
-              </Section>
-            )}
-          </>
-        )}
         </div>
-      </div>
-    </>
+      </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -565,13 +704,7 @@ function Section({
 }
 
 type UpdatedFilter =
-  | "any"
-  | "hour"
-  | "today"
-  | "week"
-  | "month"
-  | "quarter"
-  | "year";
+  "any" | "hour" | "today" | "week" | "month" | "quarter" | "year";
 
 type ProjectColumnFilters = {
   name: string;
@@ -747,13 +880,6 @@ function NumberRangeColumnFilter({
     max !== undefined ? String(max) : "",
   );
 
-  React.useEffect(() => {
-    setMinText(min !== undefined ? String(min) : "");
-  }, [min]);
-  React.useEffect(() => {
-    setMaxText(max !== undefined ? String(max) : "");
-  }, [max]);
-
   const commit = (raw: string, kind: "min" | "max") => {
     if (raw.trim() === "") {
       onChange({ [kind]: undefined });
@@ -843,6 +969,58 @@ function UpdatedColumnFilter({
   );
 }
 
+function ProjectsColumnHead({
+  k,
+  children,
+  className,
+  align = "left",
+  filter,
+  sortKey,
+  sortDir,
+  onSort,
+}: {
+  k: SortKey;
+  children: React.ReactNode;
+  className?: string;
+  align?: "left" | "right";
+  filter: React.ReactNode;
+  sortKey: SortKey;
+  sortDir: "asc" | "desc";
+  onSort: (key: SortKey) => void;
+}) {
+  return (
+    <TableHead className={className}>
+      <div
+        className={cn(
+          "inline-flex items-center gap-0.5",
+          align === "right" && "justify-end w-full",
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => onSort(k)}
+          className={cn(
+            "inline-flex items-center gap-1 hover:text-foreground transition-colors",
+            align === "right" && "justify-end",
+          )}
+        >
+          {children}
+          {sortKey === k ? (
+            sortDir === "asc" ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )
+          ) : (
+            <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
+          )}
+        </button>
+        {filter}
+      </div>
+    </TableHead>
+  );
+}
+
 function ProjectsTable({
   projects,
   stats,
@@ -862,53 +1040,48 @@ function ProjectsTable({
     p.organizationId ? (orgMap.get(p.organizationId) ?? null) : null;
   const orgLabel = (p: ProjectWithRole) => orgEntry(p)?.name ?? "—";
 
-  const orgOptions = React.useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const p of projects) {
-      if (!p.organizationId) continue;
-      const name = orgMap.get(p.organizationId)?.name ?? "—";
-      seen.set(p.organizationId, name);
-    }
-    return [...seen.entries()]
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [projects, orgMap]);
+  const seenOrganizations = new Map<string, string>();
+  for (const project of projects) {
+    if (!project.organizationId) continue;
+    const name = orgMap.get(project.organizationId)?.name ?? "—";
+    seenOrganizations.set(project.organizationId, name);
+  }
+  const orgOptions = [...seenOrganizations.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const patchFilters = (patch: Partial<ProjectColumnFilters>) => {
     setColumnFilters((prev) => ({ ...prev, ...patch }));
   };
 
-  const filtered = React.useMemo(() => {
-    const nameQ = columnFilters.name.trim().toLowerCase();
-    return projects.filter((p) => {
-      if (nameQ && !p.name.toLowerCase().includes(nameQ)) return false;
-      if (
-        columnFilters.organizationId &&
-        p.organizationId !== columnFilters.organizationId
-      ) {
-        return false;
-      }
-      const open = stats.get(p.id)?.open ?? 0;
-      const done = stats.get(p.id)?.done ?? 0;
-      if (
-        !passesNumberRange(open, columnFilters.openMin, columnFilters.openMax)
-      ) {
-        return false;
-      }
-      if (
-        !passesNumberRange(done, columnFilters.doneMin, columnFilters.doneMax)
-      ) {
-        return false;
-      }
-      if (!passesUpdatedFilter(p.updatedAt, columnFilters.updated)) {
-        return false;
-      }
-      return true;
-    });
-  }, [projects, stats, columnFilters]);
+  const nameQuery = columnFilters.name.trim().toLowerCase();
+  const filteredRows = projects.filter((project) => {
+    if (nameQuery && !project.name.toLowerCase().includes(nameQuery)) {
+      return false;
+    }
+    if (
+      columnFilters.organizationId &&
+      project.organizationId !== columnFilters.organizationId
+    ) {
+      return false;
+    }
+    const open = stats.get(project.id)?.open ?? 0;
+    const done = stats.get(project.id)?.done ?? 0;
+    if (
+      !passesNumberRange(open, columnFilters.openMin, columnFilters.openMax)
+    ) {
+      return false;
+    }
+    if (
+      !passesNumberRange(done, columnFilters.doneMin, columnFilters.doneMax)
+    ) {
+      return false;
+    }
+    return passesUpdatedFilter(project.updatedAt, columnFilters.updated);
+  });
 
-  const sorted = React.useMemo(() => {
-    const arr = [...filtered];
+  const sorted = (() => {
+    const arr = [...filteredRows];
     const dir = sortDir === "asc" ? 1 : -1;
     arr.sort((a, b) => {
       switch (sortKey) {
@@ -931,8 +1104,7 @@ function ProjectsTable({
       }
     });
     return arr;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, stats, sortKey, sortDir]);
+  })();
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -945,50 +1117,6 @@ function ProjectsTable({
   };
 
   const filtersActive = hasActiveColumnFilters(columnFilters);
-
-  const ColumnHead = ({
-    k,
-    children,
-    className,
-    align = "left",
-    filter,
-  }: {
-    k: SortKey;
-    children: React.ReactNode;
-    className?: string;
-    align?: "left" | "right";
-    filter: React.ReactNode;
-  }) => (
-    <TableHead className={className}>
-      <div
-        className={cn(
-          "inline-flex items-center gap-0.5",
-          align === "right" && "justify-end w-full",
-        )}
-      >
-        <button
-          type="button"
-          onClick={() => toggleSort(k)}
-          className={cn(
-            "inline-flex items-center gap-1 hover:text-foreground transition-colors",
-            align === "right" && "justify-end",
-          )}
-        >
-          {children}
-          {sortKey === k ? (
-            sortDir === "asc" ? (
-              <ChevronUp className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronDown className="h-3.5 w-3.5" />
-            )
-          ) : (
-            <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
-          )}
-        </button>
-        {filter}
-      </div>
-    </TableHead>
-  );
 
   return (
     <div className="rounded-lg border border-border overflow-hidden">
@@ -1010,8 +1138,11 @@ function ProjectsTable({
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <ColumnHead
+            <ProjectsColumnHead
               k="name"
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
               filter={
                 <ColumnFilterButton
                   active={columnFilters.name.trim().length > 0}
@@ -1027,9 +1158,12 @@ function ProjectsTable({
               }
             >
               Project
-            </ColumnHead>
-            <ColumnHead
+            </ProjectsColumnHead>
+            <ProjectsColumnHead
               k="org"
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
               className="w-60"
               filter={
                 <ColumnFilterButton
@@ -1078,9 +1212,12 @@ function ProjectsTable({
               }
             >
               Organization
-            </ColumnHead>
-            <ColumnHead
+            </ProjectsColumnHead>
+            <ProjectsColumnHead
               k="open"
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
               className="w-24 text-right"
               align="right"
               filter={
@@ -1093,6 +1230,7 @@ function ProjectsTable({
                   align="end"
                 >
                   <NumberRangeColumnFilter
+                    key={`open:${columnFilters.openMin ?? "none"}:${columnFilters.openMax ?? "none"}`}
                     label="Open"
                     min={columnFilters.openMin}
                     max={columnFilters.openMax}
@@ -1104,9 +1242,12 @@ function ProjectsTable({
               }
             >
               Open
-            </ColumnHead>
-            <ColumnHead
+            </ProjectsColumnHead>
+            <ProjectsColumnHead
               k="done"
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
               className="w-24 text-right"
               align="right"
               filter={
@@ -1119,6 +1260,7 @@ function ProjectsTable({
                   align="end"
                 >
                   <NumberRangeColumnFilter
+                    key={`done:${columnFilters.doneMin ?? "none"}:${columnFilters.doneMax ?? "none"}`}
                     label="Done"
                     min={columnFilters.doneMin}
                     max={columnFilters.doneMax}
@@ -1130,9 +1272,12 @@ function ProjectsTable({
               }
             >
               Done
-            </ColumnHead>
-            <ColumnHead
+            </ProjectsColumnHead>
+            <ProjectsColumnHead
               k="updated"
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={toggleSort}
               className="w-36"
               filter={
                 <ColumnFilterButton
@@ -1147,7 +1292,7 @@ function ProjectsTable({
               }
             >
               Updated
-            </ColumnHead>
+            </ProjectsColumnHead>
             <TableHead className="w-40 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -1167,6 +1312,7 @@ function ProjectsTable({
               return (
                 <TableRow
                   key={p.id}
+                  data-project-row-id={p.id}
                   className="group/entity-ref cursor-pointer"
                   onClick={() => router.push(`/projects/${p.id}`)}
                 >
@@ -1304,7 +1450,10 @@ function ProjectHubCard({
   const href = `/projects/${project.id}`;
 
   return (
-    <Card className="group/entity-ref relative overflow-hidden flex flex-col hover:border-primary/40 hover:shadow-sm transition-all">
+    <Card
+      data-project-row-id={project.id}
+      className="group/entity-ref relative overflow-hidden flex flex-col hover:border-primary/40 hover:shadow-sm transition-all"
+    >
       <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500 opacity-80" />
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-start gap-3">
