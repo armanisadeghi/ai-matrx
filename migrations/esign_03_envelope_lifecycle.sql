@@ -79,6 +79,33 @@ language sql volatile as $fn$ select set_config('esign.privileged_write','on',tr
 create or replace function esign._disarm() returns void
 language sql volatile as $fn$ select set_config('esign.privileged_write','off',true)::void $fn$;
 
+
+-- 🚨 THE OWNER BRANCH. `iam.has_access` is has_access_for(auth.uid(), …) and it does NOT include
+-- the row's creator — every generated entity policy on this platform reads "owner OR
+-- iam.has_access(...)", precisely because the function is only the second half. A permission check
+-- written as has_access alone therefore refuses the person who created the envelope, which is the
+-- textbook over-tightening defect (db-rules §6): the requester could not send their own request.
+-- One helper, consulted by every esign RPC that gates on the envelope.
+create or replace function esign._may_manage(p_envelope_id uuid, p_level text default 'editor')
+returns boolean
+language sql stable security definer set search_path to 'esign','public' as $fn$
+  select exists (select 1 from esign.envelope e
+                  where e.id = p_envelope_id
+                    and (e.created_by = auth.uid()
+                         or iam.has_access('esign_envelope', e.id, p_level::permission_level)))
+      or public.is_platform_admin();
+$fn$;
+
+create or replace function esign._may_manage_campaign(p_campaign_id uuid, p_level text default 'editor')
+returns boolean
+language sql stable security definer set search_path to 'esign','public' as $fn$
+  select exists (select 1 from esign.campaign c
+                  where c.id = p_campaign_id
+                    and (c.created_by = auth.uid()
+                         or iam.has_access('esign_campaign', c.id, p_level::permission_level)))
+      or public.is_platform_admin();
+$fn$;
+
 -- ---------------------------------------------------------------------------------
 -- 3. THE ONE EVENT WRITER (§2.5, RECORDED DECISION 2).
 -- ---------------------------------------------------------------------------------
@@ -463,9 +490,7 @@ begin
   select * into e from esign.envelope where id = s.envelope_id;
 
   -- THE PERMISSION CHECK — the whole reason a per-purpose wrapper exists (§5.4 issuance side).
-  if auth.uid() is not null
-     and not iam.has_access('esign_envelope', e.id, 'editor')
-     and not public.is_platform_admin() then
+  if auth.uid() is not null and not esign._may_manage(e.id, 'editor') then
     return jsonb_build_object('granted', false, 'reason', 'no_permission_on_envelope');
   end if;
   if s.actor_type <> 'external' then
@@ -719,7 +744,7 @@ begin
   if not found then
     raise exception 'esign_envelope_state: envelope % does not exist', p_envelope_id using errcode = 'P0002';
   end if;
-  if not iam.has_access('esign_envelope', e.id, 'viewer') and not public.is_platform_admin() then
+  if not esign._may_manage(e.id, 'viewer') then
     return jsonb_build_object('granted', false, 'reason', 'no_access');
   end if;
   return jsonb_build_object(

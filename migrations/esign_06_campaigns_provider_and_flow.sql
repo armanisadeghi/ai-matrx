@@ -247,7 +247,7 @@ begin
   if not found then
     raise exception 'esign_campaign_progress: campaign % does not exist', p_campaign_id using errcode = 'P0002';
   end if;
-  if not iam.has_access('esign_campaign', c.id, 'viewer') and not public.is_platform_admin() then
+  if not esign._may_manage_campaign(c.id, 'viewer') then
     return jsonb_build_object('granted', false, 'reason', 'no_access');
   end if;
 
@@ -330,7 +330,7 @@ begin
   if not found then
     raise exception 'esign_campaign_export: campaign % does not exist', p_campaign_id using errcode = 'P0002';
   end if;
-  if not iam.has_access('esign_campaign', c.id, 'viewer') and not public.is_platform_admin() then
+  if not esign._may_manage_campaign(c.id, 'viewer') then
     return jsonb_build_object('granted', false, 'reason', 'no_access');
   end if;
   return jsonb_build_object(

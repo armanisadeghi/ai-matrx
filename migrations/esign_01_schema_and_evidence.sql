@@ -49,11 +49,15 @@
 --    is true, every column that describes the signed bytes is immutable against every writer,
 --    including a direct authenticated UPDATE that never touches an RPC.
 --
--- 6. THE EVIDENCE WRITE GUARD IS RESET BEFORE EVERY RETURN, not left set for the transaction.
---    HRB-008's sixth finding is that `hr.privileged_write` is transaction-scoped, so one definer
---    call disarms the guard for the rest of the caller's transaction. This lane's guard flag
---    (`esign.privileged_write`) is armed at the top of each definer RPC and disarmed on every exit
---    path, so the window is the function body and nothing wider.
+-- 6. THE EVIDENCE WRITE GUARD, STATED PRECISELY SO IT IS NOT OVERSOLD. What actually stops a
+--    direct client write is `current_user`: inside a SECURITY DEFINER esign RPC it is the function
+--    owner, and from PostgREST it is `authenticated`, which the guard refuses. The transaction-local
+--    `esign.privileged_write` flag is the second lane, for a non-definer service path, and it is
+--    armed at the top of each RPC and DISARMED ON EVERY EXIT PATH — deliberately unlike
+--    `hr.privileged_write`, whose transaction scope HRB-008's sixth finding showed leaves the guard
+--    open for the rest of the caller's transaction after any one HR RPC. So: the guard is real
+--    against a client, the flag's window here is the function body and nothing wider, and neither
+--    claim is stronger than that.
 -- ===================================================================================
 
 set local statement_timeout = '600s';

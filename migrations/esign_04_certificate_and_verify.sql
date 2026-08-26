@@ -230,7 +230,7 @@ begin
   if not found then
     raise exception 'esign_verify_envelope: envelope % does not exist', p_envelope_id using errcode = 'P0002';
   end if;
-  if not iam.has_access('esign_envelope', e.id, 'viewer') and not public.is_platform_admin() then
+  if not esign._may_manage(e.id, 'viewer') then
     return jsonb_build_object('granted', false, 'reason', 'no_access');
   end if;
 
