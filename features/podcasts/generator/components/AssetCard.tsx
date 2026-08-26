@@ -74,7 +74,7 @@ export function AssetCard({
     extraActions.push({
       id: "use-as-cover",
       label: selected ? "Selected as cover" : "Use as cover",
-      icon: selected ? <Check /> : <Star />,
+      icon: selected ? Check : Star,
       disabled: selected,
       onClick: () => onSelectCover(slot.url!),
     });
@@ -83,7 +83,7 @@ export function AssetCard({
     extraActions.push({
       id: "regenerate",
       label: busy ? "Regenerating…" : "Regenerate",
-      icon: <RefreshCw />,
+      icon: RefreshCw,
       disabled: busy,
       onClick: () => onRegenerate({ modelAlias: defaultAlias }),
     });
@@ -95,7 +95,7 @@ export function AssetCard({
         extraActions.push({
           id: `regenerate-${alias}`,
           label: `Regenerate · Model ${i + 1}`,
-          icon: <Layers />,
+          icon: Layers,
           disabled: busy,
           onClick: () => onRegenerate({ modelAlias: alias }),
         });

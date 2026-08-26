@@ -64,6 +64,10 @@ export type TableViewUrlState = {
   setColumnOrder: (value: string[]) => void;
   /** Convenience: flip one column's visibility. */
   toggleColumn: (fieldName: string) => void;
+  /** The whole view as one object — what a saved view stores. */
+  viewState: TableViewState;
+  /** Apply a whole view at once (a saved view being opened). */
+  applyViewState: (next: TableViewState) => void;
   /** Clear every view control at once (and the URL with it). */
   resetView: () => void;
   /** True when anything is narrowing or reordering — drives a "Reset view" affordance. */
@@ -156,6 +160,11 @@ export function useTableViewUrlState(options: {
             ? prev.hidden.filter((f) => f !== fieldName)
             : [...prev.hidden, fieldName],
         })),
+      [patchWhole],
+    ),
+    viewState: state,
+    applyViewState: useCallback(
+      (next: TableViewState) => patchWhole(next),
       [patchWhole],
     ),
     resetView: useCallback(() => {

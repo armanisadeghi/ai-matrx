@@ -745,7 +745,22 @@ function MandateCard({
               Open Map inputs and remove or re-point {verdict.missing.length === 1 ? "it" : "them"}.
             </p>
           ) : null}
-          {dropped && verdict ? (
+          {dropped && verdict?.outputSide ? (
+            <p className="mt-1.5 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-[12px] leading-relaxed text-destructive">
+              Whatever reads this job&apos;s result needs{" "}
+              <span className="font-medium">{verdict.missing.join(", ")}</span>{" "}
+              in the answer, and{" "}
+              {verdict.layer === "org"
+                ? "your organization's agent"
+                : "your agent"}{" "}
+              doesn&apos;t produce {verdict.missing.length === 1 ? "it" : "them"}
+              {" "}— so the built-in agent is running instead. Give your agent a
+              structured output that includes{" "}
+              {verdict.missing.length === 1 ? "that field" : "those fields"} and
+              it takes over again automatically.
+            </p>
+          ) : null}
+          {dropped && verdict && !verdict.outputSide ? (
             <p className="mt-1.5 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-[12px] leading-relaxed text-destructive">
               This job now needs{" "}
               <span className="font-medium">{verdict.missing.join(", ")}</span>,

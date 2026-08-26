@@ -215,12 +215,17 @@ export function StudioShell({ fileId }: StudioShellProps) {
       mime_type: mimeType,
       total_pages: pages.length,
       active_page_count: activePages.length,
+      // The PARENT's declared shape (THE FAMILY DOCTRINE — one concept,
+      // one shape family-wide). The studio loads no extractor derivative,
+      // so `processed_document_id` is empty and `using_clean_text` false;
+      // `mime_type` / `active_page_count` stay individually declared
+      // studio values above.
       document_summary: {
-        file_id: fileId,
         filename,
-        mime_type: mimeType,
+        file_id: fileId,
+        processed_document_id: "",
         total_pages: pages.length,
-        active_page_count: activePages.length,
+        using_clean_text: false,
       },
       current_page: pageNumber,
       inspector_tab: activeTab,

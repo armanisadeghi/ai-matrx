@@ -17,7 +17,16 @@
  */
 
 import { useMemo, useState } from "react";
-import { RefreshCw, RotateCcw, Star, Volume2, VolumeX } from "lucide-react";
+import {
+  Clock,
+  Copy,
+  RefreshCw,
+  RotateCcw,
+  Star,
+  Volume2,
+  VolumeX,
+  XCircle,
+} from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +40,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
 import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+  type ResolvedContextMenuContext,
+} from "@/features/context-menu-v3/types";
 import { AssistChip } from "../components/AssistChip";
 import { SNOOZE_WINDOWS, isLowConfidence } from "../constants";
 import { useAssistsQuery } from "./useAssistsQuery";
@@ -333,6 +348,104 @@ export function AssistsManager() {
     }
   };
 
+  // ── The ONE right-click menu for the whole manager ──────────────────────
+  //
+  // `MatrxDataTable` stamps `data-row-id` from `getRowId` (the assist id), so
+  // the pane's single menu resolves the right-clicked row from the DOM, same
+  // delegation shape as the Mandates/Kind-Catalog reference wirings. The
+  // decision itself is never re-implemented here — every action below calls
+  // the SAME hooks (`restore`/`dismissAll`/`snoozeAll`/`setStarred`) the
+  // toolbar and `AssistChip` already use.
+  const [menuRow, setMenuRow] = useState<Assist | null>(null);
+
+  const resolveAssistMenuTarget = (
+    target: HTMLElement | null,
+  ): ResolvedContextMenuContext | null => {
+    const id = target?.closest?.("[data-row-id]")?.getAttribute("data-row-id");
+    const row = id ? (rows.find((r) => r.id === id) ?? null) : null;
+    setMenuRow(row);
+    if (!row) return null;
+    return {
+      content: humanAssistRow(row),
+      [CONTEXT_MENU_ENTITY_KEY]: null,
+    };
+  };
+
+  const assistMenuSections: ContextMenuExtraSection[] = (() => {
+    const row = menuRow;
+    if (!row) return [];
+    const items: ContextMenuExtraSection["items"] = [
+      {
+        kind: "item",
+        id: "assist-flag",
+        label: row.isStarred ? "Unflag" : "Flag",
+        icon: Star,
+        onSelect: () => {
+          void setStarred(row.id, !row.isStarred).catch(() =>
+            toast.error("Could not update the flag — try again"),
+          );
+        },
+      },
+      {
+        kind: "item",
+        id: "assist-copy-config",
+        label: "Copy config for AI",
+        icon: Copy,
+        onSelect: () => {
+          void navigator.clipboard.writeText(humanAssistRow(row)).then(() => {
+            toast.success("Copied assist config");
+          });
+        },
+      },
+    ];
+    if (row.status === "pending") {
+      items.push({
+        kind: "submenu",
+        id: "assist-snooze",
+        label: "Snooze",
+        icon: Clock,
+        children: SNOOZE_WINDOWS.map((window) => ({
+          kind: "item" as const,
+          id: `assist-snooze-${window.key}`,
+          label: window.label,
+          onSelect: () => {
+            void runBulk(() => snoozeAll([row.id], window.key), "snoozed");
+          },
+        })),
+      });
+      items.push({
+        kind: "item",
+        id: "assist-dismiss",
+        label: "Dismiss",
+        icon: XCircle,
+        destructive: true,
+        onSelect: () => {
+          void runBulk(() => dismissAll([row.id]), "dismissed");
+        },
+      });
+    } else {
+      items.push({
+        kind: "item",
+        id: "assist-restore",
+        label: "Restore",
+        icon: RotateCcw,
+        onSelect: () => {
+          void restore(row.id)
+            .then(() => toast.success("Back in your assists"))
+            .catch(() => toast.error("Could not restore — try again"));
+        },
+      });
+    }
+    return [
+      {
+        id: "assist-actions",
+        label: "Assist",
+        anchor: "after-clipboard",
+        items,
+      },
+    ];
+  })();
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
@@ -544,6 +657,13 @@ export function AssistsManager() {
       )}
 
       <div className="min-h-0 flex-1 p-2 sm:p-3">
+        <NonEditableContextMenu
+          sourceFeature="admin"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "Assists manager" }}
+          resolveContextOnOpen={resolveAssistMenuTarget}
+          extraSections={assistMenuSections}
+        >
         <MatrxDataTable<Assist>
           data={rows}
           columns={columns}
@@ -628,6 +748,7 @@ export function AssistsManager() {
             }),
           }}
         />
+        </NonEditableContextMenu>
       </div>
 
       <ConfirmDialog

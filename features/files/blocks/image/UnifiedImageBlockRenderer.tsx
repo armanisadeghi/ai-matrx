@@ -52,16 +52,12 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu/context-menu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
 import {
   Drawer,
   DrawerContent,
@@ -73,6 +69,7 @@ import { ImageSharePopover, ShareQuickActionsBody } from "./ImageSharePopover";
 import { ShareLinkDialog } from "@/features/files/components/core/ShareLinkDialog/ShareLinkDialog";
 import { useImageActions } from "./useImageActions";
 import { useUnifiedImageUrl } from "./useUnifiedImageUrl";
+import { deriveViewerUrl } from "./helpers/derive-viewer-url";
 import type { ImageVariantFormat } from "./utils/render-image-variant";
 import type { UnifiedImageBlock } from "./types";
 import type { MediaExtraAction } from "../actions";
@@ -93,6 +90,13 @@ export interface UnifiedImageBlockRendererProps {
    * unaffected.
    */
   extraActions?: MediaExtraAction[];
+  /**
+   * Attribution for the v3 context menu — the FEATURE that mounted this
+   * renderer (chat, podcasts, notes, …). Defaults to "files", the renderer's
+   * home. Mounting features with their own registered source should pass it
+   * so agent launches from the menu attribute to the true caller.
+   */
+  sourceFeature?: SourceFeature;
 }
 
 // ─── Format / size option tables ──────────────────────────────────────────────
@@ -200,7 +204,13 @@ function useLongPress(onLongPress: () => void, ms = 500) {
 
 export const UnifiedImageBlockRenderer: React.FC<
   UnifiedImageBlockRendererProps
-> = ({ block, variant = "inline", onCompactClick, extraActions }) => {
+> = ({
+  block,
+  variant = "inline",
+  onCompactClick,
+  extraActions,
+  sourceFeature = "files",
+}) => {
   const { src, status, isPlaceholder, fileId, reportLoadError } =
     useUnifiedImageUrl(block);
   const isMobile = useIsMobile();
@@ -287,6 +297,140 @@ export const UnifiedImageBlockRenderer: React.FC<
     );
   }
 
+  // ── v3 context menu wiring ─────────────────────────────────────────
+  //
+  // The right-click menu is the canonical v3 `NonEditableContextMenu` —
+  // every image-specific action folds in as an "Image" extraSections group
+  // (THE LOSSLESS LAW: same rows, same handlers as the old bespoke menu),
+  // and v3 adds Copy / AI / Export / Attach / Share on top. The durable
+  // identity (viewer deep link for matrx files, the external URL otherwise)
+  // is the content — never a signed URL.
+  const durableRef =
+    block.origin === "matrx" ? deriveViewerUrl(block) : block.externalUrl;
+
+  const imageItems: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "view-full-size",
+      label: "View full size",
+      icon: Expand,
+      onSelect: handleExpand,
+    },
+    {
+      kind: "item",
+      id: "open-new-tab",
+      label: "Open in new tab",
+      icon: ExternalLink,
+      onSelect: actions.openNewTab,
+    },
+    { kind: "separator", id: "image-sep-download" },
+    {
+      kind: "item",
+      id: "download",
+      label: actions.isDownloading ? "Downloading…" : "Download",
+      icon: Download,
+      onSelect: actions.download,
+      disabled: actions.isDownloading,
+    },
+  ];
+  if (isMatrx) {
+    imageItems.push(
+      {
+        kind: "submenu",
+        id: "download-as",
+        label: "Download as",
+        icon: FileImage,
+        children: FORMAT_OPTIONS.map(
+          (option): ContextMenuExtraItem => ({
+            kind: "item",
+            id: `download-as-${option.format}`,
+            label: option.label,
+            description: option.description,
+            onSelect: () => actions.downloadAs(option.format),
+            disabled: actions.isVariantBusy,
+          }),
+        ),
+      },
+      {
+        kind: "submenu",
+        id: "resize-download",
+        label: "Resize and download",
+        icon: Maximize,
+        children: SIZE_OPTIONS.map(
+          (option): ContextMenuExtraItem => ({
+            kind: "item",
+            id: `resize-download-${option.width}`,
+            label: option.label,
+            description: option.description,
+            onSelect: () => actions.resizeAndDownload(option.width),
+            disabled: actions.isVariantBusy,
+          }),
+        ),
+      },
+    );
+  }
+  imageItems.push(
+    { kind: "separator", id: "image-sep-copy" },
+    {
+      kind: "item",
+      id: "copy-image",
+      label: "Copy image",
+      icon: Clipboard,
+      onSelect: actions.copyImage,
+    },
+    {
+      kind: "item",
+      id: "copy-link",
+      label: "Copy link",
+      icon: Link2,
+      onSelect: actions.copyLink,
+    },
+    {
+      kind: "item",
+      id: "print",
+      label: "Print",
+      icon: Printer,
+      onSelect: actions.print,
+    },
+  );
+  if (actions.parentFileId) {
+    imageItems.push(
+      { kind: "separator", id: "image-sep-original" },
+      {
+        kind: "item",
+        id: "view-original",
+        label: "View original",
+        icon: ExternalLink,
+        onSelect: actions.viewOriginal,
+      },
+    );
+  }
+
+  const menuSections: ContextMenuExtraSection[] = [];
+  if (extraActions && extraActions.length > 0) {
+    // Domain actions stay the LEADING group, exactly as before.
+    menuSections.push({
+      id: "media-domain",
+      items: extraActions.map(
+        (a): ContextMenuExtraItem => ({
+          kind: "item",
+          id: a.id,
+          label: a.label,
+          icon: a.icon,
+          onSelect: a.onClick,
+          disabled: a.disabled,
+          destructive: a.danger,
+        }),
+      ),
+    });
+  }
+  menuSections.push({
+    id: "image",
+    label: "Image",
+    icon: ImageIcon,
+    items: imageItems,
+  });
+
   // ── Drawer body (mobile long-press) ───────────────────────────────
   //
   // The drawer mirrors the dropdown's action set in a touch-friendly
@@ -300,7 +444,7 @@ export const UnifiedImageBlockRenderer: React.FC<
           {extraActions.map((a) => (
             <DrawerRow
               key={a.id}
-              icon={a.icon}
+              icon={a.icon ? <a.icon /> : undefined}
               label={a.label}
               onClick={a.onClick}
               disabled={a.disabled}
@@ -400,12 +544,36 @@ export const UnifiedImageBlockRenderer: React.FC<
 
   return (
     <>
-      <ContextMenu>
-        {/* On touch, long-press must open ONLY the bottom-sheet drawer (via
-            `longPressHandlers`). Leaving the Radix context menu enabled makes
-            long-press race up a floating popover that isn't a proper drawer —
-            so disable the context-menu trigger on mobile. */}
-        <ContextMenuTrigger asChild disabled={isMobile}>
+      {/* On touch, long-press must open ONLY the bottom-sheet drawer (via
+          `longPressHandlers`) — so the v3 menu is suppressed on mobile,
+          matching the old disabled Radix trigger. */}
+      <NonEditableContextMenu
+        sourceFeature={sourceFeature}
+        suppressed={isMobile}
+        enableFloatingIcon={false}
+        contextData={{
+          content: durableRef ?? block.fileName ?? "Image",
+          context: {
+            mediaKind: "image",
+            origin: block.origin,
+            url: durableRef,
+            fileName: block.fileName,
+            alt: block.fileName ?? "Image",
+            ...(block.origin === "matrx" ? { fileId: block.fileId } : {}),
+          },
+        }}
+        entity={
+          block.origin === "matrx"
+            ? {
+                type: "file",
+                id: block.fileId,
+                title: block.fileName ?? "Image",
+                resourceType: "file",
+              }
+            : undefined
+        }
+        extraSections={menuSections}
+      >
           <div
             className={
               dimsKnown
@@ -546,9 +714,7 @@ export const UnifiedImageBlockRenderer: React.FC<
                           }
                         >
                           {a.icon ? (
-                            <span className="w-4 h-4 mr-2 inline-flex items-center justify-center">
-                              {a.icon}
-                            </span>
+                            <a.icon className="w-4 h-4 mr-2" />
                           ) : null}
                           {a.label}
                         </DropdownMenuItem>
@@ -652,125 +818,7 @@ export const UnifiedImageBlockRenderer: React.FC<
               </DropdownMenu>
             </div>
           </div>
-        </ContextMenuTrigger>
-
-        <ContextMenuContent className="w-56">
-          {extraActions && extraActions.length > 0 ? (
-            <>
-              {extraActions.map((a) => (
-                <ContextMenuItem
-                  key={a.id}
-                  onClick={a.onClick}
-                  disabled={a.disabled}
-                  className={
-                    a.danger
-                      ? "text-destructive focus:text-destructive"
-                      : undefined
-                  }
-                >
-                  {a.icon ? (
-                    <span className="w-4 h-4 mr-2 inline-flex items-center justify-center">
-                      {a.icon}
-                    </span>
-                  ) : null}
-                  {a.label}
-                </ContextMenuItem>
-              ))}
-              <ContextMenuSeparator />
-            </>
-          ) : null}
-          <ContextMenuItem onClick={handleExpand}>
-            <Expand className="w-4 h-4 mr-2" />
-            View full size
-          </ContextMenuItem>
-          <ContextMenuItem onClick={actions.openNewTab}>
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Open in new tab
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            onClick={actions.download}
-            disabled={actions.isDownloading}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            {actions.isDownloading ? "Downloading…" : "Download"}
-          </ContextMenuItem>
-          {isMatrx ? (
-            <>
-              <ContextMenuSub>
-                <ContextMenuSubTrigger>
-                  <FileImage className="w-4 h-4 mr-2" />
-                  Download as
-                </ContextMenuSubTrigger>
-                <ContextMenuSubContent className="w-60">
-                  {FORMAT_OPTIONS.map((option) => (
-                    <ContextMenuItem
-                      key={option.format}
-                      onClick={() => actions.downloadAs(option.format)}
-                      disabled={actions.isVariantBusy}
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">
-                          {option.label}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {option.description}
-                        </span>
-                      </div>
-                    </ContextMenuItem>
-                  ))}
-                </ContextMenuSubContent>
-              </ContextMenuSub>
-              <ContextMenuSub>
-                <ContextMenuSubTrigger>
-                  <Maximize className="w-4 h-4 mr-2" />
-                  Resize and download
-                </ContextMenuSubTrigger>
-                <ContextMenuSubContent className="w-60">
-                  {SIZE_OPTIONS.map((option) => (
-                    <ContextMenuItem
-                      key={option.width}
-                      onClick={() => actions.resizeAndDownload(option.width)}
-                      disabled={actions.isVariantBusy}
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">
-                          {option.label}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {option.description}
-                        </span>
-                      </div>
-                    </ContextMenuItem>
-                  ))}
-                </ContextMenuSubContent>
-              </ContextMenuSub>
-            </>
-          ) : null}
-          <ContextMenuSeparator />
-          <ContextMenuItem onClick={actions.copyImage}>
-            <Clipboard className="w-4 h-4 mr-2" />
-            Copy image
-          </ContextMenuItem>
-          <ContextMenuItem onClick={actions.copyLink}>
-            <Link2 className="w-4 h-4 mr-2" />
-            Copy link
-          </ContextMenuItem>
-          <ContextMenuItem onClick={actions.print}>
-            <Printer className="w-4 h-4 mr-2" />
-            Print
-          </ContextMenuItem>
-          {actions.parentFileId ? (
-            <>
-              <ContextMenuSeparator />
-              <ContextMenuItem onClick={actions.viewOriginal}>
-                <ExternalLink className="w-4 h-4 mr-2" />
-                View original
-              </ContextMenuItem>
-            </>
-          ) : null}
-        </ContextMenuContent>
-      </ContextMenu>
+      </NonEditableContextMenu>
 
       {/* Mobile drawer */}
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>

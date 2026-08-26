@@ -31636,6 +31636,84 @@ export type Database = {
           },
         ]
       }
+      saved_view: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          definition: Json
+          definition_version: number
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_default: boolean
+          metadata: Json
+          name: string
+          organization_id: string
+          sort_order: number | null
+          subject_id: string | null
+          surface_key: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          definition?: Json
+          definition_version?: number
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          metadata?: Json
+          name: string
+          organization_id: string
+          sort_order?: number | null
+          subject_id?: string | null
+          surface_key: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          definition?: Json
+          definition_version?: number
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          sort_order?: number | null
+          subject_id?: string | null
+          surface_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_view_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_view_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schemas: {
         Row: {
           display_name: string

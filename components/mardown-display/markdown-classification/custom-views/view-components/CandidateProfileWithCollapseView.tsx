@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import FlexibleLoadingComponent from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultLoadingComponent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 interface CandidateExperience {
   company?: string;
@@ -33,9 +34,23 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: { extracted?: Can
   };
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="content-extractor"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: JSON.stringify(extracted) }}
+      resolveContextOnOpen={(target) => {
+        const item = target?.closest?.("[data-candidate-profile-item]");
+        if (!(item instanceof HTMLElement)) return null;
+        return { content: item.innerText.trim() };
+      }}
+      enableFloatingIcon={false}
+    >
     <div className="max-w-5xl mx-auto rounded-xl shadow-lg bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
       {/* Header */}
-      <div className="px-6 py-8 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-700">
+      <div
+        data-candidate-profile-item="identity"
+        className="px-6 py-8 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-700"
+      >
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
           {extracted.name || "Unnamed Candidate"}
         </h1>
@@ -57,6 +72,7 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: { extracted?: Can
               {extracted.key_experiences.map((experience, index) => (
                 <div
                   key={index}
+                  data-candidate-profile-item="experience"
                   className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
                 >
                   <div
@@ -140,7 +156,11 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: { extracted?: Can
             sectionData && Array.isArray(sectionData) && sectionData.length > 0;
 
           return (
-            <div key={section} className="space-y-2">
+            <div
+              key={section}
+              data-candidate-profile-item={section}
+              className="space-y-2"
+            >
               <div
                 onClick={() => toggleSection(section)}
                 className="flex justify-between items-center cursor-pointer bg-slate-100 dark:bg-slate-800 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
@@ -211,6 +231,7 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: { extracted?: Can
         </p>
       </div>
     </div>
+    </NonEditableContextMenu>
   );
 };
 

@@ -8,11 +8,24 @@
  * scope picker.
  *
  * Parent: `matrx-user/pdf-extractor` (same document family, so an agent
- * wired to `file_id` / `filename` works on both). The extractor's
- * text-scope vocabulary (`full_document_text`, `active_scope_text`,
- * `scope_kind`, …) is inherited but the studio does NOT load extracted
- * text — those keys are re-declared here as `alwaysAvailable: false` so
- * the scope helper cannot claim a guarantee the studio can't keep.
+ * wired to `file_id` / `filename` works on both).
+ *
+ * ── THE FAMILY DOCTRINE, APPLIED (2026-08-26) ────────────────────────
+ * This file used to re-declare five names the parent already conveys —
+ * `file_id`, `total_pages`, `current_page`, `processed_document_id`,
+ * `document_summary`. All five meant the SAME concept as the parent's
+ * (the open document's identity and the reader position), so all five
+ * were SHADOWS and are gone: inheritance carries them, and the scope
+ * builder still takes them (inherited `alwaysAvailable: true` keys stay
+ * REQUIRED params). `document_summary` is now emitted in the PARENT's
+ * declared shape (`{ filename, file_id, processed_document_id,
+ * total_pages, using_clean_text }`) so one binding reads one shape
+ * family-wide; the studio-only facts (`mime_type`,
+ * `active_page_count`) remain individually declared values below.
+ * What REMAINS re-declared is the sanctioned AVAILABILITY OVERRIDE
+ * only: parent-guaranteed keys the studio cannot promise (`filename`
+ * while hydrating; the extractor text vocabulary the studio never
+ * loads) keep the same name + type with `alwaysAvailable: false`.
  */
 
 import type {
@@ -38,17 +51,10 @@ const groups: SurfaceValueGroup[] = [
 
 const surfaceSpecific: SurfaceValue[] = [
   // ── Document identity (100-199) ──────────────────────────────────────
-  {
-    name: "file_id",
-    label: "File ID",
-    description:
-      "UUID of the `cld_files` row open in Analysis Studio. Guaranteed — the studio is a `/files/f/[fileId]/studio` route and the server 404s without a resolvable PDF file.",
-    valueType: "string",
-    alwaysAvailable: true,
-    typicalCharCount: 36,
-    group: "studio_document",
-    sortOrder: 100,
-  },
+  // `file_id`, `total_pages`, `current_page`, `processed_document_id` and
+  // `document_summary` are NOT declared here — the parent conveys them
+  // (THE FAMILY DOCTRINE). `filename` below is the sanctioned
+  // availability override (parent always, studio only after hydration).
   {
     name: "filename",
     label: "Document filename",
@@ -72,17 +78,6 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 120,
   },
   {
-    name: "total_pages",
-    label: "Total pages",
-    description:
-      "Number of `file_pages` rows loaded for this document. Zero while pages are still loading.",
-    valueType: "number",
-    alwaysAvailable: true,
-    typicalCharCount: 5,
-    group: "studio_document",
-    sortOrder: 130,
-  },
-  {
     name: "active_page_count",
     label: "Active page count",
     description:
@@ -93,30 +88,9 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "studio_document",
     sortOrder: 140,
   },
-  {
-    name: "document_summary",
-    label: "Document summary",
-    description:
-      "Composite identity object for the open document: `{ file_id, filename, mime_type, total_pages, active_page_count }`. One binding for everything needed to name and re-fetch this document. Always populated.",
-    valueType: "object",
-    alwaysAvailable: true,
-    typicalCharCount: 200,
-    group: "studio_document",
-    sortOrder: 150,
-  },
-
   // ── View state (200-299) ─────────────────────────────────────────────
-  {
-    name: "current_page",
-    label: "Current page number",
-    description:
-      "1-indexed page the user is viewing on the studio canvas. Always populated (defaults to 1, or the `?page=` search param on load).",
-    valueType: "number",
-    alwaysAvailable: true,
-    typicalCharCount: 4,
-    group: "studio_view",
-    sortOrder: 200,
-  },
+  // `current_page` is inherited (the parent's "1-indexed page the user is
+  // viewing" is exactly the studio canvas position — always populated).
   {
     name: "inspector_tab",
     label: "Inspector tab",
@@ -221,20 +195,13 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 
   // ── Inherited keys the studio genuinely cannot populate ──────────────
-  // The parent guarantees these; Analysis Studio never loads extracted
-  // text, so re-declaring them `alwaysAvailable: false` keeps the scope
-  // helper honest. Generic agents wired to them resolve empty, never fail.
-  {
-    name: "processed_document_id",
-    label: "Processed document ID",
-    description:
-      "UUID of the `processed_documents` derivative for this file. NOT loaded by Analysis Studio (which reads `file_pages`, not the extractor tables) — always empty here. Resolve it from `file_id` if you need extractor text.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 36,
-    group: "studio_unavailable",
-    sortOrder: 700,
-  },
+  // THE AVAILABILITY OVERRIDE: the parent guarantees these; Analysis
+  // Studio never loads extracted text, so they keep the same name + type
+  // with `alwaysAvailable: false` — the honest declaration. Generic
+  // agents wired to them resolve empty, never fail.
+  // (`processed_document_id` is NOT re-declared: the parent already says
+  // `alwaysAvailable: false`, so its copy here was a pure shadow. The
+  // studio never loads it — resolve it from `file_id` when needed.)
   {
     name: "full_document_text",
     label: "Full document text (not loaded here)",
@@ -432,8 +399,9 @@ open inspector tab is the strongest signal of intent: "redact" means they are
 removing sensitive content, "pii" means they are hunting for it.
 
 This surface does NOT load extracted document text. The inherited PDF Extractor
-text values are always empty here — work from \`file_id\` and the annotations, or
-send the user to the extractor studio.
+text values are always empty here, and \`processed_document_id\` is not resolved
+here either — work from \`file_id\` and the annotations, or send the user to the
+extractor studio.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -478,21 +446,27 @@ send the user to the extractor studio.
  * Type-safe payload helper for the Analysis Studio scope.
  *
  * Required keys (no `?`) mirror every `alwaysAvailable: true` value —
- * including the inherited-and-then-narrowed ones. Every parent key this
- * surface cannot guarantee is re-declared above as `alwaysAvailable: false`,
- * so it is optional here by design rather than by omission.
+ * including the INHERITED ones (`file_id`, `total_pages`, `current_page`,
+ * `document_summary` arrive from `matrx-user/pdf-extractor` and stay
+ * required, so the studio can never launch without its document identity).
+ * `document_summary` is typed to the PARENT's declared shape — one concept,
+ * one shape, family-wide; `processed_document_id` is empty and
+ * `using_clean_text` false because the studio loads no extracted text.
+ * Every other parent key the studio cannot guarantee is re-declared above
+ * as `alwaysAvailable: false` (THE AVAILABILITY OVERRIDE), so it is
+ * optional here by design rather than by omission.
  */
 export function createAnalysisStudioScope(values: {
-  // alwaysAvailable: true → required
+  // alwaysAvailable: true → required (own + inherited)
   file_id: string;
   total_pages: number;
   active_page_count: number;
   document_summary: {
-    file_id: string;
     filename: string;
-    mime_type: string;
+    file_id: string;
+    processed_document_id: string;
     total_pages: number;
-    active_page_count: number;
+    using_clean_text: boolean;
   };
   current_page: number;
   inspector_tab: string;

@@ -54,6 +54,8 @@ import {
 } from "@/lib/field-formats/choices";
 import { defaultFormatForBase } from "@/lib/field-formats/registry";
 import { useTableViewUrlState } from "@/features/data-tables/hooks/useTableViewUrlState";
+import { useSavedViews } from "@/features/data-tables/saved-views/useSavedViews";
+import { SavedViewBar } from "@/features/data-tables/saved-views/SavedViewBar";
 import { resolveViewColumns } from "@/features/data-tables/table-view-url";
 import { ColumnViewMenu } from "@/features/data-tables/components/ColumnViewMenu";
 import {
@@ -286,6 +288,9 @@ interface UserTableViewerProps {
 
 const DATA_TABLES_SURFACE_NAME = "matrx-user/data-tables" as const;
 
+/** Shared with the saved-view codec so "default page size" means one thing. */
+const SAVED_VIEW_DEFAULTS = { pageSize: 20 } as const;
+
 const UserTableViewer = ({
   tableId,
   fillHeight = false,
@@ -344,9 +349,22 @@ const UserTableViewer = ({
     setHiddenColumns,
     columnOrder,
     setColumnOrder,
+    viewState,
+    applyViewState,
     resetView,
     isViewCustomized,
   } = useTableViewUrlState({ defaultPageSize: 20, resetKey: tableId });
+
+  // Saved views — named, re-runnable arrangements of THIS table. Applying one
+  // writes the URL through the same setters a click uses, so a view stays a
+  // shortcut to a URL rather than a second source of truth.
+  const savedViews = useSavedViews({
+    tableId,
+    viewState,
+    defaults: SAVED_VIEW_DEFAULTS,
+    applyViewState,
+    viewIsPristine: !isViewCustomized,
+  });
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -2424,6 +2442,25 @@ const UserTableViewer = ({
           </p>
         </div>
       )}
+
+      <SavedViewBar
+        views={savedViews.views}
+        loading={savedViews.loading}
+        liveDefinition={savedViews.liveDefinition}
+        activeViewId={savedViews.activeViewId}
+        readOnly={isReadOnly}
+        displayNameFor={(fieldName) =>
+          fields.find((f) => f.field_name === fieldName)?.display_name ??
+          fieldName
+        }
+        onApply={savedViews.apply}
+        onClearActive={savedViews.clearActive}
+        onSaveNew={savedViews.saveNew}
+        onUpdate={savedViews.update}
+        onRename={savedViews.rename}
+        onSetDefault={savedViews.setDefault}
+        onDelete={savedViews.remove}
+      />
 
       {/* Column visibility + order for THIS VIEW. Deliberately next to the
           grid rather than inside Table Settings: Table Settings edits the

@@ -9,10 +9,19 @@
  *
  * Agents bound here act on the IN-PROGRESS scan (items, labels, upload
  * status) or, after Save, on the pipeline's live progress. Parent:
- * `matrx-user/pdf-extractor`. The parent's document-text vocabulary is
- * inherited but the scanner never loads extracted body text — those keys
- * are re-declared here as `alwaysAvailable: false` so the scope helper
- * cannot promise something this surface can't deliver.
+ * `matrx-user/pdf-extractor`.
+ *
+ * ── THE FAMILY DOCTRINE, APPLIED (2026-08-26) ────────────────────────
+ * This file used to re-declare `total_pages` and `processed_document_id`,
+ * names the parent already conveys with the SAME meaning (the document's
+ * page count; the extractor derivative's UUID) — both were SHADOWS and
+ * are gone. Inheritance carries them; the scope builder still takes them
+ * (`total_pages` stays a REQUIRED param — the parent guarantees it, and
+ * the scanner always emits it, zero before save). What REMAINS
+ * re-declared is the sanctioned AVAILABILITY OVERRIDE only: parent-
+ * guaranteed keys the scanner can only sometimes emit (`file_id` /
+ * `filename` until save; the extractor text vocabulary it never loads)
+ * keep the same name + type with `alwaysAvailable: false`.
  */
 
 import type {
@@ -175,17 +184,10 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "scan_output",
     sortOrder: 300,
   },
-  {
-    name: "processed_document_id",
-    label: "Processed document ID",
-    description:
-      "UUID of the `processed_documents` derivative created by the extractor pipeline after save. Empty until the pipeline hands it back.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 36,
-    group: "scan_output",
-    sortOrder: 310,
-  },
+  // `processed_document_id` is NOT declared here — the parent already
+  // conveys it as `alwaysAvailable: false` with the same meaning, so the
+  // copy this file carried was a pure shadow (THE FAMILY DOCTRINE). It
+  // stays empty until the extractor pipeline hands it back after save.
   {
     name: "filename",
     label: "Output filename",
@@ -197,17 +199,11 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "scan_output",
     sortOrder: 320,
   },
-  {
-    name: "total_pages",
-    label: "Output page count",
-    description:
-      "Page count of the assembled PDF as reported by the save stream. Zero before save — imported multi-page PDFs mean this can exceed `scan_page_count`.",
-    valueType: "number",
-    alwaysAvailable: true,
-    typicalCharCount: 5,
-    group: "scan_output",
-    sortOrder: 330,
-  },
+  // `total_pages` is NOT declared here — inherited from the parent with
+  // the same meaning and the same guarantee (the scanner always emits it:
+  // zero before save, then the assembled PDF's page count as the save
+  // stream reports it, which can exceed `scan_page_count` when imported
+  // multi-page PDFs are in the session).
 
   // ── Processing progress (400-499) ────────────────────────────────────
   {
@@ -411,8 +407,10 @@ There are two moments here, and the values tell you which one you are in. BEFORE
 save, \`scan_session_summary\`, \`scan_items\`, and \`scan_page_labels\` describe an
 in-progress capture — \`scan_all_uploaded\` is the readiness gate, and a non-zero
 \`scan_error_count\` means the user has failed uploads to fix. AFTER save,
-\`file_id\` / \`filename\` / \`total_pages\` name the assembled PDF and
-\`scan_processing_stage\` plus \`scan_processed_pages\` track OCR and cleanup live.
+\`file_id\` / \`filename\` / \`total_pages\` name the assembled PDF (\`total_pages\`
+is zero until the save stream reports it, and \`processed_document_id\` arrives
+only when the extractor pipeline hands it back) and \`scan_processing_stage\`
+plus \`scan_processed_pages\` track OCR and cleanup live.
 
 This surface never loads extracted document text; the inherited PDF Extractor
 text values are always empty here. \`scan_raw_preview\` is the only text it sees.
@@ -461,9 +459,12 @@ text values are always empty here. \`scan_raw_preview\` is the only text it sees
  * Type-safe payload helper for the scanner scope.
  *
  * Required keys (no `?`) mirror every `alwaysAvailable: true` value —
- * including the inherited-and-then-narrowed ones. Every parent key the
- * scanner cannot guarantee is re-declared above as `alwaysAvailable: false`,
- * so it is optional here by design rather than by omission.
+ * including the INHERITED `total_pages` (the parent guarantees it and the
+ * scanner always emits it, zero before save). Every parent key the
+ * scanner cannot guarantee is re-declared above as `alwaysAvailable: false`
+ * (THE AVAILABILITY OVERRIDE), so it is optional here by design rather
+ * than by omission; `processed_document_id` is optional at the parent
+ * already and is no longer re-declared.
  */
 export function createScannerScope(values: {
   // alwaysAvailable: true → required

@@ -53,13 +53,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu/context-menu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
 import {
   Drawer,
   DrawerContent,
@@ -87,6 +86,11 @@ export interface UnifiedVideoBlockRendererProps {
    * menu, mobile drawer) as a leading group. Keeps a single "…" menu.
    */
   extraActions?: MediaExtraAction[];
+  /**
+   * Attribution for the v3 context menu — the FEATURE that mounted this
+   * renderer. Defaults to "files", the renderer's home.
+   */
+  sourceFeature?: SourceFeature;
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -143,7 +147,13 @@ function useLongPress(onLongPress: () => void, ms = 500) {
 
 export const UnifiedVideoBlockRenderer: React.FC<
   UnifiedVideoBlockRendererProps
-> = ({ block, variant = "inline", onCompactClick, extraActions }) => {
+> = ({
+  block,
+  variant = "inline",
+  onCompactClick,
+  extraActions,
+  sourceFeature = "files",
+}) => {
   const { src, status, posterUrl, reportLoadError } = useUnifiedVideoUrl(block);
   const isMobile = useIsMobile();
   const fileId = block.origin === "matrx" ? block.fileId : null;
@@ -208,6 +218,87 @@ export const UnifiedVideoBlockRenderer: React.FC<
     );
   }
 
+  // ── v3 context menu wiring ─────────────────────────────────────────
+  //
+  // The right-click menu is the canonical v3 `NonEditableContextMenu` —
+  // every video-specific action folds in as a "Video" extraSections group
+  // (THE LOSSLESS LAW: same rows, same handlers as the old bespoke menu),
+  // and v3 adds Copy / AI / Export / Attach / Share on top. The durable
+  // identity (viewer deep link for matrx files, the external URL otherwise)
+  // is the content — never a signed URL.
+  const durableRef =
+    block.origin === "matrx" ? `/files/f/${block.fileId}` : block.externalUrl;
+
+  const videoItems: ContextMenuExtraItem[] = [
+    {
+      kind: "item",
+      id: "view-full-size",
+      label: "View full size",
+      icon: Expand,
+      onSelect: handleExpand,
+    },
+    {
+      kind: "item",
+      id: "open-new-tab",
+      label: "Open in new tab",
+      icon: ExternalLink,
+      onSelect: actions.openNewTab,
+    },
+    { kind: "separator", id: "video-sep-download" },
+    {
+      kind: "item",
+      id: "download",
+      label: actions.isDownloading ? "Downloading…" : "Download",
+      icon: Download,
+      onSelect: actions.download,
+      disabled: actions.isDownloading,
+    },
+    {
+      kind: "item",
+      id: "copy-link",
+      label: "Copy link",
+      icon: Link2,
+      onSelect: actions.copyLink,
+    },
+  ];
+  if (actions.parentFileId) {
+    videoItems.push(
+      { kind: "separator", id: "video-sep-original" },
+      {
+        kind: "item",
+        id: "view-original",
+        label: "View original",
+        icon: ExternalLink,
+        onSelect: actions.viewOriginal,
+      },
+    );
+  }
+
+  const menuSections: ContextMenuExtraSection[] = [];
+  if (extraActions && extraActions.length > 0) {
+    // Domain actions stay the LEADING group, exactly as before.
+    menuSections.push({
+      id: "media-domain",
+      items: extraActions.map(
+        (a): ContextMenuExtraItem => ({
+          kind: "item",
+          id: a.id,
+          label: a.label,
+          icon: a.icon,
+          onSelect: a.onClick,
+          disabled: a.disabled,
+          destructive: a.danger,
+        }),
+      ),
+    });
+  }
+  menuSections.push({
+    id: "video",
+    label: "Video",
+    icon: VideoIcon,
+    items: videoItems,
+  });
+
   // ── Drawer body (mobile long-press) ───────────────────────────────
   const drawerBody = (
     <div className="px-4 pb-6 flex flex-col gap-0.5">
@@ -216,7 +307,7 @@ export const UnifiedVideoBlockRenderer: React.FC<
           {extraActions.map((a) => (
             <DrawerRow
               key={a.id}
-              icon={a.icon}
+              icon={a.icon ? <a.icon /> : undefined}
               label={a.label}
               onClick={a.onClick}
               disabled={a.disabled}
@@ -264,8 +355,35 @@ export const UnifiedVideoBlockRenderer: React.FC<
 
   return (
     <>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
+      {/* On touch, long-press must open ONLY the bottom-sheet drawer (via
+          `longPressHandlers`) — suppress the v3 menu on mobile so the two
+          gestures never race (same rule as the image renderer). */}
+      <NonEditableContextMenu
+        sourceFeature={sourceFeature}
+        suppressed={isMobile}
+        enableFloatingIcon={false}
+        contextData={{
+          content: durableRef ?? block.fileName ?? "Video",
+          context: {
+            mediaKind: "video",
+            origin: block.origin,
+            url: durableRef,
+            fileName: block.fileName,
+            ...(block.origin === "matrx" ? { fileId: block.fileId } : {}),
+          },
+        }}
+        entity={
+          block.origin === "matrx"
+            ? {
+                type: "file",
+                id: block.fileId,
+                title: block.fileName ?? "Video",
+                resourceType: "file",
+              }
+            : undefined
+        }
+        extraSections={menuSections}
+      >
           <div
             className="relative group my-2 w-fit max-w-full"
             {...(isMobile ? longPressHandlers : {})}
@@ -374,9 +492,7 @@ export const UnifiedVideoBlockRenderer: React.FC<
                           }
                         >
                           {a.icon ? (
-                            <span className="w-4 h-4 mr-2 inline-flex items-center justify-center">
-                              {a.icon}
-                            </span>
+                            <a.icon className="w-4 h-4 mr-2" />
                           ) : null}
                           {a.label}
                         </DropdownMenuItem>
@@ -417,64 +533,7 @@ export const UnifiedVideoBlockRenderer: React.FC<
               </DropdownMenu>
             </div>
           </div>
-        </ContextMenuTrigger>
-
-        <ContextMenuContent className="w-56">
-          {extraActions && extraActions.length > 0 ? (
-            <>
-              {extraActions.map((a) => (
-                <ContextMenuItem
-                  key={a.id}
-                  onClick={a.onClick}
-                  disabled={a.disabled}
-                  className={
-                    a.danger
-                      ? "text-destructive focus:text-destructive"
-                      : undefined
-                  }
-                >
-                  {a.icon ? (
-                    <span className="w-4 h-4 mr-2 inline-flex items-center justify-center">
-                      {a.icon}
-                    </span>
-                  ) : null}
-                  {a.label}
-                </ContextMenuItem>
-              ))}
-              <ContextMenuSeparator />
-            </>
-          ) : null}
-          <ContextMenuItem onClick={handleExpand}>
-            <Expand className="w-4 h-4 mr-2" />
-            View full size
-          </ContextMenuItem>
-          <ContextMenuItem onClick={actions.openNewTab}>
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Open in new tab
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            onClick={actions.download}
-            disabled={actions.isDownloading}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            {actions.isDownloading ? "Downloading…" : "Download"}
-          </ContextMenuItem>
-          <ContextMenuItem onClick={actions.copyLink}>
-            <Link2 className="w-4 h-4 mr-2" />
-            Copy link
-          </ContextMenuItem>
-          {actions.parentFileId ? (
-            <>
-              <ContextMenuSeparator />
-              <ContextMenuItem onClick={actions.viewOriginal}>
-                <ExternalLink className="w-4 h-4 mr-2" />
-                View original
-              </ContextMenuItem>
-            </>
-          ) : null}
-        </ContextMenuContent>
-      </ContextMenu>
+      </NonEditableContextMenu>
 
       {/* Mobile drawer */}
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>

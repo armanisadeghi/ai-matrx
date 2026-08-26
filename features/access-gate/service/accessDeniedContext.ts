@@ -11,6 +11,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { deriveStatus } from "./deriveStatus";
 import { isUuid } from "@/features/scopes/service/associationGuards";
 import {
   cmsAccessGateLabel,
@@ -114,31 +115,6 @@ function parseDisclosure(raw: unknown): AccessDisclosure {
     : "none";
 }
 
-/**
- * Turn the RPC payload into the ONE status a surface branches on.
- *
- * Order matters. "Do I actually have access?" is asked FIRST, because a
- * surface only calls this after a read failed — and if the caller genuinely has
- * access, the failure was transient (a dropped connection, a timeout) and
- * showing them a denial screen would be the same class of lie this feature
- * exists to kill.
- */
-function deriveStatus(
-  payload: Record<string, unknown>,
-  disclosure: AccessDisclosure,
-): AccessGateStatus {
-  // An unregistered token is a bug in the CALLING surface, not evidence about
-  // the user's record. Reporting it as "missing" would tell someone their data
-  // is gone because WE misconfigured a registry — the exact lie this feature
-  // exists to kill. (Caught by the adversarial pass, 2026-08-11.)
-  if (payload.unresolvable === true) return "error";
-  if (disclosure === "anonymous") return "anonymous";
-  if (parseLevel(payload.level) !== "none") return "ok";
-  if (payload.exists === false) return "missing";
-  if (payload.deleted === true) return "deleted";
-  if (payload.exists === true) return "denied";
-  return "error";
-}
 
 const UNKNOWN: AccessDeniedContext = {
   status: "error",

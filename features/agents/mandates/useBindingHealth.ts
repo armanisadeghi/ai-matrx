@@ -21,6 +21,14 @@
  *    problems`) and runs the SYSTEM DEFAULT instead. Verdict kind `dropped`:
  *    "your agent isn't running; the built-in one is."
  *
+ * 1b. THE OUTPUT SIDE — BOTH ERAS, ALWAYS. `enforced_holder_contract` strips
+ *    the input side for a provisioned mandate but keeps `required_output_keys`
+ *    in force, so a holder that does not declare them is DROPPED in either era
+ *    (164 of 365 live mandates declare them; 161 are provisioned). This half
+ *    was missing until 2026-08-26, which meant the dominant failure mode
+ *    rendered as a healthy "Yours". Checked first, and it outranks any input
+ *    finding: if the server drops the binding, "your agent still runs" is false.
+ *
  * 2. PROVISION mandate (`provision_key` set — the normal case since
  *    2026-08-22). The holder is NEVER checked against the input side; the
  *    binding's `consumption_map` is checked at BIND time only ("everything
@@ -46,6 +54,10 @@ import {
 // importing them via ./overrides is a cycle.
 import type { MandateContract } from "./contract";
 import type { ConsumptionMap } from "./provision-shapes";
+import {
+  fetchAgentOutputSchemas,
+  missingOutputKeys,
+} from "./output-contract";
 
 /** One bound (mandate, agent) pair to verify. */
 export interface BoundAgentRef {
@@ -80,6 +92,9 @@ export interface BindingVerdict {
   checking: boolean;
   /** The agent could not be read at all (deleted, or no longer shared). */
   unreadable: boolean;
+  /** True when the failure is the OUTPUT contract (the agent does not produce
+   * the keys this job's consumers require) rather than the input side. */
+  outputSide?: boolean;
 }
 
 export function useBindingHealth(
@@ -88,6 +103,9 @@ export function useBindingHealth(
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const [checkedAt, setCheckedAt] = useState(0);
+  // agentId -> raw output_schema. Undefined entry = not read yet.
+  const [outputSchemas, setOutputSchemas] = useState<Record<string, unknown>>({});
+  const [outputChecked, setOutputChecked] = useState(false);
 
   // Only LEGACY refs need the agent's declaration; provision refs are judged
   // purely on offer vs consumption map. Stable key so the effect doesn't
@@ -99,6 +117,29 @@ export function useBindingHealth(
         .join(","),
     [refs],
   );
+
+  // The output side applies in BOTH eras, so every bound agent is read — not
+  // just the legacy ones.
+  const allAgentIds = useMemo(
+    () => [...new Set(refs.map((r) => r.agentId))].sort().join(","),
+    [refs],
+  );
+
+  useEffect(() => {
+    if (!allAgentIds) {
+      setOutputChecked(true);
+      return;
+    }
+    let cancelled = false;
+    void fetchAgentOutputSchemas(allAgentIds.split(",")).then((byId) => {
+      if (cancelled) return;
+      setOutputSchemas(byId);
+      setOutputChecked(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [allAgentIds]);
 
   useEffect(() => {
     if (!legacyAgentIds) return;
@@ -122,6 +163,38 @@ export function useBindingHealth(
     // store, so the memo must recompute once the fetches settle.
     void checkedAt;
     for (const ref of refs) {
+      // OUTPUT SIDE FIRST — enforced in both eras, and a failure here means the
+      // server DROPS the binding, which outranks any input-side finding.
+      if (ref.contract.requiredOutputKeys.length > 0) {
+        if (!outputChecked) {
+          out[ref.mandateId] = {
+            passing: true,
+            kind: "dropped",
+            missing: [],
+            layer: ref.layer,
+            checking: true,
+            unreadable: false,
+          };
+          continue;
+        }
+        const missingOut = missingOutputKeys(
+          ref.contract.requiredOutputKeys,
+          outputSchemas[ref.agentId] ?? null,
+        );
+        if (missingOut.length > 0) {
+          out[ref.mandateId] = {
+            passing: false,
+            kind: "dropped",
+            missing: missingOut,
+            layer: ref.layer,
+            checking: false,
+            unreadable: false,
+            outputSide: true,
+          };
+          continue;
+        }
+      }
+
       if (ref.provisionKey) {
         if (ref.offeredValueNames === null) {
           out[ref.mandateId] = {
@@ -177,5 +250,5 @@ export function useBindingHealth(
       };
     }
     return out;
-  }, [refs, store, checkedAt]);
+  }, [refs, store, checkedAt, outputSchemas, outputChecked]);
 }

@@ -15,15 +15,20 @@
  * row, nothing more. No coupling to any one feature.
  */
 
-import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 
 export interface MediaExtraAction {
   /** Stable key for React lists. */
   id: string;
   /** Menu-row label. */
   label: string;
-  /** Optional leading icon (Lucide element). */
-  icon?: ReactNode;
+  /**
+   * Optional leading icon — the Lucide COMPONENT (`Check`), not an element
+   * (`<Check />`). A component flows losslessly into both the renderer's own
+   * surfaces (toolbar dropdown / mobile drawer) and the v3 context menu's
+   * `ContextMenuExtraItem.icon`, which requires `LucideIcon`.
+   */
+  icon?: LucideIcon;
   /** Invoked on click/tap. */
   onClick: () => void;
   /** Greys out + blocks the row when true. */
