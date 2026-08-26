@@ -9,13 +9,18 @@
  * row click drills GSC-style; right-click opens floating panels.
  */
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Eye, PanelTop } from "lucide-react";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -37,6 +42,12 @@ import {
   useWatchedIds,
 } from "@/features/marketing/search-console/hooks/useWatchState";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+  type KeywordMenuRow,
+} from "@/features/marketing/seo/keyword/keyword-actions";
 import type {
   GscCompareMode,
   GscRangeKey,
@@ -111,13 +122,22 @@ export function WatchlistTab({
   const valueFor = (row: GscWatchRow) =>
     row.kind === "query" ? keywordValues.data?.get(row.entity_id) : undefined;
 
-  const clickedRowRef = useRef<GscWatchRow | null>(null);
+  // State, not a ref: `extraSections` below reads it directly, and the
+  // keyword section must appear/disappear per the actual row kind clicked
+  // (this table mixes watched queries and pages in one pane).
+  const [clickedRow, setClickedRow] = useState<GscWatchRow | null>(null);
   const rowId = (row: GscWatchRow) => `${row.kind}:${row.entity_id}`;
   const resolveRowContext = (target: HTMLElement | null) => {
     const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
     const row = id ? (rows.find((r) => rowId(r) === id) ?? null) : null;
-    clickedRowRef.current = row;
+    setClickedRow(row);
     if (!row) return null;
+    // KI-026's own row: Attach To / Share target the watched keyword or page,
+    // never the pane.
+    const entity =
+      row.kind === "query"
+        ? keywordEntityRef({ phrase: row.key, keywordId: row.entity_id })
+        : { type: "web_page" as const, id: row.entity_id, title: row.key };
     return {
       content: humanLines(
         gscMetricCopyLines(
@@ -126,11 +146,39 @@ export function WatchlistTab({
           row,
         ),
       ),
+      [CONTEXT_MENU_ENTITY_KEY]: entity,
     };
   };
 
+  const queryClient = useQueryClient();
+  // MSR-01 — the shared keyword row-actions family, same as every other
+  // keyword surface. Only the watched QUERY rows are keywords; a watched
+  // page has no single-keyword identity behind it.
+  const keywordSurfaces = useKeywordAssignSurfaces({
+    siteId,
+    onChanged: () =>
+      void queryClient.invalidateQueries({
+        queryKey: ["marketing", "gsc", "keyword-value-for", siteId],
+      }),
+  });
+  const keywordMenuSection = useKeywordMenuSection({
+    siteId,
+    siteName,
+    surfaces: keywordSurfaces,
+    getRow: (): KeywordMenuRow | null => {
+      const row = clickedRow;
+      if (!row || row.kind !== "query") return null;
+      return {
+        phrase: row.key,
+        keywordId: row.entity_id,
+        currentLevel: valueFor(row)?.value_band ?? null,
+        levelIsRuling: valueFor(row)?.value_source === "override",
+      };
+    },
+  });
+
   const openRowDrillPanel = () => {
-    const row = clickedRowRef.current;
+    const row = clickedRow;
     if (!row) {
       toast.error("Right-click a data row to drill into it.");
       return;
@@ -317,6 +365,7 @@ export function WatchlistTab({
         ) : (
           <NonEditableContextMenu
             sourceFeature="marketing"
+            contentSource={{ type: "raw" }}
             contextData={{ content: "" }}
             resolveContextOnOpen={resolveRowContext}
             extraSections={[
@@ -334,9 +383,17 @@ export function WatchlistTab({
                   },
                 ],
               },
+              // MSR-01 — the shared keyword row-actions family (Set class /
+              // Set service / Set level / Open Keyword Intelligence), the
+              // same menu every other keyword surface offers. Watched PAGE
+              // rows are not keywords, so the section is absent for them.
+              ...(clickedRow?.kind === "query" ? [keywordMenuSection] : []),
             ]}
           >
             <div className="flex h-full min-h-0 flex-col">
+              {keywordSurfaces.isOpen ? (
+                <div className="mb-2 shrink-0">{keywordSurfaces.node}</div>
+              ) : null}
               <MatrxDataTable<GscWatchRow>
                 urlState={{ id: "gsc-watchlist" }}
                 data={rows}

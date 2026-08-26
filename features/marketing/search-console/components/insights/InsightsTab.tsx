@@ -441,7 +441,7 @@ function useInsightRowMenu<
           keyword_id: row.keyword_id ?? "",
         };
       },
-      extraSections,
+      extraSections: extraSections,
     },
   };
 }

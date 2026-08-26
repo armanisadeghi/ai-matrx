@@ -11,10 +11,11 @@
  */
 
 import { useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Filter, PanelTop, Pickaxe } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -36,6 +37,12 @@ import { describeGscWindow } from "@/features/marketing/search-console/lib/forma
 import { panelDrillFor } from "@/features/marketing/search-console/lib/drills";
 import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
+import {
+  keywordEntityRef,
+  useKeywordAssignSurfaces,
+  useKeywordMenuSection,
+  type KeywordMenuRow,
+} from "@/features/marketing/seo/keyword/keyword-actions";
 import type {
   GscBreakdownRow,
   GscCompareMode,
@@ -122,10 +129,47 @@ export function DigResultsTable({
     const row = key ? (rows.find((r) => r.key === key) ?? null) : null;
     clickedRowRef.current = row;
     if (!row) return null;
+    // The row's own entity, so Attach To / Share target the exact keyword or
+    // page that was right-clicked, not the pane.
+    const entity =
+      dimension === "query"
+        ? keywordEntityRef({ phrase: row.key, keywordId: row.keyword_id ?? null })
+        : row.page_id
+          ? { type: "web_page" as const, id: row.page_id, title: row.key }
+          : null;
     return {
       content: humanLines(gscMetricCopyLines(columnLabel, dimension, row)),
+      [CONTEXT_MENU_ENTITY_KEY]: entity,
     };
   };
+
+  const queryClient = useQueryClient();
+  // MSR-01 — the shared keyword row-actions family (Set class / Set service /
+  // Set level / Open Keyword Intelligence), the same menu every other keyword
+  // surface offers. Query dimension only — a page row has no single keyword
+  // behind it.
+  const keywordSurfaces = useKeywordAssignSurfaces({
+    siteId,
+    onChanged: () =>
+      void queryClient.invalidateQueries({
+        queryKey: ["marketing", "gsc", "keyword-value-for", siteId],
+      }),
+  });
+  const keywordMenuSection = useKeywordMenuSection({
+    siteId,
+    siteName,
+    surfaces: keywordSurfaces,
+    getRow: (): KeywordMenuRow | null => {
+      const row = clickedRowRef.current;
+      if (!row || dimension !== "query") return null;
+      return {
+        phrase: row.key,
+        keywordId: row.keyword_id ?? null,
+        currentLevel: valueFor(row)?.value_band ?? null,
+        levelIsRuling: valueFor(row)?.value_source === "override",
+      };
+    },
+  });
 
   const openRowDrillPanel = () => {
     const row = clickedRowRef.current;
@@ -247,6 +291,7 @@ export function DigResultsTable({
   return (
     <NonEditableContextMenu
       sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
       contextData={{ content: "" }}
       resolveContextOnOpen={resolveRowContext}
       extraSections={[
@@ -299,9 +344,16 @@ export function DigResultsTable({
               : []),
           ],
         },
+        // MSR-01 — the shared keyword row-actions family (Set class / Set
+        // service / Set level / Open Keyword Intelligence): the same menu
+        // every other keyword surface offers, not a bespoke subset.
+        ...(dimension === "query" ? [keywordMenuSection] : []),
       ]}
     >
       <div className="flex h-full min-h-0 flex-col">
+        {dimension === "query" && keywordSurfaces.isOpen ? (
+          <div className="mb-2 shrink-0">{keywordSurfaces.node}</div>
+        ) : null}
         <MatrxDataTable<GscDigResultRow>
           urlState={{ id: `gsc-dig-${dimension}` }}
           data={rows}

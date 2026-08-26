@@ -800,6 +800,7 @@ export function GscDimensionTable({
   return (
     <NonEditableContextMenu
       sourceFeature="marketing"
+      contentSource={{ type: "raw" }}
       contextData={{ content: "" }}
       resolveContextOnOpen={resolveRowContext}
       extraSections={[
