@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 549 active entity tokens. A token here is FK-valid for
+// 554 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -205,8 +205,10 @@ export type EntityTypeToken =
   | "hindsight_replay"
   | "hindsight_replay_step"
   | "hindsight_review"
+  | "hr_access_audit"
   | "hr_accommodation_request"
   | "hr_ai_evidence"
+  | "hr_alert_routing_rule"
   | "hr_application"
   | "hr_asset"
   | "hr_asset_assignment"
@@ -232,6 +234,7 @@ export type EntityTypeToken =
   | "hr_crew"
   | "hr_deduction_code"
   | "hr_department"
+  | "hr_disposition_event"
   | "hr_earning_code"
   | "hr_eeo_response"
   | "hr_emergency_contact"
@@ -264,6 +267,8 @@ export type EntityTypeToken =
   | "hr_leave_ledger"
   | "hr_leave_policy"
   | "hr_leave_request"
+  | "hr_legal_hold"
+  | "hr_legal_hold_item"
   | "hr_location"
   | "hr_new_hire_report"
   | "hr_offer"
@@ -808,6 +813,7 @@ export type ComponentEntityToken =
   | "hr_leave_enrollment"
   | "hr_leave_ledger"
   | "hr_leave_request"
+  | "hr_legal_hold_item"
   | "hr_new_hire_report"
   | "hr_opening"
   | "hr_overtime_alert"
@@ -1117,8 +1123,10 @@ export type ScopeableEntityToken =
   | "hindsight_replay"
   | "hindsight_replay_step"
   | "hindsight_review"
+  | "hr_access_audit"
   | "hr_accommodation_request"
   | "hr_ai_evidence"
+  | "hr_alert_routing_rule"
   | "hr_application"
   | "hr_asset"
   | "hr_asset_assignment"
@@ -1144,6 +1152,7 @@ export type ScopeableEntityToken =
   | "hr_crew"
   | "hr_deduction_code"
   | "hr_department"
+  | "hr_disposition_event"
   | "hr_earning_code"
   | "hr_eeo_response"
   | "hr_emergency_contact"
@@ -1176,6 +1185,8 @@ export type ScopeableEntityToken =
   | "hr_leave_ledger"
   | "hr_leave_policy"
   | "hr_leave_request"
+  | "hr_legal_hold"
+  | "hr_legal_hold_item"
   | "hr_location"
   | "hr_new_hire_report"
   | "hr_offer"
@@ -1748,8 +1759,10 @@ export const ENTITY_TYPE_METADATA = {
   "hindsight_replay": { token: "hindsight_replay", schema: "hindsight", table: "replay", label: "Hindsight Replay", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hindsight_replay_step": { token: "hindsight_replay_step", schema: "hindsight", table: "replay_step", label: "Wire Replay Step", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hindsight_review": { token: "hindsight_review", schema: "hindsight", table: "review", label: "Hindsight Review", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_access_audit": { token: "hr_access_audit", schema: "hr", table: "access_audit", label: "Access audit", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_accommodation_request": { token: "hr_accommodation_request", schema: "hr", table: "accommodation_request", label: "Accommodation request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_ai_evidence": { token: "hr_ai_evidence", schema: "hr", table: "ai_evidence", label: "AI evidence", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_alert_routing_rule": { token: "hr_alert_routing_rule", schema: "hr", table: "alert_routing_rule", label: "Alert routing rule", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_application": { token: "hr_application", schema: "hr", table: "application", label: "Application", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_asset": { token: "hr_asset", schema: "hr", table: "asset", label: "Asset", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_asset_assignment": { token: "hr_asset_assignment", schema: "hr", table: "asset_assignment", label: "Asset assignment", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1775,6 +1788,7 @@ export const ENTITY_TYPE_METADATA = {
   "hr_crew": { token: "hr_crew", schema: "hr", table: "crew", label: "Crew", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_deduction_code": { token: "hr_deduction_code", schema: "hr", table: "deduction_code", label: "Deduction code", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_department": { token: "hr_department", schema: "hr", table: "department", label: "Department", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
+  "hr_disposition_event": { token: "hr_disposition_event", schema: "hr", table: "disposition_event", label: "Disposition event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_earning_code": { token: "hr_earning_code", schema: "hr", table: "earning_code", label: "Earning code", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_eeo_response": { token: "hr_eeo_response", schema: "hr", table: "eeo_response", label: "EEO self-identification response", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_emergency_contact": { token: "hr_emergency_contact", schema: "hr", table: "emergency_contact", label: "Emergency contact", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1807,6 +1821,8 @@ export const ENTITY_TYPE_METADATA = {
   "hr_leave_ledger": { token: "hr_leave_ledger", schema: "hr", table: "leave_ledger", label: "Leave ledger entry", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_leave_policy": { token: "hr_leave_policy", schema: "hr", table: "leave_policy", label: "Leave policy", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_leave_request": { token: "hr_leave_request", schema: "hr", table: "leave_request", label: "Leave request", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_legal_hold": { token: "hr_legal_hold", schema: "hr", table: "legal_hold", label: "Legal hold", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "matter_name", contentRole: null, referenceCategory: null },
+  "hr_legal_hold_item": { token: "hr_legal_hold_item", schema: "hr", table: "legal_hold_item", label: "Legal hold item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_location": { token: "hr_location", schema: "hr", table: "location", label: "Location", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_new_hire_report": { token: "hr_new_hire_report", schema: "hr", table: "new_hire_report", label: "New hire report", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_offer": { token: "hr_offer", schema: "hr", table: "offer", label: "Offer", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2301,8 +2317,10 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hindsight_replay",
   "hindsight_replay_step",
   "hindsight_review",
+  "hr_access_audit",
   "hr_accommodation_request",
   "hr_ai_evidence",
+  "hr_alert_routing_rule",
   "hr_application",
   "hr_asset",
   "hr_asset_assignment",
@@ -2328,6 +2346,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hr_crew",
   "hr_deduction_code",
   "hr_department",
+  "hr_disposition_event",
   "hr_earning_code",
   "hr_eeo_response",
   "hr_emergency_contact",
@@ -2360,6 +2379,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hr_leave_ledger",
   "hr_leave_policy",
   "hr_leave_request",
+  "hr_legal_hold",
+  "hr_legal_hold_item",
   "hr_location",
   "hr_new_hire_report",
   "hr_offer",
