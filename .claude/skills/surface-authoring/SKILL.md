@@ -16,6 +16,11 @@ This is the ONE surface lifecycle skill. It owns the manifest contract, layered 
 
 ## Choose the path
 
+- **Agent-native surface:** stop before the binding lifecycle. Chat, Agents Hub,
+  Agent Apps, Agent Build/Run/Battle, mandate authoring, agent comparison/history,
+  and agent/widget test harnesses are subjects or universal hosts. They may keep
+  neutral runtime identity for menus, but get no roles, defaults, bindings,
+  bound roster, Bind control, or disclosure UI.
 - **New or structurally changed surface:** follow this file from identity through layered registration.
 - **Existing surface that needs completion or repair:** read [`references/runtime-rollout.md`](./references/runtime-rollout.md), then close every applicable contract here.
 - **Context-menu wiring or repair:** invoke `context-menu-v3`; its skill owns wrapper choice, per-row delegation, `contentSource`, `entity`, and no-fake-menu proof. This skill owns making that canonical menu part of a complete surface.
@@ -25,7 +30,7 @@ Adding a surface is **code-first, DB-mirror**. Code is the single source of trut
 
 ## What a surface is — and the recursion that trips people up
 
-A **surface** exists to bind **highly custom agents to a specific place** and hand them **highly specific context**. That's the whole job. So the test for "should this be its own surface?" is never "does it render its own UI" — it's **"would different custom agents, with different context, act here?"** If yes, it's a surface.
+An eligible **surface** exists to bind **highly custom agents to a specific place** and hand them **highly specific context**. Agent-native hosts are the boundary: when the agent is what the UI is for, it is the subject, not a binding target.
 
 **A context item in one surface can itself BE a surface — and then its context is its own parts, not itself.** This is the model that confuses people:
 
@@ -498,7 +503,7 @@ Registering a surface is a LAYERED recipe — each layer is independently shippa
 
 - **Agent role** = a named position the surface PLUGS an agent into (`agentRoles`; cleanup's `clean` + `custom_slot`, scribe's `assistant`). `defaultAgentId` = platform default; users/orgs override in `ui_surface_agent_pref`, resolved `manifest → global → org-by-membership → user` by `services/surface-config.service.ts`. **A system agent's role sets `mandateKey` (e.g. `"masterwork.scout"`) INSTEAD of `defaultAgentId`** — the Holder resolves live from `agent.mandate` (sourceTier `"mandate"`); never freeze an agent UUID in a manifest for a job that has a Mandate (drift check refuses both set at once; reference: `masterwork-rulebook.manifest.ts`). Roles with a resolved agent surface automatically in the shell header Agents menu (`SurfaceAgentsHeaderButton` → `SurfaceBoundAgentsList` "Surface roles") and launch with the page's live scope — never build a bespoke per-page agent menu. **Disclosure never adds chips, badges, labels, rosters, or any other visible page content.** Pages read via `hooks/useSurfaceConfig.ts` / `useSurfaceAgentRoles`. **Never store a per-surface agent choice in `userPreferences` / `useSetting`** — that's the exact legacy this system deleted (`scribeAssistantAgentId`).
 
-  🚨 **THE DISCLOSURE LAW is top-menu-only metadata, never page UI.** Register only a fixed AI job the surface already runs through `agentRoles` or UI-free `useDeclaredSurfaceMandates`, and open its mandate IN PLACE via `useOpenMandateWindow()` rather than linking to a mandate route. Never add an agent chip, badge, label, roster, callout, or section to the surface. Universal hosts such as Chat set `agentRosterMode: "universal"` and accept no surface bindings. **Invoke the `agent-disclosure` skill** for the full boundary and verification. Guard: `pnpm check:agent-disclosure`.
+  🚨 **THE DISCLOSURE LAW is top-menu-only metadata, never page UI.** Register only a fixed AI job an eligible ordinary product surface already runs through `agentRoles` or UI-free `useDeclaredSurfaceMandates`, and open its mandate IN PLACE via `useOpenMandateWindow()` rather than linking to a mandate route. Never add an agent chip, badge, label, roster, callout, or section to the surface. Agent-native hosts accept no roles or surface bindings. **Invoke the `agent-disclosure` skill** for the full boundary and verification. Guard: `pnpm check:agent-disclosure`.
 - **Config namespace** = a typed JSONB bucket in `ui_surface_config` (`dictionary`, `session_defaults`). Adding one = a PURE handler (validate/merge/empty) in `config/namespace-registry.ts` + a manifest `configNamespaces` line. Zero SQL.
 - Surfaces with ≥1 role or namespace automatically appear in the user hub at **`/surfaces`**.
 
@@ -520,6 +525,10 @@ Registering a surface is a LAYERED recipe — each layer is independently shippa
 - Baseline `selection`/`text_before`/`text_after` are captured by the menu itself — don't duplicate.
 
 ## Layer 6 — Bindings + verification
+
+Skip this layer entirely for agent-native surfaces. Their own agent is the
+subject, and no default, role, surface binding, bound roster, or Bind control is
+created for it.
 
 Bindings are **`platform.associations` edges** (agent → surface, tier-encoded `role`, `value_mappings` in edge metadata), written ONLY through `services/bind-agent-to-surface.service.ts` — UI paths: `SurfaceAgentBindPanel`, the 5-panel `/agents/[id]/surfaces` shell, or the batch editor. Never write an edge by hand.
 

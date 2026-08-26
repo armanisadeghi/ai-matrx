@@ -7,7 +7,8 @@ description: >-
   only when the whole focused surface is genuinely ready. Use when he asks an
   agent to fix, refine, review, or iterate on a page, route, panel, overlay, or
   other UI while he may inspect localhost during the work. Not for a report-only
-  UI audit.
+  UI audit or an agent-native surface whose product is choosing, building,
+  running, testing, or comparing agents.
 ---
 
 # Live UI iteration
@@ -20,6 +21,21 @@ Own the focused surface continuously: **requested changes first, then full surfa
 - **Do not stop at a plan, diagnosis, partial checklist, or “first pass.”** Continue until every applicable certification item is pass/fixed/N/A and live verification is complete.
 - **Only narrow the work when Arman explicitly says** “only make these changes,” “stop after this,” or equivalent. Even then, verify those changes proportionately and state that the surface was not fully certified.
 - **New feedback becomes priority zero.** Apply it, make it visible, then resume the remaining certification work.
+
+## Eligibility and continuity
+
+- **Exclude agent-native surfaces from every fleet.** Chat, Agents Hub, Agent Apps,
+  Agent Build/Builder, Agent Run/Runner/history, Agent Battle/comparison, mandate
+  authoring, and agent/widget test harnesses are subjects or universal hosts—not
+  product surfaces for this workflow. Do not add bindings, roles, disclosure, or
+  agent UI to them. Replace an excluded candidate with an ordinary product route.
+- **Integration never pauses this loop.** Periodic integration, type sync, release,
+  or shared-checkout sweeps are expected background activity. Checkpoint and push
+  the current coherent owned files, then resume immediately; never wait for a
+  sweep or release to end.
+- **Only an exact-file collision can suspend a path.** Preserve both owners' work,
+  continue every non-overlapping task, and resume the collided path as soon as it
+  is isolated. A general "freeze" message is not authority to stop the fleet.
 
 Read [`references/readiness-gate.md`](./references/readiness-gate.md) before the first browser handoff. Read [`references/skill-router.md`](./references/skill-router.md) while gathering the surface so every applicable specialist contract is invoked.
 

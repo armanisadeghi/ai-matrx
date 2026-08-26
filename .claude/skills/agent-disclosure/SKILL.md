@@ -6,8 +6,8 @@ description: >-
   window already runs a mandate behind a button, assist, automatic action, or
   mode; when the agent-disclosure guard names a file; or during a surface check.
   Disclosure never adds agent labels, chips, cards, rosters, or any other visible
-  page content. Not for agent-authoring surfaces or universal agent hosts such as
-  Chat, where no fixed worker is bound to the surface.
+  page content. Not for agent-native surfaces or universal agent hosts, where no
+  fixed worker is bound to the surface.
 ---
 
 # Agent disclosure — register existing fixed jobs in the top menu
@@ -49,11 +49,19 @@ for this page. Confirm the integration already exists before registering it.
 - Open the mandate through `useOpenMandateWindow`; never link away to a mandate
   route from a working surface.
 
-### Agent-authoring surface — exempt
+### Agent-native surface — excluded and unbound
 
-If the user builds, edits, pins, tests, or reviews an agent, the agent is the
-subject, not a hidden worker. Agent Builder, mandate consoles, and agent settings
-must not register the subject as a surface job.
+If the product is choosing, building, editing, running, testing, reviewing, or
+comparing agents, the agent is the subject—not a hidden worker and not a surface
+binding. This includes Chat, Agents Hub, Agent Apps, Agent Build/Builder, Agent
+Run/Runner/history, Agent Battle/comparison, mandate authoring/settings, and
+agent/widget test harnesses.
+
+- Do not add manifest `agentRoles`, defaults, bindings, a bound roster, or Bind.
+- Do not register a "separate fixed job" merely because one appears inside the
+  host; the whole agent-native surface is outside disclosure.
+- Do not add visible agent content. Existing agent cards, pickers, runs, and
+  controls are the product itself, not disclosure.
 
 ### Universal agent host — exempt and structurally unbound
 
@@ -67,9 +75,8 @@ quick-action choices are universal-host content/navigation.
 - The top Agents menu must omit the bound-agent list and Bind control.
 - The binding service must reject direct writes for the surface.
 
-A genuinely separate fixed mandate that performs a job *on* a universal host
-may be registered as that specific job. The host's available agent catalog is
-still never a surface roster.
+An agent-native host never becomes eligible because it also runs a fixed
+mandate. Keep that job out of surface roles and bindings.
 
 ## Find the work
 
@@ -149,7 +156,7 @@ The existing menu row is the door. A link from a working surface to
 | Situation | Verdict |
 | --- | --- |
 | Existing button/assist/automatic action runs one fixed mandate | Register that job in the top menu only. |
-| Page builds, edits, tests, or reviews an agent | Exempt; the agent is the subject. |
+| Page chooses, builds, runs, tests, reviews, or compares agents | Excluded and unbound; the agent is the subject. |
 | Page lets the user choose or chat with any agent | Exempt universal host; no bound roster or Bind control. |
 | Runtime mode selects one of several fixed jobs | Register the live fixed job without rendering UI. |
 | Service/thunk/tool handler runs a mandate | Register on the calling surface, not in machinery. |

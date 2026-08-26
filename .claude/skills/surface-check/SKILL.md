@@ -19,6 +19,13 @@ how you run it on a surface end to end without coming back with questions.
 
 `/surface-check <surfaceName | route | overlayId>` — or nothing: **pick the stalest**.
 
+**Fleet eligibility comes first.** A rolling or live-UI fleet skips every
+agent-native surface: Chat, Agents Hub, Agent Apps, Agent Build/Run/Battle,
+mandate authoring, agent comparison/history, and agent/widget test harnesses.
+Replace it with the next ordinary product surface. A direct user-requested UI
+check may inspect one, but S5 is the agent-native exclusion—not authority to add
+roles, bindings, disclosure, or agent UI.
+
 ```sql
 -- stalest first: never-checked, then oldest; skip rows claimed in the last 6h
 select name, label, readiness, last_checked_at, check_claimed_at
@@ -58,6 +65,9 @@ Rules while fixing:
 - Reuse → Extend → Compose → Create. Invoke `no-dead-ends` before building any surface; `context-docs` before editing any FEATURE.md; `code-splitting` before any dynamic import; `supabase-realtime` before any `.channel(`; `type-safety` for any type error.
 - Never remove, rename, or hide a feature to make a section pass (THE LOSSLESS LAW). Never disable a check. Never `eslint-disable`.
 - Batch commits per section (`git add <your files>` → `git commit --only -m "surface-check(<surface>): S6 context menu — …"`), push often. Shared checkout: never tree-wide git ops; never verify a variant by editing a production file in place.
+- Periodic integration, type-sync, and release sweeps do not pause the check.
+  Checkpoint the coherent owned set and continue immediately. Suspend only an
+  exact overlapping path while it is isolated; keep all non-overlapping work moving.
 - Mobile = in-app browser at 375×812 (`resize_window` mobile preset), both themes (`document.documentElement.classList.toggle('dark')`).
 
 ## Step 3 — Verify live (non-negotiable)
@@ -119,5 +129,5 @@ It is also an advisory release gate ("Surface value blast radius").
 2. ~~`/administration/ui/surfaces` Checked column + never/stale filter~~ — LIVE (sortable; never-checked first). Still missing: the per-section result popover reading `last_check.sections`.
 3. `pnpm check:textareas` ratchet — non-Pro textarea count per feature, baseline only goes down (S7 has no guard today; ~528 sites).
 4. Structural guards for S5 — (a) an eslint rule or test that every `launchAgentExecution`/`launchMandate` call inside an agent-purpose feature passes `surfaceName: null` or a literal string (never `undefined`); (b) a static candidate report that compares explicit Mandate/agent launch points with manifest roles and live bindings. Historical tool-call reduction still requires runtime telemetry, so the static report is a scout, not proof.
-5. `agents/battle` has no surface wiring at all — first S1–S6 pass there is a full build.
+5. Add a structural campaign-eligibility guard so agent-native routes cannot enter rolling/live-UI fleets; until it lands, the explicit eligibility gate above is mandatory.
 6. `create<X>Scope` builders are hand-written and drift silently — nothing validates that a builder's param keys match its manifest's value names. A generated `ValueNameOf<M>` type would make a rename a compile error.
