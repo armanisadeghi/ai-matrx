@@ -51914,6 +51914,71 @@ export type Database = {
         }
         Relationships: []
       }
+      site_keyword_offering: {
+        Row: {
+          assigned_by: string | null
+          brand_offering_id: string
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_primary: boolean
+          keyword_id: string
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          site_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          assigned_by?: string | null
+          brand_offering_id: string
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_primary?: boolean
+          keyword_id: string
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          site_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          assigned_by?: string | null
+          brand_offering_id?: string
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_primary?: boolean
+          keyword_id?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          site_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_keyword_offering_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_keyword_value: {
         Row: {
           audience_fit: string | null
@@ -52014,6 +52079,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      site_offering_value: {
+        Row: {
+          audience_fit: string | null
+          brand_fit: string | null
+          brand_offering_id: string
+          capacity_appetite: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          lead_quality: string | null
+          metadata: Json
+          notes: string | null
+          offering_match: string | null
+          organization_id: string
+          site_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          weight: number | null
+        }
+        Insert: {
+          audience_fit?: string | null
+          brand_fit?: string | null
+          brand_offering_id: string
+          capacity_appetite?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          lead_quality?: string | null
+          metadata?: Json
+          notes?: string | null
+          offering_match?: string | null
+          organization_id: string
+          site_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          weight?: number | null
+        }
+        Update: {
+          audience_fit?: string | null
+          brand_fit?: string | null
+          brand_offering_id?: string
+          capacity_appetite?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          lead_quality?: string | null
+          metadata?: Json
+          notes?: string | null
+          offering_match?: string | null
+          organization_id?: string
+          site_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          weight?: number | null
+        }
+        Relationships: []
       }
       site_topic_value: {
         Row: {
@@ -52498,6 +52626,7 @@ export type Database = {
           metadata: Json
           notes: string | null
           offering_match: string | null
+          offering_template_id: string | null
           organization_id: string
           pack_id: string
           sort: number
@@ -52531,6 +52660,7 @@ export type Database = {
           metadata?: Json
           notes?: string | null
           offering_match?: string | null
+          offering_template_id?: string | null
           organization_id: string
           pack_id: string
           sort?: number
@@ -52564,6 +52694,7 @@ export type Database = {
           metadata?: Json
           notes?: string | null
           offering_match?: string | null
+          offering_template_id?: string | null
           organization_id?: string
           pack_id?: string
           sort?: number
@@ -54068,6 +54199,25 @@ export type Database = {
           region: string
         }[]
       }
+      gsc_keyword_offerings_for: {
+        Args: { p_keyword_ids: string[]; p_site_id: string }
+        Returns: {
+          assigned_by: string
+          confidence: number
+          has_own_worth: boolean
+          keyword_id: string
+          lineage: string
+          notes: string
+          offering_id: string
+          offering_kind: string
+          offering_name: string
+          root_id: string
+          root_kind: string
+          root_name: string
+          worth_from_id: string
+          worth_from_name: string
+        }[]
+      }
       gsc_keyword_stamps_for: {
         Args: {
           p_dimension_slugs?: string[]
@@ -54205,6 +54355,16 @@ export type Database = {
           p_value_id?: string
         }
         Returns: Json
+      }
+      gsc_offering_stats: {
+        Args: { p_end: string; p_site_id: string; p_start: string }
+        Returns: {
+          clicks: number
+          impressions: number
+          keywords: number
+          offering_id: string
+          value_band: string
+        }[]
       }
       gsc_perf_breakdown: {
         Args: {
@@ -54754,6 +54914,21 @@ export type Database = {
           class_source: string
           keyword_id: string
           traffic_class: string
+        }[]
+      }
+      gsc_set_keyword_offering: {
+        Args: {
+          p_keyword_ids: string[]
+          p_notes?: string
+          p_offering_id?: string
+          p_organization_id: string
+          p_site_id: string
+        }
+        Returns: {
+          keyword_id: string
+          value_band: string
+          value_score: number
+          value_source: string
         }[]
       }
       gsc_set_keyword_stamps: {
@@ -55350,6 +55525,19 @@ export type Database = {
           p_timeout_hours?: number
         }
         Returns: Json
+      }
+      set_site_offering_value: {
+        Args: {
+          p_brand_offering_id: string
+          p_clear?: boolean
+          p_lead_quality?: string
+          p_notes?: string
+          p_offering_match?: string
+          p_organization_id: string
+          p_site_id: string
+          p_weight?: number
+        }
+        Returns: string
       }
       set_value_settings: {
         Args: {
@@ -60520,6 +60708,94 @@ export type Database = {
           },
         ]
       }
+      brand_offering: {
+        Row: {
+          adopted_at: string | null
+          brand_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          kind: string
+          metadata: Json
+          name: string
+          organization_id: string
+          parent_id: string | null
+          slug: string
+          sort: number
+          status: string
+          template_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          adopted_at?: string | null
+          brand_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          parent_id?: string | null
+          slug: string
+          sort?: number
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          adopted_at?: string | null
+          brand_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          parent_id?: string | null
+          slug?: string
+          sort?: number
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_offering_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_offering_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "brand_offering"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_offering_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "offering_template"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_fact: {
         Row: {
           brand_id: string
@@ -61905,6 +62181,80 @@ export type Database = {
           },
         ]
       }
+      offering_template: {
+        Row: {
+          aliases: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          industry_id: string | null
+          kind: string
+          metadata: Json
+          name: string
+          organization_id: string
+          parent_id: string | null
+          slug: string
+          sort: number
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          aliases?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          industry_id?: string | null
+          kind: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          parent_id?: string | null
+          slug: string
+          sort?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          aliases?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          industry_id?: string | null
+          kind?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          parent_id?: string | null
+          slug?: string
+          sort?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offering_template_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "offering_template"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page: {
         Row: {
           canonical_page_id: string
@@ -62799,6 +63149,73 @@ export type Database = {
           },
         ]
       }
+      site_offering: {
+        Row: {
+          brand_offering_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          site_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          brand_offering_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          site_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          brand_offering_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          site_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_offering_brand_offering_id_fkey"
+            columns: ["brand_offering_id"]
+            isOneToOne: false
+            referencedRelation: "brand_offering"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_offering_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_offering_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
+        ]
+      }
       sitemap: {
         Row: {
           child_count: number | null
@@ -63277,6 +63694,14 @@ export type Database = {
       }
     }
     Functions: {
+      adopt_offering_template: {
+        Args: {
+          p_organization_id: string
+          p_site_id: string
+          p_template_id: string
+        }
+        Returns: string
+      }
       assert_component_site: {
         Args: {
           p_id: string
@@ -63438,6 +63863,57 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      move_site_offering: {
+        Args: {
+          p_offering_id: string
+          p_organization_id: string
+          p_parent_id?: string
+          p_sibling_order?: string[]
+          p_site_id: string
+        }
+        Returns: string
+      }
+      offering_templates_for_site: {
+        Args: { p_search?: string; p_site_id: string }
+        Returns: {
+          adopted: boolean
+          aliases: Json
+          description: string
+          id: string
+          industry_id: string
+          kind: string
+          name: string
+          parent_id: string
+          slug: string
+          sort: number
+        }[]
+      }
+      remove_site_offering: {
+        Args: {
+          p_offering_id: string
+          p_organization_id: string
+          p_replacement_offering_id?: string
+          p_site_id: string
+        }
+        Returns: {
+          brand_offering_retired: boolean
+          keywords_reassigned: number
+          offering_id: string
+          offering_name: string
+        }[]
+      }
+      save_site_offering: {
+        Args: {
+          p_description?: string
+          p_kind?: string
+          p_name?: string
+          p_offering_id?: string
+          p_organization_id: string
+          p_parent_id?: string
+          p_site_id: string
+        }
+        Returns: string
+      }
       site_audit_rollup: { Args: { p_site_id: string }; Returns: Json }
       site_audit_trend: { Args: { p_site_id: string }; Returns: Json }
       site_gsc_daily: {
@@ -63458,6 +63934,34 @@ export type Database = {
           page_id: string
           path: string
           url: string
+        }[]
+      }
+      site_offering_delete_impact: {
+        Args: { p_offering_id: string; p_site_id: string }
+        Returns: {
+          child_count: number
+          keyword_count: number
+          offering_id: string
+          offering_name: string
+          other_site_count: number
+          value_count: number
+        }[]
+      }
+      site_offerings: {
+        Args: { p_site_id: string }
+        Returns: {
+          adopted_at: string
+          brand_id: string
+          description: string
+          id: string
+          kind: string
+          metadata: Json
+          name: string
+          parent_id: string
+          slug: string
+          sort: number
+          status: string
+          template_id: string
         }[]
       }
       site_page_coverage: { Args: { p_site_id: string }; Returns: Json }

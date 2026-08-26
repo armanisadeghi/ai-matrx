@@ -2,7 +2,7 @@
 
 **One-liner:** Separate the platform suggestion catalog from brand-owned offerings and explicit site availability so no site can display or assign an offering it has not selected.
 **Change types:** canonicalize · split · migrate · modify
-**Status:** decisions FINAL (Arman delegated 2026-08-25) — awaiting GO to execute
+**Status:** GO received; canonical tables, backfill, and operation RPCs applied live and ledgered 2026-08-25. Frontend/Python consumer cutover remains in progress.
 
 ## 1. Scope — the cluster
 
@@ -15,7 +15,7 @@
 | `web.brand` | 40 | parent | The brand owns the commercial catalog. |
 | `web.site` | 58 | availability scope | A site exposes only explicitly selected brand offerings. |
 | `web.brand_offering` | new | create + certify | Canonical, tenant-owned offering identity and hierarchy. |
-| `web.offering_template` | new | create + certify | Platform-owned suggestion catalog (the system defaults); no tenant columns. |
+| `web.offering_template` | new | create + certify | Platform-owned suggestion catalog, explicitly owned by the Matrx System organization. |
 | `web.site_offering` | new | create + certify | Explicit site-to-brand-offering availability; absence means unavailable. |
 | `seo.site_keyword_offering` | new | create + certify | Site-specific keyword placement against an offering the site actually exposes. |
 | `seo.site_offering_value` | new | create + certify | Site-specific worth and match judgments over a brand offering. |
@@ -49,7 +49,7 @@ Live-DB facts these shapes answer (verified 2026-08-25): `seo.topic` has 408 liv
 | `template_id` | FK → `web.offering_template`, nullable | Provenance only — see borrow semantics below. |
 | `adopted_at`, `sort`, standard audit/soft-delete columns | | `visibility` defaults org-scoped (`platform.entity_default_visibility`), **not** `public`. |
 
-**`web.offering_template` — where the system defaults sit.** Platform-owned suggestion catalog: **no `organization_id`**, no tenant columns pretending otherwise. Columns: `name`, `slug`, `kind` (`product`|`service`), `description`, `aliases`, `parent_id` (template hierarchy), `industry_id` (nullable link to the industry entity starter packs already use), `status`, audit columns. Super-admin writes only. Templates are seeded from today's builtin `service`/`product` topic rows and from ratified industry pack work.
+**`web.offering_template` — where the system defaults sit.** This is a normal canonical system-owned entity: `organization_id NOT NULL`, explicitly written as the Matrx System organization (`39c38960-d30c-4840-b0c1-c9960de95582`) with **no column default or database resolver**. `visibility` is at least `internal`, making the system-org rows globally readable through the canonical access kernel. Columns: `name`, `slug`, `kind` (`product`|`service`), `description`, `aliases`, `parent_id` (template hierarchy), `industry_id` (nullable link to the industry entity starter packs already use), `status`, and standard audit/soft-delete columns. Super-admin writes only through one guarded RPC family; direct authenticated writes are refused and audited. Templates are seeded from today's builtin `service`/`product` topic rows and from ratified industry pack work.
 
 **How we borrow — copy-on-adopt, never live inheritance.** Adopting a template (from Add offering or a starter pack) **copies** name/description/kind/needed ancestry into `web.brand_offering` rows and stamps `template_id` + `adopted_at`. After adoption the brand row is wholly the brand's: template edits never mutate brand offerings, brand edits never touch templates or other brands. Provenance exists so the UI can show From template / Changed from template and offer an explicit opt-in refresh later — the exact pattern the value-system rulebook already proved with pack provenance. Adoption through a site's flow also writes that site's `web.site_offering` row in the same transaction; adoption from a brand surface writes no availability rows.
 
@@ -83,7 +83,7 @@ For every existing site/topic placement or worth row, resolve its site's brand, 
 - **D3 — What does parent-child mean?** **DECIDED: catalog hierarchy only.** Product families and service branches must never encode which site sells them.
 - **D4 — How are site-only offerings represented?** **DECIDED: one brand offering with one site-availability row.** Identity stays canonical while distribution remains narrow.
 - **D5 — What happens to `topic`?** **DECIDED: split.** `topic` keeps only genuine semantic taxonomy (`brand`/`problem`/`authority`/`reputation`); shared suggestions become `web.offering_template`; company inventory becomes `web.brand_offering`.
-- **D6 — Where do system defaults live, and how do brands borrow?** **DECIDED: `web.offering_template`, copy-on-adopt.** Platform-owned, tenant-column-free, super-admin-written. Adoption copies into brand rows and stamps `template_id` provenance; no live inheritance in either direction. Reachable only inside Add offering and starter-pack review.
+- **D6 — Where do system defaults live, and how do brands borrow?** **DECIDED: `web.offering_template`, copy-on-adopt.** Platform-owned means explicitly owned by the Matrx System organization, never ownerless and never assigned by a default or resolver. Super-admin writes only. Adoption copies into brand rows and stamps `template_id` provenance; no live inheritance in either direction. Reachable only inside Add offering and starter-pack review.
 - **D7 — Tenant hygiene on the new tables?** **DECIDED: no hardcoded defaults, enforced consistency.** No column ever defaults to a specific org UUID; `visibility` defaults org-scoped, not public; triggers enforce offering↔brand↔org and edge↔brand agreement so a cross-tenant row is unrepresentable, not merely unqueried.
 - **D8 — Other channels (social, stores, ads)?** **DECIDED: sibling availability edges later, same identity.** `web.site_offering` is the first edge; future channels get their own explicit edge tables over the same `brand_offering` rows. No channel ever mints an offering identity.
 
@@ -113,4 +113,4 @@ Apply and ledger the migration, regenerate frontend and aidream database models,
 
 ---
 
-Reply `go` to execute, or change any decision above.
+Execution was authorized and began 2026-08-25. The database foundation is live; consumer cutover follows the acceptance gate above.
