@@ -272,6 +272,18 @@ export const RUN_CONSOLE_VALUES: SurfaceValue[] = [
     group: "brands",
     sortOrder: 370,
   },
+  {
+    name: "place_detection_status",
+    label: "Place-detection scoreboard",
+    description:
+      "Gazetteer place-detection engine only (KI-015): the GLOBAL scoreboard (`seo.keyword_place_status` read with no brand) — this engine scans one shared keyword corpus, not a per-brand queue, so there is no per-brand table to show. {queue_total, queue_scanned, queue_pending, keywords_with_places, keywords_explicit_local, next_phrase, last_scanned_at}. Absent on other engines and until the status read resolves.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 600,
+    autoContext: false,
+    group: "brands",
+    sortOrder: 375,
+  },
 
   // ── Limits & knobs ────────────────────────────────────────────────────────
   {
@@ -491,6 +503,7 @@ export type RunConsoleScopeValues = {
   focused_site_name?: string;
   brand_coverage?: Array<Record<string, unknown>>;
   situational_status?: Array<Record<string, unknown>>;
+  place_detection_status?: Record<string, unknown>;
   cap_ceiling?: number;
   effective_cap?: number;
   min_impressions?: number;
