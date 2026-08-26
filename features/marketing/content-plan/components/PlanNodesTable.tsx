@@ -686,7 +686,7 @@ export function PlanNodesTable({
       hierarchy={{
         rows: nodes,
         getParentId: (row) => row.parent_id,
-        onReparent: (row, parentId) => onReparent(row.id, parentId),
+        onMove: (row, move) => onReparent(row.id, move.parentId),
         itemLabel: (row) => row.label,
         rootDropLabel: "Drop here to move this page to the top level",
       }}

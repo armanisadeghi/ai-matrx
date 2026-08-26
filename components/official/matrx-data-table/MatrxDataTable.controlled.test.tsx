@@ -211,7 +211,8 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
         getRowId={(row) => row.id}
         hierarchy={{
           getParentId: () => null,
-          onReparent: () => undefined,
+          onMove: () => undefined,
+          manualOrder: true,
           itemLabel: (row) => row.name,
         }}
         detail={{ enabled: false }}
