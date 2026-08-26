@@ -40,9 +40,11 @@ tables (AI Models, relationships, …) can cut over to one contract.
   every active canonical query control. Set `pageSize={0}` when a hierarchy
   must remain whole; pagination is then omitted even when URL state is enabled.
 - **Hierarchy movement is table-owned and opt-in.** `hierarchy` adds a compact
-  first-cell drag handle, row/root drop targets, descendant-cycle prevention,
-  and one `onReparent(row, parentId)` write. Consumers keep their database
-  authority and fallback parent picker; they never fork the row renderer.
+  first-cell pointer/touch drag handle, row/root drop targets,
+  descendant-cycle prevention, and one `onReparent(row, parentId)` write. A
+  moved row keeps its descendants because only that row's parent changes.
+  Consumers keep their database authority and fallback parent picker; they
+  never fork the row renderer or use native HTML drag events.
 - **URL state is built in and opt-in.** `urlState={{ id: "accounts" }}` stores
   table-owned search, match mode, any-of, layered/column filters, sort,
   pagination, open row, and open window under `table.accounts.*`. The stable id
@@ -249,6 +251,11 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-25 — Replaced unreliable native HTML hierarchy dragging with the
+  shared dnd-kit pointer sensor. Live Offerings verification moved a nested
+  branch to root and restored it beneath its original parent with every
+  descendant intact.
 
 - 2026-08-25 — Added canonical hierarchy reparenting and opt-in immediate cell
   saving. Keyword Value Offerings is the first hierarchy consumer; Content
