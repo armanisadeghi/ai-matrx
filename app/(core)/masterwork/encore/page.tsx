@@ -21,9 +21,7 @@ export default async function EncoreRoute() {
           </h1>
         </div>
       </PageHeader>
-      <div className="h-full overflow-y-auto bg-textured pt-[calc(var(--shell-header-h)+1rem)]">
-        <EncoreHomePage />
-      </div>
+      <EncoreHomePage />
     </>
   );
 }
