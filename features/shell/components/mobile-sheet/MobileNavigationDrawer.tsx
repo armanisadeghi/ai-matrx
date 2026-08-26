@@ -38,6 +38,14 @@ function mobileMenuControl(): HTMLInputElement | null {
   ) as HTMLInputElement | null;
 }
 
+function navItemIdentity(item: ShellNavItem): string {
+  return `${item.href}::${item.label}`;
+}
+
+function navChildIdentity(child: ShellNavChild): string {
+  return `${child.panelAction ?? child.action ?? child.href}::${child.label}`;
+}
+
 function searchResults(items: ShellNavItem[], query: string): SearchResult[] {
   const needle = query.trim().toLocaleLowerCase();
   if (!needle) return [];
@@ -99,11 +107,13 @@ export default function MobileNavigationDrawer({
   settingsItem,
 }: MobileNavigationDrawerProps) {
   const [open, setOpen] = useState(false);
-  const [activeGroupHref, setActiveGroupHref] = useState<string | null>(null);
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   const allItems = [...items, settingsItem];
-  const activeGroup = allItems.find((item) => item.href === activeGroupHref);
+  const activeGroup = allItems.find(
+    (item) => navItemIdentity(item) === activeGroupId,
+  );
   const results = searchResults(allItems, query);
 
   useEffect(() => {
@@ -117,7 +127,7 @@ export default function MobileNavigationDrawer({
         // Vaul on the next frame so that same pointer-up cannot dismiss the
         // drawer as an outside interaction immediately after opening it.
         openFrame = window.requestAnimationFrame(() => {
-          setActiveGroupHref(null);
+          setActiveGroupId(null);
           setQuery("");
           setOpen(true);
           openFrame = null;
@@ -142,14 +152,14 @@ export default function MobileNavigationDrawer({
     const control = mobileMenuControl();
     if (control && control.checked !== nextOpen) control.checked = nextOpen;
     if (!nextOpen) {
-      setActiveGroupHref(null);
+      setActiveGroupId(null);
       setQuery("");
     }
   };
 
   const renderChild = (child: ShellNavChild) => (
     <MobileSheetNavLink
-      key={child.panelAction ?? child.action ?? child.href}
+      key={navChildIdentity(child)}
       href={child.href}
       iconName={child.panelAction ? NAV_WINDOW_PANEL_ICON : child.iconName}
       label={child.label}
@@ -162,13 +172,13 @@ export default function MobileNavigationDrawer({
       {items.map((item) =>
         item.children?.length ? (
           <GroupButton
-            key={item.href}
+            key={navItemIdentity(item)}
             item={item}
-            onOpen={() => setActiveGroupHref(item.href)}
+            onOpen={() => setActiveGroupId(navItemIdentity(item))}
           />
         ) : (
           <MobileSheetNavLink
-            key={item.href}
+            key={navItemIdentity(item)}
             href={item.href}
             iconName={item.iconName}
             label={item.label}
@@ -182,7 +192,7 @@ export default function MobileNavigationDrawer({
       {settingsItem.children?.length ? (
         <GroupButton
           item={settingsItem}
-          onOpen={() => setActiveGroupHref(settingsItem.href)}
+          onOpen={() => setActiveGroupId(navItemIdentity(settingsItem))}
         />
       ) : (
         <MobileSheetNavLink
@@ -273,7 +283,7 @@ export default function MobileNavigationDrawer({
         <button
           type="button"
           className="shell-mobile-back-button"
-          onClick={() => setActiveGroupHref(null)}
+          onClick={() => setActiveGroupId(null)}
           aria-label="Back to main menu"
           aria-hidden={!showBack}
           data-visible={showBack ? "true" : undefined}
@@ -308,7 +318,7 @@ export default function MobileNavigationDrawer({
           <MobileRouteMenuSlot />
           <div
             className="shell-mobile-view"
-            key={query.trim() ? "search" : (activeGroupHref ?? "root")}
+            key={query.trim() ? "search" : (activeGroupId ?? "root")}
           >
             {query.trim()
               ? renderSearch()
