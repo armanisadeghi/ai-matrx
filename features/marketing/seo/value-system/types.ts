@@ -95,7 +95,16 @@ export type ValueReason =
    * topic step links to that node in the topic tree. Optional because cached
    * receipts written before the resolver carried it still render.
    */
-  | { kind: "topic"; topic: string; topic_id?: string | null; weight: number; root: string | null; negative_guard: boolean; effect?: "add"; amount?: number }
+  | {
+      kind: "topic";
+      topic: string;
+      topic_id?: string | null;
+      weight: number;
+      root: string | null;
+      negative_guard: boolean;
+      effect?: "add";
+      amount?: number;
+    }
   /** KI-048: the starting point every score is built from. */
   | { kind: "baseline"; amount: number }
   /**
@@ -367,7 +376,8 @@ export interface StarterPackSummary {
   /** Bumps on every content edit (D4) — the join key for "changed since you adopted". */
   pack_version: number;
   /** How the caller reaches this pack: admin · curator · organization (subscribed/pilot) · industry · global. */
-  entitled_via: "admin" | "curator" | "organization" | "industry" | "global" | null;
+  entitled_via:
+    "admin" | "curator" | "organization" | "industry" | "global" | null;
   /** The evaluated org holds an organization-audience grant (its subscription / pilot). */
   subscribed: boolean;
   subscriber_count: number;
@@ -461,11 +471,7 @@ export interface StarterPackDetail {
 
 /** What a pack part is called on the wire — the adopt RPC's `p_include`. */
 export type StarterPackPart =
-  | "topics"
-  | "value_bands"
-  | "geo_bands"
-  | "geo_areas"
-  | "meaning";
+  "topics" | "value_bands" | "geo_bands" | "geo_areas" | "meaning";
 
 /** Counts of rows actually written. Adoption is additive and idempotent: a
  *  second adopt writes nothing new, and never overwrites a site's own ruling. */
@@ -509,9 +515,11 @@ export interface StarterPackAdoptResult {
  * `yours`      — (topic worth only) the site set this topic's worth itself,
  *                before or instead of the pack.
  */
-export type PackItemState = "missing" | "as_adopted" | "changed" | "archived" | "yours";
+export type PackItemState =
+  "missing" | "as_adopted" | "changed" | "archived" | "yours";
 
-export type PackItemKind = "rule" | "value_band" | "geo_band" | "geo_area" | "topic";
+export type PackItemKind =
+  "rule" | "value_band" | "geo_band" | "geo_area" | "topic";
 
 export interface StarterPackStatusItem {
   kind: PackItemKind;
@@ -641,7 +649,9 @@ export interface StarterPackPreview {
     stamped_only_keywords: number;
     protected_keywords: number;
     movements: PreviewMovement[];
-    samples: Array<PreviewSampleKeyword & { source: string; stamped_only: boolean }>;
+    samples: Array<
+      PreviewSampleKeyword & { source: string; stamped_only: boolean }
+    >;
   };
   unvalued_before: number;
   unvalued_after: number;

@@ -56,6 +56,7 @@ import {
   deleteTopic,
   listAllTopics,
   listTopicWorth,
+  moveTopic,
   saveTopic,
   setTopicParent,
   setTopicWorth,
@@ -259,6 +260,21 @@ export function TopicTreeWorkbench() {
     onError: failed("pin that parent"),
   });
 
+  const moveOffering = useMutation({
+    mutationFn: (input: {
+      topicId: string;
+      parentId: string | null;
+      siblingOrder: string[];
+    }) => moveTopic(siteId, input.topicId, input.parentId, input.siblingOrder),
+    onSuccess: () => {
+      void refreshTree();
+      toast.success("Offering moved", {
+        description: "Its full branch moved with it.",
+      });
+    },
+    onError: failed("move that offering"),
+  });
+
   const upsertTopic = useMutation({
     mutationFn: (input: {
       topicId: string | null;
@@ -364,6 +380,7 @@ export function TopicTreeWorkbench() {
 
   const busy =
     pinParent.isPending ||
+    moveOffering.isPending ||
     upsertTopic.isPending ||
     saveWorth.isPending ||
     placeKeywords.isPending ||
@@ -504,8 +521,12 @@ export function TopicTreeWorkbench() {
     });
 
   const topicActions: OfferingRowActions = {
-    onReparent: (target, parentId) =>
-      pinParent.mutate({ topicId: target.topic.id, parentId }),
+    onMove: (target, move, siblingOrder) =>
+      moveOffering.mutate({
+        topicId: target.topic.id,
+        parentId: move.parentId,
+        siblingOrder,
+      }),
     onPinParent: openParentPicker,
     onMakeRoot: (target) =>
       pinParent.mutate({ topicId: target.topic.id, parentId: null }),
@@ -517,7 +538,7 @@ export function TopicTreeWorkbench() {
   };
 
   const runContextAction = (
-    action: Exclude<keyof OfferingRowActions, "onReparent">,
+    action: Exclude<keyof OfferingRowActions, "onMove">,
   ) => {
     const node = contextNodeRef.current;
     if (node) topicActions[action](node);

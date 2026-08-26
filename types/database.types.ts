@@ -54879,6 +54879,15 @@ export type Database = {
           kw_id: string
         }[]
       }
+      gsc_topic_move: {
+        Args: {
+          p_parent_id?: string
+          p_sibling_order: string[]
+          p_site_id: string
+          p_topic_id: string
+        }
+        Returns: string
+      }
       gsc_topic_offering_split: {
         Args: { p_end: string; p_site_id: string; p_start: string }
         Returns: {

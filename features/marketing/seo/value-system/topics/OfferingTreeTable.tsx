@@ -20,10 +20,12 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type {
   CellEditsMap,
   MatrxColumnDef,
+  MatrxDataTableHierarchyMove,
   MatrxDataTableQueryState,
 } from "@/components/official/matrx-data-table/types";
 import { filterAndSortRows } from "@/components/official/matrx-data-table/filter-engine";
 import { cn } from "@/styles/themes/utils";
+import { isJsonObject } from "@/types/json";
 import { formatCount } from "@/features/marketing/search-console/types";
 import {
   humanLines,
@@ -60,10 +62,15 @@ export interface OfferingTableRow {
   clicks: number;
   impressions: number;
   bands: Record<string, number>;
+  treeOrder: number | null;
 }
 
 export interface OfferingRowActions {
-  onReparent: (node: TopicTreeNode, parentId: string | null) => void;
+  onMove: (
+    node: TopicTreeNode,
+    move: MatrxDataTableHierarchyMove,
+    siblingOrder: string[],
+  ) => void;
   onPinParent: (node: TopicTreeNode) => void;
   onSetWorth: (node: TopicTreeNode) => void;
   onEdit: (node: TopicTreeNode) => void;
@@ -79,6 +86,47 @@ function optionLabel(
 ): string {
   if (!value) return "Not set";
   return options.find((option) => option.value === value)?.label ?? value;
+}
+
+function topicTreeOrder(node: TopicTreeNode): number | null {
+  const metadata = node.topic.metadata;
+  if (!isJsonObject(metadata)) return null;
+  const value = metadata.tree_order;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function compareManualOrder(
+  left: OfferingTableRow,
+  right: OfferingTableRow,
+): number {
+  if (left.treeOrder !== null || right.treeOrder !== null) {
+    if (left.treeOrder === null) return 1;
+    if (right.treeOrder === null) return -1;
+    if (left.treeOrder !== right.treeOrder)
+      return left.treeOrder - right.treeOrder;
+  }
+  if (left.keywordsBranch !== right.keywordsBranch) {
+    return right.keywordsBranch - left.keywordsBranch;
+  }
+  return left.name.localeCompare(right.name);
+}
+
+/** Build the exact complete destination order expected by the atomic move RPC. */
+export function destinationSiblingOrder(
+  rows: OfferingTableRow[],
+  movedId: string,
+  move: MatrxDataTableHierarchyMove,
+): string[] {
+  const siblings = rows
+    .filter((row) => row.parentId === move.parentId && row.id !== movedId)
+    .sort(compareManualOrder);
+  const beforeIndex = move.beforeId
+    ? siblings.findIndex((row) => row.id === move.beforeId)
+    : -1;
+  const insertionIndex = beforeIndex >= 0 ? beforeIndex : 0;
+  const siblingIds = siblings.map((row) => row.id);
+  siblingIds.splice(insertionIndex, 0, movedId);
+  return siblingIds;
 }
 
 export function offeringTableRows(nodes: TopicTreeNode[]): OfferingTableRow[] {
@@ -117,6 +165,7 @@ export function offeringTableRows(nodes: TopicTreeNode[]): OfferingTableRow[] {
       clicks: node.subtree.clicks,
       impressions: node.subtree.impressions,
       bands: node.subtree.bands,
+      treeOrder: topicTreeOrder(node),
     };
   });
 }
@@ -184,7 +233,9 @@ export function processOfferingTreeRows(
 
   const ordered: OfferingTableRow[] = [];
   const visit = (siblings: OfferingTableRow[]) => {
-    const sorted = filterAndSortRows(siblings, columns, {}, state.sort, "");
+    const sorted = state.sort
+      ? filterAndSortRows(siblings, columns, {}, state.sort, "")
+      : [...siblings].sort(compareManualOrder);
     for (const row of sorted) {
       if (!keep.has(row.id)) continue;
       ordered.push(row);
@@ -455,7 +506,6 @@ export function OfferingTreeTable({
       }
       urlState={{
         id: "offering-tree",
-        defaultSort: { id: "keywordsBranch", direction: "desc" },
         selectedRow: false,
       }}
       toolbar={{
@@ -463,7 +513,7 @@ export function OfferingTreeTable({
         searchMatch: {},
         leading: (
           <span className="hidden text-xs text-muted-foreground xl:inline">
-            Sorting reorders siblings and keeps every branch intact.
+            Drag left or above for a sibling · right for a child.
           </span>
         ),
         actions: (
@@ -483,11 +533,18 @@ export function OfferingTreeTable({
         getParentId: (row) => row.parentId,
         onMove: (row, move) => {
           const node = byId.get(row.id);
-          if (node) actions.onReparent(node, move.parentId);
+          if (node) {
+            actions.onMove(
+              node,
+              move,
+              destinationSiblingOrder(rows, row.id, move),
+            );
+          }
         },
+        manualOrder: true,
         canReparent: () => !busy,
         itemLabel: (row) => row.name,
-        rootDropLabel: "Drop here to make this a root offering",
+        rootDropLabel: "Place first at the top level",
       }}
       copy={{
         label: "Offering",

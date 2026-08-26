@@ -3,6 +3,7 @@ import type {
   MatrxDataTableQueryState,
 } from "@/components/official/matrx-data-table/types";
 import {
+  destinationSiblingOrder,
   processOfferingTreeRows,
   type OfferingTableRow,
 } from "./OfferingTreeTable";
@@ -17,6 +18,7 @@ function row(
   parentId: string | null,
   name: string,
   keywordsBranch: number,
+  treeOrder: number | null = null,
 ): OfferingTableRow {
   return {
     id,
@@ -40,6 +42,7 @@ function row(
     clicks: 0,
     impressions: 0,
     bands: {},
+    treeOrder,
   };
 }
 
@@ -103,9 +106,47 @@ describe("Offering tree table processing", () => {
     );
 
     expect(result.map((entry) => entry.id)).toEqual([
-      "root-b",
       "root-a",
       "child-a",
+      "root-b",
     ]);
+  });
+
+  it("uses persisted sibling order when no table sort is active", () => {
+    const manuallyOrdered = [
+      row("root-b", null, "Beta", 12, 2),
+      row("root-a", null, "Alpha", 20, 1),
+    ];
+
+    const result = processOfferingTreeRows(
+      manuallyOrdered,
+      state(),
+      columns,
+      new Set(),
+    );
+
+    expect(result.map((entry) => entry.id)).toEqual(["root-a", "root-b"]);
+  });
+
+  it("builds a complete top-level order with the moved branch first", () => {
+    expect(
+      destinationSiblingOrder(rows, "child-b", {
+        parentId: null,
+        beforeId: null,
+        position: "root",
+        targetId: null,
+      }),
+    ).toEqual(["child-b", "root-a", "root-b"]);
+  });
+
+  it("inserts a sibling immediately above the shadow target", () => {
+    expect(
+      destinationSiblingOrder(rows, "child-a", {
+        parentId: "root-b",
+        beforeId: "child-b",
+        position: "before",
+        targetId: "child-b",
+      }),
+    ).toEqual(["child-a", "child-b"]);
   });
 });

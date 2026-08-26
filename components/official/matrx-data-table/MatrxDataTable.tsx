@@ -732,10 +732,7 @@ function MatrxDataTableCore<T>({
     canMoveToParent(getRowId(target), source) ||
     (Boolean(hierarchy?.manualOrder) &&
       canMoveToParent(hierarchy?.getParentId(target) ?? null, source));
-  const persistHierarchyMove = (
-    row: T,
-    move: MatrxDataTableHierarchyMove,
-  ) => {
+  const persistHierarchyMove = (row: T, move: MatrxDataTableHierarchyMove) => {
     if (!hierarchy) return;
     void Promise.resolve(hierarchy.onMove(row, move)).catch(
       (error: unknown) => {
@@ -776,7 +773,8 @@ function MatrxDataTableCore<T>({
       "clientY" in activator && typeof activator.clientY === "number"
         ? activator.clientY + event.delta.y
         : rect.top + rect.height / 2;
-    const siblingIntent = Boolean(hierarchy.manualOrder) &&
+    const siblingIntent =
+      Boolean(hierarchy.manualOrder) &&
       (pointerY <= rect.top + rect.height * 0.34 ||
         pointerX <= rect.left + 58 + targetDepth * 12);
     const move: MatrxDataTableHierarchyMove = siblingIntent
@@ -1278,9 +1276,7 @@ function MatrxDataTableCore<T>({
                   hierarchy.rootDropLabel ??
                   "Drop here to move to the top level"
                 }
-                draggedLabel={
-                  hierarchy.itemLabel?.(draggedRow) ?? "Moving row"
-                }
+                draggedLabel={hierarchy.itemLabel?.(draggedRow) ?? "Moving row"}
               />
             ) : null}
             {isFetching && !isLoading ? (
@@ -1988,7 +1984,9 @@ function HierarchyDropShadow({
     >
       <span className="min-w-0 flex-1 truncate">{draggedLabel}</span>
       <span className="shrink-0 text-primary">
-        {nested ? `Inside ${preview.targetLabel}` : `Above ${preview.targetLabel}`}
+        {nested
+          ? `Inside ${preview.targetLabel}`
+          : `Above ${preview.targetLabel}`}
       </span>
     </div>
   );
