@@ -162,7 +162,7 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
       [CONTEXT_MENU_ENTITY_KEY]:
         row.presence === "snapshot-only"
           ? null
-          : { type: "kind_definition", id: row.kind, title: row.label },
+          : { type: "content_ir_kind", id: row.kind, title: row.label },
     };
   };
 

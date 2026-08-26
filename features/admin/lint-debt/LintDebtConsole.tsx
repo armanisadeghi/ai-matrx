@@ -487,7 +487,7 @@ export function LintDebtConsole({
 
       <div className="min-h-0 flex-1">
         <NonEditableContextMenu
-          sourceFeature="lint-debt"
+          sourceFeature="admin"
           contentSource={{ type: "raw" }}
           contextData={{ content: "" }}
           resolveContextOnOpen={(element) => {

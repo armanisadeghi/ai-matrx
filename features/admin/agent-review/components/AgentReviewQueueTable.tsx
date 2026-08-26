@@ -292,7 +292,7 @@ export default function AgentReviewQueueTable() {
 
       <div className="min-h-0 flex-1">
         <NonEditableContextMenu
-          sourceFeature="agent-review"
+          sourceFeature="admin"
           contentSource={{ type: "raw" }}
           contextData={{ content: "" }}
           resolveContextOnOpen={(element) => {

@@ -200,7 +200,7 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
 
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card">
         <NonEditableContextMenu
-          sourceFeature="unwired"
+          sourceFeature="admin"
           contentSource={{ type: "raw" }}
           contextData={{ content: "" }}
           resolveContextOnOpen={(element) => {

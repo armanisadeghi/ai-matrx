@@ -50169,6 +50169,9 @@ export type Database = {
           metadata: Json
           notes: string | null
           organization_id: string
+          scope_brand_id: string | null
+          scope_site_id: string | null
+          scope_tier: string
           topic_id: string
           updated_at: string
           updated_by: string | null
@@ -50187,6 +50190,9 @@ export type Database = {
           metadata?: Json
           notes?: string | null
           organization_id?: string
+          scope_brand_id?: string | null
+          scope_site_id?: string | null
+          scope_tier: string
           topic_id: string
           updated_at?: string
           updated_by?: string | null
@@ -50205,6 +50211,9 @@ export type Database = {
           metadata?: Json
           notes?: string | null
           organization_id?: string
+          scope_brand_id?: string | null
+          scope_site_id?: string | null
+          scope_tier?: string
           topic_id?: string
           updated_at?: string
           updated_by?: string | null
@@ -55406,6 +55415,17 @@ export type Database = {
           site_keywords_local: number
           site_keywords_scanned: number
           site_local_clicks: number
+        }[]
+      }
+      keyword_placement_resolve: {
+        Args: { p_keyword_ids: string[]; p_site_id: string }
+        Returns: {
+          assigned_by: string
+          confidence: number
+          keyword_id: string
+          organization_id: string
+          scope_tier: string
+          topic_id: string
         }[]
       }
       keyword_value_map: {

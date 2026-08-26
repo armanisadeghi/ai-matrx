@@ -415,7 +415,7 @@ export function CatalogKindTable({
 
       <div className="min-h-0 flex-1">
         <NonEditableContextMenu
-          sourceFeature="applications-catalogs"
+          sourceFeature="admin"
           contentSource={{ type: "raw" }}
           contextData={{ content: "" }}
           resolveContextOnOpen={(element) => {

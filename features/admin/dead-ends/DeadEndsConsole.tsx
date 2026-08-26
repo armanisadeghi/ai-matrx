@@ -504,7 +504,7 @@ export function DeadEndsConsole({
 
       <div className="min-h-0 flex-1">
         <NonEditableContextMenu
-          sourceFeature="dead-ends"
+          sourceFeature="admin"
           contentSource={{ type: "raw" }}
           contextData={{ content: "" }}
           resolveContextOnOpen={(element) => {

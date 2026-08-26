@@ -12,7 +12,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ShieldCheck, Building2 } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -157,7 +157,7 @@ export function AdminChangePolicyView() {
                     </SettingsCallout>
                 ) : (
                     <NonEditableContextMenu
-                        sourceFeature="change-policy"
+                        sourceFeature="admin"
                         contentSource={{ type: "raw" }}
                         contextData={{ content: "" }}
                         resolveContextOnOpen={(element) => {
@@ -203,7 +203,7 @@ export function AdminChangePolicyView() {
                     description={`All ${CHANGE_TYPE_CATALOGUE.length} change types with their default handling. The catalogue is CODE (features/change-policy/catalogue.ts); edit it there and apply the generated seed — never by hand in the DB. Row 38 is floored structurally in the resolver.`}
                 />
                 <NonEditableContextMenu
-                    sourceFeature="change-policy"
+                    sourceFeature="admin"
                     contentSource={{ type: "raw" }}
                     contextData={{ content: "" }}
                     resolveContextOnOpen={(element) => {
