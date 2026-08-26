@@ -40023,6 +40023,59 @@ export type Database = {
         Args: { p_bucket: string }
         Returns: string
       }
+      mnd_list_facets: {
+        Args: { p_search?: string }
+        Returns: {
+          kind: string
+          total: number
+          value: string
+        }[]
+      }
+      mnd_list_scope_counts: {
+        Args: { p_search?: string }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      mnd_list_scoped: {
+        Args: {
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          description: string
+          drift: string
+          feature: string
+          has_settings_override: boolean
+          health: string
+          id: string
+          input_kind: string
+          is_enabled: boolean
+          label: string
+          latest_version: number
+          mandate_key: string
+          offered_count: number
+          output_kind: string
+          pinned_version_number: number
+          provision_key: string
+          resolved_agent_id: string
+          resolved_agent_name: string
+          resolved_agent_type: string
+          resolved_layer: string
+          resolved_use_latest: boolean
+          total_count: number
+          updated_at: string
+        }[]
+      }
       move_site_to_organization: {
         Args: {
           p_brand_action?: string
