@@ -37,9 +37,7 @@ export type ProofRunDetail = components["schemas"]["ProofRunDetail"];
 
 export type ProofRunsResponse = components["schemas"]["ProofRunsResponse"];
 
-function proofResultFromWire(
-  value: Record<string, unknown>,
-): ProofResultKind {
+function proofResultFromWire(value: Record<string, unknown>): ProofResultKind {
   const status =
     value.status === "passed" ||
     value.status === "failed" ||
@@ -92,42 +90,15 @@ export function attestationFromRun(run: ProofRunDetail): ProofAttestation {
 }
 
 // ---------------------------------------------------------------------------
-// Saved scenarios — verification authored in the UI, no deploy
-//
-// These endpoints are newer than this repo's OpenAPI snapshot, so their shapes
-// are declared here and will be superseded by `components["schemas"][...]` on
-// the next `pnpm update-api-types` (the server is the author of both).
+// Saved scenarios — verification authored in the UI, no deploy.
+// The server contract is now present in the generated OpenAPI artifact.
 // ---------------------------------------------------------------------------
 
 /** The rule vocabulary the expectation engine implements. */
-export type ExpectationRule =
-  | "contains_marker"
-  | "excludes_marker"
-  | "routes_exist"
-  | "path_present"
-  | "path_absent"
-  | "path_equals"
-  | "min_items"
-  | "max_items"
-  | "matches"
-  | "judge";
+export type ExpectationRule = components["schemas"]["Expectation"]["rule"];
 
 /** One typed rule about the agent's output. */
-export interface Expectation {
-  id: string;
-  rule: ExpectationRule;
-  title?: string;
-  /** Why this rule proves work happened — shown on the pass AND the fail. */
-  proves?: string;
-  /** Dotted path into the artifact; empty means the whole output as text. */
-  path?: string;
-  /** Marker NAME (not its value) — resolved per run from `{{marker:NAME}}`. */
-  marker?: string;
-  value?: unknown;
-  count?: number;
-  rubric?: string;
-  required?: boolean;
-}
+export type Expectation = components["schemas"]["Expectation"];
 
 export interface ProofScenario {
   slug: string;
@@ -145,7 +116,9 @@ export interface ProofScenario {
   check_slug: string;
 }
 
-export interface ScenariosResponse {
+export type ScenariosResponse = components["schemas"]["ScenariosResponse"];
+
+export interface ProofScenariosResponse {
   scenarios: ProofScenario[];
 }
 
@@ -157,7 +130,9 @@ export interface MandateOfferedValue {
   description: string;
 }
 
-export interface MandateOption {
+export type MandateOption = components["schemas"]["MandateOption"];
+
+export interface ProofMandateOption {
   mandate_key: string;
   label: string;
   description: string;
@@ -175,9 +150,116 @@ export interface ExpectationRuleHelp {
   help: string;
 }
 
-export interface MandateCatalogResponse {
-  mandates: MandateOption[];
+export type MandateCatalogResponse =
+  components["schemas"]["MandateCatalogResponse"];
+
+export interface ProofMandateCatalogResponse {
+  mandates: ProofMandateOption[];
   rules: ExpectationRuleHelp[];
+}
+
+function normalizeScenario(
+  row: components["schemas"]["ScenarioRow"],
+): ProofScenario {
+  return {
+    slug: row.slug,
+    label: row.label,
+    description: row.description ?? "",
+    mandate_key: row.mandate_key,
+    variables: row.variables ?? {},
+    allowed_routes: row.allowed_routes ?? [],
+    expectations: row.expectations ?? [],
+    user_input: row.user_input ?? null,
+    is_active: row.is_active ?? true,
+    live_every_seconds: row.live_every_seconds ?? 21600,
+    max_cost_usd: row.max_cost_usd ?? 0.75,
+    check_slug: row.check_slug ?? `scenario:${row.slug}`,
+  };
+}
+
+export function normalizeScenariosResponse(
+  response: ScenariosResponse,
+): ProofScenariosResponse {
+  return { scenarios: (response.scenarios ?? []).map(normalizeScenario) };
+}
+
+export function normalizeSavedScenario(
+  row: components["schemas"]["ScenarioRow"],
+): ProofScenario {
+  return normalizeScenario(row);
+}
+
+function normalizeOfferedValue(value: unknown): MandateOfferedValue | null {
+  if (!isJsonObject(value)) return null;
+  if (
+    typeof value.name !== "string" ||
+    typeof value.kind !== "string" ||
+    typeof value.guaranteed !== "boolean" ||
+    typeof value.description !== "string"
+  ) {
+    return null;
+  }
+  return {
+    name: value.name,
+    kind: value.kind,
+    guaranteed: value.guaranteed,
+    description: value.description,
+  };
+}
+
+function normalizeRule(value: unknown): ExpectationRule | null {
+  switch (value) {
+    case "contains_marker":
+    case "excludes_marker":
+    case "routes_exist":
+    case "path_present":
+    case "path_absent":
+    case "path_equals":
+    case "min_items":
+    case "max_items":
+    case "matches":
+    case "judge":
+      return value;
+    default:
+      return null;
+  }
+}
+
+function normalizeRuleHelp(value: unknown): ExpectationRuleHelp | null {
+  if (!isJsonObject(value)) return null;
+  const rule = normalizeRule(value.rule);
+  if (
+    !rule ||
+    typeof value.label !== "string" ||
+    !Array.isArray(value.needs) ||
+    !value.needs.every((entry) => typeof entry === "string") ||
+    typeof value.help !== "string"
+  ) {
+    return null;
+  }
+  return { rule, label: value.label, needs: value.needs, help: value.help };
+}
+
+export function normalizeMandateCatalogResponse(
+  response: MandateCatalogResponse,
+): ProofMandateCatalogResponse {
+  return {
+    mandates: (response.mandates ?? []).map((mandate) => ({
+      mandate_key: mandate.mandate_key,
+      label: mandate.label,
+      description: mandate.description ?? "",
+      output_kind: mandate.output_kind ?? null,
+      required_output_keys: mandate.required_output_keys ?? [],
+      accepts_user_input: mandate.accepts_user_input ?? true,
+      provision: mandate.provision ?? null,
+      offered_values: (mandate.offered_values ?? [])
+        .map(normalizeOfferedValue)
+        .filter((value): value is MandateOfferedValue => value !== null),
+    })),
+    rules: (response.rules ?? [])
+      .map(normalizeRuleHelp)
+      .filter((value): value is ExpectationRuleHelp => value !== null),
+  };
 }
 
 /** A blank scenario, pre-filled with the shape a good one has. */

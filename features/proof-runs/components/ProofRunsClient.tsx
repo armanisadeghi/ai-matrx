@@ -55,7 +55,7 @@ import {
   PROOF_ATTESTATION_KIND,
   PROOF_CHECK_STATUS_KIND,
   type ExpectationRuleHelp,
-  type MandateOption,
+  type ProofMandateOption,
   type ProofCheckStatus,
   type ProofRunDetail,
   type ProofRunMode,
@@ -68,7 +68,13 @@ import {
   type ProofRunConsoleState,
 } from "@/features/proof-runs/components/ProofRunConsole";
 import { ScenarioEditor } from "@/features/proof-runs/components/ScenarioEditor";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const MODES: { value: ProofRunMode; label: string; hint: string }[] = [
   {
@@ -107,7 +113,7 @@ export default function ProofRunsClient() {
   const [console_, setConsole] = useState<ProofRunConsoleState>(EMPTY_CONSOLE);
   const [runningSlug, setRunningSlug] = useState<string | null>(null);
   const [scenarios, setScenarios] = useState<ProofScenario[]>([]);
-  const [mandates, setMandates] = useState<MandateOption[]>([]);
+  const [mandates, setMandates] = useState<ProofMandateOption[]>([]);
   const [ruleHelp, setRuleHelp] = useState<ExpectationRuleHelp[]>([]);
   const [editing, setEditing] = useState<ProofScenario | null>(null);
   const [selected, setSelected] = useState<string>("");
@@ -356,8 +362,8 @@ export default function ProofRunsClient() {
           <p className="font-medium">The proof-run API did not answer.</p>
           <p className="text-xs">{loadError}</p>
           <p className="text-xs opacity-80">
-            If this says 404, the server has the page but not yet the endpoints —
-            they ship with the next aidream deploy. Nothing here is broken;
+            If this says 404, the server has the page but not yet the endpoints
+            — they ship with the next aidream deploy. Nothing here is broken;
             there is just nothing to talk to yet.
           </p>
         </div>
@@ -448,8 +454,9 @@ export default function ProofRunsClient() {
               Scenarios
             </CardTitle>
             <CardDescription>
-              Traps you author: a fictional world with planted markers, where the
-              right answer is knowable in advance and unreachable by guessing.
+              Traps you author: a fictional world with planted markers, where
+              the right answer is knowable in advance and unreachable by
+              guessing.
             </CardDescription>
           </div>
           {!editing ? (
@@ -508,9 +515,10 @@ export default function ProofRunsClient() {
                     </p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       {scenario.expectations.length} rule(s) ·{" "}
-                      {scenario.allowed_routes.length} route(s) in the universe ·
-                      live every {Math.round(scenario.live_every_seconds / 3600)}h
-                      · ${scenario.max_cost_usd.toFixed(2)}/run
+                      {scenario.allowed_routes.length} route(s) in the universe
+                      · live every{" "}
+                      {Math.round(scenario.live_every_seconds / 3600)}h · $
+                      {scenario.max_cost_usd.toFixed(2)}/run
                     </p>
                   </div>
                   <div className="flex items-center gap-1">

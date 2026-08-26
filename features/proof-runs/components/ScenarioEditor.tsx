@@ -47,7 +47,7 @@ import type {
   Expectation,
   ExpectationRule,
   ExpectationRuleHelp,
-  MandateOption,
+  ProofMandateOption,
   ProofScenario,
 } from "@/features/proof-runs/types";
 
@@ -100,9 +100,7 @@ function ExpectationRow({
   const Chevron = open ? ChevronDown : ChevronRight;
   const isJudge = expectation.rule === "judge";
   const markerMissing =
-    needs.marker &&
-    expectation.marker &&
-    !markers.includes(expectation.marker);
+    needs.marker && expectation.marker && !markers.includes(expectation.marker);
 
   const set = (patch: Partial<Expectation>) =>
     onChange({ ...expectation, ...patch });
@@ -196,7 +194,11 @@ function ExpectationRow({
               <Input
                 value={expectation.id}
                 onChange={(e) =>
-                  set({ id: e.target.value.replace(/[^a-z0-9_]/gi, "_").toLowerCase() })
+                  set({
+                    id: e.target.value
+                      .replace(/[^a-z0-9_]/gi, "_")
+                      .toLowerCase(),
+                  })
                 }
                 placeholder="no_fabricated_routes"
                 className="h-8 text-xs"
@@ -248,8 +250,8 @@ function ExpectationRow({
                   </Select>
                 ) : (
                   <p className="text-xs text-amber-700 dark:text-amber-300">
-                    Plant one first — put{" "}
-                    <code>{"{{marker:name}}"}</code> in a variable.
+                    Plant one first — put <code>{"{{marker:name}}"}</code> in a
+                    variable.
                   </p>
                 )}
               </div>
@@ -330,7 +332,7 @@ export function ScenarioEditor({
   onCancel,
 }: {
   scenario: ProofScenario;
-  mandates: MandateOption[];
+  mandates: ProofMandateOption[];
   rules: ExpectationRuleHelp[];
   onSaved: (scenario: ProofScenario) => void;
   onCancel: () => void;
@@ -378,7 +380,9 @@ export function ScenarioEditor({
       return;
     }
     if (!/^[a-z0-9][a-z0-9_]{2,60}$/.test(scenario.slug)) {
-      toast.error("The slug must be lowercase letters, numbers and underscores");
+      toast.error(
+        "The slug must be lowercase letters, numbers and underscores",
+      );
       return;
     }
     setSaving(true);
@@ -601,7 +605,12 @@ export function ScenarioEditor({
           <Label className="text-xs">
             The closed universe — every route that EXISTS in this scenario
           </Label>
-          <Button variant="outline" size="sm" onClick={addRoute} className="h-6 px-2 text-[11px]">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={addRoute}
+            className="h-6 px-2 text-[11px]"
+          >
             <Plus className="mr-1 h-3 w-3" />
             Add route
           </Button>

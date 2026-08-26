@@ -29,6 +29,14 @@ import type {
   ProofScenario,
   ScenariosResponse,
 } from "@/features/proof-runs/types";
+import {
+  normalizeMandateCatalogResponse,
+  normalizeSavedScenario,
+  normalizeScenariosResponse,
+  type ProofMandateCatalogResponse,
+  type ProofScenariosResponse,
+} from "@/features/proof-runs/types";
+import type { components } from "@/types/python-generated/api-types";
 
 const BASE = "/proof-runs";
 
@@ -159,11 +167,11 @@ export async function* runProofCheck(
 
 export async function fetchScenarios(
   signal?: AbortSignal,
-): Promise<ScenariosResponse> {
+): Promise<ProofScenariosResponse> {
   const { data } = await getJson<ScenariosResponse>(`${BASE}/scenarios`, {
     signal,
   });
-  return data;
+  return normalizeScenariosResponse(data);
 }
 
 export async function saveScenario(
@@ -173,12 +181,11 @@ export async function saveScenario(
   // `check_slug` is derived by the server from the slug — sending it back would
   // be a second authority on the same fact.
   const { check_slug: _derived, ...payload } = scenario;
-  const { data } = await putJson<ProofScenario, typeof payload>(
-    `${BASE}/scenarios/${scenario.slug}`,
-    payload,
-    { signal },
-  );
-  return data;
+  const { data } = await putJson<
+    components["schemas"]["ScenarioRow"],
+    typeof payload
+  >(`${BASE}/scenarios/${scenario.slug}`, payload, { signal });
+  return normalizeSavedScenario(data);
 }
 
 export async function deleteScenario(slug: string): Promise<void> {
@@ -187,10 +194,10 @@ export async function deleteScenario(slug: string): Promise<void> {
 
 export async function fetchMandateCatalog(
   signal?: AbortSignal,
-): Promise<MandateCatalogResponse> {
+): Promise<ProofMandateCatalogResponse> {
   const { data } = await getJson<MandateCatalogResponse>(
     `${BASE}/mandate-catalog`,
     { signal },
   );
-  return data;
+  return normalizeMandateCatalogResponse(data);
 }

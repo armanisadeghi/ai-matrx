@@ -72,6 +72,9 @@ quietly reading as passes.
 
 ## Change Log
 
+- **2026-08-26 — Codex: generated scenario contracts adopted.** The scenario expectation,
+  scenario-list response, mandate option, and mandate-catalog response now alias the live generated
+  OpenAPI schemas directly instead of retaining the bootstrap mirrors that predated those schemas.
 - **2026-08-26 — Claude: built.** Page, feature client, live console, and the two DB kind
   components (`proof_attestation_readout`, `proof_check_status_tile`) that activated both kinds.
   Registered in the admin nav under Compute → Verification. Verified in-browser against the
