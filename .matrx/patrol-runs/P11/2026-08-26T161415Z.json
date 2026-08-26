@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P11",
+  "runId": "2026-08-26T161415Z",
+  "baseSha": "83129f3884fd22bade6163e114aee32b578cd156",
+  "createdAt": "2026-08-26T16:14:15Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-26T16:14:15Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "First recorded P11 run: full static scan plus Education route-family browser rotation",
+      "evidence": [
+        "No prior .matrx/patrol-runs/P11/latest.json exists; no unfinished candidate to resume",
+        "Registry requires Education as the first complete route-family pass"
+      ],
+      "previousEventHash": null,
+      "eventHash": "f91dc45bc74d5778f70c289177ce8e3408c821673948247c0f1e518d621947a2"
+    }
+  ]
+}

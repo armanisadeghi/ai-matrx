@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P11",
+  "runId": "2026-08-26T161415Z",
+  "state": "discovered",
+  "updatedAt": "2026-08-26T16:14:15Z",
+  "summary": "First recorded P11 run: full static scan plus Education route-family browser rotation",
+  "source": "2026-08-26T161415Z.json",
+  "eventHash": "f91dc45bc74d5778f70c289177ce8e3408c821673948247c0f1e518d621947a2"
+}
