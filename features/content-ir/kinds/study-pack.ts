@@ -95,7 +95,15 @@ export const studyPackSetKindSchema: KindSchema = {
 
 /** Canonical member order — also the render order in StudyPackBlock. */
 export const STUDY_PACK_CHILDREN = [
-  { key: "notes", kind: "study_notes", label: "Study notes" },
+  // The notes member was mislabeled `study_notes` for its whole life: the
+  // notes agent has always produced `{title, notes_markdown, key_terms,
+  // trust}`, which is NOT the registered `study_notes` shape (`{overview,
+  // sections, glossary}`) — so the member routed to a component expecting a
+  // different structure and rendered wrong. `study_notes_document` is the
+  // registered kind for the shape the payload actually has (minted
+  // 2026-08-25, Arman's direct instruction), and it is right for OLD packs
+  // too — their notes members have always held this shape, marker or not.
+  { key: "notes", kind: "study_notes_document", label: "Study notes" },
   { key: "flashcards", kind: "flashcard_set", label: "Flashcards" },
   { key: "quiz", kind: "quiz_set", label: "Practice quiz" },
   { key: "lessons", kind: "lesson_script_set", label: "Lessons" },
