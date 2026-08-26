@@ -34,6 +34,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { toast } from "@/lib/toast";
 import { runNow } from "@/features/scheduling/service/schedulerClient";
+import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import {
   fetchEvidenceValues,
   fetchSeoMandates,
@@ -298,6 +299,29 @@ function MandatesPanel() {
 
 // ── Workbench panel ─────────────────────────────────────────────────────────
 
+/** Mirrors aidream `site_evidence.EvidenceWorkbenchResult`. */
+interface WorkbenchResult {
+  question: string;
+  values_used: string[];
+  evidence_sizes: Record<string, number>;
+  evidence: Record<string, string>;
+  answer: string;
+  model_id: string | null;
+  agent_id: string;
+}
+
+function parseWorkbenchResult(raw: unknown): WorkbenchResult | null {
+  if (!raw || typeof raw !== "object") return null;
+  const candidate = raw as Record<string, unknown>;
+  if (typeof candidate.answer !== "string") return null;
+  return candidate as unknown as WorkbenchResult;
+}
+
+const WORKBENCH_STAGES: Record<string, string> = {
+  "seo.evidence_materializing": "Materializing site evidence…",
+  "seo.evidence_ready": "Evidence assembled — running the agent…",
+};
+
 function WorkbenchPanel() {
   const [sites, setSites] = useState<SeoSiteOption[]>([]);
   const [valueSpecs, setValueSpecs] = useState<EvidenceValueSpec[]>([]);
@@ -317,6 +341,15 @@ function WorkbenchPanel() {
         toast.error(`Evidence pool failed to load: ${String(error)}`),
       );
   }, []);
+
+  const run = useSeoCommandRun<WorkbenchResult>({
+    key: "evidence-workbench",
+    path: "/seo/evidence-workbench",
+    finalKind: "seo.workbench_completed",
+    stageLabels: WORKBENCH_STAGES,
+    parseResult: parseWorkbenchResult,
+    live: { label: "Evidence Workbench" },
+  });
 
   const toggleValue = (name: string) => {
     setSelected((previous) => {
@@ -340,8 +373,14 @@ function WorkbenchPanel() {
       toast.error("Select at least one evidence value.");
       return;
     }
-    toast.error(
-      "Evidence Workbench execution is not available in the live API yet.",
+    run.reset();
+    void run.launch(
+      {
+        site_id: siteId,
+        question: question.trim(),
+        values: [...selected],
+      },
+      sites.find((site) => site.id === siteId)?.domain ?? siteId,
     );
   };
 
@@ -412,15 +451,60 @@ function WorkbenchPanel() {
           />
         </div>
 
-        <Button onClick={launch}>Run the workbench</Button>
+        <Button onClick={launch} disabled={run.running}>
+          {run.running ? (run.stage ?? "Running…") : "Run the workbench"}
+        </Button>
       </div>
 
       <div className="min-w-0 space-y-3">
-        <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
-          Pick a site, choose which evidence the agent may see, and draft the
-          question here. Execution becomes available when the live API exposes
-          the evidence-workbench contract.
-        </div>
+        {run.error ? (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            {run.error}
+          </div>
+        ) : null}
+        {run.result ? (
+          <>
+            <div className="rounded-md border border-border bg-card p-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="text-sm font-semibold">Answer</div>
+                <div className="text-xs text-muted-foreground">
+                  values: {run.result.values_used.join(", ")}
+                </div>
+              </div>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                {run.result.answer}
+              </p>
+            </div>
+            <details className="rounded-md border border-border bg-card p-4">
+              <summary className="cursor-pointer text-sm font-semibold">
+                The exact evidence the agent was shown
+              </summary>
+              <div className="mt-3 space-y-3">
+                {Object.entries(run.result.evidence).map(([name, text]) => (
+                  <div key={name}>
+                    <div className="font-mono text-xs font-semibold">
+                      {name}{" "}
+                      <span className="font-normal text-muted-foreground">
+                        ({run.result?.evidence_sizes[name] ?? text.length}{" "}
+                        chars)
+                      </span>
+                    </div>
+                    <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap rounded bg-muted/50 p-2 text-xs">
+                      {text}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </>
+        ) : !run.running && !run.error ? (
+          <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
+            Pick a site, choose exactly which evidence the agent may see, ask a
+            question, and judge the answer against what it was shown — coverage
+            stamps included. This is the test bench for evaluating agents and
+            evidence slices before anything runs on a schedule.
+          </div>
+        ) : null}
       </div>
     </div>
   );
