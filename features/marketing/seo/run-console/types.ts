@@ -139,3 +139,32 @@ export interface SituationalRunOutcome {
     error: string | null;
   }>;
 }
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * KI-015 — gazetteer place detection.
+ *
+ * A THIRD engine, same console. Unlike the other two, this one has no per-
+ * brand notion of "owed work" — `seo.fn_backfill_keyword_places` scans one
+ * SHARED keyword corpus (states, cities, "near me" grammar), not a brand's own
+ * queue, so a single pass covers every site at once. The body therefore shows
+ * one global scoreboard and one Run now, not a brand table to tick.
+ * `placesWritten` is the field nothing else in this union carries — the
+ * discriminant `outcomeKind` in `run-console-scope.ts` reads it.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/** One global pass's outcome — `seo.fn_backfill_keyword_places`. */
+export interface PlaceDetectionRunOutcome {
+  finishedAt: string;
+  /** Keywords the pass read this call. */
+  claimed: number;
+  keywordsWithPlaces: number;
+  /** The field that makes this outcome shape unique in the union. */
+  placesWritten: number;
+  localIntentStamped: number;
+  /** Left alone because a person had already ruled on them. */
+  humanProtected: number;
+  /** KI-044 — set when autonomy held the pass back; `claimed` reads 0 either way. */
+  skipped: string | null;
+  autonomyMode: string | null;
+  error: string | null;
+}

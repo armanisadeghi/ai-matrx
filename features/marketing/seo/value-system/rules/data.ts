@@ -458,18 +458,28 @@ export async function getGeoPlacesByIds(
  * The place-detection scoreboard (`seo.keyword_place_status`). Server state, so
  * it survives the tab — the same reason the facet backfill strip reads a ledger
  * rather than counting in the browser.
+ *
+ * `siteId: null` reads the GLOBAL ledger (the shared keyword corpus the
+ * nightly/console pass actually scans) — the DB function requires
+ * `public.is_admin()` for that mode, same admin gate the run console's
+ * system tier already sits behind. Every per-brand caller keeps passing a
+ * real id; this never changes what they see.
  */
 export async function getPlaceDetectionStatus(
-  siteId: string,
+  siteId: string | null,
   minImpressions: number,
   signal?: AbortSignal,
 ): Promise<PlaceDetectionStatus> {
-  const response = await (await seoDb())
-    .rpc("keyword_place_status", {
-      p_site_id: siteId,
-      p_min_impressions: minImpressions,
-    })
-    .abortSignal(signal ?? new AbortController().signal);
+  const db = await seoDb();
+  const response = await (siteId === null
+    ? db.rpc("keyword_place_status_global", {
+        p_min_impressions: minImpressions,
+      })
+    : db.rpc("keyword_place_status", {
+        p_site_id: siteId,
+        p_min_impressions: minImpressions,
+      })
+  ).abortSignal(signal ?? new AbortController().signal);
   const rows = assertGoverned(
     response.data,
     response.error,

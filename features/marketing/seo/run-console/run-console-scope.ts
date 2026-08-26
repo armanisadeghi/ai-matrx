@@ -24,11 +24,14 @@ import type { ConsoleEngine } from "./engines";
 import type {
   ConsoleSiteRow,
   EngineScheduleRow,
+  PlaceDetectionRunOutcome,
   RunConsoleScope,
   RunOutcome,
   SituationalRefreshStatus,
   SituationalRunOutcome,
 } from "./types";
+
+type AnyRunOutcome = RunOutcome | SituationalRunOutcome | PlaceDetectionRunOutcome;
 
 export interface BrandCoverageRow {
   site_id: string;
@@ -55,6 +58,9 @@ export interface RunConsoleScopeInput {
   coverage?: readonly BrandCoverageRow[];
   situationalStatus?: readonly SituationalRefreshStatus[];
 
+  /** KI-015 — the global scoreboard, when the mounted engine is place detection. */
+  placeDetectionStatus?: import("../value-system/rules/types").PlaceDetectionStatus | null;
+
   /** False until the knob read resolves — every knob value stays absent. */
   knobsResolved: boolean;
   capCeiling?: number;
@@ -66,25 +72,31 @@ export interface RunConsoleScopeInput {
   queueLength: number;
   runStage?: string | null;
   runError?: string | null;
-  outcomes: readonly (RunOutcome | SituationalRunOutcome)[];
+  outcomes: readonly AnyRunOutcome[];
 
   /** Undefined until the schedule read resolves. */
   schedules?: readonly EngineScheduleRow[];
 }
 
-function isPlacementOutcome(
-  outcome: RunOutcome | SituationalRunOutcome,
-): outcome is RunOutcome {
-  return "claimed" in outcome;
+function isPlacementOutcome(outcome: AnyRunOutcome): outcome is RunOutcome {
+  return "claimed" in outcome && !("placesWritten" in outcome);
+}
+
+function isPlaceDetectionOutcome(
+  outcome: AnyRunOutcome,
+): outcome is PlaceDetectionRunOutcome {
+  return "placesWritten" in outcome;
 }
 
 /** The roll-up across a session's outcomes — the composite of its parts. */
 function summarize(
-  outcomes: readonly (RunOutcome | SituationalRunOutcome)[],
+  outcomes: readonly AnyRunOutcome[],
 ): Record<string, unknown> | undefined {
   if (outcomes.length === 0) return undefined;
   const summary = {
-    brands: new Set(outcomes.map((outcome) => outcome.siteId)).size,
+    brands: new Set(
+      outcomes.map((outcome) => ("siteId" in outcome ? outcome.siteId : "global")),
+    ).size,
     claimed: 0,
     placed: 0,
     proposed: 0,
@@ -104,6 +116,10 @@ function summarize(
       summary.human_protected += outcome.humanProtected;
       summary.quarantined += outcome.quarantined;
       if (outcome.ceilingReached) summary.ceiling_reached = true;
+    } else if (isPlaceDetectionOutcome(outcome)) {
+      summary.claimed += outcome.claimed;
+      summary.stamped += outcome.localIntentStamped;
+      summary.human_protected += outcome.humanProtected;
     } else {
       summary.stamped += outcome.stamped;
       summary.released += outcome.removed;
@@ -118,12 +134,14 @@ function summarize(
  * that placed nothing because autonomy said wait must never read as "nothing
  * to place", so the refusals travel as their own value.
  */
-function refusals(
-  outcomes: readonly (RunOutcome | SituationalRunOutcome)[],
-): string[] {
+function refusals(outcomes: readonly AnyRunOutcome[]): string[] {
   return outcomes
     .map((outcome) =>
-      isPlacementOutcome(outcome) ? outcome.autonomyRefusal : outcome.refusal,
+      isPlacementOutcome(outcome)
+        ? outcome.autonomyRefusal
+        : isPlaceDetectionOutcome(outcome)
+          ? outcome.skipped
+          : outcome.refusal,
     )
     .filter((sentence): sentence is string => !!sentence);
 }
