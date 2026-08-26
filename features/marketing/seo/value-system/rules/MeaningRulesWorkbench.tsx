@@ -844,11 +844,12 @@ export function MeaningRulesWorkbench() {
         {
           kind: "item",
           id: "rule-see-fires-on",
-          label: "See what this rule fires on",
+          label: "See what it fires on",
           icon: PanelTop,
+          // Description ONLY as a disabled-reason tooltip (THE DENSITY LAW).
           description: filters
-            ? `The keywords it matches, in a floating panel — ${describeRuleMatch(rule)}`
-            : "This rule records no match condition, so there is nothing to show",
+            ? undefined
+            : "No match condition recorded — nothing to show",
           disabled: !filters,
           onSelect: () => {
             if (!filters) return;
@@ -864,9 +865,8 @@ export function MeaningRulesWorkbench() {
         {
           kind: "item",
           id: "rule-edit",
-          label: "Edit this rule…",
+          label: "Edit rule…",
           icon: Pencil,
-          description: "Its words, its multiplier and the tier it targets",
           onSelect: () => setEditingRule(rule),
         },
         ...(prov
@@ -874,9 +874,12 @@ export function MeaningRulesWorkbench() {
               {
                 kind: "item",
                 id: "rule-revert",
-                label: `Put it back to ${prov.packName}’s version`,
+                label: "Revert to pack…",
                 icon: RotateCcw,
-                description: `Pack says: ${prov.packSummary}`,
+                description:
+                  prov.state === "changed"
+                    ? undefined
+                    : "Unchanged from the pack",
                 disabled: prov.state !== "changed",
                 onSelect: () => void revertToPack(prov, rule.name),
               },
@@ -886,10 +889,9 @@ export function MeaningRulesWorkbench() {
         {
           kind: "item",
           id: "rule-archive",
-          label: "Archive this rule…",
+          label: "Archive rule…",
           icon: Archive,
           destructive: true,
-          description: "Everything it was scoring re-resolves without it",
           onSelect: () => void archiveTheRule(rule),
         },
       ];
@@ -900,9 +902,8 @@ export function MeaningRulesWorkbench() {
       {
         kind: "item",
         id: "area-edit",
-        label: "Edit this service area…",
+        label: "Edit area…",
         icon: Pencil,
-        description: "The places it stands for, and the band it carries",
         onSelect: () => setEditingArea(area),
       },
       ...(prov
@@ -910,9 +911,12 @@ export function MeaningRulesWorkbench() {
             {
               kind: "item",
               id: "area-revert",
-              label: `Put it back to ${prov.packName}’s version`,
+              label: "Revert to pack…",
               icon: RotateCcw,
-              description: `Pack says: ${prov.packSummary}`,
+              description:
+                prov.state === "changed"
+                  ? undefined
+                  : "Unchanged from the pack",
               disabled: prov.state !== "changed",
               onSelect: () => void revertToPack(prov, area.label),
             },
@@ -922,10 +926,9 @@ export function MeaningRulesWorkbench() {
       {
         kind: "item",
         id: "area-archive",
-        label: "Archive this service area…",
+        label: "Archive area…",
         icon: Archive,
         destructive: true,
-        description: "Everything it was placing re-resolves without it",
         onSelect: () => void archiveTheArea(area),
       },
     ];

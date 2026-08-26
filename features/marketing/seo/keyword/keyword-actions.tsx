@@ -394,8 +394,6 @@ export function useKeywordMenuSection(opts: {
       id: "kw-set-class",
       label: "Set the class…",
       icon: Tag,
-      description:
-        "Money, educational, brand or mismatched — and say why, in your words",
       onSelect: withRow((row) => surfaces.openDimension(row, "traffic_class")),
     },
     {
@@ -403,8 +401,6 @@ export function useKeywordMenuSection(opts: {
       id: "kw-set-service",
       label: "Which offering?",
       icon: Network,
-      description:
-        "Place this keyword under the offering, product or thing it is really about",
       onSelect: withRow((row) => surfaces.openService(row)),
     },
     {
@@ -412,8 +408,6 @@ export function useKeywordMenuSection(opts: {
       id: "kw-set-dimension",
       label: "Answer a dimension…",
       icon: BrainCircuit,
-      description:
-        "Any dimension — or type a new value and it becomes one (P23)",
       onSelect: withRow((row) => surfaces.openDimension(row)),
     },
     {
@@ -421,7 +415,6 @@ export function useKeywordMenuSection(opts: {
       id: "kw-pin-level",
       label: "Pin a level…",
       icon: Gavel,
-      description: "Your ruling beats every computed signal until you clear it",
       onSelect: withRow((row) => surfaces.openLevel(row)),
     },
     {
@@ -429,7 +422,6 @@ export function useKeywordMenuSection(opts: {
       id: "kw-why",
       label: "Why this score",
       icon: Info,
-      description: "The full receipt, with a door to every rule behind it",
       onSelect: withRow((row) => {
         if (!row.keywordId) {
           toast.error("This query has no library keyword, so it has no score.");
@@ -447,10 +439,8 @@ export function useKeywordMenuSection(opts: {
     {
       kind: "item",
       id: "kw-pages",
-      label: "See pages for this keyword",
+      label: "See pages",
       icon: PanelTop,
-      description:
-        "Opens beside this table in a floating panel — you never lose the view",
       onSelect: withRow((row) => {
         if (opts.openPages) {
           opts.openPages(row);
@@ -473,8 +463,6 @@ export function useKeywordMenuSection(opts: {
       id: "kw-intel",
       label: "Open Keyword Intelligence",
       icon: BrainCircuit,
-      description:
-        "Everything the platform knows about this keyword, in a floating window",
       onSelect: withRow((row) => {
         openKeywordWindow({
           phrase: row.phrase,

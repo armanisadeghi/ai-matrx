@@ -23,6 +23,14 @@ The deep contract is **[`features/context-menu-v3/FEATURE.md`](../../../features
 
 A surface with both modes (editor + preview) uses **both** — one per mode.
 
+## 🚨 THE DENSITY LAW — labels only, macOS-terse (Arman, 2026-08-25)
+
+A menu item is a **short verb phrase**: `Edit rule…`, `See its keywords`, `Revert to pack…`. **No `description` / subtext, ever**, with ONE exception: a `disabled` item carries a `description` naming why it's off and where it works ("Unchanged from the pack", "Works on the Keyword Workbench"). Rule of thumb: if macOS wouldn't put it in a menu, neither do we. Any other description requires Arman's explicit approval, requested AFTER the menu ships bare — and ~95% will be refused. An agent that ships prose under menu rows has failed the task.
+
+## 🚨 CANONICAL SECTIONS — check the registry BEFORE writing any `extraSections`
+
+**[`features/context-menu-v3/SECTIONS.md`](../../../features/context-menu-v3/SECTIONS.md)** is the registry of shared per-identity section builders (keyword, class, level, page, CRM row, …) and THE ADOPTION PROTOCOL. The short form: if the right-clicked thing already has a registered builder, USE it — and grow it with the actions this surface makes obvious (every consumer gains them). If the thing appears on 2+ surfaces and has no builder, extract + register one. Only a truly page-local identity gets inline `extraSections`. Actions impossible on this surface stay visible-but-`disabled` with the reason as the tooltip — the menu is identical everywhere; only availability changes.
+
 ## Wire a surface — the mechanical steps
 
 1. **Import the wrapper statically** — it's the light shell; children render synchronously, and only `MenuContent` lazy-loads on first open. Never wrap it in a per-consumer `next/dynamic` (that re-adds a loading fallback and a layout-collapse null state for zero benefit).

@@ -732,8 +732,6 @@ export function TopicTreeWorkbench() {
                         id: "topic-view-keywords",
                         label: "See keywords in this branch",
                         icon: PanelTop,
-                        description:
-                          "Open the filtered keyword report in a floating panel",
                         onSelect: () => runContextAction("onViewKeywords"),
                       },
                       {

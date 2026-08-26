@@ -50,7 +50,6 @@ export function classMenuSection(opts: {
       id: "class-see-keywords",
       label: "See these keywords",
       icon: PanelTop,
-      description: "Every keyword carrying this class, in a floating panel",
       onSelect: () =>
         openDrilldown({
           siteId,
@@ -65,17 +64,16 @@ export function classMenuSection(opts: {
       id: "class-review",
       label:
         trafficClass === "unclassified"
-          ? "Classify them in the Keyword Workbench"
-          : "Review them in the Keyword Workbench",
+          ? "Classify in Keyword Workbench"
+          : "Review in Keyword Workbench",
       icon: ExternalLink,
       href: `${marketingRoutes.site(null, siteId, "/keywords")}?view=workbench&st=traffic_class:${trafficClass}`,
     },
     {
       kind: "link",
       id: "class-edit-rules",
-      label: "Edit the rules that set the class…",
+      label: "Edit class rules…",
       icon: Pencil,
-      description: "The Rulebook — the words and facts that decide it",
       href: marketingRoutes.site(null, siteId, "/value/rules"),
     },
   ];
@@ -83,7 +81,7 @@ export function classMenuSection(opts: {
     items.push({
       kind: "item",
       id: "class-filter-movers",
-      label: "Filter the movers to this class",
+      label: "Filter movers to this class",
       icon: Filter,
       onSelect: opts.onFilterMovers,
     });
@@ -106,7 +104,6 @@ export function levelMenuSection(opts: {
       id: "level-see-keywords",
       label: "See these keywords",
       icon: PanelTop,
-      description: `Every keyword sitting at ${bandLabel}, in a floating panel`,
       onSelect: () =>
         openDrilldown({
           siteId,
@@ -119,16 +116,15 @@ export function levelMenuSection(opts: {
     {
       kind: "link",
       id: "level-review",
-      label: "Review them on the value workbench",
+      label: "Review on Value Workbench",
       icon: ExternalLink,
       href: `${marketingRoutes.site(null, siteId, "/value")}?band=${encodeURIComponent(band)}`,
     },
     {
       kind: "link",
       id: "level-edit-vocabulary",
-      label: "Edit the level vocabulary…",
+      label: "Edit level vocabulary…",
       icon: Pencil,
-      description: "Your words and your thresholds for every level",
       href: levelVocabularyHref({ brandId: null, siteId }),
     },
   ];
@@ -136,7 +132,7 @@ export function levelMenuSection(opts: {
     items.push({
       kind: "item",
       id: "level-filter-movers",
-      label: "Filter the movers to this level",
+      label: "Filter movers to this level",
       icon: Filter,
       onSelect: opts.onFilterMovers,
     });
@@ -160,9 +156,8 @@ export function pageMenuSection(opts: {
     {
       kind: "item",
       id: "page-see-keywords",
-      label: "See the keywords this page ranks for",
+      label: "See ranking keywords",
       icon: PanelTop,
-      description: "The query breakdown for this page, in a floating panel",
       onSelect: () =>
         openDrilldown({
           siteId,
@@ -177,7 +172,7 @@ export function pageMenuSection(opts: {
     items.push({
       kind: "link",
       id: "page-open",
-      label: "Open the page workspace",
+      label: "Open page workspace",
       icon: ExternalLink,
       href: marketingRoutes.sitePage(null, siteId, pageId),
     });
