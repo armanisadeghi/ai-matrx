@@ -61,7 +61,6 @@ import {
   getPlacementIcon,
   getPlacementLabel,
   resolveIcon,
-  hasItemsRecursive,
   resolveRichActionView,
   PLACEMENT_COLOR,
 } from "../hooks/useContextMenuActions";
@@ -398,7 +397,10 @@ function placementNode(
   const mode = m.resolvedPlacementMode[placementType as PlacementKey];
   if (mode === "hide") return null;
   const groups = m.grouped[placementType] || [];
-  const hasItems = groups.length > 0 && groups.some(hasItemsRecursive);
+  // A category with zero items still RENDERS (as a greyed submenu) — Arman
+  // must see where new items will land the moment he creates the category.
+  // The placement is only disabled when it has no categories at all.
+  const hasCategories = groups.length > 0;
   const label = getPlacementLabel(placementType);
   const color = PLACEMENT_COLOR[placementType];
   return {
@@ -407,12 +409,12 @@ function placementNode(
     label,
     icon: getPlacementIcon(placementType),
     iconStyle: color ? { color } : undefined,
-    disabled: mode === "disable" || !hasItems || m.loading,
-    loading: m.loading && !hasItems,
+    disabled: mode === "disable" || !hasCategories,
+    loading: m.loading && !hasCategories,
     emptyLabel: `No ${label}`,
     width: "w-64",
     placement: placementType,
-    children: hasItems ? groups.map((g) => categoryGroupNode(g, m)) : [],
+    children: groups.map((g) => categoryGroupNode(g, m)),
   };
 }
 

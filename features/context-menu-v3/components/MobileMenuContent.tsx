@@ -59,7 +59,6 @@ import {
   getPlacementIcon,
   getPlacementLabel,
   resolveIcon,
-  hasItemsRecursive,
   resolveRichActionView,
 } from "../hooks/useContextMenuActions";
 import { jsonSectionLabel } from "../utils/json-menu-actions";
@@ -181,7 +180,17 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
         id: entry.id,
         label: entry.label,
         icon: ItemIcon,
+        // Parity with desktop `categoryGroupNode`: legacy-matched rows show
+        // red, keyboard shortcuts show as the trailing hint (hardware
+        // keyboards exist on tablets).
+        iconClass: entry.legacyMatch
+          ? "text-red-600 dark:text-red-400"
+          : undefined,
         disabled: isDisabled,
+        hint:
+          entry.entryType === "agent_shortcut" && entry.keyboardShortcut
+            ? entry.keyboardShortcut
+            : undefined,
         sublabel: isDisabled ? "Not configured" : undefined,
         onSelect: close(() => m.handleEntrySelect(entry)),
       });
@@ -205,7 +214,10 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     if (resolvedPlacementMode[placementType as PlacementKey] === "hide")
       return null;
     const groups = grouped[placementType] || [];
-    const hasItems = groups.length > 0 && groups.some(hasItemsRecursive);
+    // Parity with desktop `placementNode`: an empty category still renders
+    // (drilling in shows its empty state) — never dropped. The placement is
+    // only disabled when it has no categories at all.
+    const hasCategories = groups.length > 0;
     const label = getPlacementLabel(placementType);
     const children: MobileNode[] = [];
     for (const g of groups) {
@@ -226,9 +238,8 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
       icon: getPlacementIcon(placementType) as Icon,
       disabled:
         resolvedPlacementMode[placementType as PlacementKey] === "disable" ||
-        !hasItems ||
-        loading,
-      loading,
+        !hasCategories,
+      loading: loading && !hasCategories,
       children,
       emptyLabel: `No ${label}`,
     };
