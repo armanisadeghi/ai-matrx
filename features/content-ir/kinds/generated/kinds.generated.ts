@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 483 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 484 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "7ab794226df7";
+export const KIND_REGISTRY_FINGERPRINT = "a86d764d3d42";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -999,7 +999,7 @@ export interface CompetitorOpportunityArtifactSection {
 export interface ContentGap {
   gap: string;
   __kind?: "content_gap_v1";
-  severity?: "high" | "medium" | "low";
+  severity?: "critical" | "high" | "medium" | "low";
 }
 
 /**
@@ -6365,6 +6365,71 @@ export interface CompetitorOpportunityAutopsyV1 {
 }
 
 /**
+ * Kind `competitor_page_autopsy_pro` (registry v2).
+ */
+export interface CompetitorPageAutopsyPro {
+  error?: string | number | boolean | Record<string, unknown> | unknown[] | null;
+  topic?: string;
+  __kind: "competitor_page_autopsy_pro";
+  verdict: string;
+  page_type?: string;
+  entity_gaps?: ({
+    gap?: string;
+    __kind: "page_autopsy_gap";
+    action?: string;
+    evidence?: string;
+    severity?: string;
+  })[];
+  own_page_id?: string;
+  why_it_wins?: ({
+    __kind: "page_autopsy_win_factor";
+    factor?: string;
+    impact?: number;
+    evidence?: string;
+    confidence?: number;
+  })[];
+  content_gaps?: ({
+    gap?: string;
+    __kind: "page_autopsy_gap";
+    action?: string;
+    evidence?: string;
+    severity?: string;
+  })[];
+  own_page_url: string;
+  competitor_url: string;
+  analyst_version?: string;
+  recommended_move?: string;
+  competitor_domain: string;
+  schema_advantages?: ({
+    gap?: string;
+    __kind: "page_autopsy_gap";
+    action?: string;
+    evidence?: string;
+    severity?: string;
+  })[];
+  backlink_advantage?: {
+    __kind: "page_autopsy_backlink_advantage";
+    summary?: string;
+    own_referring_domains?: number;
+    competitor_referring_domains?: number;
+  };
+  overall_confidence?: number;
+  recommended_actions?: ({
+    __kind: "page_autopsy_action";
+    action?: string;
+    effort?: string;
+    impact?: string;
+    rationale?: string;
+  })[];
+  internal_link_advantage?: {
+    __kind: "page_autopsy_link_advantage";
+    summary?: string;
+    own_supporting_links?: string | number | boolean | Record<string, unknown> | unknown[] | null;
+    competitor_supporting_links?: string | number | boolean | Record<string, unknown> | unknown[] | null;
+  };
+}
+
+/**
  * Kind `competitor_page_autopsy_v1` (registry v4).
  */
 export interface CompetitorPageAutopsyV1 {
@@ -9793,7 +9858,7 @@ export interface PageImage {
 /**
  * `page_keyword_analysis_v1` — the Page Analyzer's artifact.
  *  *
- *  * Kind `page_keyword_analysis_v1` (registry v3).
+ *  * Kind `page_keyword_analysis_v1` (registry v4).
  */
 export interface PageKeywordAnalysisV1 {
   gaps?: ContentGap[];
@@ -18850,6 +18915,7 @@ export type GeneratedKindSlug =
   | "competitor_lookup_result"
   | "competitor_opportunity_autopsy_result"
   | "competitor_opportunity_autopsy_v1"
+  | "competitor_page_autopsy_pro"
   | "competitor_page_autopsy_v1"
   | "content_fingerprint"
   | "content_plan_archetype_instantiation"
@@ -19336,6 +19402,7 @@ export interface KindPayloadBySlug {
   "competitor_lookup_result": CompetitorLookupResult;
   "competitor_opportunity_autopsy_result": CompetitorOpportunityAutopsyResult;
   "competitor_opportunity_autopsy_v1": CompetitorOpportunityAutopsyV1;
+  "competitor_page_autopsy_pro": CompetitorPageAutopsyPro;
   "competitor_page_autopsy_v1": CompetitorPageAutopsyV1;
   "content_fingerprint": ContentFingerprint;
   "content_plan_archetype_instantiation": ContentPlanArchetypeInstantiation;
@@ -19826,6 +19893,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "competitor_lookup_result",
   "competitor_opportunity_autopsy_result",
   "competitor_opportunity_autopsy_v1",
+  "competitor_page_autopsy_pro",
   "competitor_page_autopsy_v1",
   "content_fingerprint",
   "content_plan_archetype_instantiation",
