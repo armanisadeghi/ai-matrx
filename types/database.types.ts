@@ -33729,6 +33729,10 @@ export type Database = {
         Args: { p_definition_id: string }
         Returns: string
       }
+      custom_reference_validity: {
+        Args: { p_definitions: Json; p_organization_id: string; p_values: Json }
+        Returns: Json
+      }
       ddl_guard_ack: {
         Args: {
           p_before?: string
@@ -33841,6 +33845,18 @@ export type Database = {
       feature_knob_set: {
         Args: { p_feature: string; p_key: string; p_value: Json }
         Returns: Json
+      }
+      find_custom_references_to: {
+        Args: {
+          p_organization_id: string
+          p_target_id: string
+          p_target_token: string
+        }
+        Returns: {
+          field_key: string
+          source_id: string
+          source_token: string
+        }[]
       }
       get_change_policy_divergence: { Args: never; Returns: Json }
       heal_reachability_drift: { Args: never; Returns: Json }
@@ -34160,6 +34176,10 @@ export type Database = {
       }
       resolve_change_handling: {
         Args: { p_change_type_key: string; p_organization_id: string }
+        Returns: Json
+      }
+      resolve_custom_references: {
+        Args: { p_definitions: Json; p_organization_id: string; p_values: Json }
         Returns: Json
       }
       resolve_retention_policy: {
