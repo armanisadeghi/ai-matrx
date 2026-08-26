@@ -607,7 +607,10 @@ export function ProjectsHub({
             )}
 
             {loading ? (
-              <ProjectsHubSkeleton view={view} />
+              <ProjectsHubSkeleton
+                view={view}
+                useThreeColumns={isFiltered || query.trim().length > 0}
+              />
             ) : filtered.length === 0 ? (
               <Card className="p-12 text-center">
                 <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
@@ -701,39 +704,49 @@ function Section({
   );
 }
 
-function ProjectsHubSkeleton({ view }: { view: "cards" | "table" }) {
+function ProjectsHubSkeleton({
+  view,
+  useThreeColumns,
+}: {
+  view: "cards" | "table";
+  useThreeColumns: boolean;
+}) {
   if (view === "table") {
     return (
       <div
         className="overflow-hidden rounded-lg border border-border bg-card"
         aria-label="Loading projects"
       >
-        <div className="grid grid-cols-[minmax(12rem,1fr)_15rem_6rem_6rem_9rem_10rem] gap-3 border-b border-border bg-muted/20 px-4 py-3">
-          {[52, 48, 36, 36, 44, 46].map((width, index) => (
-            <Skeleton
-              key={index}
-              className="h-3"
-              style={{ width: `${width}%` }}
-            />
-          ))}
-        </div>
-        <div className="divide-y divide-border">
-          {[0, 1, 2, 3, 4].map((row) => (
-            <div
-              key={row}
-              className="grid grid-cols-[minmax(12rem,1fr)_15rem_6rem_6rem_9rem_10rem] items-center gap-3 px-4 py-3"
-            >
-              <div className="flex items-center gap-2.5">
-                <Skeleton className="h-7 w-7 rounded-md" />
-                <Skeleton className="h-4 w-36" />
-              </div>
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="ml-auto h-4 w-6" />
-              <Skeleton className="ml-auto h-4 w-6" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="ml-auto h-7 w-24" />
+        <div className="w-full overflow-auto">
+          <div className="min-w-[1020px]">
+            <div className="grid grid-cols-[minmax(12rem,1fr)_15rem_6rem_6rem_9rem_10rem] gap-3 border-b border-border bg-muted/20 px-4 py-3">
+              {[52, 48, 36, 36, 44, 46].map((width, index) => (
+                <Skeleton
+                  key={index}
+                  className="h-3"
+                  style={{ width: `${width}%` }}
+                />
+              ))}
             </div>
-          ))}
+            <div className="divide-y divide-border">
+              {[0, 1, 2, 3, 4].map((row) => (
+                <div
+                  key={row}
+                  className="grid grid-cols-[minmax(12rem,1fr)_15rem_6rem_6rem_9rem_10rem] items-center gap-3 px-4 py-3"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Skeleton className="h-7 w-7 rounded-md" />
+                    <Skeleton className="h-4 w-36" />
+                  </div>
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="ml-auto h-4 w-6" />
+                  <Skeleton className="ml-auto h-4 w-6" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="ml-auto h-7 w-24" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -741,7 +754,10 @@ function ProjectsHubSkeleton({ view }: { view: "cards" | "table" }) {
 
   return (
     <div
-      className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3"
+      className={cn(
+        "grid grid-cols-1 gap-4 lg:grid-cols-2",
+        useThreeColumns && "xl:grid-cols-3",
+      )}
       aria-label="Loading projects"
     >
       {[0, 1, 2, 3, 4, 5].map((card) => (
