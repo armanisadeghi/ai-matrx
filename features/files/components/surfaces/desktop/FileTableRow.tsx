@@ -170,6 +170,8 @@ function FileRow({
     <FileRowContextMenu fileId={file.id}>
       <tr
         ref={mergeRef}
+        data-surface-value="visible_files"
+        data-surface-record-id={file.id}
         className={cn(
           "group/entity-ref group cursor-pointer border-b text-sm transition-colors",
           isPreviewActive
@@ -469,6 +471,8 @@ function FolderRow({
     <FolderRowContextMenu folderId={folder.id}>
       <tr
         ref={setMergedRef}
+        data-surface-value="visible_folders"
+        data-surface-record-id={folder.id}
         className={cn(
           "group/entity-ref group cursor-pointer border-b text-sm transition-colors",
           isFocused

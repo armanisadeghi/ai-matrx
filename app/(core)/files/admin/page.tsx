@@ -17,11 +17,23 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
   description:
     "The file workspace (browse / upload / share / trash), the universal file handler (single entry point for every file flow — uploads, media blocks, durable URLs), and the outbound webhooks + event-spine surface (DB-native delivery over platform.activity_log). Private bytes route through aidream; public files ride the CDN.",
   docs: [
-    { label: "Files handler FEATURE.md", href: "/features/files/handler/FEATURE.md" },
-    { label: "Webhooks + Event Spine FEATURE.md", href: "/features/files/webhooks/FEATURE.md" },
+    {
+      label: "Files handler FEATURE.md",
+      href: "/features/files/handler/FEATURE.md",
+    },
+    {
+      label: "Webhooks + Event Spine FEATURE.md",
+      href: "/features/files/webhooks/FEATURE.md",
+    },
     { label: "Files FEATURE.md", href: "/features/files/FEATURE.md" },
-    { label: "Roadmap", href: "https://github.com/AI-Matrix-Engine/matrx-common-docs/blob/main/systems/media/file-service/HANDOFF.md" },
-    { label: "Upload troubleshooting", href: "https://github.com/AI-Matrix-Engine/matrx-frontend/blob/main/features/files/handler/FEATURE.md" },
+    {
+      label: "Roadmap",
+      href: "https://github.com/AI-Matrix-Engine/matrx-common-docs/blob/main/systems/media/file-service/HANDOFF.md",
+    },
+    {
+      label: "Upload troubleshooting",
+      href: "https://github.com/AI-Matrix-Engine/matrx-frontend/blob/main/features/files/handler/FEATURE.md",
+    },
   ],
   routeScanPath: "app/(core)/files",
 
@@ -29,7 +41,8 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/files",
       label: "Workspace home",
-      description: "Primary file workspace — folder tree, recents, quick actions.",
+      description:
+        "Primary file workspace — folder tree, recents, quick actions.",
       filePath: "app/(core)/files/page.tsx",
       status: "Live",
     },
@@ -37,13 +50,14 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
       url: "/files/all",
       label: "All files",
       description: "Flat list of every file the user owns.",
-      filePath: "app/(core)/files/all/page.tsx",
+      filePath: "app/(core)/files/all/[[...path]]/page.tsx",
       status: "Live",
     },
     {
       url: "/files/recents",
       label: "Recents",
-      description: "Recently touched files (user uploads only — system-created files are excluded by provenance).",
+      description:
+        "Recently touched files (user uploads only — system-created files are excluded by provenance).",
       filePath: "app/(core)/files/recents/page.tsx",
       status: "Live",
     },
@@ -52,7 +66,7 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
       label: "Starred",
       description: "Favorited files.",
       filePath: "app/(core)/files/starred/page.tsx",
-      status: "Live",
+      status: "Coming soon",
     },
     {
       url: "/files/shared",
@@ -87,20 +101,20 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
       label: "Activity",
       description: "Per-user file activity feed.",
       filePath: "app/(core)/files/activity/page.tsx",
-      status: "Live",
+      status: "Coming soon",
     },
     {
       url: "/files/requests",
       label: "File requests",
       description: "Inbound file-request flows.",
       filePath: "app/(core)/files/requests/page.tsx",
-      status: "Live",
+      status: "Coming soon",
     },
     {
-      url: "/files/f/<path>",
-      label: "File / folder detail",
-      description: "Path-addressed file or folder view.",
-      filePath: "app/(core)/files/f/",
+      url: "/files/f/<fileId>",
+      label: "File detail",
+      description: "Dedicated ID-addressed file viewer and editor.",
+      filePath: "app/(core)/files/f/[fileId]/page.tsx",
       status: "Live",
     },
     {
@@ -126,7 +140,40 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
     },
   ],
 
+  windowPanels: [
+    {
+      overlayId: "cloudFilesWindow",
+      description: "Canonical Files browser hosted in a floating window.",
+      status: "Live",
+    },
+    {
+      overlayId: "filePreviewWindow",
+      description: "Canonical file preview hosted in a floating window.",
+      status: "Live",
+      launchFrom: {
+        note: "Open from a file row because the preview requires a file ID.",
+        href: "/files/all",
+      },
+    },
+  ],
+
   components: [
+    {
+      name: "PageShell",
+      filePath: "features/files/components/surfaces/PageShell.tsx",
+      description:
+        "Responsive /files/all host: desktop browser plus mobile push stack, with the canonical matrx-user/files surface runtime.",
+      status: "Live",
+      tier: "internal",
+    },
+    {
+      name: "MobileStack",
+      filePath: "features/files/components/surfaces/MobileStack.tsx",
+      description:
+        "Mobile-first folder and file push navigation with read-only Files surface scope.",
+      status: "Live",
+      tier: "internal",
+    },
     {
       name: "fileHandler",
       filePath: "features/files/handler/handler.ts",
@@ -154,7 +201,8 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "filesDb",
       filePath: "features/files/filesDb.ts",
-      description: "Schema-helper wrapper for direct supabase-js access to the files schema.",
+      description:
+        "Schema-helper wrapper for direct supabase-js access to the files schema.",
       status: "Live",
       tier: "internal",
     },
@@ -175,7 +223,8 @@ const FILES_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "Knowledge",
       adminUrl: "/knowledge/admin",
-      description: "File ingest feeds data stores; file_rag_jobs emits run.completed/run.failed to the spine.",
+      description:
+        "File ingest feeds data stores; file_rag_jobs emits run.completed/run.failed to the spine.",
     },
   ],
 };

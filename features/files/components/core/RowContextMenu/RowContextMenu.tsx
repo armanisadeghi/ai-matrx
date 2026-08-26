@@ -51,7 +51,7 @@ import {
 } from "@/features/files/agent-context/buildFilesContextData";
 import { useFilesRowContextData } from "@/features/files/agent-context/FilesSurfaceScopeContext";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAllFilesMap,
@@ -156,8 +156,10 @@ export function FileRowContextMenu({
       // useFileActions.move is source-aware: real → moveFileThunk,
       // virtual → moveAny.
       await actions.move(folderId);
-    } catch {
-      /* error surfaces via slice state */
+    } catch (err) {
+      toast.error("Move failed", {
+        description: extractErrorMessage(err),
+      });
     }
   }, [actions, file]);
 
@@ -187,8 +189,10 @@ export function FileRowContextMenu({
           visibility: file.visibility,
         }),
       ).unwrap();
-    } catch {
-      /* swallow */
+    } catch (err) {
+      toast.error("Duplicate failed", {
+        description: extractErrorMessage(err),
+      });
     }
   }, [actions, dispatch, file]);
 
@@ -263,7 +267,11 @@ export function FileRowContextMenu({
           resourceType: "file",
         }}
         extraSections={[
-          { id: "file-trash-actions", anchor: "after-clipboard", items: trashItems },
+          {
+            id: "file-trash-actions",
+            anchor: "after-clipboard",
+            items: trashItems,
+          },
         ]}
         enableFloatingIcon={false}
       >
@@ -477,6 +485,7 @@ export function FolderRowContextMenu({
     // the Cmd/Ctrl+V keyboard shortcut on the active folder, where the full
     // duplicate pipeline lives.
     if (clipboard.op !== "cut") return;
+    const failures: string[] = [];
     for (const item of clipboard.items) {
       try {
         if (item.kind === "file") {
@@ -518,9 +527,18 @@ export function FolderRowContextMenu({
             ).unwrap();
           }
         }
-      } catch {
-        /* per-item failure tolerable */
+      } catch (err) {
+        failures.push(extractErrorMessage(err));
       }
+    }
+    if (failures.length > 0) {
+      toast.error(
+        failures.length === 1
+          ? "Item could not be moved"
+          : `${failures.length} items could not be moved`,
+        { description: failures[0] },
+      );
+      return;
     }
     setClipboard(null);
   }, [clipboard, dispatch, foldersByIdAll, folderId]);
@@ -547,10 +565,8 @@ export function FolderRowContextMenu({
     try {
       await folderActions.delete();
     } catch (err) {
-      toast({
-        title: "Delete failed",
+      toast.error("Delete failed", {
         description: extractErrorMessage(err),
-        variant: "destructive",
       });
     }
   }, [folder, folderActions]);
@@ -563,8 +579,10 @@ export function FolderRowContextMenu({
     if (newParent === folderId) return; // can't move into itself
     try {
       await folderActions.move(newParent);
-    } catch {
-      /* slice surfaces error */
+    } catch (err) {
+      toast.error("Move failed", {
+        description: extractErrorMessage(err),
+      });
     }
   }, [folder, folderActions, folderId]);
 

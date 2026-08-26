@@ -108,7 +108,9 @@ function sectionFromPath(): string {
  * children of the active folder (root when none) — the closest honest answer
  * a shell without the page's search/scoping logic can give.
  */
-function buildFallbackContextData(state: RootState): Record<string, unknown> {
+export function buildFilesContextDataFromState(
+  state: RootState,
+): Record<string, unknown> {
   const section = sectionFromPath();
   const filesById = selectAllFilesMap(state);
   const foldersById = selectAllFoldersMap(state);
@@ -166,7 +168,7 @@ export function useFilesRowContextData(): (
   return (overrides) => {
     const base = getPageContextData
       ? getPageContextData()
-      : buildFallbackContextData(store.getState());
+      : buildFilesContextDataFromState(store.getState());
     return { ...base, ...overrides };
   };
 }

@@ -24,14 +24,14 @@
  * may NOT. Handlers: `features/files/components/surfaces/
  * useFilesSurfaceWriteHandlers.ts`, registered on PageShell's provider.
  *
- * ONE MOUNT. `SurfaceRuntimeProvider` for this surface is mounted in exactly
- * one place — `PageShell.tsx` — so unlike `schedules` / `shapes` / `knowledge`
- * this is NOT a per-mount posture job. `RowContextMenu.tsx` and
+ * TWO READ MOUNTS, ONE WRITE MOUNT. `PageShell.tsx` mounts this surface for
+ * both responsive branches: desktop publishes scope + handlers; mobile
+ * publishes the same live Redux-backed scope but no handlers because its push
+ * stack does not render the desktop search/filter/sort/view controls that make
+ * those UI writes visible and reversible. `RowContextMenu.tsx` and
  * `FileRightClickMenu.tsx` also name `matrx-user/files`, but they pass it to
  * the context-menu-v3 READ seam (scope/contextData for a right-clicked row);
- * neither mounts a runtime, so neither registers or needs handlers. The
- * desktop shell is the whole write surface; the mobile `MobileStack` mounts no
- * provider at all and stays read-only (same gap the readiness note records).
+ * neither mounts a runtime, so neither registers or needs handlers.
  *
  * THE ONE THAT EARNS THE SURFACE: `active_file_name` / `active_folder_name`.
  * "Rename these screenshots to something I can find later" is a real
@@ -849,7 +849,7 @@ export const filesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/files",
   readiness: "partial",
   readinessNote:
-    "Full completeness audit done against PageShell and every declared value is emitted; remaining gaps: not yet DB-synced, no live non-matching-name binding test, no `data-surface-value` anchors on the rows, and the mobile MobileStack shell mounts no SurfaceRuntimeProvider (desktop only).",
+    "LUI-007 static S1-S18 pass complete: DB mirror present, desktop and mobile both emit live scope, row/search/section/preview anchors are mounted, and load/error/retry states are explicit. Remaining certification work is browser proof at desktop/tablet/mobile, including a non-matching-name binding run; mobile intentionally remains read-only because it does not render the desktop write controls.",
   label: "Files",
   urlPattern: "/files/all/[...path]",
   intro: `<surface_intro>
@@ -857,7 +857,8 @@ The user is in the Matrx cloud files browser — a Dropbox-style file manager ov
 their own files. A left sidebar picks a SECTION (all, recents, photos, shared,
 starred, trash, folders); the main pane lists folders and files for the current
 section and folder, shaped by a search box, filter chips, per-column filters and
-a sort; a right-hand preview pane shows one ACTIVE file when opened.
+a sort. Desktop opens one ACTIVE file in a right-hand preview pane; mobile opens
+the same durable file in its push-navigation detail frame.
 
 Read the values in three layers:
   1. WHERE the user is — files_section, active_folder_* / active_folder_breadcrumb.

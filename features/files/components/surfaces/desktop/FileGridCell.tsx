@@ -103,6 +103,8 @@ function GridFile({
     <FileRowContextMenu fileId={file.id}>
       <div
         ref={mergeRef}
+        data-surface-value="visible_files"
+        data-surface-record-id={file.id}
         className={cn(
           "group flex flex-col rounded-lg border bg-card overflow-hidden transition-shadow",
           isPreviewActive
@@ -265,6 +267,8 @@ function GridFolder({
     <FolderRowContextMenu folderId={folder.id}>
       <div
         ref={setMergedRef}
+        data-surface-value="visible_folders"
+        data-surface-record-id={folder.id}
         className={cn(
           "group flex flex-col rounded-lg border bg-card overflow-hidden transition-shadow",
           isFocused

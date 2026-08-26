@@ -32,6 +32,7 @@ export function TopBar({
 }: TopBarProps) {
   return (
     <div
+      data-surface-value="search_query"
       className={cn(
         "flex items-center gap-3 bg-background px-4 py-2 shrink-0",
         className,

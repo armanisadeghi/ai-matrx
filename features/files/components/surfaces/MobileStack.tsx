@@ -39,12 +39,18 @@ import {
   selectAllFoldersMap,
   selectSortedChildrenOfFolder,
   selectSortedRootChildren,
+  selectTreeError,
+  selectTreeStatus,
 } from "@/features/files/redux/selectors";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   setActiveFileId,
   setActiveFolderId,
 } from "@/features/files/redux/slice";
-import { loadFolderContents } from "@/features/files/redux/thunks";
+import {
+  loadFolderContents,
+  loadUserFileTree,
+} from "@/features/files/redux/thunks";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
@@ -53,6 +59,7 @@ import {
   FileRowContextMenu,
   FolderRowContextMenu,
 } from "@/features/files/components/core/RowContextMenu/RowContextMenu";
+import { FilesTreeErrorState, FilesTreeLoadingState } from "./FilesTreeState";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -213,6 +220,9 @@ function FolderFrameBody({
   const dispatch = useAppDispatch();
   const foldersById = useAppSelector(selectAllFoldersMap);
   const filesById = useAppSelector(selectAllFilesMap);
+  const treeStatus = useAppSelector(selectTreeStatus);
+  const treeError = useAppSelector(selectTreeError);
+  const userId = useAppSelector(selectUserId);
   const rootSorted = useAppSelector(selectSortedRootChildren);
   const folderSorted = useAppSelector((s) =>
     folderId ? selectSortedChildrenOfFolder(s, folderId) : EMPTY_TREE_CHILDREN,
@@ -230,6 +240,11 @@ function FolderFrameBody({
   useEffect(() => {
     dispatch(setActiveFolderId(folderId));
   }, [dispatch, folderId]);
+
+  const retryTreeLoad = () => {
+    if (!userId) return;
+    void dispatch(loadUserFileTree({ userId }));
+  };
 
   const rows = useMemo(() => {
     const out: { kind: "file" | "folder"; id: string; name: string }[] = [];
@@ -260,7 +275,11 @@ function FolderFrameBody({
         onLeftPress={onBack}
       />
 
-      {rows.length === 0 ? (
+      {treeStatus === "idle" || treeStatus === "loading" ? (
+        <FilesTreeLoadingState />
+      ) : treeStatus === "error" ? (
+        <FilesTreeErrorState error={treeError} onRetry={retryTreeLoad} />
+      ) : rows.length === 0 ? (
         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
           This folder is empty.
         </div>
@@ -276,7 +295,11 @@ function FolderFrameBody({
                   folderId={row.id}
                   onOpen={() => onPush({ kind: "folder", folderId: row.id })}
                 >
-                  <li className="flex h-12 items-center active:bg-accent/60">
+                  <li
+                    className="flex h-12 items-center active:bg-accent/60"
+                    data-surface-value="visible_folders"
+                    data-surface-record-id={row.id}
+                  >
                     <button
                       type="button"
                       onClick={() =>
@@ -302,7 +325,11 @@ function FolderFrameBody({
             if (!rec) return null;
             return (
               <FileRowContextMenu key={row.id} fileId={row.id}>
-                <li className="flex h-14 items-center active:bg-accent/60">
+                <li
+                  className="flex h-14 items-center active:bg-accent/60"
+                  data-surface-value="visible_files"
+                  data-surface-record-id={row.id}
+                >
                   <button
                     type="button"
                     onClick={() => {
@@ -391,7 +418,10 @@ function FileFrameBody({ fileId, onBack }: FileFrameBodyProps) {
         rightLabel="Actions"
         onRightPress={() => setActionsOpen(true)}
       />
-      <div className="flex-1 overflow-hidden">
+      <div
+        className="flex-1 overflow-hidden"
+        data-surface-value="active_file_id"
+      >
         <FilePreview fileId={fileId} className="h-full w-full" />
       </div>
       <MobileFileActionSheet

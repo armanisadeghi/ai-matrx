@@ -7,25 +7,25 @@ in the same change.
 
 ## Where things are
 
-| Concern | Location |
-|---|---|
-| Types (the ONE source) | `types.ts` |
-| Table column allowlist + client | `filesDb.ts` (`FILES_TABLE_COLUMNS`) |
-| Redux | `redux/` — slice `cloudFiles`, `thunks.ts`, `virtual-thunks.ts`, `request-ledger.ts`, `realtime-middleware.ts` |
-| Realtime attach/detach | `providers/CloudFilesRealtimeProvider.tsx` |
-| Direct-Supabase writes | `api/direct.ts`; share links via `utils/permissions/shareLinks.ts` |
-| Universal file handler | `handler/` (see `handler/FEATURE.md`) |
-| Upload transport policy | `upload/cloudUpload.ts` (`resolveUploadTransport`), `upload/tusUpload.ts` |
-| Core components | `components/core/` — FileTree, FileList, FileIcon, FileMeta, FilePreview, FileUploadDropzone, FileBreadcrumbs, FileActions, FileContextMenu, ShareLinkDialog, PermissionsDialog |
-| Surfaces (6) | `components/surfaces/` — PageShell, WindowPanelShell, MobileStack, EmbeddedShell, DialogShell, DrawerShell |
-| The one file picker | `features/resource-manager/resource-picker/FilesResourcePicker.tsx`, hosted by `components/pickers/CloudFilesPickerHost` |
-| Previewer dispatch | `components/core/FilePreview/PreviewerSwitch.tsx` |
-| File-type registry | `utils/file-types.ts` (`FILE_TYPES`, `getFilePreviewProfile`, `listSupportedTypes`) |
-| Route ownership (which host answers) | `lib/api/service-routing.ts` (`STANDALONE_FILE_ROUTE_RULES`, `resolveFilesBaseUrl`) |
-| URL state | `utils/url-state.ts`, `utils/server-search-params.ts` |
-| Routes | `app/(a)/files/` (`/files`; `/cloud-files/*` 308s here). Public shares: `app/(public)/s/[token]/` |
-| Blocks (media rendering — NOT this node) | `blocks/`, `blocks/image/UNIFIED_IMAGE_BLOCK.md` |
-| Webhooks / event spine (NOT this node) | `webhooks/FEATURE.md` |
+| Concern                                  | Location                                                                                                                                                                        |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Types (the ONE source)                   | `types.ts`                                                                                                                                                                      |
+| Table column allowlist + client          | `filesDb.ts` (`FILES_TABLE_COLUMNS`)                                                                                                                                            |
+| Redux                                    | `redux/` — slice `cloudFiles`, `thunks.ts`, `virtual-thunks.ts`, `request-ledger.ts`, `realtime-middleware.ts`                                                                  |
+| Realtime attach/detach                   | `providers/CloudFilesRealtimeProvider.tsx`                                                                                                                                      |
+| Direct-Supabase writes                   | `api/direct.ts`; share links via `utils/permissions/shareLinks.ts`                                                                                                              |
+| Universal file handler                   | `handler/` (see `handler/FEATURE.md`)                                                                                                                                           |
+| Upload transport policy                  | `upload/cloudUpload.ts` (`resolveUploadTransport`), `upload/tusUpload.ts`                                                                                                       |
+| Core components                          | `components/core/` — FileTree, FileList, FileIcon, FileMeta, FilePreview, FileUploadDropzone, FileBreadcrumbs, FileActions, FileContextMenu, ShareLinkDialog, PermissionsDialog |
+| Surfaces (6)                             | `components/surfaces/` — PageShell, WindowPanelShell, MobileStack, EmbeddedShell, DialogShell, DrawerShell                                                                      |
+| The one file picker                      | `features/resource-manager/resource-picker/FilesResourcePicker.tsx`, hosted by `components/pickers/CloudFilesPickerHost`                                                        |
+| Previewer dispatch                       | `components/core/FilePreview/PreviewerSwitch.tsx`                                                                                                                               |
+| File-type registry                       | `utils/file-types.ts` (`FILE_TYPES`, `getFilePreviewProfile`, `listSupportedTypes`)                                                                                             |
+| Route ownership (which host answers)     | `lib/api/service-routing.ts` (`STANDALONE_FILE_ROUTE_RULES`, `resolveFilesBaseUrl`)                                                                                             |
+| URL state                                | `utils/url-state.ts`, `utils/server-search-params.ts`                                                                                                                           |
+| Routes                                   | `app/(a)/files/` (`/files`; `/cloud-files/*` 308s here). Public shares: `app/(public)/s/[token]/`                                                                               |
+| Blocks (media rendering — NOT this node) | `blocks/`, `blocks/image/UNIFIED_IMAGE_BLOCK.md`                                                                                                                                |
+| Webhooks / event spine (NOT this node)   | `webhooks/FEATURE.md`                                                                                                                                                           |
 
 ## Invariants — do not violate
 
@@ -75,5 +75,17 @@ in the same change.
 `pnpm type-check` · `pnpm check:db-guards` · `pnpm check:access-errors` · `pnpm check:doctrine` ·
 `pnpm sync-types`. Diagnostic harness for upload/backend reachability: `/demos/cloud-files-debug`.
 
-`app/(a)/files/` routes additionally follow `app/(a)/_read_first_route_rules/RULES.md` — SSR-first,
-zero layout shift, Cache Components.
+`app/(core)/files/` routes additionally follow the core route rules — SSR-first
+and zero layout shift, with Cache Components disabled by repository doctrine.
+
+## Change log
+
+- **2026-08-25 — LUI-007 `/files/all` static surface pass.** Both responsive
+  branches now register the canonical `matrx-user/files` read scope (desktop
+  remains the sole write-handler host because mobile does not render those
+  reversible controls). Initial tree loading and failures render contextual
+  skeleton/error/retry states instead of a false empty folder. Desktop and
+  mobile file/folder rows, search, section, list, and active preview now carry
+  `data-surface-value` anchors. Row-menu move/duplicate/paste failures no longer
+  disappear, and the feature admin map reflects the real catch-all/detail
+  paths, current coming-soon routes, canonical shells, and window panels.
