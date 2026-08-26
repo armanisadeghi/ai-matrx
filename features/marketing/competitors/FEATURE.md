@@ -21,14 +21,17 @@ IR execution path (`adoptForeignStream` → `LiveRunDisplay`). No component pars
 
 ## UX contract
 
-The page opens on the highest-value opportunities, not a setup wall. Automatic discovery
-is the default; known domains are optional input. Bounds make cost visible. Opportunities,
-competitors, and run history use the canonical `MatrxDataTable`, with sort and filter on
-every data column, full record drawers/windows, real external doors for competitor pages,
-canonical owned-page links, and row-level workflow actions. The Backlink Intelligence
-competitor tab links here with the current site preselected. `AssistStrip` uses the
-`matrx-user/marketing-competitors` surface, whose runtime scope includes the selected
-site, loaded competitors and opportunities, latest persisted artifact, and active run.
+The bare route opens on **Run**. The shell header owns brand/site context and the six
+URL-addressable modes (Run, Review, Opportunities, Competitors, Evidence, History); the
+body never repeats the selected identity or picker. Run is a compact, full-width command
+surface with automatic discovery as the default, optional known domains, and visible cost
+bounds. Opportunities, competitors, and run history use the canonical `MatrxDataTable`,
+with sort and filter on every data column, full record drawers/windows, real external doors
+for competitor pages, canonical owned-page links, and row-level workflow actions. The
+Backlink Intelligence competitor tab links here with the current site preselected.
+`AssistStrip` uses the `matrx-user/marketing-competitors` surface, whose runtime scope
+includes the selected site, loaded competitors and opportunities, latest persisted
+artifact, and active run.
 
 Identification is equally primary: the user types a known business name, web lookup
 returns likely official sites with external doors, and one click adds the selected
@@ -78,6 +81,12 @@ is frozen BESIDE the ruling — without both versions "were we right?" is unansw
 classification without buying a page-crawl autopsy. Everything lands `proposed`.
 
 ## Change log
+
+- 2026-08-26 — Replaced the title-only route header, body hero, KPI tiles, and in-body site
+  selector with the canonical `EntityModeHeader`: brand dropdown, six URL-addressable
+  modes, and refresh. The compact Run view is now the default and primary work surface;
+  manual competitor entry moved to Review. Site inventory now uses `readAllRows` and joins
+  brand identity so the switcher remains complete and brand-led.
 
 - 2026-08-25 — **The autopsy asks WHICH competitor universe — national or local (MSR-25).** Arman,
   walking the page: *"when it says run a fresh autopsy, we're missing one of the most important
