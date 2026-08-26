@@ -137,7 +137,14 @@ export function usePunchClock(input: UsePunchClockInput): PunchClock {
 
   // ── The single read the surface mounts on ────────────────────────────────────────────────────
   useEffect(() => {
-    if (!employmentId) return;
+    if (!employmentId) {
+      // 🚨 Never leave the widget spinning at nobody. Route 34 mounts with no subject until the
+      // operator has searched, and a permanent `loading` there is indistinguishable from a hung
+      // request. `no-subject` is the honest arm of the union and it says what to do next.
+      setView({ kind: "no-subject" });
+      setState(null);
+      return;
+    }
 
     let live = true;
     const startTimer = window.setTimeout(() => {
