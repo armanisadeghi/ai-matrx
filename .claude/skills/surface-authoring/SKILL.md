@@ -489,7 +489,7 @@ Before you say a surface is added:
 - [ ] `pnpm check:surface-drift` passes
 - [ ] `pnpm check:surface-routes` passes — no phantom mapping, and this route is not silently undeclared
 - [ ] DB sync applied (admin UI or `POST /api/admin/surfaces/sync-manifests`)
-- [ ] Surface code launches agents via `runtime.surfaceName` + `applicationScope: create<LocalSlug>Scope(...)`
+- [ ] Eligible ordinary surface launches use `runtime.surfaceName` + `applicationScope: create<LocalSlug>Scope(...)`; agent-native primary launches use explicit `runtime: { surfaceName: null }`
 
 If anything in the checklist is unclear, re-read the relevant section above instead of guessing — the resolver is unforgiving when the contract drifts.
 
@@ -520,8 +520,8 @@ Registering a surface is a LAYERED recipe — each layer is independently shippa
 
 ## Layer 5 — Runtime emitter (`buildScope`)
 
-- The page assembles its scope with the manifest's `createXScope(...)` at **trigger time** (read live refs, not stale state) and launches with `runtime.surfaceName` set — via the v3 context menu (`EditableContextMenu` / `NonEditableContextMenu`) `surfaceName=` + `getApplicationScope`, `useAgentLauncher().launchAgent`, or `useAiPostProcess`. Cleanup's emitter: `CleanupPad.tsx` `buildScope()`.
-- Mount `<SurfaceRuntimeProvider>` (`runtime/SurfaceRuntimeContext.tsx`) so the header Agents chrome gets live Run scope.
+- An eligible ordinary surface assembles its scope with `createXScope(...)` at **trigger time** (read live refs, not stale state) and launches with `runtime.surfaceName` set — via the v3 context menu (`EditableContextMenu` / `NonEditableContextMenu`) `surfaceName=` + `getApplicationScope`, `useAgentLauncher().launchAgent`, or `useAiPostProcess`. Cleanup's emitter: `CleanupPad.tsx` `buildScope()`.
+- An agent-native surface's primary launch passes explicit `runtime: { surfaceName: null }`. Its neutral `<SurfaceRuntimeProvider>` may remain for context-menu identity, but it supplies no roles, bindings, bound roster, or Bind control.
 - Baseline `selection`/`text_before`/`text_after` are captured by the menu itself — don't duplicate.
 
 ## Layer 6 — Bindings + verification
@@ -548,4 +548,4 @@ Verify like the owner does:
 - [ ] DB synced AND live row counts verified
 - [ ] Route prefix in `utils/route-to-surface.ts` (more-specific prefixes ABOVE their parent)
 - [ ] Emitter wired (or explicitly deferred in the manifest header comment)
-- [ ] Non-matching-name binding + Matrx-vs-matrix test passed live
+- [ ] Eligible ordinary surface: non-matching-name binding + Matrx-vs-matrix test passed live; agent-native: N/A with `surfaceName: null` and zero-role/binding/Bind proof

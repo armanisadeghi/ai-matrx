@@ -155,11 +155,11 @@ The existing menu row is the door. A link from a working surface to
 
 | Situation | Verdict |
 | --- | --- |
-| Existing button/assist/automatic action runs one fixed mandate | Register that job in the top menu only. |
+| On an eligible ordinary product surface, an existing action runs one fixed mandate | Register that job in the top menu only. |
 | Page chooses, builds, runs, tests, reviews, or compares agents | Excluded and unbound; the agent is the subject. |
 | Page lets the user choose or chat with any agent | Exempt universal host; no bound roster or Bind control. |
-| Runtime mode selects one of several fixed jobs | Register the live fixed job without rendering UI. |
-| Service/thunk/tool handler runs a mandate | Register on the calling surface, not in machinery. |
+| On an eligible ordinary product surface, runtime mode selects one of several fixed jobs | Register the live fixed job without rendering UI. |
+| On an eligible ordinary product surface, service/thunk/tool machinery runs a mandate | Register on the calling surface, not in machinery. |
 | No AI job exists yet | Do nothing; disclosure cannot invent one. |
 | Agent uses a raw UUID with no mandate | Fix hardcoded-agent architecture first; do not invent a key. |
 

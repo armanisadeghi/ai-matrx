@@ -100,7 +100,7 @@ Admin view of the ledger: `/administration/ui/surfaces` (Last checked column, ne
 
 ## What is ARMAN-class (log, don't ask)
 
-Product semantics only: **creating a new parent surface or re-homing one in the hierarchy** (and anything that edits a SIBLING's manifest — you were scoped to one surface and other agents may be inside the others), whether a feature exists, a grouping of menu rows not yet approved, whether a text field's length _matters_ when THE LENGTH RULE is genuinely ambiguous (default: ON if `typicalCharCount` ≥ 1,000, else OFF — log it), whether an agent-purpose surface should ALSO expose itself to other agents (default: provider mounted, own launch `surfaceName: null`).
+Product semantics only: **creating a new parent surface or re-homing one in the hierarchy** (and anything that edits a SIBLING's manifest — you were scoped to one surface and other agents may be inside the others), whether a feature exists, a grouping of menu rows not yet approved, and whether a text field's length _matters_ when THE LENGTH RULE is genuinely ambiguous (default: ON if `typicalCharCount` ≥ 1,000, else OFF — log it). Agent-native exclusion is absolute, never ARMAN-class.
 
 NOT Arman-class — decide these yourself: whether THIS surface's existing `inheritsFrom` is correct, its own label/readiness/groups, every value and write target it should declare, and every fix the sections name. Everything else has a rule — apply it.
 
