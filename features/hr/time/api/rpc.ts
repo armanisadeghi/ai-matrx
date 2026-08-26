@@ -194,9 +194,17 @@ const OPAQUE_VALUE_KEYS = new Set([
   "parameters",
   "resolution",
   "facts",
-  "config",
   "scope",
 ]);
+
+// ⚠️ `config` is deliberately NOT in that list, and the reason is a bug this file already had.
+// `hr._kiosk_device_config` returns `{require_photo, require_geo, max_clock_skew_seconds,
+// pin_length, confirm_dismiss_seconds, heartbeat_seconds, location_name}` — a DECLARED shape that
+// `KioskDeviceSession["config"]` reads by its camel names. Excluding it left every one of those
+// `undefined` on the client, which would have shown up as a kiosk that could not compute skew, read
+// its PIN length, or set its heartbeat interval. The rule is: exclude a key only when its value is
+// genuinely free-form or is evidence read back by its stored names — never merely because it
+// *sounds* like a bag.
 
 function toCamel(key: string): string {
   return key.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
