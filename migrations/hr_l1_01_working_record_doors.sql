@@ -54,6 +54,26 @@
 -- avoids a lateral join per row, and no calculation may read them. `hr_directory_list` reads
 -- them; `hr_employee_profile`'s header resolves `hr.employment_as_of` / `hr.primary_position_as_of`
 -- and never touches them. The two functions are deliberately asymmetric and this is why.
+--
+-- 🚨 RECORDED TECHNICAL DECISION 3b — `current_*` IS NULL FOR EVERY PREHIRE, AND FOR ANYBODY
+-- WITH NO LIVE PRIMARY ASSIGNMENT TODAY.
+--
+-- Read live from `hr._refresh_current_position`: the trigger resolves the primary assignment whose
+-- `effective_range @> current_date` and writes NULL when there is none — so it clears, rather than
+-- populates, `current_employment_id` / `current_job_title_id` / `current_department_id` /
+-- `current_manager_employee_id` for a future-dated hire. §4.1 nonetheless lands the new person on
+-- their profile "with the pending chip if the hire date is future", and §2.2 keeps `prehire` in
+-- the directory's default status set. A directory built STRICTLY on `current_*` therefore renders
+-- every brand-new hire as a row with a name, a number and nothing else — and no door, because
+-- `employment_id` is null too. Reproduced 2026-08-26 on a real future-dated hire.
+--
+-- THIS LANE'S CALL, and it keeps §1.2 intact: `current_*` stays the preferred source and is read
+-- first. When it is NULL the row falls back — through ONE lateral, bounded to the page — to the
+-- spell in force today, else the EARLIEST spell that has not ended, and to that spell's earliest
+-- primary assignment. The fallback is labelled on the row (`row_basis`), so a screen can say
+-- "starts 9 Sep" instead of showing blanks, and no CALCULATION reads either source: this resolves
+-- an identity for a door and a label for a cell, which is exactly what §1.2 carves out.
+-- **→ coordinator: §5.1 owes one sentence, because every lane's list surface will hit this.**
 -- ===================================================================================
 
 set local statement_timeout = '600s';
@@ -340,7 +360,7 @@ begin
   -- four clamped literal column names rather than dynamic SQL — a static plan a reviewer reads.
   with scoped as (
     select e.id                                as employee_id,
-           e.current_employment_id             as employment_id,
+           coalesce(e.current_employment_id, em.id)              as employment_id,
            e.display_name, e.employee_number, e.work_email, e.work_phone,
            e.photo_file_id, e.directory_status,
            coalesce(pa.job_title_id, e.current_job_title_id)     as job_title_id,
@@ -350,19 +370,39 @@ begin
            coalesce(pa.location_id, e.primary_location_id)       as location_id,
            l.name                                                as location,
            l.tz                                                  as timezone,
-           e.current_manager_employee_id       as manager_employee_id,
+           coalesce(e.current_manager_employee_id, mgr.id)       as manager_employee_id,
            case when v_shows_mgr then mgr.display_name end       as manager_name,
            pa.worker_class, pa.flsa_status, pa.schedule_class, pa.fte,
            case when v_shows_hire then em.hire_date end          as hire_date,
+           case when e.current_employment_id is not null then 'current'
+                when em.id is null then 'no_spell'
+                when em.hire_date > v_today then 'upcoming'
+                else 'no_primary_assignment' end                 as row_basis,
            e.custom
       from hr.employee e
-      left join hr.employment em on em.id = e.current_employment_id and em.deleted_at is null
-      left join hr.position_assignment pa
-             on pa.id = e.current_position_assignment_id and pa.deleted_at is null
+      -- current first (§1.2), then the fallback of RECORDED DECISION 3b
+      left join lateral (
+        select em2.* from hr.employment em2
+         where em2.deleted_at is null
+           and (em2.id = e.current_employment_id
+                or (e.current_employment_id is null and em2.employee_id = e.id
+                    and (em2.termination_date is null or em2.termination_date >= v_today)))
+         order by (em2.id = e.current_employment_id) desc, em2.hire_date asc
+         limit 1) em on true
+      left join lateral (
+        select pa2.* from hr.position_assignment pa2
+         where pa2.deleted_at is null
+           and (pa2.id = e.current_position_assignment_id
+                or (e.current_position_assignment_id is null and pa2.employment_id = em.id
+                    and pa2.is_primary
+                    and (pa2.effective_to is null or pa2.effective_to >= v_today)))
+         order by (pa2.id = e.current_position_assignment_id) desc, pa2.effective_from asc
+         limit 1) pa on true
       left join hr.job_title jt on jt.id = coalesce(pa.job_title_id, e.current_job_title_id)
       left join hr.department d on d.id = coalesce(pa.department_id, e.current_department_id)
       left join hr.location  l on l.id = coalesce(pa.location_id, e.primary_location_id)
-      left join hr.employee mgr on mgr.id = e.current_manager_employee_id
+      left join hr.employment mem on mem.id = pa.manager_employment_id and mem.deleted_at is null
+      left join hr.employee mgr on mgr.id = coalesce(e.current_manager_employee_id, mem.employee_id)
      where e.organization_id = p_organization_id
        and e.deleted_at is null
        and e.directory_status = any(v_statuses)
@@ -564,14 +604,14 @@ begin
 
   -- ---------------------------------------------------------------- the tab set (§2.3.1)
   -- Every tab below is present ONLY when this viewer has at least one accessible field in it.
-  v_tabs := v_tabs || 'personal';
-  v_tabs := v_tabs || 'job';
+  v_tabs := array_append(v_tabs, 'personal');
+  v_tabs := array_append(v_tabs, 'job');
 
   if v_kind = 'self' or hr.capability(v_uid, 'comp.read', v_emp, v_on) then
-    v_tabs := v_tabs || 'compensation';
+    v_tabs := array_append(v_tabs, 'compensation');
   elsif v_kind = 'manager' then
     v_comp_mgr := hr._knob('hr.access','comp_visibility_for_managers') #>> '{}';
-    if v_comp_mgr = 'band_only' then v_tabs := v_tabs || 'compensation'; end if;
+    if v_comp_mgr = 'band_only' then v_tabs := array_append(v_tabs, 'compensation'); end if;
   end if;
 
   -- The four hosted tabs (§2.3.9) are owned by sibling pillars. They are offered when the
@@ -579,25 +619,25 @@ begin
   -- a contractor has no Time off tab at all, and nothing says why.
   if v_kind in ('self','manager','hr_admin','org_admin') then
     if coalesce(v_worker_class,'employee') <> 'contractor' then
-      v_tabs := v_tabs || 'time-off';
+      v_tabs := array_append(v_tabs, 'time-off');
     end if;
-    v_tabs := v_tabs || 'time';
-    v_tabs := v_tabs || 'training';
+    v_tabs := array_append(v_tabs, 'time');
+    v_tabs := array_append(v_tabs, 'training');
   end if;
   if v_kind in ('self','manager','hr_admin') then
-    v_tabs := v_tabs || 'performance';
+    v_tabs := array_append(v_tabs, 'performance');
   end if;
 
   if v_kind in ('self','hr_admin') then
-    v_tabs := v_tabs || 'emergency';
-    v_tabs := v_tabs || 'documents';
+    v_tabs := array_append(v_tabs, 'emergency');
+    v_tabs := array_append(v_tabs, 'documents');
   end if;
   if v_kind in ('manager','hr_admin') then
-    v_tabs := v_tabs || 'notes';
+    v_tabs := array_append(v_tabs, 'notes');
   end if;
   if hr.capability(v_uid, 'incident.read', v_emp, v_on)
      or hr.capability(v_uid, 'corrective_action.issue', v_emp, v_on) then
-    v_tabs := v_tabs || 'relations';
+    v_tabs := array_append(v_tabs, 'relations');
   end if;
 
   -- ---------------------------------------------------------------- the header (§2.3.0)
