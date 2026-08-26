@@ -18,12 +18,10 @@ import {
   Crown,
   Shield,
   User as UserIcon,
-  Loader2,
   Plus,
   Users,
   Settings,
   ArrowRight,
-  Search,
   Calendar,
   ExternalLink,
   FolderTree,
@@ -36,7 +34,8 @@ import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ProInput } from "@/components/official/ProInput";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { CreateOrgModal } from "@/features/organizations/components/CreateOrgModal";
 import { OrganizationAbbreviation } from "@/features/organizations/components/OrganizationAbbreviation";
@@ -49,13 +48,14 @@ import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRe
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectScopeTypesByOrg } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { selectScopesByOrg } from "@/features/agent-context/redux/scope/scopesSlice";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 import type { UseScopeSuggestionsResult } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   ORGANIZATIONS_SURFACE_NAME,
   createOrganizationsScope,
@@ -145,7 +145,9 @@ function OrgCard({
       <span className={`absolute inset-x-0 top-0 h-1 ${meta.bar} opacity-80`} />
       {isPending && (
         <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="text-sm font-medium text-muted-foreground">
+            Opening {org.name}…
+          </span>
         </div>
       )}
 
@@ -242,16 +244,19 @@ function OrgCard({
             icon={<Users className="h-3.5 w-3.5" />}
             value={org.memberCount ?? 1}
             label={org.memberCount === 1 ? "member" : "members"}
+            href={`/organizations/${org.slug}/settings#members`}
           />
           <StatChip
             icon={<FolderTree className="h-3.5 w-3.5" />}
             value={scopeTypes.length}
             label={scopeTypes.length === 1 ? "dimension" : "dimensions"}
+            href={`/organizations/${org.slug}/scopes`}
           />
           <StatChip
             icon={<Network className="h-3.5 w-3.5" />}
             value={scopes.length}
             label={scopes.length === 1 ? "scope" : "scopes"}
+            href={`/organizations/${org.slug}/scopes`}
           />
           {org.createdAt && (
             <span className="flex items-center gap-1 text-muted-foreground">
@@ -311,19 +316,54 @@ function StatChip({
   icon,
   value,
   label,
+  href,
 }: {
   icon: React.ReactNode;
   value: React.ReactNode;
   label: string;
+  href: string;
 }) {
   return (
-    <span className="flex items-center gap-1.5 text-muted-foreground">
+    <Link
+      href={href}
+      className="flex min-h-11 items-center gap-1.5 rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
       {icon}
       <span className="font-semibold text-foreground tabular-nums">
         {value}
       </span>
       {label}
-    </span>
+    </Link>
+  );
+}
+
+function OrganizationsLoadingState() {
+  return (
+    <div
+      className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3"
+      aria-label="Loading your organizations"
+    >
+      {Array.from({ length: 3 }, (_, index) => (
+        <Card key={index} className="overflow-hidden p-5">
+          <div className="flex items-start gap-3.5">
+            <Skeleton className="h-14 w-14 shrink-0 rounded-xl" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          </div>
+          <div className="mt-5 flex gap-3">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <Skeleton className="mt-5 h-28 w-full rounded-lg" />
+          <div className="mt-4 flex gap-2">
+            <Skeleton className="h-9 flex-1" />
+            <Skeleton className="h-9 w-24" />
+          </div>
+        </Card>
+      ))}
+    </div>
   );
 }
 
@@ -333,6 +373,7 @@ export default function OrganizationsPage() {
   const [createOpen, setCreateOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const isMobile = useIsMobile();
+  const store = useAppStore();
 
   const filtered = query
     ? filterAndSortBySearch(organizations, query, [
@@ -351,22 +392,33 @@ export default function OrganizationsPage() {
   // ── Surface runtime (matrx-user/organizations, list mode) ───────────────
   // Built at trigger time only; emits the launcher's full org list — no org
   // is active here, so no org_identity / membership / resources values.
-  const getSurfaceScope = () =>
-    createOrganizationsScope({
+  const getSurfaceScope = () => {
+    const state = store.getState();
+    return createOrganizationsScope({
       current_view: "list",
       organization_count: organizations.length,
-      organizations_summary: organizations.map((o) => ({
-        id: o.id,
-        name: o.name,
-        slug: o.slug,
-        abbreviation: o.abbreviation,
-        role: o.role,
-        is_personal: o.isPersonal,
-        member_count: o.memberCount ?? null,
-      })),
+      organizations_summary: organizations.map((o) => {
+        const scopeTypes = selectScopeTypesByOrg(state, o.id);
+        const scopes = selectScopesByOrg(state, o.id);
+        return {
+          id: o.id,
+          name: o.name,
+          slug: o.slug,
+          abbreviation: o.abbreviation,
+          description: o.description ?? null,
+          website: o.website ?? null,
+          role: o.role,
+          is_personal: o.isPersonal,
+          member_count: o.memberCount ?? null,
+          created_at: o.createdAt,
+          scope_type_count: scopeTypes.length,
+          scope_count: scopes.length,
+        };
+      }),
       search_query: query || undefined,
       selection: window.getSelection()?.toString() || undefined,
     });
+  };
 
   return (
     <SurfaceRuntimeProvider
@@ -420,131 +472,147 @@ export default function OrganizationsPage() {
           </>
         }
       />
-      <div className="h-full overflow-y-auto bg-textured">
+      <NonEditableContextMenu
+        // SourceFeature has no Organizations literal; the existing org resource
+        // surface uses the canonical generic system attribution for this reason.
+        sourceFeature="system"
+        surfaceName={ORGANIZATIONS_SURFACE_NAME}
+        getApplicationScope={getSurfaceScope}
+        contentSource={{ type: "raw" }}
+        enableFloatingIcon={false}
+      >
         <div
-          className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 space-y-6"
-          style={{ paddingTop: "calc(var(--shell-header-h) + 1rem)" }}
+          className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]"
+          data-surface-value="current_view"
         >
-          {/* Stats + search */}
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-5 flex-wrap">
-              <Stat
-                value={organizations.length}
-                label={organizations.length === 1 ? "workspace" : "workspaces"}
-              />
-              <Stat
-                value={teamCount}
-                label={teamCount === 1 ? "team" : "teams"}
-              />
+          <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 space-y-6">
+            {/* Stats + search */}
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div
+                className="flex items-center gap-5 flex-wrap"
+                data-surface-value="organization_count"
+              >
+                <Stat
+                  value={organizations.length}
+                  label={
+                    organizations.length === 1 ? "workspace" : "workspaces"
+                  }
+                />
+                <Stat
+                  value={teamCount}
+                  label={teamCount === 1 ? "team" : "teams"}
+                />
+              </div>
+
+              {organizations.length > 4 && (
+                <div
+                  className="flex w-full items-center gap-2 sm:w-auto"
+                  data-surface-value="search_query"
+                >
+                  <ProInput
+                    aria-label="Search organizations"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search organizations…"
+                    wrapperClassName="min-w-0 flex-1 sm:w-80"
+                    enableVoice={false}
+                    showCopyButton={false}
+                    clearable
+                    onClear={() => setQuery("")}
+                  />
+                  {filtered.length > 0 && (
+                    <ReferencesBulkCopyButton
+                      referenceType="organization"
+                      records={filtered.map((o) => ({
+                        id: o.id,
+                        label: o.name,
+                      }))}
+                      toastLabel={`${filtered.length} organization${filtered.length === 1 ? "" : "s"}`}
+                    />
+                  )}
+                </div>
+              )}
             </div>
 
-            {organizations.length > 4 && (
-              <div className="relative flex items-center gap-2">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  aria-label="Search organizations"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search organizations…"
-                  className="pl-9 max-w-sm"
-                />
-                {filtered.length > 0 && (
-                  <ReferencesBulkCopyButton
-                    referenceType="organization"
-                    records={filtered.map((o) => ({
-                      id: o.id,
-                      label: o.name,
-                    }))}
-                    toastLabel={`${filtered.length} organization${filtered.length === 1 ? "" : "s"}`}
-                  />
-                )}
-              </div>
+            {loading ? (
+              <OrganizationsLoadingState />
+            ) : error ? (
+              <Card className="p-8 text-center border-destructive/40">
+                <div className="max-w-sm mx-auto">
+                  <h3 className="font-semibold mb-1">
+                    We couldn&apos;t load your organizations
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">{error}</p>
+                  <Button size="sm" variant="outline" onClick={refresh}>
+                    Try again
+                  </Button>
+                </div>
+              </Card>
+            ) : organizations.length === 0 ? (
+              <Card className="p-12 text-center">
+                <div className="max-w-xs mx-auto">
+                  <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    <Building2 className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-semibold mb-1">No organizations yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Create a team to collaborate, share agents, and build shared
+                    knowledge.
+                  </p>
+                  <Button size="sm" onClick={() => setCreateOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Create organization
+                  </Button>
+                </div>
+              </Card>
+            ) : filtered.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-12">
+                No organizations match “{query}”.
+              </p>
+            ) : (
+              <>
+                <div data-surface-value="organizations_summary">
+                  {personal.length > 0 && (
+                    <section>
+                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                        Personal
+                      </h2>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {personal.map((org) => (
+                          <OrgCard
+                            key={org.id}
+                            org={org}
+                            suggestions={suggestions}
+                            kpis={kpis}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {teams.length > 0 && (
+                    <section>
+                      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                        Teams
+                      </h2>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {teams.map((org) => (
+                          <OrgCard
+                            key={org.id}
+                            org={org}
+                            suggestions={suggestions}
+                            kpis={kpis}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </div>
+              </>
             )}
           </div>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="text-center">
-                <Loader2 className="h-7 w-7 animate-spin text-primary mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  Loading organizations…
-                </p>
-              </div>
-            </div>
-          ) : error ? (
-            <Card className="p-8 text-center border-destructive/40">
-              <div className="max-w-sm mx-auto">
-                <h3 className="font-semibold mb-1">
-                  We couldn&apos;t load your organizations
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">{error}</p>
-                <Button size="sm" variant="outline" onClick={refresh}>
-                  Try again
-                </Button>
-              </div>
-            </Card>
-          ) : organizations.length === 0 ? (
-            <Card className="p-12 text-center">
-              <div className="max-w-xs mx-auto">
-                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                  <Building2 className="h-7 w-7 text-muted-foreground" />
-                </div>
-                <h3 className="font-semibold mb-1">No organizations yet</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Create a team to collaborate, share agents, and build shared
-                  knowledge.
-                </p>
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1.5" />
-                  Create organization
-                </Button>
-              </div>
-            </Card>
-          ) : filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-12">
-              No organizations match “{query}”.
-            </p>
-          ) : (
-            <>
-              {personal.length > 0 && (
-                <section>
-                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    Personal
-                  </h2>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {personal.map((org) => (
-                      <OrgCard
-                        key={org.id}
-                        org={org}
-                        suggestions={suggestions}
-                        kpis={kpis}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {teams.length > 0 && (
-                <section>
-                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    Teams
-                  </h2>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {teams.map((org) => (
-                      <OrgCard
-                        key={org.id}
-                        org={org}
-                        suggestions={suggestions}
-                        kpis={kpis}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </>
-          )}
         </div>
-      </div>
+      </NonEditableContextMenu>
 
       <CreateOrgModal
         isOpen={createOpen}

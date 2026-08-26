@@ -299,7 +299,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "organizations_summary",
     label: "Your organizations",
     description:
-      "One entry per organization the user belongs to: { id, name, slug, abbreviation, role, is_personal, member_count }. Emitted on the list view as the FULL list (the active search filter is not applied); absent inside a workspace.",
+      "One entry per organization the user belongs to: { id, name, slug, abbreviation, description, website, role, is_personal, member_count, created_at, scope_type_count, scope_count }. Emitted on the list view as the FULL list (the active search filter is not applied); absent inside a workspace.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 900,
@@ -406,7 +406,9 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const organizationsManifest: SurfaceManifest = {
   surfaceName: ORGANIZATIONS_SURFACE_NAME,
-  readiness: "verified",
+  readiness: "partial",
+  readinessNote:
+    "The launcher and workspace emitters, profile write targets, direct data paths, route metadata, Surface Context anchors, and canonical v3 launcher menu are statically complete. The 2026-08-26 launcher repair still needs isolated-browser proof at desktop/tablet/mobile in both themes, including search, card doors, context menu, Surface Context, loading/error/empty states, console, and Error Inspector, before readiness returns to verified.",
   label: "Organizations",
   urlPattern: "/organizations",
   intro: `<surface_intro>
@@ -447,9 +449,14 @@ export interface OrganizationsOrgEntry {
   name: string;
   slug: string;
   abbreviation: string;
+  description: string | null;
+  website: string | null;
   role: string;
   is_personal: boolean;
   member_count: number | null;
+  created_at: string;
+  scope_type_count: number;
+  scope_count: number;
 }
 
 /**
