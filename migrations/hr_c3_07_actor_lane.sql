@@ -907,6 +907,29 @@ begin
 end
 $fn$;
 
+-- ============================================================ §6.3 the kiosk vocabulary
+-- 🚨 §6.3's TWO-STEP NEEDS ONE MORE `auth_method` VALUE, and a probe found it missing.
+-- §6.3 is explicit: `hr_kiosk_authenticate(p_device_id, p_device_secret)` yields "a row in
+-- hr.kiosk_session with session_token and expires_at", and the EMPLOYEE's PIN is presented
+-- afterwards. The live CHECK admits only pin | pin_photo | badge | manager_override — every value
+-- describing how the PERSON authenticated — so the device leg of the session had no expressible
+-- value at all and the first live call died on the constraint. `device` is added for the leg
+-- BEFORE a person is bound; the row flips to `pin` the moment the PIN is verified, so a session
+-- that ever carried a punch still records how its human proved themselves.
+-- OWED: SPEC-DATA-MODEL §7.11's auth_method CHECK.
+do $$ begin
+  if exists (select 1 from pg_constraint where conname = 'kiosk_session_auth_method_check'
+              and conrelid = 'hr.kiosk_session'::regclass
+              and pg_get_constraintdef(oid) not like '%device%') then
+    alter table hr.kiosk_session drop constraint kiosk_session_auth_method_check;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'kiosk_session_auth_method_check'
+                  and conrelid = 'hr.kiosk_session'::regclass) then
+    alter table hr.kiosk_session add constraint kiosk_session_auth_method_check
+      check (auth_method in ('device','pin','pin_photo','badge','manager_override'));
+  end if;
+end $$;
+
 -- ============================================================ §6.3 the kiosk device actor
 -- 🚨 HOW RLS ADMITS THE KIOSK: IT DOES NOT. hr.punch carries zero anon table grants, so a leaked
 -- anon key alone reaches nothing — the definer function is the only door, and the device secret
@@ -1103,7 +1126,7 @@ begin
 end
 $fn$;
 
-create or replace function public.hr_kiosk_session_close(p_session_token text, p_reason text default 'signed_out')
+create or replace function public.hr_kiosk_session_close(p_session_token text, p_reason text default 'completed')
 returns jsonb
 language plpgsql security definer set search_path = public, hr
 as $fn$
@@ -1114,7 +1137,15 @@ begin
      and ended_at is null and deleted_at is null;
   if not found then return jsonb_build_object('ok', false, 'reason','session_not_valid'); end if;
   perform set_config('hr.privileged_write','on',true);
-  update hr.kiosk_session set ended_at = now(), end_reason = p_reason where id = s.id;
+  -- the live end_reason vocabulary is completed | expired | timeout | revoked | device_suspended |
+  -- superseded; anything else is normalised rather than refused, because a kiosk closing a session
+  -- must never fail on a word
+  update hr.kiosk_session
+     set ended_at = now(),
+         end_reason = case when p_reason in ('completed','expired','timeout','revoked',
+                                             'device_suspended','superseded')
+                           then p_reason else 'completed' end
+   where id = s.id;
   return jsonb_build_object('ok', true, 'kiosk_session_id', s.id);
 end
 $fn$;
