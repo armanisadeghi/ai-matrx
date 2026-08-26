@@ -311,7 +311,19 @@ else
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts"
-        "Component ownership law (no created_by)|pnpm check:component-created-by"
+        # 🚨 `:strict` ON PURPOSE, IN THE ADVISORY LIST TOO — and this line is the
+        # fix for a gate that was decor for five days. The checker gates its EXIT
+        # CODE on --strict, so the bare `pnpm check:component-created-by` invoked
+        # here exited 0 while printing "VIOLATION"; and "VIOLATION" is not one of
+        # the banners run_gate's advisory-marker regex knows, so run_gate printed a
+        # silent green [OK]. That is exactly the failure mode the comment on that
+        # regex warns about. Meanwhile release.sh runs THIS list (`--advisory
+        # || true`) and nothing in the repo runs --strict automatically, so 229
+        # offenders accumulated behind a green light (see the 2026-08-26 entry in
+        # db-rules §6d-1). With `:strict` the checker exits 1, run_gate prints a red
+        # [FAIL] with the full offender list, and advisory mode still exits 0 —
+        # scream, never block, which is the contract this list actually has.
+        "Component ownership law (no created_by)|pnpm check:component-created-by:strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts"
         "Kind loading-slug twin (aidream)|pnpm exec tsx scripts/check-loading-slug-twin.ts"
         # CONTENT IR / KINDS — the two halves of the kinds program's frontend

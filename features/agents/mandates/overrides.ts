@@ -220,9 +220,20 @@ export async function fetchMandatePickerData(
 }
 
 export interface MandateBindingInput {
-  /** Swap the agent (floating — user-surface bindings never version-pin; the
-   * client run path has no is_version channel). Null = settings-only. */
+  /** Swap the agent. Null = settings-only binding. */
   agentId: string | null;
+  /**
+   * VERSION PINNING (Arman's rule 6, 2026-08-26): pin the binding to a
+   * definition_version snapshot instead of floating on the master. Exactly one
+   * of agentId / agentVersionId may be set (the server 422s on both). Pinned
+   * bindings resolve correctly server-side today; the CLIENT run path's
+   * version channel is D1 follow-through — until it lands, a pinned binding on
+   * a client-resolved mandate refuses loudly at resolve time (never silently).
+   */
+  agentVersionId?: string | null;
+  /** Explicit float choice. Defaults to agentId != null (the old derived
+   * behavior) so existing call sites keep their semantics. */
+  useLatest?: boolean;
   /** LLMParams-shaped settings override (model, thinking_level, …). Null =
    * agent-swap-only. At least one of agent/settings/consumption must be set. */
   configOverrides: JsonObject | null;
@@ -314,8 +325,8 @@ export async function putMandateBinding(
       body: {
         principal_type: principal.principalType,
         agent_id: input.agentId,
-        agent_version_id: null,
-        use_latest: input.agentId != null,
+        agent_version_id: input.agentVersionId ?? null,
+        use_latest: input.useLatest ?? (input.agentId != null),
         config_overrides: input.configOverrides,
         is_enabled: input.isEnabled ?? true,
         ...(principal.organizationId
