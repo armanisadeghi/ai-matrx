@@ -1677,11 +1677,21 @@ The ACTION tier of the 360 loop: a surface declares client-side TOOLS an agent o
 The universal Agents header dropdown exposes two ephemeral WindowPanels for the current route/runtime surface:
 
 - **Surface Context** (`surfaceContextWindow`) is available to every user. It samples the matching `SurfaceRuntimeProvider.getScope()` while open, labels live/snapshot/unavailable state, and presents declared values beside their exact current values plus any undeclared runtime keys.
-- **Surface Context Admin** (`surfaceContextInspector`) is gated by Redux `selectIsAdmin` both in the dropdown and inside the window. Its Live Values view uses the same runtime sampling; Manifest & Settings embeds the canonical admin editor and exposes code-owned provenance plus every DB-owned editable surface setting.
+- **Admin** (`surfaceContextInspector`) is gated by Redux `selectIsAdmin` both in the dropdown and inside the window. The dropdown button is labelled **"Admin"** — it shares a two-column grid with Surface Context and the old "Surface Context Admin" truncated; the window's own title stays `Surface Context Admin`, where there is room. Its Live Values view uses the same runtime sampling; Manifest & Settings embeds the canonical admin editor and exposes code-owned provenance plus every DB-owned editable surface setting.
 
 Both panels keep the standard thin WindowPanel chrome: friendly manifest-derived surface labels, icon-only header actions, and the canonical compact Copy for AI control. Runtime/manifest status and technical identifiers belong in panel content, footers, or the copied AI payload rather than the user-facing title bar.
 
 Sampling is intentionally view-only and ephemeral: it reads the provider callback every 400 ms while a panel is open and never copies surface data into Redux or changes the agent execution scope.
+
+## "AI doing jobs here" — THE DISCLOSURE LAW in the Agents menu (2026-08-25)
+
+🚨 **A surface that RUNS an agent NAMES it, inline AND in the Agents menu.** Arman's ruling: "on any surface where an agent is actually being assigned but built into the physical UI … we also add that agent to the list of available agents at the top." A page that quietly calls a model is a black box, and a black box cannot be approved.
+
+- **[`components/chrome/SurfaceMandatesSection.tsx`](./components/chrome/SurfaceMandatesSection.tsx)** renders the section from TWO sources and no third registry: the DECLARED `agentRoles[].mandateKey` of this surface **and of its family** (ancestry + children, the same `getRelatedSurfaces` walk that draws the breadcrumb — so standing anywhere in podcast lists the podcast family's jobs), plus the LIVE registrations below. Every row is a DOOR into the mandate console (`/administration/agents/mandates?mandate=<key>` for admins, `/agents/mandates?feature=<key>` otherwise); admins get [`MandateNotesPanel`](../agents/mandates/components/MandateNotesPanel.tsx) in place. Labels come from ONE batched `fetchMandateIdentities` read, never one request per row. It renders on UNREGISTERED pages too — a page with no manifest can still be running an agent.
+- **[`runtime/surface-mandates.ts`](./runtime/surface-mandates.ts)** is the live half: a module registry (the header is a SIBLING of `<main>`, so context cannot reach it — same reasoning as `SurfaceRuntimeContext`), written by `useDeclaredSurfaceMandates`. It exists because several surfaces choose their mandate from live state — the run console runs a different one per selected engine.
+- **[`components/agents/PageAgents.tsx`](../../components/agents/PageAgents.tsx)** is the ONE declaration that satisfies both halves: it names the AI on the page and registers it here. A surface already using it gets the menu entry for free.
+- 🚨 **THE SELF-CONTEXT EXCEPTION.** Agent-AUTHORING surfaces (the builder, the mandate console, agent settings) register NOTHING — there the agent is the page's subject, and giving it context of itself is the opposite of what those pages want.
+- Guard: **`pnpm check:agent-disclosure`** ([`scripts/check-agent-disclosure.ts`](../../scripts/check-agent-disclosure.ts)) — advisory, scans surfaces only (the execution machinery discloses nothing by design), and names the exempt paths with reasons.
 
 ## Architecture
 
@@ -1971,6 +1981,8 @@ regex/uniqueness) are the second and third chips of that campaign, not blockers
 on the first.
 
 ## Change Log
+
+- **2026-08-25 — THE DISCLOSURE LAW: the Agents menu lists the AI doing jobs on this page.** New `SurfaceMandatesSection` (declared roles + the FAMILY's + live registrations, each a door, with mandate notes in place for admins), new live registry `runtime/surface-mandates.ts` written by `<PageAgents>`, and the dropdown's admin button relabelled **Admin** (the old "Surface Context Admin" truncated). New surfaces registered in the same pass: `matrx-admin/marketing-run-console` + `matrx-user/marketing-automations`, sharing ONE value set (`manifests/_run-console.manifest.ts`, the `_conversation-document` precedent) — the console that runs `seo.topic_assigner` from its own button had no surface at all. Guard `pnpm check:agent-disclosure` (advisory) reports 40 surfaces that still run a mandate and name no agent.
 
 - **2026-08-25 — One surface lifecycle skill.** `surface-authoring` now owns manifest authoring, layered registration, existing-surface runtime rollout, canonical-menu adoption, Pro inputs, DB sync, and verification; the overlapping `surface-registration` and `surface-pro-rollout` skill entrypoints were removed.
 - **2026-08-25 — Surface Context value names keep their row instead of being squeezed by metadata.** The selected value header now takes a full row, so status badges and Locate/Copy actions wrap beneath it instead of squeezing labels such as `visible_agents` into a 30 px column. The key is block-truncated and the two mobile actions use 44 px targets; desktop keeps the compact 28 px controls.

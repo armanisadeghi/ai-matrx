@@ -99,6 +99,7 @@
     "check:autorun-headless": "tsx scripts/check-autorun-headless.ts",
     "check:kind-marker-law": "tsx scripts/check-kind-marker-law.ts",
     "check:hardcoded-prompts": "tsx scripts/check-hardcoded-prompts.ts",
+    "check:agent-disclosure": "tsx scripts/check-agent-disclosure.ts",
     "check:hardcoded-prompts:strict": "tsx scripts/check-hardcoded-prompts.ts --strict",
     "check:hardcoded-prompts:write": "tsx scripts/check-hardcoded-prompts.ts --write",
     "check:hardcoded-agents": "tsx scripts/check-hardcoded-agents.ts",

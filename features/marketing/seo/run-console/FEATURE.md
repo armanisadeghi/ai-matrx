@@ -196,6 +196,24 @@ do".
 
 ## Invariants & gotchas
 
+- 🚨 **THIS CONSOLE IS A SURFACE, and it emits one.** `matrx-admin/marketing-run-console`
+  (system tier) and `matrx-user/marketing-automations` (organization/brand tier)
+  share ONE value set — `features/surfaces/manifests/_run-console.manifest.ts`.
+  The tier picks the surface (`runConsoleSurfaceName` in `run-console-scope.ts`),
+  each engine body registers the emitter, and both manifests declare
+  `seo.topic_assigner` as an agent role BY MANDATE KEY so it is listed,
+  inspectable, runnable against the live evidence and note-able from the Agents
+  menu. Adding a value to the console means adding it to the shared manifest and
+  the builder in the same change — THE COMPLETENESS LAW.
+- 🚨 **The knob values stay ABSENT until the knob read resolves.** A zero would
+  read as "no ceiling / no owed work" when it means "we have not looked", and
+  `cap_ceiling: 0` specifically means the knob ROW IS MISSING and the console is
+  refusing to run. `buildRunConsoleScope` keeps that distinction; never collapse
+  it into a default.
+- 🚨 **No write targets, deliberately.** Run now, the per-brand cap and the
+  schedule each spend money or change what gets published, so an agent bound
+  here reads and reasons; a person presses the button.
+
 - 🚨 **A saved, enabled row SPENDS MONEY on its own cadence.** `DISPATCHER_NOTICE`
   in `ScheduleCascadePanel.tsx` says so on the panel and in the save toast; never
   soften it back toward "nothing runs". A row saved here IS the approval record
@@ -235,6 +253,23 @@ do".
 ---
 
 ## Change log
+
+- `2026-08-25` — 🚨 **REGISTERED AS A SURFACE (both tiers).** The console ran
+  `seo.topic_assigner` from its own Run button and was not a surface at all: the
+  Agents menu could not name it, nothing could be bound to its evidence, and
+  there was nowhere to leave a note about a pass. Added the shared 38-value
+  manifest (`_run-console.manifest.ts`) behind two surfaces, the scope builder
+  `run-console-scope.ts`, emitters on BOTH engine bodies (the situational body
+  gets a builder handed DOWN rather than lifting its run state into the shell),
+  route mappings for all three mounts, and the topic-assigner agent role by
+  mandate key. `<PageAgents>` now also registers into the live surface-mandate
+  registry, so the menu's "AI doing jobs here" section lists this engine's agent
+  with its door and its notes. `ui_surface` rows seeded and synced live (38
+  values + 1 role each); `check:surface-drift` and `check:surface-routes` green;
+  verified live end to end, including a note written here and read back in the
+  mandate console. Readiness `partial` — the sub-panels' own editor state
+  (schedule cascade fields, run-history filters, the queue panels) is still
+  undeclared, and Locate anchors are pending.
 
 - `2026-08-25` — 🚨 **A SECOND ENGINE: SITUATIONAL REFRESH (KI-016), and the
   console says what each engine is ALLOWED to do (KI-044).** A situational stamp
