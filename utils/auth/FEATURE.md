@@ -107,6 +107,11 @@ sales page after signing in.
   [`protected-routes.ts`](./protected-routes.ts) is the shared proxy policy.
   A guest must see the sign-in experience, never a database, mandate, or
   permissions error from inside the product.
+- **Session loss clears client authority before cleanup.**
+  [`AuthSessionWatcher.tsx`](../../components/layout/AuthSessionWatcher.tsx)
+  dispatches `clearUserAuth()` on `SIGNED_OUT` or a booted tab's empty
+  `INITIAL_SESSION`; identity-scoped islands must unmount before they can call
+  PostgREST as `anon`.
 - **External app redirects are registered capabilities, not user input.**
   [`trusted-app-redirect.ts`](./trusted-app-redirect.ts) requires an exact
   first-party origin and the exact `/oauth/callback` path before any access or
@@ -129,6 +134,9 @@ links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
 the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-08-25** — Session loss now clears Redux auth authority before global
+  product islands can fan one expiry into unrelated anonymous database calls.
 
 - **2026-08-24** — Social OAuth callbacks now preserve the initiating request
   origin, including localhost ports 3000/3001/3002; added origin-validation and

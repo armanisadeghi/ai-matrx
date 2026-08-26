@@ -45,6 +45,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { clearContext } from "@/lib/redux/slices/appContextSlice";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { contextValuesActions } from "@/features/scopes/redux/contextValuesSlice";
+import { clearUserAuth } from "@/lib/redux/slices/userAuthSlice";
 
 const AuthSessionWatcherImpl = dynamic(
   () => import("./AuthSessionWatcherImpl"),
@@ -127,11 +128,22 @@ export default function AuthSessionWatcher() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT") {
+      const lostBootedSession =
+        event === "SIGNED_OUT" ||
+        (event === "INITIAL_SESSION" &&
+          Boolean(bootedIdRef.current) &&
+          !session);
+
+      if (lostBootedSession) {
         // Sign-out ends this tab's write path too — keep a copy of anything
         // still unsaved before the overlay goes up.
         captureDrafts("signed-out");
         setSessionExpired(true);
+        // This is the authority cutoff, not merely overlay state. Global
+        // identity-scoped islands key their lifetimes off Redux; leaving the
+        // boot-time id/token there keeps them mounted after Supabase has
+        // become anon and fans one expiry into unrelated 42501 failures.
+        dispatch(clearUserAuth());
         // The store is a module-level singleton that survives a same-tab
         // sign-out → re-login. Reset the org/scope/context state so the
         // previous user's active context and cached scope tree never bleed
