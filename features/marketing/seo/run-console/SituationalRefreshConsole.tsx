@@ -40,7 +40,10 @@ import { cn } from "@/styles/themes/utils";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { getSituationalRefreshStatus, runSituationalRefresh } from "./data";
+import type { RunConsoleLiveState } from "./run-console-scope";
 import type {
   ConsoleSiteRow,
   SituationalRefreshStatus,
@@ -88,12 +91,23 @@ export function SituationalRefreshConsole({
   selected,
   onSelectedChange,
   schedulePanel,
+  surfaceName,
+  buildScope,
 }: {
   sites: ConsoleSiteRow[];
   sitesLoading: boolean;
   sitesError: boolean;
   selected: string[];
   onSelectedChange: (ids: string[]) => void;
+  /** The surface this mount emits — the tier decides it (KI-049). */
+  surfaceName: string;
+  /**
+   * The shell's half of the scope, closed over. This body owns the run state
+   * and the per-brand situational standing; handing a builder DOWN is what
+   * keeps that state where it lives instead of lifting it into the shell just
+   * to satisfy a provider.
+   */
+  buildScope: (live: RunConsoleLiveState) => SurfaceScopePayload;
   /**
    * The tier's schedule editor, built by the shell so BOTH engines author
    * their cadence through the one `ScheduleCascadePanel` and the one cascade.
@@ -107,6 +121,22 @@ export function SituationalRefreshConsole({
 
   const rows = useSituationalRows(sites);
   const byId = new Map(sites.map((site) => [site.id, site]));
+
+  // THE EMITTER for this engine's tab. `getScope` runs at trigger time and
+  // reads these closures fresh (the hook holds it in a ref).
+  useSurfaceRuntimeRegistration({
+    surfaceName,
+    getScope: () =>
+      buildScope({
+        selectedSiteIds: selected,
+        situationalStatus: rows
+          .map((row) => row.status)
+          .filter((status): status is SituationalRefreshStatus => !!status),
+        isRunning: running,
+        queueLength: queue.length,
+        outcomes,
+      }),
+  });
 
   /**
    * Drain one brand at a time. The pass is cheap but it is still a bounded

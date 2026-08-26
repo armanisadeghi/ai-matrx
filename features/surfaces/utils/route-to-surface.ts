@@ -294,6 +294,10 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
     prefix: "/administration/automation/scheduling",
     surface: "matrx-admin/scheduling",
   },
+  {
+    prefix: "/administration/marketing/run-console",
+    surface: "matrx-admin/marketing-run-console",
+  },
   // NO /administration catch-all: an unmapped admin route resolves to null
   // (caller omits client.surface) rather than lying that it is system-agents.
   // Register a manifest + a specific prefix here when an admin family gets
@@ -322,6 +326,9 @@ const MARKETING_SITE_VERTICAL_SURFACES: Readonly<Record<string, string>> = {
   settings: "matrx-user/marketing-site-settings",
   keywords: "matrx-user/marketing-site-keywords",
   media: "matrx-user/marketing-site-media",
+  // The run console at the BRAND tier — same component, same vocabulary, one
+  // brand's blast radius (`matrx-user/marketing-automations`).
+  automations: "matrx-user/marketing-automations",
   // access / cost / structure stay on the site surface — they re-project the
   // same entity and don't warrant their own agent bindings. Settings left that
   // list on 2026-08-11: it is agent-WRITABLE (crawl policy), which is a
@@ -350,6 +357,9 @@ function resolveMarketingSurface(stripped: string): string | null {
   if (segments[1] === "ranks") return "matrx-user/marketing-ranks-hub";
   if (segments[1] === "initiatives") return "matrx-user/marketing-initiatives";
   if (segments[1] === "reports") return "matrx-user/marketing-reports";
+  // /marketing/automations — the run console at the ORGANIZATION tier (the
+  // per-brand mount resolves through the site-vertical map below).
+  if (segments[1] === "automations") return "matrx-user/marketing-automations";
 
   // /marketing/brands/[brandId][...]
   if (segments[1] === "brands" && segments.length >= 3) {

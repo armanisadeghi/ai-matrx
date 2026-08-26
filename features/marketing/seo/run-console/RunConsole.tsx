@@ -77,6 +77,11 @@ import { RunHistoryPanel } from "./RunHistoryPanel";
 import { extractErrorMessage } from "@/utils/errors";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { PageAgents } from "@/components/agents/PageAgents";
+import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  buildRunConsoleScope,
+  runConsoleSurfaceName,
+} from "./run-console-scope";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import type { ConsoleSiteRow, RunConsoleScope, RunOutcome } from "./types";
@@ -397,6 +402,21 @@ function SituationalEngineView({
       ) : null}
 
       <SituationalRefreshConsole
+        surfaceName={runConsoleSurfaceName(scope)}
+        buildScope={(live) =>
+          buildRunConsoleScope({
+            engine,
+            scope,
+            sites: siteRows,
+            sitesLoading: sites.isLoading,
+            sitesError: sites.isError,
+            knobsResolved: knobs.isSuccess,
+            capCeiling,
+            effectiveCap: capCeiling,
+            schedules: schedules.data,
+            ...live,
+          })
+        }
         sites={siteRows}
         sitesLoading={sites.isLoading}
         sitesError={sites.isError}
@@ -587,6 +607,48 @@ function TopicPlacementConsole({
   const knobsBroken = knobs.isSuccess && capCeiling === 0;
 
   const brandRows = useBrandTableRows(visible, minImpressions);
+
+  /**
+   * THE EMITTER. Registered from a hook rather than a wrapping provider: this
+   * body has an early throw and its live state is spread across several
+   * queries, so a JSX wrapper would re-register on every branch flip.
+   *
+   * `getScope` is called at TRIGGER time and reads these closures fresh — the
+   * hook holds the value in a ref, so an inline arrow is correct here.
+   */
+  useSurfaceRuntimeRegistration({
+    surfaceName: runConsoleSurfaceName(scope),
+    getScope: () =>
+      buildRunConsoleScope({
+        engine,
+        scope,
+        requestOrganizationId,
+        sites: siteRows,
+        sitesLoading: sites.isLoading,
+        sitesError: sites.isError,
+        selectedSiteIds: selected,
+        focusedSiteId,
+        coverage: brandRows
+          .filter((row) => !!row.status)
+          .map((row) => ({
+            site_id: row.site.id,
+            site_name: row.site.name,
+            clicks_placed_pct: row.clicksPlacedPct,
+            owed: row.owed,
+          })),
+        knobsResolved: knobs.isSuccess,
+        capCeiling,
+        effectiveCap,
+        minImpressions,
+        dailyCeiling,
+        isRunning: running,
+        queueLength: queue.length,
+        runStage: pass.stage,
+        runError: pass.error,
+        outcomes,
+        schedules: schedules.data,
+      }),
+  });
   const brandColumns = buildBrandColumns({
     running,
     onRunOne: (siteId) => startRun([siteId]),
@@ -607,7 +669,10 @@ function TopicPlacementConsole({
         </div>
 
         {/* NO SECRET AI: this console runs an agent — name it. */}
-        <PageAgents agents={[...engine.agents]} />
+        <PageAgents
+          agents={[...engine.agents]}
+          surfaceName={runConsoleSurfaceName(scope)}
+        />
 
         <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
           <ShieldCheck className="h-3 w-3" />
