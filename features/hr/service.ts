@@ -786,6 +786,46 @@ export function deliverHrVerification(args: {
   );
 }
 
+// ── Route 3 — my own compensation (SPEC-EMPLOYEES §2.1) ─────────────────────
+
+/**
+ * The caller's OWN pay: the current stack as of today, plus the full history.
+ *
+ * ⚠️ WHY A SEPARATE DOOR AND NOT `hr_confidential_list('hr_compensation', …)`.
+ * That door filters by `organization_id` only, so reading one person's pay
+ * through it records a WHOLE-ORG audited list read against the caller — for a
+ * viewer who is entitled to exactly one row. That corrupts the audit trail this
+ * tier exists to produce, and the subject's own access log would show them
+ * apparently reading everybody's pay. A self-scoped door is the honest shape.
+ *
+ * 🚨 IT RETURNS EVERY CONCURRENT COMPONENT SEPARATELY. Base, shift differential
+ * and any allowance each keep their own window. Nothing sums them, here or
+ * anywhere downstream — a summed figure is not true on any day and somebody
+ * will quote it in a wage claim.
+ *
+ * A person with NO compensation row (a volunteer) gets a refusal, and the nav
+ * item is ABSENT for them — never an empty pay page.
+ */
+export function fetchHrMyCompensation(args: {
+  employmentId: string;
+  asOf?: string | null;
+}): Promise<
+  HrResult<{
+    as_of: string;
+    /** Concurrent components in force on `as_of`. Never summed. */
+    current: Record<string, unknown>[];
+    /** Every row, `effective_from desc`, including approved-but-future ones. */
+    history: Record<string, unknown>[];
+    currency: string | null;
+  }>
+> {
+  return callHr(
+    "hr_my_compensation",
+    { p_employment_id: args.employmentId, p_as_of: args.asOf ?? null },
+    { envelope: true, whatFailed: "Your pay record" },
+  );
+}
+
 // ── The member ⇄ employee seam (SPEC-UI-IA §6, MemberManagement) ────────────
 
 /**

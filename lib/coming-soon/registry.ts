@@ -846,6 +846,65 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "The register reports photo PRESENCE (`hasPhoto`), which is all a list may show. Opening the image needs the gated file read (`hr_confidential_get` on the punch photo target), and the punch photo is not yet a registered confidential target. Owed by lane L3 / HRB-015 with L1's sensitivity lane.",
     surfaces: ["/hr/time/punches — photo column"],
   },
+
+  // ── Self-service surfaces the HR nav already links (SPEC-UI-IA §3.1) ──────
+  // These are registered rather than left as 404s because `resolveHrNav`
+  // renders the nav item for an employee persona TODAY. A nav item the shell
+  // itself draws, pointing at nothing, is the dead end this registry exists to
+  // make visible. Each names the pillar lane that owes it.
+  "hr.me.documents": {
+    id: "hr.me.documents",
+    label: "My documents",
+    owner: "hr",
+    promise:
+      "Your document file, your signature requests and your acknowledgments in one place — the same files the organization holds about you, not a copy.",
+    stage: "planned",
+    surfaces: ["/hr/me/documents", "HR nav — My Documents"],
+  },
+  "hr.me.schedule": {
+    id: "hr.me.schedule",
+    label: "My schedule",
+    owner: "hr",
+    promise:
+      "Your published shifts, the open shifts you can claim, swap requests, and the availability you set — with a change banner whenever a published shift moves.",
+    stage: "planned",
+    surfaces: ["/hr/me/schedule", "HR nav — My Schedule"],
+  },
+  "hr.me.time-off": {
+    id: "hr.me.time-off",
+    label: "My time off",
+    owner: "hr",
+    promise:
+      "Your balance for each kind of leave, a request form that tells you about a conflict before you submit it, and every request you have made.",
+    stage: "planned",
+    surfaces: ["/hr/me/time-off", "HR nav — My Time Off"],
+  },
+  "hr.me.training": {
+    id: "hr.me.training",
+    label: "My training",
+    owner: "hr",
+    promise:
+      "What you have been assigned, when it is due, and your transcript — which is yours and is never rewritten.",
+    stage: "planned",
+    surfaces: ["/hr/me/training", "HR nav — My Training"],
+  },
+  "hr-settings.custom-field-authoring": {
+    id: "hr-settings.custom-field-authoring",
+    label: "Add a custom field",
+    owner: "platform-extensibility",
+    promise:
+      "Create an extra field on an HR record — its type, where it appears, who may see it, and whether AI may read it — and edit or archive the ones that already exist.",
+    stage: "blocked",
+    // The registry (`platform.custom_field_definition` / `custom_field_target`) is
+    // live and route 73 READS it today. What does not exist is the platform CLIENT
+    // KIT — `CustomFieldsSection`, `CustomFieldInput`, `customFieldColumns` — which
+    // lane L14 owns. Building an HR-local editor would be a second renderer for one
+    // shape, which is the defect the one-component law exists to prevent, and the
+    // kind that is never removed once two surfaces depend on it.
+    blockedBy:
+      "The platform custom-field client kit (CustomFieldsSection / CustomFieldInput / customFieldColumns) is owned by lane L14 and does not exist yet; HR must not fork a competing editor.",
+    surfaces: ["/hr/settings/fields — Add a custom field"],
+  },
 };
 
 export function getComingSoon(id: string): ComingSoonEntry | undefined {
