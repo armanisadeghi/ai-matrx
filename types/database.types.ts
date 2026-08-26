@@ -43856,6 +43856,7 @@ export type Database = {
           created_at: string
           default_keyword_count: number
           domain_class_multipliers: Json
+          entity_match_risk: boolean
           freshness_weight: string
           include_youtube_default: boolean
           is_active: boolean
@@ -43880,6 +43881,7 @@ export type Database = {
           created_at?: string
           default_keyword_count?: number
           domain_class_multipliers?: Json
+          entity_match_risk?: boolean
           freshness_weight: string
           include_youtube_default?: boolean
           is_active?: boolean
@@ -43904,6 +43906,7 @@ export type Database = {
           created_at?: string
           default_keyword_count?: number
           domain_class_multipliers?: Json
+          entity_match_risk?: boolean
           freshness_weight?: string
           include_youtube_default?: boolean
           is_active?: boolean

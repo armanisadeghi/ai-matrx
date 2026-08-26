@@ -140,6 +140,14 @@ export function sampleRunFrames(
       typeof n.data?.spec_type === "string" ? n.data.spec_type : "",
     ]),
   );
+  const outputKindById = new Map(
+    definition.nodes.map((n) => [
+      n.id,
+      typeof n.data?.output_kind === "string" && n.data.output_kind.length > 0
+        ? n.data.output_kind
+        : null,
+    ]),
+  );
   const order = runOrder(definition);
   const clamped = Math.max(0, Math.min(order.length + 1, momentIndex));
 
@@ -179,7 +187,12 @@ export function sampleRunFrames(
     const info = byId.get(nodeId);
     if (!info) return;
     const base = nodeEventBase(runId, i + 1, info, specById.get(nodeId) ?? "");
-    events.push({ ...base, event: "node_started", inputs: {} });
+    events.push({
+      ...base,
+      event: "node_started",
+      inputs: {},
+      output_kind: outputKindById.get(nodeId) ?? null,
+    });
     emitStream(
       nodeId,
       "Sample output.",
@@ -207,6 +220,7 @@ export function sampleRunFrames(
         ...nodeEventBase(runId, finishedCount + 1, info, specById.get(runningId) ?? ""),
         event: "node_started",
         inputs: {},
+        output_kind: outputKindById.get(runningId) ?? null,
       });
       emitStream(
         runningId,

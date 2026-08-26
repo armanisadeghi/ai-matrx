@@ -56,6 +56,7 @@ export interface NodeStartedEvent {
   item_index?: number;
   invocation_count?: number;
   inputs: Record<string, unknown>;
+  output_kind: string | null;
 }
 
 export interface NodeCompletedEvent {

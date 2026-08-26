@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 432 active entity tokens. A token here is FK-valid for
+// 433 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -51,6 +51,7 @@ export type EntityTypeToken =
   | "agent_card"
   | "agent_definition_version"
   | "agent_drift_alert"
+  | "agent_mandate_note"
   | "agent_prompt_remediation"
   | "agent_provision"
   | "agent_run"
@@ -780,6 +781,7 @@ export type ScopeableEntityToken =
   | "agent_card"
   | "agent_definition_version"
   | "agent_drift_alert"
+  | "agent_mandate_note"
   | "agent_prompt_remediation"
   | "agent_provision"
   | "agent_run"
@@ -1254,6 +1256,7 @@ export const ENTITY_TYPE_METADATA = {
   "agent_card": { token: "agent_card", schema: "agent", table: "card", label: "Agent Card", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_definition_version": { token: "agent_definition_version", schema: "agent", table: "definition_version", label: "Agent Definition Version", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "agent_drift_alert": { token: "agent_drift_alert", schema: "agent", table: "drift_alert", label: "Agent Drift Alert", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "agent_mandate_note": { token: "agent_mandate_note", schema: "agent", table: "mandate_note", label: "Mandate Note", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_prompt_remediation": { token: "agent_prompt_remediation", schema: "agent", table: "prompt_remediation", label: "Agent Prompt Remediation", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_provision": { token: "agent_provision", schema: "agent", table: "provision", label: "Mandate Provision", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_run": { token: "agent_run", schema: "chat", table: "agent_run", label: "Agent Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1690,6 +1693,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "agent_card",
   "agent_definition_version",
   "agent_drift_alert",
+  "agent_mandate_note",
   "agent_prompt_remediation",
   "agent_provision",
   "agent_run",
