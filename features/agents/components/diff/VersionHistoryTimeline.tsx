@@ -1,13 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
+import { supabase } from "@/utils/supabase/client";
 import {
   GitCompareArrows,
   ArrowRight,
   Loader2,
   ChevronDown,
   Atom,
+  ShieldAlert,
 } from "lucide-react";
 import type { AgentVersionHistoryItem } from "@/features/agents/redux/agent-definition/thunks";
 import { useSmartVersionFetch } from "@/features/agents/hooks/useSmartVersionFetch";
@@ -154,6 +164,7 @@ export function VersionHistoryTimeline({
             return (
               <VersionRow
                 key={version.version_number}
+                agentId={agentId}
                 version={version}
                 prevVersion={prevVersion ?? undefined}
                 isLatest={isLatest}
@@ -174,6 +185,7 @@ export function VersionHistoryTimeline({
 }
 
 function VersionRow({
+  agentId,
   version,
   prevVersion,
   isLatest,
@@ -183,6 +195,7 @@ function VersionRow({
   onCompare,
   onFetchGap,
 }: {
+  agentId: string;
   version: EnrichedVersion;
   prevVersion?: EnrichedVersion;
   isLatest: boolean;
@@ -195,6 +208,33 @@ function VersionRow({
   const diff = version.diffSummary;
   const changedFields =
     diff?.root.filter((n) => n.changeType !== "unchanged") ?? [];
+  // Optimistic mirror of the manual declaration — the RPC is the authority.
+  const [declared, setDeclared] = useState<string | null>(
+    version.contract_break_declared ?? null,
+  );
+
+  async function declareBreak(kind: "input" | "output" | "both" | null) {
+    const previous = declared;
+    setDeclared(kind);
+    const { error } = await supabase.rpc("agx_declare_contract_break", {
+      p_agent_id: agentId,
+      p_version_number: version.version_number,
+      p_kind: kind ?? undefined,
+    });
+    if (error) {
+      setDeclared(previous);
+      toast.error(`Couldn't record the contract break: ${error.message}`);
+    } else {
+      toast.success(
+        kind
+          ? `v${version.version_number} marked as a ${kind} contract break.`
+          : `Contract-break declaration cleared for v${version.version_number}.`,
+      );
+    }
+  }
+
+  const autoChange = version.contract_change || null;
+  const effectiveChange = declared ?? autoChange;
 
   return (
     <>
@@ -241,6 +281,49 @@ function VersionRow({
 
         {/* Changes */}
         <td className="py-2.5 pr-3 max-sm:min-w-[12rem]">
+          <div className="mb-1 flex flex-wrap items-center gap-1">
+            {effectiveChange && (
+              <span
+                className="inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[0.5625rem] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                title={
+                  declared
+                    ? "Manually declared: the way this agent is used could break at this version."
+                    : "The declared input/output structure changed at this version — pinned callers and saved sample inputs may no longer fit."
+                }
+              >
+                Contract: {effectiveChange}
+                {declared ? " (declared)" : ""}
+              </span>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 px-1 text-[0.5625rem] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 max-sm:opacity-100"
+                  title="Mark this version as a contract break the hashes cannot see (e.g. a prompt-level output change)"
+                >
+                  <ShieldAlert className="h-2.5 w-2.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => void declareBreak("input")}>
+                  Declare input break
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void declareBreak("output")}>
+                  Declare output break
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void declareBreak("both")}>
+                  Declare input + output break
+                </DropdownMenuItem>
+                {declared && (
+                  <DropdownMenuItem onClick={() => void declareBreak(null)}>
+                    Clear declaration
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           {version.change_note && (
             <div className="text-muted-foreground mb-1">
               {version.change_note}

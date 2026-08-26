@@ -31,6 +31,7 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
+import { AgentSampleStrip } from "../samples/AgentSampleStrip";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { AlertTriangle, Loader2, RotateCw, TestTube2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -365,6 +366,13 @@ export function AgentRunnerPage({
         backHref={backHref}
         basePath={basePath}
       /> */}
+
+      {/* "Use a sample" chips — approved test cases prefill the composer via
+          the same input slices the user's own typing uses. */}
+      <AgentSampleStrip
+        agentId={agentId}
+        conversationId={activeConversationId}
+      />
 
       {/* Main conversation area */}
       <div className="flex-1 overflow-hidden flex justify-center min-w-0">

@@ -18,6 +18,7 @@ import {
   unregisterSurface,
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
+import { AgentSampleStrip } from "../samples/AgentSampleStrip";
 import type { ConversationInvocation } from "@/features/agents/types/conversation-invocation.types";
 
 interface AgentBuilderRightPanelProps {
@@ -87,18 +88,25 @@ export function AgentBuilderRightPanel({
   }
 
   return (
-    <AgentConversationColumn
-      conversationId={conversationId}
-      displayConversationId={displayConversationId ?? undefined}
-      surfaceKey={surfaceKey}
-      smartInputProps={{
-        showSubmitOnEnterToggle: true,
-        // Match the live run/chat surfaces (AgentRunnerPage, ChatRoomClient,
-        // scribe, etc.) which all use the blue send button. Without this the
-        // builder test panel fell back to the legacy "default" black
-        // bg-foreground button, which looked broken/disabled.
-        sendButtonVariant: "blue",
-      }}
-    />
+    <div className="flex h-full min-h-0 flex-col">
+      {/* One-click "run with sample data" — approved test cases prefill the
+          composer through the normal input slices. */}
+      <AgentSampleStrip agentId={agentId} conversationId={conversationId} />
+      <div className="min-h-0 flex-1">
+        <AgentConversationColumn
+          conversationId={conversationId}
+          displayConversationId={displayConversationId ?? undefined}
+          surfaceKey={surfaceKey}
+          smartInputProps={{
+            showSubmitOnEnterToggle: true,
+            // Match the live run/chat surfaces (AgentRunnerPage, ChatRoomClient,
+            // scribe, etc.) which all use the blue send button. Without this the
+            // builder test panel fell back to the legacy "default" black
+            // bg-foreground button, which looked broken/disabled.
+            sendButtonVariant: "blue",
+          }}
+        />
+      </div>
+    </div>
   );
 }
