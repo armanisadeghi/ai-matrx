@@ -221,6 +221,8 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
 
     expect(markup).toContain('aria-label="Move Alpha"');
     expect(markup).toContain("touch-none");
+    expect(markup).toContain("h-11 w-11");
+    expect(markup).toContain("lg:h-7 lg:w-4");
     expect(markup).toContain('title="Drag to move"');
   });
 

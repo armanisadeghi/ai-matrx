@@ -40,11 +40,17 @@ tables (AI Models, relationships, …) can cut over to one contract.
   every active canonical query control. Set `pageSize={0}` when a hierarchy
   must remain whole; pagination is then omitted even when URL state is enabled.
 - **Hierarchy movement is table-owned and opt-in.** `hierarchy` adds a compact
-  first-cell pointer/touch drag handle, row/root drop targets,
-  descendant-cycle prevention, and one `onReparent(row, parentId)` write. A
-  moved row keeps its descendants because only that row's parent changes.
-  Consumers keep their database authority and fallback parent picker; they
-  never fork the row renderer or use native HTML drag events.
+  first-cell pointer/touch drag handle, exact drop shadows, descendant-cycle
+  prevention, and one `onMove(row, move)` write. A shadow between rows means
+  `position: "before"`; an indented shadow beneath a row means
+  `position: "inside"`; the persistent top strip means `position: "root"`.
+  Row highlighting is never used as a sibling-placement claim. Consumers set
+  `manualOrder: true` only when they persist `beforeId` and the complete sibling
+  order; reparent-only consumers continue to offer parent/root targets without
+  advertising an order they cannot save. A moved row keeps its descendants
+  because only that row's parent changes. Consumers keep their database
+  authority and fallback parent picker; they never fork the row renderer or
+  use native HTML drag events.
 - **URL state is built in and opt-in.** `urlState={{ id: "accounts" }}` stores
   table-owned search, match mode, any-of, layered/column filters, sort,
   pagination, open row, and open window under `table.accounts.*`. The stable id
@@ -251,6 +257,11 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-25 — Replaced ambiguous hierarchy row highlighting with exact dashed
+  drop shadows for sibling-above, nested-inside, and absolute-top placement.
+  Added the `onMove` structural contract and the `manualOrder` capability gate,
+  so a table only previews sibling insertion when its consumer can persist it.
 
 - 2026-08-25 — Replaced unreliable native HTML hierarchy dragging with the
   shared dnd-kit pointer sensor. Live Offerings verification moved a nested

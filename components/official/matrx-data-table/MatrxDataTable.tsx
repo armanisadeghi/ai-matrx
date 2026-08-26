@@ -1923,7 +1923,7 @@ function HierarchyDragHandle({
       ref={setNodeRef}
       type="button"
       disabled={disabled}
-      className="flex h-7 w-4 shrink-0 touch-none cursor-grab items-center justify-center text-muted-foreground hover:text-foreground active:cursor-grabbing disabled:cursor-default disabled:opacity-40"
+      className="flex h-11 w-11 shrink-0 touch-none cursor-grab items-center justify-center text-muted-foreground hover:text-foreground active:cursor-grabbing disabled:cursor-default disabled:opacity-40 lg:h-7 lg:w-4"
       aria-label={`Move ${label}`}
       title="Drag to move"
       onClick={(event) => event.stopPropagation()}
@@ -1980,7 +1980,12 @@ function HierarchyDropShadow({
       aria-hidden="true"
       data-matrx-hierarchy-shadow={preview.move.position}
       className="pointer-events-none fixed z-[80] flex h-7 items-center gap-2 rounded border border-dashed border-primary/70 bg-card/95 px-2 text-xs font-medium text-foreground shadow-lg shadow-primary/25 backdrop-blur-sm"
-      style={{ left, top, width }}
+      style={{
+        left,
+        top,
+        width,
+        maxWidth: `calc(100vw - ${left + 8}px)`,
+      }}
     >
       <span className="min-w-0 flex-1 truncate">{draggedLabel}</span>
       <span className="shrink-0 text-primary">
