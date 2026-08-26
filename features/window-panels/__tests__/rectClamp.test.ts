@@ -166,11 +166,19 @@ describe("safeViewportDims", () => {
   const realH = window.innerHeight;
   afterEach(() => {
     Object.assign(window, { innerWidth: realW, innerHeight: realH });
+    delete (globalThis as unknown as Record<symbol, unknown>)[
+      Symbol.for("matrx.windowPanels.degenerateViewportWarned")
+    ];
+    jest.restoreAllMocks();
   });
 
   it("returns the real measurement when it is sane", () => {
     Object.assign(window, { innerWidth: 1440, innerHeight: 900 });
-    expect(safeViewportDims()).toEqual({ vw: 1440, vh: 900, degenerate: false });
+    expect(safeViewportDims()).toEqual({
+      vw: 1440,
+      vh: 900,
+      degenerate: false,
+    });
   });
 
   it("falls back when the viewport measures 0×0 (hidden/prerendered page)", () => {
@@ -180,6 +188,22 @@ describe("safeViewportDims", () => {
     const { vw, vh } = safeViewportDims();
     expect(vw).toBeGreaterThan(0);
     expect(vh).toBeGreaterThan(0);
+  });
+
+  it("warns without entering the captured console-error boundary", () => {
+    const errorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const warnSpy = jest
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+    Object.assign(window, { innerWidth: 0, innerHeight: 0 });
+
+    safeViewportDims();
+    safeViewportDims();
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
   it("falls back per-axis on non-finite measurements", () => {

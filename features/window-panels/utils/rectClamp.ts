@@ -54,7 +54,9 @@ function screamOnceAboutDegenerateMeasurement(
   const host = globalThis as unknown as Record<symbol, unknown>;
   if (host[DEGENERATE_WARNED]) return;
   host[DEGENERATE_WARNED] = true;
-  console.error(
+  // A zero-sized viewport is a browser lifecycle measurement, not a product
+  // failure. Keep recovery visible without feeding console-error capture.
+  console.warn(
     "[window-panels] degenerate viewport measurement",
     { innerWidth: rawW, innerHeight: rawH },
     "— using fallback dimensions so window geometry cannot collapse to zero. " +
@@ -89,7 +91,7 @@ export interface ViewportDims {
  * re-clamps it (the "window opens invisible" class, watchdog reason:
  * zero-size). Judging visibility against a 0×0 viewport is just as wrong:
  * every on-screen rect reads as off-screen. A degenerate measurement is never
- * a real screen — fall back to sane dimensions, scream once, and tell the
+ * a real screen — fall back to sane dimensions, warn once, and tell the
  * caller so writers can stand down (`degenerate`).
  */
 export function safeViewportDims(): ViewportDims {
@@ -147,9 +149,7 @@ export function clampRectToViewport(
       x: Number.isFinite(rect.x) ? rect.x : 0,
       y: Number.isFinite(rect.y) ? rect.y : 0,
       width:
-        Number.isFinite(rect.width) && rect.width > 0
-          ? rect.width
-          : FALLBACK_W,
+        Number.isFinite(rect.width) && rect.width > 0 ? rect.width : FALLBACK_W,
       height:
         Number.isFinite(rect.height) && rect.height > 0
           ? rect.height

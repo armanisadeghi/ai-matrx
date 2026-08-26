@@ -75,16 +75,16 @@ The rule, and why it is not a style preference:
   panel.** If clicking the thing navigates somewhere, the panel shows what that destination
   shows.
 - A bespoke panel body is a **second renderer of the same data**, so it drifts, and it
-  usually drifts by *truncating* — the offending panel showed 5 of 83 pages while the
+  usually drifts by _truncating_ — the offending panel showed 5 of 83 pages while the
   canonical table paginated all 83. That is not a smaller view; it is a **wrong** one.
 - Worked example: `GscDrilldownWindow` (`features/marketing/search-console/windows/`) is the
   Search Console page for one slice — `KpiBand` + `PerformanceChart` + `GscDimensionTable`.
   Every insight table's panel action opens it with `filters: { query_eq: row.query }` instead
   of rendering its own list.
-- 🚨 **AND THE PANEL REPLACES THE TRIP, IT DOES NOT LINK TO IT.** Arman, 2026-08-26: *"We
+- 🚨 **AND THE PANEL REPLACES THE TRIP, IT DOES NOT LINK TO IT.** Arman, 2026-08-26: _"We
   don't ever want to send the user off of the page, over to a route like the agent's mandate
   route. Instead, you should do the same thing that we do when the user clicks on the settings
-  icon for the agents that are assigned into roles."* A working surface that names a record
+  icon for the agents that are assigned into roles."_ A working surface that names a record
   OPENS its window; a `<Link>` to that record's route from such a surface is the regression
   this law exists to stop. The route keeps existing for browsing the whole list.
 - Worked example: `MandateWindow` (`windows/agents/MandateWindow.tsx`) — the mandate twin of
@@ -113,7 +113,7 @@ The rule, and why it is not a style preference:
 
 - 2026-08-25 — **`structuredValueWindow` — the canonical panel for ONE structured value.**
   Any surface with a structure too big to read in place (`useOpenStructuredValueWindow({ value,
-  title, subtitle })`) gets a movable, multi-instance, ephemeral window that WRAPS
+title, subtitle })`) gets a movable, multi-instance, ephemeral window that WRAPS
   `components/official/structured-value/StructuredValueView` — THE FLOOR of the platform's
   structured rendering — and draws no field list of its own, per the law above. First consumer:
   `data_table` cells, where structure previously had exactly one treatment (a `JSON.stringify`
@@ -505,7 +505,7 @@ A triggered panel must **never** silently fail to appear. Two layers enforce it 
 
 **Geometry can never collapse to zero — and a degenerate measurement writes NOTHING.** A hidden/prerendered page, a background or undisplayed tab, and a `display:none` ancestor all measure `window.innerWidth/innerHeight` as **0**, which turns `"90vw"` into width 0 — the window registers a 0×0 rect and opens invisible (watchdog reason: `zero-size`). Seams that kill the class:
 
-- **Every viewport read for geometry goes through `safeViewportDims()`** ([`utils/rectClamp.ts`](./utils/rectClamp.ts)) — it falls back to 1280×800, screams **once per page** (latched on a `globalThis` symbol, so duplicate module instances can't multiply the log), and returns `degenerate: true`.
+- **Every viewport read for geometry goes through `safeViewportDims()`** ([`utils/rectClamp.ts`](./utils/rectClamp.ts)) — it falls back to 1280×800, warns **once per page** (latched on a `globalThis` symbol, so duplicate module instances can't multiply the log), and returns `degenerate: true`. The expected hidden-tab lifecycle condition uses `console.warn`; it never enters the captured `console.error` production queue.
 - 🚨 **A reader may use the fallback dims; a WRITER must bail.** Anything that persists geometry from a viewport read checks `degenerate` and returns without dispatching: `WindowTraySync`'s resize handler, `WindowPanel`'s off-screen rescue, `useWindowPanel`'s drag-release clamp. Inventing 1280×800 is right for "give me something to render against" and wrong for "store this as the user's geometry" — a write per measurement is how a measure → write → re-measure cycle starts.
 - **No-op clamps don't write.** `clampWindowRect` / `clampAllWindowRects` / `revealWindow` compare with `rectsEqual` and only assign when the rect actually moved; an unconditional Immer assign hands every subscriber a fresh object on every clamp.
 - **`recomputeTrayPositions` ignores a non-positive payload** — `trayViewport` is durable state reused by every later minimize/restore/register, so storing 0×0 once parks every tray chip at a garbage position long after the tab is visible again.
@@ -821,6 +821,8 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 ---
 
 ## Change log
+
+- **2026-08-26** — **Degenerate viewport recovery is warning-level observability.** The expected hidden/prerendered 0×0 measurement still warns once and prevents geometry writes, but no longer enters the production `client:console-error` queue.
 
 - **2026-08-24** — Added `userSearchWindow`, the canonical reusable user-discovery panel. It is callback-backed, multi-instance, ephemeral, mobile-fullscreen, runtime-validates every overlay payload, and renders a sortable/filterable/paginated `MatrxDataTable`. Super-admin callers may load the protected account directory; ordinary callers provide only candidates they can already see. `UserSearchField` is the shared inline-input plus window-launch affordance.
 - **2026-08-24** — **`TableViewerWindow` mounts its own right-click menu** (context-menu-v3 worklist row 7). The platform's generic "look at this data" window is opened OVER other pages, so a right-click inside it was answered by whatever page sat underneath — that page's surface, values and agents, silently wrong and looking like it worked. One `NonEditableContextMenu` wraps the body and delegates per row via `resolveContextOnOpen` reading `StreamingTableRenderer`'s existing `data-cell-row` attributes (the renderer is untouched); a clicked row resolves to `Header: value` lines, empty space to the whole markdown table. Its own section adds Copy row as JSON / Copy table as JSON / Copy table as CSV via the ONE `parseMarkdownTable`. Applies to every window: **an overlay/window surface must mount its own menu** — see the `context-menu-v3` skill and `features/context-menu-v3/FEATURE.md`. Live-verified from a note's table → Window.
