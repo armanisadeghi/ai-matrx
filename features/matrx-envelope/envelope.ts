@@ -11,7 +11,7 @@
  * The retired 4-key shell (`matrx_version`/`kind`/`type`/`items`) is READ-ONLY
  * and understood in exactly one place — `directives/legacyShell.ts`, reachable
  * only through `decodeDirective`. Nothing here emits it and nothing here
- * detects it. See common-docs/projects/kind-directives/PLAN.md.
+ * detects it. See docs/protocol/KIND_DIRECTIVES.md.
  */
 
 // ── Output-directive receipt events (stream `data` events) ───────────────────

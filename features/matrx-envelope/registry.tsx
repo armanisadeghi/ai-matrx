@@ -23,7 +23,7 @@
  * neutral card so an unknown shape is still displayed, never dropped.
  *
  * Add a renderer = one `registerDirectiveRenderer(...)` call. No switch to edit.
- * Spec: common-docs/projects/kind-directives/PLAN.md (KD3/KD4).
+ * Spec: docs/protocol/KIND_DIRECTIVES.md (renderer registry + class prefix tier).
  */
 
 import type { ComponentType } from "react";

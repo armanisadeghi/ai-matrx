@@ -14,7 +14,8 @@
  * `pnpm check:directive-grammar` re-derives the JSON from a live aidream
  * checkout. Change the Python first, regenerate, then change this.
  *
- * Plan of record: `common-docs/projects/kind-directives/PLAN.md`.
+ * Source of record: `docs/protocol/KIND_DIRECTIVES.md`; doctrine:
+ * `common-docs/policies/strictness-law.md`.
  *
  * THE WIRE SHAPE
  * --------------

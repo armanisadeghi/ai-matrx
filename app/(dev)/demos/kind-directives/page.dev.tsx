@@ -17,7 +17,7 @@
  * user as RAW JSON. If any row here ever shows raw JSON again, the same class
  * of break is back.
  *
- * Plan: common-docs/projects/kind-directives/PLAN.md.
+ * Spec: docs/protocol/KIND_DIRECTIVES.md.
  */
 
 import MarkdownStream from "@/components/MarkdownStream";

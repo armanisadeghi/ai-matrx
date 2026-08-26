@@ -367,7 +367,7 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
   old" branch. **A fallback branch is a defect the moment it is written.** Strict for anything an
   author or an agent controls; loud-and-recorded ONLY where a genuine platform outage would
   otherwise punish a user — and that path must be unreachable by writing bad code. Full text:
-  [`/projects/kind-directives/PLAN.md`](/projects/kind-directives/PLAN.md) § THE STRICTNESS LAW.
+  [`/policies/strictness-law.md`](/policies/strictness-law.md).
 - **Enrichment is an optional field, not a variant.** When a kind will later be enriched by
   another system (a search result gaining the scraped page behind it), declare it now as an
   OPTIONAL nested kind on the existing shape — *"That's how schemas work."* Do not mint a second

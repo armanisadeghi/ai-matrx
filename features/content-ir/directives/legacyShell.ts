@@ -9,8 +9,8 @@
  *
  * Those fences must keep rendering forever. This module is how — and it is the
  * ENTIRE legacy story on the client. Its constraints are not style, they are
- * the campaign's Strictness Law (`common-docs/projects/kind-directives/PLAN.md`
- * § THE STRICTNESS LAW, clause 4), and each is mechanically proven:
+ * THE STRICTNESS LAW (`common-docs/policies/strictness-law.md`, clause 4),
+ * and each is mechanically proven:
  *
  * 1. **READ-ONLY.** It translates an old shell into the new one. It never
  *    emits, never writes, and never hands the old shape back to anyone.

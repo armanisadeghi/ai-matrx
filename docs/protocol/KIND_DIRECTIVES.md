@@ -15,7 +15,8 @@ kind uses. There is no second pipeline.
 
 - Grammar + shell + position law (pure, importable anywhere): `matrx_graph.content_ir.directives`
 - Server registry, decode, schema-gen, actions: `aidream/services/content_ir_directives/`
-- Plan of record: `common-docs/projects/kind-directives/PLAN.md`
+- Doctrine it must obey: `common-docs/policies/strictness-law.md` (THE STRICTNESS LAW)
+- Campaign record (COMPLETE 2026-08-26, archived): `common-docs/projects/archive/kind-directives/PLAN.md`
 
 ---
 
@@ -151,7 +152,7 @@ predicates in `matrx_graph.content_ir.directives`, and every caller asks one of 
 `IN_CONTENT_CLASSES` is `{reference, secret}` — exactly the pre-merge in-content set.
 `view` is pure and could plausibly be read as in-content, but nothing registers a `view`
 shape today, and widening a position gate no caller needs is the "little bit of breathing
-room" the campaign's Strictness Law forbids. A `view` shape that ever earns in-content
+room" THE STRICTNESS LAW forbids. A `view` shape that ever earns in-content
 resolution adds itself there deliberately, with a consumer.
 
 **The third position** — current-turn model-authored text — is the orchestrator's
@@ -572,7 +573,7 @@ you are reading this because you want to import the shim somewhere else: the ans
   only `reference` and `secret` resolve.
 - A failed apply warns; the delivered response always stands.
 - No new escape hatch, no baseline that grows, no dual registration, no fallback branch.
-  Strict-or-not resolves to strict (campaign Strictness Law).
+  Strict-or-not resolves to strict (THE STRICTNESS LAW).
 
 ---
 

@@ -7,8 +7,9 @@
 > genuinely reference-specific: the reference noun taxonomy, the chips, the copy-shortcut
 > builders, the renderer registry, and the apply/confirm affordances.
 >
-> Plan of record: `/Users/armanisadeghi/code/common-docs/projects/kind-directives/PLAN.md`
-> (read § THE STRICTNESS LAW before changing anything here). Cross-repo SoR:
+> Source of record: `docs/protocol/KIND_DIRECTIVES.md` (byte-identical in aidream). Read
+> [`/policies/strictness-law.md`](/Users/armanisadeghi/code/common-docs/policies/strictness-law.md)
+> before changing anything here. Cross-repo SoR:
 > `/Users/armanisadeghi/code/common-docs/systems/matrx-envelope/FEATURE.md`.
 
 **Detection is `__kind`, never `matrx_version`.** The retired 4-key shell
