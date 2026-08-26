@@ -12,6 +12,8 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
+import type { ResolvedContextMenuContext } from "@/features/context-menu-v3/types";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 // ── Menu entries ────────────────────────────────────────────────────────────
@@ -218,6 +220,20 @@ export interface ItemContextMenuProps extends ItemMenuSurface {
    * on touch so long-press doesn't fight scroll + the always-visible kebab.
    */
   enabled?: boolean;
+  /**
+   * Live surface values for the universal menu. A delegated pane menu uses
+   * the same scope builder as its SurfaceRuntimeProvider, so AI actions never
+   * lose the values the surface declares.
+   */
+  getApplicationScope?: () => ApplicationScope;
+  /**
+   * ONE-MENU-PER-PANE delegation. Resolve the clicked row's existing kebab
+   * config and per-row context from the event target at open time.
+   */
+  resolveItemOnOpen?: (target: HTMLElement | null) => {
+    config: ItemMenuConfigInput;
+    context?: ResolvedContextMenuContext | null;
+  } | null;
 }
 
 // ── EditableLabel props ─────────────────────────────────────────────────────

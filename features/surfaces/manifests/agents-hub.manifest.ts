@@ -13,8 +13,9 @@
  * the shell's live query/view controller into this manifest and sends writes
  * back through the same setters as its visible toolbar. The `/agents/all`
  * source wiring was added 2026-08-25 after a production review found that route
- * naming alone exposed a popover with no runtime; independent production
- * verification remains required after deployment.
+ * naming alone exposed a popover with no runtime. That runtime and its approval
+ * write were subsequently production-verified at desktop, tablet, and phone
+ * widths; full S1-S18 live certification remains independent of that repair.
  *
  * A list surface guarantees a different kind of context than a record
  * surface: no single entity is "open" here. What IS always present is the
@@ -371,7 +372,7 @@ export const agentsHubManifest: SurfaceManifest = {
   surfaceName: AGENTS_HUB_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Values and catalog_filters remain production-verified on /agents/classic. The canonical /agents/all source now mounts the shared entity-list runtime adapter and write handler after a live review found 0/27 values there; local contract checks pass, but an independent post-deployment production run must verify the canonical route before this surface returns to verified.",
+    "The canonical /agents/all runtime, 27-value scope, and catalog_filters approval write were production-verified at desktop, tablet, and phone widths on 2026-08-25. Readiness remains partial until the current full S1-S18 surface sweep completes fresh live visual and interaction proof.",
   label: "Agents Hub",
   urlPattern: "/agents",
   intro: `<surface_intro>

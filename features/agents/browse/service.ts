@@ -42,7 +42,7 @@ function pgError(error: { message?: string; code?: string }): Error {
     error.message?.trim()
       ? `${error.message}${error.code ? ` (${error.code})` : ""}`
       : "Supabase returned an error with no message — usually a gateway/PostgREST " +
-        "failure rather than a query error.",
+          "failure rather than a query error.",
   );
 }
 
@@ -93,7 +93,12 @@ export async function fetchBrowseScopeCounts(
   for (const row of data ?? []) {
     const total = Number(row.total ?? 0);
     const kind = row.scope;
-    if (kind !== "mine" && kind !== "orgs" && kind !== "shared" && kind !== "public") {
+    if (
+      kind !== "mine" &&
+      kind !== "orgs" &&
+      kind !== "shared" &&
+      kind !== "public"
+    ) {
       continue;
     }
     // A narrow_id means "one org/industry inside this scope"; no id means the
@@ -159,6 +164,7 @@ export async function fetchBrowseFacets(
  */
 export async function saveAgentRowEdits(
   agentId: string,
+  organizationId: string,
   edit: AgentRowEdit,
 ): Promise<void> {
   // Typed against the generated table Update shape — never a loose bag.
@@ -169,12 +175,16 @@ export async function saveAgentRowEdits(
   if (edit.category !== undefined) patch.category = edit.category || null;
   if (edit.tags !== undefined) patch.tags = edit.tags;
   if (Object.keys(patch).length === 0) return;
+  // The row's authoritatively loaded organization is part of the write, not a
+  // database-selected default. Also constrain the target to that same tenant.
+  patch.organization_id = organizationId;
 
   const { error } = await supabase
     .schema("agent")
     .from("definition")
     .update(patch)
-    .eq("id", agentId);
+    .eq("id", agentId)
+    .eq("organization_id", organizationId);
 
   if (error) throw pgError(error);
 }

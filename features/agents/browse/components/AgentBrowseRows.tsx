@@ -45,6 +45,7 @@ export function AgentBrowseRows({
       {rows.map((row) => (
         <div
           key={row.id}
+          data-row-id={row.id}
           role="button"
           tabIndex={0}
           onClick={() => onOpenActionModal(row)}
@@ -56,7 +57,7 @@ export function AgentBrowseRows({
           }}
           className={cn(
             "group flex w-full cursor-pointer items-center gap-3 px-3 text-left transition-colors hover:bg-muted/50",
-            compact ? "h-8" : "h-10",
+            compact ? "h-11 sm:h-8" : "h-11 sm:h-10",
           )}
         >
           {/* Star always occupies its slot so every name starts on the same
@@ -71,7 +72,7 @@ export function AgentBrowseRows({
               e.stopPropagation();
               onToggleFavorite(row);
             }}
-            className="shrink-0 rounded p-0.5 text-muted-foreground/40 hover:text-amber-500 disabled:hover:text-muted-foreground/40"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/40 hover:text-amber-500 disabled:hover:text-muted-foreground/40 sm:h-6 sm:w-6"
           >
             <Star
               className={cn(
@@ -158,7 +159,7 @@ export function AgentBrowseRows({
               onClick={(e) => e.stopPropagation()}
               // Reserved space, revealed on hover/focus — the row never
               // reflows when the kebab appears.
-              className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground opacity-100 transition-opacity sm:h-7 sm:w-7 sm:opacity-0 sm:focus-visible:opacity-100 sm:group-hover:opacity-100"
             >
               <MoreVertical className="h-4 w-4" />
             </button>

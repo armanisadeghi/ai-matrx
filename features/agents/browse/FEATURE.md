@@ -110,12 +110,13 @@ selection resets). Without it, every user with ANY stored blob keeps
 the table row menu, card kebab, and compact-row kebab. `/agents/all` had
 **three** divergent hard-coded lists.
 
-**Right-click is NOT wired** — not here and not on `/transcripts`. This doc and
-`agentActionRegistry.tsx` both used to assert right-click parity that never
-shipped. `ItemContextMenu` takes this same config, but `MatrxDataTable` exposes
-no row-wrapper seam; the extension and its one real hazard (a row-level menu
-would swallow the native right-click inside inline-editable cells, killing
-copy/paste there) are tracked in `docs/handoffs/inventory-law-sweep.md`.
+**Right-click and mobile long-press use ONE menu for the whole pane.** The
+entity-list shell resolves the clicked `data-row-id` at open time, then feeds
+that row's existing `agentActionRegistry` config, entity identity, and the
+surface's live 27-value scope into `ItemContextMenu`. Table, cards, and dense
+rows therefore share one action contract without nested Radix roots or a
+mobile wrapper between `<tbody>` and `<tr>`. Text inputs still yield to the
+native edit menu.
 
 Menu style rules, set against Chrome's app menu as the benchmark:
 
@@ -211,6 +212,15 @@ hostile at 2,000.
 - Column ORDER and width are not user-controlled yet (visibility is).
 
 ## Change log
+
+- **2026-08-25 (pilot surface check)** — Replaced per-table-row desktop-only
+  context-menu roots with one delegated pane menu across table, card, and dense
+  views; the same registry config now powers right-click and mobile long-press
+  while carrying the live surface scope and per-row entity. Raised phone row
+  actions/favorites to 44px, made dense-row actions visible on touch, replaced
+  the forbidden AI Sparkles icon in the classic-view notice, and made inline
+  edits carry and constrain by the row's explicit `organization_id`. Fresh
+  browser certification remains pending; the surface is still partial.
 
 - **2026-08-25 (surface runtime)** — `/agents/all` now supplies the
   `matrx-user/agents` runtime through the generic `EntityListPage` surface seam.

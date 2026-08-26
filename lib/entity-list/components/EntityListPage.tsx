@@ -22,6 +22,9 @@ import {
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ItemContextMenu } from "@/components/official/item/ItemMenu";
+import type { ItemMenuConfig } from "@/components/official/item/types";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { useUrlSearchParams } from "@/lib/url-state/useUrlState";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { defaultHiddenColumns } from "../columns";
@@ -37,6 +40,8 @@ import { countActiveFilters } from "../types";
 import { EntityScopeTabs } from "./EntityScopeTabs";
 import { EntityListToolbar } from "./EntityListToolbar";
 import { EntityListTable } from "./EntityListTable";
+
+const EMPTY_ITEM_MENU_CONFIG: ItemMenuConfig = { sections: [] };
 
 /**
  * Bind an agent surface to a list page.
@@ -230,6 +235,17 @@ export function EntityListPage<TRow>({
     hrefFor: (row: TRow) => entityListRowHref(config, row),
   };
 
+  const surfaceList: EntityListSurfaceController<TRow> = {
+    ...list,
+    view: {
+      sort: effectiveSort.sort,
+      direction: effectiveSort.direction,
+      favoritesFirst: prefs.favoritesFirst,
+      pageSize: prefs.pageSize,
+    },
+    patchView,
+  };
+
   const page = (
     <div className="flex h-full flex-col overflow-hidden">
       {/*
@@ -357,17 +373,45 @@ export function EntityListPage<TRow>({
     </div>
   );
 
-  if (!surface) return page;
-  const surfaceList: EntityListSurfaceController<TRow> = {
-    ...list,
-    view: {
-      sort: effectiveSort.sort,
-      direction: effectiveSort.direction,
-      favoritesFirst: prefs.favoritesFirst,
-      pageSize: prefs.pageSize,
-    },
-    patchView,
-  };
+  // ONE context menu wraps the pane. MatrxDataTable already stamps
+  // `data-row-id`; feature-owned cards/rows owe the same anchor. Resolving the
+  // row at open time keeps right-click and mobile long-press on the exact same
+  // action registry as the kebab, without N nested menu roots.
+  const pageWithContextMenu = (
+    <ItemContextMenu
+      config={EMPTY_ITEM_MENU_CONFIG}
+      sourceFeature={config.sourceFeature}
+      surfaceName={surface?.surfaceName}
+      getApplicationScope={
+        surface ? () => surface.getScope(surfaceList) : undefined
+      }
+      resolveItemOnOpen={(target) => {
+        const rowId = target
+          ?.closest("[data-row-id]")
+          ?.getAttribute("data-row-id");
+        const row = rowId
+          ? list.rows.find((candidate) => config.getRowId(candidate) === rowId)
+          : undefined;
+        if (!row) {
+          return {
+            config: EMPTY_ITEM_MENU_CONFIG,
+            context: { [CONTEXT_MENU_ENTITY_KEY]: null },
+          };
+        }
+        return {
+          config: actions.menuFor(row),
+          context: {
+            content: config.getRowName(row),
+            [CONTEXT_MENU_ENTITY_KEY]: config.getRowEntity?.(row) ?? null,
+          },
+        };
+      }}
+    >
+      {page}
+    </ItemContextMenu>
+  );
+
+  if (!surface) return pageWithContextMenu;
   return (
     <SurfaceRuntimeProvider
       surfaceName={surface.surfaceName}
@@ -378,7 +422,7 @@ export function EntityListPage<TRow>({
           : undefined
       }
     >
-      {page}
+      {pageWithContextMenu}
     </SurfaceRuntimeProvider>
   );
 }

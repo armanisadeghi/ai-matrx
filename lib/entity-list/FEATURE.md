@@ -131,6 +131,12 @@ names on one page.
    feature-owned row summary into `MatrxDataTable.mobileCards`; the canonical
    table still owns query state, pagination, copy controls, and row actions.
    Never fetch a second mobile list or rebuild those actions inside the card.
+9. **One context menu per pane.** The shell wraps the list once and resolves
+   the clicked `data-row-id` at open time. Every view must stamp that anchor;
+   the table already does. The resolver reuses `actions.menuFor(row)`, supplies
+   `getRowEntity(row)`, and passes the same live surface scope as
+   `SurfaceRuntimeProvider`, so right-click and phone long-press cannot drift
+   from the kebab or silently lose declared values.
 
 ## Parity contracts (break these and users notice, not CI)
 
@@ -213,6 +219,11 @@ demoting the detail page — cheap, high value, not a redesign. This shell is
 how that savior page gets built.
 
 ## Change log
+
+- 2026-08-25 — Moved context-menu ownership from N desktop-only table-row
+  wrappers to one delegated pane menu. Table, alternate cards, and dense rows
+  now resolve the same row registry at open time; mobile long-press and desktop
+  right-click share actions, per-row entity, and live surface values.
 
 - 2026-08-25 — Added the generic `config.mobileCards` forwarding seam so a
   feature-entry list can expose its essential phone context while retaining the

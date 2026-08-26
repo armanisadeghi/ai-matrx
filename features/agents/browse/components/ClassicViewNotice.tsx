@@ -14,7 +14,7 @@
 // no removal date is how a banner becomes permanent.
 
 import Link from "next/link";
-import { Sparkles, X } from "lucide-react";
+import { Rows3, X } from "lucide-react";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 
 export function ClassicViewNotice() {
@@ -25,14 +25,15 @@ export function ClassicViewNotice() {
   if (dismissed) return null;
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-1.5 text-xs">
-      <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
-      <span className="flex-1 text-foreground">
-        This is the new Agents list — scopes, full filtering, and inline editing.
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-1.5 text-xs sm:flex-nowrap">
+      <Rows3 className="h-3.5 w-3.5 shrink-0 text-primary" />
+      <span className="min-w-48 flex-1 text-foreground">
+        This is the new Agents list — scopes, full filtering, and inline
+        editing.
       </span>
       <Link
         href="/agents/classic"
-        className="shrink-0 font-medium text-primary hover:underline"
+        className="inline-flex min-h-11 shrink-0 items-center font-medium text-primary hover:underline sm:min-h-0"
       >
         Use the classic view
       </Link>
@@ -40,7 +41,7 @@ export function ClassicViewNotice() {
         type="button"
         aria-label="Dismiss"
         onClick={() => setDismissed(true)}
-        className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground sm:h-6 sm:w-6"
       >
         <X className="h-3.5 w-3.5" />
       </button>

@@ -422,6 +422,8 @@ export function ItemContextMenu({
   sourceFeature,
   surfaceName,
   entity,
+  getApplicationScope,
+  resolveItemOnOpen,
   onOpenChange,
   onCloseAutoFocus,
   enabled = true,
@@ -440,12 +442,14 @@ export function ItemContextMenu({
       sourceFeature={sourceFeature}
       surfaceName={surfaceName}
       entity={entity}
-      resolveContextOnOpen={() => {
+      getApplicationScope={getApplicationScope}
+      resolveContextOnOpen={(target) => {
         // Re-resolve on every open so lazy configs stay live (parity with the
         // old handleOpenChange). The resolved config feeds extraSections on
         // the re-render this setState triggers, before MenuContent mounts.
-        setResolved(resolveItemMenuConfig(config));
-        return null;
+        const item = resolveItemOnOpen?.(target);
+        setResolved(resolveItemMenuConfig(item?.config ?? config));
+        return item?.context ?? null;
       }}
       extraSections={resolved ? itemMenuConfigToExtraSections(resolved) : []}
       onMenuOpenChange={onOpenChange}

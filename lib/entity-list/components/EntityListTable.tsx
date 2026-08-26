@@ -22,8 +22,7 @@ import type {
   ColumnFiltersState,
   MatrxColumnDef,
 } from "@/components/official/matrx-data-table/types";
-import { ItemContextMenu, ItemMenu } from "@/components/official/item/ItemMenu";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import type { EntityListConfig, EntityRowActions } from "../config";
@@ -113,7 +112,6 @@ export function EntityListTable<TRow>({
   emptyAction,
   emptyState,
 }: Props<TRow>) {
-  const isMobile = useIsMobile();
   const { favorite } = config;
 
   // ONE star: clickable, sortable, filterable. A separate read-only "Fav"
@@ -133,7 +131,7 @@ export function EntityListTable<TRow>({
           e.stopPropagation();
           actions.onToggleFavorite?.(row);
         }}
-        className="rounded p-0.5 text-muted-foreground/40 hover:text-amber-500 disabled:hover:text-muted-foreground/40"
+        className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/40 hover:text-amber-500 disabled:hover:text-muted-foreground/40 sm:h-6 sm:w-6"
       >
         <Star
           className={cn(
@@ -239,47 +237,12 @@ export function EntityListTable<TRow>({
             }
           : undefined
       }
-      // RIGHT-CLICK, from the SAME `ItemMenuConfig` the kebab uses — so the two
-      // can never offer different actions. `agentActionRegistry` and
-      // `features/agents/browse/FEATURE.md` both claimed the config already
-      // drove right-click; it never did on any view, and both docs were
-      // corrected earlier in this sweep. This is the code catching up.
-      //
-      // One change reaches every consumer of the shell (`/agents/all` and
-      // `/transcripts` today). Not a fragmentation risk: the eslint ban targets
-      // `MenuContent`/`MobileMenuContent`, the heavy layer, which stays behind
-      // the shell's existing dynamic edge — `ItemMenu`/`ItemContextMenu` are
-      // the thin wrappers and are already statically imported here.
-      // DESKTOP ONLY, and not for the reason you'd guess. Right-click being a
-      // pointer gesture is the small half; the load-bearing half is that
-      // `ContextMenuV3`'s mobile branch wraps its children in a real
-      // `<div style="display:contents">` to catch long-press, and a `<div>`
-      // between `<tbody>` and `<tr>` is invalid HTML. The desktop branch uses
-      // Radix's `asChild`, which merges onto the `<tr>` and adds no node —
-      // which is the only reason a row wrapper is safe here at all. Any future
-      // `rowWrapper` consumer owes the same check.
-      rowWrapper={(row, children) => (
-        <ItemContextMenu
-          config={actions.menuFor(row)}
-          // The surface slot the wrapper used to drop on the floor:
-          // `sourceFeature` was hardcoded `"files"` for every consumer, and
-          // `entity` — which is what turns Attach To and Share on inside the
-          // v3 menu — was never passed at all. Both now come from the config,
-          // because only the feature knows what its rows are. A heterogeneous
-          // hub returns `undefined` per row rather than fabricating a token.
-          sourceFeature={config.sourceFeature}
-          entity={config.getRowEntity?.(row)}
-          enabled={!isMobile}
-        >
-          {children}
-        </ItemContextMenu>
-      )}
       rowActions={(row) => (
         <ItemMenu config={actions.menuFor(row)} align="end">
           <button
             type="button"
             aria-label={`Actions for ${config.getRowName(row)}`}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground sm:h-7 sm:w-7"
             onClick={(e) => e.stopPropagation()}
           >
             <MoreVertical className="h-4 w-4" />

@@ -5,17 +5,13 @@ import { AgentsListHeader } from "@/features/agents/components/shell/AgentsListH
 import { AgentBrowsePage } from "@/features/agents/browse/components/AgentBrowsePage";
 
 /**
- * /agents/browse — the canonical feature-entry list, proven on agents.
+ * /agents/all — the canonical Agents Hub feature-entry list.
  *
- * Deliberately a NEW route beside /agents/all rather than a rewrite of it:
- * /agents/all keeps working untouched while this one is iterated on. Once this
- * shape is settled it becomes the reusable list shell every feature adopts.
- *
- * No SSR seed on purpose. The list is scope-driven and server-paginated, so a
- * seed fetched before the user's scope/sort/page is known would be thrown away
- * — which is exactly what /agents/all does today (it seeds 30 rows, marks the
- * store "succeeded", then immediately re-fetches and shows a skeleton over
- * data it already had).
+ * This route is the authenticated target of `/agents`; guests remain on the
+ * public Agents landing page. The scope-driven, server-paginated list mounts
+ * the shared entity-list shell and the `matrx-user/agents` surface runtime.
+ * There is intentionally no speculative SSR seed: the authenticated scope,
+ * sort, filters, and page are the query contract.
  */
 export default async function AgentsListRoute() {
   const { isAuthenticated } = await getServerAuth();

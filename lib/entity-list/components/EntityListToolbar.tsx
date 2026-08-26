@@ -140,6 +140,9 @@ export function EntityListToolbar<TRow>({
           value={query.search}
           onChange={(e) => onSearch(e.target.value)}
           placeholder={searchPlaceholder}
+          // ProInput intentionally does not fit this integrated compact search:
+          // its mic/menu chrome would duplicate this surface's own controls.
+          // The query is still exposed as a surface value/write target, and
           // 16px minimum prevents iOS zoom-on-focus.
           className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground lg:text-sm"
         />

@@ -58,7 +58,7 @@ function CardAction({
   return (
     <Link
       href={href}
-      className="flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:h-7"
       onClick={(e) => e.stopPropagation()}
     >
       <Icon className="h-3.5 w-3.5" />
@@ -88,129 +88,134 @@ export function AgentBrowseCards({
       {rows.map((row) => {
         const agentHref = hrefFor(row);
         return (
-        <div
-          key={row.id}
-          role="button"
-          tabIndex={0}
-          title="Click to choose action"
-          onClick={(e) => {
-            // Cmd/ctrl-click → Run in a new tab (classic card behaviour).
-            if (shouldOpenInNewTab(e)) {
-              openInNewTab(`/agents/${row.id}/run`);
-              return;
-            }
-            onOpenActionModal(row);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
+          <div
+            key={row.id}
+            data-row-id={row.id}
+            role="button"
+            tabIndex={0}
+            title="Click to choose action"
+            onClick={(e) => {
+              // Cmd/ctrl-click → Run in a new tab (classic card behaviour).
+              if (shouldOpenInNewTab(e)) {
+                openInNewTab(`/agents/${row.id}/run`);
+                return;
+              }
               onOpenActionModal(row);
-            }
-          }}
-          className="group flex cursor-pointer flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40"
-        >
-          <div className="flex items-start gap-2.5 p-3 pb-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <Webhook className="h-4 w-4" />
-            </span>
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onOpenActionModal(row);
+              }
+            }}
+            className="group flex cursor-pointer flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40"
+          >
+            <div className="flex items-start gap-2.5 p-3 pb-2">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <Webhook className="h-4 w-4" />
+              </span>
 
-            <div className="min-w-0 flex-1">
-              {/*
+              <div className="min-w-0 flex-1">
+                {/*
                 The name is a REAL anchor so cmd-click, middle-click, "open in
                 new tab" and keyboard focus reach the agent — the card body
                 still opens AgentActionModal, so the click that bubbles is
                 unchanged and only the name itself navigates.
               */}
-              <p className="line-clamp-2 text-sm font-medium leading-snug">
-                {agentHref ? (
-                  <Link
-                    href={agentHref}
-                    onClick={(e) => e.stopPropagation()}
-                    className="rounded-sm  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    {row.name}
-                  </Link>
-                ) : (
-                  row.name
-                )}
-              </p>
-              {row.description && (
-                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                  {cleanMarkdownPreview(row.description)}
+                <p className="line-clamp-2 text-sm font-medium leading-snug">
+                  {agentHref ? (
+                    <Link
+                      href={agentHref}
+                      onClick={(e) => e.stopPropagation()}
+                      className="rounded-sm  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {row.name}
+                    </Link>
+                  ) : (
+                    row.name
+                  )}
                 </p>
-              )}
-              <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                {row.category && (
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] py-0 font-normal"
+                {row.description && (
+                  <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                    {cleanMarkdownPreview(row.description)}
+                  </p>
+                )}
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  {row.category && (
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] py-0 font-normal"
+                    >
+                      {row.category}
+                    </Badge>
+                  )}
+                  {row.is_archived && (
+                    <Badge variant="outline" className="text-[10px] py-0">
+                      <Archive className="mr-1 h-2.5 w-2.5" />
+                      Archived
+                    </Badge>
+                  )}
+                  {showOwner && row.owner_email && (
+                    <span className="truncate text-[10px] text-muted-foreground">
+                      {row.owner_email}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div
+                className="flex shrink-0 items-center gap-0.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  aria-label={
+                    row.is_favorite
+                      ? "Remove from favorites"
+                      : "Add to favorites"
+                  }
+                  title={
+                    row.is_owner
+                      ? undefined
+                      : "Shared agents can't be favorited"
+                  }
+                  disabled={!row.is_owner}
+                  onClick={() => onToggleFavorite(row)}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-40 sm:h-7 sm:w-7"
+                >
+                  <Star
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      row.is_favorite && "fill-amber-400 text-amber-500",
+                    )}
+                  />
+                </button>
+                <ItemMenu config={menuFor(row)} align="end">
+                  <button
+                    type="button"
+                    aria-label={`Actions for ${row.name}`}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground sm:h-7 sm:w-7"
                   >
-                    {row.category}
-                  </Badge>
-                )}
-                {row.is_archived && (
-                  <Badge variant="outline" className="text-[10px] py-0">
-                    <Archive className="mr-1 h-2.5 w-2.5" />
-                    Archived
-                  </Badge>
-                )}
-                {showOwner && row.owner_email && (
-                  <span className="truncate text-[10px] text-muted-foreground">
-                    {row.owner_email}
-                  </span>
-                )}
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </ItemMenu>
               </div>
             </div>
 
-            <div
-              className="flex shrink-0 items-center gap-0.5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                aria-label={
-                  row.is_favorite ? "Remove from favorites" : "Add to favorites"
-                }
-                title={
-                  row.is_owner ? undefined : "Shared agents can't be favorited"
-                }
-                disabled={!row.is_owner}
-                onClick={() => onToggleFavorite(row)}
-                className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
-              >
-                <Star
-                  className={cn(
-                    "h-3.5 w-3.5",
-                    row.is_favorite && "fill-amber-400 text-amber-500",
-                  )}
-                />
-              </button>
-              <ItemMenu config={menuFor(row)} align="end">
-                <button
-                  type="button"
-                  aria-label={`Actions for ${row.name}`}
-                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </ItemMenu>
+            <div className="mt-auto flex items-center gap-1 border-t border-border px-2 py-1">
+              <CardAction
+                href={`/agents/${row.id}/run`}
+                icon={Play}
+                label="Run"
+              />
+              <CardAction
+                href={`/agents/${row.id}/build`}
+                icon={Pencil}
+                label="Edit"
+              />
+              <CardAction href={`/agents/${row.id}`} icon={Eye} label="View" />
             </div>
           </div>
-
-          <div className="mt-auto flex items-center gap-1 border-t border-border px-2 py-1">
-            <CardAction
-              href={`/agents/${row.id}/run`}
-              icon={Play}
-              label="Run"
-            />
-            <CardAction
-              href={`/agents/${row.id}/build`}
-              icon={Pencil}
-              label="Edit"
-            />
-            <CardAction href={`/agents/${row.id}`} icon={Eye} label="View" />
-          </div>
-        </div>
         );
       })}
     </div>
