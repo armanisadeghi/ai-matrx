@@ -282,7 +282,7 @@ function MatrxDataTableCore<T>({
    * instead, which is what the floor was actually asking for.
    */
   const CHECKBOX_TAP_AREA =
-    "relative max-lg:before:absolute max-lg:before:-inset-[15px] max-lg:before:content-['']";
+    "relative max-lg:before:absolute max-lg:before:left-1/2 max-lg:before:top-1/2 max-lg:before:h-11 max-lg:before:w-11 max-lg:before:-translate-x-1/2 max-lg:before:-translate-y-1/2 max-lg:before:content-['']";
   const mobileCardsClass =
     mobileCardsBreakpoint === "lg" ? "lg:hidden" : "sm:hidden";
   const tableWithCardsClass =
