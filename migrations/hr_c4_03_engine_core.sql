@@ -60,6 +60,16 @@
 --    flow type's `ai_ceiling` (mode 1/2 under an `advisory` ceiling) is a definition defect and the
 --    step never activates. It does not silently drop to mode 4 either — a definition that says
 --    something impossible is fixed, not reinterpreted.
+--
+-- 6. A MODE-1/2 STEP NEVER RESOLVES AN APPROVER, AND A RULE THAT DOES NOT FIRE SKIPS THE STEP.
+--    §7.1 modes 1 and 2 are *deterministic rule evaluation, not a model call*. Nobody is being
+--    asked anything, so routing such a step would issue a grant and an inbox row for a decision
+--    that will never be taken. Fired -> `auto_approved` with a REAL decision row carrying
+--    `actor_type='automation'`, `rule_key`, `rule_version` and a `calculation_snapshot`. Not fired
+--    -> `skipped` with `state_reason='auto_rule_not_met'`, and the flow continues to the human step
+--    behind it, which is exactly §8.1's "any condition false -> manager approval". A rule with no
+--    predicate at all does NOT fire (autonomy policy rule 8: the ladder resolving to nothing never
+--    means apply).
 -- ===================================================================================
 
 -- ============================================================ 1. the ledger writers
@@ -366,6 +376,40 @@ begin
   return v_n;
 end $fn$;
 
+-- ============================================================ 5a. deterministic auto-decision (§7.1)
+-- 🚨 THE AUTO-DECIDE RULE IS THE SAME DECLARATIVE PREDICATE `condition` USES, PLUS A VERSIONED KEY.
+-- §9.4 lists the leave rule as dotted knobs (`auto_decide_rule.max_hours`, `.min_notice_days`,
+-- `.leave_types`, `.min_coverage_pct`). Teaching the engine what `max_hours` MEANS for leave and
+-- something else for scheduling is per-flow code, and §0 law 3 forbids exactly that ("there is no
+-- IF flow_type = 'leave' THEN ... anywhere in code"). So those knob names become LEAVES of the
+-- §2.4 predicate — `{"rule_key":..,"rule_version":..,"when":{"all":[{"field":"payload.total_hours",
+-- "op":"<=","value":8}, ...]}}` — evaluated by the one evaluator, over the one context, with the
+-- evaluated context stored as the decision's `calculation_snapshot` (AR2 LOCK 6). Configuration
+-- stays configuration and the engine stays flow-agnostic.
+-- OWED: SPEC-WORKFLOW-ENGINE §9.4's four `auto_decide_rule.*` rows record the predicate shape.
+create or replace function hr._wf_auto_decide(p_step uuid, p_ctx jsonb)
+returns jsonb language plpgsql security definer set search_path to 'hr','public' as $fn$
+declare sd hr.workflow_step_definition%rowtype; v_rule jsonb; v_when jsonb; v_fired boolean;
+begin
+  select sd2.* into sd from hr.workflow_step_definition sd2
+    join hr.workflow_step s on s.step_definition_id = sd2.id where s.id = p_step;
+  v_rule := coalesce(sd.auto_decide_rule, '{}'::jsonb);
+  if v_rule = '{}'::jsonb then
+    -- autonomy policy rule 8: the ladder resolving to NOTHING never means "apply".
+    return jsonb_build_object('fired', false, 'reason', 'no_rule_declared');
+  end if;
+  v_when := coalesce(v_rule -> 'when', '{}'::jsonb);
+  if v_when = '{}'::jsonb then
+    return jsonb_build_object('fired', false, 'reason', 'rule_has_no_predicate');
+  end if;
+  v_fired := hr._wf_condition_met(v_when, p_ctx);
+  return jsonb_build_object(
+    'fired', v_fired,
+    'rule_key', coalesce(v_rule ->> 'rule_key', sd.step_key || '_auto'),
+    'rule_version', coalesce(v_rule ->> 'rule_version', sd.auto_decide_rule_version, '1'),
+    'snapshot', jsonb_build_object('predicate', v_when, 'context', p_ctx, 'result', v_fired));
+end $fn$;
+
 -- ============================================================ 6. step activation (§3.2, §7.3)
 create or replace function hr.wf_activate_step(p_step uuid, p_exclude uuid[] default '{}')
 returns jsonb language plpgsql security definer set search_path to 'hr','public' as $fn$
@@ -439,6 +483,40 @@ begin
            closed_at = now() where id = p_step;
     perform hr._wf_event(inst.id, p_step, 'step_skipped', 'pending', 'skipped');
     return jsonb_build_object('granted', true, 'state', 'skipped', 'reason', 'autonomy_mode_off');
+  end if;
+
+  -- ---- RECORDED DECISION 6: modes 1 and 2 are DETERMINISTIC RULE EVALUATION and never resolve an
+  -- approver at all. A rule that fires closes the step `auto_approved` with a real decision row; a
+  -- rule that does not fire SKIPS the step and the flow continues to the human step behind it
+  -- (§8.1's "any condition false -> manager approval"). Neither outcome asks anybody anything, so
+  -- routing a mode-1/2 step would open a grant and an inbox row for a decision that is not needed.
+  if v_mode in (1,2) then
+    declare v_auto jsonb;
+    begin
+      v_auto := hr._wf_auto_decide(p_step, v_ctx);
+      if coalesce((v_auto ->> 'fired')::boolean, false) then
+        insert into hr.workflow_decision
+          (organization_id, workflow_instance_id, workflow_step_id, step_key, decision, reason,
+           actor_type, approval_basis, autonomy_mode, rule_key, rule_version, calculation_snapshot)
+        values (inst.organization_id, inst.id, p_step, st.step_key, 'approved',
+                'the organisation''s auto-approval rule was satisfied',
+                'automation', 'auto_rule', v_mode,
+                v_auto ->> 'rule_key', v_auto ->> 'rule_version',
+                coalesce(v_auto -> 'snapshot','{}'::jsonb));
+        update hr.workflow_step set activated_at = now(), approvals_needed = 0,
+               approvals_received = 0 where id = p_step;
+        perform hr._wf_event(inst.id, p_step, 'auto_decided', 'pending', 'auto_approved',
+                             'automation', null, null, v_auto);
+        perform hr._wf_close_step(p_step, 'auto_approved', v_auto ->> 'rule_key');
+        return jsonb_build_object('granted', true, 'state', 'auto_approved', 'rule', v_auto);
+      end if;
+      update hr.workflow_step set state = 'skipped', state_reason = 'auto_rule_not_met',
+             closed_at = now() where id = p_step;
+      perform hr._wf_event(inst.id, p_step, 'step_skipped', 'pending', 'skipped', 'automation',
+                           null, null, v_auto);
+      return jsonb_build_object('granted', true, 'state', 'skipped', 'reason', 'auto_rule_not_met',
+                                'rule', v_auto);
+    end;
   end if;
 
   -- ---- resolve the approvers (§2.2)
@@ -817,6 +895,7 @@ begin
     'hr._wf_call_hook(regprocedure,uuid)',
     'hr._wf_grant_step(uuid)', 'hr._wf_revoke_step(uuid)',
     'hr._wf_project_step(uuid)', 'hr._wf_unproject_step(uuid,text)',
+    'hr._wf_auto_decide(uuid,jsonb)',
     'hr.wf_activate_step(uuid,uuid[])', 'hr._wf_route(uuid)', 'hr._wf_join(uuid)',
     'hr.wf_request(text,text,uuid,uuid,jsonb,uuid,boolean,text)',
     'hr.wf_submit(uuid)'] loop

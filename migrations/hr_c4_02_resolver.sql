@@ -85,6 +85,18 @@
 --    and `suspended` are also treated as absent — they are live, they mean exactly this, and
 --    ignoring them would route work to someone the system already knows is away.
 --    OWED: SPEC-WORKFLOW-ENGINE §2.3's fourth bullet (name the store or drop it).
+--
+-- 7. A SELF-STEP WHOSE ACTOR IS THE SUBJECT (NOT THE REQUESTER) IS EXPRESSED AS CONFIG ON AN
+--    EXISTING RUNG, NOT AS A NEW RUNG. §2.2's rung vocabulary has `requester` for self-steps, and
+--    that is right for `timecard_attestation` (the engine opens one instance per employment, so
+--    subject = requester). It is WRONG for `corrective_action_ack`, where the manager files and the
+--    SUBJECT acknowledges — the actor is neither an authority holder nor the requester, and §1.3a
+--    marks `corrective_action_ack` and `acknowledgment_ack` as self-steps all the same. Rather than
+--    coin an eighth rung the spec does not have, `fixed_user` reads
+--    `resolver_config = {"employment_source":"subject"}` (also `"manager_of_subject"`), which is
+--    exactly what `resolver_config jsonb` is for. `allows_self` still governs whether the subject
+--    survives eligibility, so the never-self law is untouched.
+--    OWED: SPEC-WORKFLOW-ENGINE §2.2 — record `employment_source` in the `fixed_user` row.
 -- ===================================================================================
 
 -- ============================================================ 1. target-table resolution
@@ -496,8 +508,17 @@ begin
       v_path := 'top_of_chart';
 
     elsif v_rung = 'fixed_user' then
-      select coalesce(array_agg((x)::uuid), '{}'::uuid[]) into v_cands
-        from jsonb_array_elements_text(coalesce(sd.resolver_config -> 'employment_ids', '[]'::jsonb)) x;
+      -- RECORDED DECISION 7: `{"employment_source":"subject"}` names the SUBJECT of the instance.
+      -- This is CONFIG, not a new rung — §2.2's rung vocabulary is untouched.
+      if sd.resolver_config ->> 'employment_source' = 'subject' then
+        v_cands := case when v_subject is null then '{}'::uuid[] else ARRAY[v_subject] end;
+      elsif sd.resolver_config ->> 'employment_source' = 'manager_of_subject' then
+        v_cands := case when hr.manager_as_of(v_subject, v_at) is null then '{}'::uuid[]
+                        else ARRAY[hr.manager_as_of(v_subject, v_at)] end;
+      else
+        select coalesce(array_agg((x)::uuid), '{}'::uuid[]) into v_cands
+          from jsonb_array_elements_text(coalesce(sd.resolver_config -> 'employment_ids', '[]'::jsonb)) x;
+      end if;
       if v_cands <> '{}' then v_had_holders := true; end if;
       v_path := 'fixed';
 
