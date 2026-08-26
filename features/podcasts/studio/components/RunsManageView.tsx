@@ -136,7 +136,7 @@ export function RunsManageView({
     window.setTimeout(() => {
       setDeleteError(null);
       setDeleteRequest({ run, anchorPoint });
-    }, 120);
+    }, 0);
   };
 
   const handleDeleteRun = async () => {
