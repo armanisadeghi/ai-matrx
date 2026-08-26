@@ -35169,6 +35169,7 @@ export type Database = {
           name: string
         }[]
       }
+      admin_heal_hr_grant_drift: { Args: never; Returns: Json }
       admin_heal_reachability_drift: { Args: never; Returns: Json }
       admin_list: {
         Args: never
@@ -39296,6 +39297,63 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      hr_activate_employer: { Args: { p_payload: Json }; Returns: Json }
+      hr_authority_delegate: {
+        Args: { p_delegation_id: string }
+        Returns: Json
+      }
+      hr_authority_delegation_end: {
+        Args: { p_delegation_id: string; p_reason: string }
+        Returns: Json
+      }
+      hr_authority_delegation_request: {
+        Args: {
+          p_authority_id: string
+          p_delegate_employment_id: string
+          p_effective_from: string
+          p_effective_to: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      hr_authority_grant: {
+        Args: {
+          p_action_type: string
+          p_effective_from?: string
+          p_effective_to?: string
+          p_holder_id: string
+          p_holder_kind: string
+          p_limits?: Json
+          p_organization_id?: string
+          p_rank?: number
+          p_reason?: string
+          p_scope_employment_ids?: string[]
+          p_scope_id?: string
+          p_scope_kind?: string
+        }
+        Returns: Json
+      }
+      hr_authority_revoke: {
+        Args: { p_authority_id: string; p_reason: string }
+        Returns: Json
+      }
+      hr_role_assign: {
+        Args: {
+          p_effective_from?: string
+          p_effective_to?: string
+          p_employment_id: string
+          p_reason?: string
+          p_role_key: string
+          p_scope_employment_ids?: string[]
+          p_scope_id?: string
+          p_scope_kind?: string
+        }
+        Returns: Json
+      }
+      hr_role_revoke: {
+        Args: { p_assignment_id: string; p_reason: string }
+        Returns: Json
       }
       industry_assign_org: {
         Args: {

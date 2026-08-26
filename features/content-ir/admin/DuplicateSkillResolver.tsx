@@ -428,9 +428,25 @@ export default function DuplicateSkillResolver({
       </p>
     );
   }
+  // Outstanding work first — a stale declaration is the most urgent of all,
+  // because it is a decision that has quietly stopped being true. Resolved
+  // cases stay on the page (badged, and reversible) so the page is also the
+  // standing record of every ownership decision.
+  const rank = (c: DuplicateSkillCase) =>
+    c.declaredStale ? 0 : c.declaredOwner ? 2 : 1;
+  const ordered = [...cases].sort(
+    (a, b) => rank(a) - rank(b) || a.kind.localeCompare(b.kind),
+  );
+  const open = cases.filter((c) => rank(c) !== 2).length;
+
   return (
     <div className="flex flex-col gap-4 p-4">
-      {cases.map((item) => (
+      <p className="text-xs text-muted-foreground">
+        {open} of {cases.length} contested kind{cases.length === 1 ? "" : "s"}{" "}
+        still need a decision. Resolved ones stay listed with their declared
+        owner and can be changed or cleared here.
+      </p>
+      {ordered.map((item) => (
         <CaseCard key={`${item.kind}-${item.syntax}`} item={item} />
       ))}
     </div>

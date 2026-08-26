@@ -80,13 +80,28 @@ export function resetLegacyShellUses(): void {
   uses = 0;
 }
 
-/** Whether `obj` is a retired 4-key shell (presence of the old sentinel). */
+/**
+ * Whether `obj` is a retired 4-key DIRECTIVE shell: the old sentinel key PLUS
+ * a `kind` from the retired directive vocabulary.
+ *
+ * The sentinel alone is not a directive claim — any stored object may carry a
+ * `matrx_version` key for its own reasons, and treating bare presence as "this
+ * is a directive" made `decodeDirective` THROW a user-visible alarm for data
+ * that was never a directive at all (adversarial finding A-10.3). "Not a
+ * directive" must return null; the alarm is reserved for a genuine directive
+ * claim (a known retired `kind`, or the reserved `directive_v` namespace) that
+ * cannot be honored.
+ */
 export function isLegacyShell(obj: unknown): boolean {
+  if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
+    return false;
+  }
+  const record = obj as Record<string, unknown>;
+  if (!(LEGACY_SENTINEL in record)) return false;
+  const kind = record.kind;
   return (
-    typeof obj === "object" &&
-    obj !== null &&
-    !Array.isArray(obj) &&
-    LEGACY_SENTINEL in (obj as Record<string, unknown>)
+    typeof kind === "string" &&
+    (kind in CLASS_BY_LEGACY_KIND || LEGACY_SIDE_EFFECT_KINDS.has(kind))
   );
 }
 
