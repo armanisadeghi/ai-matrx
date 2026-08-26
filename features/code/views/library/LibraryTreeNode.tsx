@@ -108,7 +108,13 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
     <div className="select-none">
       <NonEditableContextMenu
         sourceFeature="code-editor"
-        contextData={{ content: folder.name }}
+        contextData={{ content: folder.description ?? folder.name }}
+        contentSource={{ type: "raw" }}
+        entity={{
+          type: "code_folder",
+          id: folder.id,
+          title: folder.name,
+        }}
         extraSections={folderMenuSections}
         enableFloatingIcon={false}
       >
@@ -168,38 +174,50 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
             const tabId = libraryTabId(file.id);
             const active = activeTabId === tabId;
             return (
-              <div
+              <NonEditableContextMenu
                 key={file.id}
-                role="treeitem"
-                aria-selected={active}
-                tabIndex={0}
-                onClick={() => onOpenFile(file.id)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onOpenFile(file.id);
-                  }
+                sourceFeature="code-editor"
+                contextData={{ content: file.path ?? file.name }}
+                contentSource={{ type: "raw" }}
+                entity={{
+                  type: "code_file",
+                  id: file.id,
+                  title: file.name,
                 }}
-                className={cn(
-                  "flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
-                  ROW_HEIGHT,
-                  TEXT_BODY,
-                  HOVER_ROW,
-                  active && ACTIVE_ROW,
-                )}
-                style={{ paddingLeft: 8 + (depth + 1) * 12 }}
-                title={file.path ?? file.name}
+                enableFloatingIcon={false}
               >
-                <span className="inline-block w-3" />
-                <FileIcon name={file.name} kind="file" />
-                <span className="truncate">{file.name}</span>
-                {file._dirty && (
-                  <span
-                    className="ml-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-400 dark:bg-neutral-500"
-                    aria-label="Unsaved changes"
-                  />
-                )}
-              </div>
+                <div
+                  role="treeitem"
+                  aria-selected={active}
+                  tabIndex={0}
+                  onClick={() => onOpenFile(file.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onOpenFile(file.id);
+                    }
+                  }}
+                  className={cn(
+                    "flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
+                    ROW_HEIGHT,
+                    TEXT_BODY,
+                    HOVER_ROW,
+                    active && ACTIVE_ROW,
+                  )}
+                  style={{ paddingLeft: 8 + (depth + 1) * 12 }}
+                  title={file.path ?? file.name}
+                >
+                  <span className="inline-block w-3" />
+                  <FileIcon name={file.name} kind="file" />
+                  <span className="truncate">{file.name}</span>
+                  {file._dirty && (
+                    <span
+                      className="ml-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-400 dark:bg-neutral-500"
+                      aria-label="Unsaved changes"
+                    />
+                  )}
+                </div>
+              </NonEditableContextMenu>
             );
           })}
           {!hasChildren && (

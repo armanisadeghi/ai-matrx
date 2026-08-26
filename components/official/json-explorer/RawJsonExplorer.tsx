@@ -485,9 +485,20 @@ const RawJsonExplorerBody: React.FC<RawJsonExplorerProps> = ({
         </div>
       </NonEditableContextMenu>
 
-      <pre className="whitespace-pre-wrap p-2 text-foreground font-mono overflow-auto h-full">
-        {displayJsonStr}
-      </pre>
+      {/* The actual JSON dump — a distinct pane from the key-navigation menu
+          above, so it gets its own menu (no nesting: this one wraps only the
+          <pre>, the other wraps only the nav rows). No `entity`: `pageData`
+          is caller-supplied unknown JSON with no registered record type. */}
+      <NonEditableContextMenu
+        sourceFeature="content-extractor"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: displayJsonStr }}
+        enableFloatingIcon={false}
+      >
+        <pre className="whitespace-pre-wrap p-2 text-foreground font-mono overflow-auto h-full">
+          {displayJsonStr}
+        </pre>
+      </NonEditableContextMenu>
 
       <BookmarkDialog
         open={bookmarkDialogOpen}
