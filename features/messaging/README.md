@@ -22,11 +22,13 @@ Real-time user-to-user messaging for AI Matrx using Supabase Realtime.
 The messaging system uses proper Next.js App Router patterns with dynamic routing:
 
 ```
-app/(authenticated)/messages/
+app/(core)/messages/
 ├── layout.tsx              # Shared layout with persistent desktop sidebar
 ├── page.tsx                # Conversation list (mobile full-screen, desktop empty state)
-└── [conversationId]/
-    └── page.tsx            # Chat thread view
+├── [conversationId]/
+│   └── page.tsx            # Chat thread view
+└── admin/
+    └── page.tsx            # Admin-gated feature resource map
 ```
 
 **Key Features:**
@@ -573,6 +575,7 @@ sequenceDiagram
 
 ## Change Log
 
+- **2026-08-25 — surface context and failure states now stay truthful at the point of action.** The route passes its live `matrx-user/messages` scope into the one list and thread context menu; the focused conversation/message overlays its exact identity, sender, body, and timestamp so actions no longer run against only generic pane text. Initial conversation-load failures are now visible and retryable, mark-as-read failures no longer disappear, mobile composer/list controls meet the 44px target, raw theme branches were replaced in the touched route UI, and conversation-menu navigation uses a real link instead of `window.location.assign`. `/messages/admin` now inventories the Tier 1 route, windows, components, and Redux owner.
 - **2026-08-25 — effective actors no longer borrow the audit principal's identity.** Agent-mediated messages render their `metadata.actor_label` instead of the authenticated sender's profile; Codex review labels are humanized as `Codex · <task id>` so the originating task remains findable. Agent bubbles never use Arman's avatar, and human review messages are treated as the current user's messages only when `sender_id` also matches.
 - **2026-08-25 — messaging recovers the real Supabase session boundary.** `LazyMessagingInitializer` waits for Redux identity + access token, and `conversationsWithDetails.ts` uses `runWithSessionRetry` for both first-page and paginated reads. If PostgREST still sees `anon`, the ONE reader re-resolves the browser session and retries exactly once; ordinary permission denials are not retried.
 - 2026-08-24 — **Every messaging pane got the canonical v3 right-click menu; `features/messaging/` previously had none anywhere.** A user could read a DM and could not copy it, export the thread, or hand it to an AI — and inside the floating Messages window the right-click was answered by whatever page happened to be underneath, silently handing the user THAT page's surface and agents (the overlay hazard). Now: `ConversationList` mounts ONE menu for the list and resolves the right-clicked row from `data-conversation-id`; `ChatThread` mounts ONE menu for the transcript and resolves the message from `data-message-id` (added to `MessageBubble`), falling back to the CONVERSATION's entity on empty space; `MessagesWindow` mounts its own on the "Select a conversation" empty state, which is window chrome neither pane covers. Entities are `dm_conversation` / `dm_message` — the `communication.*` tokens, never `conversation`/`message`, which are the AI chat entities in `chat.*`. Shared definitions live in NEW `lib/messaging-menu-actions.tsx`, so the `/messages` route and the window share one set of items. `contentSource` is `{type:"raw"}` on purpose: the `chat-message` source resolves against `chat.message`, so pointing a DM at it would aim Convert/Edit at the wrong table. `MessageInput` gained a `draftInsert` prop (text + nonce) so "Quote in a reply" appends into the composer without clobbering what the user already typed. Verified live in the floating window: list row, message, and empty state all open with real content and no INERT MENU / VALUE MAPPING GAP screams.

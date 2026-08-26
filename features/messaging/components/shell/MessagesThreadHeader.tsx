@@ -47,7 +47,7 @@ export function MessagesThreadHeader({
                 <span
                   className={cn(
                     "absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-background",
-                    isOnline ? "bg-green-500" : "bg-zinc-400",
+                    isOnline ? "bg-success" : "bg-muted-foreground",
                   )}
                 />
               )}

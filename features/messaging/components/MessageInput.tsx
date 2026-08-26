@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SendTapButton } from "@/components/icons/tap-buttons";
 import { AttachReferenceButton } from "@/features/matrx-envelope/components/AttachReferenceButton";
 import { ReferencePickerChip } from "@/features/matrx-envelope/components/ReferencePickerChip";
 import {
@@ -74,7 +75,7 @@ export function MessageInput({
   }, [content]);
 
   // Handle typing indicator
-  const handleTyping = useCallback(() => {
+  const handleTyping = () => {
     // Clear existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -91,7 +92,7 @@ export function MessageInput({
       isTypingRef.current = false;
       onTyping?.(false);
     }, 2000);
-  }, [onTyping]);
+  };
 
   // Handle content change
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -102,7 +103,7 @@ export function MessageInput({
   const canSend = Boolean(content.trim() || attachments.length > 0);
 
   // Handle send
-  const handleSend = useCallback(() => {
+  const handleSend = () => {
     if (!canSend || isSending || disabled) return;
 
     // Stop typing indicator
@@ -122,15 +123,7 @@ export function MessageInput({
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-  }, [
-    content,
-    attachments,
-    canSend,
-    isSending,
-    disabled,
-    onSendMessage,
-    onTyping,
-  ]);
+  };
 
   // Handle key press (Enter to send, Shift+Enter for new line)
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -152,7 +145,7 @@ export function MessageInput({
   return (
     <div
       className={cn(
-        "w-full shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-background px-3 py-2",
+        "w-full shrink-0 border-t border-border bg-background px-3 py-2",
         className,
       )}
     >
@@ -182,41 +175,40 @@ export function MessageInput({
           disabled={disabled}
           className={cn(
             "w-full min-h-[44px] max-h-[150px] resize-none text-base pl-10 pr-12",
-            "rounded-xl border-zinc-300 dark:border-zinc-700",
-            "bg-zinc-100 dark:bg-zinc-800/50",
+            "rounded-xl border-border",
+            "bg-muted",
             "focus-visible:ring-1 focus-visible:ring-primary",
-            "placeholder:text-zinc-400 dark:placeholder:text-zinc-500",
+            "placeholder:text-muted-foreground",
           )}
           rows={1}
         />
         {/* Attach a note / file / task / agent / link — no fence JSON typed by
             a human, ever (features/matrx-envelope/referenceText.ts). */}
-        <AttachReferenceButton
-          className="absolute left-2.5 bottom-2.5"
-          disabled={disabled || isSending}
-          pickerScope="direct-message"
-          onAttach={(refs) => setAttachments((prev) => [...prev, ...refs])}
-        />
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={!canSend || isSending || disabled}
-          className={cn(
-            "absolute right-3 bottom-2.5 p-1 rounded-full transition-colors",
-            "text-zinc-400 hover:text-primary",
-            "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-zinc-400",
-            canSend &&
-              !isSending &&
-              !disabled &&
-              "text-primary hover:text-primary/80",
-          )}
-        >
+        <div className="absolute bottom-0 left-0">
+          <AttachReferenceButton
+            disabled={disabled || isSending}
+            pickerScope="direct-message"
+            onAttach={(refs) => setAttachments((prev) => [...prev, ...refs])}
+          />
+        </div>
+        <div className="absolute bottom-0 right-0">
           {isSending ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <span
+              className="flex h-11 w-11 items-center justify-center text-primary"
+              role="status"
+              aria-label="Sending message"
+            >
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+            </span>
           ) : (
-            <Send className="h-4 w-4" />
+            <SendTapButton
+              variant="transparent"
+              ariaLabel="Send message"
+              onClick={handleSend}
+              disabled={!canSend || disabled}
+            />
           )}
-        </button>
+        </div>
       </div>
     </div>
   );

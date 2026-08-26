@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useEffect, useRef, useState } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { selectCurrentConversation } from "../redux/messagingSlice";
 import { useChat } from "@/hooks/useSupabaseMessaging";
@@ -11,7 +11,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronUp } from "lucide-react";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
-import { OnlineIndicator } from "./OnlineIndicator";
 import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
@@ -21,7 +20,9 @@ import {
   messageCopyLines,
   messageEntityRef,
   messageMenuSection,
+  messageSenderName,
 } from "@/features/messaging/lib/messaging-menu-actions";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 
 interface ChatThreadProps {
   conversationId: string;
@@ -37,6 +38,8 @@ interface ChatThreadProps {
    * route, which mounts the surface runtime, passes it.
    */
   onLoadedMessageCountChange?: (count: number) => void;
+  /** Live route scope sampled by context-menu actions. */
+  getApplicationScope?: () => ApplicationScope;
 }
 
 export function ChatThread({
@@ -46,6 +49,7 @@ export function ChatThread({
   className,
   messageBubbleClassName,
   onLoadedMessageCountChange,
+  getApplicationScope,
 }: ChatThreadProps) {
   const conversation = useAppSelector(selectCurrentConversation);
 
@@ -53,21 +57,12 @@ export function ChatThread({
   const user = useAppSelector(selectUser);
   const userId = propUserId || user?.id;
 
-  // Memoize displayName to prevent unnecessary effect re-runs
-  const displayName = useMemo(
-    () =>
-      propDisplayName ||
-      user?.userMetadata?.fullName ||
-      user?.userMetadata?.name ||
-      user?.email?.split("@")[0] ||
-      "User",
-    [
-      propDisplayName,
-      user?.userMetadata?.fullName,
-      user?.userMetadata?.name,
-      user?.email,
-    ],
-  );
+  const displayName =
+    propDisplayName ||
+    user?.userMetadata?.fullName ||
+    user?.userMetadata?.name ||
+    user?.email?.split("@")[0] ||
+    "User";
 
   // Chat hook
   const {
@@ -81,7 +76,6 @@ export function ChatThread({
     setTyping,
     isAnyoneTyping,
     typingText,
-    onlineUsers,
   } = useChat(conversationId, userId || null, displayName, {
     autoMarkAsRead: true,
   });
@@ -91,6 +85,7 @@ export function ChatThread({
   // that message. Right-clicking the empty space between messages falls back
   // to the conversation itself, never to nothing.
   const [menuMessageId, setMenuMessageId] = useState<string | null>(null);
+  const menuMessageRef = useRef<(typeof messages)[number] | null>(null);
   const [quote, setQuote] = useState<{ text: string; nonce: number } | null>(
     null,
   );
@@ -101,38 +96,30 @@ export function ChatThread({
   const lastMessageCountRef = useRef(0);
   const isInitialLoadRef = useRef(true);
 
-  // Scroll to bottom helper - finds the viewport and scrolls it
-  const scrollToBottom = useCallback((smooth: boolean = true) => {
-    // Double requestAnimationFrame ensures layout is complete
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        // Find the Radix ScrollArea viewport
-        const viewport = scrollAreaRef.current?.querySelector(
-          "[data-radix-scroll-area-viewport]",
-        );
-        if (viewport) {
-          viewport.scrollTo({
-            top: viewport.scrollHeight,
-            behavior: smooth ? "smooth" : "instant",
-          });
-        }
-      });
-    });
-  }, []);
-
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages.length > 0 && messages.length > lastMessageCountRef.current) {
       // On initial load, scroll instantly; on new messages, scroll smoothly
       const isInitial = isInitialLoadRef.current;
-      scrollToBottom(!isInitial);
+      // Double requestAnimationFrame ensures the Radix viewport has laid out.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const viewport = scrollAreaRef.current?.querySelector(
+            "[data-radix-scroll-area-viewport]",
+          );
+          viewport?.scrollTo({
+            top: viewport.scrollHeight,
+            behavior: isInitial ? "instant" : "smooth",
+          });
+        });
+      });
 
       if (isInitial) {
         isInitialLoadRef.current = false;
       }
     }
     lastMessageCountRef.current = messages.length;
-  }, [messages.length, scrollToBottom]);
+  }, [messages.length]);
 
   // Publish the loaded-message count to whoever owns the surface scope. The
   // messages themselves live in this component's `useChat` subscription, so the
@@ -142,31 +129,15 @@ export function ChatThread({
   }, [messages.length, onLoadedMessageCountChange]);
 
   // Handle send message
-  const handleSendMessage = useCallback(
-    async (content: string) => {
-      if (!content.trim()) return;
-      await sendMessage(content);
-    },
-    [sendMessage],
-  );
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim()) return;
+    await sendMessage(content);
+  };
 
   // Handle typing
-  const handleTyping = useCallback(
-    (isTyping: boolean) => {
-      setTyping(isTyping);
-    },
-    [setTyping],
-  );
-
-  // Get other participant for direct chat display
-  const otherParticipant =
-    conversation?.type === "direct"
-      ? conversation.participants?.find((p) => p.user_id !== userId)
-      : null;
-
-  const isOtherUserOnline = otherParticipant
-    ? onlineUsers.some((u) => u.user_id === otherParticipant.user_id)
-    : false;
+  const handleTyping = (isTyping: boolean) => {
+    setTyping(isTyping);
+  };
 
   // Group messages by date
   const groupMessagesByDate = () => {
@@ -188,7 +159,7 @@ export function ChatThread({
 
   if (!userId) {
     return (
-      <div className="flex items-center justify-center h-full text-zinc-500">
+      <div className="flex h-full items-center justify-center text-muted-foreground">
         Please sign in to view messages
       </div>
     );
@@ -196,12 +167,34 @@ export function ChatThread({
 
   const menuMessage = messages.find((m) => m.id === menuMessageId) ?? null;
 
+  const getMenuApplicationScope = () => {
+    const base = getApplicationScope?.() ?? {};
+    const focused = menuMessageRef.current;
+    if (!focused) {
+      return {
+        ...base,
+        content: conversation
+          ? `Conversation: ${conversation.display_name || conversation.group_name || "Conversation"}`
+          : (base.content ?? "Messages conversation"),
+      } satisfies ApplicationScope;
+    }
+    return {
+      ...base,
+      current_sender_id: focused.sender_id,
+      current_sender_name: messageSenderName(focused),
+      last_message_text: focused.content,
+      last_message_timestamp: focused.created_at,
+      content: messageCopyLines(focused),
+    } satisfies ApplicationScope;
+  };
+
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Messages Area */}
       <NonEditableContextMenu
         sourceFeature="messages"
         surfaceName={MESSAGES_SURFACE_NAME}
+        getApplicationScope={getMenuApplicationScope}
         // `{type:"raw"}`, deliberately NOT `chat-message` — that ContentSource
         // resolves against `chat.message` (the AI chat), so pointing a DM at it
         // would send Convert/Edit at the wrong table. Copy-as / Export /
@@ -219,6 +212,7 @@ export function ChatThread({
             ?.getAttribute("data-message-id");
           setMenuMessageId(id ?? null);
           const message = id ? messages.find((m) => m.id === id) : null;
+          menuMessageRef.current = message ?? null;
           if (!message) {
             // Empty space in the transcript — the CONVERSATION is what the
             // user right-clicked, so that is what Attach To targets.
@@ -236,7 +230,11 @@ export function ChatThread({
         extraSections={[
           messageMenuSection({
             message: menuMessage,
-            onReply: (text) => setQuote({ text, nonce: Date.now() }),
+            onReply: (text) =>
+              setQuote((previous) => ({
+                text,
+                nonce: (previous?.nonce ?? 0) + 1,
+              })),
           }),
         ]}
       >
@@ -250,7 +248,7 @@ export function ChatThread({
                   variant="ghost"
                   size="sm"
                   onClick={loadMoreMessages}
-                  className="text-xs"
+                  className="h-11 text-xs md:h-8"
                 >
                   <ChevronUp className="h-3 w-3 mr-1" />
                   Load earlier messages
@@ -260,7 +258,11 @@ export function ChatThread({
 
             {/* Loading Skeleton */}
             {isLoading && messages.length === 0 && (
-              <div className="space-y-4 py-4">
+              <div
+                className="space-y-4 py-4"
+                role="status"
+                aria-label="Loading messages"
+              >
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div
                     key={i}
@@ -286,7 +288,7 @@ export function ChatThread({
             {/* Messages */}
             {!isLoading && messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                <p className="text-sm text-muted-foreground">
                   No messages yet. Start the conversation!
                 </p>
               </div>
@@ -296,13 +298,13 @@ export function ChatThread({
                   <div key={group.date}>
                     {/* Date Separator */}
                     <div className="flex items-center justify-center my-4">
-                      <div className="flex-1 border-t border-zinc-200 dark:border-zinc-700" />
-                      <span className="px-3 text-xs text-zinc-400 bg-background">
+                      <div className="flex-1 border-t border-border" />
+                      <span className="bg-background px-3 text-xs text-muted-foreground">
                         {group.date === new Date().toLocaleDateString()
                           ? "Today"
                           : group.date}
                       </span>
-                      <div className="flex-1 border-t border-zinc-200 dark:border-zinc-700" />
+                      <div className="flex-1 border-t border-border" />
                     </div>
 
                     {/* Messages for this date */}
@@ -378,7 +380,7 @@ export function ChatThread({
             />
           </div>
           {/* Typing text */}
-          <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+          <span className="text-[11px] text-muted-foreground">
             {typingText}
           </span>
         </div>
@@ -386,8 +388,18 @@ export function ChatThread({
 
       {/* Error Display */}
       {error && (
-        <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs">
-          {error}
+        <div
+          className="flex items-center justify-between gap-3 border-y border-destructive/40 bg-destructive/10 px-4 py-2 text-xs text-destructive"
+          role="alert"
+        >
+          <span>{error}</span>
+          <Button
+            variant="outline"
+            className="h-11 shrink-0 md:h-8"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
         </div>
       )}
 

@@ -146,18 +146,27 @@ export function conversationMenuSection(args: {
   const href = conversation ? conversationHref(conversation.id) : null;
 
   const items: ContextMenuExtraItem[] = [
-    {
-      kind: "item",
-      id: "dm-conversation-open",
-      label: "Open conversation",
-      icon: ExternalLink,
-      disabled: !conversation,
-      onSelect: () => {
-        if (!conversation) return;
-        if (onOpen) onOpen(conversation.id);
-        else window.location.assign(conversationHref(conversation.id));
-      },
-    },
+    ...(conversation && onOpen
+      ? [
+          {
+            kind: "item" as const,
+            id: "dm-conversation-open",
+            label: "Open conversation",
+            icon: ExternalLink,
+            onSelect: () => onOpen(conversation.id),
+          },
+        ]
+      : href
+        ? [
+            {
+              kind: "link" as const,
+              id: "dm-conversation-open",
+              label: "Open conversation",
+              icon: ExternalLink,
+              href,
+            },
+          ]
+        : []),
     ...(href
       ? [
           {

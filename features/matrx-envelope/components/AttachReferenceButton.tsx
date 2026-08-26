@@ -15,14 +15,14 @@
  * canonical stored-files picker window.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Paperclip } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { PaperclipTapButton } from "@/components/icons/tap-buttons";
 import { cn } from "@/lib/utils";
 import { curatedTokens } from "@/features/scopes/registry/entityRegistry";
 import { referenceTypeLabel } from "@/features/scopes/utils/referenceCell";
@@ -51,7 +51,6 @@ export interface AttachReferenceButtonProps {
   /** Anchor scope, required only if `scope` is offered. */
   scopeId?: string | null;
   disabled?: boolean;
-  className?: string;
   /** Distinguishes this picker's file-picker window from others on the page. */
   pickerScope?: string;
 }
@@ -61,14 +60,13 @@ export function AttachReferenceButton({
   types,
   scopeId = null,
   disabled = false,
-  className,
   pickerScope = "attach-reference",
 }: AttachReferenceButtonProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [filePickerOpen, setFilePickerOpen] = useState(false);
 
-  const offeredTypes = useMemo(() => {
+  const offeredTypes = (() => {
     if (types && types.length > 0) return [...new Set(types)];
     // Set-dedupe: the lead types are also curated tokens in the registry.
     // Lead with what people actually attach; the rest keep registry order.
@@ -83,7 +81,7 @@ export function AttachReferenceButton({
         ...curatedTokens(),
       ]),
     ];
-  }, [types]);
+  })();
 
   const [activeType, setActiveType] = useState<string>(offeredTypes[0] ?? "");
   const type = offeredTypes.includes(activeType)
@@ -100,19 +98,12 @@ export function AttachReferenceButton({
     <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button
-            type="button"
+          <PaperclipTapButton
+            variant="transparent"
             disabled={disabled}
-            aria-label="Attach a reference"
-            title="Attach a note, file, task, agent, link…"
-            className={cn(
-              "rounded-full p-1 text-zinc-400 transition-colors hover:text-primary",
-              "disabled:cursor-not-allowed disabled:opacity-40",
-              className,
-            )}
-          >
-            <Paperclip className="h-4 w-4" />
-          </button>
+            ariaLabel="Attach a reference"
+            tooltip="Attach a note, file, task, agent, or link"
+          />
         </PopoverTrigger>
         <PopoverContent
           ref={contentRef}

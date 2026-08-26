@@ -52,18 +52,22 @@ export default function MessagesPageClient() {
 
       {/* Mobile: Full-screen conversation list (desktop sidebar is hidden) */}
       <div className="md:hidden flex flex-col h-full pt-[var(--shell-header-h)]">
-        <ConversationList userId={userId} className="flex-1" />
+        <ConversationList
+          userId={userId}
+          className="flex-1"
+          getApplicationScope={getScope}
+        />
       </div>
 
       {/* Desktop: Empty state (sidebar shows list, this is the default content) */}
       <div className="hidden md:flex flex-1 h-full flex-col items-center justify-center text-center p-8">
-        <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
-          <MessageSquare className="w-8 h-8 text-zinc-400" />
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+          <MessageSquare className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-100 mb-1">
+        <h2 className="mb-1 text-lg font-medium text-foreground">
           Select a conversation
         </h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm">
+        <p className="max-w-sm text-sm text-muted-foreground">
           Choose a conversation from the list or start a new one to begin
           messaging
         </p>

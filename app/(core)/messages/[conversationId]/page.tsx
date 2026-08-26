@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
@@ -17,6 +17,7 @@ import { useOnlinePresence } from "@/hooks/useSupabaseMessaging";
 import { getMessagingService } from "@/lib/supabase/messaging";
 import { createMessagesScope } from "@/features/surfaces/manifests/messages.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { toast } from "@/lib/toast";
 
 export default function ConversationPage() {
   const params = useParams();
@@ -28,21 +29,18 @@ export default function ConversationPage() {
   // subscription). A ref, not state: `getScope` is sampled when the user presses
   // Run, so this must be the live value and must not re-render the thread.
   const loadedMessageCountRef = useRef(0);
-  const handleLoadedMessageCountChange = useCallback((count: number) => {
+  const handleLoadedMessageCountChange = (count: number) => {
     loadedMessageCountRef.current = count;
-  }, []);
+  };
 
   // Get user from Redux - use auth.users.id (UUID)
   const user = useAppSelector(selectUser);
   const userId = user?.id ?? undefined;
-  const displayName = useMemo(
-    () =>
-      user?.userMetadata?.fullName ||
-      user?.userMetadata?.name ||
-      user?.email?.split("@")[0] ||
-      "User",
-    [user?.userMetadata?.fullName, user?.userMetadata?.name, user?.email],
-  );
+  const displayName =
+    user?.userMetadata?.fullName ||
+    user?.userMetadata?.name ||
+    user?.email?.split("@")[0] ||
+    "User";
 
   // Get conversations from Redux (centralized state)
   const conversations = useAppSelector(selectConversations);
@@ -83,8 +81,12 @@ export default function ConversationPage() {
       markAsReadCalledRef.current = true;
       getMessagingService()
         .markConversationAsRead(conversationId, userId)
-        .catch(() => {
-          // Non-critical -- swallow errors
+        .catch((error: unknown) => {
+          console.error(
+            "[Messaging] Failed to mark conversation as read:",
+            error,
+          );
+          toast.error("Could not mark this conversation as read");
         });
     }
 
@@ -141,6 +143,7 @@ export default function ConversationPage() {
           displayName={displayName}
           className="flex-1"
           onLoadedMessageCountChange={handleLoadedMessageCountChange}
+          getApplicationScope={getScope}
         />
       </div>
     </SurfaceRuntimeProvider>

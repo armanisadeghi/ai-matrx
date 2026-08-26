@@ -10,6 +10,7 @@ import {
   updateConversationLastMessage,
   markConversationAsRead,
   setLoading,
+  setError,
 } from "../redux/messagingSlice";
 import { createClient } from "@/utils/supabase/client";
 import { uniqueChannelTopic } from "@/utils/supabase/realtime";
@@ -149,10 +150,12 @@ export function MessagingInitializer() {
   const loadConversations = useCallback(async () => {
     if (!userId) {
       dispatch(setConversations([]));
+      dispatch(setError(null));
       return;
     }
 
     dispatch(setLoading(true));
+    dispatch(setError(null));
 
     try {
       // Use the database function for efficient loading. The shared reader
@@ -180,6 +183,13 @@ export function MessagingInitializer() {
     } catch (err) {
       if (!mountedRef.current) return;
       console.error("[Messaging] Failed to load conversations:", err);
+      dispatch(
+        setError(
+          err instanceof Error
+            ? err.message
+            : "The conversation list could not be loaded.",
+        ),
+      );
     } finally {
       if (mountedRef.current) {
         dispatch(setLoading(false));

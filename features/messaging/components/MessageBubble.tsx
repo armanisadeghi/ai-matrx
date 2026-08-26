@@ -27,15 +27,21 @@ interface MessageBubbleProps {
 function StatusIcon({ status }: { status: MessageStatus }) {
   switch (status) {
     case "sending":
-      return <Loader2 className="h-3 w-3 animate-spin text-zinc-400" />;
+      return (
+        <Loader2
+          className="h-3 w-3 animate-spin text-muted-foreground"
+          role="status"
+          aria-label="Sending message"
+        />
+      );
     case "sent":
-      return <Check className="h-3 w-3 text-zinc-400" />;
+      return <Check className="h-3 w-3 text-muted-foreground" />;
     case "delivered":
-      return <CheckCheck className="h-3 w-3 text-zinc-400" />;
+      return <CheckCheck className="h-3 w-3 text-muted-foreground" />;
     case "read":
-      return <CheckCheck className="h-3 w-3 text-blue-500" />;
+      return <CheckCheck className="h-3 w-3 text-primary" />;
     case "failed":
-      return <AlertCircle className="h-3 w-3 text-red-500" />;
+      return <AlertCircle className="h-3 w-3 text-destructive" />;
     default:
       return null;
   }
@@ -59,9 +65,7 @@ export function MessageBubble({
   } = message;
 
   const senderProfileName =
-    sender?.display_name ||
-    sender?.email?.split("@")[0] ||
-    "Unknown";
+    sender?.display_name || sender?.email?.split("@")[0] || "Unknown";
   const actor = messageActorPresentation(message.metadata, senderProfileName);
   const senderName = actor.label;
 
@@ -97,8 +101,8 @@ export function MessageBubble({
         )}
       >
         {!isOwn && <div className="w-6 shrink-0" />}
-        <div className="px-3 py-2 rounded-2xl bg-zinc-100 dark:bg-zinc-800">
-          <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">
+        <div className="rounded-2xl bg-muted px-3 py-2">
+          <p className="text-sm italic text-muted-foreground">
             Message deleted
           </p>
         </div>
@@ -117,7 +121,7 @@ export function MessageBubble({
       {showSenderName && (
         <span
           className={cn(
-            "text-xs text-zinc-500 dark:text-zinc-400 mb-0.5",
+            "mb-0.5 text-xs text-muted-foreground",
             !isOwn && "ml-8",
           )}
         >
@@ -163,7 +167,7 @@ export function MessageBubble({
             "max-w-[75vw] md:max-w-[400px] px-3 py-2 rounded-2xl",
             isOwn
               ? "bg-primary text-primary-foreground rounded-br-md"
-              : "bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-bl-md",
+              : "rounded-bl-md bg-muted text-foreground",
             bubbleClassName,
           )}
         >
@@ -182,11 +186,13 @@ export function MessageBubble({
         )}
       >
         {isOwn && status && <StatusIcon status={status} />}
-        <span className="text-[10px] text-zinc-400">
+        <span className="text-[10px] text-muted-foreground">
           {formatTime(created_at)}
         </span>
         {edited_at && (
-          <span className="text-[10px] text-zinc-400 italic">(edited)</span>
+          <span className="text-[10px] italic text-muted-foreground">
+            (edited)
+          </span>
         )}
       </div>
     </div>

@@ -18,6 +18,11 @@ import React from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { ConversationList } from "@/features/messaging/components/ConversationList";
+import {
+  selectConversations,
+  selectTotalUnreadCount,
+} from "@/features/messaging/redux/messagingSlice";
+import { createMessagesScope } from "@/features/surfaces/manifests/messages.manifest";
 
 export default function MessagesLayoutClient({
   children,
@@ -27,18 +32,33 @@ export default function MessagesLayoutClient({
   // Get user from Redux - use auth.users.id (UUID)
   const user = useAppSelector(selectUser);
   const userId = user?.id ?? undefined;
+  const conversations = useAppSelector(selectConversations);
+  const totalUnreadCount = useAppSelector(selectTotalUnreadCount);
+
+  const getScope = () =>
+    createMessagesScope({
+      total_unread_count: totalUnreadCount,
+      all_conversations: conversations.map((conversation) => ({
+        id: conversation.id,
+        title: conversation.display_name ?? conversation.group_name ?? null,
+        unread_count: conversation.unread_count ?? 0,
+        last_message_at: conversation.updated_at,
+      })),
+    });
 
   return (
-    <div className="flex h-full overflow-y-auto overflow-x-hidden bg-background">
+    <div className="flex h-full min-h-0 overflow-y-auto overflow-x-hidden bg-background">
       {/* Desktop Sidebar - Persistent Conversation List */}
-      <div className="hidden md:flex md:w-80 flex-col border-r border-border shrink-0 pt-[var(--shell-header-h)]">
-        <ConversationList userId={userId} className="flex-1" />
+      <div className="hidden min-h-0 shrink-0 flex-col border-r border-border pt-[var(--shell-header-h)] md:flex md:w-80">
+        <ConversationList
+          userId={userId}
+          className="min-h-0 flex-1"
+          getApplicationScope={getScope}
+        />
       </div>
 
       {/* Main Content Area - Route Outlet */}
-      <div className="flex-1 min-w-0">
-        {children}
-      </div>
+      <div className="min-h-0 min-w-0 flex-1">{children}</div>
     </div>
   );
 }
