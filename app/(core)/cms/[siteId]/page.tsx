@@ -6,16 +6,18 @@ import { CmsPageService } from "@/features/cms/services/cmsService";
 import { useSiteContext } from "./SiteLayoutClient";
 import PageListView from "@/features/cms/components/PageListView";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 import { createCmsSiteExtraSections } from "@/features/cms/agent-context/cmsSiteExtraSections";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { clientSiteRootUrl } from "@/features/cms/utils/pageUrls";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { humanLines } from "@/features/marketing/lib/copy-payloads";
 import {
   slugifyTitle,
   SLUG_RE,
 } from "@/features/html-pages/utils/promoteConvert";
-import type { AgentWritePolicy } from "@/features/cms/types";
+import type { AgentWritePolicy, ClientPageSummary } from "@/features/cms/types";
 
 export default function SiteDashboardPage() {
   const { siteId } = useParams() as { siteId: string };
@@ -128,6 +130,33 @@ export default function SiteDashboardPage() {
     }
   };
 
+  // Per-row entity delegation (THE PER-ROW ENTITY RULE): ONE menu wraps the
+  // whole page list; resolveContextOnOpen reads the right-clicked row off
+  // PageListView's `data-row-id` stamp. `client_pages` has no registered
+  // EntityTypeToken yet (no `platform.create_entity_table` entry), so Attach
+  // To / Share stay dark here — that is a real gap, not an oversight, and
+  // wiring the type would require a DB entity registration this task does
+  // not cover. Copy / Export / Convert light up correctly via `content`.
+  const resolvePageRowContext = (target: HTMLElement | null) => {
+    const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const page: ClientPageSummary | null =
+      (id && pages.find((p) => p.id === id)) || null;
+    if (!page) return null;
+    return {
+      content: humanLines([
+        ["Title", page.title],
+        ["Slug", page.slug],
+        ["Route", page.route],
+        ["Type", page.page_type],
+        ["Category", page.category],
+        ["Published", page.is_published ? "yes" : "no"],
+        ["Has draft", page.has_draft ? "yes" : "no"],
+        ["Updated", page.updated_at],
+      ]),
+      [CONTEXT_MENU_ENTITY_KEY]: null,
+    };
+  };
+
   const handlePublishPage = async (pageId: string) => {
     try {
       await CmsPageService.publishDraft(pageId);
@@ -150,6 +179,8 @@ export default function SiteDashboardPage() {
         {...CMS_SITE_CONTEXT_MENU_PROPS}
         extraSections={siteExtraSections}
         contextData={buildSurfaceScope() as Record<string, unknown>}
+        contentSource={{ type: "raw" }}
+        resolveContextOnOpen={resolvePageRowContext}
       >
         <div className="h-full flex flex-col overflow-hidden">
           <div className="flex-1 overflow-auto">

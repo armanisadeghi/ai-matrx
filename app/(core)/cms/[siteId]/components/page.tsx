@@ -13,6 +13,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { SurfaceRoleAgentButton } from "@/features/surfaces/components/chrome/SurfaceRoleAgentButton";
+import { humanLines } from "@/features/marketing/lib/copy-payloads";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -356,7 +357,23 @@ export default function ComponentsPage() {
                 const rowMenuProps = {
                   ...CMS_COMPONENT_CONTEXT_MENU_PROPS,
                   extraSections: rowExtraSections,
-                  contextData: buildSurfaceScope() as Record<string, unknown>,
+                  // `client_components` has no registered EntityTypeToken (no
+                  // `platform.create_entity_table` entry) — Attach To / Share
+                  // stay dark here, a real gap outside this pass's scope.
+                  // Copy / Export / Convert light up via real `content`.
+                  contentSource: { type: "raw" as const },
+                  contextData: {
+                    ...(buildSurfaceScope() as Record<string, unknown>),
+                    content: humanLines([
+                      ["Name", comp.name],
+                      ["Type", comp.component_type],
+                      ["Active", comp.is_active ? "yes" : "no"],
+                      ["Has draft", comp.has_draft ? "yes" : "no"],
+                      ["Updated", comp.updated_at],
+                      ["HTML", comp.html_content],
+                      ["CSS", comp.css_content ?? ""],
+                    ]),
+                  },
                 };
                 return (
                   <div
@@ -429,6 +446,7 @@ export default function ComponentsPage() {
                           <EditableContextMenu
                             {...CMS_COMPONENT_CONTEXT_MENU_PROPS}
                             extraSections={rowExtraSections}
+                            contentSource={{ type: "raw" }}
                             getTextarea={() => htmlTextareaRef.current}
                             getApplicationScope={getHtmlApplicationScope}
                             contextData={
@@ -457,6 +475,7 @@ export default function ComponentsPage() {
                           <EditableContextMenu
                             {...CMS_COMPONENT_CONTEXT_MENU_PROPS}
                             extraSections={rowExtraSections}
+                            contentSource={{ type: "raw" }}
                             getTextarea={() => cssTextareaRef.current}
                             getApplicationScope={getCssApplicationScope}
                             contextData={

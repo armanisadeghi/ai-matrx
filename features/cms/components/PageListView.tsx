@@ -383,6 +383,7 @@ export default function PageListView({
                   return (
                     <tr
                       key={page.id}
+                      data-row-id={page.id}
                       className="border-b border-border/50 last:border-0 hover:bg-muted/20 active:bg-muted/50 cursor-pointer transition-colors select-none"
                       onClick={() => onOpenPage(page.id)}
                       onMouseEnter={() => onFocusPage?.(page.id)}
