@@ -55,6 +55,8 @@ import { EXTRACTION_ENTITY_TYPE } from "./constants";
 import {
   MOBILE_TABLE,
 } from "@/components/official/mobile-table/mobileTable";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 
 type SortKey = "updated" | "name" | "rows" | "source";
 
@@ -252,6 +254,31 @@ export function ExtractionCatalogClient() {
           ) : visible.length === 0 ? (
             <EmptyState hasAny={entries.length > 0} />
           ) : (
+            <NonEditableContextMenu
+              sourceFeature="page_extraction"
+              surfaceName="matrx-user/knowledge"
+              contentSource={{ type: "raw" }}
+              contextData={{
+                content: `Extraction datasets (${visible.length}):\n${visible
+                  .map((e) => `- ${e.name} — source ${e.sourceName}, ${e.rowCount.toLocaleString()} rows, ${e.latestRunStatus ?? "no runs"}`)
+                  .join("\n")}`,
+              }}
+              resolveContextOnOpen={(target) => {
+                const id = target
+                  ?.closest("[data-row-id]")
+                  ?.getAttribute("data-row-id");
+                const row = id ? visible.find((e) => e.jobId === id) : undefined;
+                if (!row) return null;
+                return {
+                  content: `Dataset: ${row.name}\nSource: ${row.sourceName}\nRows: ${row.rowCount.toLocaleString()}\nStatus: ${row.latestRunStatus ?? "—"}\nUpdated: ${row.updatedAt}`,
+                  [CONTEXT_MENU_ENTITY_KEY]: {
+                    type: EXTRACTION_ENTITY_TYPE,
+                    id: row.jobId,
+                    title: row.name,
+                  },
+                };
+              }}
+            >
             <table className={cn("text-sm", MOBILE_TABLE)}>
               <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur">
                 <tr className="border-b border-border text-left text-xs text-muted-foreground">
@@ -311,6 +338,7 @@ export function ExtractionCatalogClient() {
                   return (
                     <tr
                       key={e.jobId}
+                      data-row-id={e.jobId}
                       onClick={() => open(e.jobId)}
                       className="group cursor-pointer border-b border-border/60 bg-card transition-colors max-sm:whitespace-nowrap sm:bg-transparent sm:hover:bg-accent/50"
                     >
@@ -405,6 +433,7 @@ export function ExtractionCatalogClient() {
                 })}
               </tbody>
             </table>
+            </NonEditableContextMenu>
           )}
         </div>
       </div>
