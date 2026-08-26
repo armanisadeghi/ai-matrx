@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useRef } from "react";
 import { CheckCircle2, Loader2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,7 @@ export function CompactConfirmPopover({
   onConfirm,
 }: CompactConfirmPopoverProps) {
   const isMobile = useIsMobile();
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const descriptionId = useId();
 
@@ -81,12 +82,7 @@ export function CompactConfirmPopover({
         collisionPadding={12}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
-          const content = event.currentTarget;
-          window.setTimeout(() => {
-            content
-              .querySelector<HTMLButtonElement>("[data-compact-confirm-cancel]")
-              ?.focus();
-          }, 0);
+          window.setTimeout(() => cancelRef.current?.focus(), 0);
         }}
         onCloseAutoFocus={(event) => event.preventDefault()}
         className="w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-border/80 bg-popover/95 p-0 text-popover-foreground shadow-xl backdrop-blur-glass backdrop-saturate-glass"
@@ -139,7 +135,7 @@ export function CompactConfirmPopover({
 
           <div className="flex gap-2">
             <Button
-              data-compact-confirm-cancel
+              ref={cancelRef}
               type="button"
               variant="ghost"
               size="sm"
