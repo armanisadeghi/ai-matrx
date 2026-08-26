@@ -75,7 +75,7 @@ platform-wide PGRST002 outage. It is a fleet-wide config change and **not a buil
 | Path | What lives there |
 |---|---|
 | `api/types.ts` | The RPC-lane domain types. **Temporary by construction** — when the wrappers land and `pnpm db-types` regenerates, the generated types become the source of truth and the diff against this file is the drift detector. Narrowing a generated type to match this file destroys that signal; fix this file instead. |
-| `api/rpc.ts` | THE ONE DOOR. Also the RPC lane's four-case mock. Carries one narrow, loudly-commented cast whose **removal** is the drift detector. |
+| `api/rpc.ts` | THE ONE DOOR. Also the RPC lane's four-case mock, the envelope unwrapping, and the snake→camel seam. Carries one narrow, loudly-commented cast whose **removal** is the drift detector. |
 | `api/service.ts` | Typed calls, no behaviour. The mobile-app boundary. |
 | `api/idempotencyKey.ts` | The ONE punch-key mint, shared by web, kiosk, manager entry and mobile. |
 | `api/mock/registry.ts` | The direct lane's fixtures (see below). |

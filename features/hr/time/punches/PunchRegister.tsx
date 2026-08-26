@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { toast } from "@/lib/toast";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
+import { hrTimesheetHref } from "@/features/hr/routes";
 
 import { getPunchRegister } from "../api/service";
 import type { Paged, PunchRow } from "../api/types";
@@ -206,7 +207,7 @@ function punchColumns(): MatrxColumnDef<PunchRow>[] {
       // The door onto this punch's day in the COMPUTED lane — the only place hours may be read.
       cell: (row) => (
         <Link
-          href={`/hr/time/timesheets/${row.employmentId}?day=${row.localWorkDate}`}
+          href={hrTimesheetHref(row.employmentId)}
           className="underline underline-offset-4"
         >
           {formatLocalDate(row.localWorkDate, { weekday: true })}

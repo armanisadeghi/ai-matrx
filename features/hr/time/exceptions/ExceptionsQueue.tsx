@@ -46,6 +46,7 @@ import {
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { toast } from "@/lib/toast";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
+import { hrTimeExceptionsHref, hrTimesheetHref } from "@/features/hr/routes";
 
 import { resolveAttendanceException } from "../api/service";
 import type {
@@ -127,7 +128,7 @@ export function ExceptionsQueue({
         {kind ? (
           <p className="text-xs">
             Filtered to <span className="font-medium">{EXCEPTION_KIND_LABELS[kind]}</span> ·{" "}
-            <Link href="/hr/time/exceptions" className="underline underline-offset-4">
+            <Link href={hrTimeExceptionsHref()} className="underline underline-offset-4">
               show everything
             </Link>
           </p>
@@ -242,7 +243,7 @@ function exceptionColumns({
       id: "employeeDisplayName",
       accessorKey: "employeeDisplayName",
       header: "Employee",
-      href: (row) => `/hr/time/timesheets/${row.employmentId}`,
+      href: (row) => hrTimesheetHref(row.employmentId),
       cell: (row) => (
         <span className="font-medium">{row.employeeDisplayName ?? "This employee"}</span>
       ),

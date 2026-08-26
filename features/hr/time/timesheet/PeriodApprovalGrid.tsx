@@ -38,6 +38,12 @@ import type {
 import { Button } from "@/components/ui/button";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
+import {
+  hrTimeExceptionsHref,
+  hrTimePeriodHref,
+  hrTimePeriodsHref,
+  hrTimesheetHref,
+} from "@/features/hr/routes";
 
 import { getPeriodGrid } from "../api/service";
 import { getPayPeriod } from "../periods/api/periodReads";
@@ -282,7 +288,7 @@ function columns(
       accessorKey: "employeeDisplayName",
       header: "Employee",
       // A real anchor — cmd-click and middle-click open route 29 in a new tab (the door law).
-      href: (row) => `/hr/time/timesheets/${row.employmentId}`,
+      href: (row) => hrTimesheetHref(row.employmentId),
       cell: (row) => (
         <span className="font-medium">{row.employeeDisplayName}</span>
       ),
@@ -373,7 +379,7 @@ function columns(
           <span className="text-muted-foreground">None</span>
         ) : (
           <Link
-            href={`/hr/time/exceptions?employmentId=${row.employmentId}`}
+            href={hrTimeExceptionsHref(undefined, { employment: row.employmentId })}
             className="font-medium underline underline-offset-4"
           >
             {row.openExceptionCount}
@@ -459,7 +465,7 @@ function MobileRow({ row }: { row: PeriodGridRow }) {
     <div className="space-y-1 border-b border-border px-3 py-2.5">
       <div className="flex items-baseline justify-between gap-2">
         <Link
-          href={`/hr/time/timesheets/${row.employmentId}`}
+          href={hrTimesheetHref(row.employmentId)}
           className="text-sm font-medium underline underline-offset-4"
         >
           {row.employeeDisplayName}
@@ -495,7 +501,7 @@ export function PeriodGridHeader({ period }: { period: PayPeriodRow }) {
         {period.counts.approved} of {period.counts.employments} timecards approved
       </span>
       <Link
-        href={`/hr/time/periods/${period.id}`}
+        href={hrTimePeriodHref(period.id)}
         className="text-xs font-medium underline underline-offset-4"
       >
         Move the pay period
@@ -514,7 +520,7 @@ function NoPeriodChosen() {
           want to work through.
         </p>
         <Link
-          href="/hr/time/periods"
+          href={hrTimePeriodsHref()}
           className="mt-3 inline-flex text-sm font-medium underline underline-offset-4"
         >
           Open pay periods

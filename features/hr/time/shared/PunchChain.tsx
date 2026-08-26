@@ -12,9 +12,11 @@
  * the single most damaging thing a component in this feature could do, so there is no prop for it.
  */
 
+import Link from "next/link";
 import { Camera, MapPin, Undo2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { hrPunchesHref } from "@/features/hr/routes";
 
 import type { PunchRow } from "../api/types";
 import { formatDateTimeInTz } from "./format";
@@ -117,6 +119,13 @@ function PunchChainRow({
           <span>
             Voided {formatDateTimeInTz(punch.voidedAt, punch.tz)}
             {punch.voidedReason ? <> — &ldquo;{punch.voidedReason}&rdquo;</> : null}
+            {/*
+             * 🚨 THE DOOR IS UNCONDITIONAL. §2.5 requires the voiding punch to be *a door*, and an
+             * earlier version of this fell back to a bare uuid when no `onOpenPunch` was supplied —
+             * which is a dead end, in the one place a person is reconciling a wage record. When the
+             * host offers no in-place opener, the fallback is the raw register filtered to this
+             * employment, where the replacement punch is listed. Never text.
+             */}
             {punch.voidedByPunchId ? (
               <>
                 {" · "}
@@ -129,7 +138,12 @@ function PunchChainRow({
                     Open the punch that replaced it
                   </button>
                 ) : (
-                  <span className="font-mono">{punch.voidedByPunchId}</span>
+                  <Link
+                    href={hrPunchesHref(undefined, { employment: punch.employmentId })}
+                    className="underline decoration-dotted underline-offset-2 hover:text-foreground"
+                  >
+                    Open the punch that replaced it
+                  </Link>
                 )}
               </>
             ) : null}

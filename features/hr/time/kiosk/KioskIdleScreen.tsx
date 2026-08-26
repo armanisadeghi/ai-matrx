@@ -79,7 +79,14 @@ export function KioskIdleScreen({ skew, busy, onChoose, captureNotice }: KioskId
             <Button
               key={kind}
               type="button"
-              variant={presentation.emphasis === "primary" ? "default" : "outline"}
+              /*
+                Weight is by ACT, not by `presentation.emphasis`. That field answers "which act is
+                primary in the current state", and the kiosk has no state to answer it against
+                (see the header) — reading it here paints four of six controls as primary, which is
+                the same as painting none. Clocking in and out is what a wall tablet is for; the
+                break acts are the ones you go looking for.
+              */
+              variant={kind === "clock_in" || kind === "clock_out" ? "default" : "outline"}
               disabled={busy}
               onClick={() => onChoose(kind)}
               className="min-h-[96px] gap-3 text-2xl font-semibold"

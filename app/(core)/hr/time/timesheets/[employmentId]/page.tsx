@@ -16,10 +16,10 @@ export default async function EmploymentTimesheetPage({
   searchParams,
 }: {
   params: Promise<{ employmentId: string }>;
-  searchParams: Promise<{ payPeriodId?: string }>;
+  searchParams: Promise<{ period?: string }>;
 }) {
   const { employmentId } = await params;
-  const { payPeriodId } = await searchParams;
+  const { period } = await searchParams;
 
   return (
     <>
@@ -34,7 +34,7 @@ export default async function EmploymentTimesheetPage({
         >
           <EmploymentPeriodDetail
             employmentId={employmentId}
-            payPeriodId={payPeriodId ?? null}
+            payPeriodId={period ?? null}
           />
         </Suspense>
       </div>

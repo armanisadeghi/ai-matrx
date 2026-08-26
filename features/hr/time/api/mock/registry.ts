@@ -668,8 +668,12 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
                     earningCodeId: "ccccccc1-0000-4000-8000-000000000001",
                     earningCodeName: "Regular",
                     earningCode: "REG",
-                    startedAt: "2026-03-11T01:58:00Z",
-                    endedAt: "2026-03-11T10:03:00Z",
+                    // 🚨 PAID differs from RAW, which is the whole point of the rounding case:
+                    // recorded 6:58 PM–3:03 AM, paid 7:00 PM–3:00 AM. A fixture where the two
+                    // pairs are identical renders "Recorded X. Paid X. +1 minute", which reads as
+                    // a bug in the surface and hides a real one.
+                    startedAt: "2026-03-11T02:00:00Z",
+                    endedAt: "2026-03-11T10:00:00Z",
                     localWorkDate: "2026-03-10",
                     tz: TZ,
                     hours: 8,

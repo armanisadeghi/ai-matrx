@@ -34,9 +34,9 @@ const KINDS = new Set<string>([
 export default async function AttendanceExceptionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ kind?: string; employmentId?: string }>;
+  searchParams: Promise<{ kind?: string; employment?: string }>;
 }) {
-  const { kind, employmentId } = await searchParams;
+  const { kind, employment } = await searchParams;
   const validKind =
     kind && KINDS.has(kind) ? (kind as AttendanceExceptionKind) : null;
 
@@ -51,7 +51,7 @@ export default async function AttendanceExceptionsPage({
             <div className="h-full animate-pulse bg-card/40" aria-label="Loading the queue" />
           }
         >
-          <ExceptionsQueue kind={validKind} employmentId={employmentId ?? null} />
+          <ExceptionsQueue kind={validKind} employmentId={employment ?? null} />
         </Suspense>
       </div>
     </>

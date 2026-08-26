@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { hrTimeExceptionsHref } from "@/features/hr/routes";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 
 import { resolveAttendanceException } from "../api/service";
@@ -82,7 +83,7 @@ function groupByKind(rows: AttendanceExceptionRow[]): KindGroup[] {
 export function ExceptionsStrip({
   exceptions,
   /** Pre-filters the route 31 door — a group's door lands on ITS kind, not the whole queue. */
-  queueHref = "/hr/time/exceptions",
+  queueHref = hrTimeExceptionsHref(),
   mockCase,
   onResolved,
   className,
@@ -167,7 +168,7 @@ function KindGroupBlock({
           />
           {/* THE GROUP'S OWN DOOR, pre-filtered to this kind. */}
           <Link
-            href={`${queueHref}?kind=${group.kind}`}
+            href={hrTimeExceptionsHref(undefined, { kind: group.kind })}
             className="text-xs underline underline-offset-4"
           >
             See all

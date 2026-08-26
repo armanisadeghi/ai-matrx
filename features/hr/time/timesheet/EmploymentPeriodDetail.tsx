@@ -37,6 +37,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { toast } from "@/lib/toast";
+import { hrPunchesHref, hrTimeExceptionsHref, hrTimePeriodHref } from "@/features/hr/routes";
 
 import { getTimesheet } from "../api/service";
 import type { Timesheet } from "../api/types";
@@ -150,7 +151,7 @@ function DetailBody({
 
       <ExceptionsStrip
         exceptions={timesheet.openExceptions}
-        queueHref={`/hr/time/exceptions?employmentId=${timesheet.employmentId}`}
+        queueHref={hrTimeExceptionsHref(undefined, { employment: timesheet.employmentId })}
         mockCase={mockCase}
         onResolved={onChanged}
       />
@@ -172,7 +173,7 @@ function DetailBody({
             double-pays.
           </p>
           <Link
-            href={`/hr/time/periods/${timesheet.payPeriod.id}`}
+            href={hrTimePeriodHref(timesheet.payPeriod.id)}
             className="mt-2 inline-flex text-sm font-medium underline underline-offset-4"
           >
             Open the pay period to record an adjustment
@@ -186,7 +187,7 @@ function DetailBody({
             reason is always required, and the employee is always told what changed and why.
           </p>
           <Link
-            href={`/hr/time/punches?employmentId=${timesheet.employmentId}`}
+            href={hrPunchesHref(undefined, { employment: timesheet.employmentId })}
             className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
           >
             <PencilLine className="h-4 w-4" aria-hidden />

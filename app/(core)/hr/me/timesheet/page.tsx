@@ -19,9 +19,9 @@ export const metadata = { title: "My timesheet" };
 export default async function MyTimesheetPage({
   searchParams,
 }: {
-  searchParams: Promise<{ employmentId?: string; payPeriodId?: string }>;
+  searchParams: Promise<{ employment?: string; period?: string }>;
 }) {
-  const { employmentId, payPeriodId } = await searchParams;
+  const { employment, period } = await searchParams;
 
   return (
     <>
@@ -36,8 +36,8 @@ export default async function MyTimesheetPage({
           }
         >
           <MyTimesheet
-            employmentId={employmentId ?? null}
-            payPeriodId={payPeriodId ?? null}
+            employmentId={employment ?? null}
+            payPeriodId={period ?? null}
           />
         </Suspense>
       </div>

@@ -14,9 +14,9 @@ export const metadata = { title: "Timesheets" };
 export default async function TimesheetApprovalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ payPeriodId?: string }>;
+  searchParams: Promise<{ period?: string }>;
 }) {
-  const { payPeriodId } = await searchParams;
+  const { period } = await searchParams;
 
   return (
     <>
@@ -29,7 +29,7 @@ export default async function TimesheetApprovalPage({
             <div className="h-full animate-pulse bg-card/40" aria-label="Loading timesheets" />
           }
         >
-          <PeriodApprovalGrid payPeriodId={payPeriodId ?? null} />
+          <PeriodApprovalGrid payPeriodId={period ?? null} />
         </Suspense>
       </div>
     </>

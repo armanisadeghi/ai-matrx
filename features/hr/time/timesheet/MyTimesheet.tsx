@@ -101,8 +101,13 @@ function MyTimesheetBody({
 
   return (
     <>
+      {/*
+       * No title here on purpose. `<PageHeader>` already carries "My timesheet" in the shell's
+       * header zone; repeating it in the body is the faux in-body header the `core-route-headers`
+       * skill names as failure class 1. What the body owes the reader is the sentence that changes
+       * how they read the numbers, not the page's own name.
+       */}
       <header className="space-y-1">
-        <h1 className="text-base font-semibold">My timesheet</h1>
         <p className="text-xs text-muted-foreground">
           Every figure here was calculated by the payroll engine, not by this page. Open any
           overtime or premium number to see exactly which rule produced it.
