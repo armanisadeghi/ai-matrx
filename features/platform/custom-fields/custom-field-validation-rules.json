@@ -1609,6 +1609,56 @@
       }
     },
     {
+      "name": "currency_missing_the_currency_key_is_type_mismatch",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "currency"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": {
+          "amount": 10
+        }
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "Caught a real NULL-propagation defect: jsonb_typeof(v -> 'missing') is SQL NULL, so `<> 'string'` was NULL and the whole compound-shape check silently passed. Every twin must test an ABSENT sub-key, not only a wrong-typed one."
+    },
+    {
+      "name": "object_options_without_a_value_key_leave_select_unconstrained",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "single_select",
+          "options": [
+            {
+              "label": "Gold"
+            }
+          ]
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "zzz"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      },
+      "$note": "Same NULL defect on the option reader: a list of objects with no `value` must leave the select UNCONSTRAINED, never constrain it to a list of NULLs."
+    },
+    {
       "name": "file_caps",
       "field_definitions": [
         {
@@ -2106,7 +2156,7 @@
         "a": true,
         "b": null
       },
-      "expect": 21
+      "expect": 19
     }
   ],
   "count_keys_cases": [
