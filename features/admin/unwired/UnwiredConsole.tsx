@@ -199,6 +199,9 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
       </section>
 
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card">
+        {/* No entity: a finding is a static-analysis result read from a JSON
+            snapshot (scripts/unwired/types), not a DB record — there is no
+            EntityTypeToken for it, so Copy/AI act on the raw content only. */}
         <NonEditableContextMenu
           sourceFeature="admin"
           contentSource={{ type: "raw" }}

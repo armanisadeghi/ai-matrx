@@ -486,6 +486,9 @@ export function LintDebtConsole({
       )}
 
       <div className="min-h-0 flex-1">
+        {/* No entity: a lint finding is an ESLint result read from a JSON
+            snapshot, not a DB record — there is no EntityTypeToken for it,
+            so Copy/AI act on the raw content only. */}
         <NonEditableContextMenu
           sourceFeature="admin"
           contentSource={{ type: "raw" }}
