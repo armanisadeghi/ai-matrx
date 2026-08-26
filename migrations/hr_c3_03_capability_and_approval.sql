@@ -1,8 +1,10 @@
 -- HR domain C3 — migration 3 of 6 (register item HRB-007, lane core-c3-access).
 --
--- THE PREDICATES. hr.population_contains (§1.3c, fixpoint, crew included), hr.capability (§1.4),
--- hr.can_approve (§1.3b, never-approve-yourself FIRST), hr.incident_excluded (§5), the six
--- role/authority write RPCs (§1.2) and the one-shot activation bootstrap (§1.1).
+-- THE PREDICATES, and only the predicates. hr._knob, hr.employments_of, hr.manager_chain,
+-- hr.position_subtree, hr.population_contains (§1.3c, fixpoint, crew included), hr.capability
+-- (§1.4), hr.incident_excluded (§5), hr._approval_subject, hr._limits_satisfied and
+-- hr.can_approve (§1.3b, never-approve-yourself FIRST).
+-- The §1.2 write RPCs and the §1.1 activation bootstrap are file 4; the derivation is file 5.
 --
 -- Authority: SPEC-ACCESS §1.1–§1.4, §5. Applied live as `hr_c3_03_capability_and_approval`.
 -- Idempotent.

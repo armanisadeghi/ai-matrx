@@ -142,8 +142,10 @@ export default function AgentReviewWorkspace({
               review_created_at: row.created_at,
               review_updated_at: row.updated_at,
               review_instructions: row.instructions,
-              feedback_draft: feedback,
               can_act: row.status === "ready_for_human" && Boolean(user?.id),
+              // Omitted while empty rather than emitted blank — see the
+              // manifest's note on `hasValue()`.
+              ...(feedback ? { feedback_draft: feedback } : {}),
               ...(row.feedback ? { review_feedback: row.feedback } : {}),
               ...(row.conversation_id
                 ? { review_conversation_id: row.conversation_id }

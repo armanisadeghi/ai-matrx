@@ -27,6 +27,8 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 | Registry classification | `registry.ts`                                                 |
 | Status/types            | `types.ts`                                                    |
 | Triage contract         | `triage.ts`                                                   |
+| Surface scope (list)    | `surface-scope.ts`                                            |
+| Surface write half      | `components/AgentReviewWriteTargets.tsx`                      |
 
 ## Data contract
 
@@ -55,6 +57,14 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 - The same conversation appears in `/messages/[conversationId]`; Agent Review embeds the canonical messaging thread rather than cloning chat state.
 - Blank domain/feature values render **Not assigned** instead of disappearing.
 
+## Agent surfaces
+
+Both routes are agent-aware surfaces, and they are TWO surfaces on purpose: the list can only emit true queue-wide counts because it reads every row, and the item page can only emit the open row's state — neither can honestly promise the other's values.
+
+- `matrx-admin/agent-review` (list) emits queue counts per workflow status, repair-routing rollups from `metadata.triage`, the registry classification vocabulary, and a 25-row sample of the open view. Its one write target, `review_triage_classification`, re-routes ONE row (lane, priority, workstreams, required tools) through `updateReviewQueueRow` and re-reads the row to prove the write landed.
+- `matrx-admin/agent-review-item` (workspace) emits the open row, its classification, its triage envelope, and the live feedback editor. Its one write target, `review_feedback_draft`, stages prose into that editor; nothing is saved.
+- **No agent may change a row's STATUS on either surface.** This queue is where agents register their own work, so no write target exists for Request changes, Approve, Run agent review again, or Archive — every transition stays a human button press recorded in the review's conversation. Claim state (`metadata.triage.assignment`) and the verification record are equally off-limits from the page: they belong to the skill's atomic SQL claim protocol.
+
 ## Security and integration
 
 - The admin layout and `agent.review_queue` super-admin RLS gate the review surface.
@@ -66,6 +76,7 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 
 ## Change log
 
+- 2026-08-26 — Rebuilt both surfaces against the live agent-first pages: real emitters on the list and the item workspace, a working triage write target, a feedback-draft write target, and a separate `matrx-admin/agent-review-item` surface. The old manifest still described the retired human-first page (pending/changes_requested statuses, an archived toggle, per-row feedback drafts) and claimed an emitter in a file that never existed.
 - 2026-08-25 — Widened detail-page messages to 80% of the transcript, removed redundant review-thread helper copy, and promoted Original target to the same heading treatment as Your review.
 - 2026-08-25 — Compressed the detail header into fixed Back/Open doors, a fading single-line title, and one repository-to-feature hierarchy; removed the duplicate status and label/value grid.
 - 2026-08-25 — Made Open enter the review workspace and launch its target in a separate tab; corrected effective-actor presentation so Codex messages show their task ID without borrowing Arman's avatar, while human-authored feedback is explicitly labeled Arman.

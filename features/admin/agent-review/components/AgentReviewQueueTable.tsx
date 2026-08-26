@@ -138,12 +138,7 @@ export default function AgentReviewQueueTable() {
         cell: (row) => {
           const target = reviewTargetPageDisplay(row.url);
           return (
-            <Button
-              asChild
-              size="sm"
-              variant="outline"
-              className="h-8 gap-1.5"
-            >
+            <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
               <Link
                 href={target.href}
                 target="_blank"
@@ -153,9 +148,7 @@ export default function AgentReviewQueueTable() {
                 onClick={(event) => {
                   event.stopPropagation();
                   window.setTimeout(() => {
-                    router.push(
-                      `/administration/users/agent-review/${row.id}`,
-                    );
+                    router.push(`/administration/users/agent-review/${row.id}`);
                   }, 0);
                 }}
               >
@@ -271,150 +264,158 @@ export default function AgentReviewQueueTable() {
       getScope={getSurfaceScope}
       isEditable={false}
     >
-    <div className="flex h-full min-h-0 flex-col gap-4 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">Agent Review</h1>
-          <p className="text-sm text-muted-foreground">
-            Agents prepare and verify every item before it reaches you.
-          </p>
+      <div className="flex h-full min-h-0 flex-col gap-4 p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold">Agent Review</h1>
+            <p className="text-sm text-muted-foreground">
+              Agents prepare and verify every item before it reaches you.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={view === "inbox" ? "default" : "outline"}
+              onClick={() => setView("inbox")}
+            >
+              Ready for you ({inboxRows.length})
+            </Button>
+            <Button
+              size="sm"
+              variant={view === "all" ? "default" : "outline"}
+              onClick={() => setView("all")}
+            >
+              All activity ({rows.length})
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void refresh()}>
+              <RefreshCw className="mr-1.5 h-4 w-4" /> Refresh
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant={view === "inbox" ? "default" : "outline"}
-            onClick={() => setView("inbox")}
-          >
-            Ready for you ({inboxRows.length})
-          </Button>
-          <Button
-            size="sm"
-            variant={view === "all" ? "default" : "outline"}
-            onClick={() => setView("all")}
-          >
-            All activity ({rows.length})
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => void refresh()}>
-            <RefreshCw className="mr-1.5 h-4 w-4" /> Refresh
-          </Button>
-        </div>
-      </div>
 
-      <nav
-        aria-label="Agent review workflow"
-        className="flex items-stretch gap-2"
-      >
-        {FLOW.map((step, index) => {
-          const count = activeRows.filter((row) =>
-            step.statuses.some((status) => status === row.status),
-          ).length;
-          return (
-            <div key={step.label} className="contents">
-              {index > 0 ? (
-                <ArrowRight className="mt-6 h-4 w-4 shrink-0 text-muted-foreground" />
-              ) : null}
-              <div className="min-w-0 flex-1 rounded-md border bg-card px-3 py-2">
-                <div className="text-sm font-medium">{step.label}</div>
-                <div className="mt-1 text-2xl font-semibold tabular-nums">
-                  {count}
+        <nav
+          aria-label="Agent review workflow"
+          className="flex items-stretch gap-2"
+        >
+          {FLOW.map((step, index) => {
+            const count = activeRows.filter((row) =>
+              step.statuses.some((status) => status === row.status),
+            ).length;
+            return (
+              <div key={step.label} className="contents">
+                {index > 0 ? (
+                  <ArrowRight className="mt-6 h-4 w-4 shrink-0 text-muted-foreground" />
+                ) : null}
+                <div className="min-w-0 flex-1 rounded-md border bg-card px-3 py-2">
+                  <div className="text-sm font-medium">{step.label}</div>
+                  <div className="mt-1 text-2xl font-semibold tabular-nums">
+                    {count}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </nav>
+            );
+          })}
+        </nav>
 
-      <div className="min-h-0 flex-1">
-        {/* Write half of the surface — renders nothing, services the
+        <div className="min-h-0 flex-1">
+          {/* Write half of the surface — renders nothing, services the
             manifest's triage target through updateReviewQueueRow. */}
-        <AgentReviewWriteTargets rows={rows} onRowUpdated={applySavedRow} />
-        {/* No entity: agent.review_queue has no registered EntityTypeToken
+          <AgentReviewWriteTargets rows={rows} onRowUpdated={applySavedRow} />
+          {/* No entity: agent.review_queue has no registered EntityTypeToken
             today — Copy/AI act on the raw content only.
             surfaceName is `matrx-admin/agent-review` (registered manifest,
             features/surfaces/manifests/admin-agent-review.manifest.ts) —
             this IS that surface's own table, and the provider above supplies
             the same live scope the menu passes as `getApplicationScope`. */}
-        <NonEditableContextMenu
-          sourceFeature="admin"
-          surfaceName={ADMIN_AGENT_REVIEW_SURFACE_NAME}
-          getApplicationScope={getSurfaceScope}
-          contentSource={{ type: "raw" }}
-          contextData={{ content: "" }}
-          resolveContextOnOpen={(element) => {
-            const id = element?.closest("[data-row-id]")?.getAttribute("data-row-id");
-            const row = id ? visibleRows.find((r) => r.id === id) : undefined;
-            setClickedRow(row ?? null);
-            if (!row) return null;
-            return { content: reviewRowContent(row, registry) };
-          }}
-          extraSections={[
-            {
-              id: "agent-review-row",
-              label: "This review item",
-              anchor: "after-compare",
-              items: [
-                {
-                  kind: "link",
-                  id: "agent-review-open-item",
-                  label: "Open review item",
-                  icon: ArrowRight,
-                  href: clickedRow
-                    ? `/administration/users/agent-review/${clickedRow.id}`
-                    : "#",
-                  disabled: !clickedRow,
-                  description: "Open the review's own page",
-                },
-                {
-                  kind: "link",
-                  id: "agent-review-open-target",
-                  label: "Open the reviewed surface",
-                  icon: ExternalLink,
-                  href: clickedRow
-                    ? reviewTargetPageDisplay(clickedRow.url).href
-                    : "#",
-                  target: "_blank",
-                  disabled: !clickedRow,
-                  description: "Open the surface this item reviews",
-                },
-              ] satisfies ContextMenuExtraItem[],
-            },
-          ]}
-        >
-          <MatrxDataTable
-            data={visibleRows}
-            columns={columns}
-            getRowId={(row) => row.id}
-            isLoading={loading}
-            urlState={{
-              id: "agent-review",
-              defaultSort: { id: "updated_at", direction: "desc" },
+          <NonEditableContextMenu
+            sourceFeature="admin"
+            surfaceName={ADMIN_AGENT_REVIEW_SURFACE_NAME}
+            getApplicationScope={getSurfaceScope}
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(element) => {
+              const id = element
+                ?.closest("[data-row-id]")
+                ?.getAttribute("data-row-id");
+              const row = id ? visibleRows.find((r) => r.id === id) : undefined;
+              setClickedRow(row ?? null);
+              if (!row) return null;
+              return { content: reviewRowContent(row, registry) };
             }}
-            toolbar={{
-              search: true,
-              searchPlaceholder: "Search review items",
-            }}
-            detail={{ enabled: false }}
-            onRowOpen={(row) =>
-              router.push(`/administration/users/agent-review/${row.id}`)
-            }
-            pageSize={25}
-            pageSizeOptions={[25, 50, 100]}
-            zebra
-            mobile="scroll"
-            emptyState={{
-              title:
-                view === "inbox"
-                  ? "Nothing is waiting for your review"
-                  : "No review items match this view",
-              description:
-                view === "inbox"
-                  ? "Agents are still testing and repairing the remaining activity."
-                  : "Clear a search or column filter to see more items.",
-            }}
-          />
-        </NonEditableContextMenu>
+            extraSections={[
+              {
+                id: "agent-review-row",
+                label: "This review item",
+                anchor: "after-compare",
+                items: [
+                  {
+                    kind: "link",
+                    id: "agent-review-open-item",
+                    label: "Open review item",
+                    icon: ArrowRight,
+                    href: clickedRow
+                      ? `/administration/users/agent-review/${clickedRow.id}`
+                      : "#",
+                    disabled: !clickedRow,
+                    description: "Open the review's own page",
+                  },
+                  {
+                    kind: "link",
+                    id: "agent-review-open-target",
+                    label: "Open the reviewed surface",
+                    icon: ExternalLink,
+                    href: clickedRow
+                      ? reviewTargetPageDisplay(clickedRow.url).href
+                      : "#",
+                    target: "_blank",
+                    disabled: !clickedRow,
+                    description: "Open the surface this item reviews",
+                  },
+                ] satisfies ContextMenuExtraItem[],
+              },
+            ]}
+          >
+            {/* A PLAIN DOM CHILD, not the table itself: Radix clones the
+              trigger's ref + onContextMenu onto its ONE child, and
+              MatrxDataTable forwards neither — wrapping it directly produced
+              a menu that never opened (measured live 2026-08-26). */}
+            <div className="flex h-full min-h-0 flex-col">
+              <MatrxDataTable
+                data={visibleRows}
+                columns={columns}
+                getRowId={(row) => row.id}
+                isLoading={loading}
+                urlState={{
+                  id: "agent-review",
+                  defaultSort: { id: "updated_at", direction: "desc" },
+                }}
+                toolbar={{
+                  search: true,
+                  searchPlaceholder: "Search review items",
+                }}
+                detail={{ enabled: false }}
+                onRowOpen={(row) =>
+                  router.push(`/administration/users/agent-review/${row.id}`)
+                }
+                pageSize={25}
+                pageSizeOptions={[25, 50, 100]}
+                zebra
+                mobile="scroll"
+                emptyState={{
+                  title:
+                    view === "inbox"
+                      ? "Nothing is waiting for your review"
+                      : "No review items match this view",
+                  description:
+                    view === "inbox"
+                      ? "Agents are still testing and repairing the remaining activity."
+                      : "Clear a search or column filter to see more items.",
+                }}
+              />
+            </div>
+          </NonEditableContextMenu>
+        </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

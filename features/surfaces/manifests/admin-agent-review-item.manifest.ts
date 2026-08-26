@@ -219,12 +219,19 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "review_content",
   },
   {
+    // NOT `alwaysAvailable`, even though the page holds this state on every
+    // render: the platform judges PRESENCE with `hasValue()` in
+    // `SurfaceContextWindow.tsx`, where an EMPTY STRING counts as absent. An
+    // empty editor is the normal state here (it is cleared after every
+    // recorded action), so promising it would make the window report
+    // "1 required missing" for the whole time the human has not typed —
+    // measured live 2026-08-26. The same reasoning as `admin-users`.
     name: "feedback_draft",
     label: "Feedback draft",
     description:
-      "Live contents of the review editor on this page — what the human is about to send back, before any button is pressed. Empty string when the editor is empty (it is cleared after every recorded action). Always present. Read twin of the `review_feedback_draft` write target.",
+      "Live contents of the review editor on this page — what the human is about to send back, before any button is pressed. Absent while the editor is empty, which is its normal state between rounds. Read twin of the `review_feedback_draft` write target.",
     valueType: "string",
-    alwaysAvailable: true,
+    alwaysAvailable: false,
     typicalCharCount: 500,
     sortOrder: 300,
     group: "review_editor",
@@ -297,9 +304,9 @@ export function createAdminAgentReviewItemScope(values: {
   review_created_at: string;
   review_updated_at: string;
   review_instructions: string;
-  feedback_draft: string;
   can_act: boolean;
   // alwaysAvailable: false → optional
+  feedback_draft?: string;
   review_feedback?: string;
   review_conversation_id?: string;
   review_triage?: ReviewTriage;
