@@ -43,6 +43,19 @@
 --    cannot still sign, and the delegate is a NEW signer row at the same position — evidence keeps
 --    both, because who was asked and who actually signed are different facts.
 --
+-- 7. 🚨 IP PINNING IS RECORDED BY THE LANE AND ENFORCED BY NOBODY, SO THIS FAMILY ENFORCES IT.
+--    §5.7 rule 6 says outsider sessions are IP-pinned by default. Read live: `outsider_verify`
+--    STORES the issuing IP on platform.actor_session when the purpose declares `ip_pinned`, and
+--    `platform.assert_outsider_scope` never compares it to anything — so a stolen session secret
+--    works from any address on every purpose in the lane. `esign._ctx_outsider` compares the
+--    caller's IP to the session's and refuses on a mismatch, uniformly. This closes it for the
+--    signing family only. DEBT, OWNER = the access lane (HRB-007): the comparison belongs in
+--    assert_outsider_scope, where all eight purposes get it.
+--
+-- 8. THE DOWNLOAD DOOR ASSERTS THE `download` VERB ON THE DOCUMENT, not merely `read` on the signer
+--    row. The registry declares `download` on esign_envelope_document for a reason; checking the
+--    weaker grant would mean the stronger one is decorative.
+--
 -- 6. DOWNLOADS RETURN A TICKET, NOT A URL. §2.8 forbids a new store and a new ACL, and Postgres
 --    cannot mint a signed storage URL. The RPC authorises the download, writes the `downloaded`
 --    event with IP and user-agent, and returns the file id, version and a TTL taken from
@@ -142,6 +155,15 @@ begin
   if t.verification_factor <> 'none' and ses.verified_at is null then
     return jsonb_build_object('granted', false, 'reason', 'link_no_longer_valid',
                               'true_reason', 'session_not_verified');
+  end if;
+
+  -- RECORDED DECISION 7 — nor does it check this. §5.7 rule 6.
+  if ses.ip is not null and p_ip is not null and ses.ip <> p_ip then
+    insert into platform.actor_token_event (organization_id, actor_token_id, session_id, event_type, ip, detail)
+    values (t.organization_id, t.id, ses.id, 'replay_rejected', p_ip,
+            jsonb_build_object('true_reason','session_ip_moved'));
+    return jsonb_build_object('granted', false, 'reason', 'link_no_longer_valid',
+                              'true_reason', 'session_ip_moved');
   end if;
 
   return jsonb_build_object(
@@ -676,6 +698,12 @@ returns jsonb language plpgsql security definer set search_path to 'esign','publ
 declare c jsonb; begin
   c := esign._ctx_outsider(p_session, 'read', p_ip, p_ua);
   if not (c ->> 'granted')::boolean then return c - 'true_reason'; end if;
+  -- RECORDED DECISION 8 — the `download` verb, on the document, per §5.3 law 2.
+  begin
+    perform platform.assert_outsider_scope(p_session, 'esign_envelope_document', p_document_id, 'download');
+  exception when others then
+    return jsonb_build_object('granted', false, 'reason', 'link_no_longer_valid');
+  end;
   return esign._act_download(c, p_document_id);
 end $fn$;
 
