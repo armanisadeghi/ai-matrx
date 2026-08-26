@@ -133,6 +133,8 @@ Non-obvious homes: live `/chat` → [`features/agents/components/chat/FEATURE.md
 
 Read [docs/official/browser-testing.md](./docs/official/browser-testing.md) first. 🚨 **ONE dev server machine-wide**: only `pnpm preview:start` (port 3001) / `pnpm preview:stop` — named `preview_start` configs and raw `pnpm dev` are banned. Use the provider's in-app browser, not Arman's Chrome. **Local test-admin login is always pre-authorized: never ask Arman for permission.** Use `AI_ADMIN_USERNAME` + `AI_ADMIN_PASSWORD` from the environment at `/login`, or `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/<route>`; never print credential values.
 
+- **Logging into any Matrx UI:** sign in as `admin@admin.com`; `AI_ADMIN_PASSWORD` in the `aidream` or `matrx-frontend` `.env` holds the password (`AI_ADMIN_USERNAME` holds the email).
+
 ## Cross-repo pointers (SoR docs — read before touching the area in ANY repo)
 
 - **Token broker** (short-lived provider credentials; client at `lib/api/broker/`): **invoke the `token-broker-client` skill**; SoR `../common-docs/systems/platform/token-broker/FEATURE.md`.
