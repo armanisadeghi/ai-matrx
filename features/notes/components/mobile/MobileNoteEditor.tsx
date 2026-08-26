@@ -24,6 +24,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
 import type { Note } from "@/features/notes/types";
+import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
 
 export type MobileEditorMode = "plain" | "wysiwyg" | "preview";
@@ -317,7 +318,15 @@ export default function MobileNoteEditor({
         {effectiveMode === "plain" && readOnly && (
           <NonEditableContextMenu
             sourceFeature="notes"
+            surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
             contextData={{ content: localContent }}
+            contentSource={{ type: "note", noteId: note.id } satisfies ContentSource}
+            entity={{
+              type: "note",
+              id: note.id,
+              title: localLabel || note.label,
+              resourceType: "note",
+            }}
           >
             <textarea
               ref={textareaRef}
@@ -332,10 +341,17 @@ export default function MobileNoteEditor({
         {effectiveMode === "plain" && !readOnly && (
           <EditableContextMenu
             sourceFeature="notes"
+            surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
             contextData={{ content: localContent }}
             contentSource={
               { type: "note", noteId: note.id } satisfies ContentSource
             }
+            entity={{
+              type: "note",
+              id: note.id,
+              title: localLabel || note.label,
+              resourceType: "note",
+            }}
             getTextarea={() => textareaRef.current}
             onTextReplace={(next) => {
               setLocalContent(next);

@@ -334,9 +334,19 @@ const ProcessorExtractorBody = ({ jsonData, configKey }: ProcessorExtractorProps
                     </SplitView>
                 </div>
             ) : (
-                <pre className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 p-4 rounded-md text-sm text-gray-800 dark:text-gray-200 overflow-auto max-h-[60dvh]">
-                    {displayJsonStr}
-                </pre>
+                // Its own menu, distinct pane from the key-navigation menu above
+                // (no nesting). No `entity`: `jsonData` is caller-supplied
+                // unknown JSON with no registered record type.
+                <NonEditableContextMenu
+                    sourceFeature="content-extractor"
+                    contentSource={{ type: "raw" }}
+                    contextData={{ content: displayJsonStr }}
+                    enableFloatingIcon={false}
+                >
+                    <pre className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 p-4 rounded-md text-sm text-gray-800 dark:text-gray-200 overflow-auto max-h-[60dvh]">
+                        {displayJsonStr}
+                    </pre>
+                </NonEditableContextMenu>
             )}
 
         </div>

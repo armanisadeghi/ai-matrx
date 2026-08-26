@@ -264,6 +264,18 @@ export function NoteEditor({
       ? { type: "note", noteId: note.id }
       : undefined;
 
+  // Same phantom-note guard as `menuContentSource` — an unsaved note has no
+  // row for Attach To / Share to point at.
+  const menuEntity =
+    note?.id && note.id !== "__phantom__"
+      ? {
+          type: "note" as const,
+          id: note.id,
+          title: localLabel || note.label,
+          resourceType: "note" as const,
+        }
+      : undefined;
+
   const getApplicationScope = useCallback(() => {
     const el = textareaRef.current;
     const start = el?.selectionStart ?? selectionStart;
@@ -756,6 +768,7 @@ export function NoteEditor({
             getTextarea={() => textareaRef.current}
             getApplicationScope={getApplicationScope}
             contentSource={menuContentSource}
+            entity={menuEntity}
             contextData={contextData}
             onTextReplace={(newText) => {
               const textarea = textareaRef.current;
@@ -841,6 +854,7 @@ export function NoteEditor({
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getApplicationScope={getApplicationScope}
             contentSource={menuContentSource}
+            entity={menuEntity}
             contextData={contextData}
             onTextReplace={(newText) => {
               if (tuiEditorRef.current?.getInstance) {
@@ -885,6 +899,7 @@ export function NoteEditor({
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getApplicationScope={getApplicationScope}
             contentSource={menuContentSource}
+            entity={menuEntity}
             contextData={contextData}
             onTextReplace={(newText) => {
               if (tuiEditorRef.current?.getInstance) {
@@ -938,6 +953,8 @@ export function NoteEditor({
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getApplicationScope={getApplicationScope}
             contextData={contextData}
+            contentSource={menuContentSource}
+            entity={menuEntity}
           >
             <ScrollArea className="absolute inset-0 w-full h-full">
               <div className="p-6 pb-[50dvh] bg-textured">
