@@ -149,6 +149,8 @@
     "check:retired-db-ref": "npx tsx scripts/check-retired-db-ref.ts",
     "check:hr-time-arithmetic": "npx tsx scripts/check-hr-time-arithmetic.ts",
     "check:hr-time-arithmetic:strict": "npx tsx scripts/check-hr-time-arithmetic.ts --strict",
+    "check:hr-punch-write-path": "tsx scripts/check-hr-punch-write-path.ts",
+    "check:hr-punch-write-path:strict": "tsx scripts/check-hr-punch-write-path.ts --strict",
     "check:release-gates": "bash scripts/run-release-gates.sh",
     "check:release-gates:advisory": "bash scripts/run-release-gates.sh --advisory",
     "check:release-gates:strict": "bash scripts/run-release-gates.sh --strict",

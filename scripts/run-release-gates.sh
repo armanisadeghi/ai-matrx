@@ -94,6 +94,20 @@ if $STRICT; then
         # re-ENABLE inside ONE transaction, so a guard left disabled at rest is a
         # mistake, not a state. (aidream/scripts/release.sh asserts the same.)
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards:strict"
+        # HR PUNCH WRITE PATH is BLOCKING in strict mode, because RLS does NOT
+        # prevent the insert: hr.punch is a `component` table whose write policy
+        # admits anyone holding editor on the parent, so a client-direct
+        # `insert into hr.punch` would manufacture a raw time record that passed
+        # none of hr.punch_record's invariants. What actually holds the door is
+        # structural and live-only — hr absent from PostgREST's exposed schemas,
+        # zero anon table grants, an enumerated set of sanctioned writers, pinned
+        # search_paths — none of which tsc or a code review can see. SPEC-TIME §15
+        # called wiring this query into CI, rather than leaving it a review
+        # checklist line, the only thing standing between us and that insert path.
+        # All 9 checks are green with no backlog to grandfather. An unreachable DB
+        # or an empty/short result prints LIVE PULL FAILED and counts as a finding,
+        # never as a pass. (SPEC-DATA-MODEL §18.5 / L3-80.)
+        "HR punch write path (client-direct insert into hr.punch)|pnpm check:hr-punch-write-path:strict"
         # PARTITION RUNWAY stays ADVISORY even in strict mode. It is the only
         # gate whose subject is the CALENDAR, not the code: a release that has
         # nothing to do with history.row_versions must not be blocked because a
@@ -299,6 +313,15 @@ else
         # not a blocked release.
         "Reachability standing guards|pnpm check:reachability-guards"
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards"
+        # HR PUNCH WRITE PATH — BLOCKING in --strict (see the strict list above for
+        # why RLS does not prevent a client-direct `insert into hr.punch`). Listed
+        # here with `:strict` ON PURPOSE for the same reason component-created-by
+        # is below: release.sh runs THIS list (`--advisory || true`) and nothing in
+        # the repo runs --strict automatically, so a bare invocation would exit 0
+        # and print a silent green [OK]. With `:strict` the checker exits 1,
+        # run_gate prints a red [FAIL] with the offenders, and advisory mode still
+        # exits 0 — scream, never block.
+        "HR punch write path (client-direct insert into hr.punch)|pnpm check:hr-punch-write-path:strict"
         # Time-bounded DDL that can expire on the calendar — partition runway,
         # catch-all partitions that started receiving rows, stalled pg_cron
         # jobs. Loud, never blocking (D122).
