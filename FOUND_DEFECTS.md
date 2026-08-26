@@ -2048,3 +2048,22 @@ One line per fix — title, date, pointer. History lives in git. Entries older t
 - **D102** — `callApi` surfaces server messages instead of bare "HTTP 422". 2026-07-28.
 - **D97** — Univer autosave filtered to mutations; scrolling no longer writes snapshots. 2026-07-28.
 - **D99 / D98 / D75 / D73c / D72 / D68 / D69 / D109 / D82 / D71** — assorted one-file fixes, 2026-07-28 (git history has the detail).
+
+## DB kind components cannot open an entity — `EntityRef` is not on their import allowlist
+
+**Found:** 2026-08-26, building the Proof Runs admin surface.
+
+A DB-authored kind component (`content_ir.kind_component`, `source='db'`) may import the kind-kit,
+shadcn ui, lucide, `cn` and the copy bar — but **not** `components/official/entity-ref/EntityRef`
+(`features/agent-apps/utils/allowed-imports.ts`). So any kind whose payload names an entity id can
+only render it as text, which is exactly the dead end `pnpm check:dead-ends` exists to stop; the
+gate does not see it because it scans repo files, not DB component sources.
+
+Concrete instance: `proof_attestation_readout` renders the run's receipts-anchor conversation id as
+`<code>`. The surrounding page supplies a real door (`ProofRunConsole` + the run detail), so nothing
+is stranded today — but every other kind component with an id is in the same position, silently.
+
+**Fix shape:** add `@/components/official/entity-ref/EntityRef` to the allowlist (it is pure
+presentation over the entity registry, the same class as the kit primitives already allowed), then
+sweep DB components that render bare ids. Not done here — widening what DB components may import is
+a platform decision with blast radius beyond one feature.

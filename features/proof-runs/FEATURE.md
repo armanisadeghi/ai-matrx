@@ -16,8 +16,8 @@ proof land, and read the history.
 
 ## What this page owns — and what it deliberately does not
 
-| Owns | Does not own |
-|---|---|
+| Owns                                                                                             | Does not own                                                               |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | The check list, the run controls (auto / live / replay), the live console, the run-history table | How a `proof_check_status` tile or a `proof_attestation` readout **looks** |
 
 `proof_check_status` and `proof_attestation` are **registered kinds with active kind components**,
@@ -36,12 +36,12 @@ by their parent, the same precedent as `faq_item` and `media_chapter`.
 
 ## Files
 
-| File | Role |
-|---|---|
-| `api.ts` | The `/proof-runs` client. `getJson` for reads; `postNdjson` for the run stream. |
-| `types.ts` | Request/response shapes. Kind payloads are **imported from the generated artifact**, never re-declared. |
-| `components/ProofRunsClient.tsx` | The page: checks, controls, history, run orchestration. |
-| `components/ProofRunConsole.tsx` | The live console; hands the finished attestation to the kind component. |
+| File                             | Role                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `api.ts`                         | The `/proof-runs` client. `getJson` for reads; `postNdjson` for the run stream.                         |
+| `types.ts`                       | Request/response shapes. Kind payloads are **imported from the generated artifact**, never re-declared. |
+| `components/ProofRunsClient.tsx` | The page: checks, controls, history, run orchestration.                                                 |
+| `components/ProofRunConsole.tsx` | The live console; hands the finished attestation to the kind component.                                 |
 
 ## Reading the page
 
@@ -53,6 +53,12 @@ by their parent, the same precedent as `faq_item` and `media_chapter`.
 - **A skipped proof is never a pass.** In replay the five boundary proofs read "Not checked", and
   the attestation says `replay_only` rather than `live_receipts`.
 - **The gate declining to run is not a failure** — it renders as an amber notice with the reason.
+- **The receipts anchor is a door, not a string.** The run's conversation holds the actual model
+  calls the proofs were computed from, so it renders as an `<EntityRef token="conversation">` in
+  both the live console and the run detail (`pnpm check:dead-ends`). The kind component shows the
+  id as text because `EntityRef` is not on the DB-component import allowlist
+  (`features/agent-apps/utils/allowed-imports.ts`) — a real platform gap, logged in
+  `FOUND_DEFECTS.md`, not something to work around per-component.
 
 ## What the first click found
 

@@ -33,6 +33,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "@/lib/toast";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { extractErrorMessage } from "@/utils/errors";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import {
@@ -439,6 +440,18 @@ export default function ProofRunsClient() {
                     <span className="font-mono">
                       {openRun.replayed_from_run_id}
                     </span>
+                  </span>
+                ) : null}
+                {openRun.conversation_id ? (
+                  <span className="flex items-center gap-1">
+                    receipts anchor
+                    {/* The door onto the evidence itself: this conversation
+                        holds the model calls the proofs were computed from. */}
+                    <EntityRef
+                      token="conversation"
+                      id={openRun.conversation_id}
+                      name={`${openRun.check_slug} run`}
+                    />
                   </span>
                 ) : null}
               </div>

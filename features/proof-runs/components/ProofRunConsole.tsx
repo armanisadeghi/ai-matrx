@@ -21,6 +21,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import type {
   ProofEvaluatedData,
@@ -163,8 +164,17 @@ export function ProofRunConsole({ state }: { state: ProofRunConsoleState }) {
             {state.started.gate_reason}
           </p>
           {state.started.conversation_id ? (
-            <p className="mt-1 font-mono text-[10px] text-muted-foreground">
-              receipts anchor {state.started.conversation_id}
+            <p className="mt-1 flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
+              <span>receipts anchor</span>
+              {/* The anchor is a REAL conversation holding this run's model
+                  calls — the evidence the proofs are computed from. Naming an
+                  id without a door is a dead end (`pnpm check:dead-ends`), and
+                  here the door is the whole point: open it and read the calls. */}
+              <EntityRef
+                token="conversation"
+                id={state.started.conversation_id}
+                name={`${state.started.slug} run`}
+              />
             </p>
           ) : null}
         </div>
