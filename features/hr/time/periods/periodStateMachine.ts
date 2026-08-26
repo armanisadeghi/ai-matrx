@@ -160,10 +160,13 @@ export const REOPEN_NOTICE =
  */
 export function disputeSentence(disputesOpen: number): string | null {
   if (disputesOpen <= 0) return null;
+  // Wording is §2.7's, verbatim: *"3 timecards are approved with an open disagreement. The
+  // disagreement travels to the export."* Only the timecard noun agrees with the count — the
+  // disagreement stays singular even at three, because it is each timecard's own disagreement, and
+  // the second sentence ("The disagreement travels") depends on that reading.
   const noun = disputesOpen === 1 ? "timecard is" : "timecards are";
-  const disagreement = disputesOpen === 1 ? "an open disagreement" : "open disagreements";
   return (
-    `${disputesOpen} ${noun} approved with ${disagreement}. ` +
+    `${disputesOpen} ${noun} approved with an open disagreement. ` +
     `The disagreement travels to the export.`
   );
 }

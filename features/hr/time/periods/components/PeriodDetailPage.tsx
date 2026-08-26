@@ -13,10 +13,20 @@
  * 🚨 ROLE VARIATIONS (§2.7): manager read-only and only their own reports; HR admin every
  * transition EXCEPT export; payroll admin everything including export, acknowledge and fail. The
  * role is resolved from the caller's HR capabilities — never from a guess and never from the URL.
+ *
+ * 🚨 THE EXPORT SURFACES HERE ARE LANE L13's COMPONENTS, MOUNTED — NOT THIS LANE's.
+ * `<ExportRunPanel>` and `<ExportRunList>` come from `features/hr/exports/`, which owns the
+ * payroll-export engine seam (register item HRB-025). This lane briefly carried a second set at
+ * `features/hr/time/exports/`; the coordinator ruled 2026-08-26 that L13's wins, and that fork was
+ * DELETED rather than deprecated — no shim, no fallback, no twin ([no-legacy](/policies/no-legacy.md)).
+ * Read `features/hr/exports/FEATURE.md` before changing anything about the export half of this page.
  */
 
+import { useState } from "react";
+
 import { useHrContext } from "@/features/hr/shared/useHrContext";
-import { ExportPanel } from "../../exports/components/ExportPanel";
+import { ExportRunList } from "@/features/hr/exports/components/ExportRunList";
+import { ExportRunPanel } from "@/features/hr/exports/components/ExportRunPanel";
 import { usePayPeriod, useTimeAdjustments } from "../hooks/usePayPeriods";
 import type { PeriodViewerRole } from "../periodStateMachine";
 import { BoundaryWeeksPanel } from "./BoundaryWeeksPanel";
@@ -44,6 +54,10 @@ export function PeriodDetailPage({ payPeriodId }: { payPeriodId: string }) {
   const mockCase = useMockCase();
   const { period, isLoading, failure, reload } = usePayPeriod(payPeriodId, mockCase);
   const adjustments = useTimeAdjustments(payPeriodId, mockCase);
+
+  // Bumped when a build is accepted, so the history beside the panel re-reads the truth from the
+  // reader rather than trusting the 202 — the durable record is the `hr.payroll_export` row.
+  const [exportToken, setExportToken] = useState(0);
 
   const role = resolvePeriodRole(hr.capabilities);
   const organizationId = hr.active?.organization_id ?? null;
@@ -80,12 +94,34 @@ export function PeriodDetailPage({ payPeriodId }: { payPeriodId: string }) {
             <BoundaryWeeksPanel boundaryWorkweekIds={period.boundaryWorkweekIds} />
 
             {organizationId ? (
-              <ExportPanel
-                period={period}
-                organizationId={organizationId}
-                canExport={role === "payroll_admin"}
-                mockCase={mockCase}
-              />
+              <>
+                {/*
+                  Export is the PAYROLL ADMINISTRATOR's alone (§2.7): an HR admin performs every
+                  period transition EXCEPT export. The build panel is therefore mounted only for
+                  that role, while the history below stays visible to everyone who can read the
+                  period — seeing what was sent is not the same authority as sending it.
+                */}
+                {role === "payroll_admin" ? (
+                  <ExportRunPanel
+                    payPeriodId={period.id}
+                    mockCase={mockCase}
+                    onGenerated={() => setExportToken((token) => token + 1)}
+                  />
+                ) : (
+                  <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
+                    Building, accepting and failing a payroll file is the payroll
+                    administrator&apos;s. Every version and its state is below.
+                  </p>
+                )}
+                <div>
+                  <h3 className="mb-2 text-[13px] font-semibold text-foreground">Export history</h3>
+                  <ExportRunList
+                    payPeriodId={period.id}
+                    mockCase={mockCase}
+                    refreshToken={exportToken}
+                  />
+                </div>
+              </>
             ) : (
               <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-[12px] text-muted-foreground">
                 Choose an employer to see this period&apos;s payroll exports.
