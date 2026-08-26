@@ -58,4 +58,23 @@ export const DEAD_END_ALLOWLIST: DeadEndAllowlistEntry[] = [
     addedBy: "no-dead-ends detector",
     addedOn: "2026-08-15",
   },
+  {
+    file: "features/content-ir/admin/DuplicateSkillResolver.tsx",
+    rule: "bare-id-text",
+    reason:
+      "`skillId` here is skill.definition.skill_id — a HUMAN-READABLE SLUG " +
+      "(`kind_card_detail`), not an opaque id, and the shape doctor's gather " +
+      "never carries the skill's uuid, so there is no id to hand a peek. The " +
+      "`skill` token is deliberately peek-only in entityRegistry.ts (no detail " +
+      "route exists), and a peek keyed by slug would 404 — worse than no door, " +
+      "which is exactly what that registry comment warns against. The surface " +
+      "answers the identity question better than a door would: each candidate " +
+      "card carries the skill's label, everything else it teaches, its " +
+      "containment relationship and its demonstration count, and `Compare " +
+      "skill bodies` opens the FULL body of both skills in a Monaco diff. The " +
+      "flagged line is also inside a ConfirmDialog sentence, where a " +
+      "same-tab navigation would discard the decision note being typed.",
+    addedBy: "no-dead-ends detector",
+    addedOn: "2026-08-26",
+  },
 ];
