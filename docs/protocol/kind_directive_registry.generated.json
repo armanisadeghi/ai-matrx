@@ -156,7 +156,7 @@
                     }
                   ],
                   "default": null,
-                  "description": "WHO this agent belongs to. Set it whenever the agent is being built FOR a user (a Masterwork's Maker/Editor/Chief, anything a customer's build produces): the agent is born agent_type='user', created_by=<this user>, in their effective org, with an internal card \u2014 exactly what a normal user-created agent gets. Leave it None ONLY for a platform builtin the PLATFORM ships to everyone (the internal_agents/*.md factory, seed scripts); a builtin is ownerless, sits in the Matrx System org, and shows in every user's browse list.",
+                  "description": "WHO this agent belongs to. Set it whenever the agent is being built FOR a user (a Masterwork's Maker/Editor/Chief, anything a customer's build produces): the agent is born agent_type='user', created_by=<this user>, in their effective org, with an internal card \u2014 exactly what a normal user-created agent gets. Leave it None ONLY for a platform builtin the PLATFORM ships to everyone (the agent factory, seed scripts); a builtin is ownerless, sits in the Matrx System org, and shows in every user's browse list.",
                   "title": "Owner User Id"
                 },
                 "response_format": {
@@ -1255,6 +1255,44 @@
       "purposes": [],
       "schema": {
         "$defs": {
+          "BranchPurpose": {
+            "additionalProperties": false,
+            "description": "WHY a branch of the plan exists, recorded ON the branch node.\n\nCaptured at PLANNING time, when the planner still holds the whole tree in\nits head and every branch point IS a decision it just made. This is\ndeliberately NOT a stored copy of the plan: a plan blob goes stale the\nmoment a user adds or removes one page, while a branch's purpose survives\nevery leaf change beneath it \u2014 it only dies when the branch itself does.\n\nDownstream, placing ONE page walks UP the tree: this branch's purpose plus\nits ancestors' and its aunts'/uncles' \u2014 tens of lines even on a\n6,000-page plan, instead of compressing a whole site into a prompt.",
+            "properties": {
+              "belongs_here": {
+                "description": "2-4 short phrases naming the kinds of pages that belong in this branch.",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Belongs Here",
+                "type": "array"
+              },
+              "does_not_belong": {
+                "description": "1-3 short phrases naming the kinds of pages that look like they belong here but live in a DIFFERENT branch \u2014 name that branch.",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Does Not Belong",
+                "type": "array"
+              },
+              "purpose": {
+                "description": "One or two sentences: why this section of the site exists and what job it does for the visitor. Written so someone who has never seen the rest of the plan can place a page correctly from it alone.",
+                "title": "Purpose",
+                "type": "string"
+              },
+              "source": {
+                "default": "planner",
+                "description": "`planner` = emitted while the plan was designed (the real thing); `backfill` = derived afterwards from an existing plan.",
+                "title": "Source",
+                "type": "string"
+              }
+            },
+            "required": [
+              "purpose"
+            ],
+            "title": "BranchPurpose",
+            "type": "object"
+          },
           "PlanSourceSpec": {
             "additionalProperties": false,
             "description": "A cited source attached to a planned node \u2014 lands as a `plan.entity`\nrow (entity_type='source') plus a `cites` edge.",
@@ -1314,6 +1352,18 @@
                 "additionalProperties": true,
                 "title": "Attributes",
                 "type": "object"
+              },
+              "branch_purpose": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/BranchPurpose"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "ONLY on a node that has children: why this branch exists and what belongs in it versus elsewhere. Lands in `plan.node.attributes.branch_purpose`."
               },
               "brief": {
                 "description": "Short bullet points describing what the page must cover.",
