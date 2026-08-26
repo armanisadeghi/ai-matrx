@@ -84,24 +84,41 @@ import { EffectiveConfigLayers } from "../components/EffectiveConfigLayers";
 import { buildBindingSavePayload } from "./save-payload";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 
+export type WorkspacePrincipal =
+  | { kind: "user" }
+  | { kind: "org"; orgId: string };
+
 export interface OverrideFlowProps {
   data: MandateWorkspaceData;
   userId: string | null;
+  /** Whose binding this flow edits. The USER principal on /agents/mandates;
+   * the ORG principal on the org-scoped route (org fixed by the route, the
+   * server's is_org_admin gate enforces authority). */
+  principal: WorkspacePrincipal;
   onChanged: () => void;
 }
 
 type FlowState = "collapsed" | "editing";
 
-export function OverrideFlow({ data, userId, onChanged }: OverrideFlowProps) {
+export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlowProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
   const myBinding = useMemo(
     () =>
-      data.bindings.find(
-        (b) => b.principal_type === "user" && b.subject_user_id === userId,
+      data.bindings.find((b) =>
+        principal.kind === "org"
+          ? b.principal_type === "org" && b.organization_id === principal.orgId
+          : b.principal_type === "user" && b.subject_user_id === userId,
       ) ?? null,
-    [data.bindings, userId],
+    [data.bindings, userId, principal],
+  );
+  const wirePrincipal = useMemo(
+    () =>
+      principal.kind === "org"
+        ? { principalType: "org" as const, organizationId: principal.orgId }
+        : { principalType: "user" as const },
+    [principal],
   );
   const storedMap = useMemo(
     () => parseBindingWave1(myBinding).consumptionMap,
@@ -213,7 +230,10 @@ export function OverrideFlow({ data, userId, onChanged }: OverrideFlowProps) {
   useEffect(() => setDraftMap(storedMap), [myBinding?.id, myBinding?.updated_at, storedMap]);
 
   // ── Step 4 — canonical settings overrides (the bench recipe) ──────────────
-  const overridesId = `mandate-binding-${data.mandate.id}-user`;
+  const overridesId =
+    principal.kind === "org"
+      ? `mandate-binding-${data.mandate.id}-org-${principal.orgId}`
+      : `mandate-binding-${data.mandate.id}-user`;
   const overridesReady = useAppSelector((s) =>
     Boolean(selectInstanceOverrideState(overridesId)(s)),
   );
@@ -301,8 +321,12 @@ export function OverrideFlow({ data, userId, onChanged }: OverrideFlowProps) {
               : undefined,
         storedOverrides,
       });
-      await putMandateBinding(dispatch, data.mandate.mandate_key, { principalType: "user" }, payload);
-      toast.success("Your agent now fulfils this job.");
+      await putMandateBinding(dispatch, data.mandate.mandate_key, wirePrincipal, payload);
+      toast.success(
+        principal.kind === "org"
+          ? "Your organization's agent now fulfils this job."
+          : "Your agent now fulfils this job.",
+      );
       onChanged();
     } catch (err) {
       // The server's 422 detail VERBATIM — never flattened.
@@ -323,7 +347,7 @@ export function OverrideFlow({ data, userId, onChanged }: OverrideFlowProps) {
     if (!ok) return;
     setBusy(true);
     try {
-      await removeMandateBinding(dispatch, data.mandate.mandate_key, { principalType: "user" });
+      await removeMandateBinding(dispatch, data.mandate.mandate_key, wirePrincipal);
       toast.success("Override removed — the default fulfils this job again.");
       onChanged();
     } catch (err) {

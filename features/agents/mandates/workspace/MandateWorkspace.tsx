@@ -41,11 +41,11 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { MandateResolutionRibbon } from "../components/MandateResolutionRibbon";
-import { OverrideFlow } from "./OverrideFlow";
 import { MandateNotesPanel } from "../components/MandateNotesPanel";
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
 import { splitMandateKey } from "../mandate-key";
 import type { OfferedValue } from "../provision-shapes";
+import { OverrideFlow, type WorkspacePrincipal } from "./OverrideFlow";
 import {
   useMandateWorkspaceData,
   type MandateBindingRowDb,
@@ -56,6 +56,8 @@ export interface MandateWorkspaceProps {
   /** Mandate key ("podcast.multihost_script") or the row uuid — both open. */
   mandateKeyOrId: string;
   host: "route" | "window";
+  /** Whose binding §4 edits. Defaults to the personal principal. */
+  principal?: WorkspacePrincipal;
 }
 
 /** The layer that decides the Holder for this caller, plus the winning ref. */
@@ -100,7 +102,11 @@ function resolveForCaller(
   return { layer, agent, agentId, useLatest, pinned, latest, drift, orgBindings, userBinding };
 }
 
-export function MandateWorkspace({ mandateKeyOrId, host }: MandateWorkspaceProps) {
+export function MandateWorkspace({
+  mandateKeyOrId,
+  host,
+  principal = { kind: "user" },
+}: MandateWorkspaceProps) {
   const { data, loading, error, refresh } = useMandateWorkspaceData(mandateKeyOrId);
   const userId = useAppSelector(selectUserId);
   const { organizations } = useUserOrganizations();
@@ -160,16 +166,27 @@ export function MandateWorkspace({ mandateKeyOrId, host }: MandateWorkspaceProps
 
         <JobSection data={data} />
         <FulfillmentSection data={data} resolution={resolution} onChanged={refresh} />
-        <OrgOverridesDisclosure
-          resolution={resolution}
-          agentsById={data.agentsById}
-          orgNames={organizations}
-        />
+        {principal.kind === "user" ? (
+          <OrgOverridesDisclosure
+            resolution={resolution}
+            agentsById={data.agentsById}
+            orgNames={organizations}
+          />
+        ) : null}
 
         {/* §4 — the stepwise override flow (choose → validate → map → settings).
             PERSONAL only — org bindings are edited on the org route. */}
-        <Section title="Your override">
-          <OverrideFlow data={data} userId={userId} onChanged={refresh} />
+        <Section
+          title={
+            principal.kind === "org" ? "Organization override" : "Your override"
+          }
+        >
+          <OverrideFlow
+            data={data}
+            userId={userId}
+            principal={principal}
+            onChanged={refresh}
+          />
         </Section>
 
         <MandateNotesPanel
