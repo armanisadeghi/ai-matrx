@@ -1408,6 +1408,17 @@ export default function PageEditor({
               {...CMS_PAGE_CONTEXT_MENU_PROPS}
               extraSections={pageExtraSections}
               contextData={buildSurfaceScope() as Record<string, unknown>}
+              contentSource={{ type: "raw" }}
+              entity={
+                page
+                  ? {
+                      type: "web_page",
+                      id: page.id,
+                      title: page.title,
+                      resourceType: "web_page",
+                    }
+                  : undefined
+              }
             >
               {tabPanels}
             </NonEditableContextMenu>
@@ -1418,6 +1429,17 @@ export default function PageEditor({
               getTextarea={() => textareaRef.current}
               getApplicationScope={getApplicationScope}
               contextData={buildSurfaceScope() as Record<string, unknown>}
+              contentSource={{ type: "raw" }}
+              entity={
+                page
+                  ? {
+                      type: "web_page",
+                      id: page.id,
+                      title: page.title,
+                      resourceType: "web_page",
+                    }
+                  : undefined
+              }
               onTextReplace={(text) => {
                 if (effectiveTab === "html") setHtmlContent(text);
                 else if (effectiveTab === "css") setCssContent(text);

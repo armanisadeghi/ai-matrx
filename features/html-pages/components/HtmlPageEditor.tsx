@@ -482,6 +482,10 @@ export default function HtmlPageEditor({
       getTextarea={() => metaDescriptionRef.current}
       getApplicationScope={getMetaApplicationScope}
       contextData={buildSurfaceScope() as Record<string, unknown>}
+      // No `entity`: `html_pages` has no registered EntityTypeToken (not
+      // onboarded to `platform.create_entity_table`) — Attach To / Share stay
+      // dark here, a real gap outside this pass's scope.
+      contentSource={{ type: "raw" }}
       onTextReplace={(text) => {
         setMetaDescription(text);
         markDirty();
@@ -604,6 +608,7 @@ export default function HtmlPageEditor({
       extraSections={pageExtraSections}
       getApplicationScope={getHtmlApplicationScope}
       contextData={buildSurfaceScope() as Record<string, unknown>}
+      contentSource={{ type: "raw" }}
       onTextReplace={(text) => {
         setHtmlContent(text);
         markDirty();
@@ -641,6 +646,7 @@ export default function HtmlPageEditor({
       {...HTML_PAGE_CONTEXT_MENU_PROPS}
       extraSections={pageExtraSections}
       contextData={buildSurfaceScope() as Record<string, unknown>}
+      contentSource={{ type: "raw" }}
     >
       <iframe
         key={dirty ? `draft-${page.id}` : `live-${page.id}-${page.updated_at}`}

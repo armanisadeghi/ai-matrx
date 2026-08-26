@@ -2243,6 +2243,7 @@ export default function ResearchInitForm() {
                     getApplicationScope={getSubjectApplicationScope}
                     onTextReplace={setSubjectDescription}
                     contextData={subjectContextData}
+                    contentSource={{ type: "raw" }}
                   >
                     <ProTextarea
                       ref={subjectRef}

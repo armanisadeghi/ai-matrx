@@ -1025,7 +1025,19 @@ export function MessageTemplateManager({
                     {previewMode === "editor" && (
                       <EditableContextMenu
                         sourceFeature="messages"
+                        contentSource={{ type: "raw" }}
+                        entity={
+                          editData.id
+                            ? {
+                                type: "message_template",
+                                id: editData.id,
+                                title: editData.label || "Message template",
+                                resourceType: "message_template",
+                              }
+                            : undefined
+                        }
                         getTextarea={() => editTextareaRef.current}
+                        onTextReplace={(next) => handleEditChange("content", next)}
                       >
                         <AutoResizeTextarea
                           ref={editTextareaRef}
@@ -1046,7 +1058,19 @@ export function MessageTemplateManager({
                         <div className="flex-1 min-w-0">
                           <EditableContextMenu
                             sourceFeature="messages"
+                            contentSource={{ type: "raw" }}
+                            entity={
+                              editData.id
+                                ? {
+                                    type: "message_template",
+                                    id: editData.id,
+                                    title: editData.label || "Message template",
+                                    resourceType: "message_template",
+                                  }
+                                : undefined
+                            }
                             getTextarea={() => editTextareaRef.current}
+                            onTextReplace={(next) => handleEditChange("content", next)}
                           >
                             <AutoResizeTextarea
                               ref={editTextareaRef}
@@ -1077,7 +1101,19 @@ export function MessageTemplateManager({
                         <div className="flex-1 min-w-0">
                           <EditableContextMenu
                             sourceFeature="messages"
+                            contentSource={{ type: "raw" }}
+                            entity={
+                              editData.id
+                                ? {
+                                    type: "message_template",
+                                    id: editData.id,
+                                    title: editData.label || "Message template",
+                                    resourceType: "message_template",
+                                  }
+                                : undefined
+                            }
                             getTextarea={() => editTextareaRef.current}
+                            onTextReplace={(next) => handleEditChange("content", next)}
                           >
                             <AutoResizeTextarea
                               ref={editTextareaRef}
@@ -1283,7 +1319,11 @@ export function MessageTemplateManager({
               <Label htmlFor="create-content">Content</Label>
               <EditableContextMenu
                 sourceFeature="messages"
+                contentSource={{ type: "raw" }}
                 getTextarea={() => createTextareaRef.current}
+                onTextReplace={(next) =>
+                  setCreateFormData({ ...createFormData, content: next })
+                }
               >
                 <AutoResizeTextarea
                   ref={createTextareaRef}

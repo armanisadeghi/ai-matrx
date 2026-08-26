@@ -267,7 +267,11 @@ export function SaveTemplateModal({
                     <div className="flex-1 border-r border-border/50 p-3">
                         <EditableContextMenu
                             sourceFeature="messages"
+                            contentSource={{ type: "raw" }}
                             getTextarea={() => textareaRef.current}
+                            onTextReplace={setContent}
+                            onTextInsertBefore={(text) => setContent(`${text}${content}`)}
+                            onTextInsertAfter={(text) => setContent(`${content}${text}`)}
                         >
                             <AutoResizeTextarea
                                 ref={textareaRef}
@@ -292,7 +296,11 @@ export function SaveTemplateModal({
                 <div className="p-3 h-full">
                     <EditableContextMenu
                         sourceFeature="messages"
+                        contentSource={{ type: "raw" }}
                         getTextarea={() => textareaRef.current}
+                        onTextReplace={setContent}
+                        onTextInsertBefore={(text) => setContent(`${text}${content}`)}
+                        onTextInsertAfter={(text) => setContent(`${content}${text}`)}
                     >
                         <AutoResizeTextarea
                             ref={textareaRef}
