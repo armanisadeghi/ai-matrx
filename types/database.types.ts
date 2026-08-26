@@ -440,6 +440,8 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           id: string
+          input_contract: Json | null
+          input_contract_hash: string | null
           input_kind: string | null
           is_active: boolean
           is_archived: boolean
@@ -452,6 +454,7 @@ export type Database = {
           model_tiers: Json | null
           name: string
           organization_id: string
+          output_contract_hash: string | null
           output_schema: Json | null
           rag_awareness_fragment: string | null
           rag_awareness_mode: string
@@ -486,6 +489,8 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           id?: string
+          input_contract?: Json | null
+          input_contract_hash?: string | null
           input_kind?: string | null
           is_active?: boolean
           is_archived?: boolean
@@ -498,6 +503,7 @@ export type Database = {
           model_tiers?: Json | null
           name: string
           organization_id: string
+          output_contract_hash?: string | null
           output_schema?: Json | null
           rag_awareness_fragment?: string | null
           rag_awareness_mode?: string
@@ -532,6 +538,8 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           id?: string
+          input_contract?: Json | null
+          input_contract_hash?: string | null
           input_kind?: string | null
           is_active?: boolean
           is_archived?: boolean
@@ -544,6 +552,7 @@ export type Database = {
           model_tiers?: Json | null
           name?: string
           organization_id?: string
+          output_contract_hash?: string | null
           output_schema?: Json | null
           rag_awareness_fragment?: string | null
           rag_awareness_mode?: string
@@ -591,6 +600,8 @@ export type Database = {
           change_note: string | null
           changed_at: string
           context_policies: Json | null
+          contract_break_declared: string | null
+          contract_change: string | null
           created_at: string
           created_by: string | null
           created_by_system: string | null
@@ -600,6 +611,8 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           id: string
+          input_contract: Json | null
+          input_contract_hash: string | null
           input_kind: string | null
           is_active: boolean | null
           matrx_actions: Json
@@ -610,6 +623,7 @@ export type Database = {
           model_tiers: Json | null
           name: string | null
           organization_id: string
+          output_contract_hash: string | null
           output_schema: Json | null
           rag_awareness_mode: string
           settings: Json | null
@@ -632,6 +646,8 @@ export type Database = {
           change_note?: string | null
           changed_at?: string
           context_policies?: Json | null
+          contract_break_declared?: string | null
+          contract_change?: string | null
           created_at?: string
           created_by?: string | null
           created_by_system?: string | null
@@ -641,6 +657,8 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           id?: string
+          input_contract?: Json | null
+          input_contract_hash?: string | null
           input_kind?: string | null
           is_active?: boolean | null
           matrx_actions?: Json
@@ -651,6 +669,7 @@ export type Database = {
           model_tiers?: Json | null
           name?: string | null
           organization_id: string
+          output_contract_hash?: string | null
           output_schema?: Json | null
           rag_awareness_mode?: string
           settings?: Json | null
@@ -673,6 +692,8 @@ export type Database = {
           change_note?: string | null
           changed_at?: string
           context_policies?: Json | null
+          contract_break_declared?: string | null
+          contract_change?: string | null
           created_at?: string
           created_by?: string | null
           created_by_system?: string | null
@@ -682,6 +703,8 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           id?: string
+          input_contract?: Json | null
+          input_contract_hash?: string | null
           input_kind?: string | null
           is_active?: boolean | null
           matrx_actions?: Json
@@ -692,6 +715,7 @@ export type Database = {
           model_tiers?: Json | null
           name?: string | null
           organization_id?: string
+          output_contract_hash?: string | null
           output_schema?: Json | null
           rag_awareness_mode?: string
           settings?: Json | null
@@ -821,6 +845,132 @@ export type Database = {
             columns: ["agent_id"]
             isOneToOne: false
             referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exemplar: {
+        Row: {
+          agent_id: string
+          agent_version: number | null
+          captured_agent_id: string | null
+          captured_model_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          input_contract_hash: string | null
+          is_active: boolean
+          label: string
+          mandate_id: string | null
+          metadata: Json
+          organization_id: string
+          output_contract_hash: string | null
+          position: number
+          reference_artifact: Json | null
+          reference_output: string | null
+          source: string
+          source_conversation_id: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          user_input: string | null
+          variables: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          agent_id: string
+          agent_version?: number | null
+          captured_agent_id?: string | null
+          captured_model_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          input_contract_hash?: string | null
+          is_active?: boolean
+          label: string
+          mandate_id?: string | null
+          metadata?: Json
+          organization_id: string
+          output_contract_hash?: string | null
+          position?: number
+          reference_artifact?: Json | null
+          reference_output?: string | null
+          source?: string
+          source_conversation_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_input?: string | null
+          variables?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          agent_id?: string
+          agent_version?: number | null
+          captured_agent_id?: string | null
+          captured_model_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          input_contract_hash?: string | null
+          is_active?: boolean
+          label?: string
+          mandate_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          output_contract_hash?: string | null
+          position?: number
+          reference_artifact?: Json | null
+          reference_output?: string | null
+          source?: string
+          source_conversation_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_input?: string | null
+          variables?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exemplar_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exemplar_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_exemplar_captured_agent_id_fkey"
+            columns: ["captured_agent_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_exemplar_captured_agent_id_fkey"
+            columns: ["captured_agent_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_exemplar_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "mandate"
             referencedColumns: ["id"]
           },
         ]
@@ -1019,100 +1169,6 @@ export type Database = {
           },
           {
             foreignKeyName: "mandate_binding_mandate_id_fkey"
-            columns: ["mandate_id"]
-            isOneToOne: false
-            referencedRelation: "mandate"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      mandate_exemplar: {
-        Row: {
-          captured_agent_id: string | null
-          captured_model_id: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          is_active: boolean
-          label: string
-          mandate_id: string
-          metadata: Json
-          organization_id: string
-          position: number
-          reference_artifact: Json | null
-          reference_output: string | null
-          source: string
-          updated_at: string
-          updated_by: string | null
-          user_input: string | null
-          variables: Json
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          captured_agent_id?: string | null
-          captured_model_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_active?: boolean
-          label: string
-          mandate_id: string
-          metadata?: Json
-          organization_id: string
-          position?: number
-          reference_artifact?: Json | null
-          reference_output?: string | null
-          source?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_input?: string | null
-          variables?: Json
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          captured_agent_id?: string | null
-          captured_model_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_active?: boolean
-          label?: string
-          mandate_id?: string
-          metadata?: Json
-          organization_id?: string
-          position?: number
-          reference_artifact?: Json | null
-          reference_output?: string | null
-          source?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_input?: string | null
-          variables?: Json
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "mandate_exemplar_captured_agent_id_fkey"
-            columns: ["captured_agent_id"]
-            isOneToOne: false
-            referencedRelation: "card"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mandate_exemplar_captured_agent_id_fkey"
-            columns: ["captured_agent_id"]
-            isOneToOne: false
-            referencedRelation: "definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mandate_exemplar_mandate_id_fkey"
             columns: ["mandate_id"]
             isOneToOne: false
             referencedRelation: "mandate"
@@ -1880,6 +1936,132 @@ export type Database = {
           placement_type: string | null
         }
         Relationships: []
+      }
+      mandate_exemplar: {
+        Row: {
+          agent_id: string | null
+          agent_version: number | null
+          captured_agent_id: string | null
+          captured_model_id: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          id: string | null
+          input_contract_hash: string | null
+          is_active: boolean | null
+          label: string | null
+          mandate_id: string | null
+          metadata: Json | null
+          organization_id: string | null
+          output_contract_hash: string | null
+          position: number | null
+          reference_artifact: Json | null
+          reference_output: string | null
+          source: string | null
+          source_conversation_id: string | null
+          status: string | null
+          updated_at: string | null
+          updated_by: string | null
+          user_input: string | null
+          variables: Json | null
+          version: number | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_version?: number | null
+          captured_agent_id?: string | null
+          captured_model_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string | null
+          input_contract_hash?: string | null
+          is_active?: boolean | null
+          label?: string | null
+          mandate_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          output_contract_hash?: string | null
+          position?: number | null
+          reference_artifact?: Json | null
+          reference_output?: string | null
+          source?: string | null
+          source_conversation_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_input?: string | null
+          variables?: Json | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Update: {
+          agent_id?: string | null
+          agent_version?: number | null
+          captured_agent_id?: string | null
+          captured_model_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string | null
+          input_contract_hash?: string | null
+          is_active?: boolean | null
+          label?: string | null
+          mandate_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          output_contract_hash?: string | null
+          position?: number | null
+          reference_artifact?: Json | null
+          reference_output?: string | null
+          source?: string | null
+          source_conversation_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_input?: string | null
+          variables?: Json | null
+          version?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exemplar_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exemplar_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_exemplar_captured_agent_id_fkey"
+            columns: ["captured_agent_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_exemplar_captured_agent_id_fkey"
+            columns: ["captured_agent_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_exemplar_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "mandate"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       menu_surface: {
         Row: {
@@ -35182,6 +35364,7 @@ export type Database = {
           placement_type: string
         }[]
       }
+      agx_contract_hash: { Args: { p_contract: Json }; Returns: string }
       agx_create_agent_from_template: {
         Args: { p_template_id: string }
         Returns: string
@@ -35199,6 +35382,10 @@ export type Database = {
         }
         Returns: string
       }
+      agx_declare_contract_break: {
+        Args: { p_agent_id: string; p_kind?: string; p_version_number: number }
+        Returns: undefined
+      }
       agx_duplicate_agent: {
         Args: { p_agent_id: string; p_as_system?: boolean }
         Returns: string
@@ -35212,6 +35399,10 @@ export type Database = {
         Returns: string
       }
       agx_escape_regex: { Args: { p: string }; Returns: string }
+      agx_exemplar_approve: {
+        Args: { p_exemplar_id: string }
+        Returns: undefined
+      }
       agx_get_access_level: {
         Args: { p_agent_id: string }
         Returns: {
@@ -35464,7 +35655,11 @@ export type Database = {
         Returns: {
           change_note: string
           changed_at: string
+          contract_break_declared: string
+          contract_change: string
+          input_contract_hash: string
           name: string
+          output_contract_hash: string
           version_id: string
           version_number: number
         }[]
@@ -35501,6 +35696,10 @@ export type Database = {
           version_id: string
           version_number: number
         }[]
+      }
+      agx_input_contract: {
+        Args: { p_slots: Json; p_vars: Json }
+        Returns: Json
       }
       agx_list_facets: {
         Args: {

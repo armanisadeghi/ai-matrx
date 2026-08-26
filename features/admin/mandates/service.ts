@@ -388,8 +388,7 @@ export interface MandateAgentOption {
 
 // ── Test bench (exemplars + candidate runs) ──────────────────────────────────
 
-export type MandateExemplarRow =
-  Database["agent"]["Tables"]["mandate_exemplar"]["Row"];
+export type MandateExemplarRow = Database["agent"]["Tables"]["exemplar"]["Row"];
 
 export async function fetchMandateExemplars(
   mandateId: string,
@@ -397,7 +396,7 @@ export async function fetchMandateExemplars(
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
-    .from("mandate_exemplar")
+    .from("exemplar")
     .select("*")
     .eq("mandate_id", mandateId)
     .is("deleted_at", null)
@@ -407,18 +406,33 @@ export async function fetchMandateExemplars(
   return data ?? [];
 }
 
+/** A test case's subject is always an AGENT; the mandate is call-site context. */
+async function requireMandateAgentId(
+  mandate: MandateDefinitionRow,
+): Promise<string> {
+  const agentId = await resolveMandateDefaultAgentId(mandate);
+  if (!agentId) {
+    throw new Error(
+      "Bind an agent to this mandate before saving test cases — a test case belongs to the agent that runs it.",
+    );
+  }
+  return agentId;
+}
+
 export async function createMandateExemplar(input: {
-  mandateId: string;
+  mandate: MandateDefinitionRow;
   label: string;
   variables: JsonObject;
   userInput?: string | null;
 }): Promise<MandateExemplarRow> {
   const supabase = createClient();
+  const agentId = await requireMandateAgentId(input.mandate);
   const { data, error } = await supabase
     .schema("agent")
-    .from("mandate_exemplar")
+    .from("exemplar")
     .insert({
-      mandate_id: input.mandateId,
+      agent_id: agentId,
+      mandate_id: input.mandate.id,
       label: input.label,
       variables: input.variables,
       user_input: input.userInput ?? null,
@@ -444,7 +458,7 @@ export async function createMandateExemplar(input: {
  * batch result in the history list and in the server's promote endpoint.
  */
 export async function saveAdHocResultAsExemplar(input: {
-  mandateId: string;
+  mandate: MandateDefinitionRow;
   label: string;
   variables: JsonObject;
   userInput?: string | null;
@@ -470,12 +484,17 @@ export async function saveAdHocResultAsExemplar(input: {
     exemplar_id: exemplarId,
     promoted_to_reference_at: promotedAt,
   };
+  const capturedAgentId =
+    input.result.definition_agent_id ?? input.result.agent_id ?? null;
+  const agentId =
+    capturedAgentId ?? (await requireMandateAgentId(input.mandate));
   const { data, error } = await supabase
     .schema("agent")
-    .from("mandate_exemplar")
+    .from("exemplar")
     .insert({
       id: exemplarId,
-      mandate_id: input.mandateId,
+      agent_id: agentId,
+      mandate_id: input.mandate.id,
       label: input.label,
       variables: input.variables,
       user_input: input.userInput ?? null,
@@ -508,7 +527,7 @@ export async function deleteMandateExemplar(id: string): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase
     .schema("agent")
-    .from("mandate_exemplar")
+    .from("exemplar")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
@@ -941,7 +960,7 @@ async function fetchExemplarForResultUpdate(
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
-    .from("mandate_exemplar")
+    .from("exemplar")
     .select("*")
     .eq("id", exemplarId)
     .is("deleted_at", null)
@@ -963,7 +982,7 @@ export async function saveMandateTestVerdictNote(
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
-    .from("mandate_exemplar")
+    .from("exemplar")
     .update({ metadata })
     .eq("id", exemplarId)
     .eq("updated_at", current.updated_at)
@@ -996,7 +1015,7 @@ export async function promoteMandateTestResult(
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
-    .from("mandate_exemplar")
+    .from("exemplar")
     .update({
       metadata,
       reference_output: result.output,

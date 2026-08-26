@@ -1278,6 +1278,14 @@
       "new": "crm.outreach_list_member",
       "since": "2026-08-13",
       "reason": "renamed with its parent. Use .schema('crm').from('outreach_list_member'); the FK is outreach_list_id."
+    },
+    {
+      "relation": "mandate_exemplar",
+      "old": "agent.mandate_exemplar",
+      "newSchema": "agent",
+      "new": "agent.exemplar",
+      "since": "2026-08-25",
+      "reason": "generalized to the agent-level sample/test-case store (agent_id is the subject, mandate_id optional context). Use .schema('agent').from('exemplar'). A TEMPORARY alias view exists until the FE release + aidream deploy; drop it after."
     }
   ]
 }

@@ -268,7 +268,7 @@ export function TryItNowPanel({
     setSaving(true);
     try {
       await saveAdHocResultAsExemplar({
-        mandateId: mandate.id,
+        mandate,
         label: saveLabel.trim() || "First test case",
         // The inputs THIS run received — the form may have been edited since.
         variables: completed.variables,

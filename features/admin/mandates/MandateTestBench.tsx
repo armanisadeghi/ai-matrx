@@ -743,7 +743,7 @@ export function MandateTestBench({
     }
     try {
       await createMandateExemplar({
-        mandateId: mandate.id,
+        mandate,
         label: newLabel.trim() || "Manual test case",
         variables,
         userInput: newUserInput.trim() || null,
