@@ -41,6 +41,10 @@ import type {
   ContextMenuExtraItem,
   ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
+import {
+  withAvailability,
+  type AvailabilityMap,
+} from "@/features/context-menu-v3/utils/availability";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { useOpenGscDrilldownWindow } from "@/features/overlays/openers/gscDrilldownWindow";
 import { useOpenGscWhyScoreWindow } from "@/features/overlays/openers/gscWhyScoreWindow";
@@ -372,6 +376,16 @@ export function useKeywordMenuSection(opts: {
   openPages?: (row: KeywordMenuRow) => void;
   /** Label for the section heading. */
   label?: string;
+  /**
+   * THE CONSISTENCY STEP — what THIS surface cannot do, and why.
+   *
+   * Keyed by item id (`kw-set-class`, `kw-pages`, `kw-intel`, …). A named item
+   * stays visible, in place, DISABLED, with the reason as its tooltip; it is
+   * never dropped. Build reasons with `unavailableHere("the Keyword
+   * Workbench")` / `needs("a library keyword")`.
+   * Contract: `features/context-menu-v3/utils/availability.ts`.
+   */
+  unavailable?: AvailabilityMap;
 }): ContextMenuExtraSection {
   const openKeywordWindow = useOpenKeywordWindow();
   const openWhyScore = useOpenGscWhyScoreWindow();
@@ -474,11 +488,14 @@ export function useKeywordMenuSection(opts: {
     });
   }
 
-  return {
-    id: "keyword-intelligence",
-    label: opts.label ?? "This keyword",
-    icon: Tag,
-    anchor: "after-compare",
-    items,
-  };
+  return withAvailability(
+    {
+      id: "keyword-intelligence",
+      label: opts.label ?? "This keyword",
+      icon: Tag,
+      anchor: "after-compare",
+      items,
+    },
+    opts.unavailable,
+  );
 }
