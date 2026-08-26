@@ -351,6 +351,16 @@ export function InvocationBody({
       />
     );
   }
+  // A FAILED step explains itself before anything else. The tail branch used
+  // to outrank the error, so a step that died mid-JSON left 4000 chars of raw
+  // mid-string payload on screen forever with no explanation — the kit-title
+  // loop-guard failure on 2026-08-26 read as "the component is broken" when
+  // the truth was "the model turn failed". The error card carries the
+  // headline, the cause, and the copy-for-AI door; the raw tail stays one
+  // JSON-toggle away on the failed slot, not smeared across the tile.
+  if (invocation.error && !working) {
+    return <StepErrorBody runId={runId} invocation={invocation} />;
+  }
   // Same rule as the lane: the durable tail is raw text, and a settled output
   // is the same content routed to a real component. The tail gets its turn
   // only until the document wins.
