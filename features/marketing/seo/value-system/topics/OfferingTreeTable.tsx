@@ -481,9 +481,9 @@ export function OfferingTreeTable({
       edit={{ enabled: true, autoSave: true, onSave: onSaveEdits }}
       hierarchy={{
         getParentId: (row) => row.parentId,
-        onReparent: (row, parentId) => {
+        onMove: (row, move) => {
           const node = byId.get(row.id);
-          if (node) actions.onReparent(node, parentId);
+          if (node) actions.onReparent(node, move.parentId);
         },
         canReparent: () => !busy,
         itemLabel: (row) => row.name,

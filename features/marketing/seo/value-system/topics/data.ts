@@ -78,7 +78,7 @@ export async function listAllTopics(): Promise<TopicNode[]> {
     ({ from, to }) =>
       db
         .from("topic")
-        .select("id, name, slug, node_type, parent_id, description", {
+        .select("id, name, slug, node_type, parent_id, description, metadata", {
           count: "exact",
         })
         .is("deleted_at", null)
@@ -161,6 +161,28 @@ export async function setTopicParent(
     response.data,
     response.error,
     "pin the parent",
+  ) as string;
+}
+
+/** Persist one ordered hierarchy move. Descendants stay attached to `topicId`. */
+export async function moveTopic(
+  siteId: string,
+  topicId: string,
+  parentId: string | null,
+  siblingOrder: string[],
+): Promise<string> {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_topic_move", {
+    p_site_id: siteId,
+    p_topic_id: topicId,
+    p_parent_id: parentId ?? undefined,
+    p_sibling_order: siblingOrder,
+  });
+  return assertGoverned(
+    response.data,
+    response.error,
+    "move the offering",
   ) as string;
 }
 

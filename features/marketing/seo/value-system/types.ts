@@ -8,6 +8,8 @@
  * 'negative' and 'unvalued' are RESERVED band slugs emitted by the resolver.
  */
 
+import type { Database } from "@/types/database.types";
+
 export interface ValueBandDef {
   value: string;
   label: string;
@@ -231,14 +233,16 @@ export interface ValueRule {
   metadata: PackProvenance;
 }
 
-export interface TopicNode {
-  id: string;
-  name: string;
-  slug: string;
-  node_type: string;
-  parent_id: string | null;
-  description: string | null;
-}
+export type TopicNode = Pick<
+  Database["seo"]["Tables"]["topic"]["Row"],
+  | "id"
+  | "name"
+  | "slug"
+  | "node_type"
+  | "parent_id"
+  | "description"
+  | "metadata"
+>;
 
 export interface SiteTopicValue {
   id: string;
