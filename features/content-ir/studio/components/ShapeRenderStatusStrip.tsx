@@ -20,8 +20,8 @@ import {
   BrainCircuit,
   CircleAlert,
   Code2,
+  LayoutTemplate,
   Loader2,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
@@ -61,7 +61,7 @@ interface ShapeRenderStatusStripProps {
 
 const SOURCE_ICON: Record<ShapeRenderStatus["source"], typeof BadgeCheck> = {
   custom: Code2,
-  builtin: Sparkles,
+  builtin: LayoutTemplate,
   generic: CircleAlert,
 };
 
@@ -85,6 +85,9 @@ export default function ShapeRenderStatusStrip({
   // lazy-loaded so this always-rendered strip never pulls the render tree
   // (block-dispatch.tsx) into its own chunk.
   const [dispatchResolves, setDispatchResolves] = useState<boolean | null>(null);
+  const [dispatchComponentKey, setDispatchComponentKey] = useState<string | null>(
+    null,
+  );
   const [switchingId, setSwitchingId] = useState<string | null>(null);
   const [clearingDataOnly, setClearingDataOnly] = useState(false);
 
@@ -127,7 +130,6 @@ export default function ShapeRenderStatusStrip({
   const resolution = componentsWarm ? resolveComponent(kind, "web", "output") : null;
 
   useEffect(() => {
-    setDispatchResolves(null);
     if (!resolution || resolution.source !== "bundled") return;
     if (resolution.componentKey === GENERIC_STRUCTURED_COMPONENT_KEY) return;
     let cancelled = false;
@@ -138,16 +140,19 @@ export default function ShapeRenderStatusStrip({
     )
       .then(({ resolveBlockDispatch }) => {
         if (!cancelled) {
+          setDispatchComponentKey(resolution.componentKey);
           setDispatchResolves(resolveBlockDispatch(resolution.componentKey) !== null);
         }
       })
       .catch(() => {
-        if (!cancelled) setDispatchResolves(null);
+        if (!cancelled) {
+          setDispatchComponentKey(resolution.componentKey);
+          setDispatchResolves(null);
+        }
       });
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- resolution is a plain object recomputed per render; key its identity by componentKey/source
   }, [resolution?.componentKey, resolution?.source]);
 
   if (!componentsWarm) {
@@ -173,7 +178,8 @@ export default function ShapeRenderStatusStrip({
         }
       : null,
     candidateCount: candidates?.length ?? 0,
-    dispatchResolves,
+    dispatchResolves:
+      resolution?.componentKey === dispatchComponentKey ? dispatchResolves : null,
   });
 
   const Icon = SOURCE_ICON[status.source];

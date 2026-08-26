@@ -175,15 +175,17 @@ export default function KindAssetsTab({
 }: KindAssetsTabProps) {
   const router = useRouter();
   const [components, setComponents] = useState(detail.components);
+  const [sourceComponents, setSourceComponents] = useState(detail.components);
   const [switchingId, setSwitchingId] = useState<string | null>(null);
   // Which row the resolver ACTUALLY picks right now — computed client-side
   // from the same registry the app renders with, so this table can never
   // claim a winner the render path disagrees with.
   const [winnerKey, setWinnerKey] = useState<string | null>(null);
 
-  useEffect(() => {
+  if (sourceComponents !== detail.components) {
+    setSourceComponents(detail.components);
     setComponents(detail.components);
-  }, [detail.components]);
+  }
 
   useEffect(() => {
     let cancelled = false;

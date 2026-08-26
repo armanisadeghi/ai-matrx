@@ -120,7 +120,10 @@ export default function ShapeActivationControl({
   }, [kind, kindDefinitionId]);
 
   useEffect(() => {
-    void refreshVerdict();
+    const timeoutId = window.setTimeout(() => {
+      void refreshVerdict();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [refreshVerdict]);
 
   async function flip(next: boolean): Promise<void> {
@@ -186,7 +189,9 @@ export default function ShapeActivationControl({
   // the gate's own claim.
   const hasActiveComponent = (verdict?.componentPlatforms.length ?? 0) > 0;
   const dataOnlyLooksWrong =
-    Boolean(verdict) && !verdict!.renderLegApplicable && (dataOnly || hasActiveComponent);
+    verdict !== null &&
+    !verdict.renderLegApplicable &&
+    (dataOnly || hasActiveComponent);
 
   return (
     <section className="rounded-lg border border-border bg-card p-3">
