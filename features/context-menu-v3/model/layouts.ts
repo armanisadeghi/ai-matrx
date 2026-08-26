@@ -113,7 +113,7 @@ export function arrangeMenu(
   sections.push({
     id: "clipboard",
     group: "clipboard",
-    nodes: compact([r.spokenSummary, r.copyAs, r.json, r.selectAll]),
+    nodes: compact([r.spokenSummary, r.spokenSummaryLive, r.copyAs, r.json, r.selectAll]),
   });
 
   // AI + libraries — every placement row, same names as Classic.

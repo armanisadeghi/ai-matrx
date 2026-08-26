@@ -68,7 +68,7 @@ import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions"
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useSpeech } from "@/features/audio/service/useSpeech";
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
-import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
+import { useOpenListenSummaryWindow } from "@/features/overlays/openers/listenSummaryWindow";
 import { insertTextAtCursor } from "@/utils/editor-text-insertion";
 import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -242,6 +242,7 @@ export interface ContextMenuActions {
   handleCopy: () => Promise<void>;
   handleSpeak: () => void;
   handleSpokenSummary: () => void;
+  handleSpokenSummaryLive: () => void;
   spokenSummaryAvailable: boolean;
   handleCut: () => Promise<void>;
   handlePaste: () => Promise<void>;
@@ -341,7 +342,7 @@ export function useContextMenuActions(
   const { roles: surfaceAgentRoles } = useSurfaceAgentRoles(
     surfaceName ?? "matrx-unregistered/context-menu",
   );
-  const openAgentRunWindow = useOpenAgentRunWindow();
+  const openListenSummaryWindow = useOpenListenSummaryWindow();
   const quickActions = useQuickActions();
   const openDiffWindow = useOpenDiffViewerWindow();
   const openFindReplace = useOpenFindReplace();
@@ -476,18 +477,20 @@ export function useContextMenuActions(
 
   const spokenSummaryAgentId =
     surfaceAgentRoles.spoken_summary?.effectiveAgentId ?? null;
-  const handleSpokenSummary = () => {
+  // Both listening actions open the Listen panel (summary text + audio
+  // transport in one place). The only difference is stream-to-stream autoplay.
+  const openSpokenSummary = (autoPlay: boolean) => {
     if (!spokenSummaryAgentId || !actionText.text.trim()) return;
-    openAgentRunWindow({
-      initialAgentId: spokenSummaryAgentId,
-      initialAgentName: surfaceAgentRoles.spoken_summary?.role.label ?? null,
-      initialVariableValues: {
-        content: actionText.text,
-        style: "Extremely Concise Summary",
-      },
-      initialAutoRun: true,
+    openListenSummaryWindow({
+      agentId: spokenSummaryAgentId,
+      agentName: surfaceAgentRoles.spoken_summary?.role.label ?? null,
+      sourceText: actionText.text,
+      style: "Extremely Concise Summary",
+      autoPlay,
     });
   };
+  const handleSpokenSummary = () => openSpokenSummary(false);
+  const handleSpokenSummaryLive = () => openSpokenSummary(true);
 
   const handleCut = async () => {
     if (!selectionRange || selectionRange.type !== "editable") return;
@@ -1053,6 +1056,7 @@ export function useContextMenuActions(
     handleCopy,
     handleSpeak,
     handleSpokenSummary,
+    handleSpokenSummaryLive,
     spokenSummaryAvailable: Boolean(spokenSummaryAgentId),
     handleCut,
     handlePaste,

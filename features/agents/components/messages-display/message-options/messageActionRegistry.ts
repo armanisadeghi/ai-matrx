@@ -178,6 +178,12 @@ export interface MessageActionContext {
   openMessageTemplateSave: (
     options: OpenQuickMessageTemplateSaveWindowOptions,
   ) => { close: () => void };
+  /**
+   * Effective `spoken_summary` agent for the assistant-message surface,
+   * resolved by the host menu (`useSurfaceAgentRoles`). Null (no binding)
+   * hides both listening actions.
+   */
+  spokenSummaryAgent?: { agentId: string; label: string | null } | null;
 }
 
 // ============================================================================

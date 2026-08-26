@@ -41,7 +41,7 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { MandateResolutionRibbon } from "../components/MandateResolutionRibbon";
-import { MandateOverridePanel } from "../components/MandateOverridePanel";
+import { OverrideFlow } from "./OverrideFlow";
 import { MandateNotesPanel } from "../components/MandateNotesPanel";
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
 import { splitMandateKey } from "../mandate-key";
@@ -166,16 +166,10 @@ export function MandateWorkspace({ mandateKeyOrId, host }: MandateWorkspaceProps
           orgNames={organizations}
         />
 
-        {/* §4 — the override flow. TRANSITIONAL: the proven MandateOverridePanel
-            runs here until the stepwise OverrideFlow replaces it (same build).
-            It gets deleted at cutover, never kept as a twin. */}
+        {/* §4 — the stepwise override flow (choose → validate → map → settings).
+            PERSONAL only — org bindings are edited on the org route. */}
         <Section title="Your override">
-          <MandateOverridePanel
-            mandate={data.mandate}
-            bindings={data.bindings}
-            agentsById={data.agentsById}
-            onChanged={refresh}
-          />
+          <OverrideFlow data={data} userId={userId} onChanged={refresh} />
         </Section>
 
         <MandateNotesPanel
