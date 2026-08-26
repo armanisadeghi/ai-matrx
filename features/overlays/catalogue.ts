@@ -45,6 +45,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  listenSummaryWindow: {
+    label: "Listen",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   siteCommandRunWindow: {
     label: "Site Command Run",
     instanceMode: "multi",

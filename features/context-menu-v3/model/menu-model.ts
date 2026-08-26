@@ -49,6 +49,7 @@ import {
   BrainCircuit,
   Volume2,
   Headphones,
+  AudioLines,
   type LucideIcon,
 } from "lucide-react";
 import type { IconComponentType } from "@/components/official/icons/IconResolver";
@@ -208,6 +209,7 @@ export interface MenuRoles {
   copy: MenuItemNode;
   speak: MenuItemNode;
   spokenSummary: MenuItemNode;
+  spokenSummaryLive: MenuItemNode;
   copyAs: MenuSubmenuNode | null;
   json: MenuSubmenuNode | null;
   cut: MenuItemNode;
@@ -534,6 +536,15 @@ export function buildMenuModel(
     disabled: actionText.source === "none" || !m.spokenSummaryAvailable,
     onSelect: m.handleSpokenSummary,
   };
+  const spokenSummaryLive: MenuItemNode = {
+    kind: "item",
+    id: "spoken-summary-live",
+    label: "Summarize & listen",
+    icon: AudioLines,
+    iconClassName: "text-violet-500",
+    disabled: actionText.source === "none" || !m.spokenSummaryAvailable,
+    onSelect: m.handleSpokenSummaryLive,
+  };
   const copyAs: MenuSubmenuNode | null =
     m.copyVariantActions.length > 0
       ? {
@@ -842,6 +853,7 @@ export function buildMenuModel(
       copy,
       speak,
       spokenSummary,
+      spokenSummaryLive,
       copyAs,
       json,
       cut,
@@ -894,6 +906,7 @@ export function buildMenuModel(
       copy,
       speak,
       spokenSummary,
+      spokenSummaryLive,
       copyAs,
       json,
       cut,

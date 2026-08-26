@@ -760,6 +760,10 @@ const LiveRunWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/LiveRunWindow"),
   { ssr: false },
 );
+const ListenSummaryWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/listen/ListenSummaryWindow"),
+  { ssr: false },
+);
 const SiteCommandRunWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/marketing/SiteCommandRunWindow"),
@@ -1178,6 +1182,9 @@ export default function OverlayController() {
     agentRunWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentRunWindow"),
     ),
+    listenSummaryWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "listenSummaryWindow"),
+    ),
     agentSettingsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentSettingsWindow"),
     ),
@@ -1541,6 +1548,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     agentRunWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentRunWindow"),
+    ) as Record<string, unknown> | null,
+    listenSummaryWindow: useAppSelector((s) =>
+      selectOverlayData(s, "listenSummaryWindow"),
     ) as Record<string, unknown> | null,
     agentSettingsWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentSettingsWindow"),
@@ -2875,6 +2885,41 @@ export default function OverlayController() {
                 : null
             }
             initialAutoRun={data?.initialAutoRun === true}
+          />
+        );
+      })()}
+
+      {/* listenSummaryWindow */}
+      {(() => {
+        const isOpen = isOpenById.listenSummaryWindow;
+        const data = dataById.listenSummaryWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <ListenSummaryWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "listenSummaryWindow" }))
+            }
+            initialAgentId={
+              typeof data?.initialAgentId === "string"
+                ? data.initialAgentId
+                : null
+            }
+            initialAgentName={
+              typeof data?.initialAgentName === "string"
+                ? data.initialAgentName
+                : null
+            }
+            initialSourceText={
+              typeof data?.initialSourceText === "string"
+                ? data.initialSourceText
+                : null
+            }
+            initialStyle={
+              typeof data?.initialStyle === "string" ? data.initialStyle : null
+            }
+            initialAutoPlay={data?.initialAutoPlay === true}
           />
         );
       })()}

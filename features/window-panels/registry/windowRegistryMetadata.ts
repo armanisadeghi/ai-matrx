@@ -486,6 +486,19 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "card",
   },
 
+  // ── Listen — "summarize for listening" player ────────────────────────────
+  // Ephemeral by construction: the summary stream + live speech cannot be
+  // restored on reload; the durable record is the run's own conversation.
+  {
+    slug: "listen-summary-window",
+    overlayId: "listenSummaryWindow",
+    kind: "window",
+    label: "Listen",
+    defaultData: {},
+    ephemeral: true,
+    mobilePresentation: "card",
+  },
+
   // ── Marketing site command run (analyze / sitemaps / GSC / links / fetch) ─
   // Ephemeral: the live stream cannot be restored, and it must not be — the
   // durable record is the command's own `web.crawl_session` row, which the
