@@ -483,8 +483,6 @@ export function KeywordWorkbench() {
                           id: "kw-quick-assign",
                           label: `${view.current.lastUsed.dimensionLabel}: ${view.current.lastUsed.valueLabel}`,
                           icon: Tag,
-                          description:
-                            "Assign the value you used last — one click, no dialog",
                           onSelect: () => {
                             const row = clickedRow.current;
                             const picked = view.current?.lastUsed;

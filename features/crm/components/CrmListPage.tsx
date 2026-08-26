@@ -854,7 +854,6 @@ export function CrmListPage({
               id: "crm-add-to-outreach-list",
               label: "Add to an outreach list",
               icon: Megaphone,
-              description: "Enroll this record without leaving the list",
               onSelect: () => {
                 setSelectedIds([target.id]);
                 setAddToOutreachListOpen(true);

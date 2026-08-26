@@ -263,8 +263,6 @@ export function DigResultsTable({
                   ? "Pages for this query — floating panel"
                   : "Queries for this page — floating panel",
               icon: PanelTop,
-              description:
-                "Open this row's breakdown in a floating panel you can keep beside others",
               onSelect: openRowDrillPanel,
             },
             {
@@ -272,8 +270,6 @@ export function DigResultsTable({
               id: "gsc-dig-watch-row",
               label: `Watch / unwatch this ${dimension}`,
               icon: Eye,
-              description:
-                "Toggle this row on your Watchlist tab (per-user, cross-site)",
               onSelect: () => {
                 const row = clickedRowRef.current;
                 if (!row) {
@@ -290,8 +286,6 @@ export function DigResultsTable({
                     id: "gsc-dig-filter-row",
                     label: "Drill into this row here",
                     icon: Filter,
-                    description:
-                      "Jump to the matching tab filtered to this row (same as clicking it)",
                     onSelect: () => {
                       const row = clickedRowRef.current;
                       if (!row) {

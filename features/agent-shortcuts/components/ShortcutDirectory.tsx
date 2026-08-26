@@ -380,7 +380,6 @@ export function ShortcutDirectory({
         label: `Open "${row.label}"`,
         icon: ExternalLink,
         href: resolveShortcutEditUrl(row, mode),
-        description: "Open this shortcut for editing",
       },
       {
         kind: "link",

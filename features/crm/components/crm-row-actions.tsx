@@ -340,7 +340,6 @@ export function useCrmRowMenu<T extends { id: string }>(
       label: "Open",
       icon: ExternalLink,
       href: target.href,
-      description: "Open the full record",
     });
     items.push({
       kind: "link",
@@ -349,7 +348,6 @@ export function useCrmRowMenu<T extends { id: string }>(
       icon: SquareArrowOutUpRight,
       href: target.href,
       target: "_blank",
-      description: "Keep this list where it is",
     });
   }
   if (target?.secondaryHref) {
@@ -403,7 +401,6 @@ export function useCrmRowMenu<T extends { id: string }>(
     id: "crm-copy-record",
     label: "Copy record as text",
     icon: Copy,
-    description: "Everything this row says, ready to paste",
     onSelect: withTarget((t) =>
       copyToClipboard(crmMenuContent(t), "Record copied"),
     ),

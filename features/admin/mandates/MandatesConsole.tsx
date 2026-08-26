@@ -318,7 +318,6 @@ export function MandatesConsole() {
         id: "mandate-open",
         label: `Open "${row.mandateKey}"`,
         icon: ExternalLink,
-        description: "Open this mandate's detail panel — holders, bindings, contract",
         onSelect: () => setSelectedId(row.id),
       },
       {

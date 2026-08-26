@@ -813,8 +813,6 @@ export function GscDimensionTable({
               id: "gsc-drill-panel",
               label: PANEL_DRILL_LABELS[dimension],
               icon: PanelTop,
-              description:
-                "Opens a floating panel beside this table — your filters, sort and scroll stay exactly as they are",
               onSelect: openRowDrillPanel,
             },
             {
@@ -822,8 +820,6 @@ export function GscDimensionTable({
               id: "gsc-row-scope-panel",
               label: "See this row's Search Console data",
               icon: BarChart3,
-              description:
-                "Clicks, impressions and the trend chart for this one row, in its own panel",
               onSelect: openRowScopePanel,
             },
             ...(dimension === "query"
@@ -833,8 +829,6 @@ export function GscDimensionTable({
                     id: "gsc-why-score",
                     label: "Why this score",
                     icon: Info,
-                    description:
-                      "The receipt behind this keyword's level — every step links to where you change it",
                     onSelect: openRowWhyScore,
                   },
                 ]
@@ -844,8 +838,6 @@ export function GscDimensionTable({
               id: "gsc-view-panel",
               label: "This view — floating panel",
               icon: Columns2,
-              description:
-                "Float this whole table (current filters and period) for side-by-side comparison",
               onSelect: openViewPanel,
             },
             ...(onDrill
@@ -855,8 +847,6 @@ export function GscDimensionTable({
                     id: "gsc-filter-row",
                     label: "Drill into this row here",
                     icon: Filter,
-                    description:
-                      "Apply this row as a dashboard filter (same as clicking it)",
                     onSelect: () => {
                       const row = clickedRowRef.current;
                       if (!row) {
@@ -875,8 +865,6 @@ export function GscDimensionTable({
                     id: "gsc-track-launch",
                     label: "Track as new page",
                     icon: Rocket,
-                    description:
-                      "Add to the New Pages launch tracker (first-impression watch)",
                     onSelect: () => {
                       const row = clickedRowRef.current;
                       if (!row) {
@@ -916,8 +904,6 @@ export function GscDimensionTable({
                     id: "gsc-watch-row",
                     label: `Watch / unwatch this ${labels.noun}`,
                     icon: Eye,
-                    description:
-                      "Toggle this row on your Watchlist tab (per-user, cross-site)",
                     onSelect: () => {
                       const row = clickedRowRef.current;
                       if (!row) {

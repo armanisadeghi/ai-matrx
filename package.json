@@ -53,6 +53,7 @@
     "check:surface-impact": "tsx scripts/check-surface-impact.ts",
     "check:surface-impact:strict": "tsx scripts/check-surface-impact.ts --strict",
     "check:surface-drift": "tsx scripts/check-surface-drift.ts",
+    "check:context-menu": "tsx scripts/check-context-menu.ts",
     "check:picker-add": "tsx scripts/check-picker-custom-entry.ts",
     "check:picker-add:strict": "tsx scripts/check-picker-custom-entry.ts --strict",
     "check:surface-routes": "tsx scripts/check-surface-routes.ts",

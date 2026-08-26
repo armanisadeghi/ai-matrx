@@ -178,7 +178,6 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
         label: `Open "${row.kind}"`,
         icon: ExternalLink,
         href,
-        description: "Open this kind's definition",
       });
       items.push({
         kind: "link",

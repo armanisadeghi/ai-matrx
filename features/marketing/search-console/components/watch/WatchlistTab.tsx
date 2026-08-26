@@ -330,8 +330,6 @@ export function WatchlistTab({
                     id: "gsc-watch-drill-panel",
                     label: "Drill into this row — floating panel",
                     icon: PanelTop,
-                    description:
-                      "Queries for a watched page / pages for a watched query, in a floating panel",
                     onSelect: openRowDrillPanel,
                   },
                 ],
