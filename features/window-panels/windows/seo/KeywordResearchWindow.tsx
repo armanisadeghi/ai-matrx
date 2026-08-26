@@ -115,15 +115,24 @@ function KeywordResearchWindowInner({
   const siteOptions = useSiteOptions();
   const [pickedSiteId, setPickedSiteId] = useState<string | null>(null);
   const selectedSiteId = initialSiteId ?? pickedSiteId;
-  const { clusterPhrases, keywords, loading, search, setSearch, run, runResearch } =
-    useKeywordResearch(selectedSiteId);
+  const {
+    clusterPhrases,
+    keywords,
+    loading,
+    search,
+    setSearch,
+    run,
+    runResearch,
+  } = useKeywordResearch(selectedSiteId);
   const [explorerOpen, setExplorerOpen] = useState(true);
 
   // Debounced keyword mirror for persistence. State (not a ref) because the
   // WindowPanel save effect keys on the collector's identity — a ref-backed
   // collector never re-stages, so a reload would restore a stale phrase.
   // The debounce keeps the window shell from re-rendering per keystroke.
-  const [persistedKeyword, setPersistedKeyword] = useState(initialKeyword ?? "");
+  const [persistedKeyword, setPersistedKeyword] = useState(
+    initialKeyword ?? "",
+  );
   const keywordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleKeywordChange = useCallback((keyword: string) => {
     if (keywordTimerRef.current) clearTimeout(keywordTimerRef.current);
@@ -152,7 +161,8 @@ function KeywordResearchWindowInner({
       .filter((row) => !cluster || cluster.has(row.normalized_phrase))
       .sort(
         (a, b) =>
-          (usMarket(b)?.search_volume ?? -1) - (usMarket(a)?.search_volume ?? -1),
+          (usMarket(b)?.search_volume ?? -1) -
+          (usMarket(a)?.search_volume ?? -1),
       )
       .slice(0, 100);
   }, [keywords, clusterPhrases]);
@@ -180,7 +190,7 @@ function KeywordResearchWindowInner({
               value={selectedSiteId ?? undefined}
               onValueChange={setPickedSiteId}
             >
-              <SelectTrigger className="h-8 w-56 text-xs">
+              <SelectTrigger className="h-11 w-56 text-base sm:h-8 sm:text-xs">
                 <SelectValue placeholder="Select a site to research" />
               </SelectTrigger>
               <SelectContent>
@@ -212,7 +222,7 @@ function KeywordResearchWindowInner({
           <button
             type="button"
             onClick={() => setExplorerOpen((open) => !open)}
-            className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+            className="flex min-h-11 shrink-0 items-center gap-2 border-b border-border px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground sm:min-h-0"
           >
             {explorerOpen ? (
               <ChevronUp className="h-3.5 w-3.5" />

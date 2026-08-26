@@ -34,30 +34,34 @@ export function MobileWindowHeader({
 }: MobileWindowHeaderProps) {
   const titleText = typeof title === "string" ? title : "Content";
   return (
-    <div className="flex items-center gap-1.5 px-2 py-1.5 min-h-[36px] shrink-0 border-b border-border/50 bg-muted/40 select-none">
+    <div className="flex min-h-11 shrink-0 items-center gap-1.5 border-b border-border/50 bg-muted/40 px-2 select-none">
       {/* Close + Minimize */}
       <div className="flex items-center gap-1.5 shrink-0">
         {onClose && (
           <button
             type="button"
-            className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center cursor-pointer"
+            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center"
             onClick={onClose}
             aria-label="Close"
           >
-            <X className="w-2.5 h-2.5 stroke-[3]" style={{ color: "#000" }} />
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500">
+              <X className="h-2.5 w-2.5 stroke-[3]" style={{ color: "#000" }} />
+            </span>
           </button>
         )}
         {onMinimize && (
           <button
             type="button"
-            className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center cursor-pointer"
+            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center"
             onClick={onMinimize}
             aria-label="Minimize"
           >
-            <Minus
-              className="w-2.5 h-2.5 stroke-[3]"
-              style={{ color: "#000" }}
-            />
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-yellow-400">
+              <Minus
+                className="h-2.5 w-2.5 stroke-[3]"
+                style={{ color: "#000" }}
+              />
+            </span>
           </button>
         )}
       </div>
@@ -69,7 +73,7 @@ export function MobileWindowHeader({
             <button
               type="button"
               className={cn(
-                "px-3 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer",
+                "min-h-11 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 transition-colors",
                 activePaneMobile === "sidebar"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground",
@@ -81,7 +85,7 @@ export function MobileWindowHeader({
             <button
               type="button"
               className={cn(
-                "px-3 py-1 rounded-md transition-colors truncate max-w-[120px] cursor-pointer",
+                "min-h-11 max-w-[120px] cursor-pointer truncate rounded-md px-3 py-1 transition-colors",
                 activePaneMobile === "main"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground",

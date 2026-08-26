@@ -99,6 +99,10 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
+- 2026-08-26 — **Fullscreen mobile window chrome is touch-safe.** Close,
+  Minimize, and the sidebar/main pane toggles keep 44px hit areas while the
+  traffic-light visuals remain 24px.
+
 - 2026-08-26 — **`mandateWindow` — mandates handled in place.** Every mandate NAME on a
   working surface (the Agents menu's "AI doing jobs here" rows) now opens
   this panel over the page instead of navigating to `/agents/mandates` or the admin console;

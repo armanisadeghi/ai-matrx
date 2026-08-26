@@ -281,6 +281,10 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-26 — **The floating Keyword Research window is touch-safe on phones.**
+  Its site selector and collapsible library rail now keep 44px targets below
+  `sm`; the fullscreen window header supplies the same 44px Close target.
+
 - 2026-08-26 — **Keyword cards are phone-only.** The workbench uses the default
   `mobileCardsBreakpoint="sm"`; 768px portrait tablets retain the canonical
   table while phones keep the complete card summary. Every width shares one
