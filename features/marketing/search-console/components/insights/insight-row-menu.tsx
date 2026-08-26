@@ -64,8 +64,8 @@ export function classMenuSection(opts: {
       id: "class-review",
       label:
         trafficClass === "unclassified"
-          ? "Classify in Keyword Workbench"
-          : "Review in Keyword Workbench",
+          ? "Classify in Workbench"
+          : "Review in Workbench",
       icon: ExternalLink,
       href: `${marketingRoutes.site(null, siteId, "/keywords")}?view=workbench&st=traffic_class:${trafficClass}`,
     },
@@ -116,7 +116,7 @@ export function levelMenuSection(opts: {
     {
       kind: "link",
       id: "level-review",
-      label: "Review on Value Workbench",
+      label: "Review on Workbench",
       icon: ExternalLink,
       href: `${marketingRoutes.site(null, siteId, "/value")}?band=${encodeURIComponent(band)}`,
     },

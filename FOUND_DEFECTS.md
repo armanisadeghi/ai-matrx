@@ -2151,3 +2151,14 @@ is stranded today — but every other kind component with an id is in the same p
 presentation over the entity registry, the same class as the kit primitives already allowed), then
 sweep DB components that render bare ids. Not done here — widening what DB components may import is
 a platform decision with blast radius beyond one feature.
+
+## Duplicate React keys on the Rulebook (`/value/rules`) — 2026-08-25
+
+Right-clicking anywhere on the Rulebook logs two `Encountered two children with
+the same key` errors (`34f968c7-23b1-4311-959e-5a58e83f474d`,
+`5ab92004-d769-4774-8260-3c1b3ee3816f`), and the Error Inspector badge shows
+"2 Issues" on load. Verified against the live DB: **neither uuid is a
+`seo.keyword_class_rule` or a `seo.site_geo_area`**, so the duplicate is NOT in
+the rules or service-areas lists — it is another component mounted on this page
+(shell/nav or a panel). Found while wiring the v3 context menu (KI-025);
+unrelated to that work, so logged rather than chased.
