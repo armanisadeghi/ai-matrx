@@ -19,11 +19,13 @@ import { useEffect, useState } from "react";
 import { getCached, invalidate } from "@/features/files/hooks/blob-cache";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { ensureFilesSession } from "@/features/files/handler/session";
+import { buildHeaders } from "@/lib/python-client";
+import { extractErrorMessage } from "@/utils/errors";
 
 export interface UsePdfRemoteSourceResult {
   /** A direct HTTP(S) object URL or an already-warm blob URL. */
   remoteUrl: string | null;
-  /** PDF byte auth never rides caller-supplied headers. */
+  /** Fresh request auth for fetch-capable private PDF loads; empty for CDN. */
   headers: Record<string, string>;
   /** Private durable URLs authenticate through the cross-origin cookie. */
   withCredentials: boolean;
@@ -51,9 +53,14 @@ export function usePdfRemoteSource(
   const { asset, isLoading, error, refresh } = useFileAsset(fileId, {
     enabled: !!fileId && !cached,
   });
-  const [sessionReadyFileId, setSessionReadyFileId] = useState<string | null>(
-    null,
-  );
+  const [privateAuth, setPrivateAuth] = useState<{
+    fileId: string;
+    headers: Record<string, string>;
+  } | null>(null);
+  const [authFailure, setAuthFailure] = useState<{
+    fileId: string;
+    message: string;
+  } | null>(null);
 
   const original = asset?.variants?.original;
   const publicUrl = original?.cdn_url ?? null;
@@ -64,11 +71,19 @@ export function usePdfRemoteSource(
   const retry = () => {
     if (fileId) invalidate(fileId);
     if (needsFilesSession) {
-      setSessionReadyFileId(null);
-      void ensureFilesSession({ force: true }).then(() => {
-        setSessionReadyFileId(fileId);
-        void refresh();
-      });
+      setPrivateAuth(null);
+      setAuthFailure(null);
+      void Promise.all([
+        ensureFilesSession({ force: true }),
+        buildHeaders({}, false),
+      ])
+        .then(([, auth]) => {
+          setPrivateAuth({ fileId, headers: auth.headers });
+          void refresh();
+        })
+        .catch((authError: unknown) => {
+          setAuthFailure({ fileId, message: extractErrorMessage(authError) });
+        });
       return;
     }
     void refresh();
@@ -82,16 +97,28 @@ export function usePdfRemoteSource(
       };
     }
 
-    void ensureFilesSession().then(() => {
-      if (active) setSessionReadyFileId(fileId);
-    });
+    void Promise.all([ensureFilesSession(), buildHeaders({}, false)]).then(
+      ([, auth]) => {
+        if (active) setPrivateAuth({ fileId, headers: auth.headers });
+      },
+      (authError: unknown) => {
+        if (active) {
+          setAuthFailure({
+            fileId,
+            message: extractErrorMessage(authError),
+          });
+        }
+      },
+    );
     return () => {
       active = false;
     };
   }, [fileId, needsFilesSession]);
 
   const directUrl = publicUrl ?? durableUrl;
-  const sessionReady = !needsFilesSession || sessionReadyFileId === fileId;
+  const sessionReady = !needsFilesSession || privateAuth?.fileId === fileId;
+  const currentAuthError =
+    authFailure?.fileId === fileId ? authFailure.message : null;
 
   useEffect(() => {
     if (!fileId) return;
@@ -110,10 +137,16 @@ export function usePdfRemoteSource(
 
   return {
     remoteUrl: cached?.url ?? (sessionReady ? directUrl : null),
-    headers: {},
+    headers:
+      needsFilesSession && privateAuth?.fileId === fileId
+        ? privateAuth.headers
+        : {},
     withCredentials: needsFilesSession,
-    loading: !!fileId && !cached && (isLoading || !sessionReady),
-    error: sourceMissing ? null : error,
+    loading:
+      !!fileId &&
+      !cached &&
+      (isLoading || (!sessionReady && !currentAuthError)),
+    error: sourceMissing ? null : (error ?? currentAuthError),
     sourceMissing,
     bytesLoaded: cached?.bytes ?? 0,
     bytesTotal: cached?.bytes ?? null,

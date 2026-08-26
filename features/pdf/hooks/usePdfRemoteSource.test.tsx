@@ -4,6 +4,7 @@ const mockGetCached = jest.fn();
 const mockInvalidate = jest.fn();
 const mockUseFileAsset = jest.fn();
 const mockEnsureFilesSession = jest.fn();
+const mockBuildHeaders = jest.fn();
 
 jest.mock("@/features/files/hooks/blob-cache", () => ({
   getCached: (...args: unknown[]) => mockGetCached(...args),
@@ -16,6 +17,10 @@ jest.mock("@/features/files/hooks/useFileAsset", () => ({
 
 jest.mock("@/features/files/handler/session", () => ({
   ensureFilesSession: (...args: unknown[]) => mockEnsureFilesSession(...args),
+}));
+
+jest.mock("@/lib/python-client", () => ({
+  buildHeaders: (...args: unknown[]) => mockBuildHeaders(...args),
 }));
 
 import { usePdfRemoteSource } from "./usePdfRemoteSource";
@@ -46,6 +51,10 @@ describe("usePdfRemoteSource durable authentication", () => {
     jest.clearAllMocks();
     mockGetCached.mockReturnValue(null);
     mockEnsureFilesSession.mockResolvedValue(undefined);
+    mockBuildHeaders.mockResolvedValue({
+      headers: { Authorization: "Bearer test-token" },
+      requestId: "test-request",
+    });
   });
 
   it("establishes the file session before exposing a private URL", async () => {
@@ -62,6 +71,7 @@ describe("usePdfRemoteSource durable authentication", () => {
     expect(hook.current.loading).toBe(true);
     expect(hook.current.withCredentials).toBe(true);
     expect(mockEnsureFilesSession).toHaveBeenCalledWith();
+    expect(mockBuildHeaders).toHaveBeenCalledWith({}, false);
 
     await hook.act(async () => finishSession());
     await settle(
@@ -70,6 +80,9 @@ describe("usePdfRemoteSource durable authentication", () => {
       "private PDF session",
     );
     expect(hook.current.loading).toBe(false);
+    expect(hook.current.headers).toEqual({
+      Authorization: "Bearer test-token",
+    });
     await hook.unmount();
   });
 
@@ -81,6 +94,7 @@ describe("usePdfRemoteSource durable authentication", () => {
     expect(hook.current.loading).toBe(false);
     expect(hook.current.withCredentials).toBe(false);
     expect(mockEnsureFilesSession).not.toHaveBeenCalled();
+    expect(mockBuildHeaders).not.toHaveBeenCalled();
     await hook.unmount();
   });
 
@@ -97,6 +111,7 @@ describe("usePdfRemoteSource durable authentication", () => {
     await hook.act(() => hook.current.retry());
     expect(mockInvalidate).toHaveBeenCalledWith(FILE_ID);
     expect(mockEnsureFilesSession).toHaveBeenCalledWith({ force: true });
+    expect(mockBuildHeaders).toHaveBeenCalledWith({}, false);
     await hook.unmount();
   });
 });
