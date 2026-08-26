@@ -42354,6 +42354,11 @@ export type Database = {
         Args: { p_id: string; p_token: string; p_user: string }
         Returns: boolean
       }
+      _can_edit_punch: {
+        Args: { p_at: string; p_employment_id: string; p_user: string }
+        Returns: Json
+      }
+      _clock_knob: { Args: { p_default: Json; p_key: string }; Returns: Json }
       _desired_grants_for_employment: {
         Args: { p_at?: string; p_employment_id: string }
         Returns: {
@@ -42446,6 +42451,10 @@ export type Database = {
         Returns: boolean
       }
       _l1_module_enabled: { Args: { p_org: string }; Returns: boolean }
+      _l1_next_employee_number: {
+        Args: { p_attempt?: number; p_org: string }
+        Returns: string
+      }
       _l1_org_role: { Args: { p_org: string; p_user: string }; Returns: string }
       _l1_persona: {
         Args: { p_at: string; p_org: string; p_user: string }
@@ -42457,6 +42466,30 @@ export type Database = {
       }
       _l1_viewer: {
         Args: { p_at: string; p_employee_id: string; p_user: string }
+        Returns: Json
+      }
+      _l1_write_audit: {
+        Args: {
+          p_action: string
+          p_ids: string[]
+          p_org: string
+          p_purpose?: string
+          p_self?: boolean
+          p_subject_employment: string
+          p_tier?: string
+          p_token: string
+        }
+        Returns: string
+      }
+      _l1_write_gate: {
+        Args: {
+          p_action: string
+          p_capability: string
+          p_org: string
+          p_purpose?: string
+          p_subject_employment: string
+          p_token: string
+        }
         Returns: Json
       }
       _leave_policy_probe: { Args: { p_case: string }; Returns: Json }
@@ -42489,6 +42522,62 @@ export type Database = {
         }
         Returns: Json
       }
+      _punch_allowed_kinds: { Args: { p_state: string }; Returns: string[] }
+      _punch_attest_axis: {
+        Args: { p_axis: string; p_field: string; p_response: Json }
+        Returns: string
+      }
+      _punch_auto_close_orphan: {
+        Args: { p_employment_id: string }
+        Returns: Json
+      }
+      _punch_elapsed: {
+        Args: { p_employment_id: string; p_now?: string }
+        Returns: Json
+      }
+      _punch_kind_rank: { Args: { p_kind: string }; Returns: number }
+      _punch_knob: { Args: { p_default: Json; p_key: string }; Returns: Json }
+      _punch_open_chain: {
+        Args: { p_employment_id: string }
+        Returns: {
+          attestation_response: Json
+          break_paid: boolean
+          id: string
+          local_work_date: string
+          occurred_at: string
+          position_assignment_id: string
+          punch_kind: string
+          source: string
+          tz: string
+        }[]
+      }
+      _punch_orphan_threshold_hours: {
+        Args: { p_juris: Json; p_organization_id: string }
+        Returns: number
+      }
+      _punch_raise_exception: {
+        Args: {
+          p_actual_end?: string
+          p_actual_start?: string
+          p_calc?: Json
+          p_employment_id: string
+          p_juris: Json
+          p_kind: string
+          p_organization_id: string
+          p_punch_id: string
+          p_severity: string
+        }
+        Returns: string
+      }
+      _punch_refusal: {
+        Args: { p_code: string; p_details?: Json; p_message: string }
+        Returns: Json
+      }
+      _punch_resolve_juris: {
+        Args: { p_employment_id: string; p_occurred_at: string }
+        Returns: Json
+      }
+      _punch_state_of: { Args: { p_employment_id: string }; Returns: string }
       _reconcile_grants: {
         Args: { p_at: string; p_scope_id: string; p_scope_kind: string }
         Returns: Json
@@ -42722,6 +42811,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      clock_state: { Args: { p_employment_id: string }; Returns: Json }
       compensation_as_of: {
         Args: { p_employment_id: string; p_on: string }
         Returns: {
@@ -42794,6 +42884,10 @@ export type Database = {
           subject_token: string
         }[]
       }
+      earning_code_seed_org: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
       eeo_aggregate: {
         Args: { p_as_of?: string; p_dimension: string; p_population?: Json }
         Returns: {
@@ -42851,6 +42945,123 @@ export type Database = {
       employments_of: {
         Args: { p_at?: string; p_user: string }
         Returns: string[]
+      }
+      export_advisory_money_blocks: {
+        Args: { p_organization_id: string; p_pay_period_id: string }
+        Returns: {
+          jurisdiction_key: string
+          message: string
+          rule_class: string
+          rule_id: string
+        }[]
+      }
+      export_claim: {
+        Args: {
+          p_export_format: string
+          p_idempotency_key: string
+          p_includes_pii?: boolean
+          p_organization_id: string
+          p_pay_period_id: string
+          p_supersedes_export_id?: string
+        }
+        Returns: {
+          export_id: string
+          export_version: number
+          replayed: boolean
+          supersedes_export_id: string
+        }[]
+      }
+      export_finish: {
+        Args: {
+          p_adjustment_ids: string[]
+          p_artifact_file_id: string
+          p_artifact_sha256: string
+          p_disputes_carried: Json
+          p_export_id: string
+          p_lines: Json
+          p_organization_id: string
+          p_total_amount: string
+          p_total_hours: string
+        }
+        Returns: number
+      }
+      export_get: {
+        Args: { p_export_id: string; p_organization_id: string }
+        Returns: {
+          acknowledgement_ref: string
+          artifact_file_id: string
+          artifact_sha256: string
+          delivery_state: string
+          export_format: string
+          export_id: string
+          export_version: number
+          failure_reason: string
+          includes_pii: boolean
+          line_count: number
+          pay_period_id: string
+          supersedes_export_id: string
+          total_amount: number
+          total_hours: number
+        }[]
+      }
+      export_line_source: {
+        Args: {
+          p_export_format: string
+          p_include_adjustments?: boolean
+          p_organization_id: string
+          p_pay_period_id: string
+        }
+        Returns: {
+          amount: number
+          dispute_note_present: boolean
+          earning_code: string
+          employee_number: string
+          employment_id: string
+          engine_key: string
+          engine_version: string
+          external_earning_code: string
+          external_employee_id: string
+          hours: number
+          hours_category: string
+          job_title_snapshot: string
+          jurisdiction_key: string
+          original_pay_period_id: string
+          position_assignment_id: string
+          rate: number
+          rule_version_ids: string[]
+          source_version: number
+          source_work_interval_id: string
+          time_adjustment_id: string
+          work_date: string
+          workweek_id: string
+        }[]
+      }
+      export_period_facts: {
+        Args: { p_organization_id: string; p_pay_period_id: string }
+        Returns: {
+          organization_id: string
+          pay_period_id: string
+          pending_workweek_ids: string[]
+          period_end_on: string
+          period_start_on: string
+          state: string
+        }[]
+      }
+      export_transition: {
+        Args: {
+          p_acknowledged_at?: string
+          p_acknowledgement_ref?: string
+          p_action: string
+          p_export_id: string
+          p_failure_reason?: string
+          p_organization_id: string
+        }
+        Returns: {
+          acknowledged_at: string
+          delivery_state: string
+          export_id: string
+          failure_reason: string
+        }[]
       }
       grant_drift: {
         Args: never
@@ -43014,6 +43225,130 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      provider_binding_resolve: {
+        Args: {
+          p_organization_id: string
+          p_provider_key?: string
+          p_seam: string
+        }
+        Returns: {
+          binding_id: string
+          capabilities: string[]
+          connector: Json
+          connector_kind: string
+          display_name: string
+          is_active: boolean
+          organization_id: string
+          provider_key: string
+          seam: string
+          server_version_pin: string
+        }[]
+      }
+      provider_bindings_list: {
+        Args: { p_organization_id: string; p_seam: string }
+        Returns: {
+          binding_id: string
+          bound_at: string
+          capabilities: string[]
+          connector_kind: string
+          display_name: string
+          is_active: boolean
+          organization_id: string
+          provider_key: string
+          seam: string
+        }[]
+      }
+      provider_event_record: {
+        Args: {
+          p_artifact_file_id: string
+          p_binding_id: string
+          p_direction: string
+          p_external_ref: string
+          p_external_status: string
+          p_mapped_state: string
+          p_occurred_at: string
+          p_organization_id: string
+          p_path: string
+          p_payload_summary: Json
+          p_provider_event_id: string
+          p_provider_key: string
+          p_result_summary: string
+          p_seam: string
+          p_signature_verified: boolean
+          p_subject_id: string
+          p_subject_token: string
+        }
+        Returns: {
+          duplicate: boolean
+          event_id: string
+        }[]
+      }
+      provider_sync_targets: {
+        Args: {
+          p_binding_id?: string
+          p_organization_id: string
+          p_seam: string
+          p_subject_ids?: string[]
+        }
+        Returns: {
+          binding_id: string
+          capabilities: string[]
+          connector: Json
+          connector_kind: string
+          display_name: string
+          external_ref: string
+          is_active: boolean
+          organization_id: string
+          provider_key: string
+          seam: string
+          server_version_pin: string
+          subject_id: string
+          subject_token: string
+        }[]
+      }
+      provider_webhook_candidates: {
+        Args: { p_provider_key: string; p_seam: string }
+        Returns: {
+          binding_id: string
+          capabilities: string[]
+          connector: Json
+          connector_kind: string
+          display_name: string
+          is_active: boolean
+          organization_id: string
+          provider_key: string
+          seam: string
+          server_version_pin: string
+          webhook_secret_ref: string
+        }[]
+      }
+      punch_knobs_missing: {
+        Args: never
+        Returns: {
+          feature: string
+          key: string
+          owner: string
+          spec_default: Json
+        }[]
+      }
+      punch_orphan_sweep: {
+        Args: { p_dry_run?: boolean; p_organization_id: string }
+        Returns: Json
+      }
+      punch_record: {
+        Args: {
+          p_attestation?: Json
+          p_employment_id: string
+          p_geo?: Json
+          p_idempotency_key: string
+          p_kind: string
+          p_kiosk_session_id?: string
+          p_occurred_at: string
+          p_photo_file_id?: string
+          p_source: string
+        }
+        Returns: Json
+      }
       raise_compliance_exception: {
         Args: {
           p_class: string
@@ -43069,6 +43404,16 @@ export type Database = {
       stamp_retention_triggers: {
         Args: { p_employment_id: string }
         Returns: number
+      }
+      time_rounding_config_check: {
+        Args: {
+          p_as_of?: string
+          p_jurisdiction_keys?: string[]
+          p_organization_id: string
+          p_rounding_minutes: number
+          p_rounding_mode: string
+        }
+        Returns: Json
       }
       transfer_restricted_note: {
         Args: { p_id: string; p_new_owner: string }
@@ -59799,11 +60144,28 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_duplicate_scan: {
+        Args: { p_organization_id: string; p_probe: Json }
+        Returns: Json
+      }
+      hr_emergency_contact_remove: { Args: { p_id: string }; Returns: Json }
+      hr_emergency_contact_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_employee_create: { Args: { p_payload: Json }; Returns: Json }
       hr_employee_profile: {
         Args: { p_as_of?: string; p_employee_id: string }
         Returns: Json
       }
+      hr_employee_update: {
+        Args: {
+          p_employee_id: string
+          p_expected_version?: number
+          p_patch: Json
+        }
+        Returns: Json
+      }
       hr_employment_history: { Args: { p_employee_id: string }; Returns: Json }
+      hr_engagement_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_external_identity_upsert: { Args: { p_payload: Json }; Returns: Json }
       hr_incident_status: { Args: { p_incident_id: string }; Returns: Json }
       hr_kiosk_authenticate: {
         Args: { p_device_id: string; p_device_secret: string }
@@ -59897,11 +60259,25 @@ export type Database = {
         Args: { p_assignment_id: string; p_reason: string }
         Returns: Json
       }
+      hr_self_update: {
+        Args: { p_id: string; p_patch: Json; p_token: string }
+        Returns: Json
+      }
       hr_set_employment_pin: {
         Args: { p_employment_id: string; p_pin: string }
         Returns: Json
       }
       hr_structure_list: { Args: { p_organization_id: string }; Returns: Json }
+      hr_time_rounding_config_check: {
+        Args: {
+          p_as_of?: string
+          p_jurisdiction_keys?: string[]
+          p_organization_id: string
+          p_rounding_minutes: number
+          p_rounding_mode: string
+        }
+        Returns: Json
+      }
       hr_wf_bulk_decide: {
         Args: { p_decision: string; p_reason?: string; p_step_ids: string[] }
         Returns: Json
