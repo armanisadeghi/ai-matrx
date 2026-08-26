@@ -242,6 +242,72 @@
       "purposes": [],
       "schema": {
         "$defs": {
+          "AgentDefinitionContextPolicy": {
+            "additionalProperties": false,
+            "description": "One context policy, as the live column actually stores it (rich objects,\nnever bare strings \u2014 the Masterwork Conductor's ``platform_capabilities`` /\n``my_resources`` policies are the reference shape).",
+            "properties": {
+              "description": {
+                "default": "",
+                "title": "Description",
+                "type": "string"
+              },
+              "key": {
+                "title": "Key",
+                "type": "string"
+              },
+              "label": {
+                "default": "",
+                "title": "Label",
+                "type": "string"
+              },
+              "mutable": {
+                "default": false,
+                "title": "Mutable",
+                "type": "boolean"
+              },
+              "persist": {
+                "default": "never",
+                "title": "Persist",
+                "type": "string"
+              },
+              "source": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/AgentDefinitionContextPolicySource"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "type": {
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "type"
+            ],
+            "title": "AgentDefinitionContextPolicy",
+            "type": "object"
+          },
+          "AgentDefinitionContextPolicySource": {
+            "additionalProperties": false,
+            "description": "Where a context policy's value comes from (a registered inventory kind).",
+            "properties": {
+              "kind": {
+                "title": "Kind",
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "title": "AgentDefinitionContextPolicySource",
+            "type": "object"
+          },
           "AgentDefinitionMessage": {
             "additionalProperties": false,
             "description": "One prompt message. The system message comes first.",
@@ -578,7 +644,7 @@
                 },
                 "context_policies": {
                   "items": {
-                    "type": "string"
+                    "$ref": "#/$defs/AgentDefinitionContextPolicy"
                   },
                   "title": "Context Policies",
                   "type": "array"
@@ -618,6 +684,13 @@
                     "type": "string"
                   },
                   "title": "Tags",
+                  "type": "array"
+                },
+                "tools": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Tools",
                   "type": "array"
                 },
                 "variable_definitions": {
@@ -1754,6 +1827,50 @@
                   "default": null,
                   "title": "Description"
                 },
+                "input_contract": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "input_contract_hash": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Input Contract Hash"
+                },
                 "input_kind": {
                   "anyOf": [
                     {
@@ -1961,6 +2078,18 @@
                 "name": {
                   "title": "Name",
                   "type": "string"
+                },
+                "output_contract_hash": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Output Contract Hash"
                 },
                 "output_schema": {
                   "anyOf": [
@@ -11482,6 +11611,2094 @@
     {
       "capability": "pure",
       "class": "reference",
+      "doc": "Pointer to one Asset (hr.asset) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_asset",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_asset",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_asset"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Candidate (hr.candidate) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_candidate",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_candidate",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_candidate"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Careers portal (hr.careers_portal) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_careers_portal",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_careers_portal",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_careers_portal"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Checklist template (hr.checklist_template) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_checklist_template",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_checklist_template",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_checklist_template"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Course (hr.course) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_course",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_course",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_course"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Crew (hr.crew) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_crew",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_crew",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_crew"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Deduction code (hr.deduction_code) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_deduction_code",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_deduction_code",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_deduction_code"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Department (hr.department) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_department",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_department",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_department"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Earning code (hr.earning_code) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_earning_code",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_earning_code",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_earning_code"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Employee (hr.employee) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_employee",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_employee",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_employee"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Holiday calendar (hr.holiday_calendar) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_holiday_calendar",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_holiday_calendar",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_holiday_calendar"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Interview kit (hr.interview_kit) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_interview_kit",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_interview_kit",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_interview_kit"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Job title (hr.job_title) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_job_title",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_job_title",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_job_title"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Jurisdiction (hr.jurisdiction) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_jurisdiction",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_jurisdiction",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_jurisdiction"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Jurisdiction rule class (hr.jurisdiction_rule_class) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_jurisdiction_rule_class",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_jurisdiction_rule_class",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_jurisdiction_rule_class"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Leave policy (hr.leave_policy) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_leave_policy",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_leave_policy",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_leave_policy"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Location (hr.location) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_location",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_location",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_location"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Pay group (hr.pay_group) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_pay_group",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_pay_group",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_pay_group"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Job posting (hr.posting) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_posting",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_posting",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_posting"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Record class (hr.record_class) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_record_class",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_record_class",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_record_class"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Requisition (hr.requisition) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_requisition",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_requisition",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_requisition"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Schedule (hr.schedule) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_schedule",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_schedule",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_schedule"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Schedule template (hr.schedule_template) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_schedule_template",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_schedule_template",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_schedule_template"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Survey (hr.survey) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "hr_survey",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_hr_survey",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_hr_survey"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
       "doc": "Pointer to one Item Mastery (education.item_mastery) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "item_mastery",
@@ -17626,6 +19843,93 @@
     {
       "capability": "pure",
       "class": "reference",
+      "doc": "An arbitrary external URL (no Matrx-owned id); renders the link, never fetches it.",
+      "item_model": "UrlRef",
+      "noun": "url",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_url",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "An arbitrary external URL \u2014 the ONE reference type with no Matrx-owned id.\nCovers anything not already modeled by a canonical entity (a public web page, a\nthird-party doc link). Nothing is looked up server-side: the resolver renders the\nURL (with its label) verbatim; it NEVER fetches the page (repo file rule #1 \u2014\na reference resolve is not a crawl).",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                },
+                "url": {
+                  "title": "Url",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url"
+              ],
+              "title": "UrlRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_url"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
       "doc": "Pointer to one User Markdown Sample (users.user_markdown_samples) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "user_markdown_sample",
@@ -19560,6 +21864,50 @@
                   "title": "Id",
                   "type": "string"
                 },
+                "input_contract": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "input_contract_hash": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Input Contract Hash"
+                },
                 "input_kind": {
                   "anyOf": [
                     {
@@ -19775,6 +22123,18 @@
                   ],
                   "default": null,
                   "title": "Name"
+                },
+                "output_contract_hash": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Output Contract Hash"
                 },
                 "output_schema": {
                   "anyOf": [
