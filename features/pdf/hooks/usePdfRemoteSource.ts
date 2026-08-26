@@ -3,8 +3,8 @@
 /**
  * Resolve a cloud-files PDF to the URL PDF.js should read.
  *
- * Cold files use the canonical CDN / signed-inline URL from the Asset
- * envelope. PDF.js can issue HTTP Range requests against that object URL, so
+ * Cold files use the canonical CDN / durable-inline URL from the Asset
+ * envelope. PDF.js can issue HTTP Range requests against that URL, so
  * page one paints without waiting for the entire file. This is especially
  * important for large PDFs and Office-to-PDF preview derivatives.
  *
@@ -15,15 +15,18 @@
  * responsible for preventing.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getCached, invalidate } from "@/features/files/hooks/blob-cache";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
+import { ensureFilesSession } from "@/features/files/handler/session";
 
 export interface UsePdfRemoteSourceResult {
   /** A direct HTTP(S) object URL or an already-warm blob URL. */
   remoteUrl: string | null;
-  /** Direct signed/CDN URLs do not need caller-supplied auth headers. */
+  /** PDF byte auth never rides caller-supplied headers. */
   headers: Record<string, string>;
+  /** Private durable URLs authenticate through the cross-origin cookie. */
+  withCredentials: boolean;
   /** True while the small Asset envelope is being resolved. */
   loading: boolean;
   /** Asset-resolution error, or `null`. */
@@ -34,7 +37,7 @@ export interface UsePdfRemoteSourceResult {
   bytesLoaded: number;
   /** Bytes known to be locally ready (warm blobs only). */
   bytesTotal: number | null;
-  /** Drop a suspect warm blob and mint a fresh direct URL. */
+  /** Drop a suspect warm blob, refresh auth, and retry the same durable URL. */
   retry: () => void;
 }
 
@@ -48,39 +51,68 @@ export function usePdfRemoteSource(
   const { asset, isLoading, error, refresh } = useFileAsset(fileId, {
     enabled: !!fileId && !cached,
   });
+  const [sessionReadyFileId, setSessionReadyFileId] = useState<string | null>(
+    null,
+  );
 
   const original = asset?.variants?.original;
-  const directUrl =
-    original?.cdn_url ?? original?.url ?? asset?.primary_url ?? null;
+  const publicUrl = original?.cdn_url ?? null;
+  const durableUrl = original?.url ?? asset?.primary_url ?? null;
+  const needsFilesSession = !!fileId && !cached && !publicUrl && !!durableUrl;
   const sourceMissing = !!error && MISSING_RE.test(error);
 
   const retry = () => {
     if (fileId) invalidate(fileId);
+    if (needsFilesSession) {
+      setSessionReadyFileId(null);
+      void ensureFilesSession({ force: true }).then(() => {
+        setSessionReadyFileId(fileId);
+        void refresh();
+      });
+      return;
+    }
     void refresh();
   };
 
   useEffect(() => {
+    let active = true;
+    if (!fileId || !needsFilesSession) {
+      return () => {
+        active = false;
+      };
+    }
+
+    void ensureFilesSession().then(() => {
+      if (active) setSessionReadyFileId(fileId);
+    });
+    return () => {
+      active = false;
+    };
+  }, [fileId, needsFilesSession]);
+
+  const directUrl = publicUrl ?? durableUrl;
+  const sessionReady = !needsFilesSession || sessionReadyFileId === fileId;
+
+  useEffect(() => {
     if (!fileId) return;
     if (cached) {
-      // eslint-disable-next-line no-console
       console.info(
         `[pdf-load] warm blob ready — ${fileId} (${cached.bytes} bytes)`,
       );
     } else if (directUrl) {
-      // Never log the signed URL. Its presence proves the progressive edge is
-      // armed; the durable id is enough to correlate a failure.
-      // eslint-disable-next-line no-console
+      // Never log the URL. Its presence proves the progressive edge is armed;
+      // the durable id is enough to correlate a failure.
       console.info(`[pdf-load] range source ready — ${fileId}`);
     } else if (error) {
-      // eslint-disable-next-line no-console
       console.warn(`[pdf-load] source failed — ${fileId}: ${error}`);
     }
   }, [cached, directUrl, error, fileId]);
 
   return {
-    remoteUrl: cached?.url ?? directUrl,
+    remoteUrl: cached?.url ?? (sessionReady ? directUrl : null),
     headers: {},
-    loading: !!fileId && !cached && isLoading,
+    withCredentials: needsFilesSession,
+    loading: !!fileId && !cached && (isLoading || !sessionReady),
     error: sourceMissing ? null : error,
     sourceMissing,
     bytesLoaded: cached?.bytes ?? 0,

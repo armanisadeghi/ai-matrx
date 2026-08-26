@@ -38,7 +38,7 @@ export interface PdfPreviewProps {
   fileId: string;
   className?: string;
   /**
-   * Already-resolved CDN / signed-inline URL. When present, PDF.js can begin
+   * Already-resolved CDN / durable-inline URL. When present, PDF.js can begin
    * range loading on the first render while the hook still owns refresh/retry.
    */
   remoteUrl?: string | null;
@@ -80,6 +80,7 @@ export default function PdfPreview({
   const {
     remoteUrl,
     headers,
+    withCredentials,
     loading: sessionLoading,
     error: sessionError,
     sourceMissing,
@@ -104,6 +105,7 @@ export default function PdfPreview({
       <PdfDocumentRenderer
         remoteUrl={remoteUrl ?? providedRemoteUrl}
         remoteHeaders={headers}
+        withCredentials={!providedRemoteUrl && withCredentials}
         fileName={file?.fileName ?? null}
         loading={!providedRemoteUrl && sessionLoading}
         error={providedRemoteUrl ? null : sessionError}
