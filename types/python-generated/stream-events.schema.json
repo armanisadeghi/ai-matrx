@@ -10356,6 +10356,278 @@
     "title": "PlanPageStepResultData",
     "type": "object"
   },
+  "ProofRunStartedData": {
+    "additionalProperties": false,
+    "properties": {
+      "type": {
+        "const": "proof_run_started",
+        "default": "proof_run_started",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "slug": {
+        "title": "Slug",
+        "type": "string"
+      },
+      "label": {
+        "default": "",
+        "title": "Label",
+        "type": "string"
+      },
+      "mode": {
+        "enum": [
+          "live",
+          "replay"
+        ],
+        "title": "Mode",
+        "type": "string"
+      },
+      "gate_reason": {
+        "default": "",
+        "title": "Gate Reason",
+        "type": "string"
+      },
+      "conversation_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Conversation Id"
+      }
+    },
+    "required": [
+      "run_id",
+      "slug",
+      "mode"
+    ],
+    "title": "ProofRunStartedData",
+    "type": "object"
+  },
+  "ProofRunStepData": {
+    "additionalProperties": false,
+    "description": "Human-readable progress from inside a check while it works.",
+    "properties": {
+      "type": {
+        "const": "proof_run_step",
+        "default": "proof_run_step",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "step": {
+        "default": 0,
+        "title": "Step",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "run_id",
+      "message"
+    ],
+    "title": "ProofRunStepData",
+    "type": "object"
+  },
+  "ProofEvaluatedData": {
+    "$defs": {
+      "JsonValue": {}
+    },
+    "additionalProperties": false,
+    "description": "One proof, the moment it is decided.",
+    "properties": {
+      "type": {
+        "const": "proof_evaluated",
+        "default": "proof_evaluated",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "proof_id": {
+        "title": "Proof Id",
+        "type": "string"
+      },
+      "title": {
+        "title": "Title",
+        "type": "string"
+      },
+      "status": {
+        "enum": [
+          "passed",
+          "failed",
+          "skipped"
+        ],
+        "title": "Status",
+        "type": "string"
+      },
+      "required": {
+        "default": true,
+        "title": "Required",
+        "type": "boolean"
+      },
+      "detail": {
+        "default": "",
+        "title": "Detail",
+        "type": "string"
+      },
+      "observed": {
+        "additionalProperties": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "title": "Observed",
+        "type": "object"
+      }
+    },
+    "required": [
+      "run_id",
+      "proof_id",
+      "title",
+      "status"
+    ],
+    "title": "ProofEvaluatedData",
+    "type": "object"
+  },
+  "ProofRunCompletedData": {
+    "additionalProperties": false,
+    "properties": {
+      "type": {
+        "const": "proof_run_completed",
+        "default": "proof_run_completed",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "slug": {
+        "title": "Slug",
+        "type": "string"
+      },
+      "mode": {
+        "enum": [
+          "live",
+          "replay"
+        ],
+        "title": "Mode",
+        "type": "string"
+      },
+      "verdict": {
+        "enum": [
+          "pass",
+          "fail",
+          "inconclusive"
+        ],
+        "title": "Verdict",
+        "type": "string"
+      },
+      "strength": {
+        "enum": [
+          "live_receipts",
+          "replay_only"
+        ],
+        "title": "Strength",
+        "type": "string"
+      },
+      "summary": {
+        "default": "",
+        "title": "Summary",
+        "type": "string"
+      },
+      "passed": {
+        "default": 0,
+        "title": "Passed",
+        "type": "integer"
+      },
+      "failed": {
+        "default": 0,
+        "title": "Failed",
+        "type": "integer"
+      },
+      "skipped": {
+        "default": 0,
+        "title": "Skipped",
+        "type": "integer"
+      },
+      "cost_usd": {
+        "default": 0,
+        "title": "Cost Usd",
+        "type": "number"
+      },
+      "total_tokens": {
+        "default": 0,
+        "title": "Total Tokens",
+        "type": "integer"
+      },
+      "provider_calls": {
+        "default": 0,
+        "title": "Provider Calls",
+        "type": "integer"
+      },
+      "duration_ms": {
+        "default": 0,
+        "title": "Duration Ms",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "run_id",
+      "slug",
+      "mode",
+      "verdict",
+      "strength"
+    ],
+    "title": "ProofRunCompletedData",
+    "type": "object"
+  },
+  "ProofRunSkippedData": {
+    "additionalProperties": false,
+    "description": "The gate refused to run. NEVER a pass — the reason is always named.",
+    "properties": {
+      "type": {
+        "const": "proof_run_skipped",
+        "default": "proof_run_skipped",
+        "title": "Type",
+        "type": "string"
+      },
+      "slug": {
+        "title": "Slug",
+        "type": "string"
+      },
+      "reason": {
+        "title": "Reason",
+        "type": "string"
+      },
+      "month_to_date_usd": {
+        "default": 0,
+        "title": "Month To Date Usd",
+        "type": "number"
+      }
+    },
+    "required": [
+      "slug",
+      "reason"
+    ],
+    "title": "ProofRunSkippedData",
+    "type": "object"
+  },
   "ToolStartedData": {
     "additionalProperties": false,
     "properties": {

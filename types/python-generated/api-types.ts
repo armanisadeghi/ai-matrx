@@ -15110,6 +15110,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proof-runs/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Checks */
+        get: operations["list_checks_proof_runs_checks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proof-runs/checks/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Check */
+        get: operations["get_check_proof_runs_checks__slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proof-runs/checks/{slug}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Check
+         * @description Run one check and stream every proof as it is decided.
+         */
+        post: operations["run_check_proof_runs_checks__slug__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proof-runs/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Recent Runs */
+        get: operations["list_recent_runs_proof_runs_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proof-runs/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Run Detail */
+        get: operations["get_run_detail_proof_runs_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/kg-inspector/entities": {
         parameters: {
             query?: never;
@@ -53194,6 +53282,106 @@ export interface components {
             /** Prompt Id */
             prompt_id: string;
         };
+        /**
+         * ProofCheckStatusKind
+         * @description One check's registry row plus its rolling 30-day KPIs.
+         */
+        ProofCheckStatusKind: {
+            /**
+             * Kind
+             * @description The registered kind this payload is an instance of.
+             * @default proof_check_status
+             * @constant
+             */
+            __kind?: "proof_check_status";
+            /**
+             * Slug
+             * @default
+             */
+            slug?: string;
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /**
+             * Surface
+             * @default
+             */
+            surface?: string;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active?: boolean;
+            /**
+             * Live Every Seconds
+             * @default 0
+             */
+            live_every_seconds?: number;
+            /**
+             * Max Cost Usd
+             * @default 0
+             */
+            max_cost_usd?: number;
+            /** Last Verdict */
+            last_verdict?: string | null;
+            /** Last Run At */
+            last_run_at?: string | null;
+            /** Last Live Verdict */
+            last_live_verdict?: string | null;
+            /** Last Live Run At */
+            last_live_run_at?: string | null;
+            /** Next Live Due At */
+            next_live_due_at?: string | null;
+            /**
+             * Consecutive Failures
+             * @default 0
+             */
+            consecutive_failures?: number;
+            /**
+             * Runs 30D
+             * @default 0
+             */
+            runs_30d?: number;
+            /**
+             * Live Runs 30D
+             * @default 0
+             */
+            live_runs_30d?: number;
+            /** Pass Rate 30D */
+            pass_rate_30d?: number | null;
+            /**
+             * Spend 30D Usd
+             * @default 0
+             */
+            spend_30d_usd?: number;
+            /**
+             * Has Recording
+             * @default false
+             */
+            has_recording?: boolean;
+        };
+        /** ProofChecksResponse */
+        ProofChecksResponse: {
+            /** Checks */
+            checks?: components["schemas"]["ProofCheckStatusKind"][];
+            /**
+             * Month To Date Usd
+             * @default 0
+             */
+            month_to_date_usd?: number;
+            /**
+             * Monthly Ceiling Usd
+             * @default 0
+             */
+            monthly_ceiling_usd?: number;
+        };
         /** ProofResult */
         ProofResult: {
             /** Finding Id */
@@ -53239,6 +53427,160 @@ export interface components {
             arms?: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[];
+        };
+        /**
+         * ProofRunDetail
+         * @description One run with the proofs — each a registered ``proof_result`` payload.
+         */
+        ProofRunDetail: {
+            /** Id */
+            id: string;
+            /** Check Id */
+            check_id: string;
+            /**
+             * Check Slug
+             * @default
+             */
+            check_slug?: string;
+            /** Mode */
+            mode: string;
+            /**
+             * Trigger Source
+             * @default
+             */
+            trigger_source?: string;
+            /**
+             * Status
+             * @default
+             */
+            status?: string;
+            /** Verdict */
+            verdict?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+            /**
+             * Duration Ms
+             * @default 0
+             */
+            duration_ms?: number;
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd?: number;
+            /**
+             * Total Tokens
+             * @default 0
+             */
+            total_tokens?: number;
+            /**
+             * Provider Calls
+             * @default 0
+             */
+            provider_calls?: number;
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+            /** Failure Reason */
+            failure_reason?: string | null;
+            /**
+             * Nonce
+             * @default
+             */
+            nonce?: string;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** User Request Id */
+            user_request_id?: string | null;
+            /** External Run Ref */
+            external_run_ref?: string | null;
+            /** Replayed From Run Id */
+            replayed_from_run_id?: string | null;
+            /** Recording Sha256 */
+            recording_sha256?: string | null;
+            /**
+             * Git Sha
+             * @default
+             */
+            git_sha?: string;
+            /**
+             * Environment
+             * @default
+             */
+            environment?: string;
+            /** Proofs */
+            proofs?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * ProofRunSummary
+         * @description One row of run history — the list view, without the proof bodies.
+         */
+        ProofRunSummary: {
+            /** Id */
+            id: string;
+            /** Check Id */
+            check_id: string;
+            /**
+             * Check Slug
+             * @default
+             */
+            check_slug?: string;
+            /** Mode */
+            mode: string;
+            /**
+             * Trigger Source
+             * @default
+             */
+            trigger_source?: string;
+            /**
+             * Status
+             * @default
+             */
+            status?: string;
+            /** Verdict */
+            verdict?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+            /**
+             * Duration Ms
+             * @default 0
+             */
+            duration_ms?: number;
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd?: number;
+            /**
+             * Total Tokens
+             * @default 0
+             */
+            total_tokens?: number;
+            /**
+             * Provider Calls
+             * @default 0
+             */
+            provider_calls?: number;
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+            /** Failure Reason */
+            failure_reason?: string | null;
+        };
+        /** ProofRunsResponse */
+        ProofRunsResponse: {
+            /** Runs */
+            runs?: components["schemas"]["ProofRunSummary"][];
         };
         /** ProposalOccurrence */
         ProposalOccurrence: {
@@ -57418,6 +57760,20 @@ export interface components {
         RunListResponse: {
             /** Runs */
             runs: components["schemas"]["RunResponse"][];
+        };
+        /** RunNowRequest */
+        RunNowRequest: {
+            /**
+             * Mode
+             * @description auto — the gate decides from cadence and budget (default). live — force real providers, still inside the monthly ceiling. replay — never spend money.
+             * @default auto
+             */
+            mode?: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason?: string;
         };
         /** RunNowResponse */
         RunNowResponse: {
@@ -95993,6 +96349,156 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberBatchRemoveResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_checks_proof_runs_checks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofChecksResponse"];
+                };
+            };
+        };
+    };
+    get_check_proof_runs_checks__slug__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofCheckStatusKind"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_check_proof_runs_checks__slug__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunNowRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_recent_runs_proof_runs_runs_get: {
+        parameters: {
+            query?: {
+                slug?: string | null;
+                mode?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofRunsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_run_detail_proof_runs_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofRunDetail"];
                 };
             };
             /** @description Validation Error */

@@ -39397,6 +39397,240 @@
         }
       }
     },
+    "/proof-runs/checks": {
+      "get": {
+        "tags": [
+          "Proof Runs"
+        ],
+        "summary": "List Checks",
+        "operationId": "list_checks_proof_runs_checks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProofChecksResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proof-runs/checks/{slug}": {
+      "get": {
+        "tags": [
+          "Proof Runs"
+        ],
+        "summary": "Get Check",
+        "operationId": "get_check_proof_runs_checks__slug__get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProofCheckStatusKind"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proof-runs/checks/{slug}/run": {
+      "post": {
+        "tags": [
+          "Proof Runs"
+        ],
+        "summary": "Run Check",
+        "description": "Run one check and stream every proof as it is decided.",
+        "operationId": "run_check_proof_runs_checks__slug__run_post",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunNowRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proof-runs/runs": {
+      "get": {
+        "tags": [
+          "Proof Runs"
+        ],
+        "summary": "List Recent Runs",
+        "operationId": "list_recent_runs_proof_runs_runs_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(live|replay)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mode"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProofRunsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proof-runs/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "Proof Runs"
+        ],
+        "summary": "Get Run Detail",
+        "operationId": "get_run_detail_proof_runs_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProofRunDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/kg-inspector/entities": {
       "get": {
         "tags": [
@@ -137648,6 +137882,171 @@
         ],
         "title": "PromptWarmResponse"
       },
+      "ProofCheckStatusKind": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "proof_check_status",
+            "title": "Kind",
+            "description": "The registered kind this payload is an instance of.",
+            "default": "proof_check_status"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug",
+            "default": ""
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "surface": {
+            "type": "string",
+            "title": "Surface",
+            "default": ""
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "live_every_seconds": {
+            "type": "integer",
+            "title": "Live Every Seconds",
+            "default": 0
+          },
+          "max_cost_usd": {
+            "type": "number",
+            "title": "Max Cost Usd",
+            "default": 0
+          },
+          "last_verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Verdict"
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At"
+          },
+          "last_live_verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Live Verdict"
+          },
+          "last_live_run_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Live Run At"
+          },
+          "next_live_due_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Live Due At"
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "title": "Consecutive Failures",
+            "default": 0
+          },
+          "runs_30d": {
+            "type": "integer",
+            "title": "Runs 30D",
+            "default": 0
+          },
+          "live_runs_30d": {
+            "type": "integer",
+            "title": "Live Runs 30D",
+            "default": 0
+          },
+          "pass_rate_30d": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pass Rate 30D"
+          },
+          "spend_30d_usd": {
+            "type": "number",
+            "title": "Spend 30D Usd",
+            "default": 0
+          },
+          "has_recording": {
+            "type": "boolean",
+            "title": "Has Recording",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProofCheckStatusKind",
+        "description": "One check's registry row plus its rolling 30-day KPIs."
+      },
+      "ProofChecksResponse": {
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ProofCheckStatusKind"
+            },
+            "type": "array",
+            "title": "Checks"
+          },
+          "month_to_date_usd": {
+            "type": "number",
+            "title": "Month To Date Usd",
+            "default": 0
+          },
+          "monthly_ceiling_usd": {
+            "type": "number",
+            "title": "Monthly Ceiling Usd",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProofChecksResponse"
+      },
       "ProofResult": {
         "properties": {
           "finding_id": {
@@ -137760,6 +138159,316 @@
           "finding_id"
         ],
         "title": "ProofResult"
+      },
+      "ProofRunDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "check_id": {
+            "type": "string",
+            "title": "Check Id"
+          },
+          "check_slug": {
+            "type": "string",
+            "title": "Check Slug",
+            "default": ""
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "trigger_source": {
+            "type": "string",
+            "title": "Trigger Source",
+            "default": ""
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": ""
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms",
+            "default": 0
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "default": 0
+          },
+          "provider_calls": {
+            "type": "integer",
+            "title": "Provider Calls",
+            "default": 0
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "nonce": {
+            "type": "string",
+            "title": "Nonce",
+            "default": ""
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "user_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Request Id"
+          },
+          "external_run_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Run Ref"
+          },
+          "replayed_from_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replayed From Run Id"
+          },
+          "recording_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Sha256"
+          },
+          "git_sha": {
+            "type": "string",
+            "title": "Git Sha",
+            "default": ""
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment",
+            "default": ""
+          },
+          "proofs": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Proofs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "check_id",
+          "mode"
+        ],
+        "title": "ProofRunDetail",
+        "description": "One run with the proofs — each a registered ``proof_result`` payload."
+      },
+      "ProofRunSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "check_id": {
+            "type": "string",
+            "title": "Check Id"
+          },
+          "check_slug": {
+            "type": "string",
+            "title": "Check Slug",
+            "default": ""
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "trigger_source": {
+            "type": "string",
+            "title": "Trigger Source",
+            "default": ""
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": ""
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms",
+            "default": 0
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens",
+            "default": 0
+          },
+          "provider_calls": {
+            "type": "integer",
+            "title": "Provider Calls",
+            "default": 0
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "check_id",
+          "mode"
+        ],
+        "title": "ProofRunSummary",
+        "description": "One row of run history — the list view, without the proof bodies."
+      },
+      "ProofRunsResponse": {
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/ProofRunSummary"
+            },
+            "type": "array",
+            "title": "Runs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProofRunsResponse"
       },
       "ProposalOccurrence": {
         "properties": {
@@ -148322,6 +149031,26 @@
           "runs"
         ],
         "title": "RunListResponse"
+      },
+      "RunNowRequest": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "pattern": "^(auto|live|replay)$",
+            "title": "Mode",
+            "description": "auto — the gate decides from cadence and budget (default). live — force real providers, still inside the monthly ceiling. replay — never spend money.",
+            "default": "auto"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RunNowRequest"
       },
       "RunNowResponse": {
         "properties": {

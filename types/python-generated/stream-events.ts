@@ -1612,6 +1612,58 @@ export interface PodcastTickEvent {
   total?: number;
 }
 
+export interface ProofEvaluatedData {
+  type?: "proof_evaluated";
+  run_id: string;
+  proof_id: string;
+  title: string;
+  status: "passed" | "failed" | "skipped";
+  required?: boolean;
+  detail?: string;
+  observed?: Record<string, JsonValue>;
+}
+
+export interface ProofRunCompletedData {
+  type?: "proof_run_completed";
+  run_id: string;
+  slug: string;
+  mode: "live" | "replay";
+  verdict: "pass" | "fail" | "inconclusive";
+  strength: "live_receipts" | "replay_only";
+  summary?: string;
+  passed?: number;
+  failed?: number;
+  skipped?: number;
+  cost_usd?: number;
+  total_tokens?: number;
+  provider_calls?: number;
+  duration_ms?: number;
+}
+
+export interface ProofRunSkippedData {
+  type?: "proof_run_skipped";
+  slug: string;
+  reason: string;
+  month_to_date_usd?: number;
+}
+
+export interface ProofRunStartedData {
+  type?: "proof_run_started";
+  run_id: string;
+  slug: string;
+  label?: string;
+  mode: "live" | "replay";
+  gate_reason?: string;
+  conversation_id?: string | null;
+}
+
+export interface ProofRunStepData {
+  type?: "proof_run_step";
+  run_id: string;
+  message: string;
+  step?: number;
+}
+
 export interface RagVerifyClaimsData {
   type?: "rag_verify_claims";
   claims?: string[];
@@ -1808,6 +1860,11 @@ export type TypedDataPayload =
   | PodcastStageEvent
   | PodcastStageStartedEvent
   | PodcastTickEvent
+  | ProofEvaluatedData
+  | ProofRunCompletedData
+  | ProofRunSkippedData
+  | ProofRunStartedData
+  | ProofRunStepData
   | QuestionnaireDisplayData
   | RagVerifyClaimsData
   | RagVerifyResultData
