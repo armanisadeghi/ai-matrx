@@ -507,6 +507,61 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["Content Plan Setup — Site shell rung"],
   },
+  // ── HR / payroll export (lane L13) ────────────────────────────────────────
+  // A payroll export names three identities the user must be able to open: the
+  // employment behind an unmapped id, the workweek that is not final yet, and
+  // the period's approval progress. None of those surfaces exists yet — so
+  // each is a DECLARED promise instead of a dead span or a silent omission.
+  "hr.employment-record": {
+    id: "hr.employment-record",
+    label: "Open this person's employment record",
+    owner: "hr",
+    promise:
+      "Open the employment behind this line — their pay setup, the external payroll IDs an export needs, and the history behind every hour on the file.",
+    stage: "planned",
+    blockedBy:
+      "The employment record surface is not built yet; the export lane names employments before anything can display one.",
+    surfaces: [
+      "/hr/time/periods/[periodId] — unmapped-identifier list",
+      "/hr/time/periods/[periodId] — advisory-rule refusal, affected people",
+      "/hr/time/periods/[periodId] — disputes carried into an export",
+    ],
+  },
+  "hr.workweek-detail": {
+    id: "hr.workweek-detail",
+    label: "Open this workweek",
+    owner: "hr",
+    promise:
+      "Open the workweek that is holding up this export and see exactly which intervals are still unfinalised.",
+    stage: "planned",
+    blockedBy:
+      "The workweek surface is not built yet; the export lane names pending workweeks before anything can display one.",
+    surfaces: [
+      "/hr/time/periods/[periodId] — pending-workweek precondition",
+    ],
+  },
+  "hr.period-approval-progress": {
+    id: "hr.period-approval-progress",
+    label: "Pay-period approval progress",
+    owner: "hr",
+    promise:
+      "See how far this pay period is through approval — who still has timecards to approve, which exceptions are open, and what has to happen before it can be exported.",
+    stage: "building",
+    blockedBy:
+      "The pay-period state machine and its approval view are being built alongside the export lane; export history landed first.",
+    surfaces: ["/hr/time/periods/[periodId] — period header"],
+  },
+  "hr.time-rule-detail": {
+    id: "hr.time-rule-detail",
+    label: "Time calculation rule details",
+    owner: "hr",
+    promise:
+      "Open the exact versioned time rule behind this calculated figure, including its effective dates and configuration.",
+    stage: "building",
+    blockedBy:
+      "The calculation already preserves the rule identifier, but the versioned HR rule detail surface is still being built.",
+    surfaces: ["HR time calculation snapshot — auto-close rule"],
+  },
 };
 
 export function getComingSoon(id: string): ComingSoonEntry | undefined {
