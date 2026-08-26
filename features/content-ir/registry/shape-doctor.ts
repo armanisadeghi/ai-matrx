@@ -485,6 +485,52 @@ export function kindLoadingComponent(metadata: unknown): string | null {
   return typeof slug === "string" && slug.length > 0 ? slug : null;
 }
 
+/**
+ * THE SKILL-OWNER DECLARATION — the resolution mechanism for `duplicate-skill`.
+ *
+ * R9 is ONE skill per kind per syntax. In practice the violation is almost never
+ * two rival skills for one shape: it is a CONTAINER kind's skill demonstrating
+ * the ITEM kinds it embeds (`kind_ner_canonicalization_result` shows an
+ * `ner_entity_ref` inside its payload, so the attribution pass counts it as
+ * teaching `ner_entity_ref` too). Deleting a skill would be the wrong repair —
+ * the container legitimately needs to show its children.
+ *
+ * So the resolution is a DECLARATION, not a deletion: the kind names the skill
+ * that OWNS teaching it. Every other skill that mentions it is then, by that
+ * declaration, merely embedding it.
+ *
+ * Stored at `content_ir.kind_definition.metadata.skill_owner`:
+ *
+ *   { "json": { "skill_id": "kind_ner_entity_ref",
+ *               "decided_by": "<uuid>", "decided_at": "<iso>", "note": "…" } }
+ *
+ * A bare string (`{"json": "kind_ner_entity_ref"}`) is accepted too.
+ *
+ * FALSIFIABILITY: a declaration only silences the red while it is TRUE. If the
+ * named skill stops teaching the kind, the declaration is stale and the red
+ * comes back with a message saying so — a resolution that cannot go wrong again
+ * would be a resolution that cannot be checked.
+ */
+export function kindSkillOwner(
+  metadata: unknown,
+  syntax: "json" | "xml",
+): string | null {
+  if (typeof metadata !== "object" || metadata === null || Array.isArray(metadata)) {
+    return null;
+  }
+  const owner = (metadata as Record<string, unknown>).skill_owner;
+  if (typeof owner !== "object" || owner === null || Array.isArray(owner)) {
+    return null;
+  }
+  const entry = (owner as Record<string, unknown>)[syntax];
+  if (typeof entry === "string") return entry.length > 0 ? entry : null;
+  if (typeof entry === "object" && entry !== null && !Array.isArray(entry)) {
+    const skillId = (entry as Record<string, unknown>).skill_id;
+    return typeof skillId === "string" && skillId.length > 0 ? skillId : null;
+  }
+  return null;
+}
+
 export interface ExemptionEvidence {
   kind: DoctorKindDefinition;
   /** Slugs of OTHER kinds that embed this one via `kind_edge`, sorted. */
@@ -999,15 +1045,32 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
         list.push(t);
         bySyntax.set(t.syntax, list);
       }
-      const duplicates = [...bySyntax.entries()].filter(([, list]) => list.length > 1);
-      if (duplicates.length > 0) {
-        skill = {
-          status: "warn",
-          detail: `DUPLICATE skills per syntax: ${duplicates
-            .map(([syntax, list]) => `${syntax}: ${list.map((t) => t.skillId).join(" + ")}`)
-            .join("; ")}`,
-        };
-        for (const [syntax, list] of duplicates) {
+      // A syntax with >1 teacher is a candidate violation. It is only a RED
+      // when the kind has NOT declared which skill owns it (kindSkillOwner,
+      // above) — an admin's resolution is a declaration, not a deletion.
+      const contested = [...bySyntax.entries()].filter(([, list]) => list.length > 1);
+      const unresolved: Array<[string, SkillTeaching[]]> = [];
+      const resolved: Array<[string, string]> = [];
+      for (const [syntax, list] of contested) {
+        const declared = kindSkillOwner(
+          kind.metadata,
+          syntax === "xml" ? "xml" : "json",
+        );
+        // A declaration naming a skill that no longer teaches this kind is
+        // STALE — it silences nothing and says exactly why.
+        if (declared !== null && list.some((t) => t.skillId === declared)) {
+          resolved.push([syntax, declared]);
+        } else {
+          unresolved.push([syntax, list]);
+          if (declared !== null) {
+            reds.push({
+              severity: "red",
+              code: "duplicate-skill",
+              kind: kind.kind,
+              message: `kind "${kind.kind}" declares skill owner "${declared}" for ${syntax} syntax, but that skill no longer teaches it — the declaration is STALE; re-decide among ${list.map((t) => t.skillId).join(", ")}`,
+            });
+            continue;
+          }
           reds.push({
             severity: "red",
             code: "duplicate-skill",
@@ -1015,6 +1078,21 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
             message: `${list.length} render_block skills teach kind "${kind.kind}" (${syntax} syntax): ${list.map((t) => t.skillId).join(", ")} — R9 law is ONE per kind per syntax`,
           });
         }
+      }
+      if (unresolved.length > 0) {
+        skill = {
+          status: "warn",
+          detail: `DUPLICATE skills per syntax: ${unresolved
+            .map(([syntax, list]) => `${syntax}: ${list.map((t) => t.skillId).join(" + ")}`)
+            .join("; ")}`,
+        };
+      } else if (resolved.length > 0) {
+        skill = {
+          status: "ok",
+          detail: `owner declared — ${resolved
+            .map(([syntax, skillId]) => `${syntax}: ${skillId}`)
+            .join("; ")} (other skills embed this kind, they do not teach it)`,
+        };
       } else {
         skill = {
           status: "ok",

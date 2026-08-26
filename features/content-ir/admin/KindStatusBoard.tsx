@@ -31,6 +31,7 @@ import type {
   KindBoardRow,
   KindStatusBoardModel,
 } from "@/features/content-ir/admin/kind-detail-types";
+import ShapeFindingsSummary from "@/features/content-ir/admin/ShapeFindingsSummary";
 import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE_FROZEN,
@@ -106,6 +107,14 @@ export default function KindStatusBoard({
 
   return (
     <section className="border-b border-border bg-card">
+      {/*
+        THE FINDING SUMMARY, above the matrix. Arman's ruling 2026-08-26: the
+        board must open with "how many of each class, including the classes at
+        zero", not with an undifferentiated list of red rows. Each card is the
+        door to that class's resolution surface.
+      */}
+      <ShapeFindingsSummary counts={board.findingCounts} />
+
       {/* Header */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 pr-14">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">

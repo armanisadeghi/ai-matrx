@@ -34,3 +34,14 @@ export function kindTabHref(
   const base = kindDetailHref(row);
   return base ? `${base}?tab=${tab}` : undefined;
 }
+
+/**
+ * THE FINDING RESOLUTION SURFACE — one route per Shape Doctor finding code.
+ *
+ * Every code in `shape-finding-catalog.ts` gets a door, including the ones
+ * currently at zero: a card that opens to "nothing outstanding in this class"
+ * is a working door, and a card that opens nowhere is a dead end.
+ */
+export function findingCodeHref(code: string): string {
+  return `${KIND_REGISTRY_BASE}/findings/${encodeURIComponent(code)}`;
+}

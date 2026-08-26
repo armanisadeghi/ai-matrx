@@ -48,6 +48,23 @@ export interface KindBoardRow {
   hasCanonicalExample: boolean;
 }
 
+/**
+ * Per-code finding tallies for THE FINDING CATALOG cards.
+ *
+ * Keyed by `FindingCode` for EVERY code the doctor can raise — including the
+ * ones sitting at zero. A code at zero is information (that class is currently
+ * clean); a card the summary quietly omitted would turn a status board into a
+ * list of today's problems. See `shape-finding-catalog.ts`.
+ */
+export interface FindingCodeCount {
+  red: number;
+  yellow: number;
+  /** Distinct kinds named by findings of this code. */
+  kinds: number;
+}
+
+export type FindingCountsByCode = Record<string, FindingCodeCount>;
+
 export interface KindStatusBoardModel {
   rows: KindBoardRow[];
   redFindings: ShapeFinding[];
@@ -58,6 +75,8 @@ export interface KindStatusBoardModel {
   excludedFromDrift: AssetColumn[];
   warnings: string[];
   generatedAt: string;
+  /** Tally per finding code — the card summary's source. Always complete. */
+  findingCounts: FindingCountsByCode;
 }
 
 export interface KindComponentDetail {

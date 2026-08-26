@@ -45,10 +45,12 @@ import {
   type ShapeDoctorReport,
 } from "@/features/content-ir/registry/shape-doctor";
 import type {
+  FindingCountsByCode,
   KindBoardRow,
   KindDetailData,
   KindStatusBoardModel,
 } from "@/features/content-ir/admin/kind-detail-types";
+import { FINDING_CATALOG } from "@/features/content-ir/admin/shape-finding-catalog";
 import { KIND_LOADING_SLUGS } from "@/features/content-ir/react/loading/kind-loading-slugs";
 /**
  * The DERIVED loading slug — the same module BlockRenderer selects loaders
@@ -534,6 +536,8 @@ interface SnapshotRow {
 // keeps this module's `server-only` poison pill out of client chunks).
 export type {
   BoardRowPresence,
+  FindingCodeCount,
+  FindingCountsByCode,
   KindBoardRow,
   KindStatusBoardModel,
 } from "@/features/content-ir/admin/kind-detail-types";
@@ -542,6 +546,44 @@ function snapshotStatus(value: string | undefined): AssetStatus | null {
   return value === "ok" || value === "warn" || value === "missing" || value === "n/a"
     ? value
     : null;
+}
+
+/**
+ * Tally findings per code over EVERY code in the catalog — codes with no
+ * findings are emitted at zero, never omitted. `snapshot-drift` is the one code
+ * the pure doctor never raises (the CLI does); the board measures the same
+ * condition itself as drifted rows, so its own count is carried in.
+ */
+function tallyFindings(
+  findings: ShapeDoctorReport["findings"],
+  driftedRowCount: number,
+): FindingCountsByCode {
+  const counts: FindingCountsByCode = {};
+  const kindsByCode = new Map<string, Set<string>>();
+  for (const code of Object.keys(FINDING_CATALOG)) {
+    counts[code] = { red: 0, yellow: 0, kinds: 0 };
+    kindsByCode.set(code, new Set());
+  }
+  for (const f of findings) {
+    const bucket = counts[f.code] ?? (counts[f.code] = { red: 0, yellow: 0, kinds: 0 });
+    if (f.severity === "red") bucket.red += 1;
+    else bucket.yellow += 1;
+    if (f.kind) {
+      const set = kindsByCode.get(f.code) ?? new Set<string>();
+      set.add(f.kind);
+      kindsByCode.set(f.code, set);
+    }
+  }
+  for (const [code, set] of kindsByCode) {
+    if (counts[code]) counts[code].kinds = set.size;
+  }
+  // The board's own drift measurement IS the snapshot-drift condition.
+  counts["snapshot-drift"] = {
+    red: driftedRowCount,
+    yellow: 0,
+    kinds: driftedRowCount,
+  };
+  return counts;
 }
 
 export async function buildKindStatusBoard(): Promise<KindStatusBoardModel> {
@@ -668,6 +710,7 @@ export async function buildKindStatusBoard(): Promise<KindStatusBoardModel> {
     excludedFromDrift,
     warnings,
     generatedAt: new Date().toISOString(),
+    findingCounts: tallyFindings(report.findings, driftedRowCount),
   };
 }
 

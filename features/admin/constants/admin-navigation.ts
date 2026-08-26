@@ -544,6 +544,9 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/utilities/markdown-tester"),
           destination("/administration/utilities/kind-registry", [
             "/administration/utilities/kind-registry/[kind]",
+            // One resolution surface per Shape Doctor finding class, opened
+            // from the Board tab's finding cards.
+            "/administration/utilities/kind-registry/findings/[code]",
           ]),
           destination("/administration/utilities/kind-registry/build"),
           destination("/administration/utilities/taxonomy"),
