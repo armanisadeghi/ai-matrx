@@ -7,7 +7,7 @@ import "server-only";
  *
  * Same doctrine as the client resolver (see service.ts): system default
  * (agent.mandate, public-visible) → the caller's OWN user binding
- * (RLS-scoped). Org bindings stay server-of-aidream business. Floating-only —
+ * (RLS-scoped). Org bindings apply here too (2026-08-26). Floating-only —
  * a version-pinned mandate throws, because the client run path the page hands
  * off to has no version channel.
  *
@@ -65,6 +65,39 @@ export async function resolveMandateServer(
 
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth.user?.id;
+
+  // THE ORG LAYER — same walk as the client twin (system → org → user; user
+  // wins). This twin skipped org too; both halves changed 2026-08-26.
+  if (userId) {
+    const { data: orgBindings, error: orgError } = await supabase
+      .schema("agent")
+      .from("mandate_binding")
+      .select(
+        "agent_id, agent_version_id, use_latest, config_overrides, is_enabled, updated_at",
+      )
+      .eq("mandate_id", mandate.id)
+      .eq("principal_type", "org")
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: false })
+      .limit(5);
+    if (orgError) throw orgError;
+    const orgBinding = (orgBindings ?? []).find((b) => b.is_enabled) ?? null;
+    if (orgBinding) {
+      if (orgBinding.agent_version_id) {
+        throw new Error(
+          `mandate "${mandateKey}": an organization binding is version-pinned — client-run mandates must be floating; update the binding`,
+        );
+      }
+      if (isJsonObject(orgBinding.config_overrides)) {
+        configOverrides = toLlmParams(orgBinding.config_overrides);
+      }
+      if (orgBinding.agent_id) {
+        agentId = orgBinding.agent_id;
+        provenance = "org";
+      }
+    }
+  }
+
   if (userId) {
     const { data: binding, error: bindingError } = await supabase
       .schema("agent")
@@ -83,7 +116,11 @@ export async function resolveMandateServer(
         );
       }
       if (isJsonObject(binding.config_overrides)) {
-        configOverrides = toLlmParams(binding.config_overrides);
+        // User wins per key over the org layer (server rule).
+        configOverrides = {
+          ...configOverrides,
+          ...toLlmParams(binding.config_overrides),
+        };
       }
       if (binding.agent_id) {
         agentId = binding.agent_id;
