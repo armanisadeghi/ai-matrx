@@ -1,5 +1,5 @@
 {
-  "generated_for": "952-kinds+788c661a2c00",
+  "generated_for": "961-kinds+6462cf1fc8dd",
   "columns": [
     "definition",
     "example",
@@ -2709,6 +2709,21 @@
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "crm_contact_save_result",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
       }
     },
     {
@@ -5457,6 +5472,21 @@
       }
     },
     {
+      "kind": "masterwork_result",
+      "is_active": true,
+      "family": "workflow_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "loading": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
       "kind": "masterwork.approach_select.offer",
       "is_active": false,
       "family": "provision_offer",
@@ -5919,6 +5949,51 @@
         "skill": "ok",
         "content_block": "ok",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "ner_canonicalization_result",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "ner_entity_pair_group",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "warn",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "ner_entity_ref",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "warn",
+        "content_block": "ok",
+        "surface": "warn"
       }
     },
     {
@@ -6507,6 +6582,21 @@
       }
     },
     {
+      "kind": "outreach_reply_draft",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "page",
       "is_active": true,
       "family": "workflow_io",
@@ -6807,6 +6897,21 @@
       }
     },
     {
+      "kind": "party_kind_verdict",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "pdf_table_extraction",
       "is_active": true,
       "family": "docproc",
@@ -6848,6 +6953,36 @@
         "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "personalization_target_result",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "warn",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "personalization_write_result",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -14320,6 +14455,24 @@
     {
       "severity": "red",
       "code": "duplicate-skill",
+      "kind": "ner_entity_pair_group",
+      "message": "2 render_block skills teach kind \"ner_entity_pair_group\" (json syntax): kind_ner_canonicalization_result, kind_ner_entity_pair_group — R9 law is ONE per kind per syntax"
+    },
+    {
+      "severity": "red",
+      "code": "duplicate-skill",
+      "kind": "ner_entity_ref",
+      "message": "3 render_block skills teach kind \"ner_entity_ref\" (json syntax): kind_ner_canonicalization_result, kind_ner_entity_pair_group, kind_ner_entity_ref — R9 law is ONE per kind per syntax"
+    },
+    {
+      "severity": "red",
+      "code": "duplicate-skill",
+      "kind": "personalization_target_result",
+      "message": "2 render_block skills teach kind \"personalization_target_result\" (json syntax): kind_personalization_target_result, kind_personalization_write_result — R9 law is ONE per kind per syntax"
+    },
+    {
+      "severity": "red",
+      "code": "duplicate-skill",
       "kind": "practice_prompt",
       "message": "2 render_block skills teach kind \"practice_prompt\" (json syntax): kind_practice_prompt, kind_spoken_practice_session — R9 law is ONE per kind per syntax"
     },
@@ -14340,551 +14493,6 @@
       "code": "duplicate-skill",
       "kind": "trust_envelope",
       "message": "2 render_block skills teach kind \"trust_envelope\" (json syntax): kind_live_help_answer, kind_trust_envelope — R9 law is ONE per kind per syntax"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_definition\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_agent_config_41eec0\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_audio_style_content_speaker_1_profile_speaker_2_profile\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_brief\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_cleaned_window_prior_tasks_session_title\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_company_name_employee_info\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_concept_content_format_idea_count\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_content_goal_existing_content\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_context_a58621\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_context_transcribed_text\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_conversation_id_fa282d\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_current_code_161b4f\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_current_code_d03087\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_current_system_message_additional_guidance\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_document_audits_c_audits_u_audits_w_440610\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_document_audits_c_audits_u_audits_w_954fce\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_document_name_page_content\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_dynamic_context\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_extraction_unit\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_front_back_card_history_learner_context\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_front_back_rubric_seconds_allowed_22f70d\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_front_back_topic_difficulty_56526b\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_image_description_1497da\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_intent_or_content_style_count\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_intent_or_content_style\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_json_data_fields_data_data_description_current_schema\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_keywords_search_results\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_legal_area_transcript\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_overall_agent_goal_tone_and_tyle_response_format_constra_63058a\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_page_content_45ae23\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_page_content_800869\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_page_context\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_podcast_content\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_podcast_topic_or_content_17ec37\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_prior_cleaned_suffix_raw_window_session_title_module_id\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_project_overview_victory_condition_first_step\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_prompt_config\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_prompt_object_sample_response_input_fields_to_include_pa_3f4ca3\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_prompt_object_sample_response_input_fields_to_include_pa_f4ceb8\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_prompt_purpose\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_query\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_raw_window_module_id_prior_concepts_session_title\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_rulebook_document_brief\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_scraped_content_focus_area\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_selection_content_current_message_role_context\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_service_name_region_name_state_name_intro_section_data\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_since_iso_environment_label\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_site_name_site_domain_site_brand_site_vertical_cb3911\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_text\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_topic_1e50f4\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_topic_count_difficulty_grade_level_8dffc3\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_topic_front_back_struggle_signal_9481fb\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_topic_grade_level_difficulty\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_topic_page_content_page_url_page_title_0c274b\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_topic_sources\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_transcript_087e8c\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_transcript_attempts_aggregate_remaining_cards_8ab902\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_transcript_delta_round_directive_stage_goal_held_note_2c4562\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_user_input_page_url_page_metadata_list_root_hint\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_user_input_page_url_page_text_page_metadata\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"agent_input_who_is_going_on_the_trip_event_or_purpose_age_ranges_of\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"analytics_insight\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"article_contextual_link\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"article_expert_profile\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"article_expert_quote\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"article_faq_item\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"article_news_hook\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"article_publishing_meta\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"article_research_source\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"article_section\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"article_target_keyword\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"authority_newsjacking_article\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"card_image_judgment\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"client_site_audit\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"data_table\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"interview_hole_set\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"kit_title\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"masterwork.intake_design.offer\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"media_candidate_verdict\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"media_list_ranking_result\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"newsjacking_article_expert_quote\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"newsjacking_expert_article\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"practice_prompt\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"press_newsroom_sync_result\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"press_source_request_evaluate_result\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"press_source_request_ingest_result\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"proof_attestation\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"proof_check_status\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"proof_recording\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"proof_result\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"provider_run_receipt\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"recipient_shortlist_result\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"recipient_shortlist_verdict\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"retrieved_chunk\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"seo_rank_reading\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"serp_placement\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"site_audit_issue\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"source_ref\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"spoken_practice_session\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"study_analytics_narrative\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"study_notes_document\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"study_plan_block\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"study_plan_day\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"study_plan\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"study_summary\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"tasting_descriptor\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"tasting_impression\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"tasting_note\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
-    },
-    {
-      "severity": "red",
-      "code": "vocab-unclassified",
-      "message": "kind_definition slug \"workflow.plan_kind_authoring.offer\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
     },
     {
       "severity": "yellow",
