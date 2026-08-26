@@ -360,6 +360,9 @@ export function OutreachListsPage() {
           </div>
         ) : (
           <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
+            {/* rowMenu.resolveContextOnOpen (useCrmRowMenu, crm-row-actions.tsx)
+                returns the reserved CONTEXT_MENU_ENTITY_KEY per clicked row, so
+                Attach To / Share target the exact outreach list, not the pane. */}
             <NonEditableContextMenu
               sourceFeature="crm"
               surfaceName={CRM_OUTREACH_LISTS_SURFACE_NAME}

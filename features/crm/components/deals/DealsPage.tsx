@@ -528,6 +528,15 @@ export function DealsPage() {
             </div>
           )
         ) : (
+          // No `surfaceName`: no surface manifest is registered for /crm/deals
+          // today (only `matrx-user/crm`, `matrx-user/crm-outreach-lists`, and
+          // the record/manager/inbox/chasebox/create-party surfaces exist —
+          // see features/surfaces/manifests/). Claiming an unregistered name
+          // would light up Agents chrome that resolves nothing; authoring a
+          // real deals manifest is surface-authoring work, out of scope here.
+          // rowMenu.resolveContextOnOpen (useCrmRowMenu, crm-row-actions.tsx)
+          // still returns the reserved CONTEXT_MENU_ENTITY_KEY per clicked
+          // row, so Attach To / Share target the exact deal, not the pane.
           <NonEditableContextMenu
             sourceFeature="crm"
             contentSource={{ type: "raw" }}

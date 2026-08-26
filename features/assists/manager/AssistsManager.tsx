@@ -67,6 +67,10 @@ import {
   humanAssistRow,
   projectAssistRow,
 } from "../format";
+import { createAssistsScope } from "@/features/surfaces/manifests/assists.manifest";
+
+/** The registered `matrx-user/assists` surface — this IS its manager. */
+const ASSISTS_SURFACE_NAME = "matrx-user/assists";
 
 const STATUS_TABS: Array<{
   value: string;
@@ -150,6 +154,32 @@ export function AssistsManager() {
     (sum, count) => sum + count,
     0,
   );
+
+  /**
+   * The registered `matrx-user/assists` scope — every `alwaysAvailable`
+   * value the manifest declares, so a menu-launched agent doesn't hit v3's
+   * VALUE MAPPING GAP scream.
+   */
+  const getScope = () =>
+    createAssistsScope({
+      assist_status_tab: tab,
+      assist_view_flags: {
+        include_snoozed: includeSnoozed,
+        starred_only: starredOnly,
+        unseen_only: unseenOnly,
+        show_silenced: showSilenced,
+      },
+      assist_total_count: total,
+      visible_assists_summary: rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        urgency: urgencyFromPriority(row.priority),
+        status: row.status,
+        source: row.sourceKey,
+      })),
+      silenced_sources: sourceSuppressions.map((s) => s.sourceKey),
+      assist_urgency_filter: urgency ?? undefined,
+    });
 
   const columns: MatrxColumnDef<Assist>[] = useMemo(
     () => [
@@ -659,8 +689,10 @@ export function AssistsManager() {
       <div className="min-h-0 flex-1 p-2 sm:p-3">
         <NonEditableContextMenu
           sourceFeature="admin"
+          surfaceName={ASSISTS_SURFACE_NAME}
           contentSource={{ type: "raw" }}
           contextData={{ content: "Assists manager" }}
+          getApplicationScope={getScope}
           resolveContextOnOpen={resolveAssistMenuTarget}
           extraSections={assistMenuSections}
         >

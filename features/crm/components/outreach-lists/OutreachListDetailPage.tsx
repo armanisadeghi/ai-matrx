@@ -870,7 +870,10 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
           {/* No `surfaceName`: this is the DETAIL of one list, and
               `matrx-user/crm-outreach-lists` declares the LISTS surface's
               values. Claiming it here would emit a scope this page cannot
-              honestly fill — v3 would (rightly) scream a value-mapping gap. */}
+              honestly fill — v3 would (rightly) scream a value-mapping gap.
+              rowMenu.resolveContextOnOpen (useCrmRowMenu, crm-row-actions.tsx)
+              still returns the reserved CONTEXT_MENU_ENTITY_KEY per clicked
+              member row, so Attach To / Share target that member's party. */}
           <NonEditableContextMenu
             sourceFeature="crm"
             contentSource={{ type: "raw" }}

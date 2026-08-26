@@ -19,7 +19,10 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
+import {
+    CONTEXT_MENU_ENTITY_KEY,
+    type ContextMenuExtraItem,
+} from "@/features/context-menu-v3/types";
 import {
     CHANGE_HANDLING_MODE_LABELS,
     CHANGE_TYPE_CATALOGUE,
@@ -165,7 +168,16 @@ export function AdminChangePolicyView() {
                             const row = id ? divergence.find((r) => r.organization_id === id) : undefined;
                             setClickedOrgRow(row ?? null);
                             if (!row) return null;
-                            return { content: divergenceRowContent(row) };
+                            return {
+                                content: divergenceRowContent(row),
+                                // Real registered entity (`organization`, iam.organizations) —
+                                // lights up Attach To / Share for the clicked org row.
+                                [CONTEXT_MENU_ENTITY_KEY]: {
+                                    type: "organization",
+                                    id: row.organization_id,
+                                    title: row.organization_name ?? row.organization_id,
+                                },
+                            };
                         }}
                         extraSections={[
                             {
@@ -202,6 +214,12 @@ export function AdminChangePolicyView() {
                     title="Platform defaults — the change-type catalogue"
                     description={`All ${CHANGE_TYPE_CATALOGUE.length} change types with their default handling. The catalogue is CODE (features/change-policy/catalogue.ts); edit it there and apply the generated seed — never by hand in the DB. Row 38 is floored structurally in the resolver.`}
                 />
+                {/* No entity here: a catalogue row is a CODE constant
+                    (features/change-policy/catalogue.ts), not a DB record —
+                    there is no EntityTypeToken for it, so Copy/AI act on the
+                    raw content only. No surfaceName either: no surface
+                    manifest is registered for /administration change-policy
+                    today (authoring one is surface-authoring work). */}
                 <NonEditableContextMenu
                     sourceFeature="admin"
                     contentSource={{ type: "raw" }}

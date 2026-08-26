@@ -36,6 +36,7 @@ import {
   type ContextMenuExtraSection,
   type ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
+import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "ok", label: "ok" },
@@ -411,6 +412,7 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
   return (
     <NonEditableContextMenu
       sourceFeature="admin"
+      surfaceName={ADMIN_KIND_REGISTRY_SURFACE_NAME}
       contentSource={{ type: "raw" }}
       contextData={{ content: "Content-IR Kind Catalog" }}
       resolveContextOnOpen={resolveMenuTarget}
