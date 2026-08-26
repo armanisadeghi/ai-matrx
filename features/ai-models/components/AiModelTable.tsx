@@ -1035,7 +1035,7 @@ export default function AiModelTable({
       <div className="relative min-h-0 flex-1 overflow-auto">
         <table
           className={cn(
-            "caption-bottom text-xs border-collapse",
+            "table overflow-visible caption-bottom text-xs border-collapse",
             MOBILE_TABLE_FROZEN_SECOND,
           )}
         >

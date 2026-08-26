@@ -54,7 +54,14 @@ must obey.
   never raw SQL that ignores the JSONB path.
 - **Dirty-report callbacks must be ref-stable** — an inline arrow in `onDirtyChange` caused a setState
   ping-pong loop in `AiModelDetailPanel`.
+- **The registry table has one scrollport.** Its `<table>` keeps `table overflow-visible`; the
+  `overflow-auto` wrapper owns scrolling so sticky Display Name and Actions cells actually freeze.
 - `/api/ai-models` is CDN-cached: registry changes need `POST /api/ai-models/revalidate` to reach SSR.
 
 > **Keep-docs-live rule (CLAUDE.md):** a change to this directory's file map or to any rule above
 > updates this file in the same change; a change to what the catalog MEANS updates the node's STATE.md.
+
+## Change log
+
+- `2026-08-25` — Restored the admin registry's single mobile scrollport so sticky identity and
+  action cells remain pinned while the wide table scrolls.
