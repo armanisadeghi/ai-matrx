@@ -170,8 +170,8 @@ function UsageChip({
   }
   return (
     <span className="shrink-0 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
-      {formatCount(usage.keywords)} keywords · {formatCount(usage.clicks)}{" "}
-      clicks
+      {formatCount(usage.keywords)} keyword{usage.keywords === 1 ? "" : "s"} ·{" "}
+      {formatCount(usage.clicks)} click{usage.clicks === 1 ? "" : "s"}
     </span>
   );
 }
@@ -1434,7 +1434,11 @@ export function MeaningRulesWorkbench() {
                             : "They do"
                           : `${incompleteAreasWithUsage.length} of them (${incompleteAreasWithUsage
                               .map((a) => a.label)
-                              .join(", ")}) do`}{" "}
+                              .join(", ")}) ${
+                              incompleteAreasWithUsage.length === 1
+                                ? "does"
+                                : "do"
+                            }`}{" "}
                         already carry keywords you pinned to{" "}
                         {incompleteAreasWithUsage.length === 1 ? "it" : "them"}{" "}
                         by hand — see the badge on the row — and those keep
