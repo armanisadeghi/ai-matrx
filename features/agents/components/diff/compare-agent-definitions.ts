@@ -24,6 +24,20 @@ export interface AgentDefinitionComparison {
 }
 
 /**
+ * Redux stores fetch/undo bookkeeping beside AgentDefinition under top-level
+ * `_...` keys. Remove that record chrome at the comparison boundary while
+ * leaving nested structured values untouched — nested `_`/`__` keys such as
+ * output-schema `__kind` are executable agent data and must remain visible.
+ */
+function toComparableAgentRecord(
+  agent: Partial<AgentDefinition>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(agent).filter(([key]) => !key.startsWith("_")),
+  );
+}
+
+/**
  * Compare two live agents through the same exclusions and identity rules as
  * the canonical AgentDiffViewer, while separating behavior from expected
  * personal-copy profile differences.
@@ -32,8 +46,8 @@ export function compareAgentDefinitions(
   systemAgent: Partial<AgentDefinition>,
   personalAgent: Partial<AgentDefinition>,
 ): AgentDefinitionComparison {
-  const systemRecord: Record<string, unknown> = { ...systemAgent };
-  const personalRecord: Record<string, unknown> = { ...personalAgent };
+  const systemRecord = toComparableAgentRecord(systemAgent);
+  const personalRecord = toComparableAgentRecord(personalAgent);
   const diffResult = computeDiff(
     systemRecord,
     personalRecord,

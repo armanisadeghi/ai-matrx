@@ -1,4 +1,5 @@
 import { compareAgentDefinitions } from "../compare-agent-definitions";
+import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 
 describe("compareAgentDefinitions", () => {
   it("treats a renamed personal copy as behavior-identical", () => {
@@ -58,6 +59,37 @@ describe("compareAgentDefinitions", () => {
     );
 
     expect(result.diffResult.hasChanges).toBe(true);
+    expect(result.behaviorFields.map((field) => field.key)).toEqual([
+      "outputSchema",
+    ]);
+  });
+
+  it("ignores top-level Redux bookkeeping without hiding nested __kind", () => {
+    const before = {
+      outputSchema: {
+        name: "Result",
+        schema: {
+          type: "object" as const,
+          properties: {},
+          additionalProperties: false,
+        },
+      },
+      _fetchStatus: "versionSnapshot",
+    } as Partial<AgentDefinition>;
+    const after = {
+      outputSchema: {
+        name: "Result",
+        schema: {
+          type: "object" as const,
+          properties: { __kind: { type: "string" as const } },
+          additionalProperties: false,
+        },
+      },
+      _fetchStatus: "full",
+    } as Partial<AgentDefinition>;
+
+    const result = compareAgentDefinitions(before, after);
+
     expect(result.behaviorFields.map((field) => field.key)).toEqual([
       "outputSchema",
     ]);
