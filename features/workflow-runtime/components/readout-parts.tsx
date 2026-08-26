@@ -238,6 +238,15 @@ function StepErrorBody({
   );
 }
 
+/**
+ * Reasoning tags are wire PROTOCOL, not content — the streamed lane never
+ * shows them (the accumulator folds them into reasoning blocks), so a raw
+ * heartbeat tail must not show them either.
+ */
+function stripProtocolTags(text: string): string {
+  return text.replace(/<\/?reasoning>/g, "").trimStart();
+}
+
 export function InvocationBody({
   runId,
   invocation,
@@ -390,7 +399,14 @@ export function InvocationBody({
       /^[[{]/.test(tail.trimStart()) ||
       (tail.match(/"\s*:\s*/g)?.length ?? 0) >= 2 ||
       (tail.match(/\\n/g)?.length ?? 0) >= 2;
-    if (promisedKind && working && tailIsJson) {
+    // NO promised kind required. A step with no declared kind (the current
+    // notes/summary nodes) used to fall past this guard and dump its raw
+    // reasoning + pretty-printed JSON innards through the prose branch —
+    // caught live on run 6, 2026-08-26, on a fresh bundle. The law is
+    // unconditional: raw JSON is never a rendering. With no kind to promise,
+    // the slot resolves the generic arriving silhouette, which is quiet,
+    // honest, and strictly better than string innards.
+    if (working && tailIsJson) {
       return (
         <KindSlot
           slotKey={`${runId}:${invocation.invocationKey}:tail`}
@@ -402,7 +418,7 @@ export function InvocationBody({
     }
     return (
       <p className="whitespace-pre-wrap text-xs text-muted-foreground">
-        {invocation.textTail}
+        {stripProtocolTags(invocation.textTail)}
       </p>
     );
   }
@@ -468,7 +484,7 @@ export function InvocationBody({
   if (invocation.textTail) {
     return (
       <p className="whitespace-pre-wrap text-xs text-muted-foreground">
-        {invocation.textTail}
+        {stripProtocolTags(invocation.textTail)}
       </p>
     );
   }
