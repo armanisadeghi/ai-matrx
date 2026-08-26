@@ -262,7 +262,8 @@ begin
         into v_prem from jsonb_array_elements(v_prem) x;
     end if;
 
-    v_result := jsonb_build_object('premiums', coalesce(v_prem,'[]'::jsonb));
+    v_result := jsonb_build_object('premiums', coalesce(v_prem,'[]'::jsonb),
+                                   'premium_count', jsonb_array_length(coalesce(v_prem,'[]'::jsonb)));
     -- CAPABILITY-SCOPE 3: time worked THROUGH a meal break counts toward hours worked AND toward
     -- overtime, in addition to the premium. The premium does not buy the hours.
     if coalesce((p_input->>'worked_through_meal')::boolean, false) then
@@ -392,6 +393,10 @@ begin
       if jsonb_typeof(v_p->'penalty') = 'object' then
         v_result := v_result || jsonb_build_object('penalty', v_p->'penalty');
       end if;
+      if (v_result->>'deadline_at') is not null then
+        v_result := v_result || jsonb_build_object('deadline_offset_hours',
+          round(extract(epoch from ((v_result->>'deadline_at')::timestamptz - v_start)) / 3600.0, 4));
+      end if;
     end if;
 
   -- ==================================================================== PREDICTABILITY PAY
@@ -455,7 +460,9 @@ begin
           'trigger', p_input->>'event'));
       end if;
     end loop;
-    v_result := jsonb_build_object('assignments', v_assign, 'compliance_exceptions', v_exc);
+    v_result := jsonb_build_object('assignments', v_assign, 'compliance_exceptions', v_exc,
+                                   'assignment_count', jsonb_array_length(v_assign),
+                                   'exception_count', jsonb_array_length(v_exc));
 
   -- ==================================================================== RETENTION
   elsif p_kind = 'retention-due' then

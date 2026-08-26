@@ -79,7 +79,11 @@ import {
 // search family's components above.
 import SeoRankSerpLandscapeBlockImpl from "../../blocks/rank-kinds/SeoRankSerpLandscapeBlock";
 import SerpPlacementBlockImpl from "../../blocks/rank-kinds/SerpPlacementBlock";
-import DataTableBlockImpl from "../../blocks/table-kinds/DataTableBlock";
+// The fetch-more HOST, not the bare block: production truncated tables must
+// carry a working "get the rest" control wherever the producing read can be
+// re-run (A-9 / LAW 3). The host defers to any page-level provider and
+// renders the same canonical DataTableBlock.
+import DataTableBlockImpl from "../../blocks/table-kinds/DataTableBlockWithMore";
 import {
   ProviderRunReceiptBlock as ProviderRunReceiptBlockImpl,
   SeoRankReadingBlock as SeoRankReadingBlockImpl,
