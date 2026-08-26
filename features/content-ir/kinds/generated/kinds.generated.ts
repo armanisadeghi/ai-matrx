@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 473 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 479 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "f2ff2e18496e";
+export const KIND_REGISTRY_FINGERPRINT = "8b9a37610180";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -9107,6 +9107,81 @@ export interface MetaTagOptions {
 }
 
 /**
+ * Kind `ner_canonicalization_result` (registry v5).
+ */
+export interface NerCanonicalizationResult {
+  __kind: "ner_canonicalization_result";
+  /**
+   * One entry per canonicalization decision.
+   */
+  canonical_map: ({
+    __kind: "ner_entity_pair_group";
+    /**
+     * The fullest/most correct surface form of the unified entity.
+     */
+    canonical: {
+    kind: string;
+    name: string;
+    __kind: "ner_entity_ref";
+  };
+    /**
+     * Why these pairs co-refer, or for a singleton why it stands alone.
+     */
+    reasoning: string;
+    /**
+     * The raw input entity surface forms that co-refer. A group of one is a singleton.
+     */
+    input_pairs: ({
+    kind: string;
+    name: string;
+    __kind: "ner_entity_ref";
+  })[];
+  })[];
+}
+
+/**
+ * Kind `ner_entity_pair_group` (registry v3).
+ */
+export interface NerEntityPairGroup {
+  __kind: "ner_entity_pair_group";
+  /**
+   * The fullest/most correct surface form of the unified entity.
+   */
+  canonical: {
+    kind: string;
+    name: string;
+    __kind: "ner_entity_ref";
+  };
+  /**
+   * Why these pairs co-refer, or for a singleton why it stands alone.
+   */
+  reasoning: string;
+  /**
+   * The raw input entity surface forms that co-refer. A group of one is a singleton.
+   */
+  input_pairs: ({
+    kind: string;
+    name: string;
+    __kind: "ner_entity_ref";
+  })[];
+}
+
+/**
+ * Kind `ner_entity_ref` (registry v2).
+ */
+export interface NerEntityRef {
+  /**
+   * Entity type, e.g. person, organization, location.
+   */
+  kind: string;
+  /**
+   * Entity surface form as written.
+   */
+  name: string;
+  __kind: "ner_entity_ref";
+}
+
+/**
  * Kind `news_result` (registry v11).
  */
 export interface NewsResult {
@@ -9404,6 +9479,26 @@ export interface OperationResult {
   action: string;
   message?: string | null;
   archetype?: "operation_result";
+}
+
+/**
+ * Kind `outreach_reply_draft` (registry v3).
+ */
+export interface OutreachReplyDraft {
+  __kind: "outreach_reply_draft";
+  result: {
+    id: string;
+    body: string;
+    notes: string;
+    intent: "answer_question" | "handle_objection" | "propose_next_step" | "acknowledge_decline" | "ask_clarifying_question" | "send_requested_information" | "none";
+    status: "written" | "insufficient_context";
+    subject: string;
+    confidence: number;
+    grounded_on: ({
+    from: "inbound_message" | "campaign_context" | "record";
+    claim: string;
+  })[];
+  };
 }
 
 /**
@@ -9958,6 +10053,43 @@ export interface PdfTextExtraction {
   used_ocr?: boolean;
   ocr_pages?: number;
   local_path?: string;
+}
+
+/**
+ * Kind `personalization_target_result` (registry v2).
+ */
+export interface PersonalizationTargetResult {
+  id: string;
+  notes: string;
+  __kind: "personalization_target_result";
+  fields: ({
+    fact: string;
+    name: "opening_line" | "ps_line";
+    text: string;
+    source_url: string;
+  })[];
+  status: "written" | "insufficient_evidence";
+  confidence: number;
+}
+
+/**
+ * Kind `personalization_write_result` (registry v3).
+ */
+export interface PersonalizationWriteResult {
+  __kind: "personalization_write_result";
+  results: ({
+    id: string;
+    notes: string;
+    __kind: "personalization_target_result";
+    fields: ({
+    fact: string;
+    name: "opening_line" | "ps_line";
+    text: string;
+    source_url: string;
+  })[];
+    status: "written" | "insufficient_evidence";
+    confidence: number;
+  })[];
 }
 
 /**
@@ -18734,6 +18866,9 @@ export type GeneratedKindSlug =
   | "memory_hint"
   | "mermaid_diagram"
   | "meta_tag_options"
+  | "ner_canonicalization_result"
+  | "ner_entity_pair_group"
+  | "ner_entity_ref"
   | "news_result"
   | "news_search_results"
   | "newsjacking_expert_article"
@@ -18748,6 +18883,7 @@ export type GeneratedKindSlug =
   | "office_spreadsheet"
   | "opening_hours"
   | "operation_result"
+  | "outreach_reply_draft"
   | "page"
   | "page_audio"
   | "page_block"
@@ -18770,6 +18906,8 @@ export type GeneratedKindSlug =
   | "parsed_table"
   | "pdf_table_extraction"
   | "pdf_text_extraction"
+  | "personalization_target_result"
+  | "personalization_write_result"
   | "plan_entity_attachment_set"
   | "plan_entity_roster"
   | "plan_family_names"
@@ -19210,6 +19348,9 @@ export interface KindPayloadBySlug {
   "memory_hint": MemoryHint;
   "mermaid_diagram": MermaidDiagram;
   "meta_tag_options": MetaTagOptions;
+  "ner_canonicalization_result": NerCanonicalizationResult;
+  "ner_entity_pair_group": NerEntityPairGroup;
+  "ner_entity_ref": NerEntityRef;
   "news_result": NewsResult;
   "news_search_results": NewsSearchResults;
   "newsjacking_expert_article": NewsjackingExpertArticle;
@@ -19224,6 +19365,7 @@ export interface KindPayloadBySlug {
   "office_spreadsheet": OfficeSpreadsheet;
   "opening_hours": OpeningHours;
   "operation_result": OperationResult;
+  "outreach_reply_draft": OutreachReplyDraft;
   "page": Page;
   "page_audio": PageAudio;
   "page_block": PageBlock;
@@ -19246,6 +19388,8 @@ export interface KindPayloadBySlug {
   "parsed_table": ParsedTable;
   "pdf_table_extraction": PdfTableExtraction;
   "pdf_text_extraction": PdfTextExtraction;
+  "personalization_target_result": PersonalizationTargetResult;
+  "personalization_write_result": PersonalizationWriteResult;
   "plan_entity_attachment_set": PlanEntityAttachmentSet;
   "plan_entity_roster": PlanEntityRoster;
   "plan_family_names": PlanFamilyNames;
@@ -19690,6 +19834,9 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "memory_hint",
   "mermaid_diagram",
   "meta_tag_options",
+  "ner_canonicalization_result",
+  "ner_entity_pair_group",
+  "ner_entity_ref",
   "news_result",
   "news_search_results",
   "newsjacking_expert_article",
@@ -19704,6 +19851,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "office_spreadsheet",
   "opening_hours",
   "operation_result",
+  "outreach_reply_draft",
   "page",
   "page_audio",
   "page_block",
@@ -19726,6 +19874,8 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "parsed_table",
   "pdf_table_extraction",
   "pdf_text_extraction",
+  "personalization_target_result",
+  "personalization_write_result",
   "plan_entity_attachment_set",
   "plan_entity_roster",
   "plan_family_names",
