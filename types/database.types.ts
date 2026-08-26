@@ -11032,6 +11032,7 @@ export type Database = {
       }
       notification: {
         Row: {
+          acted_at: string | null
           attempt_count: number
           body: string | null
           channel: string
@@ -11039,6 +11040,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           dedupe_key: string | null
+          deep_link: string | null
+          delivered_at: string | null
           error_code: string | null
           error_message: string | null
           event_key: string
@@ -11047,13 +11050,23 @@ export type Database = {
           metadata: Json
           next_attempt_at: string
           organization_id: string
+          outcome: string | null
+          outcome_at: string | null
           payload: Json
           provider: string | null
           provider_message_id: string | null
-          recipient_user_id: string
+          read_at: string | null
+          read_channel: string | null
+          recipient_actor_token_id: string | null
+          recipient_kind: string
+          recipient_label: string | null
+          recipient_party_id: string | null
+          recipient_user_id: string | null
           sent_at: string | null
           status: string
           subject: string | null
+          target_id: string | null
+          target_kind: string | null
           to_address: string | null
           updated_at: string
           updated_by: string | null
@@ -11061,6 +11074,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          acted_at?: string | null
           attempt_count?: number
           body?: string | null
           channel: string
@@ -11068,6 +11082,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dedupe_key?: string | null
+          deep_link?: string | null
+          delivered_at?: string | null
           error_code?: string | null
           error_message?: string | null
           event_key: string
@@ -11076,13 +11092,23 @@ export type Database = {
           metadata?: Json
           next_attempt_at?: string
           organization_id: string
+          outcome?: string | null
+          outcome_at?: string | null
           payload?: Json
           provider?: string | null
           provider_message_id?: string | null
-          recipient_user_id: string
+          read_at?: string | null
+          read_channel?: string | null
+          recipient_actor_token_id?: string | null
+          recipient_kind?: string
+          recipient_label?: string | null
+          recipient_party_id?: string | null
+          recipient_user_id?: string | null
           sent_at?: string | null
           status?: string
           subject?: string | null
+          target_id?: string | null
+          target_kind?: string | null
           to_address?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -11090,6 +11116,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          acted_at?: string | null
           attempt_count?: number
           body?: string | null
           channel?: string
@@ -11097,6 +11124,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dedupe_key?: string | null
+          deep_link?: string | null
+          delivered_at?: string | null
           error_code?: string | null
           error_message?: string | null
           event_key?: string
@@ -11105,14 +11134,75 @@ export type Database = {
           metadata?: Json
           next_attempt_at?: string
           organization_id?: string
+          outcome?: string | null
+          outcome_at?: string | null
           payload?: Json
           provider?: string | null
           provider_message_id?: string | null
-          recipient_user_id?: string
+          read_at?: string | null
+          read_channel?: string | null
+          recipient_actor_token_id?: string | null
+          recipient_kind?: string
+          recipient_label?: string | null
+          recipient_party_id?: string | null
+          recipient_user_id?: string | null
           sent_at?: string | null
           status?: string
           subject?: string | null
+          target_id?: string | null
+          target_kind?: string | null
           to_address?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      notification_event_override: {
+        Row: {
+          config_patch: Json
+          created_at: string
+          created_by: string | null
+          default_channels: Json | null
+          deleted_at: string | null
+          enabled: boolean | null
+          event_key: string
+          id: string
+          metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          config_patch?: Json
+          created_at?: string
+          created_by?: string | null
+          default_channels?: Json | null
+          deleted_at?: string | null
+          enabled?: boolean | null
+          event_key: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          config_patch?: Json
+          created_at?: string
+          created_by?: string | null
+          default_channels?: Json | null
+          deleted_at?: string | null
+          enabled?: boolean | null
+          event_key?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -12017,6 +12107,7 @@ export type Database = {
           p_worker_id: string
         }
         Returns: {
+          acted_at: string | null
           attempt_count: number
           body: string | null
           channel: string
@@ -12024,6 +12115,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           dedupe_key: string | null
+          deep_link: string | null
+          delivered_at: string | null
           error_code: string | null
           error_message: string | null
           event_key: string
@@ -12032,13 +12125,23 @@ export type Database = {
           metadata: Json
           next_attempt_at: string
           organization_id: string
+          outcome: string | null
+          outcome_at: string | null
           payload: Json
           provider: string | null
           provider_message_id: string | null
-          recipient_user_id: string
+          read_at: string | null
+          read_channel: string | null
+          recipient_actor_token_id: string | null
+          recipient_kind: string
+          recipient_label: string | null
+          recipient_party_id: string | null
+          recipient_user_id: string | null
           sent_at: string | null
           status: string
           subject: string | null
+          target_id: string | null
+          target_kind: string | null
           to_address: string | null
           updated_at: string
           updated_by: string | null
@@ -12467,6 +12570,18 @@ export type Database = {
           session_id: string
         }[]
       }
+      mark_notification_read: {
+        Args: { p_channel: string; p_notification_id: string }
+        Returns: boolean
+      }
+      record_notification_outcome: {
+        Args: {
+          p_acted_at?: string
+          p_notification_id: string
+          p_outcome: string
+        }
+        Returns: boolean
+      }
       register_voice_call_interaction: {
         Args: {
           p_contact_point_id: string
@@ -12485,6 +12600,24 @@ export type Database = {
         Returns: {
           disposition: string
           interaction_id: string
+        }[]
+      }
+      resolve_channel_address: {
+        Args: {
+          p_actor_token_id: string
+          p_channel: string
+          p_literal_address: string
+          p_organization_id: string
+          p_recipient_kind: string
+          p_recipient_party_id: string
+          p_recipient_user_id: string
+        }
+        Returns: {
+          address: string
+          contact_medium_id: string
+          contact_point_id: string
+          party_id: string
+          refusal: string
         }[]
       }
       resolve_voice_owner_call_context: {
@@ -24812,6 +24945,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      access_resolver_disagreements: {
+        Args: { p_rows?: number; p_token?: string; p_users?: number }
+        Returns: {
+          compared: number
+          disagreements: number
+          token: string
+        }[]
+      }
       accessible_entity_ids:
         | {
             Args: {
@@ -29610,6 +29751,7 @@ export type Database = {
           retention_owner_column: string | null
           rls_variant: string
           schema_name: string
+          suppress_platform_admin_lane: boolean
           table_name: string
           table_ref: unknown
           taxonomy_node_id: string | null
@@ -29655,6 +29797,7 @@ export type Database = {
           retention_owner_column?: string | null
           rls_variant?: string
           schema_name: string
+          suppress_platform_admin_lane?: boolean
           table_name: string
           table_ref?: unknown
           taxonomy_node_id?: string | null
@@ -29700,6 +29843,7 @@ export type Database = {
           retention_owner_column?: string | null
           rls_variant?: string
           schema_name?: string
+          suppress_platform_admin_lane?: boolean
           table_name?: string
           table_ref?: unknown
           taxonomy_node_id?: string | null
@@ -32916,6 +33060,7 @@ export type Database = {
         Args: { p_predicate: Json; p_user_id: string }
         Returns: boolean
       }
+      retention_settling_interval: { Args: never; Returns: string }
       retrofit_entity: {
         Args: {
           p_legacy_trigger?: string

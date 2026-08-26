@@ -15337,6 +15337,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent-testing/agents/{agent_id}/tests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Agent Tests */
+        post: operations["run_agent_tests_agent_testing_agents__agent_id__tests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mandates/{mandate_key}/binding": {
         parameters: {
             query?: never;
@@ -24096,6 +24113,81 @@ export interface components {
             max_runtime_seconds: number;
             /** Max Concurrent */
             max_concurrent: number;
+        };
+        /** AgentTestBatchRequest */
+        AgentTestBatchRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Exemplar Ids */
+            exemplar_ids?: string[] | null;
+            /**
+             * Include Candidates
+             * @default false
+             */
+            include_candidates?: boolean;
+        };
+        /** AgentTestBatchResponse */
+        AgentTestBatchResponse: {
+            /** Agent Id */
+            agent_id: string;
+            /** Exemplar Count */
+            exemplar_count: number;
+            /** Results */
+            results: components["schemas"]["AgentTestResult"][];
+        };
+        /**
+         * AgentTestResult
+         * @description One test run of one exemplar, persisted on the exemplar's metadata.
+         */
+        AgentTestResult: {
+            /** Id */
+            id?: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
+            /** Agent Id */
+            agent_id: string;
+            /** Exemplar Id */
+            exemplar_id: string;
+            /** Exemplar Label */
+            exemplar_label: string;
+            /**
+             * Output
+             * @default
+             */
+            output?: string;
+            /** Parsed */
+            parsed?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | components["schemas"]["JsonValue"][] | null;
+            /** Usage */
+            usage?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Model Id */
+            model_id?: string | null;
+            /**
+             * Duration Ms
+             * @default 0
+             */
+            duration_ms?: number;
+            /** Error */
+            error?: string | null;
         };
         /** AgentToolEntityMapEntry */
         AgentToolEntityMapEntry: {
@@ -96762,6 +96854,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MandateTestResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_agent_tests_agent_testing_agents__agent_id__tests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentTestBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTestBatchResponse"];
                 };
             };
             /** @description Validation Error */
