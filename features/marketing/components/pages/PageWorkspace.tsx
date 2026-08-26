@@ -1170,10 +1170,10 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           this page through its canonical services. */}
       <MarketingPageWriteTargets page={page} />
       <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
-        <div className="grid w-full gap-3">
+        <div className="grid min-w-0 w-full gap-3">
           <nav
             aria-label="Page sections"
-            className="sticky top-0 z-20 -mx-3 -mt-3 border-b border-border bg-textured/95 px-3 py-1.5 backdrop-blur sm:-mx-4 sm:-mt-4 sm:px-4"
+            className="sticky top-0 z-20 min-w-0 -mx-3 -mt-3 border-b border-border bg-textured/95 px-3 py-1.5 backdrop-blur sm:-mx-4 sm:-mt-4 sm:px-4"
           >
             <div className="flex items-center gap-1.5 overflow-x-auto">
               <a
