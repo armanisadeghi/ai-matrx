@@ -1,0 +1,29 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-10",
+    "operation_id": "hr_calc_retention_due",
+    "method": "POST",
+    "path": "/hr/calc/retention-due",
+    "family": "calc",
+    "case": "error",
+    "status": 422,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The §1.3 envelope for this family's most likely failure. Forces the error path to be built at the same time as the happy path."
+  },
+  "body": {
+    "error": "hr_incomplete_facts",
+    "message": "A required applicability fact is missing for rule class minors-hours.",
+    "user_message": "We need one more detail before we can finish this calculation.",
+    "details": {
+      "incomplete": [
+        {
+          "class": "minors-hours",
+          "fact": "worker_age_years"
+        }
+      ]
+    },
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

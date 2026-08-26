@@ -1,0 +1,38 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-13",
+    "operation_id": "hr_accruals_run",
+    "method": "POST",
+    "path": "/hr/accruals/run",
+    "family": "accruals",
+    "case": "edge",
+    "status": 200,
+    "mode": "async",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "clamped_by_statute > 0 — a statutory sick-leave floor overrode org policy for 12 enrollments. The clamp is recorded in each snapshot's clamps[], never applied silently."
+  },
+  "body": {
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f",
+    "execution_id": "7f2b1c90-55aa-4e12-8b31-99d0e7c41a02",
+    "status": "succeeded",
+    "poll": "/runtime/operations/0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f",
+    "events": "/runtime/executions/7f2b1c90-55aa-4e12-8b31-99d0e7c41a02/events/stream",
+    "submitted_at": "2026-03-31T02:00:00Z",
+    "result": {
+      "enrollments_processed": 288,
+      "ledger_entries_written": 288,
+      "hours_accrued": "1441.50",
+      "clamped_by_statute": 12,
+      "skipped_ineligible": 4,
+      "clamps_sample": [
+        {
+          "class": "sick-leave-floor",
+          "from": "0.0192",
+          "to": "0.0333",
+          "reason": "statutory floor exceeds org policy"
+        }
+      ]
+    }
+  }
+}

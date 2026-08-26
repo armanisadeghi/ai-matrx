@@ -1,0 +1,53 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-16",
+    "operation_id": "hr_schedule_autofill",
+    "method": "POST",
+    "path": "/hr/schedule/autofill",
+    "family": "schedule",
+    "case": "edge",
+    "status": 200,
+    "mode": "async",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "D11 — unfilled[] non-empty AND a BLOCKING minors conflict with reason 'incomplete'. Minors' hour restrictions are seeded, not built: when no rule resolves the answer is a blocking conflict, NEVER a silent 'unrestricted'."
+  },
+  "body": {
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f",
+    "execution_id": "7f2b1c90-55aa-4e12-8b31-99d0e7c41a02",
+    "status": "partial",
+    "poll": "/runtime/operations/0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f",
+    "events": "/runtime/executions/7f2b1c90-55aa-4e12-8b31-99d0e7c41a02/events/stream",
+    "submitted_at": "2026-03-17T18:04:11Z",
+    "result": {
+      "assignments": [
+        {
+          "shift_id": "00000000-0000-4000-8000-000000000021",
+          "employment_id": "00000000-0000-4000-8000-000000000041",
+          "confidence": 0.86,
+          "rationale": "available, credentialed, 18h this week, no rest conflict",
+          "relative_cost_band": 2,
+          "would_trigger_overtime": false
+        }
+      ],
+      "unfilled": [
+        {
+          "shift_id": "00000000-0000-4000-8000-000000000022",
+          "reason": "no credentialed employee available"
+        }
+      ],
+      "conflicts": [
+        {
+          "shift_id": "00000000-0000-4000-8000-000000000023",
+          "employment_id": "00000000-0000-4000-8000-000000000042",
+          "rule": "minors-hours",
+          "severity": "block",
+          "reason": "incomplete"
+        }
+      ],
+      "projected_labor_amount": "18422.75",
+      "ai_evidence_id": "00000000-0000-4000-8000-000000000051",
+      "posture_applied": "recommend"
+    }
+  }
+}

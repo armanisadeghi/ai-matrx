@@ -1,0 +1,22 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-40",
+    "operation_id": "hr_outsider_tokens_mint",
+    "method": "POST",
+    "path": "/hr/outsider-tokens/mint",
+    "family": "identity",
+    "case": "empty",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The designed zero case. The empty state is a screen, not an accident."
+  },
+  "body": {
+    "token_id": "00000000-0000-4000-8000-000000000001",
+    "secret": "REDACTED-IN-FIXTURES-returned-exactly-once",
+    "expires_at": "2026-03-17T18:04:11Z",
+    "max_uses": 0,
+    "verification_factor": "email_code"
+  }
+}

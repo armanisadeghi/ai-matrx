@@ -1,0 +1,25 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-56",
+    "operation_id": "hr_time_overtime_scan",
+    "method": "POST",
+    "path": "/hr/time/overtime/scan",
+    "family": "time",
+    "case": "error",
+    "status": 423,
+    "mode": "async",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The §1.3 envelope for this family's most likely failure. Forces the error path to be built at the same time as the happy path."
+  },
+  "body": {
+    "error": "hr_period_locked",
+    "message": "Write against a locked pay period 8f2c1a90-…; corrections are time_adjustment rows.",
+    "user_message": "This pay period is locked. We can record a correction that lands in the next period.",
+    "details": {
+      "pay_period_id": "8f2c1a90-4b3d-4c2e-9a10-2f7b6c5d4e3a",
+      "state": "locked"
+    },
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

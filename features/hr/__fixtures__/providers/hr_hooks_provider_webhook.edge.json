@@ -1,0 +1,25 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-31",
+    "operation_id": "hr_hooks_provider_webhook",
+    "method": "POST",
+    "path": "/hooks/providers/{seam}/{provider_key}",
+    "family": "providers",
+    "case": "edge",
+    "status": 503,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "§6.4 lists no mandatory edge for this operation. The generic edge is the queue/worker outage, which MUST set details.retryable = true so the handler does not capture it as a system error (§1.3)."
+  },
+  "body": {
+    "error": "hr_engine_unavailable",
+    "message": "The HR engine queue is not accepting work.",
+    "user_message": "We can't run this right now. Please try again in a few minutes.",
+    "details": {
+      "retryable": true,
+      "retry_after_seconds": 30
+    },
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

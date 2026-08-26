@@ -1,0 +1,23 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-38",
+    "operation_id": "hr_i9_inspection_export",
+    "method": "POST",
+    "path": "/hr/i9/inspection-export",
+    "family": "statutory",
+    "case": "empty",
+    "status": 202,
+    "mode": "async",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The designed zero case. The empty state is a screen, not an accident."
+  },
+  "body": {
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f",
+    "execution_id": "7f2b1c90-55aa-4e12-8b31-99d0e7c41a02",
+    "status": "queued",
+    "poll": "/runtime/operations/0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f",
+    "events": "/runtime/executions/7f2b1c90-55aa-4e12-8b31-99d0e7c41a02/events/stream",
+    "submitted_at": "2026-03-17T18:04:11Z"
+  }
+}

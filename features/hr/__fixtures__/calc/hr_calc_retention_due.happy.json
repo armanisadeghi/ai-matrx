@@ -1,0 +1,59 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-10",
+    "operation_id": "hr_calc_retention_due",
+    "method": "POST",
+    "path": "/hr/calc/retention-due",
+    "family": "calc",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "snapshot_id": "00000000-0000-4000-8000-000000000001",
+    "prospective": true,
+    "as_of": "2026-03-17",
+    "jurisdiction_key": "US-CA-LOS_ANGELES",
+    "engine": {
+      "key": "generic_csv",
+      "version": "3984be1"
+    },
+    "result": {},
+    "rules_applied": [
+      {
+        "class": "overtime",
+        "rule_id": "00000000-0000-4000-8000-000000000008",
+        "rule_version": 3,
+        "jurisdiction_key": "US-CA-LOS_ANGELES",
+        "status": "active"
+      }
+    ],
+    "flags": [
+      {
+        "code": "advisory_rule",
+        "class": "overtime",
+        "rule_id": "00000000-0000-4000-8000-000000000010",
+        "jurisdiction_key": "US-CA-LOS_ANGELES",
+        "message": "Los Angeles Fair Workweek parameters are unverified; predictability pay omitted."
+      }
+    ],
+    "incomplete": [
+      {
+        "class": "overtime",
+        "fact": "employer_fte_avg_prior_year"
+      }
+    ],
+    "clamps": [
+      {
+        "class": "overtime",
+        "from": "from-11",
+        "to": "to-12",
+        "reason": "corrected three punches on 2026-03-17"
+      }
+    ],
+    "written": {}
+  }
+}

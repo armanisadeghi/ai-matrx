@@ -1,0 +1,20 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-39",
+    "operation_id": "hr_identity_ssn_reveal",
+    "method": "POST",
+    "path": "/hr/identity/{identity_id}/ssn/reveal",
+    "family": "identity",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "ssn": "ssn-1",
+    "revealed_at": "2026-03-17T18:04:11Z",
+    "audit_id": "00000000-0000-4000-8000-000000000003"
+  }
+}

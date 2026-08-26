@@ -1,0 +1,26 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-34",
+    "operation_id": "hr_background_checks_adverse_action_final",
+    "method": "POST",
+    "path": "/hr/background-checks/{check_id}/adverse-action/final",
+    "family": "background_checks",
+    "case": "edge",
+    "status": 409,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "§3.7 — final adverse action BEFORE the statutory deadline, with details.earliest_at. The waiting period being enforced in code rather than trusted to a human is the entire reason these are endpoints and not a status dropdown."
+  },
+  "body": {
+    "error": "hr_state_conflict",
+    "message": "Candidate response deadline is 2026-03-22T17:00:00Z; final adverse action cannot be sent before it.",
+    "user_message": "The candidate still has until March 22 to respond.",
+    "details": {
+      "earliest_at": "2026-03-22T17:00:00Z",
+      "pre_adverse_sent_at": "2026-03-17T17:00:00Z",
+      "waiting_period_days": 5
+    },
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

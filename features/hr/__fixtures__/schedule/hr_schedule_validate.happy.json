@@ -1,0 +1,39 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-17",
+    "operation_id": "hr_schedule_validate",
+    "method": "POST",
+    "path": "/hr/schedule/{schedule_id}/validate",
+    "family": "schedule",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "blocking": [
+      {
+        "shift_id": "00000000-0000-4000-8000-000000000001",
+        "employment_id": "00000000-0000-4000-8000-000000000002",
+        "rule": "min_rest_hours",
+        "severity": "block",
+        "reason": "corrected three punches on 2026-03-17"
+      }
+    ],
+    "warnings": [
+      {
+        "shift_id": "00000000-0000-4000-8000-000000000002",
+        "employment_id": "00000000-0000-4000-8000-000000000003",
+        "rule": "min_rest_hours",
+        "severity": "block",
+        "reason": "corrected three punches on 2026-03-17"
+      }
+    ],
+    "projected": {},
+    "prospective_snapshot_ids": [
+      "00000000-0000-4000-8000-000000000004"
+    ]
+  }
+}

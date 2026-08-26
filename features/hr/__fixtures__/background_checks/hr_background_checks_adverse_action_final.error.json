@@ -1,0 +1,27 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-34",
+    "operation_id": "hr_background_checks_adverse_action_final",
+    "method": "POST",
+    "path": "/hr/background-checks/{check_id}/adverse-action/final",
+    "family": "background_checks",
+    "case": "error",
+    "status": 400,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The §1.3 envelope for this family's most likely failure. Forces the error path to be built at the same time as the happy path."
+  },
+  "body": {
+    "error": "hr_validation_error",
+    "message": "FCRA gate: disclosure_presented_at and authorized_at must both be set, in that order.",
+    "user_message": "We need the candidate's disclosure and authorization before running this check.",
+    "details": {
+      "missing": [
+        "disclosure_presented_at",
+        "authorized_at"
+      ]
+    },
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

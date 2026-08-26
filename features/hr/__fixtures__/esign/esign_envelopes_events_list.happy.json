@@ -1,0 +1,28 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-47",
+    "operation_id": "esign_envelopes_events_list",
+    "method": "GET",
+    "path": "/esign/envelopes/{envelope_id}/events",
+    "family": "esign",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "envelope_id": "00000000-0000-4000-8000-000000000001",
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000002",
+        "event_type": "signer_signed",
+        "occurred_at": "2026-03-17T18:04:11Z",
+        "actor_kind": "user",
+        "actor_ref": "user:jordan.rivera",
+        "detail": {}
+      }
+    ]
+  }
+}

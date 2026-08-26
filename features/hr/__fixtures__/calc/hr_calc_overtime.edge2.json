@@ -1,0 +1,72 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-03",
+    "operation_id": "hr_calc_overtime",
+    "method": "POST",
+    "path": "/hr/calc/overtime",
+    "family": "calc",
+    "case": "edge2",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Semimonthly boundary workweek, 46 hours split 20/26 across two pay periods. The 6 OT hours are computed on the WHOLE workweek, never on either period's subtotal, and are attributed to the period containing the workweek's END date. workweek_id rides every export line so payroll can reconcile.",
+    "rendered_from": "hr.jurisdiction_rule_test:OT-BOUND-01"
+  },
+  "__rendered_from": {
+    "table": "hr.jurisdiction_rule_test",
+    "code": "OT-BOUND-01",
+    "expected_status": "asserted",
+    "assertion_mode": "exact",
+    "title": "Semimonthly boundary week -- OT computed on the WHOLE workweek and attributed to the period containing the workweek END date"
+  },
+  "body": {
+    "snapshot_id": "00000000-0000-4000-8000-000000000091",
+    "prospective": false,
+    "as_of": "2026-03-29",
+    "jurisdiction_key": "US-TX",
+    "engine": {
+      "key": "hr_rules_engine",
+      "version": "3984be1"
+    },
+    "result": {
+      "hours_regular": 40,
+      "hours_overtime": 6,
+      "hours_doubletime": 0,
+      "weighted_average_regular_rate": "22.000000",
+      "attributed_pay_period_key": "apr-1-15",
+      "workweek_id": "00000000-0000-4000-8000-000000000007",
+      "lines": [
+        {
+          "earning_code": "OT",
+          "hours": 6,
+          "rate": "33.000000",
+          "amount": "198.00",
+          "work_date": "2026-04-04",
+          "work_interval_ids": [
+            "00000000-0000-4000-8000-000000000007"
+          ],
+          "workweek_id": "00000000-0000-4000-8000-000000000007",
+          "pay_period_key": "apr-1-15"
+        }
+      ]
+    },
+    "rules_applied": [
+      {
+        "class": "overtime",
+        "rule_id": "00000000-0000-4000-8000-000000000031",
+        "rule_version": 1,
+        "jurisdiction_key": "US-TX",
+        "status": "active"
+      }
+    ],
+    "flags": [],
+    "incomplete": [],
+    "clamps": [],
+    "written": {
+      "work_interval_ids": [],
+      "workweek_id": null,
+      "leave_ledger_ids": []
+    }
+  }
+}

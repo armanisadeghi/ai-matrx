@@ -1,0 +1,23 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-01",
+    "operation_id": "hr_rules_resolve",
+    "method": "POST",
+    "path": "/hr/rules/resolve",
+    "family": "rules",
+    "case": "empty",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The designed zero case. The empty state is a screen, not an accident."
+  },
+  "body": {
+    "as_of": "2026-03-17",
+    "jurisdiction_key": "US-CA-LOS_ANGELES",
+    "chain": [],
+    "resolved": [],
+    "incomplete": [],
+    "trace": []
+  }
+}

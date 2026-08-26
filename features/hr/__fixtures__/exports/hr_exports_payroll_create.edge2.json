@@ -1,0 +1,33 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-20",
+    "operation_id": "hr_exports_payroll_create",
+    "method": "POST",
+    "path": "/hr/exports/payroll",
+    "family": "exports",
+    "case": "edge2",
+    "status": 400,
+    "mode": "async",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "§4.3 — requires_mapping is the honest half of every integration. No external system knows our employee_number, so an unmapped identifier is a 400 with details.unmapped[] rather than a file with blanks in the identifier column. A payroll file with a missing employee id is WORSE than no file: it fails silently downstream, in someone else's system, after money moved."
+  },
+  "body": {
+    "error": "hr_validation_error",
+    "message": "2 employments have no external_employee_id for format quickbooks_online",
+    "user_message": "Two people still need a QuickBooks employee ID before this file can be built.",
+    "details": {
+      "unmapped": [
+        {
+          "employment_id": "00000000-0000-4000-8000-000000000041",
+          "field": "external_employee_id"
+        },
+        {
+          "employment_id": "00000000-0000-4000-8000-000000000042",
+          "field": "external_employee_id"
+        }
+      ]
+    },
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

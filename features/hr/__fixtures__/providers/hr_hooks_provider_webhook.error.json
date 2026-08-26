@@ -1,0 +1,25 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-31",
+    "operation_id": "hr_hooks_provider_webhook",
+    "method": "POST",
+    "path": "/hooks/providers/{seam}/{provider_key}",
+    "family": "providers",
+    "case": "error",
+    "status": 424,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The §1.3 envelope for this family's most likely failure. Forces the error path to be built at the same time as the happy path."
+  },
+  "body": {
+    "error": "hr_provider_unavailable",
+    "message": "The provider did not answer within the retry policy.",
+    "user_message": "The background-check provider isn't responding. You can record the result manually instead.",
+    "details": {
+      "provider_key": "noop_adapter",
+      "fallback": "path='manual' via POST /hr/providers/{seam}/results"
+    },
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

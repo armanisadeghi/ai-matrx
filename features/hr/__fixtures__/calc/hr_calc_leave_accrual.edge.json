@@ -1,0 +1,59 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-05",
+    "operation_id": "hr_calc_leave_accrual",
+    "method": "POST",
+    "path": "/hr/calc/leave-accrual",
+    "family": "calc",
+    "case": "edge",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "§6.4's '/hr/calc/* (any) — incomplete[] non-empty for minors-hours'. The fact is missing, the rule is NOT silently treated as unmet, and the caller must collect it (SPEC-JURISDICTION §2.7).",
+    "rendered_from": "hr.jurisdiction_rule_test:MIN-01"
+  },
+  "__rendered_from": {
+    "table": "hr.jurisdiction_rule_test",
+    "code": "MIN-01",
+    "expected_status": "asserted",
+    "assertion_mode": "exact",
+    "title": "A 16-year-old scheduled with no minors rule seeded -- the scheduler raises a BLOCKING warning, never a silent pass"
+  },
+  "body": {
+    "snapshot_id": "00000000-0000-4000-8000-000000000091",
+    "prospective": false,
+    "as_of": "2026-03-16",
+    "jurisdiction_key": "US-CA",
+    "engine": {
+      "key": "hr_rules_engine",
+      "version": "3984be1"
+    },
+    "result": {
+      "accrued_hours": "5.766667",
+      "blocking_warning": true
+    },
+    "rules_applied": [
+      {
+        "class": "minors-hours",
+        "rule_id": "00000000-0000-4000-8000-000000000031",
+        "rule_version": 1,
+        "jurisdiction_key": "US-CA",
+        "status": "active"
+      }
+    ],
+    "flags": [],
+    "incomplete": [
+      {
+        "class": "minors-hours",
+        "fact": "worker_age_years"
+      }
+    ],
+    "clamps": [],
+    "written": {
+      "work_interval_ids": [],
+      "workweek_id": null,
+      "leave_ledger_ids": []
+    }
+  }
+}

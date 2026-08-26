@@ -1,0 +1,58 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-54",
+    "operation_id": "hr_calc_i9_deadlines",
+    "method": "POST",
+    "path": "/hr/calc/i9-deadlines",
+    "family": "calc",
+    "case": "edge",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "A FEDERAL holiday inside the Section-2 window extends it; the employer's own closure does NOT — an employer's closure does not move a federal deadline. pending_verification until JUR-SEED-8.",
+    "rendered_from": "hr.jurisdiction_rule_test:I9-FED-03"
+  },
+  "__rendered_from": {
+    "table": "hr.jurisdiction_rule_test",
+    "code": "I9-FED-03",
+    "expected_status": "pending_verification",
+    "assertion_mode": "exact",
+    "title": "A FEDERAL holiday inside the Section 2 window extends it -- and the employer's own closure does NOT"
+  },
+  "body": {
+    "snapshot_id": "00000000-0000-4000-8000-000000000091",
+    "prospective": false,
+    "as_of": "2026-04-09",
+    "jurisdiction_key": "US",
+    "engine": {
+      "key": "hr_rules_engine",
+      "version": "3984be1"
+    },
+    "result": {
+      "section1_due_on": "2026-04-09",
+      "section2_due_on": "2026-04-15",
+      "reverification_due_on": null,
+      "business_day_calendar": "federal",
+      "org_holiday_calendar_consulted": false
+    },
+    "rules_applied": [
+      {
+        "class": "i9-section2-deadline",
+        "rule_id": "00000000-0000-4000-8000-000000000031",
+        "rule_version": 1,
+        "jurisdiction_key": "US",
+        "status": "active"
+      }
+    ],
+    "flags": [],
+    "incomplete": [],
+    "clamps": [],
+    "written": {
+      "work_interval_ids": [],
+      "workweek_id": null,
+      "leave_ledger_ids": []
+    },
+    "__pending_verification": true
+  }
+}

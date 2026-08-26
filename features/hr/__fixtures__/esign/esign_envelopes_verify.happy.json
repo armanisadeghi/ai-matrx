@@ -1,0 +1,28 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-49",
+    "operation_id": "esign_envelopes_verify",
+    "method": "POST",
+    "path": "/esign/envelopes/{envelope_id}/verify",
+    "family": "esign",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "envelope_id": "00000000-0000-4000-8000-000000000001",
+    "verified": true,
+    "mismatches": [
+      {
+        "kind": "document_hash",
+        "target_id": "00000000-0000-4000-8000-000000000004",
+        "expected_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "observed_sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      }
+    ],
+    "verified_at": "2026-03-17T18:04:11Z"
+  }
+}

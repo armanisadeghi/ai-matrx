@@ -1,0 +1,25 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-59",
+    "operation_id": "hr_careers_widget_bootstrap",
+    "method": "GET",
+    "path": "/careers/widget/bootstrap",
+    "family": "careers",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "organization": {},
+    "branding": {},
+    "openings": [
+      {}
+    ],
+    "apply_mode": "hosted",
+    "locale": "en-US",
+    "csp_nonce": "n0nc3-fixture-only"
+  }
+}

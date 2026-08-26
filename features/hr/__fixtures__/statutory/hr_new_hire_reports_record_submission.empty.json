@@ -1,0 +1,19 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-36",
+    "operation_id": "hr_new_hire_reports_record_submission",
+    "method": "POST",
+    "path": "/hr/new-hire-reports/{report_id}/record-submission",
+    "family": "statutory",
+    "case": "empty",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The designed zero case. The empty state is a screen, not an accident."
+  },
+  "body": {
+    "report_id": "00000000-0000-4000-8000-000000000001",
+    "state": "submitted"
+  }
+}

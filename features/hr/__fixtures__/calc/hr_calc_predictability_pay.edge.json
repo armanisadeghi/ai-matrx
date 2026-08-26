@@ -1,0 +1,64 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-08",
+    "operation_id": "hr_calc_predictability_pay",
+    "method": "POST",
+    "path": "/hr/calc/predictability-pay",
+    "family": "calc",
+    "case": "edge",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "An ADVISORY Fair Workweek rule. The money field is ABSENT from result — not zero, not a guess — and flags[] carries advisory_rule. §1.3 rule 3: /hr/calc/* returns 200-with-flag because the caller wants the non-money parts of the result.",
+    "rendered_from": "hr.jurisdiction_rule_test:FW-CHI-01"
+  },
+  "__rendered_from": {
+    "table": "hr.jurisdiction_rule_test",
+    "code": "FW-CHI-01",
+    "expected_status": "asserted",
+    "assertion_mode": "exact",
+    "title": "Chicago establishment, a published shift changed 3 days out -- the ordinance resolves (IL is not a preemption state), the change is FLAGGED, and predictability pay is NOT computed"
+  },
+  "body": {
+    "snapshot_id": "00000000-0000-4000-8000-000000000091",
+    "prospective": false,
+    "as_of": "2026-03-16",
+    "jurisdiction_key": "US-IL-CHICAGO",
+    "engine": {
+      "key": "hr_rules_engine",
+      "version": "3984be1"
+    },
+    "result": {
+      "covered": true,
+      "change_flagged": true,
+      "days_notice": 3,
+      "ordinance_jurisdiction": "US-IL-CHICAGO"
+    },
+    "rules_applied": [
+      {
+        "class": "fair-workweek",
+        "rule_id": "00000000-0000-4000-8000-000000000031",
+        "rule_version": 1,
+        "jurisdiction_key": "US-IL-CHICAGO",
+        "status": "advisory"
+      }
+    ],
+    "flags": [
+      {
+        "code": "advisory_rule",
+        "class": "fair-workweek",
+        "rule_id": "00000000-0000-4000-8000-000000000031",
+        "jurisdiction_key": "US-IL-CHICAGO",
+        "message": "Chicago Fair Workweek parameters are unverified; predictability pay omitted."
+      }
+    ],
+    "incomplete": [],
+    "clamps": [],
+    "written": {
+      "work_interval_ids": [],
+      "workweek_id": null,
+      "leave_ledger_ids": []
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-37",
+    "operation_id": "hr_verification_letters_generate",
+    "method": "POST",
+    "path": "/hr/verification-letters/{letter_id}/generate",
+    "family": "statutory",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "letter_id": "00000000-0000-4000-8000-000000000001",
+    "artifact_file_id": "00000000-0000-4000-8000-000000000002",
+    "snapshot": {},
+    "issued_at": "2026-03-17T18:04:11Z"
+  }
+}

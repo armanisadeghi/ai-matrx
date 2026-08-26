@@ -1,0 +1,22 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-58",
+    "operation_id": "hr_careers_opening_get",
+    "method": "GET",
+    "path": "/careers/{org_slug}/openings/{posting_id}",
+    "family": "careers",
+    "case": "error",
+    "status": 404,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The §1.3 envelope for this family's most likely failure. Forces the error path to be built at the same time as the happy path."
+  },
+  "body": {
+    "error": "not_found",
+    "message": "No careers portal is enabled for this organization slug.",
+    "user_message": "This careers page isn't available.",
+    "details": {},
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

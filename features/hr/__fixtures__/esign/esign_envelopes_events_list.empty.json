@@ -1,0 +1,19 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-47",
+    "operation_id": "esign_envelopes_events_list",
+    "method": "GET",
+    "path": "/esign/envelopes/{envelope_id}/events",
+    "family": "esign",
+    "case": "empty",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The designed zero case. The empty state is a screen, not an accident."
+  },
+  "body": {
+    "envelope_id": "00000000-0000-4000-8000-000000000001",
+    "events": []
+  }
+}

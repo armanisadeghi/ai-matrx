@@ -1,0 +1,21 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-17",
+    "operation_id": "hr_schedule_validate",
+    "method": "POST",
+    "path": "/hr/schedule/{schedule_id}/validate",
+    "family": "schedule",
+    "case": "empty",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The designed zero case. The empty state is a screen, not an accident."
+  },
+  "body": {
+    "blocking": [],
+    "warnings": [],
+    "projected": {},
+    "prospective_snapshot_ids": []
+  }
+}

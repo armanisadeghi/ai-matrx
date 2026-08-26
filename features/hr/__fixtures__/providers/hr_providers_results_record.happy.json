@@ -1,0 +1,20 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-29",
+    "operation_id": "hr_providers_results_record",
+    "method": "POST",
+    "path": "/hr/providers/{seam}/results",
+    "family": "providers",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "recorded": true,
+    "our_state": "returned",
+    "external_status": "complete"
+  }
+}

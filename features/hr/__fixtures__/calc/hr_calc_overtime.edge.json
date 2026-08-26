@@ -1,0 +1,88 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-03",
+    "operation_id": "hr_calc_overtime",
+    "method": "POST",
+    "path": "/hr/calc/overtime",
+    "family": "calc",
+    "case": "edge",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "One 13-hour California day: 8 regular + 4 OT@1.5 + 1 DT@2.0.",
+    "rendered_from": "hr.jurisdiction_rule_test:OT-CA-01"
+  },
+  "__rendered_from": {
+    "table": "hr.jurisdiction_rule_test",
+    "code": "OT-CA-01",
+    "expected_status": "asserted",
+    "assertion_mode": "exact",
+    "title": "US-CA, one 13-hour day"
+  },
+  "body": {
+    "snapshot_id": "00000000-0000-4000-8000-000000000091",
+    "prospective": false,
+    "as_of": "2026-03-16",
+    "jurisdiction_key": "US-CA",
+    "engine": {
+      "key": "hr_rules_engine",
+      "version": "3984be1"
+    },
+    "result": {
+      "hours_regular": 8,
+      "hours_overtime": 4,
+      "hours_doubletime": 1,
+      "weighted_average_regular_rate": "25.000000",
+      "lines": [
+        {
+          "earning_code": "REG",
+          "hours": 8,
+          "rate": "25.000000",
+          "amount": "200.00",
+          "work_date": "2026-03-16",
+          "work_interval_ids": [
+            "00000000-0000-4000-8000-000000000001"
+          ]
+        },
+        {
+          "earning_code": "OT",
+          "hours": 4,
+          "rate": "37.500000",
+          "amount": "150.00",
+          "work_date": "2026-03-16",
+          "work_interval_ids": [
+            "00000000-0000-4000-8000-000000000001"
+          ]
+        },
+        {
+          "earning_code": "DT",
+          "hours": 1,
+          "rate": "50.000000",
+          "amount": "50.00",
+          "work_date": "2026-03-16",
+          "work_interval_ids": [
+            "00000000-0000-4000-8000-000000000001"
+          ]
+        }
+      ]
+    },
+    "rules_applied": [
+      {
+        "class": "overtime",
+        "rule_id": "00000000-0000-4000-8000-000000000031",
+        "rule_version": 1,
+        "jurisdiction_key": "US-CA",
+        "status": "active"
+      }
+    ],
+    "flags": [],
+    "incomplete": [],
+    "clamps": [],
+    "written": {
+      "work_interval_ids": [],
+      "workweek_id": null,
+      "leave_ledger_ids": []
+    }
+  }
+}

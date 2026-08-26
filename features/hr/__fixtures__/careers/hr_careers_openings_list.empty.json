@@ -1,0 +1,22 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-57",
+    "operation_id": "hr_careers_openings_list",
+    "method": "GET",
+    "path": "/careers/{org_slug}/openings",
+    "family": "careers",
+    "case": "empty",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The designed zero case. The empty state is a screen, not an accident."
+  },
+  "body": {
+    "organization": {
+      "slug": "acme",
+      "display_name": "No-op adapter (v1 round-trip)"
+    },
+    "openings": []
+  }
+}

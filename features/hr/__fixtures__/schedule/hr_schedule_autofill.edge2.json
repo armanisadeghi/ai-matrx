@@ -1,0 +1,48 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-16",
+    "operation_id": "hr_schedule_autofill",
+    "method": "POST",
+    "path": "/hr/schedule/autofill",
+    "family": "schedule",
+    "case": "edge2",
+    "status": 200,
+    "mode": "async",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "SPEC-SCHEDULING SD-6 — two candidates on ONE shift with DIFFERENT relative_cost_band values and NO money field anywhere in assignments[]. An earlier draft returned a per-assignment projected_cost; divided by the shift's hours that IS the individual's pay rate, so it handed compensation data to every scheduling manager. The band is an ordinal, carries no amount, no rate and no unit, and is not invertible to one. projected_labor_amount stays because a whole-draft total exposes nobody."
+  },
+  "body": {
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f",
+    "execution_id": "7f2b1c90-55aa-4e12-8b31-99d0e7c41a02",
+    "status": "succeeded",
+    "poll": "/runtime/operations/0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f",
+    "events": "/runtime/executions/7f2b1c90-55aa-4e12-8b31-99d0e7c41a02/events/stream",
+    "submitted_at": "2026-03-17T18:04:11Z",
+    "result": {
+      "assignments": [
+        {
+          "shift_id": "00000000-0000-4000-8000-000000000021",
+          "employment_id": "00000000-0000-4000-8000-000000000041",
+          "confidence": 0.91,
+          "rationale": "available, credentialed, 12h this week",
+          "relative_cost_band": 1,
+          "would_trigger_overtime": false
+        },
+        {
+          "shift_id": "00000000-0000-4000-8000-000000000021",
+          "employment_id": "00000000-0000-4000-8000-000000000042",
+          "confidence": 0.74,
+          "rationale": "available, credentialed, 33h this week",
+          "relative_cost_band": 4,
+          "would_trigger_overtime": true
+        }
+      ],
+      "unfilled": [],
+      "conflicts": [],
+      "projected_labor_amount": "18422.75",
+      "ai_evidence_id": "00000000-0000-4000-8000-000000000051",
+      "posture_applied": "recommend"
+    }
+  }
+}

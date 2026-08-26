@@ -1,0 +1,26 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-39",
+    "operation_id": "hr_identity_ssn_reveal",
+    "method": "POST",
+    "path": "/hr/identity/{identity_id}/ssn/reveal",
+    "family": "identity",
+    "case": "edge",
+    "status": 403,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "SPEC-ACCESS §4.2 — A DENIAL ALWAYS NAMES WHAT WAS MISSING, because an unexplained denial is how over-tightening hides. details.capability names ssn.reveal; a bare 403 is a defect."
+  },
+  "body": {
+    "error": "hr_capability_denied",
+    "message": "hr.capability(user, 'ssn.reveal', employment 0000…0041) returned false.",
+    "user_message": "You don't have permission to reveal Social Security numbers.",
+    "details": {
+      "capability": "ssn.reveal",
+      "subject_employment_id": "00000000-0000-4000-8000-000000000041",
+      "how_to_get_it": "An org owner can grant the ssn.reveal capability in HR settings."
+    },
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

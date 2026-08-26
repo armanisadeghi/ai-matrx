@@ -1,0 +1,22 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-48",
+    "operation_id": "esign_envelopes_certificate_get",
+    "method": "GET",
+    "path": "/esign/envelopes/{envelope_id}/certificate",
+    "family": "esign",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "envelope_id": "00000000-0000-4000-8000-000000000001",
+    "payload": {},
+    "signature": "MEUCIQDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "public_key_id": "esign-ed25519-2026-01",
+    "rendered_file_id": "00000000-0000-4000-8000-000000000005"
+  }
+}

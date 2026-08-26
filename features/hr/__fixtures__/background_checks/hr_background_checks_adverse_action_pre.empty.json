@@ -1,0 +1,21 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-33",
+    "operation_id": "hr_background_checks_adverse_action_pre",
+    "method": "POST",
+    "path": "/hr/background-checks/{check_id}/adverse-action/pre",
+    "family": "background_checks",
+    "case": "empty",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The designed zero case. The empty state is a screen, not an accident."
+  },
+  "body": {
+    "check_id": "00000000-0000-4000-8000-000000000001",
+    "pre_adverse_sent_at": "2026-03-17T18:04:11Z",
+    "candidate_response_deadline_at": "2026-03-17T18:04:11Z",
+    "result_summary": "clear"
+  }
+}

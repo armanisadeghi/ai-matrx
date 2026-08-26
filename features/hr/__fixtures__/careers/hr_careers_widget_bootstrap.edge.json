@@ -1,0 +1,28 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-59",
+    "operation_id": "hr_careers_widget_bootstrap",
+    "method": "GET",
+    "path": "/careers/widget/bootstrap",
+    "family": "careers",
+    "case": "edge",
+    "status": 403,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "§3.10 — the Origin is outside the embed_key's allowlist. The key is public by nature (it sits in a <script> tag) and grants nothing but this read, so origin-binding is what stops a stolen key being embedded elsewhere."
+  },
+  "body": {
+    "error": "hr_origin_not_allowed",
+    "message": "Origin 'https://not-the-customer.example' is not in the allowlist for this embed_key.",
+    "user_message": "This job widget isn't authorized for this website.",
+    "details": {
+      "origin": "https://not-the-customer.example",
+      "allowed_origins": [
+        "https://acme.example",
+        "https://www.acme.example"
+      ]
+    },
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

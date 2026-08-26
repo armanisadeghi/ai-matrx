@@ -1,0 +1,19 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-60",
+    "operation_id": "hr_careers_application_create",
+    "method": "POST",
+    "path": "/careers/{org_slug}/applications",
+    "family": "careers",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "application_id": "00000000-0000-4000-8000-000000000001",
+    "candidate_portal_url": "https://aimatrx.com/portal/#tok"
+  }
+}

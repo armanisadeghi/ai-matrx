@@ -135,6 +135,8 @@
     "check:backend-boundaries": "tsx scripts/check-backend-boundaries.ts",
     "check:backend-boundaries:strict": "tsx scripts/check-backend-boundaries.ts --strict",
     "check:auth-destinations": "jest utils/auth/__tests__ --runInBand --no-coverage",
+    "hr:mock-walk": "NEXT_PUBLIC_HR_MOCK=1 tsx scripts/hr/hrb012_mock_walk.ts",
+    "gen:hr-contract-types": "npx openapi-typescript ../aidream/hr-contracts.openapi.json -o types/python-generated/hr-contracts.api-types.ts",
     "gen:entity-types": "tsx scripts/generate-entity-types.ts",
     "gen:directive-nouns": "node scripts/gen-directive-nouns.mjs",
     "check:entity-types": "tsx scripts/generate-entity-types.ts --check",

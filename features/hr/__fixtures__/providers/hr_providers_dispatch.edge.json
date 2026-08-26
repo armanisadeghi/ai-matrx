@@ -1,0 +1,30 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-28",
+    "operation_id": "hr_providers_dispatch",
+    "method": "POST",
+    "path": "/hr/providers/{seam}/dispatch",
+    "family": "providers",
+    "case": "edge",
+    "status": 424,
+    "mode": "async",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "D12 — the black box did not answer, and the MANUAL FALLBACK IS NAMED in the response. D12's whole point is that an org can run its own service and record the confirmation."
+  },
+  "body": {
+    "error": "hr_provider_unavailable",
+    "message": "Provider 'noop_adapter' did not answer within provider_retry_policy.",
+    "user_message": "The background-check provider isn't responding. You can record the result manually instead.",
+    "details": {
+      "seam": "background_check",
+      "provider_key": "noop_adapter",
+      "reason": "no_response",
+      "fallback": {
+        "path": "manual",
+        "endpoint": "POST /hr/providers/background_check/results"
+      }
+    },
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

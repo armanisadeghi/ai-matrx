@@ -1,0 +1,22 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-22",
+    "operation_id": "hr_exports_get",
+    "method": "GET",
+    "path": "/hr/exports/{export_id}",
+    "family": "exports",
+    "case": "empty",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The designed zero case. The empty state is a screen, not an accident."
+  },
+  "body": {
+    "export_id": "00000000-0000-4000-8000-000000000001",
+    "export_version": 0,
+    "export_format": "generic_csv",
+    "delivery_state": "generated",
+    "line_count": 0
+  }
+}

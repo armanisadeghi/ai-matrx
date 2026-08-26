@@ -1,0 +1,34 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-19",
+    "operation_id": "hr_exports_payroll_preview",
+    "method": "POST",
+    "path": "/hr/exports/payroll/preview",
+    "family": "exports",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "line_count": 1184,
+    "total_hours": "9422.75",
+    "total_amount": "241880.12",
+    "by_earning_code": [
+      {
+        "earning_code": "OT",
+        "hours": "8.00",
+        "amount": "292.50"
+      }
+    ],
+    "employments_included": 288,
+    "warnings": [
+      "warnings-6"
+    ],
+    "blocking": [
+      "blocking-7"
+    ]
+  }
+}

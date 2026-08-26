@@ -1,0 +1,46 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-11",
+    "operation_id": "hr_time_recompute",
+    "method": "POST",
+    "path": "/hr/time/recompute",
+    "family": "time",
+    "case": "edge",
+    "status": 200,
+    "mode": "async",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "§1.5 — `partial` is a REAL TERMINAL STATE, not a rounding of succeeded. A run that finished 410 of 412 workweeks produced 410 correct answers and 2 that must be SEEN. A run reported complete with a non-empty failed_units is NOT a success."
+  },
+  "body": {
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f",
+    "execution_id": "7f2b1c90-55aa-4e12-8b31-99d0e7c41a02",
+    "status": "partial",
+    "poll": "/runtime/operations/0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f",
+    "events": "/runtime/executions/7f2b1c90-55aa-4e12-8b31-99d0e7c41a02/events/stream",
+    "submitted_at": "2026-03-17T18:04:11Z",
+    "result": {
+      "workweeks_recomputed": 410,
+      "work_intervals_written": 5108,
+      "work_intervals_superseded": 4995,
+      "snapshots_written": 410,
+      "changed_workweek_ids": [
+        "00000000-0000-4000-8000-000000000011",
+        "00000000-0000-4000-8000-000000000012"
+      ],
+      "exceptions_raised": 7,
+      "failed_units": [
+        {
+          "workweek_id": "00000000-0000-4000-8000-000000000088",
+          "error": "hr_advisory_rule_blocks_money",
+          "message": "fair-workweek rule for US-IL-CHICAGO is advisory"
+        },
+        {
+          "workweek_id": "00000000-0000-4000-8000-000000000089",
+          "error": "hr_incomplete_facts",
+          "message": "minors-hours requires worker_age_years"
+        }
+      ]
+    }
+  }
+}

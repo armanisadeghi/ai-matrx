@@ -1,0 +1,28 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-26",
+    "operation_id": "hr_exports_supersede",
+    "method": "POST",
+    "path": "/hr/exports/{export_id}/supersede",
+    "family": "exports",
+    "case": "edge",
+    "status": 409,
+    "mode": "async",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "§4.5 — THE ONE RULE THAT PREVENTS DOUBLE PAYMENT. An acknowledged export can never be superseded, regenerated or re-sent. Once payroll has taken the file the only correction path is a time_adjustment row that lands in the NEXT export, tagged to the original period."
+  },
+  "body": {
+    "error": "hr_export_already_acknowledged",
+    "message": "Export 1 was acknowledged 2026-03-18T09:12:00Z (ref QBO-2026-03-IMPORT-4471); a re-export double-pays.",
+    "user_message": "Payroll already accepted this file. Corrections go on the next payroll run instead.",
+    "details": {
+      "export_id": "00000000-0000-4000-8000-000000000061",
+      "export_version": 1,
+      "acknowledged_at": "2026-03-18T09:12:00Z",
+      "acknowledgement_ref": "QBO-2026-03-IMPORT-4471",
+      "correction_path": "hr.time_adjustment tagged to the original pay period"
+    },
+    "request_id": "0d9f4c1e-2b7a-4a55-9f3e-6c0a1b2d3e4f"
+  }
+}

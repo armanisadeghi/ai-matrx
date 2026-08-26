@@ -1,0 +1,57 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-55",
+    "operation_id": "hr_time_overtime_evaluate",
+    "method": "POST",
+    "path": "/hr/time/overtime/evaluate",
+    "family": "time",
+    "case": "edge",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "D24a — preapproval.state = 'exceeded_without_approval' WITH HOURS INTACT. The flag never withholds pay: unapproved overtime is still PAID, flagged for review and linked to a write-up. No field in this response can prevent hours being exported."
+  },
+  "body": {
+    "workweek_id": "00000000-0000-4000-8000-000000000007",
+    "week_start_local_date": "2026-03-15",
+    "hours_worked_to_date": 43.75,
+    "hours_scheduled_remaining": 8.0,
+    "projected_week_hours": 51.75,
+    "thresholds": [
+      {
+        "key": "approaching",
+        "at_hours": 38.0,
+        "crossed": true,
+        "crosses_at": "2026-03-18T15:12:00Z"
+      },
+      {
+        "key": "at_overtime",
+        "at_hours": 40.0,
+        "crossed": true,
+        "crosses_at": "2026-03-19T11:03:00Z"
+      }
+    ],
+    "daily": {
+      "hours_today": 9.25,
+      "daily_ot_at_hours": 8.0,
+      "daily_dt_at_hours": 12.0
+    },
+    "preapproval": {
+      "required": true,
+      "state": "exceeded_without_approval",
+      "workflow_instance_id": null
+    },
+    "grace_minutes": 15,
+    "snapshot_id": "00000000-0000-4000-8000-000000000081",
+    "prospective": true,
+    "flags": [
+      {
+        "code": "overtime_without_preapproval",
+        "class": "overtime",
+        "message": "3.75 overtime hours worked without pre-approval. These hours ARE payable; route for review."
+      }
+    ],
+    "incomplete": []
+  }
+}

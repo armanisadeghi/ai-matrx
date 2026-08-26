@@ -1,0 +1,40 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-01",
+    "operation_id": "hr_rules_resolve",
+    "method": "POST",
+    "path": "/hr/rules/resolve",
+    "family": "rules",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "as_of": "2026-03-17",
+    "jurisdiction_key": "US-CA-LOS_ANGELES",
+    "chain": [
+      "chain-3"
+    ],
+    "resolved": [
+      {
+        "class": "overtime",
+        "rule_id": "00000000-0000-4000-8000-000000000005",
+        "rule_version": 3,
+        "jurisdiction_key": "US-CA-LOS_ANGELES",
+        "status": "active"
+      }
+    ],
+    "incomplete": [
+      {
+        "class": "overtime",
+        "fact": "employer_fte_avg_prior_year"
+      }
+    ],
+    "trace": [
+      {}
+    ]
+  }
+}

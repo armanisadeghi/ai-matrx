@@ -1,0 +1,29 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-22",
+    "operation_id": "hr_exports_get",
+    "method": "GET",
+    "path": "/hr/exports/{export_id}",
+    "family": "exports",
+    "case": "happy",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+  },
+  "body": {
+    "export_id": "00000000-0000-4000-8000-000000000001",
+    "export_version": 1,
+    "export_format": "generic_csv",
+    "delivery_state": "generated",
+    "line_count": 1184,
+    "total_hours": "9422.75",
+    "total_amount": "241880.12",
+    "artifact_file_id": "00000000-0000-4000-8000-000000000008",
+    "artifact_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "supersedes_export_id": "00000000-0000-4000-8000-000000000010",
+    "acknowledgement_ref": "QBO-2026-03-IMPORT-4471",
+    "failure_reason": "portal rejected the batch: EIN mismatch"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "__fixture": {
+    "endpoint_id": "E-10",
+    "operation_id": "hr_calc_retention_due",
+    "method": "POST",
+    "path": "/hr/calc/retention-due",
+    "family": "calc",
+    "case": "empty",
+    "status": 200,
+    "mode": "sync",
+    "spec": "SPEC-CONTRACTS §6.4",
+    "generated_by": "scripts/hr/generate_hr_fixtures.py",
+    "note": "The designed zero case. The empty state is a screen, not an accident."
+  },
+  "body": {
+    "snapshot_id": "00000000-0000-4000-8000-000000000001",
+    "prospective": false,
+    "as_of": "2026-03-17",
+    "jurisdiction_key": "US-CA-LOS_ANGELES",
+    "engine": {
+      "key": "generic_csv",
+      "version": "3984be1"
+    },
+    "result": {},
+    "rules_applied": [],
+    "flags": [],
+    "incomplete": [],
+    "clamps": [],
+    "written": {}
+  }
+}
