@@ -35212,6 +35212,7 @@ export type Database = {
           updated_by: string | null
           version: number
           work_date: string
+          workweek_id: string
         }
         Insert: {
           amount?: number | null
@@ -35244,6 +35245,7 @@ export type Database = {
           updated_by?: string | null
           version?: number
           work_date: string
+          workweek_id: string
         }
         Update: {
           amount?: number | null
@@ -35276,6 +35278,7 @@ export type Database = {
           updated_by?: string | null
           version?: number
           work_date?: string
+          workweek_id?: string
         }
         Relationships: [
           {
@@ -35318,6 +35321,13 @@ export type Database = {
             columns: ["position_assignment_id"]
             isOneToOne: false
             referencedRelation: "v_position_current"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_export_line_workweek_id_fkey"
+            columns: ["workweek_id"]
+            isOneToOne: false
+            referencedRelation: "workweek"
             referencedColumns: ["id"]
           },
         ]
@@ -35716,6 +35726,173 @@ export type Database = {
             columns: ["posting_id"]
             isOneToOne: false
             referencedRelation: "posting"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_binding: {
+        Row: {
+          bound_at: string
+          bound_reason: string | null
+          capabilities: string[]
+          connector_kind: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          metadata: Json
+          organization_id: string
+          provider_key: string
+          seam: string
+          server_version_pin: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          bound_at?: string
+          bound_reason?: string | null
+          capabilities?: string[]
+          connector_kind?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          metadata?: Json
+          organization_id: string
+          provider_key: string
+          seam: string
+          server_version_pin?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          bound_at?: string
+          bound_reason?: string | null
+          capabilities?: string[]
+          connector_kind?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          provider_key?: string
+          seam?: string
+          server_version_pin?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      provider_event: {
+        Row: {
+          artifact_file_id: string | null
+          binding_id: string | null
+          created_at: string
+          created_by: string | null
+          direction: string
+          external_ref: string | null
+          external_status: string | null
+          failure_reason: string | null
+          id: string
+          mapped_state: string | null
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          path: string
+          payload_summary: Json
+          processed_at: string | null
+          provider_event_id: string | null
+          provider_key: string
+          received_at: string
+          result_summary: string | null
+          seam: string
+          signature_verified: boolean | null
+          subject_id: string
+          subject_token: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          artifact_file_id?: string | null
+          binding_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction: string
+          external_ref?: string | null
+          external_status?: string | null
+          failure_reason?: string | null
+          id?: string
+          mapped_state?: string | null
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+          path?: string
+          payload_summary?: Json
+          processed_at?: string | null
+          provider_event_id?: string | null
+          provider_key: string
+          received_at?: string
+          result_summary?: string | null
+          seam: string
+          signature_verified?: boolean | null
+          subject_id: string
+          subject_token: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          artifact_file_id?: string | null
+          binding_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          external_ref?: string | null
+          external_status?: string | null
+          failure_reason?: string | null
+          id?: string
+          mapped_state?: string | null
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          path?: string
+          payload_summary?: Json
+          processed_at?: string | null
+          provider_event_id?: string | null
+          provider_key?: string
+          received_at?: string
+          result_summary?: string | null
+          seam?: string
+          signature_verified?: boolean | null
+          subject_id?: string
+          subject_token?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_event_binding_id_fkey"
+            columns: ["binding_id"]
+            isOneToOne: false
+            referencedRelation: "provider_binding"
             referencedColumns: ["id"]
           },
         ]
@@ -42260,6 +42437,28 @@ export type Database = {
         Returns: Json
       }
       _knob: { Args: { p_feature: string; p_key: string }; Returns: Json }
+      _l1_capabilities: {
+        Args: { p_at: string; p_org: string; p_user: string }
+        Returns: string[]
+      }
+      _l1_is_manager_of: {
+        Args: { p_at: string; p_subject_employment: string; p_user: string }
+        Returns: boolean
+      }
+      _l1_module_enabled: { Args: { p_org: string }; Returns: boolean }
+      _l1_org_role: { Args: { p_org: string; p_user: string }; Returns: string }
+      _l1_persona: {
+        Args: { p_at: string; p_org: string; p_user: string }
+        Returns: string
+      }
+      _l1_self_employment: {
+        Args: { p_at: string; p_org: string; p_user: string }
+        Returns: string
+      }
+      _l1_viewer: {
+        Args: { p_at: string; p_employee_id: string; p_user: string }
+        Returns: Json
+      }
       _leave_policy_probe: { Args: { p_case: string }; Returns: Json }
       _legality_envelope: {
         Args: { p_class: string; p_rules: Json }
@@ -42356,6 +42555,7 @@ export type Database = {
         Args: { p_condition: Json; p_ctx: Json }
         Returns: boolean
       }
+      _wf_display: { Args: { p_step: string }; Returns: Json }
       _wf_event: {
         Args: {
           p_actor_emp?: string
@@ -42963,6 +43163,10 @@ export type Database = {
       }
       wf_for_target: {
         Args: { p_target_id: string; p_target_token: string }
+        Returns: Json
+      }
+      wf_inbox: {
+        Args: { p_employment_id?: string; p_filters?: Json; p_scope?: string }
         Returns: Json
       }
       wf_instance: { Args: { p_instance_id: string }; Returns: Json }
@@ -59584,6 +59788,22 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_directory_list: {
+        Args: {
+          p_direction?: string
+          p_filter?: Json
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_sort?: string
+        }
+        Returns: Json
+      }
+      hr_employee_profile: {
+        Args: { p_as_of?: string; p_employee_id: string }
+        Returns: Json
+      }
+      hr_employment_history: { Args: { p_employee_id: string }; Returns: Json }
       hr_incident_status: { Args: { p_incident_id: string }; Returns: Json }
       hr_kiosk_authenticate: {
         Args: { p_device_id: string; p_device_secret: string }
@@ -59605,6 +59825,10 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_knob_index: {
+        Args: { p_organization_id: string; p_overridden_only?: boolean }
+        Returns: Json
+      }
       hr_mint_investigation_token: {
         Args: {
           p_incident_id: string
@@ -59623,6 +59847,20 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_my_context: { Args: { p_organization_id?: string }; Returns: Json }
+      hr_org_chart: {
+        Args: { p_on?: string; p_organization_id: string }
+        Returns: Json
+      }
+      hr_payroll_export_list: {
+        Args: {
+          p_limit?: number
+          p_organization_id: string
+          p_pay_period_id?: string
+        }
+        Returns: Json
+      }
+      hr_pending_changes: { Args: { p_employment_id: string }; Returns: Json }
       hr_restricted_get: {
         Args: {
           p_id: string
@@ -59661,6 +59899,73 @@ export type Database = {
       }
       hr_set_employment_pin: {
         Args: { p_employment_id: string; p_pin: string }
+        Returns: Json
+      }
+      hr_structure_list: { Args: { p_organization_id: string }; Returns: Json }
+      hr_wf_bulk_decide: {
+        Args: { p_decision: string; p_reason?: string; p_step_ids: string[] }
+        Returns: Json
+      }
+      hr_wf_cancel: {
+        Args: { p_instance_id: string; p_reason?: string }
+        Returns: Json
+      }
+      hr_wf_decide: {
+        Args: {
+          p_decision: string
+          p_payload?: Json
+          p_reason?: string
+          p_step_id: string
+        }
+        Returns: Json
+      }
+      hr_wf_delegate: {
+        Args: {
+          p_action_type: string
+          p_ends_at?: string
+          p_reason?: string
+          p_scope_id?: string
+          p_starts_at?: string
+          p_to_holder_id: string
+          p_to_holder_kind: string
+        }
+        Returns: Json
+      }
+      hr_wf_escalate: {
+        Args: { p_reason?: string; p_step_id: string }
+        Returns: Json
+      }
+      hr_wf_for_target: {
+        Args: { p_target_id: string; p_target_token: string }
+        Returns: Json
+      }
+      hr_wf_inbox: {
+        Args: { p_employment_id?: string; p_filters?: Json; p_scope?: string }
+        Returns: Json
+      }
+      hr_wf_instance: { Args: { p_instance_id: string }; Returns: Json }
+      hr_wf_reassign_step: {
+        Args: {
+          p_reason?: string
+          p_step_id: string
+          p_to_employment_id: string
+        }
+        Returns: Json
+      }
+      hr_wf_record_result: {
+        Args: { p_result: Json; p_step_id: string; p_verified?: boolean }
+        Returns: Json
+      }
+      hr_wf_resolve_failure: {
+        Args: { p_action: string; p_failure_id: string; p_note?: string }
+        Returns: Json
+      }
+      hr_wf_resubmit: {
+        Args: { p_instance_id: string; p_payload?: Json }
+        Returns: Json
+      }
+      hr_wf_withdraw: {
+        Args: { p_instance_id: string; p_reason?: string }
         Returns: Json
       }
       industry_assign_org: {
