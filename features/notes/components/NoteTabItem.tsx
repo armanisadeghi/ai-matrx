@@ -372,15 +372,21 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     textareaRef: noTextareaRef,
     editorMode,
   });
-  const getApplicationScope = useCallback(
-    () =>
-      buildApplicationScopeFromMenuContext({
-        selectedText: "",
-        selectionRange: null,
-        contextData: buildSurfaceScope() as Record<string, unknown>,
-      }),
-    [buildSurfaceScope],
-  );
+  const getApplicationScope = useCallback(() => {
+    const scope = buildApplicationScopeFromMenuContext({
+      selectedText: "",
+      selectionRange: null,
+      contextData: buildSurfaceScope() as Record<string, unknown>,
+    });
+    // The notes builder deliberately leaves the `content` baseline empty for
+    // persisted notes (the body rides in `current_note`; on the EDITOR the
+    // textarea-value fallback fills `content`). A tab has no field and its
+    // title is an <input> (invisible to the DOM-text fallback), so without
+    // this the menu resolves NO content — Copy / Copy-as / Export / Convert
+    // all go dead on the tab. Fill the baseline from the same store read.
+    if (!scope.content) scope.content = content;
+    return scope;
+  }, [buildSurfaceScope, content]);
 
   // Secondary actions — the single source for BOTH the "…" dropdown and the
   // right-click menu's "Tab" section, so they never drift. Primary actions
