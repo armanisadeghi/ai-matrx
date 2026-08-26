@@ -39,6 +39,7 @@ export function usePlanWorkspaceParams() {
   const siteId = params.siteId ?? null;
   const viewParam = searchParams.get("view");
   const nodeId = searchParams.get("node");
+  const researchTopicReturnId = searchParams.get("researchTopic");
   const view: PlanView = PLAN_VIEWS.includes(viewParam as PlanView)
     ? (viewParam as PlanView)
     : "tree";
@@ -64,5 +65,25 @@ export function usePlanWorkspaceParams() {
     [router, siteId],
   );
 
-  return { siteId, view, nodeId, setSiteId, setView };
+  /**
+   * The Research intake returns the approved topic in the URL. Once Setup has
+   * durably linked it, remove the one-shot handoff param without adding a
+   * second history entry.
+   */
+  const clearResearchTopicReturn = useCallback(() => {
+    if (!siteId || !researchTopicReturnId) return;
+    router.replace(marketingRoutes.contentPlanSite(siteId, view), {
+      scroll: false,
+    });
+  }, [researchTopicReturnId, router, siteId, view]);
+
+  return {
+    siteId,
+    view,
+    nodeId,
+    researchTopicReturnId,
+    setSiteId,
+    setView,
+    clearResearchTopicReturn,
+  };
 }

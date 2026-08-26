@@ -85,6 +85,7 @@ import {
   buildResearchContextData,
   RESEARCH_CONTEXT_MENU_PROPS,
 } from "@/features/research/agent-context/buildResearchContextData";
+import { researchStartDestination } from "@/features/research/utils/init-route";
 
 // Universal v3 context menu — lightweight shell, imported statically;
 // MenuContent lazy-loads on first open.
@@ -1223,19 +1224,17 @@ export default function ResearchInitForm() {
 
   // ── Navigation helpers ────────────────────────────────────────────────────
   const goToStep = (mode: Mode, step: number) => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(searchParams.toString());
     params.set("mode", mode);
     if (step >= 2) params.set("step", "2");
-    const topic = searchParams.get("topic");
-    if (topic) params.set("topic", topic);
+    else params.delete("step");
     router.push(`${pathname}?${params.toString()}`);
   };
 
   const handleModeSelect = (mode: Mode) => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(searchParams.toString());
     params.set("mode", mode);
-    const topic = searchParams.get("topic");
-    if (topic) params.set("topic", topic);
+    params.delete("step");
     router.push(`${pathname}?${params.toString()}`);
   };
 
@@ -1262,9 +1261,9 @@ export default function ResearchInitForm() {
       return;
     }
     // Step 1 → mode selection (step 0): drop mode/step params, keep topic.
-    const params = new URLSearchParams();
-    const topic = searchParams.get("topic");
-    if (topic) params.set("topic", topic);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("mode");
+    params.delete("step");
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
   };
@@ -1596,7 +1595,9 @@ export default function ResearchInitForm() {
       );
       startTransition(() => {
         api.runPipeline(topicId, organizationId).catch(() => {});
-        router.push(`/research/topics/${topicId}`);
+        router.push(
+          researchStartDestination(searchParams.get("return_to"), topicId),
+        );
       });
     } catch (err) {
       toast.error((err as Error).message ?? "Could not save keywords.");
