@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-25`
+**Last updated:** `2026-08-26`
 
 ---
 
@@ -86,7 +86,7 @@
 - **RPC takes no argument.** Call `supabase.rpc("get_user_dashboard_metrics")` with no params; identity is `auth.uid()`.
 - **First-render text is timezone-neutral.** `DashboardGreeting` supplies `Welcome back` as its `useSyncExternalStore` server snapshot, then switches to the user's local time-aware client snapshot after hydration. Never read the clock in a render initializer: server UTC and browser local time can produce different text.
 - **The page is one read-only surface.** `DashboardClient` wraps the full hub with `NonEditableContextMenu`, passes the same live `createDashboardScope()` used by `SurfaceRuntimeProvider`, and the rendered sections expose `data-surface-value` anchors for the manifest values. Do not add a second menu or a divergent scope builder.
-- **Dashboard actions stay touch-safe.** Pin, unpin, rotation, quick-action, and metric links keep a minimum 44 px interactive target; pin/unpin controls are visible without hover so they remain discoverable on touch devices. Pinned cards use one column below `sm` so the permanent unpin target never crowds the item label.
+- **Dashboard actions stay touch-safe.** Pin, unpin, rotation, quick-action, and metric links keep a minimum 44 px interactive target. A pinned card's unpin control is a compact glass-circle action centered inside the trailing edge; on hover-capable devices it reveals on card hover or keyboard focus, while touch-only devices keep it visible. Pinned cards use one column below `sm` so the action never crowds the item label.
 
 ---
 
@@ -117,6 +117,7 @@
 
 ## Change log
 
+- `2026-08-26` — Codex: Repaired pinned-card unpin affordance positioning and polish. The 44 px tap target now sits in an actual trailing overlay wrapper, with an inset, vertically centered glass-circle X that reveals on hover/focus instead of leaking the SVG onto the card border; touch-only devices retain a visible control.
 - `2026-08-25` — Codex: Completed the dashboard surface wiring: added the canonical read-only context menu over the live manifest scope, mapped rendered sections to their surface values, made metrics failures explicit and retryable, and raised pin/unpin/rotation/quick-action controls to visible 44 px touch targets.
 - `2026-08-24` — Codex: Reworded the Pinned empty state so the star control is named in text, and raised every secondary metric pill to a 44 px minimum touch target.
 - `2026-08-17` — Codex: Made the dashboard greeting timezone-safe: SSR and hydration now share a deterministic `Welcome back` snapshot, then the browser applies the local time-aware greeting. Added a regression that hydrates across conflicting server/browser clocks without React errors.

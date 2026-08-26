@@ -98,13 +98,14 @@ export function PinnedSection({
                     {inner}
                   </Link>
                 )}
-                <XTapButton
-                  onClick={() => unpin(f.id)}
-                  ariaLabel={`Unpin ${f.label}`}
-                  tooltip={`Unpin ${f.label}`}
-                  variant="transparent"
-                  className="absolute right-0 top-0 text-muted-foreground"
-                />
+                <span className="absolute right-1 top-1/2 -translate-y-1/2 opacity-100 transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100">
+                  <XTapButton
+                    onClick={() => unpin(f.id)}
+                    ariaLabel={`Unpin ${f.label}`}
+                    tooltip={`Unpin ${f.label}`}
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  />
+                </span>
               </div>
             );
           })}
