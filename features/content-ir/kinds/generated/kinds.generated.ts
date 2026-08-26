@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "617c10570d21";
+export const KIND_REGISTRY_FINGERPRINT = "e1a9adb5655a";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5334,7 +5334,7 @@ export interface AggregateResult {
 }
 
 /**
- * Kind `ai_answer` (registry v12).
+ * Kind `ai_answer` (registry v13).
  */
 export interface AiAnswer {
   /**
@@ -5614,7 +5614,7 @@ export interface ArtisanDemoReadingList {
 }
 
 /**
- * Kind `assertion_result` (registry v9).
+ * Kind `assertion_result` (registry v10).
  */
 export interface AssertionResult {
   /**
@@ -6949,7 +6949,7 @@ export interface DirectoryListing {
 }
 
 /**
- * Kind `discussion_result` (registry v11).
+ * Kind `discussion_result` (registry v12).
  */
 export interface DiscussionResult {
   url: string;
@@ -7031,7 +7031,7 @@ export interface DomainFoldReport {
 }
 
 /**
- * Kind `entity_card` (registry v12).
+ * Kind `entity_card` (registry v13).
  */
 export interface EntityCard {
   name: string;
@@ -7102,7 +7102,7 @@ export interface EvidenceSource {
  * `source`/`position` are OPTIONAL here because authored FAQs have neither —
  * the search adapters always fill both.
  *  *
- *  * Kind `faq_item` (registry v10).
+ *  * Kind `faq_item` (registry v11).
  */
 export interface FaqItem {
   /**
@@ -7578,7 +7578,7 @@ export interface GeneratedVideoSet {
 }
 
 /**
- * Kind `geo_coordinates` (registry v11).
+ * Kind `geo_coordinates` (registry v12).
  */
 export interface GeoCoordinates {
   /**
@@ -7822,7 +7822,7 @@ export interface GscSiteIntakeProposal {
 }
 
 /**
- * Kind `hash_result` (registry v6).
+ * Kind `hash_result` (registry v7).
  */
 export interface HashResult {
   /**
@@ -8223,7 +8223,7 @@ export interface Items {
 export type Json = unknown;
 
 /**
- * Kind `json_path_result` (registry v6).
+ * Kind `json_path_result` (registry v7).
  */
 export interface JsonPathResult {
   found: boolean;
@@ -8405,7 +8405,7 @@ export interface KeywordRelationshipMap {
 }
 
 /**
- * Kind `keyword_relationship_research` (registry v7).
+ * Kind `keyword_relationship_research` (registry v8).
  */
 export interface KeywordRelationshipResearch {
   /**
@@ -8690,7 +8690,7 @@ export interface LiveHelpAnswer {
 }
 
 /**
- * Kind `local_place` (registry v14).
+ * Kind `local_place` (registry v15).
  */
 export interface LocalPlace {
   name: string;
@@ -8774,7 +8774,7 @@ export interface MapResult {
 }
 
 /**
- * Kind `mapped_list_result` (registry v8).
+ * Kind `mapped_list_result` (registry v9).
  */
 export interface MappedListResult {
   /**
@@ -8798,7 +8798,7 @@ export interface MappedListResult {
 /**
  * A block of markdown prose. Rendered by the streaming markdown renderer.
  *  *
- *  * Kind `markdown` (registry v4).
+ *  * Kind `markdown` (registry v5).
  */
 export interface Markdown {
   text: string;
@@ -9227,7 +9227,7 @@ export interface NerEntityRef {
 }
 
 /**
- * Kind `news_result` (registry v11).
+ * Kind `news_result` (registry v12).
  */
 export interface NewsResult {
   url: string;
@@ -9490,7 +9490,7 @@ export interface OfficeSpreadsheet {
 }
 
 /**
- * Kind `opening_hours` (registry v12).
+ * Kind `opening_hours` (registry v13).
  */
 export interface OpeningHours {
   /**
@@ -10673,7 +10673,7 @@ export interface PodcastVideoComposeResult {
 }
 
 /**
- * Kind `postal_address` (registry v11).
+ * Kind `postal_address` (registry v12).
  */
 export interface PostalAddress {
   city?: string | null;
@@ -11433,7 +11433,7 @@ export interface RandomStringResult {
 }
 
 /**
- * Kind `rating` (registry v11).
+ * Kind `rating` (registry v12).
  */
 export interface Rating {
   /**
@@ -11594,7 +11594,7 @@ export interface RegexExtractResult {
 }
 
 /**
- * Kind `regex_replace_result` (registry v6).
+ * Kind `regex_replace_result` (registry v7).
  */
 export interface RegexReplaceResult {
   text: string;
@@ -14023,7 +14023,7 @@ export interface SourceRef {
 }
 
 /**
- * Kind `split_result` (registry v6).
+ * Kind `split_result` (registry v7).
  */
 export interface SplitResult {
   count: number;
@@ -14119,7 +14119,7 @@ export interface StatusPingDebug {
 /**
  * A list of short text values.
  *  *
- *  * Kind `string_list` (registry v6).
+ *  * Kind `string_list` (registry v7).
  */
 export interface StringList {
   items?: string[];
@@ -14130,7 +14130,7 @@ export interface StringList {
 }
 
 /**
- * Kind `structured_document` (registry v7).
+ * Kind `structured_document` (registry v8).
  */
 export interface StructuredDocument {
   title: string;
@@ -14506,7 +14506,7 @@ export interface TestCard {
 /**
  * Plain text. The generic prose kind — one block of unformatted text.
  *  *
- *  * Kind `text` (registry v6).
+ *  * Kind `text` (registry v7).
  */
 export interface Text {
   text: string;
@@ -14531,7 +14531,7 @@ export interface TextChunkSet {
 }
 
 /**
- * Kind `text_quality_check_result` (registry v6).
+ * Kind `text_quality_check_result` (registry v7).
  */
 export interface TextQualityCheckResult {
   chars: number;
@@ -14549,7 +14549,7 @@ export interface TextQualityCheckResult {
  * Shared by any node whose entire output is one rendered/joined/
  * serialized text field — ``data.stringify_json``, ``text.join``.
  *  *
- *  * Kind `text_result` (registry v6).
+ *  * Kind `text_result` (registry v7).
  */
 export interface TextResult {
   text: string;
@@ -15164,7 +15164,7 @@ export interface VideoPromptOptions {
 }
 
 /**
- * Kind `video_result` (registry v11).
+ * Kind `video_result` (registry v12).
  */
 export interface VideoResult {
   url: string;
@@ -17678,7 +17678,7 @@ export interface WebRedirectLoopV1 {
 }
 
 /**
- * Kind `web_result` (registry v13).
+ * Kind `web_result` (registry v14).
  */
 export interface WebResult {
   url: string;
@@ -18648,7 +18648,7 @@ export interface WineTasting {
 }
 
 /**
- * Kind `word_count_result` (registry v6).
+ * Kind `word_count_result` (registry v7).
  */
 export interface WordCountResult {
   lines: number;
