@@ -512,7 +512,22 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
     <div className="select-none">
       <NonEditableContextMenu
         sourceFeature="code-editor"
-        contextData={{ content: node.name }}
+        // `FilesystemAdapter` is a generic VFS abstraction over several
+        // backends (agent-fs, sandbox, local, …) addressed by path, not a
+        // database id — there is no single EntityTypeToken this node could
+        // honestly claim, so Attach To / Share stay dark and Copy/Export work
+        // off real path content instead.
+        contextData={{
+          content: [
+            node.name,
+            node.path,
+            node.size !== undefined ? formatFileSize(node.size) : null,
+            node.modifiedAt ? formatRelativeTime(node.modifiedAt) : null,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        }}
+        contentSource={{ type: "raw" }}
         extraSections={extraSections}
         enableFloatingIcon={false}
         onMenuOpenChange={handleContextMenuOpenChange}

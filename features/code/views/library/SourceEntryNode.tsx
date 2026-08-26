@@ -196,7 +196,19 @@ export const SourceEntryNode: React.FC<SourceEntryNodeProps> = ({
     <div className="select-none">
       <NonEditableContextMenu
         sourceFeature="code-editor"
-        contextData={{ content: entry.name }}
+        contextData={{ content: entry.description ?? entry.name }}
+        contentSource={{ type: "raw" }}
+        // Library sources span several adapters over different real tables
+        // (`adapter.realtimeTable`); only `tool.ui` has a registered
+        // EntityTypeToken today, so Attach To / Share light up there and stay
+        // dark for the others rather than fabricate an id against a type
+        // that doesn't exist.
+        entity={
+          adapter.realtimeTable?.schema === "tool" &&
+          adapter.realtimeTable.table === "ui"
+            ? { type: "tool_ui", id: entry.rowId, title: entry.name }
+            : undefined
+        }
         extraSections={extraSections}
         enableFloatingIcon={false}
       >
