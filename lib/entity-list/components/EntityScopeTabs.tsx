@@ -163,7 +163,7 @@ export function EntityScopeTabs({ scope, scopes, counts, onChange }: Props) {
                   aria-label={`Filter by ${meta.label}`}
                   className={cn(
                     TAB_BASE,
-                    "rounded-l-none border-l px-1",
+                    "min-w-11 justify-center rounded-l-none border-l px-1 lg:min-w-0",
                     active
                       ? "bg-primary text-primary-foreground border-primary-foreground/25"
                       : cn(TAB_IDLE, "border-border"),

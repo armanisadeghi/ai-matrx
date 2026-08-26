@@ -54,7 +54,7 @@ export function EntityColumnPicker<TRow>({
           type="button"
           aria-label="Choose columns"
           title="Choose columns"
-          className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground lg:h-9"
+          className="inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground lg:h-9 lg:min-w-0"
         >
           <Columns3 className="h-3.5 w-3.5" />
           <span className="hidden tabular-nums lg:inline">{visibleCount}</span>

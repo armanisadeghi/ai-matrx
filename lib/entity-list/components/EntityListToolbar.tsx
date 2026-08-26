@@ -129,7 +129,7 @@ export function EntityListToolbar<TRow>({
   const hasAltViews = hasCards || hasRows;
   return (
     <div className="flex min-w-0 items-center gap-1.5 sm:flex-wrap sm:gap-2">
-      <div className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2.5 lg:h-9 lg:min-w-56">
+      <div className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2.5 lg:h-9 lg:min-w-56">
         {isFetching ? (
           <Loader2
             role="status"

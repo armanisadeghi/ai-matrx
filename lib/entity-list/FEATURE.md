@@ -137,6 +137,9 @@ names on one page.
    `getRowEntity(row)`, and passes the same live surface scope as
    `SurfaceRuntimeProvider`, so right-click and phone long-press cannot drift
    from the kebab or silently lose declared values.
+10. **Phone controls are 44px minimum in both dimensions.** Search, scope
+    narrowing, and column selection stay touch-sized inside the shared shell;
+    consumers never shrink or replace them locally.
 
 ## Parity contracts (break these and users notice, not CI)
 
@@ -219,6 +222,9 @@ demoting the detail page — cheap, high value, not a redesign. This shell is
 how that savior page gets built.
 
 ## Change log
+
+- 2026-08-26 — Enforced the phone touch-target contract across shared search,
+  scope narrowing, and column selection controls.
 
 - 2026-08-25 — Moved context-menu ownership from N desktop-only table-row
   wrappers to one delegated pane menu. Table, alternate cards, and dense rows
