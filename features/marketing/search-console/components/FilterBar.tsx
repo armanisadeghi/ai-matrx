@@ -64,6 +64,7 @@ import { AddLevelDialog } from "@/features/marketing/seo/value-system/pickers/Ad
 import { useQuickAdd } from "@/features/marketing/seo/value-system/pickers/useQuickAdd";
 import { toast } from "@/lib/toast";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { listBusinessLocations } from "@/features/marketing/data/service";
 
 const FILTER_LABELS: Record<GscFilterKey, string> = {
   query_contains: "Query contains",
@@ -142,6 +143,10 @@ const QUERY_PAGE_KEYS: GscFilterKey[] = [
   // The offering filter is a keyword-level filter like a stamp, so it belongs
   // to this profile group even though this bar does not render its control.
   "topic",
+  // C10 — WHICH branch of the business a local search is about. Keyword-level
+  // like the stamps, so it lives in this group; it is NOT `country`, which is
+  // where the searcher was.
+  "location",
 ];
 const COUNTRY_DEVICE_KEYS: GscFilterKey[] = ["country", "device"];
 /** Keys that hold a LIST (several chips, several adds) rather than one value. */
@@ -169,9 +174,15 @@ function activeGroup(
   return "appearance";
 }
 
-function chipValue(key: GscFilterKey, value: string): string {
+function chipValue(
+  key: GscFilterKey,
+  value: string,
+  labelFor: { location: (value: string) => string },
+): string {
   if (key === "country") return countryLabel(value);
   if (key === "device") return deviceLabel(value);
+  // A uuid on a chip names nothing. The picker's own vocabulary answers it.
+  if (key === "location") return labelFor.location(value);
   if (key === "page_eq" && value.length > 48) {
     return `…${value.slice(-46)}`;
   }
@@ -269,6 +280,37 @@ export function FilterBar({
     enabled: wantsVocab,
     staleTime: 5 * 60_000,
   });
+  /**
+   * THE LOCATION VOCABULARY. `location` takes a `web.business_location` uuid
+   * or one of the two bucket tokens the Which-location panel already names —
+   * so a free-text box here asked a person to type a uuid from memory, and
+   * anything else they typed produced a chip nobody can read over a table with
+   * nothing in it. The picker is the fix: real names in, a real name on the
+   * chip, and never a value the RPC cannot match.
+   */
+  const locations = useQuery({
+    queryKey: ["marketing", "gsc", "filter-locations", brandId],
+    queryFn: ({ signal }) => listBusinessLocations(brandId as string, signal),
+    enabled: !!brandId && (!!filters.location || (open && draftKey === "location")),
+    staleTime: 5 * 60_000,
+  });
+  const locationOptions = [
+    ...(locations.data ?? [])
+      .filter((row) => (row.status ?? "active") === "active")
+      .map((row) => ({
+        value: row.id,
+        label: row.name ?? row.locality ?? "Unnamed location",
+        hint: [row.locality, row.region].filter(Boolean).join(", ") || undefined,
+      })),
+    // Not extra vocabulary — the SAME two words the decomposition uses for the
+    // searches no branch owns. Inventing a third would be a second dialect.
+    { value: "unresolved", label: "Local — location not resolved" },
+    { value: "not_local", label: "Not location-specific" },
+  ];
+  const locationLabel = (value: string) =>
+    locationOptions.find((o) => o.value === value)?.label ??
+    (locations.isPending ? "…" : value);
+
   const vocabulary = useQuery({
     queryKey: ["marketing", "gsc", "filter-level-vocabulary", siteId],
     queryFn: ({ signal }) =>
@@ -301,6 +343,9 @@ export function FilterBar({
       if (filters[key] && !MULTI_KEYS.includes(key)) return false;
       if (allowedKeys && !allowedKeys.includes(key)) return false;
       if (MULTI_KEYS.includes(key) && !siteId) return false;
+      // No brand, no location vocabulary — and a Location filter that can only
+      // be typed as a raw uuid is worse than not offering it at all.
+      if (key === "location" && !brandId) return false;
       if (group === "query_page") return QUERY_PAGE_KEYS.includes(key);
       if (group === "country_device") return COUNTRY_DEVICE_KEYS.includes(key);
       if (group === "appearance") return false;
@@ -372,7 +417,7 @@ export function FilterBar({
     chips.push({
       id: key,
       label: FILTER_CHIP_LABELS[key],
-      value: chipValue(key, value),
+      value: chipValue(key, value, { location: locationLabel }),
       remove: () => removeKey(key),
     });
   }
@@ -405,7 +450,9 @@ export function FilterBar({
       ? !!draftDimensionRow && !!draftStampValue
       : effectiveKey === "levels"
         ? !!draftLevel
-        : !!draftValue.trim();
+        : effectiveKey === "location"
+          ? !!draftLocation
+          : !!draftValue.trim();
 
   const addFilter = () => {
     if (rangeSpec) {
@@ -441,6 +488,12 @@ export function FilterBar({
       setOpen(false);
       return;
     }
+    if (effectiveKey === "location") {
+      if (!draftLocation) return;
+      emit({ ...filters, location: draftLocation });
+      setOpen(false);
+      return;
+    }
     if (!draftValue.trim()) return;
     emit({ ...filters, [effectiveKey]: draftValue.trim() });
     setDraftValue("");
@@ -471,7 +524,16 @@ export function FilterBar({
         </span>
       ))}
       {addable.length > 0 ? (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover
+          open={open}
+          onOpenChange={(next) => {
+            setOpen(next);
+            // Escape, a click outside, and Cancel all mean "forget it". The
+            // draft used to survive them, so re-opening the menu handed back a
+            // half-answered filter the person had already walked away from.
+            if (!next) discardDraft();
+          }}
+        >
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -662,6 +724,34 @@ export function FilterBar({
                   ) : null}
                 </p>
               </div>
+            ) : effectiveKey === "location" ? (
+              <div className="space-y-2">
+                <CreatablePicker
+                  value={draftLocation || null}
+                  onSelect={setDraftLocation}
+                  placeholder="Location"
+                  noun="location"
+                  ariaLabel="Location"
+                  loading={locations.isPending}
+                  options={locationOptions}
+                  // A branch of the business is not something you invent from a
+                  // filter menu — it is an address, hours and a phone number.
+                  // The door goes to where it IS created, in its own tab.
+                  manageAction={
+                    brandId
+                      ? {
+                          label: "Add or edit your locations",
+                          href: marketingRoutes.brandLocal(brandId),
+                        }
+                      : undefined
+                  }
+                />
+                <p className="text-[11px] leading-snug text-muted-foreground">
+                  Which branch of the business a local search is about — not
+                  where the searcher was (that is Country). The last two choices
+                  are the searches no branch owns.
+                </p>
+              </div>
             ) : (
               <Input
                 value={draftValue}
@@ -683,7 +773,18 @@ export function FilterBar({
               />
             )}
 
-            <div className="flex justify-end">
+            {/* Cancel is a REAL button, not just "press Escape and hope".
+              Both do exactly the same thing — discard and close — so there is
+              no second, worse way out of this menu. */}
+            <div className="flex justify-end gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() => setOpen(false)}
+              >
+                Cancel
+              </Button>
               <Button
                 size="sm"
                 className="h-7 text-xs"
