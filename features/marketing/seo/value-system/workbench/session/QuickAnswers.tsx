@@ -161,14 +161,14 @@ export function QuickAnswers({
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {/* ── the question ── */}
-      <div className="shrink-0 border-b border-border px-3 py-2">
+      <div className="shrink-0 border-b border-primary/25 bg-primary/5 px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
             <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
               <BrainCircuit className="h-4 w-4 shrink-0 text-primary" />
               {activeDimension?.label ?? "Pick a question"}
             </p>
-            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+            <p className="mt-0.5 truncate text-xs text-foreground/70">
               {batch.data?.why ? `Asked because it ${batch.data.why}. ` : ""}
               {batch.data?.remaining
                 ? `${formatCount(batch.data.remaining)} keywords still have no answer.`
@@ -193,14 +193,9 @@ export function QuickAnswers({
             noun="dimension"
             loading={catalog.isLoading}
             ariaLabel="Which question these keywords are being asked"
-            className="w-44"
+            className="w-52"
           />
         </div>
-        {activeDimension?.description ? (
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            {activeDimension.description}
-          </p>
-        ) : null}
       </div>
 
       {/* ── the five ── */}
@@ -239,8 +234,8 @@ export function QuickAnswers({
 
         {/* Same answer for everything still open — the reason this is a batch. */}
         {outstanding.length > 1 && values.length > 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-2">
-            <p className="text-[11px] font-medium text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-2.5">
+            <p className="text-xs font-semibold text-primary">
               Same answer for the {outstanding.length} still open
             </p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -257,7 +252,7 @@ export function QuickAnswers({
                       valueLabel: value.label,
                     })
                   }
-                  className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-foreground transition-colors hover:border-primary hover:bg-primary/5 disabled:opacity-50"
+                  className="rounded-md border border-primary/35 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10 disabled:opacity-50"
                 >
                   {value.label}
                 </button>
@@ -272,9 +267,9 @@ export function QuickAnswers({
         <Textarea
           value={reason}
           onChange={(event) => setReason(event.target.value)}
-          placeholder="Why? — one sentence. It rides along on every answer here, and it is what the AI learns your judgement from."
+          placeholder="Add a reason (optional)"
           rows={2}
-          className="min-h-0 resize-none text-xs"
+          className="min-h-0 resize-none bg-card text-sm"
           aria-label="Your reason"
         />
         <div className="flex items-center justify-between gap-2">
@@ -322,10 +317,12 @@ function KeywordRow({
   return (
     <div
       className={cn(
-        "rounded-lg border p-2 transition-colors",
+        "relative overflow-hidden rounded-lg border p-2.5 transition-colors before:absolute before:inset-y-0 before:left-0 before:w-1",
         answeredAs
-          ? "border-success/40 bg-success/5"
-          : "border-border bg-background",
+          ? "border-success/40 bg-success/5 before:bg-success"
+          : row.pickedFor === "clicks"
+            ? "border-primary/30 bg-primary/5 before:bg-primary"
+            : "border-info/30 bg-info/5 before:bg-info",
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -333,7 +330,10 @@ function KeywordRow({
           {row.keyword}
         </p>
         <span
-          className="inline-flex shrink-0 items-center gap-1 text-[10px] tabular-nums text-muted-foreground"
+          className={cn(
+            "inline-flex shrink-0 items-center gap-1 text-[11px] font-medium tabular-nums",
+            row.pickedFor === "clicks" ? "text-primary" : "text-info",
+          )}
           title={
             row.pickedFor === "clicks"
               ? "Picked because it earns clicks today"
@@ -352,7 +352,7 @@ function KeywordRow({
           {answeredAs}
         </p>
       ) : (
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
+        <div className="mt-2 flex flex-nowrap gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin">
           {values.length === 0 ? (
             <p className="text-[11px] text-muted-foreground">
               This question has no choices yet.
@@ -365,7 +365,7 @@ function KeywordRow({
                 disabled={busy}
                 title={value.description ?? undefined}
                 onClick={() => onAnswer(value.value_id, value.label)}
-                className="rounded-md border border-border bg-background px-2 py-1 text-[11px] text-foreground transition-colors hover:border-primary hover:bg-primary/5 disabled:opacity-50"
+                className="shrink-0 rounded-md border border-primary/30 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10 disabled:opacity-50"
               >
                 {value.label}
               </button>

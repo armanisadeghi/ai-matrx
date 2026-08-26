@@ -70,10 +70,10 @@ function KeywordQuickAnswersWindowInner({
       title={siteLabel ? `Quick Answers — ${siteLabel}` : "Quick Answers"}
       id="keyword-quick-answers-window"
       overlayId="keywordQuickAnswersWindow"
-      minWidth={380}
-      minHeight={360}
-      width={520}
-      height={620}
+      minWidth={620}
+      minHeight={560}
+      width={760}
+      height={700}
       position="center"
       onClose={onClose}
       onCollectData={collectData}
