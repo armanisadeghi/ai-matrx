@@ -254,14 +254,14 @@ function FileCell({
   switch (id) {
     case "name":
       return (
-        <td className="px-2 py-2">
+        <td className="max-lg:w-[calc(100vw-16rem)] max-lg:max-w-[calc(100vw-16rem)] px-2 py-2">
           <div className="flex items-center gap-2 min-w-0">
             <FileIcon
               fileName={file.fileName}
               mimeType={file.mimeType}
               size={20}
             />
-            <div className="flex min-w-0 flex-col">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <span className="flex min-w-0 items-center gap-1">
                 {/* The name was a bare <button>, so opening a file into a new
                     tab — cmd-click, middle-click — was impossible; the ONLY
@@ -549,10 +549,10 @@ function FolderCell({
   switch (id) {
     case "name":
       return (
-        <td className="px-2 py-2">
+        <td className="max-lg:w-[calc(100vw-16rem)] max-lg:max-w-[calc(100vw-16rem)] px-2 py-2">
           <div className="flex items-center gap-2 min-w-0">
             <FolderIconWithMembers isShared={isShared} size={18} />
-            <div className="flex min-w-0 flex-col">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <button
                 type="button"
                 onClick={(e) => {
@@ -674,7 +674,7 @@ function RowActions({ visible, onShare, onCopyLink, fileId }: RowActionsProps) {
     <div
       data-row-actions=""
       className={cn(
-        "flex items-center gap-1 pr-1 transition-opacity lg:ml-auto",
+        "flex shrink-0 items-center gap-1 pr-1 transition-opacity lg:ml-auto",
         // pointer-events-none while hidden (D72): the toolbar stays mounted
         // so hover transitions never shift hit areas mid-click, and its
         // invisible buttons can never swallow a click meant for the row.
@@ -745,7 +745,7 @@ function FolderRowActions({
     <div
       data-row-actions=""
       className={cn(
-        "flex items-center gap-1 pr-1 transition-opacity lg:ml-auto",
+        "flex shrink-0 items-center gap-1 pr-1 transition-opacity lg:ml-auto",
         // pointer-events-none while hidden (D72): the toolbar stays mounted
         // so hover transitions never shift hit areas mid-click, and its
         // invisible buttons can never swallow a click meant for the row.

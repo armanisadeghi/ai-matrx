@@ -52,7 +52,9 @@ in the same change.
    `fileHandler.use(...).as({kind:"html_src"})` outside React). Never call `/files/{id}/url` directly
    from image or thumbnail UI.
 10. **Dialog on desktop, Drawer on mobile**, branched in the surface. `dvh` not `vh` under
-    `app/(a)/files/`; `pb-safe` on fixed bottoms; 16px inputs. No `window.alert/confirm/prompt`.
+    `app/(a)/files/`; `pb-safe` on fixed bottoms; 16px inputs. Tablet list rows reserve space for
+    a visible 44px **More** control; mobile rows expose a 44px **Actions** control plus the canonical
+    ContextMenuV3 long-press path. No `window.alert/confirm/prompt`.
 11. **Core components never know their host** — no imports from `app/`,
     `features/window-panels/`, or `useIsMobile`; no core component opens a Dialog directly.
     Surfaces read `useIsMobile()` once near the root and branch there.
@@ -80,6 +82,8 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-26 — Tablet row actions stay on-screen.** File and folder identity cells now truncate
+  inside a bounded tablet name column while the 44px **More** control stays fixed-width and visible.
 - **2026-08-25 — LUI-007 `/files/all` static surface pass.** Both responsive
   branches now register the canonical `matrx-user/files` read scope (desktop
   remains the sole write-handler host because mobile does not render those
