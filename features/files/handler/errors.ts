@@ -7,15 +7,12 @@
  *
  * The crucial distinction the handler exists to enforce:
  *
- *   - FileExpiredError  → user HAD access, the URL aged out. Auto-refresh.
  *   - FileAccessDeniedError → user does NOT have access. Reject. Never retry.
- *
- * S3 returns the same XML-wrapped 403 for both, so the resolver consults
- * our metadata BEFORE deciding which class to throw.
+ *   - a transient auth failure on a durable URL → refresh the file session
+ *     (see ../session.ts) and retry the SAME URL; never a terminal error.
  */
 
 export type FileHandlerErrorCode =
-  | "expired"
   | "access_denied"
   | "not_found"
   | "deleted"
@@ -46,17 +43,10 @@ export class FileHandlerError extends Error {
   }
 }
 
-export class FileExpiredError extends FileHandlerError {
-  constructor(message = "Signed URL has expired", opts?: { fileId?: string }) {
-    super("expired", message, opts);
-    this.name = "FileExpiredError";
-  }
-}
-
 export class FileAccessDeniedError extends FileHandlerError {
   constructor(
-    // Thrown ONLY on a real 403 from our own file server (resolver.ts,
-    // intelligence/refresh.ts) — a proven refusal, not a guess. The sentence
+    // Thrown ONLY on a real 403 from our own file server (resolver.ts) —
+    // a proven refusal, not a guess. The sentence
     // stays plain so a surface that renders it verbatim never implies more
     // than the server actually said; a surface that can do better should
     // render `<AccessGate token="file" id={fileId}/>`, which names the owner
@@ -105,18 +95,4 @@ export class FileUploadError extends FileHandlerError {
     super("upload_failed", message, opts);
     this.name = "FileUploadError";
   }
-}
-
-/**
- * Distinguish "S3 said expired" from "we said access denied". S3 returns
- * a 403 with `<Code>Request has expired</Code>` in the XML body for an
- * aged-out signed URL; an actual permission failure on `/files/{id}/url`
- * comes back as a JSON `403 permission_denied` from our backend.
- */
-export function isS3ExpiredError(err: unknown): boolean {
-  if (!err || typeof err !== "object") return false;
-  const e = err as { status?: number; body?: string; message?: string };
-  if (e.status !== 403) return false;
-  const body = e.body ?? e.message ?? "";
-  return /Request has expired|expired/i.test(body);
 }

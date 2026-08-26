@@ -3,14 +3,13 @@
  *
  * The universal file handler. ONE shape goes in (FileSource), ONE shape
  * comes out (FileTarget). Between them, every file in the app — owned
- * cld_files row, blob from a paste, signed URL we found, base64 string,
- * external URL — funnels through the same NormalizedFile representation
- * so the core never branches on origin.
+ * cld_files row, blob from a paste, base64 string, external URL — funnels
+ * through the same NormalizedFile representation so the core never
+ * branches on origin.
  *
  * Every callsite that touches a file MUST go through this feature. Direct
- * construction of ImageBlock/AudioBlock/VideoBlock/DocumentBlock literals,
- * direct object-store SDK calls and ad-hoc useState-based signed-URL
- * timers are all banned by ESLint (see .eslintrc).
+ * construction of ImageBlock/AudioBlock/VideoBlock/DocumentBlock literals
+ * and direct object-store SDK calls are banned by ESLint (see .eslintrc).
  */
 
 import type {
@@ -45,7 +44,7 @@ import type { MessagePart } from "@/types/python-generated/stream-events";
  * Discriminated union of every file shape that can enter the handler.
  *
  * Resolution priority enforced by the resolver: owned identifiers
- * (`cloud_file`, `file_id`) beat opaque URLs (`signed_url`, `share_link`)
+ * (`cloud_file`, `file_id`) beat opaque URLs (`share_link`, `public_cdn`)
  * beat raw bytes (`blob`, `file`, `data_uri`, ...). Two locators on the
  * same source are tolerated; the resolver picks the best.
  */
@@ -66,8 +65,7 @@ export type FileSource =
   | CloudFileSource
   | FileIdSource
 
-  // Server-issued, time-bounded
-  | SignedUrlSource
+  // Server-issued
   | ShareLinkSource
   | PublicCdnSource
 
@@ -134,14 +132,6 @@ export interface CloudFileSource {
 export interface FileIdSource {
   kind: "file_id";
   fileId: string;
-  mime?: string;
-}
-
-export interface SignedUrlSource {
-  kind: "signed_url";
-  url: string;
-  expiresAt?: number;
-  fileId?: string;
   mime?: string;
 }
 
@@ -249,9 +239,11 @@ export interface FileCapabilities {
   /** True when the consumer needs to hold a JWT to open this URL. */
   requiresAuth: boolean;
   /**
-   * False for raw signed S3 URLs (CORS-blocked for `fetch()`). Output
-   * adapters that need bytes route through the same-origin proxy when
-   * this is false.
+   * True when the URL can be `fetch()`ed from the browser — durable
+   * `/files/{id}/download` route URLs qualify (the python-client attaches
+   * Authorization headers). False for opaque third-party URLs that may be
+   * CORS-blocked; output adapters that need bytes route through the
+   * backend instead when this is false.
    */
   transportSafeForFetch: boolean;
 }

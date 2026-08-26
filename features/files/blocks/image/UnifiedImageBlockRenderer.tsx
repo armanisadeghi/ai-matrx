@@ -211,7 +211,7 @@ export const UnifiedImageBlockRenderer: React.FC<
   extraActions,
   sourceFeature = "files",
 }) => {
-  const { src, status, isPlaceholder, fileId, reportLoadError } =
+  const { src, status, isPlaceholder, fileId, retryNonce, reportLoadError } =
     useUnifiedImageUrl(block);
   const isMobile = useIsMobile();
   const isMatrx = block.origin === "matrx";
@@ -613,6 +613,7 @@ export const UnifiedImageBlockRenderer: React.FC<
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {src && (
               <img
+                key={retryNonce}
                 src={src}
                 alt={block.fileName ?? "Image"}
                 width={block.width ?? undefined}
@@ -634,9 +635,9 @@ export const UnifiedImageBlockRenderer: React.FC<
                 ].join(" ")}
                 onLoad={() => setLoadedSrc(src)}
                 onError={() => {
-                  // A user's own file never just "expires" — try to re-mint
-                  // before surfacing a terminal error. Only when the handler
-                  // can do nothing more do we mark this src as failed.
+                  // A user's own file never just "expires" — refresh the file
+                  // session and retry before surfacing a terminal error. Only
+                  // when nothing more can be done do we mark this src failed.
                   const failed = src;
                   void reportLoadError(failed).then((handled) => {
                     if (!handled) setErrorSrc(failed);

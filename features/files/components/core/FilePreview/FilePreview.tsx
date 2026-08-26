@@ -69,7 +69,6 @@ export interface FilePreviewProps {
   pageNumber?: number;
   onPageChange?: (pageNumber: number) => void;
   /** Signed URL expiry. Default 1h. */
-  urlExpiresIn?: number;
 }
 
 export function FilePreview({
@@ -77,7 +76,6 @@ export function FilePreview({
   className,
   pageNumber,
   onPageChange,
-  urlExpiresIn = 3600,
 }: FilePreviewProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -91,13 +89,13 @@ export function FilePreview({
   // Inline preview URL resolution.
   //
   // For image and PDF files, prefer `/files/{id}/asset`: it returns the
-  // canonical inline-renderable URL (CDN if public, signed-inline otherwise)
+  // canonical inline-renderable URL (CDN if public, durable-inline otherwise)
   // AND surfaces every preset variant — so a future enhancement can choose
   // e.g. `hero_url` for a fullscreen image preview without another fetch.
   //
   // For everything else (video / audio / svg / fetched-by-fileId previewers
   // like data / code / markdown / text — those don't actually consume `url`),
-  // fall back to the legacy signed-URL hook. The asset endpoint works for
+  // fall back to the file handler's URL hook. The asset endpoint works for
   // any cld_files row, but the round-trip adds latency and the asset
   // metadata doesn't help video/audio playback.
   const fileMime = file?.mimeType ?? "";
@@ -105,13 +103,12 @@ export function FilePreview({
     fileMime.startsWith("image/") || fileMime === "application/pdf";
   const { asset, isLoading: assetLoading } = useFileAsset(
     useAssetForPreview ? fileId : null,
-    { signedUrlTtl: urlExpiresIn },
   );
-  const { result: signedUrl, status: signedStatus } = useFileAs(
+  const { result: resolvedUrl, status: resolvedStatus } = useFileAs(
     !useAssetForPreview && fileId ? { kind: "file_id", fileId } : null,
     { kind: "html_src" },
   );
-  const signedLoading = signedStatus === "resolving";
+  const resolvedLoading = resolvedStatus === "resolving";
   // Prefer a larger variant (hero / cover) when present, else the canonical
   // `primary_url`, else the original variant. Asset endpoint guarantees at
   // least `original`, so the third arm is a safety net.
@@ -121,8 +118,8 @@ export function FilePreview({
     asset?.primary_url ??
     asset?.variants?.original?.url ??
     null;
-  const url = useAssetForPreview ? assetUrl : signedUrl;
-  const loading = useAssetForPreview ? assetLoading : signedLoading;
+  const url = useAssetForPreview ? assetUrl : resolvedUrl;
+  const loading = useAssetForPreview ? assetLoading : resolvedLoading;
 
   const capability = useMemo(() => {
     if (!file) return null;
@@ -360,10 +357,8 @@ export function FilePreview({
   }
 
   // Fetch-based previewers receive `fileId` (through PreviewerSwitch) so
-  // they can pull the bytes via the Python `/files/{id}/download` endpoint —
-  // sidestepping the AWS S3 CORS block: the signed URL works in `<img>` /
-  // `<video>` / `<audio>` tags (no CORS preflight) but `fetch(signedUrl)`
-  // returns 403 until the S3 bucket policy is fixed.
+  // they can pull the bytes via the Python `/files/{id}/download` endpoint
+  // with Authorization headers through the python-client.
   const body = (
     <PreviewerSwitch
       source={{ kind: "fileId", fileId }}

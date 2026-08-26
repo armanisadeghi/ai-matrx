@@ -8,10 +8,9 @@
  * `KindSchema` below mirrors that model.
  *
  * MEDIA DURABILITY. `GeneratedVideo` carries `file_id` — the durable handle —
- * beside `url` / `cdn_url` / `signed_url`. The bridge prefers the id and falls
- * back CDN → url → signed, so a clip renders through the most durable
- * reference the producer gave it and an expiring URL re-mints instead of
- * breaking.
+ * beside `url` / `cdn_url`. The bridge prefers the id and falls back CDN →
+ * url, so a clip renders through the most durable reference the producer gave
+ * it.
  */
 
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
@@ -37,7 +36,10 @@ import {
 } from "./media-io-shared";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import type { MaterializedKind } from "./kind-payload";
-import type { GeneratedVideo, GeneratedVideoSet } from "./generated/kinds.generated";
+import type {
+  GeneratedVideo,
+  GeneratedVideoSet,
+} from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas — mirror of GeneratedVideo / GenerateVideoOutput.
@@ -56,7 +58,6 @@ export const generatedVideoKindSchema: KindSchema = {
     },
     url: { type: "string", nullable: true },
     cdn_url: { type: "string", nullable: true },
-    signed_url: { type: "string", nullable: true },
     path: { type: "string", nullable: true },
     mime_type: { type: "string", nullable: true },
     duration_seconds: { type: "number", nullable: true },
@@ -69,7 +70,10 @@ export const generatedVideoSetKindSchema: KindSchema = {
     videos: { type: "array", itemKinds: ["generated_video"] },
     count: { type: "number" },
     model: { type: "string", required: true },
-    usage: { type: "json", description: "Aggregated token / cost usage for the run." },
+    usage: {
+      type: "json",
+      description: "Aggregated token / cost usage for the run.",
+    },
   },
 };
 
@@ -102,7 +106,11 @@ export function readGeneratedVideo(entry: unknown): GeneratedVideoData | null {
   const fields = readMediaHandleFields(entry);
   const handle = mediaHandleOf(fields);
   if (!handle) return null;
-  return { ...fields, handle, duration_seconds: optionalNumber(entry.duration_seconds) };
+  return {
+    ...fields,
+    handle,
+    duration_seconds: optionalNumber(entry.duration_seconds),
+  };
 }
 
 export function readGeneratedVideoList(value: unknown): GeneratedVideoData[] {
@@ -148,7 +156,7 @@ export function generatedVideoSetMarkdownFromValue(
           .map((video, index) => {
             const duration = formatDuration(video.duration_seconds);
             const label = `Clip ${index + 1}${duration ? ` (${duration})` : ""}`;
-            const target = video.cdn_url ?? video.url ?? video.signed_url;
+            const target = video.cdn_url ?? video.url;
             return target ? `- [${label}](${target})` : `- ${label}`;
           })
           .join("\n")

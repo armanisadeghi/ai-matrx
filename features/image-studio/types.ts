@@ -190,8 +190,8 @@ export interface ProcessedVariant {
    * Permanent public CDN URL (Cloudflare-fronted, with a `?v=<checksum>`
    * cache-buster) when the file is uploaded with `visibility: "public"`
    * and the API returned a CDN URL. ``null`` otherwise — for private
-   * variants, callers should call `getSignedUrl(fileId)` for a 1h
-   * AWS-signed URL.
+   * variants, callers render through the durable authenticated URL
+   * (`fileUrls(fileId).inline`).
    *
    * **Never** copy the data URL once the variant is saved; that's the
    * massive base64 string we ship for in-browser preview only.

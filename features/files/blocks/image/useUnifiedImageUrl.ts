@@ -2,46 +2,37 @@
  * features/files/blocks/image/useUnifiedImageUrl.ts
  *
  * THE single hook that turns a `UnifiedImageBlock` into the URL the browser
- * should render right now. All signed-URL expiry, refresh, and access-check
- * logic lives here — components never deal with this themselves.
+ * should render right now. URL resolution is durable and synchronous —
+ * components never deal with expiry because durable URLs have none.
  *
  * Strategy (priority order):
  *   1. External block → return `externalUrl` immediately. Done.
  *   2. Matrx + public + cdnUrl → return `cdnUrl`. Permanent URL.
- *   3. Matrx + base64 (streaming) → return a data URI placeholder while
- *      we wait for the final block to land.
- *   4. Matrx + valid signed URL → return `signedUrl` as-is. The browser
- *      keeps the image rendered from its HTTP cache even after the URL
- *      expires — no proactive refresh.
- *   5. Matrx + expired/missing signed URL → ask the handler to resolve
- *      the file_id into a fresh URL. Show base64 / thumbnail as a
- *      placeholder while resolving.
+ *   3. Matrx → handler-resolved durable URL via `useFileAs(html_src)`
+ *      (`{base}/files/{id}/download?inline=1` — authenticated by the
+ *      `mx_files_session` cookie for private files).
+ *   4. Matrx + base64 (streaming) → data URI placeholder while the final
+ *      block lands.
  *
- * The handler's `useFileAs` does the heavy lifting: it loads cld_files
- * metadata once, picks the right URL flavor (CDN for public, signed for
- * private), and uses a lazy in-memory cache for signed URLs — multiple
- * consumers of the same file share one URL and one network call.
+ * Error recovery is session refresh, not URL re-mint: `reportLoadError`
+ * forces `ensureFilesSession({ force: true })` once and bumps `retryNonce`
+ * so the renderer re-requests the SAME durable URL with a fresh cookie.
  */
 
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
-import {
-  getOrMintSignedUrl,
-  invalidateSignedUrl,
-} from "@/features/files/handler/intelligence/signed-url-cache";
+import { ensureFilesSession } from "@/features/files/handler/session";
 import { isSignedUrl } from "@/lib/media/signed-url";
 import type { FileSource } from "@/features/files/handler/types";
 import type { UnifiedImageBlock } from "./types";
 
-const EXPIRY_SAFETY_MARGIN_MS = 30 * 1000;
-
 /**
- * A `cdnUrl` is only "permanent" if it is NOT itself a signed URL. The backend
- * (and some adapters) can mistakenly file an expiring signed URL into the
- * `cdnUrl` slot; treating that as permanent skips the re-mint path and the image
- * dies on expiry. For an owned file that must never happen — so we re-check here.
+ * A `cdnUrl` is only "permanent" if it is NOT itself a LEGACY signed URL. Old
+ * stored rows can carry an expiring signed URL in the `cdnUrl` slot; treating
+ * that as permanent skips the durable-resolution path and the image dies on
+ * expiry. For an owned file that must never happen — so we re-check here.
  */
 function isPermanentCdn(cdnUrl: string | null | undefined): cdnUrl is string {
   return !!cdnUrl && !isSignedUrl(cdnUrl);
@@ -63,43 +54,39 @@ export interface UseUnifiedImageUrlResult {
    */
   fileId: string | null;
   /**
+   * Bumps after a successful session-refresh recovery. Key the media element
+   * on it so the browser re-requests the same durable URL with the fresh
+   * `mx_files_session` cookie.
+   */
+  retryNonce: number;
+  /**
    * Call from the renderer's `<img onError>`. For an OWNED file (matrx +
-   * fileId) this invalidates the cached signed URL and re-mints a fresh one —
-   * because a user's own file URL expiring is a non-event, not an error. The
-   * returned promise resolves `true` when a re-mint was triggered (the caller
-   * should NOT show a terminal error and instead wait for the new `src`), or
-   * `false` when there is nothing more we can do (not ours, or re-mint failed).
+   * fileId) this refreshes the file-session cookie and retries the SAME
+   * durable URL once. Resolves `true` when a retry was triggered (the caller
+   * should NOT show a terminal error — the element remounts via
+   * `retryNonce`), or `false` when there is nothing more we can do.
    */
   reportLoadError: (failedSrc: string | null) => Promise<boolean>;
 }
 
-const MAX_REMINT_ATTEMPTS = 2;
-
 export function useUnifiedImageUrl(
   block: UnifiedImageBlock | null,
 ): UseUnifiedImageUrlResult {
-  // A freshly re-minted URL, set by `reportLoadError` after an owned file's
-  // served URL failed to load. Overrides the resolved `src` so the same <img>
-  // retries with a guaranteed-fresh signature.
-  const [override, setOverride] = useState<{
-    fileId: string;
-    url: string;
-  } | null>(null);
-  const remintAttempts = useRef(0);
+  const [retryNonce, setRetryNonce] = useState(0);
+  const retried = useRef(false);
 
   const blockFileId = block?.origin === "matrx" ? block.fileId : null;
 
-  // Reset the re-mint budget whenever the underlying file changes so a new
+  // Reset the retry budget whenever the underlying file changes so a new
   // image in the same renderer instance starts fresh.
   const lastFileIdRef = useRef(blockFileId);
   if (lastFileIdRef.current !== blockFileId) {
     lastFileIdRef.current = blockFileId;
-    remintAttempts.current = 0;
+    retried.current = false;
   }
 
   // Decide whether we need to ask the handler to resolve. Public matrx
-  // blocks with a TRUE permanent CDN url never need the handler. A signed url
-  // sitting in the cdn slot is NOT permanent — fall through to minting.
+  // blocks with a TRUE permanent CDN url never need the handler.
   const needsHandlerResolution = useMemo(() => {
     if (!block) return false;
     if (block.origin === "external") return false;
@@ -120,31 +107,25 @@ export function useUnifiedImageUrl(
     kind: "html_src",
   });
 
-  // The override only applies to the current file; reset when the file changes.
-  const activeOverrideUrl =
-    override && override.fileId === blockFileId ? override.url : null;
-
   const reportLoadError = useCallback(
     async (failedSrc: string | null): Promise<boolean> => {
       if (!blockFileId) return false; // not an owned file — caller errors out
-      if (remintAttempts.current >= MAX_REMINT_ATTEMPTS) return false;
-      remintAttempts.current += 1;
-      // LOUD recovery: a recovery firing means a real bug got past the
-      // proactive classification — surface it so it can't hide.
+      if (retried.current) return false;
+      retried.current = true;
+      // LOUD recovery: a recovery firing means the session cookie was
+      // missing/stale — surface it so a systemic auth problem can't hide.
       console.warn(
-        "[file-handler] owned image URL failed to load — re-minting from " +
-          "file_id (a user's own file never just 'expires'). " +
-          `fileId=${blockFileId} attempt=${remintAttempts.current} ` +
-          `failedSrc=${String(failedSrc).slice(0, 120)}`,
+        "[file-handler] owned image URL failed to load — refreshing the " +
+          "file session and retrying the same durable URL. " +
+          `fileId=${blockFileId} failedSrc=${String(failedSrc).slice(0, 120)}`,
       );
-      invalidateSignedUrl(blockFileId);
       try {
-        const fresh = await getOrMintSignedUrl(blockFileId);
-        setOverride({ fileId: blockFileId, url: fresh.url });
+        await ensureFilesSession({ force: true });
+        setRetryNonce((n) => n + 1);
         return true;
       } catch (err) {
         console.error(
-          `[file-handler] re-mint FAILED for owned file ${blockFileId}`,
+          `[file-handler] session refresh FAILED for owned file ${blockFileId}`,
           err,
         );
         return false;
@@ -154,7 +135,7 @@ export function useUnifiedImageUrl(
   );
 
   const resolved = useMemo<
-    Omit<UseUnifiedImageUrlResult, "reportLoadError">
+    Omit<UseUnifiedImageUrlResult, "reportLoadError" | "retryNonce">
   >(() => {
     if (!block) {
       return {
@@ -192,17 +173,7 @@ export function useUnifiedImageUrl(
       };
     }
 
-    // ── Matrx — re-minted override wins: a fresh URL from reportLoadError ──
-    if (activeOverrideUrl) {
-      return {
-        src: activeOverrideUrl,
-        status: "ready",
-        isPlaceholder: false,
-        fileId: block.fileId,
-      };
-    }
-
-    // ── Matrx — public + TRUE permanent CDN url: no expiry plumbing ─────
+    // ── Matrx — public + TRUE permanent CDN url: served straight ────────
     if (block.visibility === "public" && isPermanentCdn(block.cdnUrl)) {
       return {
         src: block.cdnUrl,
@@ -212,28 +183,11 @@ export function useUnifiedImageUrl(
       };
     }
 
-    // ── Matrx — handler has resolved a URL: prefer it (canonical) ───────
+    // ── Matrx — handler has resolved the durable URL: canonical ─────────
     if (handlerUrl) {
       return {
         src: handlerUrl,
         status: "ready",
-        isPlaceholder: false,
-        fileId: block.fileId,
-      };
-    }
-
-    // ── Matrx — handler still resolving but we have a PROVABLY-fresh
-    // signed URL. We only serve a signed URL whose expiry is known AND in
-    // the future. An unknown expiry (null) is NOT trusted — for an owned
-    // file we'd rather wait for the mint than render a URL that may be dead.
-    const signedStillValid =
-      !!block.signedUrl &&
-      block.signedUrlExpiresAt !== null &&
-      block.signedUrlExpiresAt > Date.now() + EXPIRY_SAFETY_MARGIN_MS;
-    if (signedStillValid && block.signedUrl) {
-      return {
-        src: block.signedUrl,
-        status: handlerStatus === "resolving" ? "refreshing" : "ready",
         isPlaceholder: false,
         fileId: block.fileId,
       };
@@ -250,10 +204,6 @@ export function useUnifiedImageUrl(
     }
 
     // ── Matrx — placeholder: base64 (streaming partials) ───────────────
-    // Phase 1b: `block.thumbnailUrl` is no longer carried on the block —
-    // thumbnails live on `Asset.variants["thumbnail_url"]` and surface
-    // through `MediaThumbnail` (driven by `CloudFile.thumbnailUrl`),
-    // not through the image renderer's URL pipeline.
     if (block.base64) {
       return {
         src: toDataUri(block.base64, block.mimeType),
@@ -280,11 +230,11 @@ export function useUnifiedImageUrl(
       isPlaceholder: false,
       fileId: block.fileId,
     };
-  }, [block, handlerUrl, handlerStatus, activeOverrideUrl]);
+  }, [block, handlerUrl, handlerStatus]);
 
   return useMemo<UseUnifiedImageUrlResult>(
-    () => ({ ...resolved, reportLoadError }),
-    [resolved, reportLoadError],
+    () => ({ ...resolved, retryNonce, reportLoadError }),
+    [resolved, retryNonce, reportLoadError],
   );
 }
 

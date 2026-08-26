@@ -49,12 +49,12 @@ import {
 import {
   createShareLink as createShareLinkThunk,
   deleteFile as deleteFileThunk,
-  getSignedUrl as getSignedUrlThunk,
   loadShareLinks,
   moveFile as moveFileThunk,
   updateFolder as updateFolderThunk,
   uploadFiles as uploadFilesThunk,
 } from "../../redux/thunks";
+import * as Files from "@/features/files/api/files";
 import { deleteAny, moveAny } from "../../redux/virtual-thunks";
 import { requestRename } from "../core/RenameDialog/RenameHost";
 import {
@@ -196,22 +196,16 @@ export function useFileShortcuts(): {
         if (!activeFileId) return;
         const file = filesById[activeFileId];
         if (!file) return;
-        // Duplicate fetches the current bytes via signed URL — only works
-        // for real cloud-files. Skip for virtual rows.
+        // Duplicate fetches the current bytes via the authenticated
+        // download route — only works for real cloud-files. Skip virtual rows.
         if (file.source.kind === "virtual") return;
         e.preventDefault();
         void (async () => {
           try {
-            const result = await dispatch(
-              getSignedUrlThunk({ fileId: activeFileId, expiresIn: 600 }),
-            );
-            const url = (result as { payload?: { url?: string } } | undefined)
-              ?.payload?.url;
-            if (!url) return;
-            const blob = await fetch(url).then((r) => {
-              if (!r.ok) throw new Error(`HTTP ${r.status}`);
-              return r.blob();
-            });
+            // Authenticated byte read through the python-client (Bearer
+            // header) — a bare fetch of the durable URL would not carry the
+            // cross-origin file-session cookie.
+            const { blob } = await Files.downloadFile(activeFileId);
             const base = file.fileName;
             const dot = base.lastIndexOf(".");
             const newName =
@@ -339,16 +333,7 @@ export function useFileShortcuts(): {
             const file = filesById[item.id];
             if (!file) continue;
             try {
-              const result = await dispatch(
-                getSignedUrlThunk({ fileId: item.id, expiresIn: 600 }),
-              );
-              const url = (result as { payload?: { url?: string } } | undefined)
-                ?.payload?.url;
-              if (!url) continue;
-              const blob = await fetch(url).then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.blob();
-              });
+              const { blob } = await Files.downloadFile(item.id);
               const dot = file.fileName.lastIndexOf(".");
               const newName =
                 dot > 0

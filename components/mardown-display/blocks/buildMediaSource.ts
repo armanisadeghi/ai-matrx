@@ -6,7 +6,7 @@
  * `serverData` of an `audio_output` / `video_output` / `media_block` render
  * block into the strongest `FileSource` we can, so the universal file handler
  * (`useFileSrc`) resolves a DURABLE, playable URL — preferring the public/CDN
- * URL and re-minting from `file_id` — instead of echoing a raw signed S3 URL.
+ * URL and resolving from `file_id` — instead of echoing a raw legacy URL.
  *
  * Why this exists: the old renderers passed the raw `data.url` straight to the
  * player. During streaming Python sends only a `file_id` (no minted URL) so it
@@ -45,7 +45,6 @@ export function buildMediaSource(
 
   const urlish = [
     pickStr(sd.cdnUrl) ?? pickStr(sd.cdn_url),
-    pickStr(sd.signedUrl) ?? pickStr(sd.signed_url),
     pickStr(sd.downloadUrl) ?? pickStr(sd.download_url),
     pickStr(sd.url) ?? pickStr(sd.file_url),
     pickStr(sd.externalUrl) ?? pickStr(sd.external_url),

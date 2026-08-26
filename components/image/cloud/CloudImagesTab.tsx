@@ -85,7 +85,7 @@ import {
 } from "@/features/files/redux/selectors";
 import {
   deleteFile,
-  getSignedUrl,
+  getFileUrl,
   loadUserFileTree,
   moveFile,
   updateFileMetadata,
@@ -296,7 +296,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
     try {
       for (const file of selectedBulkFiles) {
         const { url } = await dispatch(
-          getSignedUrl({ fileId: file.id, expiresIn: 3600 }),
+          getFileUrl({ fileId: file.id }),
         ).unwrap();
         const anchor = document.createElement("a");
         anchor.href = url;

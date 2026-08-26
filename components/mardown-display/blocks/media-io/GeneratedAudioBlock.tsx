@@ -47,16 +47,18 @@ export function readGeneratedAudioData(
   return {
     handle: typeof candidate.handle === "string" ? candidate.handle : null,
     file_id: typeof candidate.file_id === "string" ? candidate.file_id : null,
-    audio_url: typeof candidate.audio_url === "string" ? candidate.audio_url : null,
+    audio_url:
+      typeof candidate.audio_url === "string" ? candidate.audio_url : null,
     audio_cdn_url:
-      typeof candidate.audio_cdn_url === "string" ? candidate.audio_cdn_url : null,
-    audio_signed_url:
-      typeof candidate.audio_signed_url === "string"
-        ? candidate.audio_signed_url
+      typeof candidate.audio_cdn_url === "string"
+        ? candidate.audio_cdn_url
         : null,
-    mime_type: typeof candidate.mime_type === "string" ? candidate.mime_type : null,
+    mime_type:
+      typeof candidate.mime_type === "string" ? candidate.mime_type : null,
     duration_seconds:
-      typeof candidate.duration_seconds === "number" ? candidate.duration_seconds : null,
+      typeof candidate.duration_seconds === "number"
+        ? candidate.duration_seconds
+        : null,
     model: typeof candidate.model === "string" ? candidate.model : "",
     usage: readUsage(candidate.usage),
     bytesOnly: candidate.bytesOnly === true,

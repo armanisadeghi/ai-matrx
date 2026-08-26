@@ -56,7 +56,7 @@ import { clearSelection } from "@/features/files/redux/slice";
 import {
   deleteFile as deleteFileThunk,
   deleteFolder as deleteFolderThunk,
-  getSignedUrl as getSignedUrlThunk,
+  getFileUrl as getFileUrlThunk,
   moveFile as moveFileThunk,
   updateFileMetadata,
   updateFolder as updateFolderThunk,
@@ -143,7 +143,7 @@ export function BulkActionsBar({ className }: { className?: string }) {
       // round-trips to the asset endpoint just to pick a different URL key.
       await runWithConcurrency(selectedFileIds, MAX_PARALLEL, async (id) => {
         const result = await dispatch(
-          getSignedUrlThunk({ fileId: id, expiresIn: 3600 }),
+          getFileUrlThunk({ fileId: id }),
         );
         const url = (result as { payload?: { url?: string } } | undefined)
           ?.payload?.url;

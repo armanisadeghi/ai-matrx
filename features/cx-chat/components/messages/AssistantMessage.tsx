@@ -16,7 +16,7 @@ import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectMessageHasUnsavedChanges } from "../../_legacy-stubs";
 import { editMessage } from "../../_legacy-stubs";
 import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";
-import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
+import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
 import { chatConversationsActions } from "../../_legacy-stubs";
 import { AssistantActionBar } from "./AssistantActionBar";
 import type { ConversationMessage } from "@/features/cx-chat/types/conversation";
@@ -109,10 +109,13 @@ export function AssistantMessage({
   const audioMimeType = (
     message as ConversationMessage & { audioMimeType?: string }
   ).audioMimeType;
-  // A TTS audio response is one of our own files — never let an expired
-  // signature kill playback; the primitive re-mints from the recovered file_id.
-  const { src: audioSrc, onError: handleAudioError } =
-    useRemintableSrc(audioUrl);
+  // A TTS audio response is one of our own files — on a load failure the
+  // primitive refreshes the file-session cookie and retries the durable URL.
+  const {
+    src: audioSrc,
+    retryKey: audioRetryKey,
+    onError: handleAudioError,
+  } = useDurableSrc(audioUrl ?? null);
 
   const handleDownloadAudio = async () => {
     if (!audioUrl || isDownloading) return;
@@ -196,6 +199,7 @@ export function AssistantMessage({
               )}
             </div>
             <audio
+              key={audioRetryKey}
               controls
               autoPlay
               src={audioSrc}

@@ -3,39 +3,29 @@
  *
  * THE single hook that turns a `VideoBlock` into the URL the browser
  * should render right now. Mirrors `image/useUnifiedImageUrl.ts` exactly —
- * same signed-URL expiry / refresh / access-check strategy — so video and
+ * same durable-URL resolution + session-refresh recovery — so video and
  * image resolution stay one mental model.
  *
  * Strategy (priority order):
  *   1. External block → return `externalUrl` immediately. Done.
  *   2. Matrx + public + cdnUrl → return `cdnUrl`. Permanent URL.
- *   3. Matrx + base64 (streaming) → data URI placeholder while the final
+ *   3. Matrx → handler-resolved durable URL via `useFileAs(html_src)`.
+ *   4. Matrx + base64 (streaming) → data URI placeholder while the final
  *      block lands.
- *   4. Matrx + valid signed URL → return `signedUrl` as-is.
- *   5. Matrx + expired/missing signed URL → ask the handler to resolve
- *      the file_id into a fresh URL.
  *
- * The handler's `useFileAs` does the heavy lifting (load cld_files once,
- * pick the right flavor, lazy in-memory cache). See the image twin for
- * the full reasoning.
+ * Error recovery is session refresh, not URL re-mint — see the image twin.
  */
 
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
-import {
-  getOrMintSignedUrl,
-  invalidateSignedUrl,
-} from "@/features/files/handler/intelligence/signed-url-cache";
+import { ensureFilesSession } from "@/features/files/handler/session";
 import { isSignedUrl } from "@/lib/media/signed-url";
 import type { FileSource } from "@/features/files/handler/types";
 import type { VideoBlock } from "../types";
 
-const EXPIRY_SAFETY_MARGIN_MS = 30 * 1000;
-const MAX_REMINT_ATTEMPTS = 2;
-
-/** A `cdnUrl` is only permanent if it is NOT itself a signed/expiring URL. */
+/** A `cdnUrl` is only permanent if it is NOT itself a LEGACY signed URL. */
 function isPermanentCdn(cdnUrl: string | null | undefined): cdnUrl is string {
   return !!cdnUrl && !isSignedUrl(cdnUrl);
 }
@@ -52,10 +42,14 @@ export interface UseUnifiedVideoUrlResult {
   /** Resolved poster/cover URL, if present on the block. */
   posterUrl: string | null;
   /**
+   * Bumps after a successful session-refresh recovery. Key the media element
+   * on it so the browser re-requests the same durable URL.
+   */
+  retryNonce: number;
+  /**
    * Call from the renderer's `<video onError>`. For an OWNED file this
-   * invalidates the cached signed URL and re-mints a fresh one — a user's own
-   * file URL expiring is a non-event, not an error. Resolves `true` when a
-   * re-mint was triggered (wait for the new `src`), `false` otherwise.
+   * refreshes the file-session cookie and retries the SAME durable URL once.
+   * Resolves `true` when a retry was triggered, `false` otherwise.
    */
   reportLoadError: (failedSrc: string | null) => Promise<boolean>;
 }
@@ -63,18 +57,15 @@ export interface UseUnifiedVideoUrlResult {
 export function useUnifiedVideoUrl(
   block: VideoBlock | null,
 ): UseUnifiedVideoUrlResult {
-  const [override, setOverride] = useState<{
-    fileId: string;
-    url: string;
-  } | null>(null);
-  const remintAttempts = useRef(0);
+  const [retryNonce, setRetryNonce] = useState(0);
+  const retried = useRef(false);
 
   const blockFileId = block?.origin === "matrx" ? block.fileId : null;
 
   const lastFileIdRef = useRef(blockFileId);
   if (lastFileIdRef.current !== blockFileId) {
     lastFileIdRef.current = blockFileId;
-    remintAttempts.current = 0;
+    retried.current = false;
   }
 
   const needsHandlerResolution = useMemo(() => {
@@ -95,27 +86,23 @@ export function useUnifiedVideoUrl(
     kind: "html_src",
   });
 
-  const activeOverrideUrl =
-    override && override.fileId === blockFileId ? override.url : null;
-
   const reportLoadError = useCallback(
     async (failedSrc: string | null): Promise<boolean> => {
       if (!blockFileId) return false;
-      if (remintAttempts.current >= MAX_REMINT_ATTEMPTS) return false;
-      remintAttempts.current += 1;
+      if (retried.current) return false;
+      retried.current = true;
       console.warn(
-        "[file-handler] owned video URL failed to load — re-minting from " +
-          `file_id. fileId=${blockFileId} attempt=${remintAttempts.current} ` +
-          `failedSrc=${String(failedSrc).slice(0, 120)}`,
+        "[file-handler] owned video URL failed to load — refreshing the " +
+          "file session and retrying the same durable URL. " +
+          `fileId=${blockFileId} failedSrc=${String(failedSrc).slice(0, 120)}`,
       );
-      invalidateSignedUrl(blockFileId);
       try {
-        const fresh = await getOrMintSignedUrl(blockFileId);
-        setOverride({ fileId: blockFileId, url: fresh.url });
+        await ensureFilesSession({ force: true });
+        setRetryNonce((n) => n + 1);
         return true;
       } catch (err) {
         console.error(
-          `[file-handler] re-mint FAILED for owned file ${blockFileId}`,
+          `[file-handler] session refresh FAILED for owned file ${blockFileId}`,
           err,
         );
         return false;
@@ -125,7 +112,7 @@ export function useUnifiedVideoUrl(
   );
 
   const resolved = useMemo<
-    Omit<UseUnifiedVideoUrlResult, "reportLoadError">
+    Omit<UseUnifiedVideoUrlResult, "reportLoadError" | "retryNonce">
   >(() => {
     if (!block) {
       return {
@@ -168,17 +155,6 @@ export function useUnifiedVideoUrl(
       };
     }
 
-    // ── Matrx — re-minted override wins ───────────────────────────────
-    if (activeOverrideUrl) {
-      return {
-        src: activeOverrideUrl,
-        status: "ready",
-        isPlaceholder: false,
-        fileId: block.fileId,
-        posterUrl,
-      };
-    }
-
     // ── Matrx — public + TRUE permanent CDN url ───────────────────────
     if (block.visibility === "public" && isPermanentCdn(block.cdnUrl)) {
       return {
@@ -190,26 +166,11 @@ export function useUnifiedVideoUrl(
       };
     }
 
-    // ── Matrx — handler resolved a URL: prefer it ─────────────────────
+    // ── Matrx — handler resolved the durable URL: canonical ───────────
     if (handlerUrl) {
       return {
         src: handlerUrl,
         status: "ready",
-        isPlaceholder: false,
-        fileId: block.fileId,
-        posterUrl,
-      };
-    }
-
-    // ── Matrx — handler resolving but a PROVABLY-fresh signed URL ─────
-    const signedStillValid =
-      !!block.signedUrl &&
-      block.signedUrlExpiresAt !== null &&
-      block.signedUrlExpiresAt > Date.now() + EXPIRY_SAFETY_MARGIN_MS;
-    if (signedStillValid && block.signedUrl) {
-      return {
-        src: block.signedUrl,
-        status: handlerStatus === "resolving" ? "refreshing" : "ready",
         isPlaceholder: false,
         fileId: block.fileId,
         posterUrl,
@@ -256,11 +217,11 @@ export function useUnifiedVideoUrl(
       fileId: block.fileId,
       posterUrl,
     };
-  }, [block, handlerUrl, handlerStatus, activeOverrideUrl]);
+  }, [block, handlerUrl, handlerStatus]);
 
   return useMemo<UseUnifiedVideoUrlResult>(
-    () => ({ ...resolved, reportLoadError }),
-    [resolved, reportLoadError],
+    () => ({ ...resolved, retryNonce, reportLoadError }),
+    [resolved, retryNonce, reportLoadError],
   );
 }
 

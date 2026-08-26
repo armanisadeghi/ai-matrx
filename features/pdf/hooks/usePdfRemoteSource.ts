@@ -46,17 +46,12 @@ export function usePdfRemoteSource(
 ): UsePdfRemoteSourceResult {
   const cached = fileId ? getCached(fileId) : null;
   const { asset, isLoading, error, refresh } = useFileAsset(fileId, {
-    signedUrlTtl: 3600,
     enabled: !!fileId && !cached,
   });
 
   const original = asset?.variants?.original;
   const directUrl =
-    original?.cdn_url ??
-    original?.signed_url ??
-    original?.url ??
-    asset?.primary_url ??
-    null;
+    original?.cdn_url ?? original?.url ?? asset?.primary_url ?? null;
   const sourceMissing = !!error && MISSING_RE.test(error);
 
   const retry = () => {

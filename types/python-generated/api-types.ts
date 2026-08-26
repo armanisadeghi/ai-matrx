@@ -18255,7 +18255,7 @@ export interface paths {
          *     (alpha-flatten + contain padding). See ``PreviewVariantSpec``.
          *
          *     Returns base64 ``data_url`` (size ≤ ``max_inline_bytes``) or a
-         *     5-minute ephemeral ``signed_url`` for larger renders. Per-variant
+         *     5-minute ``ephemeral_url`` for larger renders. Per-variant
          *     errors surface as ``{"preset_id": ..., "error": "..."}`` entries.
          */
         post: operations["assets_preview_assets_preview_post"];
@@ -18306,7 +18306,7 @@ export interface paths {
          * @description No-persist PDF compression. Replaces app/api/pdf/compress.
          *
          *     Accepts a master via MediaRef. Returns base64 data URL (≤256 KB)
-         *     or 5-min ephemeral signed URL.
+         *     or a 5-min ``ephemeral_url``.
          */
         post: operations["assets_pdf_compress_assets_pdf_compress_post"];
         delete?: never;
@@ -18431,7 +18431,7 @@ export interface paths {
         };
         /**
          * Lazy-render and redirect to a vision-class variant of a master
-         * @description Render (or fetch the cached) variant and 302 to its signed URL.
+         * @description Render (or fetch the cached) variant and 302 to its durable URL.
          *
          *     The first call for a given ``(file_id, vision_class)`` pair runs the
          *     encoder and persists the variant row. Subsequent calls hit the cached
@@ -18457,6 +18457,34 @@ export interface paths {
         put?: never;
         /** Youtube Transcript */
         post: operations["youtube_transcript_media_youtube_transcript_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mint File Session
+         * @description Mint the browser file-session cookie — the auth lane behind durable
+         *     private render URLs.
+         *
+         *     An already-authenticated client (Bearer / fingerprint, with
+         *     ``credentials: 'include'``) calls this once at bootstrap (and again on a
+         *     401'd render). The HttpOnly SameSite=None cookie then rides every
+         *     ``<img>``/``<video>`` request to ``GET /files/{id}/download``; the auth
+         *     middleware accepts it ONLY on GET byte-serving routes — see
+         *     ``matrx_connect.middleware.session_cookie``.
+         */
+        post: operations["mint_file_session_files_session_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -18840,8 +18868,8 @@ export interface paths {
          * @description Return any cld_files row as an Asset envelope.
          *
          *     Surfaces the same shape the new asset upload returns, so a file-
-         *     browser click resolves to ``{url, cdn_url, signed_url, download_url}``
-         *     plus every persisted variant. This is the platform-wide cure for
+         *     browser click resolves to ``{url, cdn_url, download_url}`` (all
+         *     durable, never signed) plus every persisted variant. This is the platform-wide cure for
          *     the "click downloads when it should render" bug class — the FE
          *     chooses inline vs. attachment per click, not per endpoint.
          */
@@ -26082,13 +26110,7 @@ export interface components {
          */
         AssignmentUniqueness: "allow_repeats" | "without_replacement";
         /** AudioExtractionRequest */
-        AudioExtractionRequest: {
-            /**
-             * Signed Ttl
-             * @default 3600
-             */
-            signed_ttl?: number;
-        };
+        AudioExtractionRequest: Record<string, never>;
         /**
          * AudioExtractionResult
          * @description One extracted-audio derivative plus lineage diagnostics.
@@ -27369,11 +27391,6 @@ export interface components {
              * @enum {string}
              */
             share_level?: "read" | "write" | "admin";
-            /**
-             * Signed Url Ttl
-             * @default 3600
-             */
-            signed_url_ttl?: number;
             /**
              * Include Social Baseline
              * @description Override preset baseline default
@@ -49411,13 +49428,8 @@ export interface components {
              */
             url?: string | null;
             /**
-             * Signed Url
-             * @description Short-lived inline-view URL. A handoff, never an identity — do not store it.
-             */
-            signed_url?: string | null;
-            /**
              * Download Url
-             * @description Short-lived attachment-download URL (Content-Disposition: attachment).
+             * @description Durable attachment-download URL (Content-Disposition: attachment).
              */
             download_url?: string | null;
             /**
@@ -50929,11 +50941,6 @@ export interface components {
             pages?: number[] | null;
             /** Page Ranges */
             page_ranges?: components["schemas"]["PdfPageRange"][] | null;
-            /**
-             * Signed Ttl
-             * @default 3600
-             */
-            signed_ttl?: number;
         };
         /**
          * PdfPageSelectionResult
@@ -52519,7 +52526,7 @@ export interface components {
          * @description Legacy response shape preserved for back-compat with existing FE callers.
          *
          *     Prefer ``POST /assets`` for new integrations — it returns the full
-         *     Asset envelope (all variants, CDN/signed/download URLs).
+         *     Asset envelope (all variants, CDN/download URLs — all durable).
          */
         PodcastMediaUploadResponse: {
             /** Video Url */
@@ -101575,9 +101582,7 @@ export interface operations {
     };
     get_asset_assets__file_id__get: {
         parameters: {
-            query?: {
-                signed_url_ttl?: number;
-            };
+            query?: never;
             header?: never;
             path: {
                 file_id: string;
@@ -102001,6 +102006,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mint_file_session_files_session_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -102745,9 +102770,7 @@ export interface operations {
     };
     get_file_as_asset_files__file_id__asset_get: {
         parameters: {
-            query?: {
-                signed_url_ttl?: number;
-            };
+            query?: never;
             header?: never;
             path: {
                 file_id: string;

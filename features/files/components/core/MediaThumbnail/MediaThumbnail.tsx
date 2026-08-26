@@ -32,7 +32,7 @@
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
-import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
+import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
@@ -126,7 +126,6 @@ export function MediaThumbnail({
   // skip the round-trip.
   const useAssetThumb = preferAssetThumbnail && !backendThumb;
   const { asset } = useFileAsset(useAssetThumb ? file.id : null, {
-    signedUrlTtl: 3600,
   });
   const assetUrl = useAssetThumb ? pickThumbnailUrl(asset) : null;
 
@@ -195,17 +194,18 @@ function ImageThumb({
   alt: string;
   fallback: React.ReactNode;
 }) {
-  // Media durability: a thumbnail served by a signed (expiring) URL re-mints
-  // from its file_id on load failure instead of falling straight to the icon —
-  // a user's own file never just "expires". The hook also resets on URL change
-  // (signed-URL refresh / file swap), so no manual error/last-url bookkeeping.
-  // Durable/foreign URLs pass through untouched.
-  const { src, onError, failed } = useRemintableSrc(url);
+  // Media durability: a load failure refreshes the file-session cookie and
+  // retries the SAME durable URL before falling to the icon — a user's own
+  // file never just "expires". The hook also resets on URL change (file
+  // swap), so no manual error/last-url bookkeeping. Foreign URLs pass
+  // through untouched.
+  const { src, retryKey, onError, failed } = useDurableSrc(url);
 
   if (failed) return <>{fallback}</>;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
+      key={retryKey}
       src={src}
       alt={alt}
       loading="lazy"
@@ -222,9 +222,9 @@ function VideoPosterThumb({
   url: string;
   fallback: React.ReactNode;
 }) {
-  // Same self-heal contract as ImageThumb — re-mint an expired owned video URL
-  // before showing the icon fallback.
-  const { src, onError, failed } = useRemintableSrc(url);
+  // Same self-heal contract as ImageThumb — refresh the file session and
+  // retry the durable URL before showing the icon fallback.
+  const { src, retryKey, onError, failed } = useDurableSrc(url);
   const ref = useRef<HTMLVideoElement | null>(null);
 
   // Some browsers refuse to render a frame until they explicitly know how
@@ -247,6 +247,7 @@ function VideoPosterThumb({
   if (failed) return <>{fallback}</>;
   return (
     <video
+      key={retryKey}
       ref={ref}
       src={src}
       className="h-full w-full object-cover pointer-events-none"

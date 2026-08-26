@@ -7,7 +7,8 @@
  *   1. Hydrates from Redux when a fileId is known
  *   2. Fetches `/files/{id}` if missing from the slice
  *   3. Decides origin + capabilities (owned/shared/public/external)
- *   4. Mints a signed URL when needed and watches expiry
+ *   4. Binds the durable render URL (synchronous — durable URLs are a
+ *      pure function of the file id and never expire)
  *   5. Sniffs MIME from magic bytes when unknown
  *   6. Translates backend failure modes into typed errors
  *
@@ -32,24 +33,22 @@ import {
   FileNotFoundError,
 } from "./errors";
 import { decideForOwnedFile } from "./intelligence/access";
-import { getOrMintSignedUrl } from "./intelligence/signed-url-cache";
 import { sniffMimeFromBlob } from "./intelligence/magic-bytes";
+import { pythonFileInlineUrl } from "./utils/python-base";
 import { fromCloudFile } from "./input/normalize";
 import { classify } from "./utils/classify";
 import type { NormalizedFile } from "./types";
 
 interface ResolveOpts {
-  /** When true, the resolver will eagerly mint a signed URL if owned and missing one. */
+  /** When true, the resolver binds the durable URL if owned and missing one. */
   needsUrl?: boolean;
   /** When true, the resolver will fetch bytes to sniff MIME if missing. */
   sniffMime?: boolean;
-  /** Override default 1h signed-URL lifetime. */
-  signedExpiresIn?: number;
 }
 
 /**
  * Take a `NormalizedFile` produced by `normalize()` and finish the job:
- * hydrate, decide access, mint URLs, watch expiry. Idempotent — calling
+ * hydrate, decide access, bind the durable URL. Idempotent — calling
  * twice with the same input returns equivalent results.
  */
 export async function resolve(
@@ -63,7 +62,7 @@ export async function resolve(
   }
 
   if (opts.needsUrl && result.fileId && !result.url) {
-    result = await ensureSignedUrl(result, opts.signedExpiresIn);
+    result = ensureDurableUrl(result);
   }
 
   if (opts.sniffMime && !result.meta.mime && !result.fileId) {
@@ -133,41 +132,24 @@ async function hydrateFromFileId(
 }
 
 // ---------------------------------------------------------------------------
-// Signed URL minting (lazy — cached, never preemptively refreshed)
+// Durable URL binding (synchronous — a pure function of the file id)
 // ---------------------------------------------------------------------------
 
-async function ensureSignedUrl(
-  file: NormalizedFile,
-  expiresInSec?: number,
-): Promise<NormalizedFile> {
-  if (!file.fileId) return file;
-  if (
-    file.url &&
-    file.lifecycle.expiresAt &&
-    file.lifecycle.expiresAt > Date.now() + 30_000
-  ) {
-    return file;
-  }
-
-  // Lazy mint: the cache returns the same URL for every consumer until
-  // the URL is close to expiry, at which point the NEXT call re-mints.
-  // No background timers, no proactive refresh — once the browser has
-  // rendered the bytes, the URL string's expiry is irrelevant. The next
-  // consumer that needs a URL (a download, an edit, a remount) gets a
-  // fresh one transparently.
-  const fresh = await getOrMintSignedUrl(file.fileId, expiresInSec);
-
+function ensureDurableUrl(file: NormalizedFile): NormalizedFile {
+  if (!file.fileId || file.url) return file;
+  // The durable inline URL never expires; a plain `<img>` binding
+  // authenticates via the `mx_files_session` cookie, and `fetch()`es via
+  // the python-client attach Authorization headers — so it is fetch-safe.
   return {
     ...file,
-    url: fresh.url,
+    url: pythonFileInlineUrl(file.fileId),
     lifecycle: {
       ...file.lifecycle,
-      expiresAt: fresh.expiresAt,
       lastVerifiedAt: Date.now(),
     },
     capabilities: {
       ...file.capabilities,
-      transportSafeForFetch: false,
+      transportSafeForFetch: true,
     },
   };
 }

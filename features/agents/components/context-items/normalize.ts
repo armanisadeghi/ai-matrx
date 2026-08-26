@@ -126,8 +126,6 @@ function extractMediaRefs(
   const fileUrl =
     readNonEmptyString(d.cdnUrl) ??
     readNonEmptyString(d.cdn_url) ??
-    readNonEmptyString(d.signedUrl) ??
-    readNonEmptyString(d.signed_url) ??
     readNonEmptyString(d.externalUrl) ??
     readNonEmptyString(d.external_url) ??
     readNonEmptyString(d.downloadUrl) ??
@@ -135,7 +133,6 @@ function extractMediaRefs(
     readNonEmptyString(d.url) ??
     (rawRecord ? readNonEmptyString(rawRecord.url) : null) ??
     (nestedData ? readNonEmptyString(nestedData.cdnUrl) : null) ??
-    (nestedData ? readNonEmptyString(nestedData.signedUrl) : null) ??
     (nestedData ? readNonEmptyString(nestedData.externalUrl) : null) ??
     (nestedData ? readNonEmptyString(nestedData.url) : null);
 

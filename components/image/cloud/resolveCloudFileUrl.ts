@@ -7,18 +7,15 @@
  * file off to the provider with a usable URL.
  *
  * Implementation: delegates to the universal handler
- * (`fileHandler.use(source).as({kind: "html_src"})`), so URL minting and
- * CDN-vs-signed routing happen the same way as everywhere else. The
- * handler's lazy signed-URL cache returns a still-valid URL when one
- * exists, or mints a fresh one synchronously. Permanent CDN URLs come
- * back as-is.
+ * (`fileHandler.use(source).as({kind: "html_src"})`), so durable-URL
+ * routing (CDN for public, authenticated download route otherwise)
+ * happens the same way as everywhere else.
  */
 
 import { fileHandler } from "@/features/files/handler/handler";
 import type { CloudFileRecord } from "@/features/files/types";
 import type { AppStore } from "@/lib/redux/store";
 import type { ImageSource } from "@/components/image/context/SelectedImagesProvider";
-import { signedUrlExpiresAtMs } from "@/lib/media/signed-url";
 
 /**
  * Imperative file lookup against the cloudFiles slice. This module is
@@ -48,13 +45,6 @@ export interface ResolvedCloudUrl {
   expiresAt: number | null;
 }
 
-/**
- * Best-effort parse of the expiry from a signed S3 URL (both AWS dialects).
- * Returns `null` for permanent CDN URLs (no signature params). Delegates to the
- * canonical `lib/media/signed-url` primitive.
- */
-const parseExpiry = signedUrlExpiresAtMs;
-
 export async function resolveCloudFileUrl(
   store: AppStore,
   fileId: string,
@@ -72,7 +62,8 @@ export async function resolveCloudFileUrl(
   }
   return {
     url,
-    expiresAt: parseExpiry(url),
+    // Durable URLs never expire.
+    expiresAt: null,
   };
 }
 

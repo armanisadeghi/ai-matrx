@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "8fa789bab08b";
+export const KIND_REGISTRY_FINGERPRINT = "617c10570d21";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -455,19 +455,11 @@ export interface AssetVariantKind {
   height?: number | null;
   cdn_url?: string | null;
   file_id: string;
-  metadata?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    [key: string]: JsonValue | string | undefined;
-  };
+  metadata?: Record<string, JsonValue>;
   file_path: string;
   mime_type?: string | null;
-  signed_url?: string | null;
   size_bytes?: number | null;
   download_url?: string | null;
-  signed_url_expires_at?: number | null;
 }
 
 /**
@@ -1842,10 +1834,6 @@ export interface GeneratedImage {
    */
   mime_type?: string | null;
   /**
-   * Expiring inline URL, present only for a non-public image.
-   */
-  signed_url?: string | null;
-  /**
    * Encoded image size in bytes.
    */
   size_bytes?: number | null;
@@ -1879,10 +1867,6 @@ export interface GeneratedVideo {
    * Canonical MIME type of the encoded video.
    */
   mime_type?: string | null;
-  /**
-   * Expiring inline URL, present only for a non-public video.
-   */
-  signed_url?: string | null;
   /**
    * Video duration in seconds, when the provider reports one.
    */
@@ -7005,14 +6989,14 @@ export interface DispatchResult {
 }
 
 /**
- * Kind `document_quad_detection` (registry v5).
+ * Kind `document_quad_detection` (registry v6).
  */
 export interface DocumentQuadDetection {
   found?: boolean;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "document_quad_detection";
+  __kind?: "document_quad_detection";
   top_left?: number[] | null;
   top_right?: number[] | null;
   confidence?: number;
@@ -7505,7 +7489,7 @@ export interface GatherResult {
 }
 
 /**
- * Kind `generated_audio` (registry v5).
+ * Kind `generated_audio` (registry v7).
  */
 export interface GeneratedAudio {
   /**
@@ -7542,17 +7526,13 @@ export interface GeneratedAudio {
    */
   audio_cdn_url?: string | null;
   /**
-   * Expiring playable URL, present only for non-public audio.
-   */
-  audio_signed_url?: string | null;
-  /**
    * Audio duration in seconds, when it is known.
    */
   duration_seconds?: number;
 }
 
 /**
- * Kind `generated_image_set` (registry v4).
+ * Kind `generated_image_set` (registry v6).
  */
 export interface GeneratedImageSet {
   /**
@@ -7575,7 +7555,7 @@ export interface GeneratedImageSet {
 }
 
 /**
- * Kind `generated_video_set` (registry v5).
+ * Kind `generated_video_set` (registry v7).
  */
 export interface GeneratedVideoSet {
   /**
@@ -7964,7 +7944,7 @@ export interface ImageConceptsResult {
 }
 
 /**
- * Kind `image_edit_result` (registry v5).
+ * Kind `image_edit_result` (registry v6).
  */
 export interface ImageEditResult {
   op?: string;
@@ -7972,15 +7952,13 @@ export interface ImageEditResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "image_edit_result";
+  __kind?: "image_edit_result";
   cdn_url?: string | null;
   file_id?: string;
   mime_type?: string | null;
-  signed_url?: string | null;
   size_bytes?: number | null;
   visibility?: string;
   download_url?: string | null;
-  signed_url_expires_at?: number | null;
 }
 
 /**
@@ -15098,30 +15076,18 @@ export interface TrustEnvelope {
 /**
  * Output of ``assets.upload`` — the master file plus its rendered variants.
  *  *
- *  * Kind `uploaded_asset` (registry v7).
+ *  * Kind `uploaded_asset` (registry v9).
  */
 export interface UploadedAsset {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "uploaded_asset";
+  __kind?: "uploaded_asset";
   folder?: string;
   preset?: string | null;
   file_id?: string;
-  metadata?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    [key: string]: JsonValue | string | undefined;
-  };
-  variants?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    [key: string]: AssetVariantKind | string | undefined;
-  };
+  metadata?: Record<string, JsonValue>;
+  variants?: Record<string, AssetVariantKind>;
   visibility?: "personal" | "internal" | "link" | "public";
   primary_key?: string;
   primary_url?: string | null;

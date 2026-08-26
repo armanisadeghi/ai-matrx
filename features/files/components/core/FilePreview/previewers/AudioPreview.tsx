@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
-import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
+import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
 
 export interface AudioPreviewProps {
   url: string | null;
@@ -62,16 +62,17 @@ export function AudioPreview({
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
-  // Media durability: an audio file served by a signed (expiring) URL re-mints
-  // from its file_id on a load failure instead of dead-ending — a user's own
-  // file never just "expires". `src` is the (possibly re-minted) URL to play;
-  // `remintOnError` is wired to the <audio> error event; `remintFailed` flips
-  // true only after re-mint is exhausted. Durable/foreign URLs pass through.
+  // Media durability: on a load failure the file-session cookie is refreshed
+  // and the SAME durable URL retried once instead of dead-ending — a user's
+  // own file never just "expires". `remintOnError` is wired to the <audio>
+  // error event; `remintFailed` flips true only after the retry is exhausted.
+  // Foreign URLs pass through.
   const {
     src,
+    retryKey,
     onError: remintOnError,
     failed: remintFailed,
-  } = useRemintableSrc(url);
+  } = useDurableSrc(url);
 
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -270,6 +271,7 @@ export function AudioPreview({
       {/* Hidden native element drives playback; we only expose a custom UI. */}
       {url ? (
         <audio
+          key={retryKey}
           ref={audioRef}
           src={src}
           preload="metadata"

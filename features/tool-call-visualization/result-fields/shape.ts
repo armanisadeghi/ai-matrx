@@ -281,7 +281,7 @@ function readStringKey(obj: Record<string, unknown>, keys: readonly string[]): s
 const MIME_KEYS = ["mime_type", "media_type", "mime"] as const;
 const FILE_NAME_KEYS = ["file_name", "fileName", "filename", "name"] as const;
 const DOWNLOAD_KEYS = ["download_url", "downloadUrl"] as const;
-const FILE_URL_KEYS = ["url", "signed_url", "signedUrl", "cdn_url", "cdnUrl", "href"] as const;
+const FILE_URL_KEYS = ["url", "cdn_url", "cdnUrl", "href"] as const;
 
 /**
  * Detect a MEDIA-bearing value (image / video / audio only) and return a

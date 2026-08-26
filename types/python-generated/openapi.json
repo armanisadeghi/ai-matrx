@@ -47169,18 +47169,6 @@
               "type": "string",
               "title": "File Id"
             }
-          },
-          {
-            "name": "signed_url_ttl",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 604800,
-              "minimum": 60,
-              "default": 3600,
-              "title": "Signed Url Ttl"
-            }
           }
         ],
         "responses": {
@@ -47316,7 +47304,7 @@
           "Assets"
         ],
         "summary": "Assets Preview",
-        "description": "No-persist preview rendering. Replaces Next.js Sharp route.\n\nFull studio surface: ``fit`` (cover/contain/inside), ``position``\n(9-anchor names or continuous ``{x, y}`` focal point — including the\nsmart-crop modes ``entropy`` / ``attention``), ``background_color``\n(alpha-flatten + contain padding). See ``PreviewVariantSpec``.\n\nReturns base64 ``data_url`` (size ≤ ``max_inline_bytes``) or a\n5-minute ephemeral ``signed_url`` for larger renders. Per-variant\nerrors surface as ``{\"preset_id\": ..., \"error\": \"...\"}`` entries.",
+        "description": "No-persist preview rendering. Replaces Next.js Sharp route.\n\nFull studio surface: ``fit`` (cover/contain/inside), ``position``\n(9-anchor names or continuous ``{x, y}`` focal point — including the\nsmart-crop modes ``entropy`` / ``attention``), ``background_color``\n(alpha-flatten + contain padding). See ``PreviewVariantSpec``.\n\nReturns base64 ``data_url`` (size ≤ ``max_inline_bytes``) or a\n5-minute ``ephemeral_url`` for larger renders. Per-variant\nerrors surface as ``{\"preset_id\": ..., \"error\": \"...\"}`` entries.",
         "operationId": "assets_preview_assets_preview_post",
         "requestBody": {
           "content": {
@@ -47400,7 +47388,7 @@
           "Assets"
         ],
         "summary": "Assets Pdf Compress",
-        "description": "No-persist PDF compression. Replaces app/api/pdf/compress.\n\nAccepts a master via MediaRef. Returns base64 data URL (≤256 KB)\nor 5-min ephemeral signed URL.",
+        "description": "No-persist PDF compression. Replaces app/api/pdf/compress.\n\nAccepts a master via MediaRef. Returns base64 data URL (≤256 KB)\nor a 5-min ``ephemeral_url``.",
         "operationId": "assets_pdf_compress_assets_pdf_compress_post",
         "requestBody": {
           "content": {
@@ -47671,7 +47659,7 @@
           "Media"
         ],
         "summary": "Lazy-render and redirect to a vision-class variant of a master",
-        "description": "Render (or fetch the cached) variant and 302 to its signed URL.\n\nThe first call for a given ``(file_id, vision_class)`` pair runs the\nencoder and persists the variant row. Subsequent calls hit the cached\nrow and return immediately.",
+        "description": "Render (or fetch the cached) variant and 302 to its durable URL.\n\nThe first call for a given ``(file_id, vision_class)`` pair runs the\nencoder and persists the variant row. Subsequent calls hit the cached\nrow and return immediately.",
         "operationId": "get_or_render_variant_media__file_id__v__vision_class__get",
         "parameters": [
           {
@@ -47748,6 +47736,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/session": {
+      "post": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Mint File Session",
+        "description": "Mint the browser file-session cookie — the auth lane behind durable\nprivate render URLs.\n\nAn already-authenticated client (Bearer / fingerprint, with\n``credentials: 'include'``) calls this once at bootstrap (and again on a\n401'd render). The HttpOnly SameSite=None cookie then rides every\n``<img>``/``<video>`` request to ``GET /files/{id}/download``; the auth\nmiddleware accepts it ONLY on GET byte-serving routes — see\n``matrx_connect.middleware.session_cookie``.",
+        "operationId": "mint_file_session_files_session_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -49067,7 +49075,7 @@
           "Files"
         ],
         "summary": "Get File As Asset",
-        "description": "Return any cld_files row as an Asset envelope.\n\nSurfaces the same shape the new asset upload returns, so a file-\nbrowser click resolves to ``{url, cdn_url, signed_url, download_url}``\nplus every persisted variant. This is the platform-wide cure for\nthe \"click downloads when it should render\" bug class — the FE\nchooses inline vs. attachment per click, not per endpoint.",
+        "description": "Return any cld_files row as an Asset envelope.\n\nSurfaces the same shape the new asset upload returns, so a file-\nbrowser click resolves to ``{url, cdn_url, download_url}`` (all\ndurable, never signed) plus every persisted variant. This is the platform-wide cure for\nthe \"click downloads when it should render\" bug class — the FE\nchooses inline vs. attachment per click, not per endpoint.",
         "operationId": "get_file_as_asset_files__file_id__asset_get",
         "parameters": [
           {
@@ -49077,18 +49085,6 @@
             "schema": {
               "type": "string",
               "title": "File Id"
-            }
-          },
-          {
-            "name": "signed_url_ttl",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 604800,
-              "minimum": 60,
-              "default": 3600,
-              "title": "Signed Url Ttl"
             }
           }
         ],
@@ -68254,15 +68250,7 @@
         "title": "AssignmentUniqueness"
       },
       "AudioExtractionRequest": {
-        "properties": {
-          "signed_ttl": {
-            "type": "integer",
-            "maximum": 604800,
-            "minimum": 60,
-            "title": "Signed Ttl",
-            "default": 3600
-          }
-        },
+        "properties": {},
         "additionalProperties": false,
         "type": "object",
         "title": "AudioExtractionRequest"
@@ -71192,13 +71180,6 @@
             ],
             "title": "Share Level",
             "default": "read"
-          },
-          "signed_url_ttl": {
-            "type": "integer",
-            "maximum": 604800,
-            "minimum": 60,
-            "title": "Signed Url Ttl",
-            "default": 3600
           },
           "include_social_baseline": {
             "anyOf": [
@@ -128357,18 +128338,6 @@
             "title": "Url",
             "description": "Always-renderable URL for the file per the platform URL contract; bind UIs to this."
           },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Signed Url",
-            "description": "Short-lived inline-view URL. A handoff, never an identity — do not store it."
-          },
           "download_url": {
             "anyOf": [
               {
@@ -128379,7 +128348,7 @@
               }
             ],
             "title": "Download Url",
-            "description": "Short-lived attachment-download URL (Content-Disposition: attachment)."
+            "description": "Durable attachment-download URL (Content-Disposition: attachment)."
           },
           "cdn_url": {
             "anyOf": [
@@ -132595,13 +132564,6 @@
               }
             ],
             "title": "Page Ranges"
-          },
-          "signed_ttl": {
-            "type": "integer",
-            "maximum": 604800,
-            "minimum": 60,
-            "title": "Signed Ttl",
-            "default": 3600
           }
         },
         "additionalProperties": false,
@@ -135999,7 +135961,7 @@
         },
         "type": "object",
         "title": "PodcastMediaUploadResponse",
-        "description": "Legacy response shape preserved for back-compat with existing FE callers.\n\nPrefer ``POST /assets`` for new integrations — it returns the full\nAsset envelope (all variants, CDN/signed/download URLs)."
+        "description": "Legacy response shape preserved for back-compat with existing FE callers.\n\nPrefer ``POST /assets`` for new integrations — it returns the full\nAsset envelope (all variants, CDN/download URLs — all durable)."
       },
       "PodcastReconcileRequest": {
         "properties": {

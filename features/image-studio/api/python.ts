@@ -59,7 +59,6 @@ export interface EditOutput {
 export interface AssetVariantUrl {
   url: string | null;
   cdn_url?: string | null;
-  signed_url?: string | null;
   download_url?: string | null;
   width?: number | null;
   height?: number | null;
@@ -105,7 +104,6 @@ function parseAssetVariant(v: Record<string, unknown>): AssetVariantUrl {
   return {
     url: nullableString(v.url),
     cdn_url: nullableString(v.cdn_url),
-    signed_url: nullableString(v.signed_url),
     download_url: nullableString(v.download_url),
     width: nullableNumber(v.width),
     height: nullableNumber(v.height),

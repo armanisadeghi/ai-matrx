@@ -29,8 +29,7 @@ export class VirtualSourceError extends Error {
       | "delete"
       | "create"
       | "list_versions"
-      | "restore_version"
-      | "get_signed_url",
+      | "restore_version",
     message?: string,
   ) {
     super(

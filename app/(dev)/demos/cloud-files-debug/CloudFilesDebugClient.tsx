@@ -402,14 +402,6 @@ export function CloudFilesDebugClient() {
     [onUpload],
   );
 
-  const onSignedUrl = useCallback(() => {
-    if (!lastFileId) return;
-    void runFetch("signedUrl", {
-      method: "GET",
-      path: `/files/${lastFileId}/url?expires_in=3600`,
-    });
-  }, [lastFileId, runFetch]);
-
   const onDownloadFile = useCallback(() => {
     if (!lastFileId) return;
     void runFetch("download", {
@@ -693,14 +685,6 @@ export function CloudFilesDebugClient() {
 
             {/* Row 3: post-upload tests (only enabled with a fileId) */}
             <div className="flex flex-wrap gap-1.5">
-              <TestButton
-                running={!!running.signedUrl}
-                onClick={onSignedUrl}
-                icon={<ExternalLink className="h-3.5 w-3.5" />}
-                label="GET /files/{id}/url"
-                hint="Get a signed URL for the last uploaded file."
-                disabled={!lastFileId || !jwt}
-              />
               <TestButton
                 running={!!running.download}
                 onClick={onDownloadFile}

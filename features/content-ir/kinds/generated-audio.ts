@@ -6,10 +6,9 @@
  * (`aidream/packages/matrx-ai/matrx_ai/graph_nodes/tts_action.py`).
  *
  * MEDIA DURABILITY. `TextToSpeechOutput` carries `file_id` — the durable
- * handle — beside `audio_url` / `audio_cdn_url` / `audio_signed_url`. The
- * bridge prefers the id and falls back CDN → url → signed, so a clip renders
- * through the most durable reference the producer gave it and an expiring URL
- * re-mints instead of breaking.
+ * handle — beside `audio_url` / `audio_cdn_url`. The bridge prefers the id and
+ * falls back CDN → url, so a clip renders through the most durable reference
+ * the producer gave it.
  *
  * Single-object shape, so the bridge is effectively complete-only in practice
  * — but it is written partial-tolerant like every other bridge, so a
@@ -61,17 +60,23 @@ export const generatedAudioKindSchema: KindSchema = {
       nullable: true,
       description: "Permanent CDN URL, present only when the audio is public.",
     },
-    audio_signed_url: {
+    audio_path: {
       type: "string",
       nullable: true,
-      description: "Expiring playable URL, present only for non-public audio.",
+      description: "Local temp path, when the provider wrote a file.",
     },
-    audio_path: { type: "string", nullable: true, description: "Local temp path, when the provider wrote a file." },
-    audio_b64: { type: "string", nullable: true, description: "Base64 bytes, when nothing else is available." },
+    audio_b64: {
+      type: "string",
+      nullable: true,
+      description: "Base64 bytes, when nothing else is available.",
+    },
     mime_type: { type: "string", nullable: true },
     duration_seconds: { type: "number" },
     model: { type: "string", required: true },
-    usage: { type: "json", description: "Aggregated token / cost usage for the run." },
+    usage: {
+      type: "json",
+      description: "Aggregated token / cost usage for the run.",
+    },
   },
 };
 
@@ -99,20 +104,19 @@ export type GeneratedAudioData = Omit<
   isComplete: boolean;
 };
 
-export function readGeneratedAudio(value: Record<string, unknown>): GeneratedAudioData {
+export function readGeneratedAudio(
+  value: Record<string, unknown>,
+): GeneratedAudioData {
   const fileId = optionalString(value.file_id);
   const audioUrl = optionalString(value.audio_url);
   const audioCdnUrl = optionalString(value.audio_cdn_url);
-  const audioSignedUrl = optionalString(value.audio_signed_url);
-  // Durable first: the id, then the permanent CDN URL, then whatever playable
-  // URL exists. A signed URL is last because it is a handoff, not an identity.
-  const handle = fileId ?? audioCdnUrl ?? audioUrl ?? audioSignedUrl;
+  // Durable first: the id, then the permanent CDN URL, then the playable URL.
+  const handle = fileId ?? audioCdnUrl ?? audioUrl;
   return {
     handle,
     file_id: fileId,
     audio_url: audioUrl,
     audio_cdn_url: audioCdnUrl,
-    audio_signed_url: audioSignedUrl,
     mime_type: optionalString(value.mime_type),
     duration_seconds: optionalNumber(value.duration_seconds),
     model: stringOrEmpty(value.model),
@@ -140,7 +144,6 @@ const MD_KNOWN_KEYS = [
   "file_id",
   "audio_url",
   "audio_cdn_url",
-  "audio_signed_url",
   "audio_path",
   "audio_b64",
   "mime_type",

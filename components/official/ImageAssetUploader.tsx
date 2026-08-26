@@ -284,8 +284,6 @@ function buildSyntheticResult(
         size_bytes: null,
         url,
         cdn_url: null,
-        signed_url: null,
-        signed_url_expires_at: null,
         download_url: null,
         metadata: {},
       },

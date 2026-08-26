@@ -105,13 +105,12 @@ export function dbRowToCloudFile(row: CloudFileReadRow): CloudFile {
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
     // The DB has no computed-URL columns (public_url / url / cdn_url /
-    // signed_url / download_url are all server-computed on the REST path).
-    // Direct-DB reads (Supabase realtime, SSR) leave these null; the
-    // resolver mints a signed URL on demand via useFileSrc.
+    // download_url are all server-computed on the REST path). Direct-DB
+    // reads (Supabase realtime, SSR) leave these null; the resolver builds
+    // the durable URL from the file id on demand via useFileSrc.
     publicUrl: null,
     url: null,
     cdnUrl: null,
-    signedUrl: null,
     downloadUrl: null,
     // The DB no longer has a thumbnail_url column either (Phase 1b dropped
     // it); resolved server-side from the variants store on the REST path.
@@ -173,16 +172,12 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
     // CDN URL for visibility="public" files when the server has the CDN
     // feature enabled. Includes a ?v=<checksum[:8]> cache-buster.
     publicUrl: row.public_url ?? null,
-    // The four-flavour URL envelope. The REST FileRecord now carries all
-    // four (api-types.ts FileRecord). Dropping them here is what forced
-    // every handler-path consumer to re-mint signed URLs even for public
-    // files that already have a permanent cdn_url — the root cause of the
-    // "share links should be CDN" bug.
+    // The DURABLE URL envelope (api-types.ts FileRecord): `url` is the
+    // canonical renderable locator (CDN for public, durable download route
+    // for private), `cdn_url` public-only, `download_url` attachment
+    // disposition. None of them expire.
     url: row.url ?? null,
     cdnUrl: row.cdn_url ?? null,
-    // The live contract now exposes the authenticated durable locator as
-    // `url`; short-lived signed locators are no longer persisted on records.
-    signedUrl: null,
     downloadUrl: row.download_url ?? null,
     // Phase 1b: backend-rendered thumbnail (every file gets one). The
     // wire field is resolved server-side from the variants store now

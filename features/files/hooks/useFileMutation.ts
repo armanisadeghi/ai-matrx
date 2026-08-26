@@ -28,12 +28,9 @@
  * ──────
  * - `delete` is a reserved word, so the destructive ops are exposed as
  *   `remove(fileId)` / `removeFolder(folderId)`.
- * - `signedUrl(fileId)` returns `{ url, expiresIn }`; the legacy name is
- *   retained while callers move to the durable authenticated URL contract.
- *   It's named like a
- *   reader because it doesn't mutate state, but it's grouped here because
- *   the consumers that need it (table row actions, "open in new tab") are
- *   the same surfaces that need the other ops.
+ * - There is no URL reader here: durable URLs are a pure function of the
+ *   file id — build them synchronously via `fileUrls()` /
+ *   `pythonFileInlineUrl()` or bind the record's own `url` field.
  */
 
 import { useMemo } from "react";
@@ -41,7 +38,6 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   deleteFile,
   deleteFolder,
-  getSignedUrl,
   moveFile,
   renameFile,
   updateFileMetadata,
@@ -67,15 +63,6 @@ export interface FileMutations {
   setVisibility(fileId: string, visibility: Visibility): Promise<void>;
   /** Soft-delete (trash) by default; pass `hard: true` to bypass trash. */
   remove(fileId: string, options?: { hard?: boolean }): Promise<void>;
-  /**
-   * Fetch the durable authenticated URL. Read-shaped, but lives here because the
-   * consumers (table actions, "open in new tab") are the same surfaces
-   * that need the mutation ops above. The TTL option is compatibility-only.
-   */
-  signedUrl(
-    fileId: string,
-    options?: { expiresIn?: number },
-  ): Promise<{ url: string; expiresIn: number }>;
 }
 
 /**
@@ -100,10 +87,6 @@ export function useFileMutation(): FileMutations {
         ).unwrap(),
       remove: (fileId, options) =>
         dispatch(deleteFile({ fileId, hardDelete: options?.hard })).unwrap(),
-      signedUrl: (fileId, options) =>
-        dispatch(
-          getSignedUrl({ fileId, expiresIn: options?.expiresIn }),
-        ).unwrap(),
     }),
     [dispatch],
   );

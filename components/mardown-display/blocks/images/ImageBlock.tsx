@@ -14,7 +14,7 @@ import {
   CopyIcon,
   PencilIcon,
 } from "lucide-react";
-import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
+import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 
 const MAX_IMAGE_HEIGHT = 700;
@@ -25,11 +25,11 @@ interface ImageBlockProps {
 }
 
 const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) => {
-  // A markdown image can be one of our own (signed-S3) files. Route the URL
-  // through the self-heal primitive so an expired signature re-mints from the
-  // recovered file_id instead of rendering a broken image. For non-owned URLs
-  // this is a transparent passthrough.
-  const { src, onError: handleImageError } = useRemintableSrc(srcProp);
+  // A markdown image can be one of our own files. Route the URL through the
+  // self-heal primitive so a load failure refreshes the file-session cookie
+  // and retries the same durable URL instead of rendering a broken image. For
+  // non-owned URLs this is a transparent passthrough.
+  const { src, retryKey, onError: handleImageError } = useDurableSrc(srcProp);
   // Our own media has a recoverable file_id → offer the "Edit" escape hatch
   // (open the real image editor); external/unknown URLs simply don't show it.
   const editableFileId = fileIdFromUserFilesUrl(src);
@@ -156,6 +156,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) 
   return (
     <div className="relative my-4 rounded-3xl group max-w-[900px]">
       <img
+        key={retryKey}
         ref={imageRef}
         src={src}
         alt={alt}
@@ -319,6 +320,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) 
           onClick={handleCloseExpanded}
         >
           <img
+            key={retryKey}
             src={src}
             alt={alt}
             onClick={(e) => e.stopPropagation()}

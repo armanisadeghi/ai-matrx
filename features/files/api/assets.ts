@@ -73,8 +73,6 @@ export interface UploadAssetParams {
   shareWith?: string | ReadonlyArray<string>;
   /** Default `"read"`. */
   shareLevel?: "read" | "write" | "admin";
-  /** Signed-URL TTL in seconds. Server bounds to [60, 604800]. Default 3600. */
-  signedUrlTtl?: number;
   /** Override the preset's default `include_social_baseline`. */
   includeSocialBaseline?: boolean;
   /** Free-form metadata to attach to every variant + the master row. */
@@ -96,8 +94,6 @@ function buildUploadForm(params: UploadAssetParams): FormData {
     if (joined) form.append("share_with", joined);
   }
   if (params.shareLevel) form.append("share_level", params.shareLevel);
-  if (params.signedUrlTtl !== undefined)
-    form.append("signed_url_ttl", String(params.signedUrlTtl));
   if (params.includeSocialBaseline !== undefined)
     form.append(
       "include_social_baseline",
@@ -145,10 +141,7 @@ export async function uploadAssetWithProgress(
 // Read
 // ---------------------------------------------------------------------------
 
-export interface GetAssetParams {
-  /** Signed-URL TTL in seconds. Server bounds to [60, 604800]. */
-  signed_url_ttl?: number;
-}
+export interface GetAssetParams {}
 
 /**
  * Read the Asset envelope for a known asset master file id.
@@ -161,14 +154,10 @@ export interface GetAssetParams {
  */
 export async function getAsset(
   fileId: string,
-  params: GetAssetParams = {},
+  _params: GetAssetParams = {},
   opts: RequestOptions = {},
 ): Promise<{ data: Asset; meta: ResponseMeta }> {
-  const q =
-    params.signed_url_ttl !== undefined
-      ? `?signed_url_ttl=${params.signed_url_ttl}`
-      : "";
-  return getJson<Asset>(`${ENDPOINTS.assets.detail(fileId)}${q}`, opts);
+  return getJson<Asset>(ENDPOINTS.assets.detail(fileId), opts);
 }
 
 /**
@@ -179,14 +168,10 @@ export async function getAsset(
  */
 export async function getAssetForFile(
   fileId: string,
-  params: GetAssetParams = {},
+  _params: GetAssetParams = {},
   opts: RequestOptions = {},
 ): Promise<{ data: Asset; meta: ResponseMeta }> {
-  const q =
-    params.signed_url_ttl !== undefined
-      ? `?signed_url_ttl=${params.signed_url_ttl}`
-      : "";
-  return getJson<Asset>(`${ENDPOINTS.assets.forFile(fileId)}${q}`, opts);
+  return getJson<Asset>(ENDPOINTS.assets.forFile(fileId), opts);
 }
 
 // ---------------------------------------------------------------------------
@@ -302,8 +287,9 @@ export interface PdfCompressResult {
   reduction_ratio: number;
   mime_type: string;
   data_url: string | null;
-  signed_url: string | null;
-  /** Seconds until signed_url expires (signed_url mode only). */
+  /** 5-minute row-less scratch URL — the ONLY lawful expiring URL shape. */
+  ephemeral_url: string | null;
+  /** Seconds until ephemeral_url expires (ephemeral mode only). */
   expires_in?: number | null;
   /** Tier the caller asked for. */
   level_requested?: number | null;
@@ -345,8 +331,8 @@ export async function previewAssetMultipart(
 
 /**
  * `POST /assets/pdf-compress/multipart` — compress a PDF WITHOUT
- * persisting it. Returns `data_url` (≤256 KB) or `signed_url`
- * (5-minute TTL). Replaces the deleted Next.js Sharp/PDF route.
+ * persisting it. Returns `data_url` (≤256 KB) or `ephemeral_url`
+ * (5-minute row-less scratch). Replaces the deleted Next.js Sharp/PDF route.
  *
  * @param level minimum compression tier (1..5). Default 3. Server may
  *   escalate above this when `maxSizeBytes` forces it.
@@ -375,23 +361,27 @@ export async function compressPdfMultipart(
 
 /**
  * Materialize a `PreviewVariantResult` / `PdfCompressResult` body that
- * carries either `data_url` or `signed_url` into a `Blob`. Useful when
+ * carries either `data_url` or `ephemeral_url` into a `Blob`. Useful when
  * the FE needs the bytes locally (e.g. to wrap in a `File` for further
  * upload).
  */
 export async function materializeAssetResult(
-  result: { data_url: string | null; signed_url: string | null; mime_type: string },
+  result: {
+    data_url: string | null;
+    ephemeral_url: string | null;
+    mime_type: string;
+  },
 ): Promise<Blob> {
   if (result.data_url) {
     const response = await fetch(result.data_url);
     return response.blob();
   }
-  if (result.signed_url) {
-    const response = await fetch(result.signed_url);
+  if (result.ephemeral_url) {
+    const response = await fetch(result.ephemeral_url);
     if (!response.ok) {
       throw new Error(`Failed to fetch ephemeral asset URL: HTTP ${response.status}`);
     }
     return response.blob();
   }
-  throw new Error("Asset result has neither data_url nor signed_url");
+  throw new Error("Asset result has neither data_url nor ephemeral_url");
 }

@@ -48,11 +48,10 @@ export interface RenderedVariant {
   asset: Asset;
   /**
    * Best URL for downloading the variant — prefers `download_url`
-   * (Content-Disposition: attachment), falls back to `signed_url`,
-   * then `cdn_url`, then `url`.
+   * (Content-Disposition: attachment), then `cdn_url`, then `url`.
    */
   downloadUrl: string;
-  /** Renderable URL — prefers `cdn_url` then `signed_url` then `url`. */
+  /** Renderable URL — prefers `cdn_url` then `url`. */
   displayUrl: string;
   mimeType: string | null;
   width: number | null;
@@ -100,15 +99,14 @@ export async function renderImageVariant(
     );
   }
 
-  const displayUrl = variant.cdn_url ?? variant.signed_url ?? variant.url;
-  const downloadUrl =
-    variant.download_url ?? variant.signed_url ?? variant.cdn_url ?? displayUrl;
+  const displayUrl = variant.cdn_url ?? variant.url;
+  const downloadUrl = variant.download_url ?? variant.cdn_url ?? displayUrl;
 
   if (!downloadUrl) {
     throw new Error(`render-image-variant: variant "${key}" has no usable URL`);
   }
   if (!displayUrl) {
-    // download_url can be present while cdn_url/signed_url/url are all
+    // download_url can be present while cdn_url/url are both
     // absent — that would silently hand callers an empty <img src>. Fail
     // loud instead of masking it (matches the downloadUrl check above).
     throw new Error(

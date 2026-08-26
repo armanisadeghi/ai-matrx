@@ -403,7 +403,7 @@ export const ENDPOINTS = {
     /**
      * POST — no-persist preview rendering (E.16, matrx-utils v1.1.0).
      * Accepts a `MediaRef` source + variants[]. Returns either base64
-     * `data_url` (≤256 KB) or 5-min ephemeral `signed_url`. Replaces the
+     * `data_url` (≤256 KB) or a 5-min `ephemeral_url`. Replaces the
      * deleted Next.js Sharp route at app/api/images/studio/process.
      */
     preview: "/assets/preview" as const,
@@ -415,7 +415,7 @@ export const ENDPOINTS = {
     previewMultipart: "/assets/preview/multipart" as const,
     /**
      * POST — no-persist PDF compression (E.17). Accepts a `MediaRef` source.
-     * Returns `data_url` (≤256 KB) or 5-min ephemeral `signed_url`.
+     * Returns `data_url` (≤256 KB) or a 5-min `ephemeral_url`.
      * Replaces the deleted Next.js route at app/api/pdf/compress.
      */
     pdfCompress: "/assets/pdf-compress" as const,

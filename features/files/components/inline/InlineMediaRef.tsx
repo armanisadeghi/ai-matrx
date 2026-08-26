@@ -44,10 +44,7 @@ import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
-import {
-  getOrMintSignedUrl,
-  invalidateSignedUrl,
-} from "@/features/files/handler/intelligence/signed-url-cache";
+import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
 import type { FileSource } from "@/features/files/handler/types";
 import type { MediaRef } from "@/features/files/types";
 
@@ -617,62 +614,20 @@ export function InlineMediaRef({
     onPause: () => setIsMediaPlaying(false),
     onEnded: () => setIsMediaPlaying(false),
   };
-  // A freshly re-minted URL after the resolved one failed to load. For an
-  // owned file, a dead URL is a non-event — we re-mint from file_id rather
-  // than surface a broken image.
-  const [remintedUrl, setRemintedUrl] = useState<string | null>(null);
-  const remintAttempts = useRef(0);
-  useEffect(() => {
-    setRemintedUrl(null);
-    remintAttempts.current = 0;
-  }, [sourceFileId]);
-
-  const url = remintedUrl ?? pixelReadableUrl ?? resolvedUrl;
+  const durableSrc = useDurableSrc(
+    pixelReadableUrl ?? resolvedUrl,
+    !crossOrigin ? (sourceFileId ?? undefined) : undefined,
+    onError,
+  );
+  const url = durableSrc.src || null;
   const mediaResolutionError =
     pixelReadableError ?? resolveError?.message ?? null;
   const dimensions = resolveDimensions(size);
   const isFill = dimensions === "fill";
   const elementType = inferElementType(ref, as);
 
-  // Track whether the resolved URL failed to load. Reset whenever the
-  // URL changes — a different attempt deserves a fresh chance.
-  const [hasLoadError, setHasLoadError] = useState(false);
-  useEffect(() => {
-    setHasLoadError(false);
-  }, [url]);
-
-  const handleLoadError = useCallback(
-    (
-      event: React.SyntheticEvent<
-        HTMLImageElement | HTMLVideoElement | HTMLAudioElement
-      >,
-    ) => {
-      // Owned file (file_id source) → re-mint before surfacing an error.
-      if (sourceFileId && !crossOrigin && remintAttempts.current < 2) {
-        remintAttempts.current += 1;
-        console.warn(
-          "[file-handler] inline media failed to load — re-minting owned " +
-            `file (a user's own file never just 'expires'). fileId=${sourceFileId} ` +
-            `attempt=${remintAttempts.current}`,
-        );
-        invalidateSignedUrl(sourceFileId);
-        getOrMintSignedUrl(sourceFileId)
-          .then((fresh) => setRemintedUrl(fresh.url))
-          .catch((err) => {
-            console.error(
-              `[file-handler] inline re-mint FAILED for ${sourceFileId}`,
-              err,
-            );
-            setHasLoadError(true);
-            onError?.(event);
-          });
-        return;
-      }
-      setHasLoadError(true);
-      onError?.(event);
-    },
-    [crossOrigin, onError, sourceFileId],
-  );
+  const hasLoadError = durableSrc.failed;
+  const handleLoadError = durableSrc.onError;
 
   const defaultIcon =
     elementType === "video" ? (
@@ -799,6 +754,7 @@ export function InlineMediaRef({
   if (elementType === "video") {
     return (
       <video
+        key={durableSrc.retryKey}
         ref={sinkRef}
         src={url}
         {...sizeAttrs}
@@ -823,6 +779,7 @@ export function InlineMediaRef({
   if (elementType === "audio") {
     return (
       <audio
+        key={durableSrc.retryKey}
         ref={sinkRef}
         src={url}
         className={cn(baseCls)}
@@ -855,6 +812,7 @@ export function InlineMediaRef({
   if (isCdnUrl && !isFill && !needsPlainImg) {
     return (
       <Image
+        key={durableSrc.retryKey}
         src={url}
         alt={alt}
         width={dimensions.width}
@@ -874,6 +832,7 @@ export function InlineMediaRef({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
+      key={durableSrc.retryKey}
       ref={mediaElementRef as React.Ref<HTMLImageElement> | undefined}
       src={url}
       alt={alt}

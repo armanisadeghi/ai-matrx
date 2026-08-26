@@ -382,7 +382,6 @@ export interface AudioOutputData {
   mime_type: string;
   file_id?: string | null;
   cdn_url?: string | null;
-  signed_url?: string | null;
   download_url?: string | null;
 }
 
@@ -406,7 +405,6 @@ export interface AudioStreamEndData {
   mime_type?: string;
   file_id?: string | null;
   cdn_url?: string | null;
-  signed_url?: string | null;
   download_url?: string | null;
   duration_ms?: number | null;
   sample_rate?: number;
@@ -730,7 +728,6 @@ export interface ImageOutputData {
   mime_type: string;
   file_id?: string | null;
   cdn_url?: string | null;
-  signed_url?: string | null;
   download_url?: string | null;
 }
 
@@ -774,7 +771,7 @@ export interface ImageStudioVariantData {
   height?: number | null;
   quality?: number | null;
   size?: number | null;
-  signed_url?: string | null;
+  ephemeral_url?: string | null;
   expires_in?: number | null;
   compression_ratio?: number | null;
   notes?: string[];
@@ -1039,9 +1036,7 @@ export interface AudioBlock {
   file_id?: string | null;
   visibility?: "personal" | "internal" | "link" | "public" | null;
   cdn_url?: string | null;
-  signed_url?: string | null;
   download_url?: string | null;
-  signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
   external_url?: string | null;
@@ -1064,9 +1059,7 @@ export interface DocumentBlock {
   file_id?: string | null;
   visibility?: "personal" | "internal" | "link" | "public" | null;
   cdn_url?: string | null;
-  signed_url?: string | null;
   download_url?: string | null;
-  signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
   external_url?: string | null;
@@ -1089,9 +1082,7 @@ export interface ImageBlock {
   file_id?: string | null;
   visibility?: "personal" | "internal" | "link" | "public" | null;
   cdn_url?: string | null;
-  signed_url?: string | null;
   download_url?: string | null;
-  signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
   external_url?: string | null;
@@ -1115,9 +1106,7 @@ export interface VideoBlock {
   file_id?: string | null;
   visibility?: "personal" | "internal" | "link" | "public" | null;
   cdn_url?: string | null;
-  signed_url?: string | null;
   download_url?: string | null;
-  signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
   external_url?: string | null;
@@ -1142,9 +1131,7 @@ export interface YouTubeBlock {
   file_id?: string | null;
   visibility?: "personal" | "internal" | "link" | "public" | null;
   cdn_url?: string | null;
-  signed_url?: string | null;
   download_url?: string | null;
-  signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
   external_url?: string | null;
@@ -1741,7 +1728,6 @@ export interface VideoOutputData {
   mime_type: string;
   file_id?: string | null;
   cdn_url?: string | null;
-  signed_url?: string | null;
   download_url?: string | null;
 }
 
@@ -3432,7 +3418,7 @@ export interface AudioOutputRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
-/** Image output from the AI. Display priority: cdn_url → file handler (via file_id) → signed_url → url. */
+/** Image output from the AI. Display priority: cdn_url → file handler (via file_id) → url (durable). */
 export interface ImageOutputRenderBlock {
   type: "image_output";
   content: string;

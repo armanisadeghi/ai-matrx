@@ -72,6 +72,7 @@ import {
   purgeFile as purgeFileThunk,
   restoreFile as restoreFileThunk,
 } from "@/features/files/redux/thunks";
+import * as Files from "@/features/files/api/files";
 import type { Visibility } from "@/features/files/types";
 import { clearSelection, setActiveFileId } from "@/features/files/redux/slice";
 import {
@@ -80,7 +81,7 @@ import {
 } from "@/features/files/redux/selectors";
 import {
   deleteFile as deleteFileThunk,
-  getSignedUrl as getSignedUrlThunk,
+  getFileUrl as getFileUrlThunk,
   moveFile as moveFileThunk,
   uploadFiles as uploadFilesThunk,
 } from "@/features/files/redux/thunks";
@@ -198,7 +199,7 @@ export function FileContextMenu({
     try {
       await runBatch(async (id) => {
         const res = await dispatch(
-          getSignedUrlThunk({ fileId: id, expiresIn: 3600 }),
+          getFileUrlThunk({ fileId: id }),
         );
         const url = (res as { payload?: { url?: string } } | undefined)?.payload
           ?.url;
@@ -260,14 +261,10 @@ export function FileContextMenu({
     if (!file) return;
     setBusy("download"); // reuse busy state — same UX (spinner on item)
     try {
-      const res = await dispatch(getSignedUrlThunk({ fileId, expiresIn: 600 }));
-      const url = (res as { payload?: { url?: string } } | undefined)?.payload
-        ?.url;
-      if (!url) throw new Error("Couldn't fetch a signed URL.");
-      const blob = await fetch(url).then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.blob();
-      });
+      // Authenticated byte read through the python-client (Bearer header) —
+      // a bare fetch of the durable URL would not carry the cross-origin
+      // file-session cookie.
+      const { blob } = await Files.downloadFile(fileId);
       // Insert " (copy)" before the extension so it sorts adjacent to the
       // original — `report.pdf` → `report (copy).pdf`.
       const base = file.fileName;

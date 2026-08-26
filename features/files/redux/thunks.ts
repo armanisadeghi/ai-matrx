@@ -120,7 +120,6 @@ import type {
   ResourceType,
   RestoreVersionArg,
   RevokePermissionArg,
-  SignedUrlArg,
   UpdateFileMetadataArg,
   UploadFilesArg,
 } from "@/features/files/types";
@@ -321,7 +320,6 @@ export const loadUserFileTree = createAsyncThunk<
             publicUrl: null,
             url: null,
             cdnUrl: null,
-            signedUrl: null,
             downloadUrl: null,
             thumbnailUrl: null,
             source: { kind: "real" },
@@ -1857,24 +1855,24 @@ export const revokeShareLink = createAsyncThunk<
 });
 
 // ---------------------------------------------------------------------------
-// Utility — getSignedUrl (compatibility name; no slice state change).
+// Utility — getFileUrl (no slice state change).
 //
-// Routes through the universal handler and returns the live contract's durable
-// authenticated URL. `expiresIn` remains in the compatibility return shape;
-// callers do not use it.
+// Routes through the universal handler and returns the durable renderable
+// URL (permanent CDN for public files, the durable authenticated download
+// route otherwise). Durable URLs never expire.
 // ---------------------------------------------------------------------------
 
-export const getSignedUrl = createAsyncThunk<
-  { url: string; expiresIn: number },
-  SignedUrlArg,
+export const getFileUrl = createAsyncThunk<
+  { url: string },
+  { fileId: string },
   ThunkApi
->("cloudFiles/getSignedUrl", async ({ fileId, expiresIn }) => {
+>("cloudFiles/getFileUrl", async ({ fileId }) => {
   if (isVirtualResourceId(fileId)) {
-    // Virtual files don't have S3 bytes — there's no signed URL. Callers
-    // already hide the buttons that surface signed URLs (Download, Copy
-    // link, Open in new tab) for virtual rows; this guards the API path
-    // for any remaining callers.
-    throw new Error("Signed URLs aren't available for virtual sources");
+    // Virtual files don't have stored bytes — there's no byte URL. Callers
+    // already hide the buttons that surface URLs (Download, Copy link,
+    // Open in new tab) for virtual rows; this guards the API path for any
+    // remaining callers.
+    throw new Error("Byte URLs aren't available for virtual sources");
   }
   const url = await fileHandler
     .use({ kind: "file_id", fileId })
@@ -1882,7 +1880,7 @@ export const getSignedUrl = createAsyncThunk<
   if (!url) {
     throw new Error(`Could not resolve a URL for file ${fileId}`);
   }
-  return { url, expiresIn: expiresIn ?? 3600 };
+  return { url };
 });
 
 // ---------------------------------------------------------------------------

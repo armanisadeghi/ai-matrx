@@ -12,18 +12,14 @@
  * 🚨 MEDIA DURABILITY. Every one of these shapes may carry a `file_id` (the
  * durable handle) AND one or more URLs (a handoff). The rule this module
  * encodes once, so no component re-decides it: **prefer `file_id`; fall back
- * to the most durable URL available** (CDN → plain URL → signed URL). Never
+ * to the most durable URL available** (CDN → plain URL). Never
  * persist or pass the URL as identity — `mediaHandleOf` returns the value
  * `<InlineMediaRef>` should resolve, and InlineMediaRef owns the URL
  * lifecycle from there (re-minting a signed URL from the id on expiry).
  *
- * As of 2026-08-20 the Python producers no longer POPULATE `signed_url` /
- * `audio_signed_url` on these outputs at all: a node output is written to
- * `workflow.node_outcome` and read back days later, so an expiring URL stored
- * there is a permanent 403 (51 live rows did exactly that). The fields stay in
- * the mirrors because the seeded kind schemas still declare them, and the
- * `mediaHandleOf` fallback stays because old rows carry them — it just never
- * fires for a new run. Never "fix" a null `signed_url` by populating it.
+ * The registered schemas deliberately omit signed-URL fields: a node output is
+ * written to `workflow.node_outcome` and read back days later, so an expiring
+ * URL stored there becomes a permanent 403. Never add one back as identity.
  *
  * `GeneratedVideo` / `TextToSpeechOutput` do not carry `file_id` YET — the
  * producer-side fix landed 2026-08-18 (every media payload carries `file_id`);
@@ -51,7 +47,8 @@ export function optionalNumber(value: unknown): number | null {
 export function stringList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter(
-    (entry): entry is string => typeof entry === "string" && entry.trim() !== "",
+    (entry): entry is string =>
+      typeof entry === "string" && entry.trim() !== "",
   );
 }
 
@@ -61,7 +58,7 @@ export function stringList(value: unknown): string[] {
  * a locator field cannot leave this reader behind (`check:kind-type-twins`).
  */
 export type MediaHandleFields = MaterializedKind<
-  Pick<GeneratedImage, "file_id" | "url" | "cdn_url" | "signed_url" | "mime_type">
+  Pick<GeneratedImage, "file_id" | "url" | "cdn_url" | "mime_type">
 >;
 
 export function readMediaHandleFields(
@@ -71,7 +68,6 @@ export function readMediaHandleFields(
     file_id: optionalString(entry.file_id),
     url: optionalString(entry.url),
     cdn_url: optionalString(entry.cdn_url),
-    signed_url: optionalString(entry.signed_url),
     mime_type: optionalString(entry.mime_type),
   };
 }
@@ -83,11 +79,13 @@ export function readMediaHandleFields(
  * never a broken tag).
  */
 export function mediaHandleOf(fields: MediaHandleFields): string | null {
-  return fields.file_id ?? fields.cdn_url ?? fields.url ?? fields.signed_url;
+  return fields.file_id ?? fields.cdn_url ?? fields.url;
 }
 
 /** Aggregate usage as these outputs report it — display only, never math we own. */
-export type MediaUsage = MaterializedKind<Pick<AiUsage, "cost_usd" | "total_tokens">>;
+export type MediaUsage = MaterializedKind<
+  Pick<AiUsage, "cost_usd" | "total_tokens">
+>;
 
 export function readUsage(value: unknown): MediaUsage | null {
   if (!isRecord(value)) return null;

@@ -92,8 +92,7 @@ export interface VirtualContent {
   path: string;
   language: string;
   mimeType: string;
-  /** UTF-8 text. For binary blobs (rare in fake files) the adapter exposes
-   *  `getSignedUrl()` instead. */
+  /** UTF-8 text. Binary blobs are not modeled by virtual adapters. */
   content: string;
   updatedAt?: string;
 }
@@ -133,7 +132,7 @@ export interface VirtualCapabilities {
   move: boolean;
   /** Adapter exposes a folder hierarchy via `list({ parentId })`. */
   folders: boolean;
-  /** Adapter exposes binary content via `getSignedUrl()`. */
+  /** Adapter exposes binary content. */
   binary: boolean;
   /** Adapter has per-row version history (`listVersions` + `restoreVersion`). */
   versions: boolean;
@@ -334,8 +333,4 @@ export interface VirtualSourceAdapter {
 
   // ---- binary (optional) ----
 
-  getSignedUrl?(
-    supabase: SupabaseClient,
-    id: VirtualId,
-  ): Promise<{ url: string; expiresIn: number }>;
 }

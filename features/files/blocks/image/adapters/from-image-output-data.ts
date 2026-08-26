@@ -4,19 +4,16 @@
  * Convert a Python `image_output` data event into a UnifiedImageBlock.
  *
  * Today's Python wire shape (ImageOutputData):
- *   { type: "image_output", url, mime_type, file_id?, cdn_url?, signed_url?,
- *     download_url? }
+ *   { type: "image_output", url, mime_type, file_id?, cdn_url?, download_url? }
  *
  * What this adapter does:
  *   - Lifts `file_id` to identify a matrx-owned file (most common case).
  *   - Tries to extract `file_id` from `url` if Python didn't supply one
  *     (legacy fallback — eventually deletable).
- *   - Computes `signedUrlExpiresAt` from the X-Amz-Date / X-Amz-Expires
- *     query params on `signed_url` (or `url` if it looks signed).
  *   - Promotes additional fields from `metadata` if Python included them
  *     there as a transitional shim:
  *       visibility, thumbnail_url, parent_file_id, derivation_kind,
- *       file_name, width, height, size_bytes, signed_url_expires_at.
+ *       file_name, width, height, size_bytes.
  *   - When no `file_id` is recoverable, falls back to an external block
  *     using whichever URL is most likely permanent.
  *
@@ -32,7 +29,6 @@ import type {
 import type { MediaVisibility } from "@/features/files/blocks/types";
 import { extractFileIdFromUrl } from "../helpers/extract-file-id-from-url";
 import { parseFilenameFromUrl } from "../helpers/parse-filename-from-url";
-import { parseSignedUrlExpiry } from "../helpers/parse-signed-url-expiry";
 import { isSignedUrl } from "@/lib/media/signed-url";
 
 /**
@@ -93,39 +89,22 @@ export function fromImageOutputData(
 
   // ── URL flavors ────────────────────────────────────────────────────────
   const cdnUrl = data.cdn_url ?? null;
-  const signedUrl = data.signed_url ?? null;
   const downloadUrl = data.download_url ?? null;
 
-  // Today Python sets `url` to one of: cdn url (public files), signed url
-  // (private), or a vanity URL. If neither cdn_url nor signed_url is set,
-  // we use `url` as the best-effort source URL.
+  // `url` is the durable always-renderable URL per the platform contract. A
+  // LEGACY row/event can still carry a signed URL here — classify it so we
+  // never file an expiring URL into the permanent-CDN slot (that
+  // misclassification is the bug that made owned images go dark forever).
   const fallbackUrl = data.url;
-
-  // If `fallbackUrl` carries ANY signature markers (SigV2 `AWSAccessKeyId`/
-  // `Signature`/`Expires` OR SigV4 `X-Amz-*`), it is an EXPIRING signed URL —
-  // never a permanent CDN URL. Misclassifying a signed URL as CDN here is the
-  // bug that made owned images go dark forever: it skips the re-mint path. Use
-  // the canonical detector so every dialect is recognized.
   const fallbackLooksSigned = isSignedUrl(fallbackUrl);
-
-  const finalSignedUrl =
-    signedUrl ?? (fallbackLooksSigned ? fallbackUrl : null);
   const finalCdnUrl =
     cdnUrl ?? (fallbackLooksSigned ? null : (fallbackUrl ?? null));
-
-  // ── Expiry ─────────────────────────────────────────────────────────────
-  const explicitExpiry = metaNumber(metadata, "signed_url_expires_at");
-  const derivedExpiry = finalSignedUrl
-    ? parseSignedUrlExpiry(finalSignedUrl)
-    : null;
-  const signedUrlExpiresAt = explicitExpiry ?? derivedExpiry;
 
   // ── Identity ───────────────────────────────────────────────────────────
   const explicitFileId = data.file_id ?? null;
   const inferredFileId =
     explicitFileId ??
     extractFileIdFromUrl(finalCdnUrl) ??
-    extractFileIdFromUrl(finalSignedUrl) ??
     extractFileIdFromUrl(fallbackUrl) ??
     null;
 
@@ -144,7 +123,6 @@ export function fromImageOutputData(
     fileName:
       metaString(metadata, "file_name") ??
       parseFilenameFromUrl(downloadUrl) ??
-      parseFilenameFromUrl(finalSignedUrl) ??
       parseFilenameFromUrl(finalCdnUrl) ??
       null,
     width: metaNumber(metadata, "width"),
@@ -170,9 +148,7 @@ export function fromImageOutputData(
       fileId: inferredFileId,
       visibility: metaVisibility(metadata),
       cdnUrl: finalCdnUrl,
-      signedUrl: finalSignedUrl,
       downloadUrl,
-      signedUrlExpiresAt,
       // Phase 1b: thumbnails removed from MatrxImageBlock — the canonical
       // source is `Asset.variants["thumbnail_url"].url` via GET /assets/{id}.
       // For top-level listings, `CloudFile.thumbnailUrl` (lifted from
@@ -187,7 +163,7 @@ export function fromImageOutputData(
   // External blocks no longer carry the matrx-only URL flavors at the
   // type level (see features/files/blocks/types.ts) — those URLs are
   // dropped here when we can't prove a matrx identity.
-  const externalUrl = fallbackUrl ?? finalCdnUrl ?? finalSignedUrl ?? "";
+  const externalUrl = fallbackUrl ?? finalCdnUrl ?? "";
   if (!externalUrl) {
     const broken: ExternalImageBlock = {
       ...common,

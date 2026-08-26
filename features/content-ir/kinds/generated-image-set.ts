@@ -35,7 +35,10 @@ import {
 } from "./media-io-shared";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import type { MaterializedKind } from "./kind-payload";
-import type { GeneratedImage, GeneratedImageSet } from "./generated/kinds.generated";
+import type {
+  GeneratedImage,
+  GeneratedImageSet,
+} from "./generated/kinds.generated";
 
 // ---------------------------------------------------------------------------
 // Schemas — mirror of GeneratedImage / GenerateImageOutput.
@@ -56,19 +59,25 @@ export const generatedImageKindSchema: KindSchema = {
       nullable: true,
       description: "Permanent CDN URL, present only when the image is public.",
     },
-    signed_url: {
+    path: {
       type: "string",
       nullable: true,
-      description:
-        "Never populated by the producer — an expiring URL is a handoff, not a record. Present only on rows written before 2026-08-20.",
+      description: "Local filesystem path, when the provider wrote one.",
     },
-    path: { type: "string", nullable: true, description: "Local filesystem path, when the provider wrote one." },
-    data_b64: { type: "string", nullable: true, description: "Base64 bytes, only when no file was persisted." },
+    data_b64: {
+      type: "string",
+      nullable: true,
+      description: "Base64 bytes, only when no file was persisted.",
+    },
     mime_type: { type: "string", nullable: true },
     size_bytes: { type: "number", nullable: true },
     width: { type: "number", nullable: true },
     height: { type: "number", nullable: true },
-    seed: { type: "number", nullable: true, description: "Seed the provider used, when it reports one." },
+    seed: {
+      type: "number",
+      nullable: true,
+      description: "Seed the provider used, when it reports one.",
+    },
   },
 };
 
@@ -81,11 +90,18 @@ export const generatedImageSetKindSchema: KindSchema = {
       description: "Every image the provider returned, in order.",
     },
     count: { type: "number", description: "How many images were generated." },
-    model: { type: "string", required: true, description: "Image model id that produced the images." },
+    model: {
+      type: "string",
+      required: true,
+      description: "Image model id that produced the images.",
+    },
     // `usage` is the shared AiUsage envelope — carried as opaque JSON rather
     // than registered as two more kinds (AiUsage / AiModelUsage) that no
     // surface renders on its own.
-    usage: { type: "json", description: "Aggregated token / cost usage for the run." },
+    usage: {
+      type: "json",
+      description: "Aggregated token / cost usage for the run.",
+    },
   },
 };
 
@@ -100,7 +116,9 @@ export const GENERATED_IMAGE_SET_KIND_SCHEMAS: KindSchema[] = [
 
 /** THE SHAPE COMES FROM THE REGISTRY; the bridge adds the resolved handle. */
 export type GeneratedImageData = MediaHandleFields &
-  MaterializedKind<Pick<GeneratedImage, "width" | "height" | "seed" | "size_bytes">> & {
+  MaterializedKind<
+    Pick<GeneratedImage, "width" | "height" | "seed" | "size_bytes">
+  > & {
     /** What `<InlineMediaRef>` resolves — file_id when present, else the most durable URL. */
     handle: string | null;
   };
@@ -173,8 +191,11 @@ export function generatedImageSetMarkdownFromValue(
     images.length > 0
       ? images
           .map((image, index) => {
-            const dims = image.width && image.height ? ` (${image.width}×${image.height})` : "";
-            const target = image.cdn_url ?? image.url ?? image.signed_url;
+            const dims =
+              image.width && image.height
+                ? ` (${image.width}×${image.height})`
+                : "";
+            const target = image.cdn_url ?? image.url;
             const label = `Image ${index + 1}${dims}`;
             return target ? `- [${label}](${target})` : `- ${label}`;
           })

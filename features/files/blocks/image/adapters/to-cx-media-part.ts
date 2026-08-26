@@ -11,8 +11,8 @@
  * Strategy:
  *   - Keep generated top-level identity fields populated so
  *     legacy readers that haven't migrated keep working.
- *   - Pack EVERY canonical field (origin, fileId, cdnUrl, signedUrl,
- *     downloadUrl, visibility, thumbnails, dimensions, etc.) into
+ *   - Pack EVERY canonical field (origin, fileId, cdnUrl, downloadUrl,
+ *     visibility, thumbnails, dimensions, etc.) into
  *     `metadata` under stable keys so `fromCxMediaPart` can re-lift them
  *     losslessly when the message is reloaded.
  *
@@ -25,10 +25,10 @@ import type { UnifiedImageBlock } from "../types";
 
 export function toCxMediaPart(block: UnifiedImageBlock): ImageMediaPart {
   // The visible `url` field: prefer the most permanent option so reload
-  // works even if the signed URL has expired and metadata isn't read.
+  // works even when metadata isn't read.
   const visibleUrl =
     block.origin === "matrx"
-      ? (block.cdnUrl ?? block.signedUrl ?? undefined)
+      ? (block.cdnUrl ?? undefined)
       : block.externalUrl || undefined;
 
   // Pack the canonical fields into metadata under explicit keys. We do NOT
@@ -49,12 +49,15 @@ export function toCxMediaPart(block: UnifiedImageBlock): ImageMediaPart {
     progress: block.progress,
     error_message: block.errorMessage,
   };
+  // NEVER persist expiring locators into cx_message media parts — a stored
+  // signed URL is a guaranteed future 403. Old blocks can still carry them
+  // in free-form metadata; strip them at the write boundary.
+  delete packed.signed_url;
+  delete packed.signed_url_expires_at;
 
   if (block.origin === "matrx") {
     packed.cdn_url = block.cdnUrl;
-    packed.signed_url = block.signedUrl;
     packed.download_url = block.downloadUrl;
-    packed.signed_url_expires_at = block.signedUrlExpiresAt;
     packed.file_id = block.fileId;
     packed.visibility = block.visibility;
     // Phase 1b: `thumbnail_url` / `thumbnail_uri` removed from the block

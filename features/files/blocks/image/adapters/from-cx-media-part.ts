@@ -8,7 +8,7 @@
  *   { type: "media", kind: "image", url?, mime_type?, base64_data?,
  *     metadata? }
  *
- * Everything else (file_id, cdn_url, signed_url, visibility, thumbnails,
+ * Everything else (file_id, cdn_url, visibility, thumbnails,
  * dimensions, file_name, prompt, model, etc.) gets dumped into `metadata`
  * today by `assembleMessageParts`. This adapter pulls them BACK out so the
  * round-trip is lossless.
@@ -27,8 +27,6 @@ export function fromCxMediaPart(part: ImageMediaPart): UnifiedImageBlock {
   // assembleMessageParts dumped them).
   const cdnFromMeta =
     typeof metadata?.cdn_url === "string" ? metadata.cdn_url : null;
-  const signedFromMeta =
-    typeof metadata?.signed_url === "string" ? metadata.signed_url : null;
   const downloadFromMeta =
     typeof metadata?.download_url === "string" ? metadata.download_url : null;
   // `file_id` is stored at the TOP LEVEL of the media part by the backend
@@ -41,8 +39,10 @@ export function fromCxMediaPart(part: ImageMediaPart): UnifiedImageBlock {
     (typeof metadata?.file_id === "string" ? metadata.file_id : null);
 
   // The on-disk `url` field is whatever was visible at save time — could be
-  // CDN, could be signed (long-expired by now). Forward as the fallback.
-  const fallbackUrl = part.url ?? cdnFromMeta ?? signedFromMeta ?? "";
+  // CDN, could be a legacy signed URL (long-expired). Forward as the
+  // fallback; the adapter classifies signed URLs and never treats them as
+  // permanent.
+  const fallbackUrl = part.url ?? cdnFromMeta ?? "";
 
   const block = fromImageOutputData(
     {
@@ -51,7 +51,6 @@ export function fromCxMediaPart(part: ImageMediaPart): UnifiedImageBlock {
       mime_type: part.mime_type ?? "image/*",
       file_id: fileId,
       cdn_url: cdnFromMeta,
-      signed_url: signedFromMeta,
       download_url: downloadFromMeta,
     },
     {

@@ -69,11 +69,10 @@ export function fromCldFilesRow(row: CloudFileReadRow): MatrxImageBlock {
     derivationKind: row.derivation_kind ?? null,
 
     // No URLs from the DB row alone — caller follows up with fileHandler
-    // to mint these. signedUrlExpiresAt stays null until that happens.
+    // to resolve the durable URL.
     // Thumbnails come from the variants store (Asset.variants["thumbnail_url"])
     // via a separate fetch, not from this row.
     cdnUrl: null,
-    signedUrl: null,
     downloadUrl: null,
     base64: null,
 
@@ -89,8 +88,6 @@ export function fromCldFilesRow(row: CloudFileReadRow): MatrxImageBlock {
     status: "complete",
     progress: null,
     errorMessage: null,
-    signedUrlExpiresAt: null,
-
     metadata,
   };
 }

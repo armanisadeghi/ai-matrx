@@ -92,7 +92,7 @@ export type GranteeType = "user" | "group" | "public";
 export interface MediaRef {
   /** cld_files UUID — preferred form for any file we own. */
   file_id?: string;
-  /** Any URL we issued (signed S3, share link) OR external https://. */
+  /** Any URL we issued (durable download route, share link) OR external https://. */
   url?: string;
   /** Optional client hint; backend overrides with `cld_files.mime_type` for owned files. */
   mime_type?: string;
@@ -219,7 +219,7 @@ export interface CloudFile {
   /**
    * Permanent CDN URL (Cloudflare-fronted) when the file is public AND
    * the server has the CDN feature enabled. ``null`` otherwise — callers
-   * should fall back to ``useFileSrc({ kind: "file_id", fileId })`` for a 1h AWS-signed URL.
+   * should fall back to ``useFileSrc({ kind: "file_id", fileId })`` for the durable URL.
    *
    * Carries a ``?v=<checksum[:8]>`` cache-buster so a content change
    * invalidates the cache instantly. **Do not strip the query string.**
@@ -233,21 +233,19 @@ export interface CloudFile {
    */
   publicUrl: string | null;
   /**
-   * The four-flavour URL envelope the REST `FileRecord` carries (see
-   * aidream FE_MEDIA_BLOCK_CONTRACT.md §"URL fields"). Resolution order
-   * for display is: `cdnUrl` (permanent, public-only) → a still-valid
-   * `signedUrl` → mint a fresh signed URL. `url` is the server's canonical
-   * pick (CDN for public, signed-inline for private). `downloadUrl` carries
-   * attachment disposition.
+   * The DURABLE URL envelope the REST `FileRecord` carries. `url` is the
+   * server's canonical always-renderable pick (CDN for public, the durable
+   * `/files/{id}/download?inline=1` route for private — authenticated by
+   * the `mx_files_session` cookie). `cdnUrl` is public-only and permanent.
+   * `downloadUrl` carries attachment disposition. None of them expire.
    *
    * These are populated by `apiFileRecordToCloudFile` from the REST
    * response. They are `null` on the direct-DB read path (the `cld_files`
-   * table has no computed-URL columns) — DB-sourced rows fall back to
-   * minting via the resolver.
+   * table has no computed-URL columns) — DB-sourced rows build the durable
+   * URL from the file id via the resolver.
    */
   url: string | null;
   cdnUrl: string | null;
-  signedUrl: string | null;
   downloadUrl: string | null;
   /**
    * Backend-rendered thumbnail URL (Phase 1b universal thumbnails). Set
@@ -831,12 +829,6 @@ export interface UploadFilesArg {
   skipIndices?: number[];
 }
 
-export interface SignedUrlArg {
-  fileId: string;
-  /** Seconds. Min 60, max 604800 (7 days). Default 3600. */
-  expiresIn?: number;
-}
-
 export interface RenameFileArg {
   fileId: string;
   newName: string;
@@ -1266,14 +1258,14 @@ export type AssetPreset =
  * permissions) but the `Asset` envelope groups them under a single
  * `primary_key`-rooted record.
  *
- * URL fields:
+ * URL fields (all durable — none expire):
  *   - `url`          canonical inline-renderable URL. CDN for public,
- *                    signed-inline for private/shared. **Use this** for
- *                    `<img src>` / `<video src>` / `<audio src>`.
+ *                    the durable download route for private/shared.
+ *                    **Use this** for `<img src>` / `<video src>` /
+ *                    `<audio src>`.
  *   - `cdn_url`      permanent CDN URL when public + CDN configured;
  *                    null otherwise.
- *   - `signed_url`   AWS-signed URL with TTL, inline disposition.
- *   - `download_url` signed URL with `Content-Disposition: attachment`
+ *   - `download_url` durable URL with `Content-Disposition: attachment`
  *                    — forces a download dialog.
  */
 export interface AssetVariant {
@@ -1300,15 +1292,7 @@ export interface AssetVariant {
   file_size?: number | null;
   url: string | null;
   cdn_url: string | null;
-  signed_url: string | null;
   download_url: string | null;
-  /**
-   * Ms epoch when `signed_url` becomes invalid. Server-computed at mint
-   * time (see docs/PYTHON_UPDATES.md §4). Use to schedule refreshes
-   * ~30s before instead of parsing X-Amz query params. `null` when only
-   * a CDN URL was minted (CDN URLs don't expire).
-   */
-  signed_url_expires_at: number | null;
   metadata: Record<string, unknown>;
 }
 
@@ -1349,7 +1333,6 @@ export interface AddAssetVariantsRequest {
     format?: string;
   }>;
   include_social_baseline?: boolean;
-  signed_url_ttl?: number;
 }
 
 /**
@@ -1362,7 +1345,6 @@ export interface AssetPatchRequest {
   /** Comma-separated user IDs OR an explicit list. */
   share_with?: string | ReadonlyArray<string>;
   share_level?: PermissionLevel;
-  signed_url_ttl?: number;
   metadata?: Record<string, unknown>;
 }
 

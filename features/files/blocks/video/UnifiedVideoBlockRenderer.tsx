@@ -154,7 +154,8 @@ export const UnifiedVideoBlockRenderer: React.FC<
   extraActions,
   sourceFeature = "files",
 }) => {
-  const { src, status, posterUrl, reportLoadError } = useUnifiedVideoUrl(block);
+  const { src, status, posterUrl, retryNonce, reportLoadError } =
+    useUnifiedVideoUrl(block);
   const isMobile = useIsMobile();
   const fileId = block.origin === "matrx" ? block.fileId : null;
 
@@ -407,6 +408,7 @@ export const UnifiedVideoBlockRenderer: React.FC<
 
             {src && (
               <video
+                key={retryNonce}
                 ref={inlineVideoRef}
                 src={src}
                 poster={posterUrl ?? undefined}
@@ -418,7 +420,8 @@ export const UnifiedVideoBlockRenderer: React.FC<
                 onPause={() => setInlinePlaying(false)}
                 onEnded={() => setInlinePlaying(false)}
                 onError={() => {
-                  // Owned files never just "expire" — re-mint before giving up.
+                  // Owned files never just "expire" — refresh the session and
+                  // retry the same durable URL before giving up.
                   void reportLoadError(src);
                 }}
               />

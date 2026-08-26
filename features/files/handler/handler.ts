@@ -83,9 +83,8 @@ export const fileHandler = {
   },
 
   /**
-   * Force a re-mint of a signed URL even if it hasn't expired yet. Use
-   * after a `refresh()`-relevant DB event (visibility change, share
-   * revocation) when you know the cached URL is stale.
+   * Re-resolve a file after a DB event (visibility change, share
+   * revocation) so origin/capabilities and the bound URL are current.
    */
   async refresh(file: NormalizedFile): Promise<NormalizedFile> {
     return resolveImpl(file, { needsUrl: true });

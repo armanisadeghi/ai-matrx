@@ -1791,18 +1791,6 @@
         "default": null,
         "title": "Cdn Url"
       },
-      "signed_url": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "default": null,
-        "title": "Signed Url"
-      },
       "download_url": {
         "anyOf": [
           {
@@ -1864,18 +1852,6 @@
         "default": null,
         "title": "Cdn Url"
       },
-      "signed_url": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "default": null,
-        "title": "Signed Url"
-      },
       "download_url": {
         "anyOf": [
           {
@@ -1936,18 +1912,6 @@
         ],
         "default": null,
         "title": "Cdn Url"
-      },
-      "signed_url": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "default": null,
-        "title": "Signed Url"
       },
       "download_url": {
         "anyOf": [
@@ -2117,18 +2081,6 @@
         "default": null,
         "title": "Cdn Url"
       },
-      "signed_url": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "default": null,
-        "title": "Signed Url"
-      },
       "download_url": {
         "anyOf": [
           {
@@ -2231,18 +2183,6 @@
             "default": null,
             "title": "Cdn Url"
           },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Signed Url"
-          },
           "download_url": {
             "anyOf": [
               {
@@ -2254,18 +2194,6 @@
             ],
             "default": null,
             "title": "Download Url"
-          },
-          "signed_url_expires_at": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Signed Url Expires At"
           },
           "parent_file_id": {
             "anyOf": [
@@ -2494,18 +2422,6 @@
             "default": null,
             "title": "Cdn Url"
           },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Signed Url"
-          },
           "download_url": {
             "anyOf": [
               {
@@ -2517,18 +2433,6 @@
             ],
             "default": null,
             "title": "Download Url"
-          },
-          "signed_url_expires_at": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Signed Url Expires At"
           },
           "parent_file_id": {
             "anyOf": [
@@ -2757,18 +2661,6 @@
             "default": null,
             "title": "Cdn Url"
           },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Signed Url"
-          },
           "download_url": {
             "anyOf": [
               {
@@ -2780,18 +2672,6 @@
             ],
             "default": null,
             "title": "Download Url"
-          },
-          "signed_url_expires_at": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Signed Url Expires At"
           },
           "parent_file_id": {
             "anyOf": [
@@ -3033,18 +2913,6 @@
             "default": null,
             "title": "Cdn Url"
           },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Signed Url"
-          },
           "download_url": {
             "anyOf": [
               {
@@ -3056,18 +2924,6 @@
             ],
             "default": null,
             "title": "Download Url"
-          },
-          "signed_url_expires_at": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Signed Url Expires At"
           },
           "parent_file_id": {
             "anyOf": [
@@ -3318,18 +3174,6 @@
             "default": null,
             "title": "Cdn Url"
           },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Signed Url"
-          },
           "download_url": {
             "anyOf": [
               {
@@ -3341,18 +3185,6 @@
             ],
             "default": null,
             "title": "Download Url"
-          },
-          "signed_url_expires_at": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Signed Url Expires At"
           },
           "parent_file_id": {
             "anyOf": [
@@ -6729,7 +6561,7 @@
         "default": null,
         "title": "Size"
       },
-      "signed_url": {
+      "ephemeral_url": {
         "anyOf": [
           {
             "type": "string"
@@ -6739,7 +6571,7 @@
           }
         ],
         "default": null,
-        "title": "Signed Url"
+        "title": "Ephemeral Url"
       },
       "expires_in": {
         "anyOf": [

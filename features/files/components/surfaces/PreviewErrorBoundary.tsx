@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 import { getStore } from "@/lib/redux/store-singleton";
 import { setActiveFileId } from "@/features/files/redux/slice";
-import { getSignedUrl } from "@/features/files/redux/thunks";
+import { getFileUrl } from "@/features/files/redux/thunks";
 
 interface PreviewErrorBoundaryProps {
   fileId: string;
@@ -90,7 +90,7 @@ export class PreviewErrorBoundary extends React.Component<
         // dispatch is loosely typed here (we don't pull AppDispatch to avoid a
         // class-component generic) — runtime works exactly the same.
         .dispatch(
-          getSignedUrl({ fileId: this.props.fileId, expiresIn: 3600 }) as never,
+          getFileUrl({ fileId: this.props.fileId }) as never,
         );
       const url =
         (result as { payload?: { url?: string } } | undefined)?.payload?.url ??

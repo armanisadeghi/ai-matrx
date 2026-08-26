@@ -38,6 +38,7 @@ import { ShareLinkDialog, ShareLinkDialogBody } from "@/features/files/component
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { useFolderActions } from "@/features/files/components/core/FileActions/useFolderActions";
 import { useFileMutation, useFolderMutation } from "@/features/files/hooks/useFileMutation";
+import { fileUrls } from "@/features/files/handler/utils/python-base";
 import { formatFileSize, formatRelativeTime } from "@/features/files/utils/format";
 import { isImageMime, isVideoMime, resolveMime } from "@/features/files/utils/file-types";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -118,8 +119,9 @@ export function CloudFilesBrowserTable({
     setBusyKind("download");
     try {
       await runWithConcurrency(selectedFiles, MAX_PARALLEL, async (file) => {
-        const { url } = await fileMut.signedUrl(file.id, { expiresIn: 3600 });
-        if (!url) return;
+        // Durable download URL — a pure function of the file id; the browser
+        // authenticates the navigation via the file-session cookie.
+        const url = file.url ?? fileUrls(file.id).download;
         const a = document.createElement("a");
         a.href = url;
         a.rel = "noopener noreferrer";

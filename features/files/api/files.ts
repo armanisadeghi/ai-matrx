@@ -165,20 +165,6 @@ export async function getFileByPath(
 }
 
 /**
- * Compatibility reader for consumers that historically requested a signed
- * URL. The live contract retired that endpoint; `FileRecord.url` is now the
- * durable authenticated locator. `expiresIn` is accepted but intentionally
- * ignored so callers can migrate without inventing a replacement wire shape.
- */
-export async function getSignedUrl(
-  fileId: string,
-  _params: { expiresIn?: number } = {},
-  opts: RequestOptions = {},
-): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
-  return getFile(fileId, opts);
-}
-
-/**
  * Full tree via the RPC. Prefer calling the RPC directly via supabase-js in
  * thunks (reducer dispatches don't need a round-trip through the backend).
  * This is provided for backend-mediated contexts only.
@@ -274,7 +260,7 @@ export async function deleteFile(
 }
 
 // ---------------------------------------------------------------------------
-// Bytes + signed URL
+// Bytes
 // ---------------------------------------------------------------------------
 
 // Raw client: `downloadFile` / `downloadFileWithProgress` stream file BYTES

@@ -134,7 +134,6 @@ function PickerFileThumbnail({
   // It returns CDN URL for public files and signed-inline for private, in one call.
   // Skip the fetch entirely if we already have publicUrl or it's not an image.
   const { primaryUrl } = useFileAsset(isImage && !publicUrl ? fileId : null, {
-    signedUrlTtl: 3600,
   });
   const src = isImage ? (publicUrl ?? primaryUrl) : null;
 

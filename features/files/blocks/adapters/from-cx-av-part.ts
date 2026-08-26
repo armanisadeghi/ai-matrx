@@ -8,9 +8,9 @@
  * This is the audio/video twin of the image adapter
  * (`../image/adapters/from-cx-media-part.ts`) and exists for the same reason:
  * **media identity is the `file_id`, never a URL.** The stored `url` is
- * whatever happened to be visible at save time — usually a signed S3 URL that
- * expired long ago. `file_id` is what lets `buildMediaSource` → `useFileSrc`
- * re-mint a fresh, durable URL on every render.
+ * whatever happened to be visible at save time (legacy rows: a long-dead
+ * signed S3 URL). `file_id` is what lets `buildMediaSource` → `useFileSrc`
+ * resolve the durable URL on every render.
  *
  * `file_id` lives at the TOP LEVEL of the stored media part (and is sometimes
  * mirrored into `metadata`); the URL flavors are dumped into `metadata`. Both
@@ -32,22 +32,19 @@ interface LiftedUrls {
   url: string;
   file_id: string | null;
   cdn_url: string | null;
-  signed_url: string | null;
   download_url: string | null;
 }
 
 function liftUrls(part: AudioMediaPart | VideoMediaPart): LiftedUrls {
   const metadata = (part.metadata ?? null) as Record<string, unknown> | null;
   const cdn = str(metadata?.cdn_url);
-  const signed = str(metadata?.signed_url);
   const download = str(metadata?.download_url);
   return {
     // The on-disk `url` is a save-time snapshot; forward it as the fallback
     // the handler only uses when no identity is available.
-    url: str(part.url) ?? cdn ?? signed ?? "",
+    url: str(part.url) ?? cdn ?? "",
     file_id: str(part.file_id) ?? str(metadata?.file_id),
     cdn_url: cdn,
-    signed_url: signed,
     download_url: download,
   };
 }

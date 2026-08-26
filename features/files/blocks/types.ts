@@ -98,26 +98,18 @@ interface MatrxOriginFields {
   fileId: string;
   /**
    * cld_files.visibility — drives URL resolution:
-   *   "public"   — prefer cdnUrl; permanent URL, never re-minted
-   *   everything else ("personal" / "internal" / "link") — must use
-   *   signedUrl; re-minted lazily on next access when expired
+   *   "public"   — prefer cdnUrl; permanent URL, no auth required
+   *   everything else ("personal" / "internal" / "link") — render through
+   *   the durable authenticated URL (`fileUrls(fileId).inline`), which the
+   *   browser authenticates via the `mx_files_session` cookie
    */
   visibility: MediaVisibility;
 
   // ── URL flavors. Resolver picks the best at render time. ─────────────────
   /** Permanent CDN URL — no expiry, no auth required. */
   cdnUrl: string | null;
-  /** Short-lived presigned URL (typical TTL: 1h). */
-  signedUrl: string | null;
-  /** Attachment-disposition variant. Used for the download action. */
+  /** Durable attachment-disposition variant. Used for the download action. */
   downloadUrl: string | null;
-  /**
-   * Ms epoch when `signedUrl` becomes invalid. Server now stamps this
-   * directly (Phase 0, see docs/PYTHON_UPDATES.md §4). The URL resolver
-   * uses this to schedule a refresh ~30s before. null when only a CDN
-   * URL was minted (public files served via CDN don't expire).
-   */
-  signedUrlExpiresAt: number | null;
 
   // ── Lineage hints ────────────────────────────────────────────────────────
   /** cld_files.parent_file_id — derivation lineage. */

@@ -64,9 +64,7 @@ interface WireMediaBlockBase {
   file_id?: string | null;
   visibility?: MediaVisibility | null;
   cdn_url?: string | null;
-  signed_url?: string | null;
   download_url?: string | null;
-  signed_url_expires_at?: number | null;
   parent_file_id?: string | null;
   derivation_kind?: string | null;
   // Phase 1b: `thumbnail_url` + `thumbnail_uri` removed from the wire.
@@ -153,8 +151,8 @@ function pickVisibility(v?: WireVisibility | null): MediaVisibility {
   // The retired spellings both reconcile to `personal`, exactly as the server
   // does (matrx_utils.visibility.LEGACY_VISIBILITY_MAP). Unknown/null also
   // lands here so a block with a missing visibility is never promoted to
-  // public — that would suppress signed-URL refresh and the media would die
-  // at expiry.
+  // public — a private file must resolve through the durable authenticated
+  // route, never a bare CDN guess.
   return "personal";
 }
 
@@ -183,9 +181,7 @@ function matrxFields(wire: WireMediaBlockBase): {
   fileId: string;
   visibility: MediaVisibility;
   cdnUrl: string | null;
-  signedUrl: string | null;
   downloadUrl: string | null;
-  signedUrlExpiresAt: number | null;
   parentFileId: string | null;
   derivationKind: string | null;
 } | null {
@@ -196,9 +192,7 @@ function matrxFields(wire: WireMediaBlockBase): {
     fileId: wire.file_id,
     visibility: pickVisibility(wire.visibility),
     cdnUrl: wire.cdn_url ?? null,
-    signedUrl: wire.signed_url ?? null,
     downloadUrl: wire.download_url ?? null,
-    signedUrlExpiresAt: wire.signed_url_expires_at ?? null,
     parentFileId: wire.parent_file_id ?? null,
     derivationKind: wire.derivation_kind ?? null,
   };

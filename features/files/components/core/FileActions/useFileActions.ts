@@ -13,7 +13,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   createShareLink,
   deleteFile as deleteFileThunk,
-  getSignedUrl,
+  getFileUrl,
   loadShareLinks,
   moveFile as moveFileThunk,
   renameFile as renameFileThunk,
@@ -193,9 +193,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
       // bytes immediately. The resolved URL is durable and has no side effects
       // on the file's share state.
       if (opts?.expiresIn !== undefined) {
-        const result = await dispatch(
-          getSignedUrl({ fileId, expiresIn: opts.expiresIn }),
-        ).unwrap();
+        const result = await dispatch(getFileUrl({ fileId })).unwrap();
         if (typeof navigator !== "undefined" && navigator.clipboard) {
           try {
             await navigator.clipboard.writeText(result.url);

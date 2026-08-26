@@ -107,10 +107,13 @@ export interface FileUrls {
 }
 
 /**
- * Build every URL variant for a cld_files file id in one call. Cheap
- * — just string concatenation. Note: the resulting URLs require an
- * Authorization header on `fetch()` — they're not publicly resolvable
- * the way `shareUrls(...).public` is.
+ * Build every URL variant for a cld_files file id in one call. Cheap —
+ * just string concatenation. These are DURABLE URLs: they never expire and
+ * carry only the file id. Auth is either an Authorization header on
+ * `fetch()` (the python-client attaches it) or the `mx_files_session`
+ * cookie for plain `<img>`/`<video>` bindings (see `../session.ts`).
+ * `?inline=1` matches the exact spelling the backend emits on
+ * `FileRecord.url`, keeping cache keys identical either way.
  */
 export function fileUrls(fileId: string): FileUrls {
   const id = encodeURIComponent(fileId);
@@ -118,7 +121,7 @@ export function fileUrls(fileId: string): FileUrls {
   const base = `${backend}/files/${id}/download`;
   return {
     download: base,
-    inline: `${base}?inline=true`,
+    inline: `${base}?inline=1`,
   };
 }
 

@@ -30,7 +30,10 @@ import {
   type GeneratedImageData,
   type GeneratedImageSetData,
 } from "@/features/content-ir/kinds/generated-image-set";
-import { formatCost, readUsage } from "@/features/content-ir/kinds/media-io-shared";
+import {
+  formatCost,
+  readUsage,
+} from "@/features/content-ir/kinds/media-io-shared";
 import { cn } from "@/lib/utils";
 
 export interface GeneratedImageSetBlockProps {
@@ -75,7 +78,7 @@ export function GeneratedImageTile({
   const openFilePreview = useOpenFilePreviewWindow();
   const openImageViewer = useOpenImageViewerWindow();
 
-  const viewerUrl = image.cdn_url ?? image.url ?? image.signed_url;
+  const viewerUrl = image.cdn_url ?? image.url;
   const label = `Generated image ${index + 1}`;
 
   const open = () => {
@@ -83,7 +86,8 @@ export function GeneratedImageTile({
       openFilePreview({ fileId: image.file_id });
       return;
     }
-    if (viewerUrl) openImageViewer({ images: [viewerUrl], alts: [label], title: label });
+    if (viewerUrl)
+      openImageViewer({ images: [viewerUrl], alts: [label], title: label });
   };
 
   const dims =
@@ -160,7 +164,9 @@ export default function GeneratedImageSetBlock({
 
       {data.images.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          {data.isComplete ? "No images were returned." : "Waiting for the first image…"}
+          {data.isComplete
+            ? "No images were returned."
+            : "Waiting for the first image…"}
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">

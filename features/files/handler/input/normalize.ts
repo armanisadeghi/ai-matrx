@@ -11,7 +11,7 @@
 
 import type { CloudFile } from "@/features/files/types";
 import { classify } from "../utils/classify";
-import { pythonShareUrl } from "../utils/python-base";
+import { pythonFileInlineUrl, pythonShareUrl } from "../utils/python-base";
 import { createTrackedObjectUrl } from "@/lib/media/object-url-registry";
 import {
   EPHEMERAL_CAPS,
@@ -49,8 +49,6 @@ export function normalize(source: FileSource): NormalizedFile {
       return fromCloudFile(source.cloudFile, source);
     case "file_id":
       return fromFileId(source);
-    case "signed_url":
-      return fromSignedUrl(source);
     case "share_link":
       return fromShareLink(source);
     case "public_cdn":
@@ -221,21 +219,21 @@ export function fromCloudFile(
     sizeBytes: cloudFile.fileSize ?? undefined,
     checksum: cloudFile.checksum ?? undefined,
   });
-  // Prefer the PERMANENT URL flavours for public files (cdn_url → canonical
-  // url → legacy public_url). These never expire, so they're safe to seed
-  // directly. For private/shared files we deliberately leave `url` empty
-  // and let the resolver mint a fresh signed URL through its TTL-aware
-  // cache — the signed URL the REST response carried may already be stale,
-  // and the FileRecord doesn't include an expiry we could trust. This is
-  // the fix for "we issue expiring signed URLs for public files that have
-  // a permanent cdn_url."
+  // Every URL flavour is DURABLE now. Public files prefer the permanent
+  // CDN URL (cdn_url → canonical url → legacy public_url). Private/shared
+  // files bind the server's canonical `url` (the durable
+  // `/files/{id}/download?inline=1` route) when the envelope carries it,
+  // else build the identical durable URL from the file id — synchronously,
+  // no minting round-trip.
   const isPublic = cloudFile.visibility === "public";
   const bestUrl = isPublic
-    ? (cloudFile.cdnUrl ?? cloudFile.url ?? cloudFile.publicUrl ?? undefined)
-    : (cloudFile.publicUrl ?? undefined);
-  // A CDN/public URL is CORS-safe for fetch; a raw signed S3 URL is not.
-  const isCdnOrPublic =
-    !!(isPublic && (cloudFile.cdnUrl ?? cloudFile.url)) || !!cloudFile.publicUrl;
+    ? (cloudFile.cdnUrl ??
+      cloudFile.url ??
+      cloudFile.publicUrl ??
+      pythonFileInlineUrl(cloudFile.id))
+    : (cloudFile.url ??
+      cloudFile.publicUrl ??
+      pythonFileInlineUrl(cloudFile.id));
   return {
     fileId: cloudFile.id,
     url: bestUrl,
@@ -246,7 +244,9 @@ export function fromCloudFile(
       canShare: true,
       canDelete: true,
       requiresAuth: cloudFile.visibility !== "public",
-      transportSafeForFetch: isCdnOrPublic,
+      // Durable route URLs (and CDN/public URLs) are fetch-safe: the
+      // python-client attaches Authorization headers to our own routes.
+      transportSafeForFetch: true,
     },
     meta,
     lifecycle: {
@@ -271,6 +271,10 @@ function fromFileId(
 ): NormalizedFile {
   return {
     fileId: source.fileId,
+    // The durable inline URL is a pure function of the id — seed it here so
+    // render paths are synchronous. The resolver still hydrates metadata and
+    // may replace it with a permanent CDN URL for public files.
+    url: pythonFileInlineUrl(source.fileId),
     origin: "owned",
     capabilities: {
       canRead: true,
@@ -278,7 +282,7 @@ function fromFileId(
       canShare: false,
       canDelete: false,
       requiresAuth: true,
-      transportSafeForFetch: false,
+      transportSafeForFetch: true,
     },
     meta: classify({ mime: source.mime }),
     lifecycle: { refreshable: true, persisted: true },
@@ -290,32 +294,6 @@ function fromFileId(
 // ---------------------------------------------------------------------------
 // Server-issued URLs
 // ---------------------------------------------------------------------------
-
-function fromSignedUrl(
-  source: Extract<FileSource, { kind: "signed_url" }>,
-): NormalizedFile {
-  return {
-    fileId: source.fileId,
-    url: source.url,
-    origin: source.fileId ? "owned" : "external",
-    capabilities: {
-      canRead: true,
-      canEdit: false,
-      canShare: false,
-      canDelete: false,
-      requiresAuth: false,
-      transportSafeForFetch: false,
-    },
-    meta: classify({ mime: source.mime, fileName: filenameFromUrl(source.url) }),
-    lifecycle: {
-      expiresAt: source.expiresAt,
-      refreshable: !!source.fileId,
-      persisted: true,
-    },
-    scope: {},
-    __source: source,
-  };
-}
 
 function fromShareLink(
   source: Extract<FileSource, { kind: "share_link" }>,

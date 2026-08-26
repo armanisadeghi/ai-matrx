@@ -13,22 +13,21 @@
  *     row; `url` holds the only durable pointer that exists — the public CDN
  *     URL when the file is public, else the bare `file_id`.
  *
- * The server used to write the freshly-minted SIGNED S3 URL into `rs_media.url`
+ * The server used to write a freshly-minted SIGNED S3 URL into `rs_media.url`
  * for owned rows, and this gallery rendered it straight into `<img src>`. It
- * worked for a few hours and then 403'd. **A signed URL is a handoff, never an
- * identity** — so owned rows now render through `InlineMediaRef`, which
- * re-mints from the `file_id` on read (and prefers the CDN URL for public
- * files), and "open"/"download" mint a fresh signed URL at click time.
+ * worked for a few hours and then 403'd. **A URL is a handoff, never an
+ * identity** — so owned rows render through `InlineMediaRef`, which resolves
+ * the durable URL from the `file_id` (preferring the CDN URL for public
+ * files), and "open"/"download" build the durable URL at click time.
  */
 
 import { useCallback } from "react";
-import { toast } from "@/lib/toast";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import {
   fileIdToMediaRef,
   urlToMediaRef,
 } from "@/features/files/redux/converters";
-import { getSignedUrl } from "@/features/files/api/files";
+import { pythonFileInlineUrl } from "@/features/files/handler/utils/python-base";
 import type { MediaRef } from "@/features/files/types";
 import type { ResearchMedia } from "../../types";
 
@@ -48,8 +47,8 @@ export function mediaMimeType(item: ResearchMedia): string | null {
 }
 
 /**
- * The canonical reference for a row: the `file_id` when we own the file (the
- * renderer re-mints), else the discovered URL. Never a stored signed URL.
+ * The canonical reference for a row: the `file_id` when we own the file,
+ * else the discovered URL. Never a stored signed URL (legacy rows only).
  */
 export function researchMediaRef(item: ResearchMedia): MediaRef {
   return item.file_id
@@ -59,7 +58,7 @@ export function researchMediaRef(item: ResearchMedia): MediaRef {
 
 /**
  * One image renderer for the whole gallery. Owned rows resolve through the
- * file handler (signed-URL cache, CDN preference); discovered rows render the
+ * file handler (durable URL, CDN preference); discovered rows render the
  * external URL. Sized by the parent — pass the box classes in `className`.
  */
 export function ResearchMediaImage({
@@ -89,27 +88,24 @@ export function ResearchMediaImage({
 
 /**
  * Open a research media item in a new tab. Discovered → its source URL. Owned
- * → a freshly minted signed URL (the handoff, made at the moment of use).
+ * → the durable inline URL built from the file id (authenticated by the
+ * file-session cookie on navigation).
  */
 export async function openResearchMedia(item: ResearchMedia): Promise<void> {
   if (!item.file_id) {
     window.open(item.url, "_blank", "noopener,noreferrer");
     return;
   }
-  try {
-    const { data } = await getSignedUrl(item.file_id);
-    const url = data?.url;
-    if (!url) throw new Error("no url in response");
-    window.open(url, "_blank", "noopener,noreferrer");
-  } catch (err) {
-    console.error("[research/media] could not open owned file", item.file_id, err);
-    toast.error("Couldn't open that file");
-  }
+  window.open(
+    pythonFileInlineUrl(item.file_id),
+    "_blank",
+    "noopener,noreferrer",
+  );
 }
 
 /**
  * "Open this item" as an element: an anchor to the source page for discovered
- * media, a button that mints a signed URL at click time for owned media. One
+ * media, a button that opens the durable URL at click time for owned media. One
  * component so no call site has to remember that `url` on an owned row is a
  * durable pointer, not something a browser can follow.
  */

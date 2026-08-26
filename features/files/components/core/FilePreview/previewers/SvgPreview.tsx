@@ -4,7 +4,7 @@
  * Dedicated SVG previewer. SVG is unique among image formats because it's
  * text under the hood (XML), so we give it two views:
  *
- *   1. Rendered — `<img src={signedUrl}>` on a checkerboard transparency
+ *   1. Rendered — `<img src={durable url}>` on a checkerboard transparency
  *      grid so the user can actually see the alpha channel that an opaque
  *      `bg-muted/20` would hide.
  *   2. Source — the raw XML markup, fetched lazily via `useFileBlob` only
@@ -23,7 +23,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Code2, ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
-import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
+import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
 
 type View = "rendered" | "source";
 
@@ -73,14 +73,13 @@ interface SvgRenderedViewProps {
 }
 
 function SvgRenderedView({ url, fileName }: SvgRenderedViewProps) {
-  // Media durability: an SVG served by a signed (expiring) S3 URL must
-  // re-mint from its file_id on an in-view load failure rather than show a
-  // terminal error — a user's own file never just "expires". `useRemintableSrc`
-  // recovers the file_id from the URL and re-mints; for a durable/foreign URL
-  // it's a transparent passthrough. `failed` flips only after re-mint is
-  // exhausted. Hook called unconditionally (before the early returns) to respect
-  // the rules of hooks.
-  const { src, onError, failed } = useRemintableSrc(url);
+  // Media durability: on an in-view load failure the file-session cookie is
+  // refreshed and the SAME durable URL retried once rather than showing a
+  // terminal error — a user's own file never just "expires". For a foreign
+  // URL it's a transparent passthrough. `failed` flips only after the retry
+  // is exhausted. Hook called unconditionally (before the early returns) to
+  // respect the rules of hooks.
+  const { src, retryKey, onError, failed } = useDurableSrc(url);
 
   if (!url) {
     return (
@@ -106,6 +105,7 @@ function SvgRenderedView({ url, fileName }: SvgRenderedViewProps) {
     <div className="flex flex-1 items-center justify-center overflow-auto bg-checkerboard p-4">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        key={retryKey}
         src={src}
         alt={fileName}
         className="max-h-full max-w-full object-contain drop-shadow-sm"

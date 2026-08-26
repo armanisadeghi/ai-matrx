@@ -44,6 +44,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { useCloudTree } from "@/features/files/hooks/useCloudTree";
 import { useFileMutation } from "@/features/files/hooks/useFileMutation";
+import { fileUrls } from "@/features/files/handler/utils/python-base";
 import { useInfiniteWindow } from "@/features/files/hooks/useInfiniteWindow";
 import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
@@ -752,12 +753,9 @@ export function FilesResourcePicker({
   const handleFileSelect = async (file: CloudFileRecord) => {
     setIsProcessing(true);
     try {
-      // Fetch a short-lived signed URL. Unlike legacy storage, every
-      // cloud-files URL is signed — we don't need the "public vs private"
-      // dance the old picker did.
-      const { url: fileUrl } = await fileMutation.signedUrl(file.id, {
-        expiresIn: 3600,
-      });
+      // Durable renderable URL — bind the record's own `url` when present,
+      // else build it from the file id. Never expires.
+      const fileUrl = file.url ?? fileUrls(file.id).inline;
 
       // Reuse the legacy EnhancedFileDetails shape so downstream callers
       // (resource registry, attachment pills, etc.) read the same fields.

@@ -7,19 +7,16 @@
  *
  * Why this hook instead of {@link useFileSrc}: the asset endpoint
  * returns every preset variant in one shot (cover, OG, thumbnail,
- * favicons, etc.) AND it honours the same CDN-vs-signed routing rules
- * the rest of the system uses (public files get CDN URLs; private/shared
- * get signed-inline URLs). New renderers should default to this hook;
+ * favicons, etc.) AND it honours the same durable-URL routing rules the
+ * rest of the system uses (public files get CDN URLs; private/shared get
+ * durable authenticated inline URLs). New renderers should default to this hook;
  * `useFileSrc` covers callers that only need the raw inline URL
  * for the original file.
  *
  * Lifecycle:
- *   - Re-fetches whenever `fileId` or `signedUrlTtl` changes.
- *   - No proactive background refresh. Once the browser has rendered the
- *     bytes, the URL's expiry is irrelevant — the image stays on screen
- *     from the browser's HTTP cache. If a caller needs a guaranteed-fresh
- *     URL (e.g. for a download started long after mount), it can call
- *     `refresh()` explicitly.
+ *   - Re-fetches whenever `fileId` changes. The URLs are durable, so
+ *     `refresh()` exists only to re-read a mutated envelope (rename,
+ *     new variant, visibility flip).
  *
  * Pattern: plain React state + effects — no TanStack Query in
  * `features/files/hooks/` yet.
@@ -49,13 +46,11 @@ import type { Asset } from "@/features/files/types";
 // rebuilds the pane on path changes, and the same id can hit the network
 // three or four times in under a second.
 //
-// Same shape as the `fetchProcessedDocument` dedup shipped in `76923f146`
-// and the `signed-url-cache` prior art: an in-flight `Map<key, Promise>`
-// so concurrent callers share one network round-trip, plus a small
-// resolved cache so a fresh result is reused for FETCH_ASSET_CACHE_TTL_MS.
-// The key includes `userId` so a session switch can't reuse the previous
-// user's asset, and `signedUrlTtl` so two callers asking for different
-// expiries don't share an entry baked with the wrong window.
+// Same shape as the `fetchProcessedDocument` dedup shipped in `76923f146`:
+// an in-flight `Map<key, Promise>` so concurrent callers share one network
+// round-trip, plus a small resolved cache so a fresh result is reused for
+// FETCH_ASSET_CACHE_TTL_MS. The key includes `userId` so a session switch
+// can't reuse the previous user's asset.
 
 const FETCH_ASSET_CACHE_TTL_MS = 30_000;
 
@@ -67,20 +62,15 @@ interface AssetCacheEntry {
 const fetchAssetInflight = new Map<string, Promise<Asset>>();
 const fetchAssetCache = new Map<string, AssetCacheEntry>();
 
-function fetchAssetCacheKey(
-  fileId: string,
-  userId: string | null,
-  signedUrlTtl: number,
-): string {
-  return `${userId ?? "<none>"}:${fileId}:${signedUrlTtl}`;
+function fetchAssetCacheKey(fileId: string, userId: string | null): string {
+  return `${userId ?? "<none>"}:${fileId}`;
 }
 
 async function fetchAssetForFile(
   fileId: string,
   userId: string | null,
-  signedUrlTtl: number,
 ): Promise<Asset> {
-  const key = fetchAssetCacheKey(fileId, userId, signedUrlTtl);
+  const key = fetchAssetCacheKey(fileId, userId);
 
   const cached = fetchAssetCache.get(key);
   if (cached && Date.now() - cached.resolvedAt < FETCH_ASSET_CACHE_TTL_MS) {
@@ -90,7 +80,7 @@ async function fetchAssetForFile(
   const existing = fetchAssetInflight.get(key);
   if (existing) return existing;
 
-  const promise = getAssetForFile(fileId, { signed_url_ttl: signedUrlTtl })
+  const promise = getAssetForFile(fileId)
     .then(({ data }) => {
       fetchAssetCache.set(key, { resolvedAt: Date.now(), asset: data });
       return data;
@@ -116,18 +106,16 @@ export function invalidateFileAsset(fileId?: string): void {
     fetchAssetCache.clear();
     return;
   }
-  // Key shape is `${userId}:${fileId}:${signedUrlTtl}` — match the middle
-  // segment so we evict every TTL/user combination for this file. File
-  // ids are UUIDs so `:<id>:` can't appear inside another segment.
-  const needle = `:${fileId}:`;
+  // Key shape is `${userId}:${fileId}` — match the tail segment so we
+  // evict every user combination for this file. File ids are UUIDs so
+  // `:<id>` can't appear inside another segment.
+  const needle = `:${fileId}`;
   for (const key of fetchAssetCache.keys()) {
-    if (key.includes(needle)) fetchAssetCache.delete(key);
+    if (key.endsWith(needle)) fetchAssetCache.delete(key);
   }
 }
 
 export interface UseFileAssetOptions {
-  /** Signed-URL TTL in seconds. Default 3600. Server bounds to [60, 604800]. */
-  signedUrlTtl?: number;
   /**
    * If false, the hook won't fetch — useful when the host component
    * isn't visible yet (collapsed tab, off-screen list row).
@@ -152,7 +140,7 @@ export function useFileAsset(
   fileId: string | null | undefined,
   options: UseFileAssetOptions = {},
 ): UseFileAssetResult {
-  const { signedUrlTtl = 3600, enabled = true } = options;
+  const { enabled = true } = options;
   const userId = useAppSelector(selectUserId);
   const [asset, setAsset] = useState<Asset | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -163,7 +151,7 @@ export function useFileAsset(
     setIsLoading(true);
     setError(null);
     try {
-      const data = await fetchAssetForFile(fileId, userId, signedUrlTtl);
+      const data = await fetchAssetForFile(fileId, userId);
       setAsset(data);
     } catch (err) {
       setError(extractErrorMessage(err));
@@ -171,7 +159,7 @@ export function useFileAsset(
     } finally {
       setIsLoading(false);
     }
-  }, [fileId, enabled, signedUrlTtl, userId]);
+  }, [fileId, enabled, userId]);
 
   // Exposed `refresh()` is the user's explicit "give me fresh data" lever —
   // bust the cache before re-fetching, otherwise a caller still gets the
