@@ -150,8 +150,8 @@ export function DefaultRulesEditor() {
   });
   const catalog = useQuery({
     queryKey: ["marketing", "seo", "facet-catalog", "platform"],
-    // The platform catalog: no site, so only shared dimensions come back.
-    queryFn: ({ signal }) => getFacetDimensionCatalog("", signal),
+    // null = the platform catalogue alone. NOT "" — that is not a uuid.
+    queryFn: ({ signal }) => getFacetDimensionCatalog(null, signal),
   });
 
   const dimensions = useMemo(

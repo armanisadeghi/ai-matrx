@@ -187,13 +187,23 @@ function toFacetValues(raw: Json): FacetValue[] {
  * shares, PLUS the ones this site authored. ONE call powers the whole screen.
  */
 export async function getFacetDimensionCatalog(
-  siteId: string,
+  /**
+   * The site whose own dimensions to include. Pass `null` for the PLATFORM
+   * catalogue alone (the admin default-rules editor). An empty string is not a
+   * site — it reached the RPC as `p_site_id: ""` and Postgres rejected it with
+   * `invalid input syntax for type uuid`, so the caller silently got no
+   * dimensions at all (2026-08-26).
+   */
+  siteId: string | null,
   signal?: AbortSignal,
 ): Promise<FacetDimension[]> {
   const response = await (
     await seoDb()
   )
-    .rpc("facet_dimension_catalog", { p_site_id: siteId })
+    .rpc(
+      "facet_dimension_catalog",
+      siteId ? { p_site_id: siteId } : {},
+    )
     .abortSignal(signal ?? new AbortController().signal);
   const rows = assertGoverned(
     response.data,
