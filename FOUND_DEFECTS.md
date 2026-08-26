@@ -15,6 +15,68 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D264 — the COMPONENT OWNERSHIP LAW gate greps `created_by` only, and `files.analysis` still carries an `owner_id` read arm (2026-08-26)
+
+`public.component_created_by_report()` matches `\mcreated_by\M` in `qual`/`with_check`. The law
+(db-rules §6d-1) is that a component has **no owner column at all** — so a component keying its
+read arm on `owner_id` is the identical D182(3) defect and the gate cannot see it.
+
+Three tables were affected. `files.entities` and `files.pages` were cleaned by
+`migrations/component_read_lane_no_created_by.sql` (the generator fix covers both column names).
+**`files.analysis` still carries `owner_id = (select auth.uid())` in `file_analysis_select` and
+`file_analysis_update`** and cannot be repaired by regeneration — see D265.
+
+Fix: widen the report's regex to `(created_by|owner_id)`, re-seed the gate's "the zero is real"
+control count, and repair `files.analysis` (which needs D265 first). The migration's own guard
+already asserts the wider property at the generator; only the shipped conformance gate is narrow.
+
+### D265 — three registered `component` tables cannot be generated at all (2026-08-26)
+
+`iam.apply_rls(schema,table,token,'component')` fails outright on three active registered
+components. None is a `created_by` offender today, so the conformance gate reads 0 with them
+present — but each is a structural defect, and each is named in
+`migrations/component_read_lane_no_created_by.sql`'s sweep so a fourth failure stops that migration
+rather than vanishing into a silent skip.
+
+| Table | Failure | What it actually is |
+|---|---|---|
+| `files.analysis` | `column "id" does not exist` | never generated; bespoke policies; also carries the D264 `owner_id` arm |
+| `transcripts.studio_session_settings` | `column "id" does not exist` | never generated; bespoke policies |
+| `legal.wc_impairment_definition` | `component … has no composition parent` | a 215-row global REFERENCE table (no owner/org/visibility column, read by every signed-in user via a bespoke `auth_read`) **misclassified as a component** |
+
+The emitted read expression is keyed on `id` in both the bounded-definer arm and every candidate
+set, so a registered entity without `id` can never take a generated policy (§2 base contract).
+For `legal.wc_impairment_definition` the fix is the **variant**, not the policy (§6d-1 corollary).
+
+### D266 — `iam.entity_read_expr`'s parent arms still emit the §6d planner trap: 251 component read policies (2026-08-26)
+
+db-rules §6d bans `IN (SELECT unnest(<STABLE fn>))` in a policy — `unnest`'s planner support
+function const-folds the STABLE call, so Postgres **executes the recursive `SECURITY DEFINER`
+access walk while planning every statement**. §6d claimed both generators emit the safe
+`iam.unnest_uuids` form. `iam._apply_rls_unchecked` does; **`iam.entity_read_expr` does not**, and
+the component read lane is built entirely from it.
+
+Measured live 2026-08-26: **251 policies across 251 tables, every one a component `std_select`**
+(0 use `= ANY(...)`; 521 policies elsewhere do use the safe form). Currently **latent, not down** —
+these tokens walk small parent sets, unlike `folder`'s 32k self-edge — but the signature is
+unmistakable, as a real non-admin JWT:
+
+| Table | Planning | Execution | Ratio |
+|---|---|---|---|
+| `files.file_versions` | 597 ms | 0.44 ms | 1,400× |
+| `seo.search_performance_daily` | 243 ms | 0.43 ms | 566× |
+| `chat.message` | 63 ms | 0.40 ms | 159× |
+
+Cost tracks the PARENT walk, so any parent that grows the way `folder` did takes its children over
+the `authenticated` role's 8s cap with it — a 57014 → HTTP 500 that reads like an outage.
+
+Fix: route the three parent-arm branches in `iam.entity_read_expr` through `iam.unnest_uuids`, then
+re-run `iam.apply_rls` across the 251 component tables. Semantics are byte-identical
+(`x = ANY(arr)` ⇔ `x IN (SELECT unnest(arr))` in a boolean filter) and the policy text still names
+the token, so `iam.verify_canonical`'s composition-parent proof still passes — but it is a kernel
+mirror change and carries the §6d re-proof discipline. Deliberately **not** folded into the
+2026-08-26 ownership-law repair, whose proof required entity/system output to be byte-identical.
+
 ### D262 — seven `organization_id NOT NULL` tables have NO org backstop: an org-forgetting write returns 500 (2026-08-26)
 
 Found by the docs-steward's daily `platform.ddl_guard_log` read (skill step 7c), triaged live
