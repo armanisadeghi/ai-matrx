@@ -263,10 +263,29 @@ end $$;
 do $$ begin
   -- 🚨 AR2: "a failed access shutoff cannot be marked complete merely because an event was
   -- emitted." This is the constraint that makes that structural.
+  --
+  -- 🚨 BUILD-PROVEN CORRECTION (core tranche 3, caught by a rolled-back probe). Section 12.4's
+  -- literal DDL is
+  --     check (state <> 'complete' or (result_state = 'verified_success' and verification_source <> 'none'))
+  -- and it DOES NOT HOLD. Both columns are nullable, and an item created and then updated to
+  -- `complete` with neither set evaluates:
+  --     state <> 'complete'          -> false
+  --     result_state = '...'         -> NULL   (NULL = anything is NULL)
+  --     verification_source <> 'none'-> NULL
+  --     false OR (NULL AND NULL)     -> NULL
+  -- A CHECK constraint fails only on FALSE, never on NULL -- so the row is ACCEPTED and exactly
+  -- the thing AR2 called the sharpest onboarding finding sails through. Proven live: the probe
+  -- marked a `Revoke SSO` item complete with no result and no verification, and it was accepted.
+  -- coalesce() closes it. OWED SPEC CORRECTION: section 12.4's constraint body.
+  if exists (select 1 from pg_constraint where conname = 'checklist_item_complete_needs_result'
+               and pg_get_constraintdef(oid) not like '%COALESCE%') then
+    alter table hr.checklist_item drop constraint checklist_item_complete_needs_result;
+  end if;
   if not exists (select 1 from pg_constraint where conname = 'checklist_item_complete_needs_result') then
     alter table hr.checklist_item add constraint checklist_item_complete_needs_result
       check (state <> 'complete'
-             or (result_state = 'verified_success' and verification_source <> 'none'));
+             or (coalesce(result_state, '') = 'verified_success'
+                 and coalesce(verification_source, 'none') <> 'none'));
   end if;
   if not exists (select 1 from pg_constraint where conname = 'checklist_item_waiver_reasoned') then
     alter table hr.checklist_item add constraint checklist_item_waiver_reasoned
