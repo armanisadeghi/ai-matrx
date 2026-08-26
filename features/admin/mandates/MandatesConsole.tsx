@@ -155,7 +155,7 @@ export function MandatesConsole() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // DEEP LINK — `?mandate=<mandate_key>` selects that mandate on arrival.
   // Any surface that names the AI it runs links here (see
-  // `components/agents/PageAgents.tsx`); without this the link would open the
+  // top Agents menu); without this the link would open the
   // console on nothing, which is the dead end THE DOOR LAW forbids.
   const searchParams = useSearchParams();
   const deepLinkKey = searchParams.get("mandate");

@@ -10,8 +10,8 @@
  * from a button in its own UI, and until now it was not registered at all — so
  * the Agents menu could not name it, nobody could bind a second agent to look
  * at the same evidence, and there was nowhere to leave a note about how the
- * job went. THE DISCLOSURE LAW: a surface that runs AI names it, in the page
- * AND in the menu.
+ * job went. THE DISCLOSURE LAW registers that existing fixed job in the top
+ * Agents menu only; it never adds visible disclosure content to this console.
  *
  * The value vocabulary is shared with the organization/brand mount
  * (`matrx-user/marketing-automations`) through `_run-console.manifest.ts` —
@@ -32,8 +32,8 @@ export const MARKETING_RUN_CONSOLE_SURFACE_NAME =
 
 /**
  * The engine's own agent, named as a ROLE so it is listed, inspectable and
- * runnable from the Agents menu with this page's live scope — the surface half
- * of what `<PageAgents>` discloses inline.
+ * runnable from the Agents menu with this page's live scope. The manifest role
+ * is disclosure; the page body must not render a second agent roster.
  *
  * `mandateKey`, never a UUID: the agent behind the job is DB-managed and moves
  * without a deploy (the NO HARDCODED AGENTS law).

@@ -17,9 +17,12 @@
  *     on its family (ancestry + children, the same registry walk that draws the
  *     breadcrumb above). This is why standing anywhere in podcast shows the
  *     podcast family's mandates.
- *   • LIVE — what the page disclosed at runtime through `<PageAgents>` /
- *     `useDeclaredSurfaceMandates`, for surfaces that pick their mandate from
- *     live state (the run console runs a different one per engine).
+ *   • LIVE — what the page registered through UI-free
+ *     `useDeclaredSurfaceMandates`, for surfaces that pick an existing fixed
+ *     job from live state (the run console runs a different one per engine).
+ *
+ * This top-menu section is the ONLY disclosure UI. Registration must never add
+ * chips, labels, rows, rosters, or explanatory content to the working surface.
  *
  * Every row is a DOOR (no-dead-ends), and the door opens IN PLACE: the
  * `mandateWindow` panel over this page — the pinned agent, your own binding,

@@ -100,7 +100,7 @@ The rule, and why it is not a style preference:
 ## Change Log
 
 - 2026-08-26 — **`mandateWindow` — mandates handled in place.** Every mandate NAME on a
-  working surface (the Agents menu's "AI doing jobs here" rows, `PageAgents` chips) now opens
+  working surface (the Agents menu's "AI doing jobs here" rows) now opens
   this panel over the page instead of navigating to `/agents/mandates` or the admin console;
   both `<Link>`s are gone. Two panes, both canonical components: **Yours** (everyone) is
   `MandateOverridePanel` + `MandateResolutionRibbon` — principal chips, agent swap, settings

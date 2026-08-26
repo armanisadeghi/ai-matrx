@@ -699,6 +699,15 @@ export function getManifest(
 }
 
 /**
+ * Whether shell chrome and binding services may treat this surface as owning
+ * a bound-agent roster. Unknown/legacy surfaces keep the historical `bound`
+ * default; registered universal hosts opt out explicitly in their manifest.
+ */
+export function surfaceAcceptsAgentBindings(surfaceName: string): boolean {
+  return getManifest(surfaceName)?.agentRosterMode !== "universal";
+}
+
+/**
  * Direct children of a surface (manifests declaring `inheritsFrom` it),
  * in declaration order. The registry — not the DB mirror — is the ONE
  * hierarchy source for UI chrome.

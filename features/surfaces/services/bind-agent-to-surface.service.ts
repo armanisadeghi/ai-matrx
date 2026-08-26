@@ -22,7 +22,10 @@
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { getSurfaceByName } from "@/features/surfaces/services/surfaces.service";
 import { invalidateSurfaceBoundAgents } from "@/features/surfaces/services/surface-bound-agents.service";
-import { getSurfaceAncestry } from "@/features/surfaces/manifests/registry";
+import {
+  getSurfaceAncestry,
+  surfaceAcceptsAgentBindings,
+} from "@/features/surfaces/manifests/registry";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
   isValueMappingMap,
@@ -230,6 +233,12 @@ export async function bindAgentToSurface(
 ): Promise<BoundAgentSurface> {
   const { agentId, surfaceName, scope, valueMappings, writePolicies, accessOrgId } =
     args;
+
+  if (!surfaceAcceptsAgentBindings(surfaceName)) {
+    throw new Error(
+      `Surface ${surfaceName} is a universal agent host and does not accept agent bindings`,
+    );
+  }
 
   if (!accessOrgId) {
     throw new Error(

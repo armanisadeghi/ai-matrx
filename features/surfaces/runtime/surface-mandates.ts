@@ -5,10 +5,11 @@
  *
  * LIVE MANDATE DISCLOSURE — what AI is doing a job on this page, right now.
  *
- * 🚨 THE DISCLOSURE LAW (Arman, 2026-08-25): a page that runs an agent as a
- * built-in feature must NAME it — inline on the page (`<PageAgents>`) AND in
- * the Agents menu at the top, where every agent reachable from this surface is
- * listed. An agent behind a button that appears in neither is a black box.
+ * 🚨 THE DISCLOSURE LAW: a page that already runs a fixed agent job registers
+ * it in the existing Agents menu at the top. This registry renders NOTHING and
+ * must never be used as authority to add chips, labels, rosters, or any other
+ * visible page content. An undisclosed fixed job is a black box; inventing a
+ * visible disclosure block is a different defect.
  *
  * Why a module registry, not React context: the Agents header button lives in
  * the AppShell `<Header>`, a SIBLING of `<main>` — a provider under a route
@@ -18,13 +19,14 @@
  * and several surfaces choose their mandate from live state (the run console
  * runs a different mandate per selected engine). Declared roles and live
  * registrations are merged by the header — the manifest is the contract, this
- * is the disclosure.
+ * is UI-free registration for the existing top menu.
  *
  * 🚨 THE SELF-CONTEXT EXCEPTION: a surface where you BUILD or EDIT an agent
  * (the agent builder, mandate console, agent settings) must NOT register — the
  * agent under construction is the page's SUBJECT, not its worker, and handing
- * it context of itself is the opposite of what those pages want. Register only
- * agents that DO something for the user on this page.
+ * it context of itself is the opposite of what those pages want. Universal
+ * hosts such as Chat also register no available-agent roster. Register only a
+ * fixed job that the surface already performs for the user.
  */
 
 import { useEffect, useRef } from "react";
@@ -92,7 +94,7 @@ export function registerSurfaceMandates(
   };
 }
 
-/** Every mandate disclosed by the live page, de-duplicated by key. */
+/** Every fixed mandate registered for the top menu, de-duplicated by key. */
 export function getLiveSurfaceMandates(): readonly SurfaceMandateRef[] {
   return snapshot;
 }
@@ -103,7 +105,8 @@ export function useLiveSurfaceMandates(): readonly SurfaceMandateRef[] {
 }
 
 /**
- * Declare the mandates this component's surface runs.
+ * Register fixed mandates this component's surface already runs in the top
+ * Agents menu. This hook renders no UI; never add a visible disclosure sibling.
  *
  * ```ts
  * useDeclaredSurfaceMandates([

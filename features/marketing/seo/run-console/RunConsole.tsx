@@ -29,7 +29,7 @@
  *     window rather than a spinner.
  */
 
-import { useEffect, useState , useRef} from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -76,8 +76,8 @@ import { ScheduleCascadePanel } from "./ScheduleCascadePanel";
 import { RunHistoryPanel } from "./RunHistoryPanel";
 import { extractErrorMessage } from "@/utils/errors";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
-import { PageAgents } from "@/components/agents/PageAgents";
 import { useSurfaceRuntimeRegistration } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 import {
   buildRunConsoleScope,
   runConsoleSurfaceName,
@@ -455,6 +455,12 @@ function TopicPlacementConsole({
   }
   const runner = engine.runner;
   const queryClient = useQueryClient();
+  useDeclaredSurfaceMandates(
+    engine.agents.map((agent) => ({
+      ...agent,
+      surfaceName: runConsoleSurfaceName(scope),
+    })),
+  );
 
   const [selected, setSelected] = useState<string[]>([]);
   const [focusedSiteId, setFocusedSiteId] = useState<string | null>(null);
@@ -667,12 +673,6 @@ function TopicPlacementConsole({
             {engine.what}
           </p>
         </div>
-
-        {/* NO SECRET AI: this console runs an agent — name it. */}
-        <PageAgents
-          agents={[...engine.agents]}
-          surfaceName={runConsoleSurfaceName(scope)}
-        />
 
         <span className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
           <ShieldCheck className="h-3 w-3" />

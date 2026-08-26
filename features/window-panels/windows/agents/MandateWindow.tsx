@@ -10,7 +10,7 @@
  * on the page, and a user can do the same for themselves."
  *
  * So this is the mandate twin of `AgentSettingsWindow`, opened from anywhere a
- * mandate is NAMED (the Agents menu's "AI doing jobs here" rows, `PageAgents`
+ * mandate is NAMED (the Agents menu's "AI doing jobs here" rows
  * chips). The route consoles still exist for browsing all 365; nothing on a
  * working surface links to them any more.
  *

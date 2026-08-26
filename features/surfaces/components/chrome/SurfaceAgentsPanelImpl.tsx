@@ -23,6 +23,7 @@ import { getRelatedSurfaces } from "@/features/surfaces/runtime/fetchRelatedSurf
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/SurfaceBoundAgentsList";
+import { surfaceAcceptsAgentBindings } from "@/features/surfaces/manifests/registry";
 import { SurfaceMandatesSection } from "@/features/surfaces/components/chrome/SurfaceMandatesSection";
 import { Badge } from "@/components/ui/badge";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -291,7 +292,7 @@ export default function SurfaceAgentsPanelImpl({
         </div>
       )}
 
-      {activeName && (
+      {activeName && surfaceAcceptsAgentBindings(activeName) && (
         <div className="min-w-0">
           {activeName !== primaryName && activeLabel && (
             <p className="mb-1 text-[10px] text-muted-foreground">

@@ -363,6 +363,14 @@ export interface SurfaceManifest {
   /** Matches `ui_surface.name`. */
   surfaceName: string;
   /**
+   * Whether this surface has a bindable roster of agents in the shell's
+   * existing Agents menu. `bound` is the default. `universal` is reserved for
+   * hosts such as Chat where the user may choose any agent: those surfaces
+   * expose no defaults, roles, binding controls, or surface-bound roster.
+   * Code-only; this is a chrome/binding safety boundary, not DB metadata.
+   */
+  agentRosterMode?: "bound" | "universal";
+  /**
    * Every turn requires a mounted live provider to prepare request-specific
    * evidence. Missing providers and send-while-running inbox delivery fail
    * closed because neither can attach a fresh context snapshot.

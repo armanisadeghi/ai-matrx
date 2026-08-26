@@ -15,7 +15,7 @@ Invoke only the skills whose areas the focused surface actually touches, but nev
 
 - `surface-authoring` — new, stub, partial, unregistered, drifted, or incompletely wired agent-aware surfaces; includes the former Surface Pro runtime rollout
 - `context-menu-v3` — add, repair, or certify canonical right-click/long-press behavior
-- `agent-disclosure` — REQUIRED when a surface has a fixed AI worker: the inline `<PageAgents>` chip, the manifest `agentRole` by `mandateKey`, and the mandate window instead of a link to a mandate route. Agent-AUTHORING surfaces and universal agent hosts such as Chat disclose no roster; read the skill before deciding.
+- `agent-disclosure` — REQUIRED when a surface already has a fixed AI worker: register it in the existing top Agents menu through a manifest `agentRole` or UI-free `useDeclaredSurfaceMandates`, and use the mandate window instead of a route link. Disclosure NEVER adds visible page content. Agent-AUTHORING surfaces are exempt; universal hosts such as Chat use `agentRosterMode: "universal"` and expose no bound roster or Bind control.
 - `surface-write-targets` — agent-writeable fields and live apply proof
 - `admin-debug-context` — only when the feature needs custom debug data beyond the automatically captured route/viewport/console context
 

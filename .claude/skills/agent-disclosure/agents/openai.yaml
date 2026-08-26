@@ -1,4 +1,4 @@
 interface:
   display_name: "Agent Disclosure"
-  short_description: "Name fixed AI workers and open them in place"
-  default_prompt: "Use $agent-disclosure to identify fixed AI workers, exempt agent-authoring and universal-host surfaces, add the PageAgents and manifest role disclosures where required, and verify each surface live."
+  short_description: "Register fixed AI jobs in the top Agents menu"
+  default_prompt: "Use $agent-disclosure to identify AI jobs the surface already runs, register only fixed jobs in the existing top Agents menu, exempt agent-authoring and universal-host surfaces, never add visible page content, and verify the result live."

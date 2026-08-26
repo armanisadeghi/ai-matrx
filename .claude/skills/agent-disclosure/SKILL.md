@@ -1,124 +1,101 @@
 ---
 name: agent-disclosure
 description: >-
-  Make a surface NAME the AI it runs, and open that AI in place. The sweep recipe for
-  THE DISCLOSURE LAW — add PageAgents inline, declare the job as a manifest
-  `agentRole` carrying `mandateKey`, and replace every link to a mandate route with the
-  `mandateWindow` panel. Use whenever a page, panel, overlay, or window runs an agent
-  behind a button, chip, assist, or automatic action; whenever `pnpm check:agent-disclosure`
-  names a file; whenever you are working the undisclosed-surface backlog; and as part of any
-  broad UI enhancement pass on a surface that touches AI. Triggers on "this page runs an
-  agent", "name the AI", "disclose the agent", "mandate link", "PageAgents", "agentRoles",
-  "AI doing jobs here", "surface runs a mandate", "secret AI". NOT for agent-AUTHORING
-  surfaces or universal agent hosts such as Chat, where the user can choose any agent;
-  neither has a fixed surface worker to disclose.
+  Register the fixed AI jobs a surface already runs in the existing top Agents
+  menu, and open each mandate in place. Use when a page, panel, overlay, or
+  window already runs a mandate behind a button, assist, automatic action, or
+  mode; when the agent-disclosure guard names a file; or during a surface check.
+  Disclosure never adds agent labels, chips, cards, rosters, or any other visible
+  page content. Not for agent-authoring surfaces or universal agent hosts such as
+  Chat, where no fixed worker is bound to the surface.
 ---
 
-# Agent disclosure — a surface names its fixed AI workers
+# Agent disclosure — register existing fixed jobs in the top menu
 
-## The law (Arman, 2026-08-25 / 2026-08-26 — quoted)
+## The non-negotiable boundary
 
-> "Any page where we have AI integrations, I need the page to identify what agents it's
-> using for those purposes so that I can go look at those agents' instructions."
+🚨 **DISCLOSURE MUST NEVER CHANGE THE SURFACE'S VISIBLE CONTENT.**
 
-> "On any surface where an agent is actually being assigned but built into the physical UI
-> … we also add that agent to the list of available agents at the top."
+Do not add an agent chip, badge, card, row, label, roster, callout, explanatory
+copy, icon, toolbar item, or section to the page, panel, dialog, overlay, or
+window. Do not move or resize existing content to make room for disclosure. Do
+not create a new agent integration merely so a surface can be "complete."
 
-> "We don't ever want to send the user off of the page, over to a route like the agent's
-> mandate route. Instead, you should do the same thing that we do when the user clicks on
-> the settings icon for the agents that are assigned into roles."
+The disclosure destination is the shell's **existing top Agents menu only**.
+The job must already exist in the product surface. This skill records that
+pre-existing fixed job so the user can inspect its mandate without leaving the
+page. It is not authority to modify page content or product behavior.
 
-Three sentences, three obligations. A page that quietly calls a model is a black box, and a
-black box cannot be approved — least of all one that also runs on a schedule while nobody is
-watching.
+There is no inline disclosure component. `PageAgents` is forbidden and deleted.
+If a task or old document tells you to render it, that instruction is stale and
+must not be followed.
 
-Cross-repo SoR: `../../../common-docs/systems/agents/mandates/CLIENT-SURFACES.md`
-§ THE DISCLOSURE LAW. Frontend detail: [`features/surfaces/FEATURE.md`](../../../features/surfaces/FEATURE.md)
-§ "AI doing jobs here" · [`features/agents/mandates/FEATURE.md`](../../../features/agents/mandates/FEATURE.md).
+Cross-repo source of truth:
+`../../../common-docs/systems/agents/mandates/CLIENT-SURFACES.md` § THE
+DISCLOSURE LAW. Frontend detail:
+[`features/surfaces/FEATURE.md`](../../../features/surfaces/FEATURE.md).
 
-## 🚨 Decide whether the surface has a fixed worker — read this first
+## Decide whether a roster exists
 
-A surface where the user **builds, edits, pins, tests, or reviews an agent** discloses
-NOTHING. There the agent is the page's **subject**, not its worker, and handing it context
-of itself is the exact bug the surfaces system exists to prevent. Exempt by path, with the
-reason, in `scripts/check-agent-disclosure.ts`:
+### Fixed surface job — disclose in the top menu
 
-`features/agents/mandates/**` · `features/admin/mandates/**` · `features/surfaces/**` ·
-`features/agents/components/**` · `features/agent-shortcuts/**` · `app/(dev)/**` · `scripts/**`
+A fixed job is an AI action the surface itself owns: for example, a specific
+mandate behind "Assign topics" or a recurring agent that performs the same job
+for this page. Confirm the integration already exists before registering it.
 
-Adding a path there is a RULING, not housekeeping: write the reason, and only when the agent is
-the subject or the surface is a genuine universal host. "It was noisy" is not a reason.
+- Static job: declare a manifest `agentRole` carrying its `mandateKey`.
+- Runtime-selected fixed job: call `useDeclaredSurfaceMandates` from the
+  existing action-bearing component. This call has no UI.
+- Open the mandate through `useOpenMandateWindow`; never link away to a mandate
+  route from a working surface.
 
-**THE UNIVERSAL-HOST EXCEPTION.** A surface where the user chooses or chats with arbitrary agents
-has no fixed surface worker. Chat, agent pickers, pinned agents, history, and quick-action chips do
-not become bound roles merely because they can start conversations. Do not mount `<PageAgents>` for
-the available agents and do not add manifest `agentRoles` for them. The active agent's identity is
-the content of the host, not an "AI doing jobs here" roster. A separate, recurring mandate that
-performs a fixed job _on the host_ is still disclosed.
+### Agent-authoring surface — exempt
 
-The same boundary in the other direction is surface-check S5: an agent-purpose surface
-(chat, agent run, battle) launches its own primary conversation with
-`runtime: { surfaceName: null }`. Disclosure and that opt-out are different rules about the
-same boundary — read S5 when the surface's whole point is the agent.
+If the user builds, edits, pins, tests, or reviews an agent, the agent is the
+subject, not a hidden worker. Agent Builder, mandate consoles, and agent settings
+must not register the subject as a surface job.
+
+### Universal agent host — exempt and structurally unbound
+
+If the user may choose or chat with arbitrary agents, there is no fixed surface
+roster. Chat, generic agent runners, agent pickers, pinned agents, history, and
+quick-action choices are universal-host content/navigation.
+
+- Set the manifest's `agentRosterMode: "universal"`.
+- Do not add manifest `agentRoles` for available agents.
+- Do not bind default, public, organization, or user agents to the surface.
+- The top Agents menu must omit the bound-agent list and Bind control.
+- The binding service must reject direct writes for the surface.
+
+A genuinely separate fixed mandate that performs a job *on* a universal host
+may be registered as that specific job. The host's available agent catalog is
+still never a surface roster.
 
 ## Find the work
 
 ```bash
-pnpm check:agent-disclosure          # advisory; names every undisclosed SURFACE
+pnpm check:agent-disclosure
 ```
 
-It scans surfaces only — execution machinery (thunks, launchers, services, tool handlers)
-runs mandates on behalf of a surface and discloses nothing by design. That scoping is
-deliberate: a guard that prints 124 rows teaches its readers to skip it.
+The guard scans UI surfaces that run mandates. It also fails loudly if the
+forbidden `PageAgents` import or JSX pattern returns anywhere. Execution
+machinery is excluded because it runs on behalf of a surface.
 
-**Its blind spots are yours to cover** when you are already in a file:
+Before changing anything, inventory the surface's existing buttons, assists,
+automatic actions, tabs, and modes. For every candidate, prove which fixed
+mandate it already runs. Never infer a job from an agent-looking icon or from
+the existence of an agent picker.
 
-- a surface that runs an agent through a helper the regexes do not name;
-- a `<PageAgents>` that names ONE mandate on a page that runs three;
-- a chip whose `does` copy is stale because the mandate changed jobs.
+## Register a static fixed job
 
-## The fix — three parts, and the first two are not alternatives
-
-### 1. Name it inline — `<PageAgents>`
-
-```tsx
-import { PageAgents } from "@/components/agents/PageAgents";
-
-<PageAgents
-  agents={[
-    {
-      mandateKey: "seo.topic_assigner",
-      does: "places keywords onto the Offering tree",
-    },
-  ]}
-  surfaceName="matrx-admin/marketing-run-console"
-/>;
-```
-
-- **A mandate KEY, never a raw agent id.** The Holder is DB-managed and moves without a
-  deploy. A file holding a raw agent UUID is a different job first —
-  `pnpm check:hardcoded-agents`, then come back.
-- **`does` is what it does HERE, in the surface's own words**, lowercase, no period,
-  readable by a non-technical SME: "places keywords onto the Offering tree", not "invokes
-  the topic assignment mandate".
-- **`surfaceName` whenever the host knows it** — it is stamped onto notes written about the
-  mandate from this page.
-- Put it in the surface's own control bar / header row, beside what the agent acts on —
-  never in a footer nobody reads.
-- This ALSO registers the mandate into the live registry
-  ([`features/surfaces/runtime/surface-mandates.ts`](../../../features/surfaces/runtime/surface-mandates.ts)),
-  so the Agents header menu lists it. One declaration, two disclosures.
-
-### 2. Declare it as a role — the manifest half
-
-In the surface's manifest (`features/surfaces/manifests/<slug>.manifest.ts`):
+In the surface manifest:
 
 ```ts
 agentRoles: [
   {
     name: "topic_assigner",
     label: "Topic assigner",
-    description: "What this agent does here, and why an operator would inspect or test it.",
+    description: "Places this surface's keywords onto the Offering tree.",
     kind: "single",
     defaultAgentId: null,
     mandateKey: "seo.topic_assigner",
@@ -128,19 +105,34 @@ agentRoles: [
 ],
 ```
 
-- `mandateKey` **instead of** `defaultAgentId` — `check:surface-drift` refuses both.
-- This is what makes the agent **bindable, runnable against the page's live scope, and
-  testable** from the header menu. The inline chip alone does not.
-- Sync after: `pnpm check:surface-drift && pnpm check:surface-routes`, then the manifest
-  sync (`POST /api/admin/surfaces/sync-manifests`, or the Surfaces admin button).
-- **No manifest yet?** The inline half still ships today — do it. Then either register the
-  surface (**invoke `surface-authoring`**) or leave a chip saying which surface is missing.
-  Never skip part 1 because part 2 is bigger.
+- Use a mandate key, never a raw agent UUID.
+- `does`/description says what the job does here in plain product language.
+- `mandateKey` and a non-null `defaultAgentId` are mutually exclusive.
+- Do not add a role when the surface merely lets the user choose an agent.
 
-### 3. Open it IN PLACE — never a link to a mandate route
+## Register a runtime-selected fixed job
+
+Use this only when live state determines which already-existing fixed job the
+surface runs:
 
 ```tsx
-const openMandate = useOpenMandateWindow(); // features/overlays/openers/mandateWindow
+useDeclaredSurfaceMandates(
+  engine.agents.map((agent) => ({
+    mandateKey: agent.mandateKey,
+    does: agent.does,
+    surfaceName,
+  })),
+);
+```
+
+`useDeclaredSurfaceMandates` populates the top Agents menu and renders nothing.
+Mount it in the existing action-bearing component. Do not add a wrapper or a
+visible sibling. Do not use it for arbitrary picker choices.
+
+## Open the mandate in place
+
+```tsx
+const openMandate = useOpenMandateWindow();
 openMandate({
   initialMandateKey,
   mandateKeys,
@@ -149,60 +141,47 @@ openMandate({
 });
 ```
 
-A `<Link href="/agents/mandates…">` or `/administration/agents/mandates…` **from a working
-surface is a regression** — it costs the user the screen they were standing on. The routes
-stay for browsing all 365. `mandateWindow` wraps the canonical components (Yours =
-`MandateOverridePanel`, Admin = `MandateDetailView`), so nothing is re-implemented; read
-[`features/window-panels/FEATURE.md`](../../../features/window-panels/FEATURE.md) § A PANEL
-WRAPS THE CANONICAL COMPONENT before adding any pane to it.
+The existing menu row is the door. A link from a working surface to
+`/agents/mandates` or `/administration/agents/mandates` is a regression.
 
-## Decide, never ask
+## Decision table
 
-| Situation                                                  | Verdict                                                                              |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Button/assist/automatic action runs a mandate for the USER | **Disclose.** Both halves.                                                           |
-| The page builds/edits/tests/reviews the agent itself       | **Exempt** — self-context exception.                                                 |
-| The page lets the user choose/chat with any agent          | **Exempt** — universal host; available agents and quick actions are not bound roles. |
-| A thunk, service, launcher, or tool handler runs it        | **Not a surface.** The surface that calls it discloses.                              |
-| The surface runs a DIFFERENT mandate per mode/engine/tab   | Disclose the LIVE one — `<PageAgents>` re-registers when the set changes.            |
-| The mandate is disabled or unseeded                        | Still disclose. The menu shows it "off"; silence would be worse.                     |
-| The agent runs only in a window/overlay on this page       | The WINDOW discloses (mount `<PageAgents>` inside it); a window is a surface.        |
-| It runs a raw agent UUID, no mandate                       | Stop. That is `check:hardcoded-agents` work first — never invent a mandate key.      |
+| Situation | Verdict |
+| --- | --- |
+| Existing button/assist/automatic action runs one fixed mandate | Register that job in the top menu only. |
+| Page builds, edits, tests, or reviews an agent | Exempt; the agent is the subject. |
+| Page lets the user choose or chat with any agent | Exempt universal host; no bound roster or Bind control. |
+| Runtime mode selects one of several fixed jobs | Register the live fixed job without rendering UI. |
+| Service/thunk/tool handler runs a mandate | Register on the calling surface, not in machinery. |
+| No AI job exists yet | Do nothing; disclosure cannot invent one. |
+| Agent uses a raw UUID with no mandate | Fix hardcoded-agent architecture first; do not invent a key. |
 
-## Verify — per surface, live
+## Verify live
 
-1. `pnpm check:agent-disclosure` — the file is gone from the list, and the total dropped by
-   what you fixed. It never goes UP in your change.
-2. Open the route. For a fixed worker, the chip is visible where it acts and reads like the
-   product, not the code. For an exempt universal host, confirm no roster overlays its UI.
-3. Fixed worker only: open **Agents for this page** → "AI doing jobs here" lists the mandate;
-   click it and confirm its window opens **over the page**. Universal host: confirm available
-   agents do not appear as surface jobs.
-4. Fixed worker, admin only: write a note, reopen the window, and confirm it persists with the
-   surface stamped on it.
-5. `pnpm type-check` clean for your files; console clean.
+1. Capture the surface before and after. The page body's visible content,
+   spacing, controls, and layout are unchanged by disclosure.
+2. For a fixed job, open the existing top Agents menu and confirm the job
+   appears exactly once. Open it and confirm the mandate window appears over
+   the page.
+3. For a universal host, confirm the menu contains no default/public/bound
+   roster and no Bind control for that surface.
+4. Confirm no `PageAgents` import, JSX, agent chip, or disclosure-only page
+   content exists.
+5. Run `pnpm check:agent-disclosure`, focused tests, and `pnpm type-check`.
 
 ## Sweep discipline
 
-- **One feature area per commit** (`git add <your files>` → `git commit --only`). Shared
-  checkout: never tree-wide git operations, never `git add -A`.
-- **Never disclose an agent the page does not actually run** to make the count drop. A false
-  chip is worse than a missing one — it sends the reviewer to the wrong instructions.
-- **Never `eslint-disable`, never add an exempt path** to clear a finding.
-- Unrelated defects found on the way: chip them (`spawn_task`) or `FOUND_DEFECTS.md`. Do not
-  widen the sweep into the surface's other problems — unless you are running the full
-  `surface-check`, which owns that.
-- Update the surface's `FEATURE.md` Change Log in the same commit (**invoke `context-docs`**).
+- One feature area per commit; stage only owned files in the shared checkout.
+- Never add visible UI to reduce the guard count.
+- Never register an agent the surface does not already run.
+- Never add an exemption merely because a finding is inconvenient.
+- Update the feature's `FEATURE.md` change log in the same commit.
 
 ## Where this runs from
 
-- **Standalone:** `/agent-disclosure` (or "sweep the undisclosed surfaces") — work the guard's
-  list, batching by feature.
-- **Inside a UI pass:** `live-ui-iteration` routes here from
-  [`references/skill-router.md`](../live-ui-iteration/references/skill-router.md); this is a
-  required owner on any surface that touches AI, not an optional extra.
-- **Inside certification:** `surface-check` S5. A surface cannot pass S5 while it runs an
-  agent it does not name.
-- **In Codex:** the repo's `.agents/skills` is a symlink to `.claude/skills`, so this skill is
-  visible there with no second copy; `agents/openai.yaml` beside this file carries its Codex
-  interface, and `AGENTS.md` (→ `CLAUDE.md`) carries the law line that points here.
+- Standalone: `/agent-disclosure` or an undisclosed-surface sweep.
+- Live UI work: `live-ui-iteration` routes here when the surface already has a
+  fixed AI job.
+- Certification: `surface-check` S5.
+- Codex and Claude share this exact skill because `.agents/skills` points to
+  `.claude/skills`; `agents/openai.yaml` supplies the Codex interface.

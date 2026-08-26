@@ -16,21 +16,16 @@
  *
  * A page that quietly calls a model is a black box, and a black box cannot be
  * approved — least of all one that also runs on a schedule while nobody is
- * watching. Disclosure is TWO places, and this check wants at least one of
- * them wired for every file that runs a mandate:
- *
- *   1. INLINE  — `<PageAgents agents={[…]} />`, which names the AI on the page
- *      itself AND registers it into the live surface-mandate registry, so the
- *      Agents header menu lists it with its door and its notes.
- *   2. DECLARED — a `SurfaceAgentRole` carrying `mandateKey` in the surface's
- *      manifest, which additionally makes the agent bindable, runnable against
- *      the page's live scope, and testable from the menu.
+ * watching. Disclosure registers an EXISTING fixed job in the top Agents menu
+ * through a manifest role or UI-free runtime registration. It NEVER adds
+ * visible page content. The deleted inline PageAgents API is forbidden, and
+ * this guard fails immediately if it returns.
  *
  * WHAT THIS FLAGS: a file that runs a mandate — `useMandateRunner`,
  * `runMandate(`, `launchMandate(`, `resolveMandate(`, `useMandate(`, a
  * `mandateKey:` literal, or a POST to `/agents/mandates/{key}` — and which
- * neither renders `<PageAgents>` nor sits in a feature whose manifest declares
- * that job as an agent role.
+ * neither registers the job at runtime nor sits in a feature whose manifest
+ * declares that job as an agent role.
  *
  * EXCEPTIONS are reasoned, not silent: (1) a surface where the agent is the
  * SUBJECT, and (2) a universal agent host such as Chat, where the user may
@@ -58,14 +53,16 @@ const RUN_SIGNALS: RegExp[] = [
   /mandateKey\s*:/,
 ];
 
-/** Disclosure — either half satisfies the law. */
+/** Top-menu disclosure signals. None renders page content. */
 const DISCLOSURE_SIGNALS: RegExp[] = [
-  /<PageAgents\b/,
   /useDeclaredSurfaceMandates\s*\(/,
   /agentRoles\b/,
   /SurfaceAgentRole\b/,
   /MandateAgentPicker\b/,
 ];
+
+/** The deleted inline-disclosure API must never return, even in comments. */
+const FORBIDDEN_INLINE_DISCLOSURE = /\bPageAgents\b/;
 
 /**
  * Paths with no fixed surface worker. Each entry is a prefix plus the reason it
@@ -161,12 +158,14 @@ function main(): void {
   for (const dir of SCAN_DIRS) walk(join(ROOT, dir), files);
 
   const findings: Finding[] = [];
+  const forbiddenInline: string[] = [];
   let disclosed = 0;
   let exempt = 0;
 
   for (const file of files) {
     const rel = relative(ROOT, file);
     const source = readFileSync(file, "utf8");
+    if (FORBIDDEN_INLINE_DISCLOSURE.test(source)) forbiddenInline.push(rel);
     const signals = RUN_SIGNALS.filter((rx) => rx.test(source)).map((rx) =>
       rx.source.replace(/\\[sb]|[\\()*+?{}]/g, "").trim(),
     );
@@ -190,12 +189,22 @@ function main(): void {
     `Agent disclosure: ${disclosed} disclosed, ${findings.length} undisclosed, ${exempt} skipped (no fixed surface worker + execution machinery).`,
   );
 
+  if (forbiddenInline.length > 0) {
+    console.error(
+      "\n🚨 FORBIDDEN INLINE AGENT DISCLOSURE: disclosure may never add visible page content.\n" +
+        "   Delete every PageAgents import, mount, and reference. Register existing fixed jobs\n" +
+        "   only in the top Agents menu via agentRoles or useDeclaredSurfaceMandates.\n",
+    );
+    for (const file of forbiddenInline) console.error(`  ${file}`);
+    process.exit(1);
+  }
+
   if (findings.length > 0) {
     console.log(
       "\n🚨 THE DISCLOSURE LAW: these files run a mandate and name no agent.\n" +
-        "   Fix by rendering <PageAgents agents={[{ mandateKey, does }]} surfaceName={…} />\n" +
-        "   on the surface, or by declaring the job as an agentRole with a\n" +
-        "   mandateKey in the surface's manifest (both is better).\n",
+        "   Register the EXISTING fixed job in the top Agents menu through an\n" +
+        "   agentRole with mandateKey, or UI-free useDeclaredSurfaceMandates.\n" +
+        "   Never add agent chips, labels, rosters, or other page content.\n",
     );
     for (const finding of findings) {
       console.log(`  ${finding.file}`);

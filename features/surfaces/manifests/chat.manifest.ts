@@ -492,6 +492,9 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const chatManifest: SurfaceManifest = {
   surfaceName: "matrx-user/chat",
+  // Chat is the universal conversation host: every agent may be selected here,
+  // so defaults and surface bindings must never masquerade as a page roster.
+  agentRosterMode: "universal",
   readiness: "verified",
   label: "Chat",
   urlPattern: "/chat",
