@@ -658,6 +658,19 @@ function applyEvent(
       invocation.startedAt = event.ts;
       invocation.error = null;
       invocation.progress = null;
+      // The engine announces the node's EFFECTIVE declared kind at start
+      // (spec-level kinds included — `docproc.content.structure` declares
+      // `structured_document` in its SPEC, invisible in the definition's
+      // `data`). Knowing it from the first frame is what lets the readout
+      // show the promised shape's silhouette instead of raw streaming JSON.
+      // Optional on the wire — absent from pre-upgrade servers, and the
+      // completed handler remains the authoritative setter.
+      const announcedKind = (event as { output_kind?: string | null })
+        .output_kind;
+      if (typeof announcedKind === "string" && announcedKind.length > 0) {
+        invocation.outputKindDeclared = announcedKind;
+        invocation.outputKind = invocation.outputKind ?? announcedKind;
+      }
       const iteration = readField(readField(event, "inputs"), "iteration");
       if (typeof iteration === "number") invocation.iteration = iteration;
       if (append) {

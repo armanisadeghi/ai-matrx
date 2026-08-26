@@ -307,16 +307,20 @@ export function InvocationBody({
   const laneCarriesKind = useAppSelector(
     selectRequestCarriesKindEnvelope(laneRequestId ?? ""),
   );
+  // The step's promised shape: the definition's declaration (threaded by the
+  // caller) or the engine's announcement on node_started — which is the ONLY
+  // source for SPEC-level kinds like docproc.content.structure.
+  const promisedKind = declaredKind ?? invocation.outputKindDeclared;
   if (laneOwnsDisplay && laneCarriedContent) {
     // A step that DECLARED a kind but streams BARE JSON (no `__kind` in any
     // block yet) shows the declared kind's arriving silhouette, not raw
     // text. The moment any block identifies a kind, the lane takes over and
     // the real component streams — the swap is upgrade-only.
-    if (declaredKind && !laneCarriesKind && working) {
+    if (promisedKind && !laneCarriesKind && working) {
       return (
         <KindSlot
           slotKey={`${runId}:${invocation.invocationKey}:lane`}
-          kind={declaredKind}
+          kind={promisedKind}
           phase="arriving"
           chrome="bare"
         />
@@ -339,11 +343,11 @@ export function InvocationBody({
     // silhouette. Prose tails (an agent narrating) stay visible — covering
     // live words with a skeleton would be a downgrade.
     const tailIsJson = /^[[{]/.test(invocation.textTail.trimStart());
-    if (declaredKind && working && tailIsJson) {
+    if (promisedKind && working && tailIsJson) {
       return (
         <KindSlot
           slotKey={`${runId}:${invocation.invocationKey}:tail`}
-          kind={declaredKind}
+          kind={promisedKind}
           phase="arriving"
           chrome="bare"
         />
