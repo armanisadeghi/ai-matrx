@@ -228,6 +228,28 @@ export function hrCandidateHref(candidateId: string, org?: HrOrgRef): string {
 export function hrTimeHref(org?: HrOrgRef): string {
   return hrUrl("/hr/time", org);
 }
+// ── Lane L3 (HRB-015) leaves — routes 31a/31b/32/33. Added per this file's own
+//    rule that "adding a leaf builder is that lane's edit to this file".
+/** Route 32 — the pay-period state machine per pay group. */
+export function hrTimePeriodsHref(org?: HrOrgRef): string {
+  return hrUrl("/hr/time/periods", org);
+}
+/** Route 33 — one period: approval progress, export runs, post-lock adjustments. */
+export function hrTimePeriodHref(payPeriodId: string, org?: HrOrgRef): string {
+  return hrUrl(`/hr/time/periods/${payPeriodId}`, org);
+}
+/** Route 31a — the overtime pre-approval queue and the approaching-OT watchlist (D24a). */
+export function hrTimeOvertimeHref(org?: HrOrgRef): string {
+  return hrUrl("/hr/time/overtime", org);
+}
+/**
+ * Route 31b — one overtime request. The employee's request view and the manager's decision
+ * view are the SAME route and the same component, with `viewer` swapped from the caller's
+ * relationship to the subject — never two URLs that drift apart.
+ */
+export function hrTimeOvertimeRequestHref(requestId: string, org?: HrOrgRef): string {
+  return hrUrl(`/hr/time/overtime/${requestId}`, org);
+}
 /** Route 32 — the pay-period state machine per pay group, plus export history. */
 export function hrPayPeriodsHref(org?: HrOrgRef): string {
   return hrUrl("/hr/time/periods", org);

@@ -27,6 +27,7 @@
 import { supabase } from "@/utils/supabase/client";
 
 import type {
+  HrAuditedPage,
   HrDirectoryFilter,
   HrDirectoryPage,
   HrEmployeeProfile,
@@ -274,6 +275,67 @@ export function fetchHrConfidential<T = Record<string, unknown>>(args: {
   );
 }
 
+/**
+ * The LIST half of the Confidential door (SPEC-EMPLOYEES §2.2 route 17).
+ *
+ * 🚨 THERE IS NO CLIENT-DIRECT SELECT ON A CONFIDENTIAL TABLE. `hr` is not in
+ * PostgREST's exposed schema list, and even if it were, every read of this tier
+ * must land in `hr.access_audit`. This door and `fetchHrConfidential` are the
+ * only two ways a browser sees one of these rows.
+ */
+export function fetchHrConfidentialList<T = Record<string, unknown>>(args: {
+  token: string;
+  filter?: Record<string, unknown>;
+  limit?: number;
+  offset?: number;
+  purpose: string;
+}): Promise<HrResult<HrAuditedPage<T>>> {
+  return callHr<HrAuditedPage<T>>(
+    "hr_confidential_list",
+    {
+      p_token: args.token,
+      p_filter: args.filter ?? {},
+      p_limit: args.limit ?? 100,
+      p_offset: args.offset ?? 0,
+      p_purpose: args.purpose,
+    },
+    { envelope: true, whatFailed: "That list" },
+  );
+}
+
+/**
+ * The LIST half of the Restricted door (SPEC-EMPLOYEES §2.2 route 15).
+ *
+ * 🚨 THE SUBJECT EXCLUSION APPLIES TO THE LIST ITSELF. `hr.incident_excluded()`
+ * is evaluated per row on the server, after every allow lane, and it overrides
+ * `incident.read`, `hr_owner` and break-glass. An excluded row is not in `rows`
+ * AND its count is not in `total`. A result count that changes with the viewer
+ * is CORRECT here — never "fix" it with a viewer-independent cache.
+ *
+ * Unlike `fetchHrRestricted` (one row) this door takes no `justification`: a
+ * queue read is not a targeted read of a named person's file. The `purpose` is
+ * still recorded.
+ */
+export function fetchHrRestrictedList<T = Record<string, unknown>>(args: {
+  token: string;
+  filter?: Record<string, unknown>;
+  limit?: number;
+  offset?: number;
+  purpose: string;
+}): Promise<HrResult<HrAuditedPage<T>>> {
+  return callHr<HrAuditedPage<T>>(
+    "hr_restricted_list",
+    {
+      p_token: args.token,
+      p_filter: args.filter ?? {},
+      p_limit: args.limit ?? 100,
+      p_offset: args.offset ?? 0,
+      p_purpose: args.purpose,
+    },
+    { envelope: true, whatFailed: "That list" },
+  );
+}
+
 /** A Restricted-tier row. `justification` is REQUIRED and is shown in the subject's access log. */
 export function fetchHrRestricted<T = Record<string, unknown>>(args: {
   token: string;
@@ -499,6 +561,290 @@ export function createHrVerificationRequest(
     envelope: true,
     whatFailed: "This verification request",
   });
+}
+
+// ── Employee relations — the case-working doors (SPEC-EMPLOYEES §2.2 route 16)
+//
+// Same NOT-LIVE caveat as the block above. Every one of these is a write to a
+// RESTRICTED-tier record, so every one is audited server-side and every one
+// re-runs the veto: a call that succeeded a minute ago can legitimately refuse
+// now, because adding an `accused` party re-materializes the exclusion set in
+// the SAME transaction and the new respondent loses reach immediately —
+// including when the new respondent is the caller.
+
+/** Advance one incident: `intake → investigating → action_pending → resolved → closed`; `referred` from any state. */
+export function advanceHrIncident(args: {
+  incidentId: string;
+  toState: string;
+  /** REQUIRED to reach `resolved`. The server refuses without it. */
+  resolutionSummary?: string | null;
+  /** REQUIRED to reach `closed`. Starts the retention clock. */
+  resolvedAt?: string | null;
+  referralNote?: string | null;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHr<HrWriteAck>(
+    "hr_incident_advance",
+    {
+      p_incident_id: args.incidentId,
+      p_to_state: args.toState,
+      p_resolution_summary: args.resolutionSummary ?? null,
+      p_resolved_at: args.resolvedAt ?? null,
+      p_referral_note: args.referralNote ?? null,
+    },
+    { envelope: true, whatFailed: "Advancing this case" },
+  );
+}
+
+/**
+ * Add one party to an incident. Either `employmentId` or `externalName` is
+ * required — a witness who does not work here is still a witness.
+ *
+ * 🚨 Adding an `accused` party re-materializes `hr.incident.excluded_actor_ids`
+ * in the SAME transaction. If the caller is the person just accused, THIS CALL
+ * SUCCEEDS AND THEIR NEXT READ REFUSES. The surface must handle that by
+ * redirecting with a neutral message, never by explaining what happened.
+ */
+export function addHrIncidentParty(args: {
+  incidentId: string;
+  role: string;
+  employmentId?: string | null;
+  externalName?: string | null;
+  note?: string | null;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHr<HrWriteAck>(
+    "hr_incident_party_add",
+    {
+      p_incident_id: args.incidentId,
+      p_role: args.role,
+      p_employment_id: args.employmentId ?? null,
+      p_external_name: args.externalName ?? null,
+      p_note: args.note ?? null,
+    },
+    { envelope: true, whatFailed: "Adding this party" },
+  );
+}
+
+/** A restricted note. Reachable through its OWN owner lane only — no org admin can read one. */
+export function addHrRestrictedNote(args: {
+  targetToken: string;
+  targetId: string;
+  noteKind: string;
+  body: string;
+  redactedSummary?: string | null;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHr<HrWriteAck>(
+    "hr_restricted_note_add",
+    {
+      p_target_token: args.targetToken,
+      p_target_id: args.targetId,
+      p_note_kind: args.noteKind,
+      p_body: args.body,
+      p_redacted_summary: args.redactedSummary ?? null,
+    },
+    { envelope: true, whatFailed: "Saving this note" },
+  );
+}
+
+/**
+ * OSHA recordability. 🚨 A HUMAN DECISION WITH A RULES ASSIST, NEVER AUTO-SET.
+ * `oshaPrivacyCase` suppresses the name in the 300-log rendering.
+ */
+export function setHrOshaDetermination(args: {
+  incidentId: string;
+  recordable: boolean;
+  privacyCase: boolean;
+  basis: string;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHr<HrWriteAck>(
+    "hr_incident_osha_set",
+    {
+      p_incident_id: args.incidentId,
+      p_osha_recordable: args.recordable,
+      p_osha_privacy_case: args.privacyCase,
+      p_basis: args.basis,
+    },
+    { envelope: true, whatFailed: "Recording the OSHA determination" },
+  );
+}
+
+/**
+ * Record how a corrective action was acknowledged — or that it was REFUSED.
+ *
+ * 🚨 A REFUSAL TO ACKNOWLEDGE IS A VALID OUTCOME, recorded as such, never a
+ * stuck flow. And `employeeStatement` is THE EMPLOYEE'S OWN WORDS: the issuer
+ * can never edit it, which is why it only ever travels on the subject's own
+ * call and never on an issuer's patch.
+ */
+export function acknowledgeHrCorrectiveAction(args: {
+  correctiveActionId: string;
+  kind: "esign" | "wet_signature" | "verbal_witnessed" | "refused";
+  witnessEmploymentId?: string | null;
+  signedFileId?: string | null;
+  employeeStatement?: string | null;
+  refusalNote?: string | null;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHr<HrWriteAck>(
+    "hr_corrective_action_acknowledge",
+    {
+      p_corrective_action_id: args.correctiveActionId,
+      p_kind: args.kind,
+      p_witness_employment_id: args.witnessEmploymentId ?? null,
+      p_signed_file_id: args.signedFileId ?? null,
+      p_employee_statement: args.employeeStatement ?? null,
+      p_refusal_note: args.refusalNote ?? null,
+    },
+    { envelope: true, whatFailed: "Recording the acknowledgment" },
+  );
+}
+
+/** Close the loop: `resolved | escalated | expired | rescinded | led_to_separation`. */
+export function recordHrCorrectiveActionOutcome(args: {
+  correctiveActionId: string;
+  outcome: string;
+  note?: string | null;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHr<HrWriteAck>(
+    "hr_corrective_action_outcome",
+    {
+      p_corrective_action_id: args.correctiveActionId,
+      p_outcome: args.outcome,
+      p_note: args.note ?? null,
+    },
+    { envelope: true, whatFailed: "Recording this outcome" },
+  );
+}
+
+/**
+ * What the REPORTER may see: state, last-updated, and the declared next step.
+ * **Nothing from the notes, ever.** This is a separate door precisely so the
+ * notes cannot leak through a widened case read.
+ */
+export function fetchHrIncidentStatus(
+  incidentId: string,
+): Promise<HrResult<Record<string, unknown>>> {
+  return callHr<Record<string, unknown>>(
+    "hr_incident_status",
+    { p_incident_id: incidentId },
+    { envelope: true, whatFailed: "The status of your report" },
+  );
+}
+
+// ── Verification letters (SPEC-EMPLOYEES §4.9) ──────────────────────────────
+//
+// Generation is NOT here — it is `POST /api/hr/verification-letters/{id}/generate`
+// on aidream, because a letter is a rendered PDF frozen into `files.files`.
+// See `features/hr/people/verifications/service.ts`.
+
+/** The subject grants or withholds consent. A withheld consent is itself the record. */
+export function setHrVerificationConsent(args: {
+  letterId: string;
+  granted: boolean;
+  note?: string | null;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHr<HrWriteAck>(
+    "hr_verification_consent_set",
+    {
+      p_letter_id: args.letterId,
+      p_granted: args.granted,
+      p_note: args.note ?? null,
+    },
+    { envelope: true, whatFailed: "Recording your consent decision" },
+  );
+}
+
+/** Deny a request with a basis. A request for someone who never worked here ends HERE. */
+export function denyHrVerification(args: {
+  letterId: string;
+  denialBasis: string;
+  note?: string | null;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHr<HrWriteAck>(
+    "hr_verification_deny",
+    {
+      p_letter_id: args.letterId,
+      p_denial_basis: args.denialBasis,
+      p_note: args.note ?? null,
+    },
+    { envelope: true, whatFailed: "Denying this request" },
+  );
+}
+
+/** Record delivery: `token_link | email | mail | in_person`. */
+export function deliverHrVerification(args: {
+  letterId: string;
+  method: string;
+  recipient?: string | null;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHr<HrWriteAck>(
+    "hr_verification_deliver",
+    {
+      p_letter_id: args.letterId,
+      p_method: args.method,
+      p_recipient: args.recipient ?? null,
+    },
+    { envelope: true, whatFailed: "Recording the delivery" },
+  );
+}
+
+// ── The member ⇄ employee seam (SPEC-UI-IA §6, MemberManagement) ────────────
+
+/**
+ * Which org members have an `hr.employee` here.
+ *
+ * A member and an employee are related but DISTINCT, and `hr.employee` is not
+ * PostgREST-reachable, so this is the only way the members list can draw the
+ * seam. Until this door ships, the seam renders ABSENT rather than a broken
+ * link — which is the correct fallback under §1.3 anyway.
+ */
+export function fetchHrMemberEmployeeLinks(args: {
+  organizationId: string;
+  userIds: string[];
+}): Promise<
+  HrResult<{
+    links: {
+      user_id: string;
+      employee_id: string | null;
+      display_name: string | null;
+      directory_status: string | null;
+      /** true when someone explicitly marked this member as not an employee. */
+      marked_not_employee: boolean;
+    }[];
+    can_link: boolean;
+  }>
+> {
+  return callHr(
+    "hr_member_employee_links",
+    { p_organization_id: args.organizationId, p_user_ids: args.userIds },
+    { envelope: true, whatFailed: "The employee links for these members" },
+  );
+}
+
+/**
+ * Headcount + module state for one org, cheap enough for an org-settings card
+ * and an org-workspace strip that are NOT inside the HR shell.
+ *
+ * Deliberately not `hr_directory_list` with `limit: 0`: those surfaces must
+ * render for an owner/admin who holds no HR capability at all, and a directory
+ * read would refuse for them.
+ */
+export function fetchHrOrgSummary(
+  organizationId: string,
+): Promise<
+  HrResult<{
+    organization_id: string;
+    module_enabled: boolean;
+    is_activated: boolean;
+    headcount: number;
+    prehire_count: number;
+    pending_approvals: number;
+    can_enable: boolean;
+  }>
+> {
+  return callHr(
+    "hr_org_summary",
+    { p_organization_id: organizationId },
+    { envelope: true, whatFailed: "This organization's HR summary" },
+  );
 }
 
 /** Route 69's writes — departments, locations, job titles, and the rest of §2.4. */

@@ -513,3 +513,25 @@ export type HrCapabilitySet = {
   can: (capability: HrCapability) => boolean;
   all: string[];
 };
+
+// ── The audited LIST doors (hr_confidential_list / hr_restricted_list) ──────
+//
+// 🚨 A COUNT THAT CHANGES WITH THE VIEWER IS CORRECT ON THESE DOORS.
+// `hr.incident_excluded()` runs per row on the server, AFTER every allow lane,
+// and it overrides `incident.read`, `hr_owner` AND break-glass. An excluded row
+// is not in `rows` and its count is not in `total`. So two people with identical
+// capabilities can legitimately see different totals for the same filter, and
+// "fixing" that with a shared cache would leak exactly what the veto protects.
+// Never memoize one viewer's page under a viewer-independent key.
+
+export type HrAuditedPage<T> = {
+  rows: T[];
+  /** The FULL result set size AFTER the per-row exclusion — see the note above. */
+  total: number;
+  limit: number;
+  offset: number;
+  /** The `hr.access_audit` row this read wrote. Present on every audited door. */
+  audit_id?: string | null;
+  /** What the server says this viewer may do with these rows. Never a client guess. */
+  capabilities?: string[];
+};
