@@ -338,7 +338,7 @@ begin
        and jsonb_typeof(p_input->'accrued_hours_by_category') = 'object' then
       select exists (
         select 1 from jsonb_object_keys(p_input->'accrued_hours_by_category') k
-         where coalesce(v_p->'excludes','[]'::jsonb) @> jsonb_build_array(k.value))
+         where coalesce(v_p->'excludes','[]'::jsonb) @> jsonb_build_array(k))
         into v_key_blocked;
       if v_key_blocked then
         -- the envelope must say money was withheld, or a caller reads a null amount as zero
