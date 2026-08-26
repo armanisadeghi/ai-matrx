@@ -33586,6 +33586,10 @@ export type Database = {
         Args: { p_partition: string }
         Returns: string
       }
+      _outsider_parent_matches: {
+        Args: { p_id: string; p_parent: string; p_resource: string }
+        Returns: boolean
+      }
       _policy_overlap_run_probe: {
         Args: {
           p_label: string
