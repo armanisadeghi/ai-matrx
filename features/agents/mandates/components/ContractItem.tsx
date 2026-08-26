@@ -3,7 +3,7 @@
 /**
  * ContractItem — the canonical row for one required (or extra) contract
  * input in a mandate-contract comparison. Absorbed from research's per-topic
- * agents page; consumed by AgentRoleCard (research) and MandateOverrideEditor
+ * agents page; consumed by AgentRoleCard (research) and the mandate workspace
  * (/agents/mandates + the admin console). Renders name + optional type badge +
  * helpText, with a trailing three-state status mark:
  * pending (not yet compared) / matched / missing / extra (informational).

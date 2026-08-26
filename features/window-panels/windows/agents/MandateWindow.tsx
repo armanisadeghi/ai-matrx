@@ -17,7 +17,7 @@
  * 🚨 A PANEL WRAPS THE CANONICAL COMPONENT (features/window-panels/FEATURE.md).
  * Every pane here is the same component the route renders, with no second
  * implementation of anything:
- *   • Yours  → `MandateOverridePanel` — the binding editor `/agents/mandates`
+ *   • Yours  → `MandateWorkspace` — the SAME core the dedicated route
  *              composes (principal chips, agent swap, settings overrides,
  *              consumption map, copy & customize, remove).
  *   • Admin  → `MandateDetailView` — the whole console drawer: health verdict
@@ -53,9 +53,7 @@ import {
 } from "@/features/admin/mandates/service";
 import { buildRow, type MandateRow } from "@/features/admin/mandates/mandate-health";
 import { MandateDetailView } from "@/features/admin/mandates/MandateDetailPanel";
-import { MandateOverridePanel } from "@/features/agents/mandates/components/MandateOverridePanel";
-import { MandateResolutionRibbon } from "@/features/agents/mandates/components/MandateResolutionRibbon";
-import { MandateNotesPanel } from "@/features/agents/mandates/components/MandateNotesPanel";
+import { MandateWorkspace } from "@/features/agents/mandates/workspace/MandateWorkspace";
 import { onMandateCacheInvalidated } from "@/features/agents/mandates/service";
 import { splitMandateKey } from "@/features/agents/mandates/mandate-key";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
@@ -329,34 +327,15 @@ function MandateWindowInner({
               onSaved={load}
             />
           ) : (
-            <div className="space-y-3">
-              {/* The precedence chain, so "yours" is never mistaken for "the
-                  system default" — the same ribbon the route surface shows. */}
-              <MandateResolutionRibbon />
-              <MandateOverridePanel
-                key={selected.id}
-                mandate={selected.mandate}
-                bindings={data.bindingsByMandateId[selected.id] ?? []}
-                agentsById={data.agentsById}
-                onChanged={load}
-              />
-              {/* Admins get notes beside their own binding too — the same
-                  panel the Admin pane and the Agents menu mount. */}
-              {canSeeAdmin && (
-                <div className="rounded-md border border-border bg-card p-3">
-                  <p className="mb-2 text-xs font-medium text-foreground">
-                    Notes &amp; observations
-                  </p>
-                  <MandateNotesPanel
-                    key={`notes:${selected.id}`}
-                    mandateId={selected.id}
-                    mandateKey={selected.mandateKey}
-                    surfaceName={surfaceName ?? null}
-                    observedAgentId={selected.agentId}
-                  />
-                </div>
-              )}
-            </div>
+            /* THE ONE CORE (rule 3): the same MandateWorkspace the dedicated
+               route renders — §1 the job, §2 fulfillment (+drift), §3 org
+               context, §4 the stepwise override flow, notes. The window shell
+               keeps only its own concerns: the scope list and the Admin pane. */
+            <MandateWorkspace
+              key={selected.id}
+              mandateKeyOrId={selected.mandateKey}
+              host="window"
+            />
           )}
         </div>
       </div>

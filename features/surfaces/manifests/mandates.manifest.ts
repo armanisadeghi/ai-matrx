@@ -42,14 +42,14 @@
  *    The settled precedent across this campaign (`marketing-crawls` Start
  *    crawl, `pdf-extractor` Run) is that spending real resources stays behind
  *    a human press.
- *  - **Per-principal overrides** (`MandateOverrideEditor` — the tempting
- *    `selected_mandate_overrides` candidate). On inspection it holds three
- *    fields and none of them earns a target: the agent swap is identity by
- *    UUID again; `model` is an id from a catalog this surface does not
- *    expose, so it could only be guessed; and `thinking_level` alone is a
- *    single mechanical toggle — the "pure-mechanical toggle nobody would ask
- *    an agent to flip" the bar rejects. It is also governance: a binding
- *    changes which agent runs a platform step for a user or a whole org.
+ *  - **Per-principal bindings** (the mandate workspace's override flow — the
+ *    tempting `selected_mandate_overrides` candidate). Nothing there earns a
+ *    target: the agent swap is identity by UUID again; the settings step is
+ *    the canonical instance-overrides layer whose values come from the model
+ *    catalog this surface does not expose; and above all it is governance —
+ *    a binding changes which agent runs a platform step for a user or a
+ *    whole org. (The old `MandateOverrideEditor` this bullet reasoned about
+ *    was deleted in the 2026-08-26 rework; the verdict carries over.)
  *  - **Owner verdict notes** on bench results. That field is the admin's
  *    judgment of record about a comparison they ran; an agent writing it
  *    would be putting words in the reviewer's mouth.
@@ -270,7 +270,7 @@ export const AGENT_MANDATES_WRITE_TARGETS = {
  * `select_mandate` is `mode: "ui"` — navigation, the `content-plan` `select_node`
  * precedent — but `applyPolicy: "ask"` rather than `"auto"`, which is a
  * deliberate departure. On this page the workbench REMOUNTS per mandate
- * (`key={row.id}` on `MandateEditor`, `MandateTestBench` and `MandateOverridePanel`),
+ * (`key={row.id}` on `MandateEditor`, `MandateTestBench` and the workspace),
  * so moving the selection DISCARDS whatever the admin has typed into the
  * rebind editor, the override editor, or the exemplar composer. A silent
  * selection change that throws away unsaved typing is not the cheap,

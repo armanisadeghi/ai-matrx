@@ -5,7 +5,7 @@
  * fork the EXACT agent record the server runs for a mandate into an editable
  * personal copy, best-effort connect it as the caller's override, then open
  * the copy in the builder. Absorbed from research's AgentRoleCard (the proven
- * pattern, incl. its failure decomposition); consumed by MandateOverrideEditor
+ * pattern, incl. its failure decomposition); consumed by the mandate workspace
  * and research's per-topic agents page. Never fork this logic beside a
  * consumer.
  *

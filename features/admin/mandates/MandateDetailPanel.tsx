@@ -44,7 +44,6 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
 import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
-import { MandateOverridePanel } from "@/features/agents/mandates/components/MandateOverridePanel";
 import { MandateNotesPanel } from "@/features/agents/mandates/components/MandateNotesPanel";
 import { MandateResolutionRibbon } from "@/features/agents/mandates/components/MandateResolutionRibbon";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -1630,16 +1629,10 @@ export function MandateDetailView({
       >
         <div className="space-y-3 p-3">
           {/* The canonical precedence chain — the admin edits the SYSTEM layer
-              in this drawer; these overrides sit above it at runtime. */}
+              in this drawer; these bindings sit above it at runtime. The admin's
+              OWN binding is edited in the same MandateWorkspace users get
+              (window opener / the dedicated route) — one editor, never a twin. */}
           <MandateResolutionRibbon />
-          {/* key: the panel + editor seed local state from props */}
-          <MandateOverridePanel
-            key={row.id}
-            mandate={row.mandate}
-            bindings={bindings}
-            agentsById={data.agentsById}
-            onChanged={onSaved}
-          />
           <OverridesList bindings={bindings} data={data} />
         </div>
       </Section>
