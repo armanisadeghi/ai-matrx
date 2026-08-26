@@ -1539,6 +1539,15 @@ export class StreamBlockAccumulator {
     // content-ir: attach the (dark) envelope — the live one while the region
     // streams, the final one on the complete emit. Rendering does not read
     // this until the Phase 4 flip; parity telemetry proves it first.
+    //
+    // EXCEPT a `matrx` block (a Kind Directive): its reserved-namespace slug
+    // is by design never a kind_definition row, so an envelope here fires a
+    // doomed registry fetch and hands the kind route a lever to re-type the
+    // block away from MatrxEnvelopeBlock (adversarial finding A-8 — the
+    // settled splitter suppresses it at both of its construction sites too).
+    if (this.currentBlockType === "matrx") {
+      return base;
+    }
     const envelope =
       this.irEnvelope ?? (this.irSession ? this.irSession.buildEnvelope() : null);
     if (envelope) {
