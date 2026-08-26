@@ -111,7 +111,7 @@ export const KindComponentFixBadge: React.FC<KindComponentFixBadgeProps> = ({
       onClick={launch}
       title={`You can edit this component (${kind}) — open the fix agent`}
       aria-label="Fix this component"
-      className="absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-primary/40 bg-primary text-primary-foreground shadow-md opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100"
+      className="absolute right-0 top-0 z-[var(--z-popover)] flex h-6 w-6 items-center justify-center rounded-full border border-primary/40 bg-primary text-primary-foreground shadow-md opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100"
     >
       <PencilRuler className="h-3.5 w-3.5" />
     </button>

@@ -162,6 +162,8 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
 
 ## Change Log
 
+- 2026-08-25 — **The floating Shape-component edit control no longer gets cut in chat.** The control used a negative right offset (`-right-2`) inside the canonical markdown renderer's deliberate `overflow-x-clip` boundary; no z-index can escape ancestor clipping, which left half of the icon missing on wide DB-authored components. `DbKindComponent` now reserves the same 8px outside-corner gutter inside its own box, and `KindComponentFixBadge` anchors to that safe corner at the semantic popover layer. The component keeps its original floating overlap without weakening chat's wide-output containment, and the fix applies to every DB Shape consumer rather than special-casing chat.
+
 - 2026-08-25 — **The Shape stream simulator now proves interruption safely.**
   `ShapeStreamTab` can stop its real-accumulator replay mid-stream, preserve the
   last valid partial render with streaming disabled, and show a loud error. It

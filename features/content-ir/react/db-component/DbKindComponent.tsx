@@ -39,11 +39,13 @@ export const DbKindComponent: React.FC<DbKindComponentProps> = (props) => {
   // compiled component. Keeping this in the shell — not the impl — keeps the
   // impl bare-renderable (tests/SSR) and Redux out of that path.
   const runAction = useKindActionRunner();
-  // The relative wrapper anchors the ownership affordance: creators and super
-  // admins get a floating "fix this component" badge at the block's top-right
-  // that opens the kind-creator agent seeded with this exact instance.
+  // The wrapper reserves the badge's 8px outside-corner gutter inside its own
+  // box. Chat intentionally clips horizontal overflow to contain wide model
+  // output, so a negative right offset gets cut regardless of z-index. Keeping
+  // the gutter in-flow preserves the same floating overlap while making the
+  // badge immune to host overflow clipping everywhere this renderer appears.
   return (
-    <div className="relative">
+    <div className="relative pt-2 pr-2">
       <KindComponentFixBadge content={props.content} metadata={props.metadata} />
       <LazyImpl {...props} runAction={runAction} />
     </div>
