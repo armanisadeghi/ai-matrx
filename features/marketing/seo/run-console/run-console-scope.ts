@@ -30,6 +30,7 @@ import type {
   SituationalRefreshStatus,
   SituationalRunOutcome,
 } from "./types";
+import type { PlaceDetectionStatus } from "../value-system/rules/types";
 
 type AnyRunOutcome = RunOutcome | SituationalRunOutcome | PlaceDetectionRunOutcome;
 
@@ -59,7 +60,7 @@ export interface RunConsoleScopeInput {
   situationalStatus?: readonly SituationalRefreshStatus[];
 
   /** KI-015 — the global scoreboard, when the mounted engine is place detection. */
-  placeDetectionStatus?: import("../value-system/rules/types").PlaceDetectionStatus | null;
+  placeDetectionStatus?: PlaceDetectionStatus | null;
 
   /** False until the knob read resolves — every knob value stays absent. */
   knobsResolved: boolean;
@@ -157,6 +158,7 @@ export type RunConsoleLiveState = Pick<
   | "selectedSiteIds"
   | "focusedSiteId"
   | "situationalStatus"
+  | "placeDetectionStatus"
   | "isRunning"
   | "queueLength"
   | "outcomes"
@@ -226,6 +228,9 @@ export function buildRunConsoleScope(
             ...row,
           })),
         }
+      : {}),
+    ...(input.placeDetectionStatus
+      ? { place_detection_status: { ...input.placeDetectionStatus } }
       : {}),
 
     // Limits — absent, never zero, until the knob read resolves.

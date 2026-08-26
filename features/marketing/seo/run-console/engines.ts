@@ -128,10 +128,53 @@ export const SITUATIONAL_REFRESH_ENGINE: ConsoleEngine = {
   agents: [],
 };
 
+/**
+ * KI-015 — gazetteer place detection.
+ *
+ * The deterministic place pass (51 US states + 1,000 largest cities + "near
+ * me" grammar) already existed as a bench button
+ * (`PlaceDetectionStrip.tsx` → `seo.fn_backfill_keyword_places`) driving ~300
+ * keywords per press. Arman's ruling (KI-049, register): "the scheduling
+ * needs to go on the same page" — a standalone chat-approved nightly task is
+ * not the way to run this, the run console is. This engine ROW drives the
+ * SAME function the bench button already presses.
+ *
+ * ZERO AI spend — the pass is pure SQL (a gazetteer lookup), so `runner: rpc`
+ * exactly like situational refresh: no dollars, seconds not minutes, nothing
+ * to narrate in a stream.
+ *
+ * NO AGENT. `autonomyCapability: "place_detection"` exists in
+ * `seo.ai_capability` and is treated as deterministic everywhere else in this
+ * codebase (`AutonomyModesEditor.tsx`: "Deterministic · no mandate or agent",
+ * the same line `matcher_engine` gets) — the console shows that mode so
+ * nobody presses Run now wondering why nothing wrote, but `agents: []` is the
+ * honest answer: no model reasons about a single keyword here.
+ *
+ * UNLIKE THE OTHER TWO ENGINES, this one has no per-brand "owed work" —
+ * `fn_backfill_keyword_places` scans ONE shared keyword corpus across every
+ * site, not a brand's own queue (`seo.keyword_classification_queue` carries
+ * no `site_id` at all). The console body therefore renders a single global
+ * scoreboard instead of a brand table to tick — see
+ * `GazetteerPlaceDetectionConsole.tsx`.
+ */
+export const GAZETTEER_PLACE_DETECTION_ENGINE: ConsoleEngine = {
+  slug: "seo.place_detection",
+  label: "Place detection",
+  what: "Scans the shared keyword corpus for place mentions — states, cities, \"near me\" grammar — and stamps detected places plus local intent. One pass covers every brand; there is no per-brand queue.",
+  knobFeature: "seo.keyword_place_detection",
+  runner: { kind: "rpc" },
+  capKnobKey: "batch_keywords",
+  capLabel: "Max keywords per pass",
+  autonomyCapability: "place_detection",
+  // Deterministic gazetteer matching — no model reasons about a keyword here.
+  agents: [],
+};
+
 /** Every engine the console can drive today. */
 export const CONSOLE_ENGINES: readonly ConsoleEngine[] = [
   TOPIC_PLACEMENT_ENGINE,
   SITUATIONAL_REFRESH_ENGINE,
+  GAZETTEER_PLACE_DETECTION_ENGINE,
 ];
 
 export function consoleEngineBySlug(slug: string): ConsoleEngine {

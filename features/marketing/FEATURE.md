@@ -593,6 +593,13 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-26 — Codex: **Quick Answers now fits the five-answer workflow.** The
+  floating panel opens at a wider and taller working size, removes the dimension
+  essay from its header, keeps each row's answer choices on one line, and uses
+  primary, info, and success accents instead of dim gray-on-gray cards. The
+  optional reason prompt is concise, while the existing canonical keyword
+  detail window remains the only other window panel opened from this workbench.
+
 - 2026-08-26 — Codex: **Platform default-rule authoring keeps incomplete drafts in the browser.** The editor validates the name, phrases, meaning dimension, stamped answer, and numeric effect before calling `seo.platform_default_rule_save`; missing meaning renders an inline instruction instead of creating a rejected database request and error toast. The platform facet-catalogue read passes no UUID argument for platform scope, never an empty string.
 
 - 2026-08-25 — Codex: **Brand ownership and explicit site availability are the
