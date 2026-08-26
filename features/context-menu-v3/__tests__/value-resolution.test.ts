@@ -17,6 +17,13 @@
 
 // The manifests registry (used only by the dev-time audit) pulls every surface
 // manifest — mock it so the module under test stays light.
+// The live SurfaceRuntime registry — mocked so these tests can drive the
+// runtime UNDERLAY deterministically (Phase 0, 2026-08-25).
+jest.mock("@/features/surfaces/runtime/SurfaceRuntimeContext", () => ({
+  getSurfaceRuntime: jest.fn(() => null),
+  getSurfaceRuntimeForName: jest.fn(() => null),
+}));
+
 jest.mock("@/features/surfaces/manifests/registry", () => ({
   getManifest: () => null,
 }));
@@ -157,5 +164,104 @@ describe("resolveApplicationScope", () => {
     expect("contextFilter" in scope).toBe(false);
     expect("__entity" in scope).toBe(false);
     expect(scope.keep).toBe("yes");
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// THE RUNTIME UNDERLAY (Phase 0, 2026-08-25)
+// ---------------------------------------------------------------------------
+
+import {
+  getSurfaceRuntime,
+  getSurfaceRuntimeForName,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+
+const mockRuntimeForName = getSurfaceRuntimeForName as jest.Mock;
+const mockRuntimeGlobal = getSurfaceRuntime as jest.Mock;
+
+function mountRuntime(surfaceName: string, scope: Record<string, unknown>) {
+  const value = { surfaceName, getScope: () => scope };
+  mockRuntimeForName.mockImplementation((n: string) =>
+    n === surfaceName ? value : null,
+  );
+  mockRuntimeGlobal.mockImplementation(() => value);
+}
+
+describe("the mounted-SurfaceRuntime underlay", () => {
+  afterEach(() => {
+    mockRuntimeForName.mockImplementation(() => null);
+    mockRuntimeGlobal.mockImplementation(() => null);
+  });
+
+  it("fills a silence — a rich page no longer yields an inert menu", () => {
+    mountRuntime("matrx-user/rulebook", { rules_visible: "42 rules" });
+    const scope = resolveApplicationScope({
+      contextData: {},
+      selectedText: "",
+      selectionRange: null,
+      surfaceName: "matrx-user/rulebook",
+    });
+    expect(scope.rules_visible).toBe("42 rules");
+  });
+
+  it("never overrides a value the surface's static payload provided", () => {
+    mountRuntime("matrx-user/rulebook", { rules_visible: "from runtime" });
+    const scope = resolveApplicationScope({
+      contextData: { rules_visible: "from the surface" },
+      selectedText: "",
+      selectionRange: null,
+      surfaceName: "matrx-user/rulebook",
+    });
+    expect(scope.rules_visible).toBe("from the surface");
+  });
+
+  it("🚨 respects an EXPLICIT empty from a live builder (the Vault contract)", () => {
+    // The Vault forces `selection: ""` as credential-leak hardening. An empty
+    // that the surface CHOSE is an answer, and the page it sits on must never
+    // refill it.
+    mountRuntime("matrx-user/vault", { selection: "sk-live-leaked-secret" });
+    const scope = resolveApplicationScope({
+      getApplicationScope: () => ({ selection: "", content: "" }),
+      contextData: {},
+      selectedText: "whatever the DOM saw",
+      selectionRange: null,
+      surfaceName: "matrx-user/vault",
+    });
+    expect(scope.selection).toBe("");
+    expect(scope.content).toBe("");
+  });
+
+  it("skips an ASYNC getScope rather than resolving a promise into the scope", () => {
+    const value = {
+      surfaceName: "matrx-user/slow",
+      getScope: () => Promise.resolve({ late: "value" }),
+    };
+    mockRuntimeForName.mockImplementation(() => value);
+    const scope = resolveApplicationScope({
+      contextData: {},
+      selectedText: "",
+      selectionRange: null,
+      surfaceName: "matrx-user/slow",
+    });
+    expect(scope.late).toBeUndefined();
+    expect(typeof (scope as Record<string, unknown>).then).toBe("undefined");
+  });
+
+  it("survives a runtime that throws, without taking the menu down", () => {
+    mockRuntimeForName.mockImplementation(() => ({
+      surfaceName: "matrx-user/broken",
+      getScope: () => {
+        throw new Error("boom");
+      },
+    }));
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    const scope = resolveApplicationScope({
+      contextData: { content: "still here" },
+      selectedText: "",
+      selectionRange: null,
+      surfaceName: "matrx-user/broken",
+    });
+    expect(scope.content).toBe("still here");
   });
 });

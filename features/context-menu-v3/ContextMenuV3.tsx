@@ -53,10 +53,13 @@ import {
   type ContextMenuV3Props,
   type MenuContentProps,
   type ResolvedContextMenuContext,
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuEntityRef,
 } from "./types";
 import {
   mergeResolvedContextData,
   resolveEffectiveEntity,
+  sniffEntityFromDom,
 } from "./utils/per-row-entity";
 
 import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
@@ -203,6 +206,15 @@ export function ContextMenuV3({
   // during render to build the effective scope (a ref read in render is banned).
   const [resolvedContext, setResolvedContext] =
     useState<ResolvedContextMenuContext | null>(null);
+  /**
+   * The entity read straight off the right-clicked element's `data-entity-*`
+   * attributes (Phase 0, 2026-08-25). State for the same reason as
+   * `resolvedContext`: the lazy MenuContent must read it during the render
+   * that opens the menu. Only the SHELL sees the clicked element, so the sniff
+   * has to happen here. Fills a silence — never overrides a surface answer.
+   */
+  const [sniffedEntity, setSniffedEntity] =
+    useState<ContextMenuEntityRef | null>(null);
   // Set by MenuContent (via suppressSelectionRestore) when an action opens an
   // overlay that should keep focus — so closing the menu doesn't yank it back.
   const skipSelectionRestoreRef = useRef(false);
@@ -240,7 +252,14 @@ export function ContextMenuV3({
   // the user actually right-clicked — not the pane — must own Attach To /
   // Share. `resolveContextOnOpen` supplies it via `CONTEXT_MENU_ENTITY_KEY`;
   // when it doesn't, the menu-level `entity` prop stands unchanged.
-  const effectiveEntity = resolveEffectiveEntity(entity, resolvedContext);
+  // Precedence: an explicit `resolveContextOnOpen` answer (including a
+  // deliberate `null`) wins; only when the surface said nothing about the
+  // entity does the DOM sniff fill in; the menu-level prop is the floor.
+  const surfaceSpokeAboutEntity =
+    !!resolvedContext && CONTEXT_MENU_ENTITY_KEY in resolvedContext;
+  const effectiveEntity = surfaceSpokeAboutEntity
+    ? resolveEffectiveEntity(entity, resolvedContext)
+    : (sniffedEntity ?? entity);
 
   // ── Selection tracking — SCOPED to this instance's wrapped subtree ───────
   // The listener is document-global (that's the only selectionchange there
@@ -380,6 +399,7 @@ export function ContextMenuV3({
     setResolvedContext(
       resolveContextOnOpen ? resolveContextOnOpen(target) : null,
     );
+    setSniffedEntity(sniffEntityFromDom(target));
   };
 
   // Shared capture — populates selection/content state from a right-click target

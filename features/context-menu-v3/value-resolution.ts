@@ -26,6 +26,10 @@ import {
   type BaselineKey,
 } from "@/features/surfaces/manifests/_baseline.manifest";
 import { getManifest } from "@/features/surfaces/manifests/registry";
+import {
+  getSurfaceRuntime,
+  getSurfaceRuntimeForName,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SelectionRange } from "./utils/selection-tracking";
 import { CONTEXT_MENU_ENTITY_KEY } from "./types";
 
@@ -58,6 +62,12 @@ export interface ResolveScopeArgs {
    * read-only surface from presenting a dead Copy.
    */
   fallbackContent?: string;
+  /**
+   * The surface this menu declared. Used to adopt the LIVE mounted
+   * `SurfaceRuntime` for that same surface as an underlay (see
+   * `adoptMountedRuntimeScope`).
+   */
+  surfaceName?: string;
 }
 
 /**
@@ -79,15 +89,92 @@ export interface ResolveScopeArgs {
  *
  * The result always carries the 5 baseline keys (empty-floored).
  */
+/**
+ * Adopt the LIVE mounted `SurfaceRuntime` as the bottom layer of the scope.
+ *
+ * 🚨 THE RICH-PAGE / INERT-MENU CLASS (Phase 0, 2026-08-25). `getSurfaceRuntime`
+ * holds what the page is actually showing — its filters, its date range, its
+ * rows. The launch thunk adopts it. The shell-header Agents panel reads it. The
+ * MENU never did: a page with a fully mounted provider still produced an inert
+ * menu whenever whoever wired the wrapper did not also hand it values by hand.
+ * That made "make this surface's menu know what is on screen" per-surface
+ * labour, repeated once per surface, done inconsistently — the single biggest
+ * driver of shell menus in the census.
+ *
+ * PRECEDENCE — this is an UNDERLAY, the weakest layer there is. It fills only
+ * keys that nothing else provided; `contextData`, the per-row merge, a live
+ * `getApplicationScope` and the DOM capture all beat it. A surface that says
+ * something is never contradicted by the page it sits on.
+ *
+ * SYNC ONLY, deliberately. `getScope()` may return a promise, and menu scope is
+ * assembled during the render that opens the menu. An async builder is skipped
+ * here and still reaches agents at Run time through the launch thunk's own
+ * adoption — so the async case degrades to exactly the previous behaviour
+ * rather than to something wrong.
+ */
+function adoptMountedRuntimeScope(
+  surfaceName: string | undefined,
+): ApplicationScope | null {
+  try {
+    const mounted = surfaceName
+      ? getSurfaceRuntimeForName(surfaceName)
+      : getSurfaceRuntime();
+    if (!mounted) return null;
+    const payload = mounted.getScope();
+    // A promise means this surface builds its scope asynchronously — see above.
+    if (payload && typeof (payload as Promise<unknown>).then === "function")
+      return null;
+    return payload as ApplicationScope;
+  } catch (err) {
+    // Loud, non-fatal: the menu still opens with whatever the surface passed.
+    if (isDev)
+      console.error(
+        "[ContextMenuV3] mounted SurfaceRuntime threw in getScope() — menu scope falls back to the surface's own values",
+        err,
+      );
+    return null;
+  }
+}
+
+/** True for a value that carries no information — an underlay may fill it. */
+function isEmptyValue(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  if (typeof value === "string") return value.trim() === "";
+  if (typeof value === "object" && !Array.isArray(value))
+    return Object.keys(value as object).length === 0;
+  return false;
+}
+
 export function resolveApplicationScope(
   args: ResolveScopeArgs,
 ): ApplicationScope {
   const base: ApplicationScope = buildFromMenuContext(args);
+
+  /**
+   * Keys the SURFACE itself spoke about — static payload plus live builder.
+   * 🚨 An explicit EMPTY is an answer, not a silence: the Vault forces
+   * `selection: ""` as credential-leak hardening, and the runtime underlay
+   * below must never refill it from the page the Vault happens to sit on.
+   */
+  const surfaceAnswered = new Set<string>(
+    Object.keys(args.contextData ?? {}).filter((k) => !SKIP_MERGE_KEYS.has(k)),
+  );
   if (args.getApplicationScope) {
     const live = args.getApplicationScope();
     for (const [k, v] of Object.entries(live)) {
       if (SKIP_MERGE_KEYS.has(k) || v === undefined) continue;
       base[k] = v;
+      surfaceAnswered.add(k);
+    }
+  }
+
+  // THE RUNTIME UNDERLAY — fills only genuine silences, beaten by everything.
+  const runtime = adoptMountedRuntimeScope(args.surfaceName);
+  if (runtime) {
+    for (const [k, v] of Object.entries(runtime)) {
+      if (SKIP_MERGE_KEYS.has(k) || v === undefined) continue;
+      if (surfaceAnswered.has(k)) continue;
+      if (isEmptyValue(base[k])) base[k] = v;
     }
   }
 

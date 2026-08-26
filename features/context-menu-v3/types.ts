@@ -187,8 +187,13 @@ export interface ContextMenuEntityRef {
   title: string;
   /** Resource type for the sharing system. Omit to hide Share. */
   resourceType?: ResourceType;
-  /** Whether the current user owns the resource (gates Share affordances). */
-  isOwner?: boolean;
+  // NOTE (2026-08-25): an `isOwner?: boolean` lived here, declared to "gate
+  // Share affordances", read by NOTHING and passed by NO surface. Deleted
+  // rather than wired, because the semantic it promised is wrong for this
+  // platform: sharing is governed by share LEVELS (view/edit/FULL), not by
+  // ownership, so gating Share on ownership would over-tighten — and
+  // over-tightening is a defect (docs/official/db-rules.md §6). Share is
+  // gated by `resourceType` alone; the access layer decides the rest.
 }
 
 /**

@@ -374,6 +374,7 @@ export function useContextMenuActions(
     selectedText,
     selectionRange,
     fallbackContent,
+    surfaceName,
   });
   const actionText = resolveActionText(scope);
 
