@@ -1,5 +1,9 @@
 import React, { ErrorInfo } from "react";
 import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
+import {
+  isChunkLoadError,
+  notifyChunkLoadError,
+} from "@/components/errors/chunk-load-recovery";
 
 // Error boundary component for catching React errors
 interface MarkdownErrorBoundaryProps {
@@ -27,10 +31,18 @@ export class MarkdownErrorBoundary extends React.Component<
       error,
       errorInfo,
     );
-    captureReactRenderError(error, {
-      boundary: "MarkdownErrorBoundary",
-      componentStack: errorInfo.componentStack ?? null,
-    });
+    if (isChunkLoadError(error)) {
+      // A nested Markdown boundary catches lazy renderer failures before the
+      // route boundary can apply the canonical, lossless recovery policy.
+      // Announce the failure for NewVersionWatcher instead of misclassifying
+      // an asset-fetch failure as a Markdown render defect.
+      notifyChunkLoadError(error);
+    } else {
+      captureReactRenderError(error, {
+        boundary: "MarkdownErrorBoundary",
+        componentStack: errorInfo.componentStack ?? null,
+      });
+    }
     this.props.onError?.(error, errorInfo);
   }
 
