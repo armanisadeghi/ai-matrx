@@ -69,7 +69,7 @@ function EvidenceRow({
   return (
     <div className="flex gap-2 text-xs">
       <span className="w-28 shrink-0 text-muted-foreground">{label}</span>
-      <span className="min-w-0 flex-1 text-foreground">{children}</span>
+      <span className="min-w-0 flex-1 break-words text-foreground">{children}</span>
     </div>
   );
 }
@@ -130,7 +130,7 @@ function CandidateCard({
         </EvidenceRow>
         <EvidenceRow label="Also teaches">
           {candidate.teaches.length > 1 ? (
-            <span className="font-mono">
+            <span className="font-mono break-words">
               {candidate.teaches.filter((k) => k !== kind).join(", ")}
             </span>
           ) : (
@@ -141,14 +141,18 @@ function CandidateCard({
         </EvidenceRow>
         <EvidenceRow label="Relationship">
           {isContainer ? (
-            <span className="flex items-start gap-1 text-amber-700 dark:text-amber-300">
-              <Boxes className="mt-0.5 h-3 w-3 shrink-0" />
+            // Deliberately NOT a flex row: flex items do not share a line box,
+            // so the sentence could not wrap across the icon and the two
+            // <code> spans — it overflowed the card instead. Inline flow with
+            // an inline-block icon wraps correctly at any card width.
+            <span className="block break-words text-amber-700 dark:text-amber-300">
+              <Boxes className="mr-1 inline-block h-3 w-3 shrink-0 align-[-1px]" />
               CONTAINER — it teaches{" "}
-              <span className="font-mono">
+              <span className="font-mono break-words">
                 {candidate.containerKinds.join(", ")}
               </span>
               , which embed{candidate.containerKinds.length === 1 ? "s" : ""}{" "}
-              <span className="font-mono">{kind}</span> as a child. It
+              <span className="font-mono break-words">{kind}</span> as a child. It
               demonstrates this kind; it does not own it.
             </span>
           ) : (
