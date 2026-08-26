@@ -32467,6 +32467,23 @@ export type Database = {
         }
         Relationships: []
       }
+      v_hr_jurisdiction_rule_overdue: {
+        Row: {
+          basis: string | null
+          citation: Json | null
+          days_overdue: number | null
+          jurisdiction_key: string | null
+          jurisdiction_name: string | null
+          organization_id: string | null
+          rule_class: string | null
+          rule_class_label: string | null
+          rule_id: string | null
+          rule_version: number | null
+          status: string | null
+          verification_due: string | null
+        }
+        Relationships: []
+      }
       v_judge_agreement: {
         Row: {
           agreed_count: number | null

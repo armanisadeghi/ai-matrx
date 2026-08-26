@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 554 active entity tokens. A token here is FK-valid for
+// 560 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -206,10 +206,13 @@ export type EntityTypeToken =
   | "hindsight_replay_step"
   | "hindsight_review"
   | "hr_access_audit"
+  | "hr_access_role"
   | "hr_accommodation_request"
   | "hr_ai_evidence"
   | "hr_alert_routing_rule"
   | "hr_application"
+  | "hr_approval_authority"
+  | "hr_approval_delegation"
   | "hr_asset"
   | "hr_asset_assignment"
   | "hr_attendance_exception"
@@ -234,6 +237,7 @@ export type EntityTypeToken =
   | "hr_crew"
   | "hr_deduction_code"
   | "hr_department"
+  | "hr_derived_grant"
   | "hr_disposition_event"
   | "hr_earning_code"
   | "hr_eeo_response"
@@ -246,6 +250,7 @@ export type EntityTypeToken =
   | "hr_engagement"
   | "hr_establishment"
   | "hr_external_identity"
+  | "hr_field_policy"
   | "hr_holiday"
   | "hr_holiday_calendar"
   | "hr_i9"
@@ -294,6 +299,7 @@ export type EntityTypeToken =
   | "hr_requisition"
   | "hr_restricted_note"
   | "hr_retention_rule"
+  | "hr_role_assignment"
   | "hr_schedule"
   | "hr_schedule_change"
   | "hr_schedule_guidance"
@@ -800,7 +806,6 @@ export type ComponentEntityToken =
   | "hr_checklist_template_item"
   | "hr_course_version"
   | "hr_credential"
-  | "hr_employment"
   | "hr_engagement"
   | "hr_establishment"
   | "hr_external_identity"
@@ -1124,10 +1129,13 @@ export type ScopeableEntityToken =
   | "hindsight_replay_step"
   | "hindsight_review"
   | "hr_access_audit"
+  | "hr_access_role"
   | "hr_accommodation_request"
   | "hr_ai_evidence"
   | "hr_alert_routing_rule"
   | "hr_application"
+  | "hr_approval_authority"
+  | "hr_approval_delegation"
   | "hr_asset"
   | "hr_asset_assignment"
   | "hr_attendance_exception"
@@ -1152,6 +1160,7 @@ export type ScopeableEntityToken =
   | "hr_crew"
   | "hr_deduction_code"
   | "hr_department"
+  | "hr_derived_grant"
   | "hr_disposition_event"
   | "hr_earning_code"
   | "hr_eeo_response"
@@ -1164,6 +1173,7 @@ export type ScopeableEntityToken =
   | "hr_engagement"
   | "hr_establishment"
   | "hr_external_identity"
+  | "hr_field_policy"
   | "hr_holiday"
   | "hr_holiday_calendar"
   | "hr_i9"
@@ -1212,6 +1222,7 @@ export type ScopeableEntityToken =
   | "hr_requisition"
   | "hr_restricted_note"
   | "hr_retention_rule"
+  | "hr_role_assignment"
   | "hr_schedule"
   | "hr_schedule_change"
   | "hr_schedule_guidance"
@@ -1760,10 +1771,13 @@ export const ENTITY_TYPE_METADATA = {
   "hindsight_replay_step": { token: "hindsight_replay_step", schema: "hindsight", table: "replay_step", label: "Wire Replay Step", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hindsight_review": { token: "hindsight_review", schema: "hindsight", table: "review", label: "Hindsight Review", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_access_audit": { token: "hr_access_audit", schema: "hr", table: "access_audit", label: "Access audit", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_access_role": { token: "hr_access_role", schema: "hr", table: "access_role", label: "HR access role", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "hr_accommodation_request": { token: "hr_accommodation_request", schema: "hr", table: "accommodation_request", label: "Accommodation request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_ai_evidence": { token: "hr_ai_evidence", schema: "hr", table: "ai_evidence", label: "AI evidence", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_alert_routing_rule": { token: "hr_alert_routing_rule", schema: "hr", table: "alert_routing_rule", label: "Alert routing rule", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_application": { token: "hr_application", schema: "hr", table: "application", label: "Application", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_approval_authority": { token: "hr_approval_authority", schema: "hr", table: "approval_authority", label: "Approval authority", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_approval_delegation": { token: "hr_approval_delegation", schema: "hr", table: "approval_delegation", label: "Approval delegation", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_asset": { token: "hr_asset", schema: "hr", table: "asset", label: "Asset", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_asset_assignment": { token: "hr_asset_assignment", schema: "hr", table: "asset_assignment", label: "Asset assignment", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_attendance_exception": { token: "hr_attendance_exception", schema: "hr", table: "attendance_exception", label: "Attendance exception", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1788,6 +1802,7 @@ export const ENTITY_TYPE_METADATA = {
   "hr_crew": { token: "hr_crew", schema: "hr", table: "crew", label: "Crew", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_deduction_code": { token: "hr_deduction_code", schema: "hr", table: "deduction_code", label: "Deduction code", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_department": { token: "hr_department", schema: "hr", table: "department", label: "Department", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
+  "hr_derived_grant": { token: "hr_derived_grant", schema: "hr", table: "derived_grant", label: "Derived grant", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_disposition_event": { token: "hr_disposition_event", schema: "hr", table: "disposition_event", label: "Disposition event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_earning_code": { token: "hr_earning_code", schema: "hr", table: "earning_code", label: "Earning code", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_eeo_response": { token: "hr_eeo_response", schema: "hr", table: "eeo_response", label: "EEO self-identification response", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1795,11 +1810,12 @@ export const ENTITY_TYPE_METADATA = {
   "hr_employee": { token: "hr_employee", schema: "hr", table: "employee", label: "Employee", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: "container", referenceCategory: null },
   "hr_employee_private": { token: "hr_employee_private", schema: "hr", table: "employee_private", label: "Employee private record", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_employer_profile": { token: "hr_employer_profile", schema: "hr", table: "employer_profile", label: "Employer profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "legal_name", contentRole: null, referenceCategory: null },
-  "hr_employment": { token: "hr_employment", schema: "hr", table: "employment", label: "Employment spell", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_employment": { token: "hr_employment", schema: "hr", table: "employment", label: "Employment spell", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_employment_pin": { token: "hr_employment_pin", schema: "hr", table: "employment_pin", label: "Employment PIN", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_engagement": { token: "hr_engagement", schema: "hr", table: "engagement", label: "Engagement", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_establishment": { token: "hr_establishment", schema: "hr", table: "establishment", label: "Establishment", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_external_identity": { token: "hr_external_identity", schema: "hr", table: "external_identity", label: "External identity", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_field_policy": { token: "hr_field_policy", schema: "hr", table: "field_policy", label: "Self-service field policy", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_holiday": { token: "hr_holiday", schema: "hr", table: "holiday", label: "Holiday", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_holiday_calendar": { token: "hr_holiday_calendar", schema: "hr", table: "holiday_calendar", label: "Holiday calendar", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_i9": { token: "hr_i9", schema: "hr", table: "i9", label: "Form I-9", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1848,6 +1864,7 @@ export const ENTITY_TYPE_METADATA = {
   "hr_requisition": { token: "hr_requisition", schema: "hr", table: "requisition", label: "Requisition", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "requisition_number", contentRole: null, referenceCategory: null },
   "hr_restricted_note": { token: "hr_restricted_note", schema: "hr", table: "restricted_note", label: "Restricted note", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_retention_rule": { token: "hr_retention_rule", schema: "hr", table: "retention_rule", label: "Retention rule", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_role_assignment": { token: "hr_role_assignment", schema: "hr", table: "role_assignment", label: "HR role assignment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_schedule": { token: "hr_schedule", schema: "hr", table: "schedule", label: "Schedule", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_schedule_change": { token: "hr_schedule_change", schema: "hr", table: "schedule_change", label: "Schedule change", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_schedule_guidance": { token: "hr_schedule_guidance", schema: "hr", table: "schedule_guidance", label: "Schedule guidance", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
@@ -2318,10 +2335,13 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hindsight_replay_step",
   "hindsight_review",
   "hr_access_audit",
+  "hr_access_role",
   "hr_accommodation_request",
   "hr_ai_evidence",
   "hr_alert_routing_rule",
   "hr_application",
+  "hr_approval_authority",
+  "hr_approval_delegation",
   "hr_asset",
   "hr_asset_assignment",
   "hr_attendance_exception",
@@ -2346,6 +2366,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hr_crew",
   "hr_deduction_code",
   "hr_department",
+  "hr_derived_grant",
   "hr_disposition_event",
   "hr_earning_code",
   "hr_eeo_response",
@@ -2358,6 +2379,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hr_engagement",
   "hr_establishment",
   "hr_external_identity",
+  "hr_field_policy",
   "hr_holiday",
   "hr_holiday_calendar",
   "hr_i9",
@@ -2406,6 +2428,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hr_requisition",
   "hr_restricted_note",
   "hr_retention_rule",
+  "hr_role_assignment",
   "hr_schedule",
   "hr_schedule_change",
   "hr_schedule_guidance",
