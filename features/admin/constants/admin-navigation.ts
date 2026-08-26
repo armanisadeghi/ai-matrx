@@ -521,6 +521,11 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/compute/resilience-lab"),
         ],
       },
+      {
+        name: "Verification",
+        iconName: "ShieldCheck",
+        destinations: [destination("/administration/compute/proof-runs")],
+      },
     ],
   },
   {

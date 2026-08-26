@@ -139,6 +139,13 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "Bug",
         link: "/administration/compute/resilience-lab",
       },
+      {
+        title: "Proof Runs",
+        description:
+          "The platform's expensive checks — real provider calls whose results are proven from the cost ledger (provider receipts, tokens, billed cost, attribution). Run one live or replay the recorded payloads, watch each proof land, and read the run history.",
+        iconName: "ShieldCheck",
+        link: "/administration/compute/proof-runs",
+      },
     ],
   },
   {

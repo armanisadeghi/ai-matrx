@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 470 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 473 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "9b60bfd39f64";
+export const KIND_REGISTRY_FINGERPRINT = "0a03269f3bdc";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2141,7 +2141,7 @@ export interface InterviewRoundContext {
 }
 
 /**
- * * Shared by 62 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
+ * * Shared by 63 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
  */
 export type JsonValue = unknown;
 
@@ -2861,6 +2861,27 @@ export interface ProgressStep {
   priority?: "low" | "medium" | "high";
   completed: boolean;
   estimated_hours?: number;
+}
+
+/**
+ * One named, independently re-checkable assertion about a run.
+ *
+ * ``skipped`` is a first-class outcome and is NEVER a pass: a replay run
+ * cannot prove a provider was billed, and saying so out loud is the point.
+ *  *
+ *  * From kind `proof_attestation`.
+ */
+export interface ProofResultKind {
+  id?: string;
+  title?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "proof_result";
+  detail?: string;
+  status?: "passed" | "failed" | "skipped";
+  observed?: Record<string, JsonValue>;
+  required?: boolean;
 }
 
 /**
@@ -10665,6 +10686,66 @@ export interface ProgressTracker {
 }
 
 /**
+ * The verdict on one run, plus every proof it rests on.
+ *
+ * ``strength`` says what class of evidence the verdict is made of:
+ * ``live_receipts`` — provider receipts were found and checked;
+ * ``replay_only`` — recorded payloads were replayed, so the spend proofs were
+ * skipped by design and this run proves WIRING, not reality.
+ *  *
+ *  * Kind `proof_attestation` (registry v2).
+ */
+export interface ProofAttestation {
+  mode?: "live" | "replay";
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "proof_attestation";
+  failed?: number;
+  passed?: number;
+  proofs?: ProofResultKind[];
+  skipped?: number;
+  summary?: string;
+  verdict?: "pass" | "fail" | "inconclusive";
+  cost_usd?: number;
+  strength?: "live_receipts" | "replay_only";
+  total_tokens?: number;
+  provider_calls?: number;
+  conversation_id?: string | null;
+  user_request_id?: string | null;
+}
+
+/**
+ * One check's registry row plus its rolling 30-day KPIs.
+ *  *
+ *  * Kind `proof_check_status` (registry v2).
+ */
+export interface ProofCheckStatus {
+  slug?: string;
+  label?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "proof_check_status";
+  surface?: string;
+  runs_30d?: number;
+  is_active?: boolean;
+  description?: string;
+  last_run_at?: string | null;
+  last_verdict?: string | null;
+  max_cost_usd?: number;
+  has_recording?: boolean;
+  live_runs_30d?: number;
+  pass_rate_30d?: number | null;
+  spend_30d_usd?: number;
+  last_live_run_at?: string | null;
+  next_live_due_at?: string | null;
+  last_live_verdict?: string | null;
+  live_every_seconds?: number;
+  consecutive_failures?: number;
+}
+
+/**
  * What one paid call to an external provider cost and produced.
  *
  * Replaces the family's only raw bag — `RankCheckOutput.receipt` was
@@ -13904,6 +13985,72 @@ export interface StudyNotes {
    * The notes themselves, in teaching order.
    */
   sections: StudyNotesSection[];
+}
+
+/**
+ * Kind `study_notes_document` (registry v2).
+ */
+export interface StudyNotesDocument {
+  /**
+   * A short, specific title for these notes.
+   */
+  title: string;
+  /**
+   * The TrustEnvelope proving the notes are grounded in the learner's own material.
+   */
+  trust: {
+    /**
+     * One entry per source passage the notes draw on. Non-empty for grounded notes.
+     */
+    citations: ({
+    /**
+     * A short human label for the source. Null if unknown.
+     */
+    title: string | null;
+    /**
+     * The verbatim sentence(s) from the source supporting this passage.
+     */
+    excerpt: string | null;
+    /**
+     * Where inside the source, e.g. 'p. 12'. Null if unknown.
+     */
+    locator: string | null;
+    /**
+     * The chunk id from a '### Chunk <id>' marker, or a stable label for the passage.
+     */
+    sourceId: string;
+    /**
+     * What the citation points at.
+     */
+    sourceKind: "document" | "chunk" | "section" | "file" | "url" | "scope" | "transcript" | "web";
+  })[];
+    /**
+     * 'grounded' when every note traces to a cited passage. 'inferred' for reasonable synthesis. 'not_in_material' when the source cannot support real notes.
+     */
+    confidence: "grounded" | "inferred" | "not_in_material";
+    /**
+     * A label for the corpus these notes were grounded against, e.g. the source title. Null if unknown.
+     */
+    groundedIn: string | null;
+  };
+  __kind: "study_notes_document";
+  /**
+   * The key terms/concepts a student must know, each with a one-line definition drawn from the source.
+   */
+  key_terms: ({
+    /**
+     * The term or concept.
+     */
+    term: string;
+    /**
+     * A crisp one-line definition grounded in the source.
+     */
+    definition: string;
+  })[];
+  /**
+   * Comprehensive study notes in clean Markdown: hierarchical headings (##, ###), bulleted and sub-bulleted points, bold key terms, and short explanations. Organized for study, grounded strictly in the source.
+   */
+  notes_markdown: string;
 }
 
 /**
@@ -18605,6 +18752,8 @@ export type GeneratedKindSlug =
   | "press_story_angle_ruling_result"
   | "product_research_report"
   | "progress_tracker"
+  | "proof_attestation"
+  | "proof_check_status"
   | "provider_run_receipt"
   | "questionnaire"
   | "quiz_item"
@@ -18724,6 +18873,7 @@ export type GeneratedKindSlug =
   | "structured_info"
   | "study_analytics_narrative"
   | "study_notes"
+  | "study_notes_document"
   | "study_pack_set"
   | "study_plan"
   | "study_summary"
@@ -19078,6 +19228,8 @@ export interface KindPayloadBySlug {
   "press_story_angle_ruling_result": PressStoryAngleRulingResult;
   "product_research_report": ProductResearchReport;
   "progress_tracker": ProgressTracker;
+  "proof_attestation": ProofAttestation;
+  "proof_check_status": ProofCheckStatus;
   "provider_run_receipt": ProviderRunReceipt;
   "questionnaire": Questionnaire;
   "quiz_item": QuizItem;
@@ -19197,6 +19349,7 @@ export interface KindPayloadBySlug {
   "structured_info": StructuredInfo;
   "study_analytics_narrative": StudyAnalyticsNarrative;
   "study_notes": StudyNotes;
+  "study_notes_document": StudyNotesDocument;
   "study_pack_set": StudyPackSet;
   "study_plan": StudyPlan;
   "study_summary": StudySummary;
@@ -19555,6 +19708,8 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "press_story_angle_ruling_result",
   "product_research_report",
   "progress_tracker",
+  "proof_attestation",
+  "proof_check_status",
   "provider_run_receipt",
   "questionnaire",
   "quiz_item",
@@ -19674,6 +19829,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "structured_info",
   "study_analytics_narrative",
   "study_notes",
+  "study_notes_document",
   "study_pack_set",
   "study_plan",
   "study_summary",
