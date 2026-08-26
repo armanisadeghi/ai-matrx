@@ -404,18 +404,18 @@ export default function KeywordResearchWorkbench() {
     string[]
   > | null>(null);
   const [assigning, setAssigning] = useState(false);
+  const loadSiteMemberships = useCallback(
+    (signal?: AbortSignal) => {
+      const ids = visibleIdsKey ? visibleIdsKey.split(",") : [];
+      if (ids.length === 0) return Promise.resolve(new Map<string, string[]>());
+      return getKeywordSiteMemberships(ids, signal);
+    },
+    [visibleIdsKey],
+  );
   const reloadSiteMemberships = useCallback(
     async (signal?: AbortSignal) => {
-      // Keep every state transition behind an async boundary so mounting the
-      // effect cannot synchronously cascade another render.
-      await Promise.resolve();
-      const ids = visibleIdsKey ? visibleIdsKey.split(",") : [];
-      if (ids.length === 0) {
-        if (!signal?.aborted) setSiteMemberships(new Map());
-        return;
-      }
       try {
-        const result = await getKeywordSiteMemberships(ids, signal);
+        const result = await loadSiteMemberships(signal);
         if (!signal?.aborted) setSiteMemberships(result);
       } catch (error) {
         if (!signal?.aborted) {
@@ -424,13 +424,23 @@ export default function KeywordResearchWorkbench() {
         }
       }
     },
-    [visibleIdsKey],
+    [loadSiteMemberships],
   );
   useEffect(() => {
     const controller = new AbortController();
-    void reloadSiteMemberships(controller.signal);
+    void loadSiteMemberships(controller.signal).then(
+      (result) => {
+        if (!controller.signal.aborted) setSiteMemberships(result);
+      },
+      (error: unknown) => {
+        if (!controller.signal.aborted) {
+          console.error("Keyword site membership lookup failed:", error);
+          setSiteMemberships(null);
+        }
+      },
+    );
     return () => controller.abort();
-  }, [reloadSiteMemberships]);
+  }, [loadSiteMemberships]);
 
   const siteNameById = useMemo(() => {
     const map = new Map<string, string>();
