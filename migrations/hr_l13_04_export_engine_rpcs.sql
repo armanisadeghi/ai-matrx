@@ -295,13 +295,30 @@ declare
   v_ack      hr.payroll_export%rowtype;
   v_version  integer;
   v_id       uuid;
+  v_user     uuid := auth.uid();
+  v_actor_employment uuid;
 begin
+  -- RECORDED DECISION 8 — AN EXPORT NAMES WHO MADE IT, OR IT DOES NOT HAPPEN.
+  -- `payroll_export_actor_identified` requires an actor_user_id or an actor_employment_id for
+  -- every non-device actor type. Rather than letting that CHECK fire as an opaque 23514 at the
+  -- end of a long call, the actor is resolved here and a caller the database cannot name is
+  -- refused by name. A payroll file whose maker is unattributable is not a file we will produce.
+  select e.id into v_actor_employment
+    from hr.employment e
+   where e.id = any (hr.employments_of(v_user))
+     and e.organization_id = p_organization_id
+   limit 1;
+  if v_user is null and v_actor_employment is null then
+    raise exception 'hr_validation_error: an export must name its actor; this call has neither an authenticated user nor an employment in organization %',
+      p_organization_id using errcode = 'P0001',
+      hint = 'aidream calls this under acting_as_user, so auth.uid() is the caller. A direct connection must set request.jwt.claims.';
+  end if;
   -- §1.4 — the DOMAIN key is checked FIRST, before the platform claim matters. A replay returns
   -- the existing export verbatim rather than minting a second one.
   select * into v_existing
-    from hr.payroll_export
-   where organization_id = p_organization_id
-     and idempotency_key = p_idempotency_key
+    from hr.payroll_export pe
+   where pe.organization_id = p_organization_id
+     and pe.idempotency_key = p_idempotency_key
    limit 1;
   if found then
     return query select v_existing.id, v_existing.export_version, true, v_existing.supersedes_export_id;
@@ -313,10 +330,10 @@ begin
   -- whichever row it descends from. The only correction path is an hr.time_adjustment landing in
   -- the NEXT export, tagged to the original period.
   select * into v_ack
-    from hr.payroll_export
-   where organization_id = p_organization_id
-     and pay_period_id = p_pay_period_id
-     and delivery_state = 'acknowledged'
+    from hr.payroll_export pe
+   where pe.organization_id = p_organization_id
+     and pe.pay_period_id = p_pay_period_id
+     and pe.delivery_state = 'acknowledged'
    limit 1;
   if found then
     raise exception 'hr_export_already_acknowledged: export % for pay period % was acknowledged at % (ref %); a re-export would pay it twice',
@@ -326,48 +343,53 @@ begin
   end if;
 
   if p_supersedes_export_id is not null then
-    if not exists (select 1 from hr.payroll_export
-                    where id = p_supersedes_export_id
-                      and organization_id = p_organization_id
-                      and pay_period_id = p_pay_period_id) then
+    if not exists (select 1 from hr.payroll_export pe
+                    where pe.id = p_supersedes_export_id
+                      and pe.organization_id = p_organization_id
+                      and pe.pay_period_id = p_pay_period_id) then
       raise exception 'hr_state_conflict: export % is not an export of pay period % in this organization',
         p_supersedes_export_id, p_pay_period_id using errcode = 'P0001';
     end if;
     -- §4.5's transition table: only `generated` and `failed` may be superseded.
-    if not exists (select 1 from hr.payroll_export
-                    where id = p_supersedes_export_id
-                      and delivery_state in ('generated','failed')) then
+    if not exists (select 1 from hr.payroll_export pe
+                    where pe.id = p_supersedes_export_id
+                      and pe.delivery_state in ('generated','failed')) then
       raise exception 'hr_state_conflict: export % is %, and only a generated or failed export may be superseded',
         p_supersedes_export_id,
-        (select delivery_state from hr.payroll_export where id = p_supersedes_export_id)
+        (select pe.delivery_state from hr.payroll_export pe where pe.id = p_supersedes_export_id)
         using errcode = 'P0001';
     end if;
   end if;
 
   -- §4.5 — export_version counts ATTEMPTS BEFORE ACKNOWLEDGMENT, not corrections after it.
-  select coalesce(max(export_version), 0) + 1 into v_version
-    from hr.payroll_export
-   where organization_id = p_organization_id
-     and pay_period_id = p_pay_period_id;
+  -- 🚨 ALIAS-QUALIFIED ON PURPOSE. `export_version` is also an OUT parameter of this function's
+  -- RETURNS TABLE, and an unqualified reference is `ambiguous column reference` at RUNTIME, not
+  -- at create time — so it compiles green and fails on the first real call. Found by
+  -- scripts/hr/hrb025_guard_proof.py. Every column reference in this file that collides with an
+  -- OUT parameter name is qualified for the same reason.
+  select coalesce(max(pe.export_version), 0) + 1 into v_version
+    from hr.payroll_export pe
+   where pe.organization_id = p_organization_id
+     and pe.pay_period_id = p_pay_period_id;
 
   perform hr.arm_write();
   begin
     insert into hr.payroll_export (
       pay_period_id, export_format, export_version, idempotency_key, generated_at,
       line_count, delivery_state, supersedes_export_id, actor_type, actor_user_id,
-      organization_id, created_by, metadata)
+      actor_employment_id, organization_id, created_by, metadata)
     values (
       p_pay_period_id, p_export_format, v_version, p_idempotency_key, now(),
-      0, 'generated', p_supersedes_export_id, 'hr_admin', auth.uid(),
-      p_organization_id, auth.uid(),
+      0, 'generated', p_supersedes_export_id, 'hr_admin', v_user, v_actor_employment,
+      p_organization_id, v_user,
       jsonb_build_object('includes_pii', p_includes_pii))
     returning id into v_id;
   exception when unique_violation then
     -- A concurrent request won the domain key between the lookup above and this insert. That is
     -- the TOCTOU §1.4 names, and the resolution is the same as the lookup's: return theirs.
     perform set_config('hr.privileged_write', '', true);
-    select * into v_existing from hr.payroll_export
-     where organization_id = p_organization_id and idempotency_key = p_idempotency_key limit 1;
+    select * into v_existing from hr.payroll_export pe
+     where pe.organization_id = p_organization_id and pe.idempotency_key = p_idempotency_key limit 1;
     return query select v_existing.id, v_existing.export_version, true, v_existing.supersedes_export_id;
     return;
   end;
@@ -399,8 +421,8 @@ declare
   v_export hr.payroll_export%rowtype;
   v_count  integer;
 begin
-  select * into v_export from hr.payroll_export
-   where id = p_export_id and organization_id = p_organization_id;
+  select * into v_export from hr.payroll_export pe
+   where pe.id = p_export_id and pe.organization_id = p_organization_id;
   if not found then
     raise exception 'not_found: export %', p_export_id using errcode = 'P0002';
   end if;
@@ -408,7 +430,7 @@ begin
     raise exception 'hr_state_conflict: export % is %, and lines are written once at generation',
       p_export_id, v_export.delivery_state using errcode = 'P0001';
   end if;
-  if exists (select 1 from hr.payroll_export_line where payroll_export_id = p_export_id) then
+  if exists (select 1 from hr.payroll_export_line pel where pel.payroll_export_id = p_export_id) then
     raise exception 'hr_state_conflict: export % already has lines; the line set is append-only and written once',
       p_export_id using errcode = 'P0001';
   end if;
@@ -498,8 +520,8 @@ set search_path to 'hr', 'public'
 as $function$
 declare v_export hr.payroll_export%rowtype;
 begin
-  select * into v_export from hr.payroll_export
-   where id = p_export_id and organization_id = p_organization_id
+  select * into v_export from hr.payroll_export pe
+   where pe.id = p_export_id and pe.organization_id = p_organization_id
    for update;
   if not found then
     raise exception 'not_found: export %', p_export_id using errcode = 'P0002';
@@ -528,12 +550,12 @@ begin
       raise exception 'hr_state_conflict: export % is %, and only a generated or sent export can be acknowledged',
         p_export_id, v_export.delivery_state using errcode = 'P0001';
     end if;
-    update hr.payroll_export
+    update hr.payroll_export pe
        set delivery_state = 'acknowledged',
            acknowledged_at = coalesce(p_acknowledged_at, now()),
            acknowledgement_ref = p_acknowledgement_ref,
-           sent_at = coalesce(sent_at, now())
-     where id = p_export_id;
+           sent_at = coalesce(pe.sent_at, now())
+     where pe.id = p_export_id;
 
   elsif p_action = 'fail' then
     if v_export.delivery_state not in ('generated','sent') then
@@ -559,10 +581,10 @@ begin
       raise exception 'hr_state_conflict: export % is %, and only a generated or failed export may be superseded',
         p_export_id, v_export.delivery_state using errcode = 'P0001';
     end if;
-    update hr.payroll_export
+    update hr.payroll_export pe
        set delivery_state = 'superseded',
-           failure_reason = coalesce(p_failure_reason, failure_reason)
-     where id = p_export_id;
+           failure_reason = coalesce(p_failure_reason, pe.failure_reason)
+     where pe.id = p_export_id;
 
   else
     perform set_config('hr.privileged_write', '', true);
@@ -571,7 +593,7 @@ begin
 
   perform set_config('hr.privileged_write', '', true);
 
-  select * into v_export from hr.payroll_export where id = p_export_id;
+  select * into v_export from hr.payroll_export pe where pe.id = p_export_id;
   return query select v_export.id, v_export.delivery_state, v_export.acknowledged_at, v_export.failure_reason;
 end
 $function$;
