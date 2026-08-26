@@ -72,6 +72,9 @@ import {
 } from "@/features/scopes/redux/selectors/tree";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/utils/cn";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { TASKS_CONTEXT_MENU_PROPS } from "@/features/tasks/agent-context/buildTasksContextData";
+import { useTasksListSurfaceScope } from "@/features/tasks/components/TasksListSurfaceRuntime";
 
 type LucideIcon = React.ComponentType<{
   className?: string;
@@ -103,6 +106,7 @@ const GROUP_MODES: { mode: TaskGroupBy; label: string; icon: LucideIcon }[] = [
 
 export default function TasksContextSidebar() {
   const dispatch = useAppDispatch();
+  const getSurfaceScope = useTasksListSurfaceScope();
 
   // Search / views / display
   const searchQuery = useAppSelector(selectSearchQuery);
@@ -201,324 +205,332 @@ export default function TasksContextSidebar() {
       "All Projects");
 
   return (
-    <div
-      className="flex flex-col h-full min-h-0 bg-card"
-      data-surface-value="project_list"
+    <NonEditableContextMenu
+      sourceFeature={TASKS_CONTEXT_MENU_PROPS.sourceFeature}
+      surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
+      getApplicationScope={getSurfaceScope}
     >
-      {/* Search — page title lives in the shell header (PageHeader) */}
-      <div className="shrink-0 px-2 pt-2 pb-1">
-        <div
-          className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md border border-border/30"
-          data-surface-value="search_query"
-        >
-          <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-            placeholder="Search tasks..."
-            className="flex-1 min-w-0 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
-            style={{ fontSize: "16px" }}
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => dispatch(setSearchQuery(""))}
-              className="text-muted-foreground hover:text-foreground"
-              aria-label="Clear task search"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {/* View — group, sort, show completed (pinned to top) */}
-        <CollapsibleSidebarSection
-          icon={SlidersHorizontal}
-          title="View"
-          defaultOpen
-          summary={`${activeGroupLabel} · ${activeSortLabel} ${sortOrder === "desc" ? "↓" : "↑"}${showCompleted ? " · +done" : ""}`}
-        >
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              Group
-            </span>
-            {GROUP_MODES.map((m) => {
-              const Icon = m.icon;
-              return (
-                <button
-                  key={m.mode}
-                  onClick={() => dispatch(setGroupBy(m.mode))}
-                  className={cn(
-                    "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors",
-                    groupBy === m.mode
-                      ? "text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                  )}
-                  title={`Group by ${m.label}`}
-                >
-                  <Icon className="w-3 h-3" />
-                  <span>{m.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-1.5 flex items-center gap-1 flex-wrap">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              Sort
-            </span>
-            {TASK_SORT_OPTIONS.map((opt) => {
-              const isActive = sortBy === opt.field;
-              const Icon = opt.icon;
-              return (
-                <button
-                  key={opt.field}
-                  onClick={() =>
-                    dispatch(setSortBy(opt.field as TaskSortField))
-                  }
-                  className={cn(
-                    "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors",
-                    isActive
-                      ? "text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                  )}
-                >
-                  <Icon className="w-3 h-3" />
-                  <span>{opt.label}</span>
-                </button>
-              );
-            })}
-            <button
-              onClick={() => dispatch(toggleSortOrder())}
-              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              title={sortOrder === "desc" ? "Descending" : "Ascending"}
-            >
-              <ArrowUpDown className="w-3 h-3" />
-              <span>{sortOrder === "desc" ? "↓" : "↑"}</span>
-            </button>
-          </div>
-
-          <div className="mt-1.5 flex items-center justify-between px-1.5 py-1 rounded bg-muted/30">
-            <span className="flex items-center gap-1.5 text-[11px] text-foreground">
-              {showCompleted ? (
-                <Eye className="w-3 h-3 text-muted-foreground" />
-              ) : (
-                <EyeOff className="w-3 h-3 text-muted-foreground" />
-              )}
-              Show completed
-            </span>
-            <Switch
-              checked={showCompleted}
-              onCheckedChange={(v) => dispatch(setShowCompleted(!!v))}
-              className="data-[state=checked]:bg-primary h-4 w-7 [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-3"
+      <div
+        className="flex flex-col h-full min-h-0 bg-card"
+        data-surface-value="project_list"
+      >
+        {/* Search — page title lives in the shell header (PageHeader) */}
+        <div className="shrink-0 px-2 pt-2 pb-1">
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md border border-border/30"
+            data-surface-value="search_query"
+          >
+            <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+              placeholder="Search tasks..."
+              className="flex-1 min-w-0 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
+              style={{ fontSize: "16px" }}
             />
-          </div>
-        </CollapsibleSidebarSection>
-
-        {/* Smart views — Inbox / Today / Upcoming / Overdue / Assigned / Created / Completed */}
-        <CollapsibleSidebarSection
-          icon={Inbox}
-          title="Views"
-          defaultOpen
-          summary={SMART_VIEW_BY_KEY[smartView]?.label ?? "All tasks"}
-        >
-          <div className="flex flex-col gap-0.5">
-            {SMART_VIEWS.map((v) => {
-              const Icon = v.icon;
-              const count = smartViewCounts[v.key] ?? 0;
-              const isActive = smartView === v.key;
-              return (
-                <button
-                  key={v.key}
-                  onClick={() => dispatch(setSmartView(v.key))}
-                  title={v.description}
-                  className={cn(
-                    "flex items-center gap-1.5 px-1.5 py-1 rounded text-[11px] transition-colors",
-                    isActive
-                      ? "bg-accent text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                  )}
-                >
-                  <Icon className="w-3 h-3 shrink-0" />
-                  <span className="flex-1 text-left truncate">{v.label}</span>
-                  <span
-                    className={cn(
-                      "text-[10px] tabular-nums",
-                      v.key === "overdue" && count > 0
-                        ? "text-red-500 font-medium"
-                        : "text-muted-foreground/70",
-                    )}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </CollapsibleSidebarSection>
-
-        {/* Context: Organizations */}
-        <CollapsibleSidebarSection
-          icon={Building}
-          iconClassName="text-violet-500"
-          title="Organization"
-          summary={activeOrgName}
-          headerAction={
-            orgId ? (
+            {searchQuery && (
               <button
                 type="button"
-                onClick={() => handleSelectOrg(null)}
-                className="shrink-0 p-0.5 opacity-50 hover:opacity-100"
-                title="Show all organizations"
+                onClick={() => dispatch(setSearchQuery(""))}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Clear task search"
               >
-                <X className="w-2.5 h-2.5" />
+                <X className="w-3 h-3" />
               </button>
-            ) : undefined
-          }
-        >
-          <div className="space-y-0.5">
-            <AllRow
-              label="All Organizations"
-              active={!orgId}
-              count={(orgs ?? []).length}
-              onClick={() => handleSelectOrg(null)}
-              accentColor="text-violet-500"
-            />
-            {(orgs ?? []).map((o) => (
-              <ContextRow
-                key={o.id}
-                label={o.name}
-                active={orgId === o.id}
-                dimmed={
-                  false /* orgs are never dimmed — picking one is always valid */
-                }
-                accentColor="text-violet-500"
-                onClick={() => handleSelectOrg(orgId === o.id ? null : o.id)}
-              />
-            ))}
+            )}
           </div>
-        </CollapsibleSidebarSection>
+        </div>
 
-        {/* Context: each scope type with explicit clickable scopes */}
-        {scopeTypesOrdered.map((type) => {
-          const Icon = resolveIcon(type.icon);
-          const opts = scopesByType.get(type.id) ?? [];
-          const selectedOfType = opts.filter((s) => selectedScopeIds.has(s.id));
-          const typeBelongsToActiveOrg =
-            !orgId || type.organization_id === orgId;
-
-          const selectedScopeName =
-            selectedOfType.length > 0
-              ? selectedOfType.map((s) => s.name).join(", ")
-              : `All ${type.label_plural}`;
-
-          return (
-            <CollapsibleSidebarSection
-              key={type.id}
-              icon={Icon}
-              iconStyle={type.color ? { color: type.color } : undefined}
-              title={type.label_plural}
-              titleStyle={type.color ? { color: type.color } : undefined}
-              titleMuted={!typeBelongsToActiveOrg}
-              summary={selectedScopeName}
-              headerAction={
-                selectedOfType.length > 0 ? (
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {/* View — group, sort, show completed (pinned to top) */}
+          <CollapsibleSidebarSection
+            icon={SlidersHorizontal}
+            title="View"
+            defaultOpen
+            summary={`${activeGroupLabel} · ${activeSortLabel} ${sortOrder === "desc" ? "↓" : "↑"}${showCompleted ? " · +done" : ""}`}
+          >
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                Group
+              </span>
+              {GROUP_MODES.map((m) => {
+                const Icon = m.icon;
+                return (
                   <button
-                    type="button"
-                    onClick={() => clearScopesOfType(opts.map((s) => s.id))}
-                    className="shrink-0 p-0.5 opacity-50 hover:opacity-100"
-                    title={`Show all ${type.label_plural.toLowerCase()}`}
+                    key={m.mode}
+                    onClick={() => dispatch(setGroupBy(m.mode))}
+                    className={cn(
+                      "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors",
+                      groupBy === m.mode
+                        ? "text-primary font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                    )}
+                    title={`Group by ${m.label}`}
                   >
-                    <X className="w-2.5 h-2.5" />
+                    <Icon className="w-3 h-3" />
+                    <span>{m.label}</span>
                   </button>
-                ) : undefined
-              }
-            >
-              <div className="space-y-0.5">
-                <AllRow
-                  label={`All ${type.label_plural}`}
-                  active={selectedOfType.length === 0}
-                  count={opts.length}
-                  dimmed={!typeBelongsToActiveOrg}
-                  onClick={() =>
-                    typeBelongsToActiveOrg &&
-                    clearScopesOfType(opts.map((s) => s.id))
-                  }
-                  accentColor={type.color}
-                />
-                {opts.map((scope) => {
-                  // A scope is dimmed if its org doesn't match the current
-                  // active org selection. If no org selected, all scopes are
-                  // active.
-                  const dimmed = !!orgId && scope.organization_id !== orgId;
-                  const isActive = selectedScopeIds.has(scope.id);
-                  return (
-                    <ContextRow
-                      key={scope.id}
-                      label={scope.name}
-                      active={isActive}
-                      dimmed={dimmed}
-                      accentColor={type.color}
-                      dotColor={type.color}
-                      onClick={() => !dimmed && toggleScope(scope.id)}
-                    />
-                  );
-                })}
-              </div>
-            </CollapsibleSidebarSection>
-          );
-        })}
+                );
+              })}
+            </div>
 
-        {/* Projects — always show all, dim those that don't match */}
-        <CollapsibleSidebarSection
-          icon={FolderKanban}
-          iconClassName="text-amber-500"
-          title="Projects"
-          summary={activeProjectName}
-        >
-          <div className="space-y-0.5">
-            <AllRow
-              label="All Projects"
-              active={showAllProjects}
-              count={derivedProjects.reduce((s, p) => s + p.tasks.length, 0)}
-              onClick={() => {
-                dispatch(setShowAllProjects(true));
-                dispatch(setActiveProject(null));
-              }}
-              accentColor="text-amber-500"
-            />
-            {derivedProjects.map((p) => {
-              const isActive = activeProject === p.id && !showAllProjects;
-              const dimmed =
-                validProjectIds !== null && !validProjectIds.has(p.id);
-              return (
-                <ContextRow
-                  key={p.id}
-                  label={p.name}
-                  active={isActive}
-                  dimmed={dimmed}
-                  accentColor="text-amber-500"
-                  trailing={
-                    <span className="tabular-nums text-[10px] opacity-60">
-                      {p.tasks.length}
+            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                Sort
+              </span>
+              {TASK_SORT_OPTIONS.map((opt) => {
+                const isActive = sortBy === opt.field;
+                const Icon = opt.icon;
+                return (
+                  <button
+                    key={opt.field}
+                    onClick={() =>
+                      dispatch(setSortBy(opt.field as TaskSortField))
+                    }
+                    className={cn(
+                      "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors",
+                      isActive
+                        ? "text-primary font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                    )}
+                  >
+                    <Icon className="w-3 h-3" />
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => dispatch(toggleSortOrder())}
+                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                title={sortOrder === "desc" ? "Descending" : "Ascending"}
+              >
+                <ArrowUpDown className="w-3 h-3" />
+                <span>{sortOrder === "desc" ? "↓" : "↑"}</span>
+              </button>
+            </div>
+
+            <div className="mt-1.5 flex items-center justify-between px-1.5 py-1 rounded bg-muted/30">
+              <span className="flex items-center gap-1.5 text-[11px] text-foreground">
+                {showCompleted ? (
+                  <Eye className="w-3 h-3 text-muted-foreground" />
+                ) : (
+                  <EyeOff className="w-3 h-3 text-muted-foreground" />
+                )}
+                Show completed
+              </span>
+              <Switch
+                checked={showCompleted}
+                onCheckedChange={(v) => dispatch(setShowCompleted(!!v))}
+                className="data-[state=checked]:bg-primary h-4 w-7 [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-3"
+              />
+            </div>
+          </CollapsibleSidebarSection>
+
+          {/* Smart views — Inbox / Today / Upcoming / Overdue / Assigned / Created / Completed */}
+          <CollapsibleSidebarSection
+            icon={Inbox}
+            title="Views"
+            defaultOpen
+            summary={SMART_VIEW_BY_KEY[smartView]?.label ?? "All tasks"}
+          >
+            <div className="flex flex-col gap-0.5">
+              {SMART_VIEWS.map((v) => {
+                const Icon = v.icon;
+                const count = smartViewCounts[v.key] ?? 0;
+                const isActive = smartView === v.key;
+                return (
+                  <button
+                    key={v.key}
+                    onClick={() => dispatch(setSmartView(v.key))}
+                    title={v.description}
+                    className={cn(
+                      "flex items-center gap-1.5 px-1.5 py-1 rounded text-[11px] transition-colors",
+                      isActive
+                        ? "bg-accent text-primary font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                    )}
+                  >
+                    <Icon className="w-3 h-3 shrink-0" />
+                    <span className="flex-1 text-left truncate">{v.label}</span>
+                    <span
+                      className={cn(
+                        "text-[10px] tabular-nums",
+                        v.key === "overdue" && count > 0
+                          ? "text-red-500 font-medium"
+                          : "text-muted-foreground/70",
+                      )}
+                    >
+                      {count}
                     </span>
+                  </button>
+                );
+              })}
+            </div>
+          </CollapsibleSidebarSection>
+
+          {/* Context: Organizations */}
+          <CollapsibleSidebarSection
+            icon={Building}
+            iconClassName="text-violet-500"
+            title="Organization"
+            summary={activeOrgName}
+            headerAction={
+              orgId ? (
+                <button
+                  type="button"
+                  onClick={() => handleSelectOrg(null)}
+                  className="shrink-0 p-0.5 opacity-50 hover:opacity-100"
+                  title="Show all organizations"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              ) : undefined
+            }
+          >
+            <div className="space-y-0.5">
+              <AllRow
+                label="All Organizations"
+                active={!orgId}
+                count={(orgs ?? []).length}
+                onClick={() => handleSelectOrg(null)}
+                accentColor="text-violet-500"
+              />
+              {(orgs ?? []).map((o) => (
+                <ContextRow
+                  key={o.id}
+                  label={o.name}
+                  active={orgId === o.id}
+                  dimmed={
+                    false /* orgs are never dimmed — picking one is always valid */
                   }
-                  onClick={() => {
-                    if (dimmed) return;
-                    dispatch(setActiveProject(p.id));
-                    dispatch(setShowAllProjects(false));
-                  }}
+                  accentColor="text-violet-500"
+                  onClick={() => handleSelectOrg(orgId === o.id ? null : o.id)}
                 />
-              );
-            })}
-          </div>
-        </CollapsibleSidebarSection>
+              ))}
+            </div>
+          </CollapsibleSidebarSection>
+
+          {/* Context: each scope type with explicit clickable scopes */}
+          {scopeTypesOrdered.map((type) => {
+            const Icon = resolveIcon(type.icon);
+            const opts = scopesByType.get(type.id) ?? [];
+            const selectedOfType = opts.filter((s) =>
+              selectedScopeIds.has(s.id),
+            );
+            const typeBelongsToActiveOrg =
+              !orgId || type.organization_id === orgId;
+
+            const selectedScopeName =
+              selectedOfType.length > 0
+                ? selectedOfType.map((s) => s.name).join(", ")
+                : `All ${type.label_plural}`;
+
+            return (
+              <CollapsibleSidebarSection
+                key={type.id}
+                icon={Icon}
+                iconStyle={type.color ? { color: type.color } : undefined}
+                title={type.label_plural}
+                titleStyle={type.color ? { color: type.color } : undefined}
+                titleMuted={!typeBelongsToActiveOrg}
+                summary={selectedScopeName}
+                headerAction={
+                  selectedOfType.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => clearScopesOfType(opts.map((s) => s.id))}
+                      className="shrink-0 p-0.5 opacity-50 hover:opacity-100"
+                      title={`Show all ${type.label_plural.toLowerCase()}`}
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  ) : undefined
+                }
+              >
+                <div className="space-y-0.5">
+                  <AllRow
+                    label={`All ${type.label_plural}`}
+                    active={selectedOfType.length === 0}
+                    count={opts.length}
+                    dimmed={!typeBelongsToActiveOrg}
+                    onClick={() =>
+                      typeBelongsToActiveOrg &&
+                      clearScopesOfType(opts.map((s) => s.id))
+                    }
+                    accentColor={type.color}
+                  />
+                  {opts.map((scope) => {
+                    // A scope is dimmed if its org doesn't match the current
+                    // active org selection. If no org selected, all scopes are
+                    // active.
+                    const dimmed = !!orgId && scope.organization_id !== orgId;
+                    const isActive = selectedScopeIds.has(scope.id);
+                    return (
+                      <ContextRow
+                        key={scope.id}
+                        label={scope.name}
+                        active={isActive}
+                        dimmed={dimmed}
+                        accentColor={type.color}
+                        dotColor={type.color}
+                        onClick={() => !dimmed && toggleScope(scope.id)}
+                      />
+                    );
+                  })}
+                </div>
+              </CollapsibleSidebarSection>
+            );
+          })}
+
+          {/* Projects — always show all, dim those that don't match */}
+          <CollapsibleSidebarSection
+            icon={FolderKanban}
+            iconClassName="text-amber-500"
+            title="Projects"
+            summary={activeProjectName}
+          >
+            <div className="space-y-0.5">
+              <AllRow
+                label="All Projects"
+                active={showAllProjects}
+                count={derivedProjects.reduce((s, p) => s + p.tasks.length, 0)}
+                onClick={() => {
+                  dispatch(setShowAllProjects(true));
+                  dispatch(setActiveProject(null));
+                }}
+                accentColor="text-amber-500"
+              />
+              {derivedProjects.map((p) => {
+                const isActive = activeProject === p.id && !showAllProjects;
+                const dimmed =
+                  validProjectIds !== null && !validProjectIds.has(p.id);
+                return (
+                  <ContextRow
+                    key={p.id}
+                    label={p.name}
+                    active={isActive}
+                    dimmed={dimmed}
+                    accentColor="text-amber-500"
+                    trailing={
+                      <span className="tabular-nums text-[10px] opacity-60">
+                        {p.tasks.length}
+                      </span>
+                    }
+                    onClick={() => {
+                      if (dimmed) return;
+                      dispatch(setActiveProject(p.id));
+                      dispatch(setShowAllProjects(false));
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </CollapsibleSidebarSection>
+        </div>
       </div>
-    </div>
+    </NonEditableContextMenu>
   );
 }
 

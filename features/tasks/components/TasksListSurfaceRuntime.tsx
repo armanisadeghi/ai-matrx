@@ -13,16 +13,13 @@ import { useAppSelector } from "@/lib/redux/hooks";
 
 const SURFACE_NAME = "matrx-user/tasks";
 
-/**
- * Publishes the list values declared by the Tasks manifest even when no task
- * editor is open. An open editor mounts a deeper runtime and correctly wins.
- */
-export function TasksListSurfaceRuntime({ children }: { children: ReactNode }) {
+/** Canonical live list scope shared by the route runtime and its sidebar. */
+export function useTasksListSurfaceScope() {
   const tasks = useAppSelector(selectFilteredTasks);
   const projects = useAppSelector(selectProjects);
   const searchQuery = useAppSelector(selectSearchQuery);
 
-  const getSurfaceScope = () => {
+  return () => {
     const contextData = buildTasksListContextData({
       tasks,
       projects,
@@ -34,6 +31,14 @@ export function TasksListSurfaceRuntime({ children }: { children: ReactNode }) {
       contextData,
     });
   };
+}
+
+/**
+ * Publishes the list values declared by the Tasks manifest even when no task
+ * editor is open. An open editor mounts a deeper runtime and correctly wins.
+ */
+export function TasksListSurfaceRuntime({ children }: { children: ReactNode }) {
+  const getSurfaceScope = useTasksListSurfaceScope();
 
   return (
     <SurfaceRuntimeProvider
