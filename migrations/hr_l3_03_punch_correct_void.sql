@@ -49,11 +49,21 @@
 --
 -- 6. 🚨 THE EMPLOYEE IS NOTIFIED, ALWAYS, AND THE ROW IS WRITTEN EVEN WHEN THE EVENT TYPE IS NOT
 --    SEEDED YET. §4.1's ruling makes `hr.time.punch_edited` non-org-overridable: a silently edited
---    timecard is a wage claim. Verified live, `communication.notification_event_type` holds ZERO
---    `hr.time.*` rows — that vocabulary is L3-39's, another lane's. Skipping the notification until
---    it lands would make the law conditional on a seed, so the writer falls back to `["in_app"]`
---    and writes anyway. **DEBT, owner the notification-seed lane (L3-39): seed
---    `hr.time.punch_edited` with its declared channels.** `hr.punch_edit_notify_debt()` reports it.
+--    timecard is a wage claim. Skipping the notification until the vocabulary lands would make the
+--    law conditional on a seed, so the writer falls back to `in_app` and writes anyway.
+--    `hr.punch_edit_notify_debt()` reports the state.
+--
+--    🚨 **AMENDED 2026-08-26 (builder SQL-1) — THE CHANNEL SHAPE, AND WHY THIS FILE HAD TO CHANGE.**
+--    As first written this function read `default_channels` with `jsonb_array_elements_text`. Two
+--    things then happened: `hr_l10_01_notification_channel_shape.sql` made that column an OBJECT
+--    (`{"in_app":true,…}`) under a CHECK, and `hr_l3_22_notification_events.sql` seeded the 26
+--    `hr.time.*` rows. From that moment the array read raised `22023 cannot extract elements from an
+--    object` — proven live — so EVERY `hr.punch_correct` and `hr.punch_void` call failed before it
+--    could return. `hr_l10_02_notify_channel_readers.sql` repaired the LIVE body by a surgical
+--    prosrc rewrite, but **this file still carried the array read, so re-applying it re-broke the
+--    lane.** The body below now calls `hr._notify_channels(event_key, org)` — the ONE shared
+--    resolver, hr_l10_02's — and this lane keeps no second copy of it. Corrective applied live as
+--    `hr_l3_03a_punch_notify_uses_shared_resolver`.
 --
 -- 7. THIS LANE DOES NOT RECOMPUTE. `hr.work_interval` is written by the recompute engine (E-11,
 --    another lane). `punch_correct` returns the affected interval rows marked `is_stale` with the
@@ -217,18 +227,23 @@ security definer
 set search_path to 'hr', 'public'
 as $$
 declare
-  v_user uuid; v_channels jsonb; ch text; v_n integer := 0; v_payload jsonb; v_link text;
+  v_user uuid; v_channels text[]; v_basis text; ch text; v_n integer := 0;
+  v_payload jsonb; v_link text;
 begin
   select e.login_user_id into v_user
     from hr.employment em join hr.employee e on e.id = em.employee_id
    where em.id = p_employment_id;
   if v_user is null then return 0; end if;      -- nobody to reach; the punch row still records it
 
-  select t.default_channels into v_channels
-    from communication.notification_event_type t
-   where t.event_key = 'hr.time.punch_edited' and t.deleted_at is null
-   limit 1;
-  v_channels := coalesce(v_channels, '["in_app"]'::jsonb);   -- decision 6: the law is not conditional
+  -- THE ONE RESOLVER (hr_l10_02). Returns ARRAY['in_app'] for an unregistered event and '{}' when
+  -- every channel is explicitly off. This lane keeps no second copy of the shape read.
+  v_channels := hr._notify_channels('hr.time.punch_edited', p_organization_id);
+  if v_channels is null or cardinality(v_channels) = 0 then
+    -- decision 6: the law is not conditional. "No channels" cannot mean "stay silent".
+    v_channels := array['in_app']; v_basis := 'law_overrides_empty_channel_set';
+  else
+    v_basis := 'notify_channels_resolver';
+  end if;
 
   v_link := '/hr/me/timesheet?punch=' || coalesce(p_replacement_punch_id, p_voided_punch_id)::text;
   v_payload := jsonb_build_object(
@@ -237,9 +252,11 @@ begin
     'reason', p_reason,
     'changed_by_user_id', p_actor_user,
     'change', p_change,
+    'channel_basis', v_basis,
+    'org_overridable', false,
     'deep_link', v_link);
 
-  for ch in select jsonb_array_elements_text(v_channels) loop
+  foreach ch in array v_channels loop
     insert into communication.notification
       (organization_id, event_key, recipient_user_id, recipient_kind, channel, payload,
        target_kind, target_id, deep_link, dedupe_key, visibility)
@@ -263,8 +280,10 @@ as $$
     'event_key', 'hr.time.punch_edited',
     'seeded', exists (select 1 from communication.notification_event_type
                        where event_key = 'hr.time.punch_edited' and deleted_at is null),
+    'resolved_channels', to_jsonb(hr._notify_channels('hr.time.punch_edited', null)),
     'fallback_channels', '["in_app"]'::jsonb,
-    'owner', 'notification vocabulary lane (R-L3 L3-39 / SPEC-NOTIFICATIONS, D12)');
+    'resolver', 'hr._notify_channels (hr_l10_02) — this lane keeps no second copy',
+    'owner', 'event seeded by HRB-022 (l10-inbox); the punch emitter is HRB-015 lane L3');
 $$;
 
 -- -----------------------------------------------------------------------------------
