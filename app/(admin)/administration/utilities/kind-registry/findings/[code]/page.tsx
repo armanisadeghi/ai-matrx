@@ -52,7 +52,13 @@ function BodySkeleton() {
   );
 }
 
-async function FindingBody({ code }: { code: FindingCode }) {
+async function FindingBody({
+  code,
+  measuredOnBoard,
+}: {
+  code: FindingCode;
+  measuredOnBoard: boolean;
+}) {
   const payload = await gatherFindingCodePayload(code);
 
   if (code === "duplicate-skill") {
@@ -62,7 +68,13 @@ async function FindingBody({ code }: { code: FindingCode }) {
   if (payload.findings.length === 0) {
     return (
       <p className="px-4 py-6 text-sm text-muted-foreground">
-        Nothing outstanding in this class right now.
+        {measuredOnBoard
+          ? "Nothing outstanding in this class right now."
+          : // "Nothing outstanding" would flatly contradict the banner above
+            // it, which says an empty list here is not evidence of anything.
+            // An empty list for a class the board cannot observe means the
+            // board never looked — say that, not "clean".
+            "This board never looked. The class is raised only by the CLI, so this list is empty by construction and says nothing about whether the class is clean."}
       </p>
     );
   }
@@ -162,7 +174,10 @@ export default async function ShapeFindingCodePage({
       </header>
 
       <Suspense fallback={<BodySkeleton />}>
-        <FindingBody code={spec.code} />
+        <FindingBody
+          code={spec.code}
+          measuredOnBoard={spec.measuredOnBoard}
+        />
       </Suspense>
     </div>
   );

@@ -52,9 +52,16 @@
  */
 
 import React from "react";
-import { ChevronDown, ChevronRight, ExternalLink, Maximize2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Copy as CopyIcon,
+  ExternalLink,
+  Maximize2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ShortId } from "@/features/tool-call-visualization/result-fields/ShortId";
+import { useClipboard } from "@/hooks/useClipboard";
 import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { useOpenStructuredValueWindow } from "@/features/overlays/openers/structuredValueWindow";
@@ -325,6 +332,58 @@ const TemporalCell: React.FC<{
   );
 };
 
+/**
+ * Binary data carried as text (base64/hex). Truncation here needs a way back
+ * MORE than anywhere else — the cut-off characters ARE the content (LAW 3,
+ * adversarial finding A-10.1). So: honest hover (what it is + how long),
+ * expand in place, and a copy control for the FULL string, because a partial
+ * binary string is useless to every consumer.
+ */
+const BINARY_PREVIEW_CHARS = 24;
+
+const BinaryCell: React.FC<{ value: string }> = ({ value }) => {
+  const [open, setOpen] = React.useState(false);
+  const { copyText } = useClipboard();
+  const truncated = value.length > BINARY_PREVIEW_CHARS;
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1">
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          if (truncated) setOpen((v) => !v);
+        }}
+        title={
+          truncated
+            ? `Binary data carried as text — ${value.length.toLocaleString()} characters. ${open ? "Click to shorten." : "Click to see all of it."}`
+            : "Binary data, carried as text."
+        }
+        className={cn(
+          "min-w-0 text-left font-mono text-xs text-muted-foreground",
+          truncated && "cursor-pointer hover:text-foreground",
+          open ? "break-all" : "truncate",
+        )}
+      >
+        {open || !truncated ? value : `${value.slice(0, BINARY_PREVIEW_CHARS)}…`}
+      </button>
+      {truncated && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            void copyText(value, "Binary value copied — all of it");
+          }}
+          title="Copy the whole value — a cut-off binary string is useless"
+          aria-label="Copy the whole binary value"
+          className="shrink-0 rounded p-0.5 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <CopyIcon className="h-3 w-3" />
+        </button>
+      )}
+    </span>
+  );
+};
+
 /** A long string clamps to two lines and expands in place — nothing is hidden. */
 const LONG_CELL_CHARS = 90;
 
@@ -475,14 +534,7 @@ export const DataCell: React.FC<{
     );
   }
   if (type === "binary" && typeof value === "string") {
-    return (
-      <span
-        className="font-mono text-xs text-muted-foreground"
-        title="Binary data, carried as text."
-      >
-        {value.length > 24 ? `${value.slice(0, 24)}…` : value}
-      </span>
-    );
+    return <BinaryCell value={value} />;
   }
   if ((type === "json" || type === "array") && typeof value === "object") {
     return <NestedCell value={value} label={label} origin={origin} />;
