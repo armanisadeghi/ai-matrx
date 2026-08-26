@@ -12,11 +12,16 @@
  * silently never gets exported.
  *
  * `failure` is reserved for a genuine transport failure. A denial is never one.
+ *
+ * 🚨 THE EMPLOYER COMES FROM `useHrContext`, NOT FROM THE REDUX ACTIVE ORG. Every other feature in
+ * this app scopes to the user's selected organization; HR does not. SPEC-UI-IA §1 resolves the
+ * active employer from `?org=` FIRST, and HR is strictly single-employer — so reading the Redux
+ * selection would show one employer's payroll exports on a page the user opened for another.
+ * That is not a scoping bug, it is two employers' pay data merged on one screen.
  */
 
 import { useEffect, useState } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { listPayrollExports } from "../service";
 import { toExportFailure, type ExportFailure } from "../errors";
@@ -26,8 +31,12 @@ export interface UseExportHistoryResult {
   result: PayrollExportListResult | null;
   isLoading: boolean;
   failure: ExportFailure | null;
-  /** True while no organization has been selected — the read cannot be scoped yet. */
+  /** True while no employer is resolved — the read cannot be scoped yet. */
   awaitingOrganization: boolean;
+  /** The resolved employer, for callers that need it in a request body or an href. */
+  organizationId: string | null;
+  /** The `?org=` reference (slug or uuid) to carry on outgoing HR links. */
+  orgRef: string | null;
   reload: () => void;
 }
 
@@ -35,7 +44,8 @@ export function useExportHistory(
   payPeriodId: string | null,
   options?: { limit?: number; mockCase?: HrFixtureCase },
 ): UseExportHistoryResult {
-  const organizationId = useAppSelector(selectOrganizationId);
+  const hr = useHrContext();
+  const organizationId = hr.active?.organization_id ?? null;
   const limit = options?.limit;
   const mockCase = options?.mockCase;
 
@@ -72,9 +82,13 @@ export function useExportHistory(
 
   return {
     result,
-    isLoading: organizationId ? isLoading : false,
+    // Still RESOLVING the employer is loading; resolved-to-nothing is a state the surface renders
+    // (pick an employer), never a spinner that never ends.
+    isLoading: organizationId ? isLoading : hr.isLoading,
     failure,
-    awaitingOrganization: !organizationId,
+    awaitingOrganization: !organizationId && !hr.isLoading,
+    organizationId,
+    orgRef: hr.orgRef,
     reload: () => setReloadToken((token) => token + 1),
   };
 }

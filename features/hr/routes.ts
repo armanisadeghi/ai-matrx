@@ -216,6 +216,14 @@ export function hrCandidateHref(candidateId: string, org?: HrOrgRef): string {
 export function hrTimeHref(org?: HrOrgRef): string {
   return hrUrl("/hr/time", org);
 }
+/** Route 32 — the pay-period state machine per pay group, plus export history. */
+export function hrPayPeriodsHref(org?: HrOrgRef): string {
+  return hrUrl("/hr/time/periods", org);
+}
+/** Route 33 — one pay period: approval progress and its export runs. */
+export function hrPayPeriodHref(periodId: string, org?: HrOrgRef): string {
+  return hrUrl(`/hr/time/periods/${periodId}`, org);
+}
 export function hrScheduleHref(org?: HrOrgRef): string {
   return hrUrl("/hr/schedule", org);
 }

@@ -10,13 +10,24 @@
  * an inert grey span: the promise is declared, countable, and reviewable, and the user gets a real
  * answer instead of a click that does nothing.
  *
+ * 🚨 WHY AN EMPLOYMENT DOES **NOT** USE `hrEmployeeHref`, EVEN THOUGH THAT BUILDER EXISTS.
+ * Two reasons, either one sufficient. First, `/hr/people/[employeeId]` has no page file — linking
+ * there is a 404, which is a worse dead end than a declared promise. Second and more important:
+ * an EMPLOYMENT is not an EMPLOYEE. `details.unmapped[].employment_id` is an employment row; one
+ * person can hold several over time, and several at once. Feeding an employment id to a route
+ * that expects an employee id is the "a wrong door opens a DIFFERENT record" failure — the exact
+ * mistake `MatrxColumnDef.fk.token` warns about — and on a payroll screen it would show the wrong
+ * person's pay setup. When an employment surface exists, this door points at it and the registered
+ * promise is deleted.
+ *
  * The id is shown in short form with the full value in the title, because a payroll administrator
- * chasing an unmapped employee needs the actual UUID to hand to whoever can fix it.
+ * chasing an unmapped employment needs the actual UUID to hand to whoever can fix it.
  */
 
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
+import { hrPayPeriodHref } from "@/features/hr/routes";
 import { cn } from "@/lib/utils";
 
 /** Which registered promise a not-yet-built identity opens. */
@@ -58,19 +69,30 @@ export function HrIdentityDoor({
   );
 }
 
-/** The pay period DOES have a route (row 32/33), so it gets a real link, not a promise. */
+/**
+ * The pay period DOES have a route (rows 32/33), so it gets a real link, not a promise.
+ *
+ * 🚨 THE HREF IS BUILT BY `hrPayPeriodHref`, NEVER BY A TEMPLATE LITERAL HERE. HR is strictly
+ * single-employer and resolves the active employer from `?org=` BEFORE the user's active-org
+ * selection, so a hand-assembled URL that drops the param silently lands the reader in a
+ * different employer's period — merging two employers' pay data, which is a compliance defect
+ * rather than a cosmetic one. `features/hr/routes.ts` is the one place that cannot forget.
+ */
 export function PayPeriodDoor({
   payPeriodId,
+  orgRef,
   label,
   className,
 }: {
   payPeriodId: string;
+  /** The employer this row belongs to — a slug or a uuid, carried straight through. */
+  orgRef?: string | null;
   label?: string;
   className?: string;
 }) {
   return (
     <Link
-      href={`/hr/time/periods/${payPeriodId}`}
+      href={hrPayPeriodHref(payPeriodId, orgRef)}
       title={payPeriodId}
       className={cn(DOOR_CLASS, className)}
     >
