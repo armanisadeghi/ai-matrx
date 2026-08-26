@@ -1,3 +1,5 @@
+/** @jest-environment node */
+
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
     auth: {
@@ -30,15 +32,18 @@ describe("python-client getJson transient recovery", () => {
   });
 
   it("retries one browser transport rejection and captures nothing after recovery", async () => {
-    const fetchMock = jest.fn() as jest.MockedFunction<typeof fetch>;
+    const fetchMock = jest.fn<
+      ReturnType<typeof fetch>,
+      Parameters<typeof fetch>
+    >();
     fetchMock
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => null },
-        json: async () => ({ ok: true }),
-      } as unknown as Response);
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
     global.fetch = fetchMock;
 
     await expect(
@@ -52,7 +57,10 @@ describe("python-client getJson transient recovery", () => {
   });
 
   it("captures only the final failure after the bounded retry", async () => {
-    const fetchMock = jest.fn() as jest.MockedFunction<typeof fetch>;
+    const fetchMock = jest.fn<
+      ReturnType<typeof fetch>,
+      Parameters<typeof fetch>
+    >();
     global.fetch = fetchMock.mockRejectedValue(
       new TypeError("Failed to fetch"),
     );
