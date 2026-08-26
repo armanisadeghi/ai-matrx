@@ -49,7 +49,7 @@ export interface ResolvedMandate {
   mandateId: string;
   agentId: string;
   configOverrides: Partial<FeLlmParams> | null;
-  provenance: "system" | "user";
+  provenance: "system" | "org" | "user";
   /**
    * The Mandate's declared IO contract. `requiredVariables` is an INPUT
    * PRECONDITION on the caller, not only a bind-time check on the agent: a run
@@ -142,10 +142,47 @@ export async function resolveMandate(
   let provenance: ResolvedMandate["provenance"] = "system";
   let configOverrides: Partial<FeLlmParams> | null = null;
 
-  // The caller's own user binding (RLS-scoped; other principals' rows are
-  // invisible so no explicit user filter is needed beyond principal_type).
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth.user?.id;
+
+  // THE ORG LAYER (2026-08-26 — closed a doctrine fork). The server resolves
+  // system → org → user; this resolver silently skipped org, so an org
+  // binding never applied to client-resolved mandates and every "what applies
+  // to you" display over this path lied. RLS already scopes the read to org
+  // bindings of orgs the caller belongs to. Deterministic winner: newest.
+  if (userId) {
+    const { data: orgBindings, error: orgError } = await supabase
+      .schema("agent")
+      .from("mandate_binding")
+      .select(
+        "agent_id, agent_version_id, use_latest, config_overrides, is_enabled, updated_at",
+      )
+      .eq("mandate_id", mandate.id)
+      .eq("principal_type", "org")
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: false })
+      .limit(5);
+    if (orgError) throw orgError;
+    const orgBinding = (orgBindings ?? []).find((b) => b.is_enabled) ?? null;
+    if (orgBinding) {
+      if (isJsonObject(orgBinding.config_overrides)) {
+        configOverrides = toLlmParams(orgBinding.config_overrides);
+      }
+      if (orgBinding.agent_version_id) {
+        throw new Error(
+          `mandate "${mandateKey}": an organization binding is version-pinned — client-run mandates must be floating; update the binding`,
+        );
+      }
+      if (orgBinding.agent_id) {
+        agentId = orgBinding.agent_id;
+        provenance = "org";
+      }
+    }
+  }
+
+  // The caller's own user binding (RLS-scoped; other principals' rows are
+  // invisible so no explicit user filter is needed beyond principal_type).
+  // User wins over org — the same precedence the server walks.
   if (userId) {
     const { data: binding, error: bindingError } = await supabase
       .schema("agent")
@@ -161,7 +198,11 @@ export async function resolveMandate(
     if (bindingError) throw bindingError;
     if (binding?.is_enabled) {
       if (isJsonObject(binding.config_overrides)) {
-        configOverrides = toLlmParams(binding.config_overrides);
+        // Merge upward — user wins per key over the org layer (server rule).
+        configOverrides = {
+          ...configOverrides,
+          ...toLlmParams(binding.config_overrides),
+        };
       }
       if (binding.agent_version_id) {
         throw new Error(
