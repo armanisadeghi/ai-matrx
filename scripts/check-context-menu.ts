@@ -201,12 +201,23 @@ function gradeMenu(src: string): string {
     if (present || waived.has(slot)) return;
     parts.push(`no ${slot}`);
   };
+  // THE PLUMBING — without these the menu opens and every verb is dark.
   need("surfaceName", has(/surfaceName[=:]/));
   need("contentSource", has(/contentSource[=:]/));
   need("entity", has(/entity[=:]|CONTEXT_MENU_ENTITY_KEY/));
-  need("extraSections", has(/extraSections[=:]/));
-  if (parts.length === 0) return waived.size ? "wired (with waivers)" : "wired";
-  return `shell — ${parts.join(", ")}`;
+
+  // `extraSections` is DOMAIN GARNISH, not plumbing. A surface with no
+  // genuine page-local action beyond what its own toolbar already exposes is
+  // CORRECT to omit it — and grading that as a shell pushes agents to invent a
+  // menu item purely to satisfy the counter, which is padding, not coverage.
+  // So it is reported, never counted as a shell.
+  const noExtras = !has(/extraSections[=:]/) && !waived.has("extraSections");
+
+  if (parts.length > 0) return `shell — ${parts.join(", ")}`;
+  const notes: string[] = [];
+  if (noExtras) notes.push("no extraSections");
+  if (waived.size) notes.push("waivers");
+  return notes.length ? `wired (${notes.join(", ")})` : "wired";
 }
 
 /**
@@ -420,7 +431,7 @@ function report(findings: Finding[], covered: Finding[]) {
     console.log("");
   }
 
-  const shells = covered.filter((c) => c.grade && c.grade !== "wired");
+  const shells = covered.filter((c) => c.grade?.startsWith("shell"));
   if (shells.length) {
     console.log(`── menus that exist but are SHELLS (${shells.length})`);
     console.log("   Wrapping a div is cheap; these pass the wrapper test and fail the job.\n");
