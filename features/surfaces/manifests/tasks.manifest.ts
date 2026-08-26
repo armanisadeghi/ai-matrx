@@ -113,7 +113,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_task",
     label: "Active task",
     description:
-      "The composite active-task object: { id, title, description, status, priority, due_date, labels, assignee_id, project_id, project_name, created_at }. Mirrors the individual active-task values as one group value (completeness law). Empty when no task is selected.",
+      "The composite active-task object: { id, title, description, status, lifecycle_status, priority, due_date, labels, assignee_id, project_id, project_name, created_at }. Mirrors the individual active-task values as one group value (completeness law). Empty when no task is selected.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 1800,
@@ -177,6 +177,17 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 10,
     sortOrder: 350,
+    group: "task_meta",
+  },
+  {
+    name: "active_task_lifecycle_status",
+    label: "Active task lifecycle status",
+    description:
+      'Current editor draft lifecycle status: "inbox", "planned", "active", "completed", "cancelled", or "dismissed". Empty when no task is selected.',
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 10,
+    sortOrder: 352,
     group: "task_meta",
   },
   {
@@ -372,7 +383,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     description:
       "Stages a lifecycle status into the draft. One of: inbox | planned | active | completed | cancelled | dismissed. The user still saves.",
     valueType: "string",
-    updatesValue: "active_task_status",
+    updatesValue: "active_task_lifecycle_status",
     mode: "draft",
     applyPolicy: "ask",
     group: "task_meta",
@@ -428,12 +439,14 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const tasksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/tasks",
-  readiness: "verified",
+  readiness: "partial",
+  readinessNote:
+    "Static S1-S18 repair is complete; independent desktop/mobile and light/dark browser certification is pending",
   label: "Tasks",
   urlPattern: "/tasks",
   intro: `<surface_intro>
 You are on the Tasks surface: the user's task editor and to-do lists. The primary mount is the single-task editor — the active_task_* values, subtasks, and comments describe the ONE task the user has open, and the baselines (content/selection/context) come from its description editor: content is the live description draft, selection is the user's highlighted text within it.
-Description edits you propose act on the live draft the user sees. Status uses the surface vocabulary completed/pending/overdue (derived from the record's lifecycle status + due date).
+Description edits you propose act on the live draft the user sees. active_task_status is the derived attention state completed/pending/overdue; active_task_lifecycle_status is the exact editable lifecycle draft and is the read-twin for task_status writes.
 List-level values (task_list, project_list, task_count, search_query) only appear on list mounts — when absent, you are on a single task and must not assume anything about the surrounding list.
 </surface_intro>`,
   groups,
@@ -470,6 +483,7 @@ export function createTasksScope(values: {
   subtask_count?: number;
   completed_subtask_count?: number;
   active_task_status?: string;
+  active_task_lifecycle_status?: string;
   active_task_priority?: string;
   active_task_due_date?: string;
   active_task_labels?: string[];

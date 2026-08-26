@@ -201,10 +201,16 @@ export default function TasksContextSidebar() {
       "All Projects");
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-card">
+    <div
+      className="flex flex-col h-full min-h-0 bg-card"
+      data-surface-value="project_list"
+    >
       {/* Search — page title lives in the shell header (PageHeader) */}
       <div className="shrink-0 px-2 pt-2 pb-1">
-        <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md border border-border/30">
+        <div
+          className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md border border-border/30"
+          data-surface-value="search_query"
+        >
           <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           <input
             type="text"
@@ -216,8 +222,10 @@ export default function TasksContextSidebar() {
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={() => dispatch(setSearchQuery(""))}
               className="text-muted-foreground hover:text-foreground"
+              aria-label="Clear task search"
             >
               <X className="w-3 h-3" />
             </button>
@@ -399,9 +407,7 @@ export default function TasksContextSidebar() {
         {scopeTypesOrdered.map((type) => {
           const Icon = resolveIcon(type.icon);
           const opts = scopesByType.get(type.id) ?? [];
-          const selectedOfType = opts.filter((s) =>
-            selectedScopeIds.has(s.id),
-          );
+          const selectedOfType = opts.filter((s) => selectedScopeIds.has(s.id));
           const typeBelongsToActiveOrg =
             !orgId || type.organization_id === orgId;
 
@@ -423,9 +429,7 @@ export default function TasksContextSidebar() {
                 selectedOfType.length > 0 ? (
                   <button
                     type="button"
-                    onClick={() =>
-                      clearScopesOfType(opts.map((s) => s.id))
-                    }
+                    onClick={() => clearScopesOfType(opts.map((s) => s.id))}
                     className="shrink-0 p-0.5 opacity-50 hover:opacity-100"
                     title={`Show all ${type.label_plural.toLowerCase()}`}
                   >

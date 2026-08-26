@@ -142,6 +142,7 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
 
 ## Change log
 
+- `2026-08-25` — `/tasks` now mounts a list-level surface runtime and v3 context menu, so the declared visible-task/project/count/search values exist even before an editor opens. The status write target now reads back through an exact live lifecycle draft twin while preserving the separate derived attention status. The route has a geometry-matched loading skeleton; task/project names in the row list are canonical doors; desktop list actions use official buttons; mobile actions preserve 44px touch targets; and date-only row labels no longer shift through UTC parsing. Independent browser certification is pending.
 - `2026-08-25` — Mobile `/tasks` reached lifecycle parity: its overflow renders the canonical smart-view registry and counts, task details reuse Status / Start date / Repeat / Snooze / provenance controls, selected details survive view-changing edits, all new touch targets are 44px, and date-only list labels use `formatDateOnly` instead of UTC parsing.
 - `2026-08-24` — `container_resource_counts` now compares against each registered container column's physical type; `canvas.canvas_items.task_id` can remain text without aborting task inventory with `42883 text = uuid`.
 - `2026-08-24` — Task assignee selection now exposes the canonical advanced user-search window while preserving the compact inline connection filter.

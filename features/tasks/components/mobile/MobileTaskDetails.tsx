@@ -527,7 +527,8 @@ export default function MobileTaskDetails({
                     size="icon"
                     variant="ghost"
                     onClick={() => handleDeleteSubtask(subtask.id)}
-                    className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-11 w-11 rounded-full opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                    aria-label={`Delete subtask ${subtask.title}`}
                   >
                     <X size={14} />
                   </Button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -48,6 +48,9 @@ import TasksTableView from "@/features/tasks/components/TasksTableView";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { Button } from "@/components/ui/button";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { formatDateOnly } from "@/utils/dateOnly";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   buildTaskListPayload,
@@ -138,13 +141,16 @@ export default function TaskListPane() {
     return next;
   }, [groups, activeGroupKey]);
 
-  const [collapsedOverride, setCollapsedOverride] = useState<Set<string>>();
+  const collapseStateKey = `${selectedTaskId ?? "none"}:${groupBy}`;
+  const [collapsedOverride, setCollapsedOverride] = useState<{
+    key: string;
+    groups: Set<string>;
+  }>();
 
-  useEffect(() => {
-    setCollapsedOverride(undefined);
-  }, [selectedTaskId, groupBy]);
-
-  const collapsed = collapsedOverride ?? defaultCollapsed;
+  const collapsed =
+    collapsedOverride?.key === collapseStateKey
+      ? collapsedOverride.groups
+      : defaultCollapsed;
 
   const totalCount = groups.reduce((sum, g) => sum + g.tasks.length, 0);
 
@@ -194,11 +200,12 @@ export default function TaskListPane() {
 
   const toggleGroup = (key: string) => {
     setCollapsedOverride((prev) => {
-      const base = prev ?? defaultCollapsed;
+      const base =
+        prev?.key === collapseStateKey ? prev.groups : defaultCollapsed;
       const next = new Set(base);
       if (next.has(key)) next.delete(key);
       else next.add(key);
-      return next;
+      return { key: collapseStateKey, groups: next };
     });
   };
 
@@ -206,36 +213,45 @@ export default function TaskListPane() {
     <div className="flex flex-col h-full min-h-0 bg-background">
       {/* Quick-add — title moved to the shell header (PageHeader). */}
       <div className="shrink-0 px-2 py-2 border-b border-border/40 bg-muted/20 flex items-center gap-2">
-        <span className="text-[11px] text-muted-foreground tabular-nums shrink-0 pl-1">
+        <span
+          className="text-[11px] text-muted-foreground tabular-nums shrink-0 pl-1"
+          data-surface-value="task_count"
+        >
           {totalCount}
         </span>
         <div className="flex items-center rounded-md border border-border p-0.5 shrink-0">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => setView("rows")}
             className={cn(
-              "h-6 w-6 rounded flex items-center justify-center transition-colors",
+              "h-7 w-7 rounded",
               !isTableView
                 ? "bg-accent text-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )}
             title="List view"
+            aria-label="List view"
           >
             <List className="h-3.5 w-3.5" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => setView("table")}
             className={cn(
-              "h-6 w-6 rounded flex items-center justify-center transition-colors",
+              "h-7 w-7 rounded",
               isTableView
                 ? "bg-accent text-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )}
             title="Table view"
+            aria-label="Table view"
           >
             <LayoutGrid className="h-3.5 w-3.5" />
-          </button>
+          </Button>
         </div>
         <div className="flex gap-1 flex-1 min-w-0">
           <ProInput
@@ -433,33 +449,40 @@ function TaskRow({
         agent={() => buildTaskRowPayload({ task, kpis, view })}
       />
 
-      <button
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
         onClick={(e) => {
           e.stopPropagation();
           onToggle();
         }}
-        className="mt-0.5 text-muted-foreground/70 hover:text-primary transition-colors shrink-0"
+        className="mt-0.5 h-7 w-7 text-muted-foreground/70 hover:text-primary shrink-0"
         title={task.completed ? "Mark incomplete" : "Mark complete"}
+        aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
       >
         {task.completed ? (
           <CheckCircle2 className="w-3.5 h-3.5 text-success" />
         ) : (
           <CircleDashed className="w-3.5 h-3.5" />
         )}
-      </button>
+      </Button>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-1.5">
-          <span
-            className={cn(
-              "flex-1 text-[13px] leading-tight truncate",
+          <EntityRef
+            token="task"
+            id={task.id}
+            name={task.title}
+            showIcon={false}
+            onOpen={onSelect}
+            className="flex-1 min-w-0 text-[13px] leading-tight"
+            labelClassName={
               task.completed
                 ? "line-through text-muted-foreground"
-                : "text-foreground font-medium",
-            )}
-          >
-            {task.title}
-          </span>
+                : "text-foreground font-medium"
+            }
+          />
           {task.priority && (
             <span
               className={cn(
@@ -473,7 +496,15 @@ function TaskRow({
           )}
         </div>
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground/80 mt-0.5">
-          {task.projectName && (
+          {task.projectName && task.projectId !== "__unassigned__" && (
+            <EntityRef
+              token="project"
+              id={task.projectId}
+              name={task.projectName}
+              className="max-w-[120px] text-[10px]"
+            />
+          )}
+          {task.projectName && task.projectId === "__unassigned__" && (
             <span className="flex items-center gap-0.5 truncate max-w-[120px]">
               <Folder className="w-2.5 h-2.5" />
               <span className="truncate">{task.projectName}</span>
@@ -487,7 +518,7 @@ function TaskRow({
               )}
             >
               <Calendar className="w-2.5 h-2.5" />
-              {new Date(task.dueDate).toLocaleDateString("en-US", {
+              {formatDateOnly(task.dueDate, {
                 month: "short",
                 day: "numeric",
               })}

@@ -5,6 +5,7 @@ import { createTasksScope } from "@/features/surfaces/manifests/tasks.manifest";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { formatEditorSurroundContext } from "@/utils/format-editor-surround-context";
 import { isClosedStatus } from "@/features/tasks/constants/status";
+import type { Project, TaskWithProject } from "@/features/tasks/types";
 
 /** Placements for the task editor (target wiring with surfaceName). */
 export const TASKS_CONTEXT_MENU_PLACEMENTS = [
@@ -176,6 +177,7 @@ export function buildTasksContextData(
         title: title || undefined,
         description: text || undefined,
         status: surfaceStatus || undefined,
+        lifecycle_status: status || undefined,
         priority: priority || undefined,
         due_date: dueDate || undefined,
         labels,
@@ -208,6 +210,7 @@ export function buildTasksContextData(
     // ── Task metadata ────────────────────────────────────────────────────
     active_task_priority: priority || undefined,
     active_task_status: surfaceStatus || undefined,
+    active_task_lifecycle_status: status || undefined,
     active_task_due_date: dueDate || undefined,
     active_task_labels: taskOpen ? labels : undefined,
     active_task_assignee_id: assigneeId || undefined,
@@ -222,6 +225,33 @@ export function buildTasksContextData(
   });
 
   return scope as Record<string, unknown>;
+}
+
+/** Canonical list-level scope for the `/tasks` workspace mount. */
+export function buildTasksListContextData(args: {
+  tasks: TaskWithProject[];
+  projects: Project[];
+  searchQuery: string;
+}): Record<string, unknown> {
+  const taskList = args.tasks.map((task) => ({
+    id: task.id,
+    title: task.title,
+    status: task.status,
+    priority: task.priority ?? undefined,
+    due_date: task.dueDate || undefined,
+  }));
+  const projectList = args.projects.map((project) => ({
+    id: project.id,
+    name: project.name,
+    task_count: project.tasks.length,
+  }));
+
+  return createTasksScope({
+    task_list: taskList,
+    project_list: projectList,
+    task_count: taskList.length,
+    search_query: args.searchQuery || undefined,
+  }) as Record<string, unknown>;
 }
 
 /**
@@ -250,9 +280,7 @@ export function createTasksExtraSections(handlers?: {
           icon: Save,
           hint: "⌘S",
           onSelect: () =>
-            handlers?.onSave
-              ? handlers.onSave()
-              : toast.success("Save task"),
+            handlers?.onSave ? handlers.onSave() : toast.success("Save task"),
         },
         {
           kind: "item",
@@ -262,7 +290,9 @@ export function createTasksExtraSections(handlers?: {
           onSelect: () =>
             handlers?.onToggleComplete
               ? handlers.onToggleComplete()
-              : toast.success(completed ? "Marked incomplete" : "Marked complete"),
+              : toast.success(
+                  completed ? "Marked incomplete" : "Marked complete",
+                ),
         },
         { kind: "separator", id: "sep" },
         {

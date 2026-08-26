@@ -143,7 +143,6 @@ export function TaskEditorBody({
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoadingComments(true);
     taskService.getTaskComments(taskId).then((data) => {
       if (cancelled) return;
       setComments(data);
@@ -207,7 +206,7 @@ export function TaskEditorBody({
     description: effective.description,
     selectionStart: descSelectionStart,
     selectionEnd: descSelectionEnd,
-    status: task.status,
+    status: effective.status,
     priority: effective.priority ?? null,
     dueDate: effective.dueDate ?? null,
     projectId: task.project_id ?? null,
@@ -354,7 +353,10 @@ export function TaskEditorBody({
       patch("priority", value);
     },
     task_due_date: (value: unknown) => {
-      if (value !== null && (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)))
+      if (
+        value !== null &&
+        (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+      )
         throw new Error(
           "task_due_date expects a YYYY-MM-DD string, or null to clear.",
         );
@@ -407,7 +409,7 @@ export function TaskEditorBody({
           {/* Quick meta pills — at-a-glance task vitals, moved out of the
             compact title row so the row stays single-line. */}
           {/* Always rendered — the snooze control lives here. */}
-          {(
+          {
             <div className="flex items-center gap-1.5 flex-wrap -mt-1">
               <TaskProvenanceChip
                 origin={task.origin ?? null}
@@ -446,7 +448,7 @@ export function TaskEditorBody({
                 </span>
               )}
             </div>
-          )}
+          }
           {/* Core properties — compact tiles: thin inline rows; full editor: grouped card */}
           <section
             className={cn(
@@ -455,7 +457,12 @@ export function TaskEditorBody({
                 : "overflow-hidden rounded-xl border border-border/60 bg-card/40",
             )}
           >
-            <PropertyRow icon={CircleDot} label="Status" first compact={compact}>
+            <PropertyRow
+              icon={CircleDot}
+              label="Status"
+              first
+              compact={compact}
+            >
               <TaskStatusPicker
                 variant={compact ? "pill" : "segmented"}
                 value={effective.status}
@@ -463,11 +470,7 @@ export function TaskEditorBody({
               />
             </PropertyRow>
 
-            <PropertyRow
-              icon={UserIcon}
-              label="Assignee"
-              compact={compact}
-            >
+            <PropertyRow icon={UserIcon} label="Assignee" compact={compact}>
               <TaskAssigneePicker
                 assigneeId={effective.assigneeId ?? null}
                 onChange={(id) => patch("assignee_id", id)}
@@ -504,11 +507,7 @@ export function TaskEditorBody({
               />
             </PropertyRow>
 
-            <PropertyRow
-              icon={Calendar}
-              label="Due date"
-              compact={compact}
-            >
+            <PropertyRow icon={Calendar} label="Due date" compact={compact}>
               <TaskDueDatePicker
                 variant={compact ? "pill" : "field"}
                 value={effective.dueDate ?? null}
@@ -731,7 +730,8 @@ export function TaskEditorBody({
           <section>
             {isLoadingComments ? (
               <div className="flex items-center gap-2 py-2 pl-1.5 text-xs text-muted-foreground">
-                <Loader2 className="size-3 animate-spin" /> Loading...
+                <Loader2 className="size-3 animate-spin" /> Loading task
+                comments…
               </div>
             ) : comments.length > 0 ? (
               // Presentational region — right-click the read-only comment

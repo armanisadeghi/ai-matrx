@@ -98,7 +98,10 @@ export default function MobileTasksList({
     : "All Tasks";
 
   return (
-    <div className="h-full flex flex-col bg-background overflow-hidden">
+    <div
+      className="h-full flex flex-col bg-background overflow-hidden"
+      data-surface-value="task_list"
+    >
       {/* Header */}
       <div className="flex-shrink-0 border-b border-border bg-card">
         {/* Title Bar */}
@@ -122,7 +125,7 @@ export default function MobileTasksList({
 
         {/* Search Bar */}
         <div className="px-4 pb-2">
-          <div className="relative">
+          <div className="relative" data-surface-value="search_query">
             <Search
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
               size={16}
@@ -137,8 +140,10 @@ export default function MobileTasksList({
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => dispatch(setSearchQuery(""))}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-1 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
+                aria-label="Clear task search"
               >
                 <X size={16} />
               </button>
@@ -258,16 +263,21 @@ export default function MobileTasksList({
                   className="flex items-center gap-3 p-4 active:bg-muted/50 transition-colors cursor-pointer"
                 >
                   {/* Checkbox */}
-                  <div
+                  <button
+                    type="button"
                     onClick={(e) =>
                       handleTaskToggle(task.projectId, task.id, e)
+                    }
+                    className="flex min-h-11 min-w-11 items-center justify-center"
+                    aria-label={
+                      task.completed ? "Mark incomplete" : "Mark complete"
                     }
                   >
                     <Checkbox
                       checked={task.completed}
                       className="pointer-events-none"
                     />
-                  </div>
+                  </button>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">

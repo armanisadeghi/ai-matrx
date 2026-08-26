@@ -27,7 +27,7 @@ export default function MobileTasksView() {
   };
 
   return (
-    <div className="h-full w-full bg-background overflow-hidden relative touch-pan-y">
+    <div className="matrx-touch-targets h-full w-full bg-background overflow-hidden relative touch-pan-y">
       {/* Tasks List View */}
       <div
         className={`absolute inset-0 transition-transform duration-300 ease-in-out overflow-hidden ${

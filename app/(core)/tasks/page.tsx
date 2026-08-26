@@ -11,6 +11,7 @@ import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 import { TasksHeaderControls } from "@/features/tasks/components/TasksHeaderControls";
 import { TasksDesktopShell } from "@/features/tasks/components/TasksDesktopShell";
 import { TaskUrlSync } from "@/features/tasks/components/TaskUrlSync";
+import { TasksListSurfaceRuntime } from "@/features/tasks/components/TasksListSurfaceRuntime";
 import TasksLanding from "@/features/auth/components/module-landing/landings/TasksLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
@@ -27,16 +28,18 @@ export default async function TasksPage() {
 
   return (
     <PanelControlProvider>
-      <PageHeader>
-        <TasksHeaderControls />
-      </PageHeader>
-      <TaskUrlSync />
-      <div className="h-full overflow-hidden">
-        <TasksDesktopShell
-          defaultLayout={defaultLayout}
-          cookieName={COOKIE_NAME}
-        />
-      </div>
+      <TasksListSurfaceRuntime>
+        <PageHeader>
+          <TasksHeaderControls />
+        </PageHeader>
+        <TaskUrlSync />
+        <div className="h-full overflow-hidden" data-surface-value="task_list">
+          <TasksDesktopShell
+            defaultLayout={defaultLayout}
+            cookieName={COOKIE_NAME}
+          />
+        </div>
+      </TasksListSurfaceRuntime>
     </PanelControlProvider>
   );
 }
