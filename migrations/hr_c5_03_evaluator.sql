@@ -174,7 +174,7 @@ begin
       v_h := (v_day->>'hours')::numeric;
       v_tot_hours := v_tot_hours + v_h;
 
-      if v_seventh is not null and (v_day->>'consecutive_day_index')::integer = 7 then
+      if v_seventh is not null and coalesce((v_day->>'consecutive_day_index')::integer, 0) = 7 then
         -- the 7th-consecutive-day regime replaces the ordinary daily legs for that day
         v_ot := v_ot + least(v_h, (v_seventh->>'first_hours')::numeric);
         v_dt := v_dt + greatest(v_h - (v_seventh->>'first_hours')::numeric, 0);
@@ -220,10 +220,6 @@ begin
          where (p_input->>'workweek_end_date')::date between (x->>'from')::date and (x->>'to')::date
          limit 1));
     end if;
-
-  -- ==================================================================== DST ELAPSED
-  elsif p_kind = 'overtime-elapsed' then
-    null;
 
   -- ==================================================================== BREAK PREMIUM
   elsif p_kind = 'break-premium' then
@@ -442,10 +438,10 @@ begin
                          || 'repeated. No assignment was created. Check your state''s requirement.',
                             v_r->>'jurisdiction_key', v_p->>'program')));
       else
-        v_due := coalesce((p_input->>'event_date')::date, p_as_of)
-                 + make_interval(months => coalesce((v_p->>'initial_due_within_months')::integer,
-                                                    (v_p->>'cadence_months')::integer));
-        v_next := v_due + make_interval(months => (v_p->>'cadence_months')::integer);
+        v_due := (coalesce((p_input->>'event_date')::date, p_as_of)
+                  + make_interval(months => coalesce((v_p->>'initial_due_within_months')::integer,
+                                                     (v_p->>'cadence_months')::integer)))::date;
+        v_next := (v_due + make_interval(months => (v_p->>'cadence_months')::integer))::date;
         v_assign := v_assign || jsonb_build_array(jsonb_build_object(
           'jurisdiction_key', v_r->>'jurisdiction_key', 'rule_id', v_r->>'rule_id',
           'program', v_p->>'program',
@@ -470,19 +466,19 @@ begin
       v_result := jsonb_build_object('due_date', null,
         'basis','no retention rule for this record class; ABSENCE NEVER AUTHORIZES DESTRUCTION');
     elsif (v_p->>'rule') = 'later_of' then
-      select max(case x->>'trigger'
-                   when 'hire_date' then (p_input->>'hire_date')::date
-                   when 'termination_date' then (p_input->>'termination_date')::date
-                   else null end + make_interval(years => (x->>'years')::integer))
+      select max((case x->>'trigger'
+                    when 'hire_date' then (p_input->>'hire_date')::date
+                    when 'termination_date' then (p_input->>'termination_date')::date
+                    else null end + make_interval(years => (x->>'years')::integer))::date)
         into v_due from jsonb_array_elements(v_p->'terms') x;
       v_result := jsonb_build_object('due_date', v_due, 'rule','later_of',
                                      'storage', v_p->>'storage');
     else
-      v_due := (case v_p->>'trigger'
-                  when 'hire_date' then (p_input->>'hire_date')::date
-                  when 'termination_date' then (p_input->>'termination_date')::date
-                  else coalesce((p_input->>'record_created')::date, p_as_of) end)
-               + make_interval(years => (v_p->>'years')::integer);
+      v_due := ((case v_p->>'trigger'
+                   when 'hire_date' then (p_input->>'hire_date')::date
+                   when 'termination_date' then (p_input->>'termination_date')::date
+                   else coalesce((p_input->>'record_created')::date, p_as_of) end)
+                + make_interval(years => (v_p->>'years')::integer))::date;
       v_result := jsonb_build_object('due_date', v_due, 'rule','single_term');
     end if;
 
