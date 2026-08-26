@@ -45,6 +45,7 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
 import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
 import { MandateOverridePanel } from "@/features/agents/mandates/components/MandateOverridePanel";
+import { MandateNotesPanel } from "@/features/agents/mandates/components/MandateNotesPanel";
 import { MandateResolutionRibbon } from "@/features/agents/mandates/components/MandateResolutionRibbon";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
@@ -1471,6 +1472,11 @@ export function MandateDetailView({
   );
   const [testOpen, setTestOpen] = useState(row.health === "version drift");
   const [overridesOpen, setOverridesOpen] = useState(false);
+  // REVIEW TIME. Notes are written in the second something is noticed (from the
+  // Agents menu, wherever the job runs) and read back HERE, when the mandate is
+  // being judged. Open by default: evidence you have to go looking for is
+  // evidence that does not get used.
+  const [notesOpen, setNotesOpen] = useState(true);
   // Bumped by the drift panel's "Test old vs new first" — the bench scrolls
   // itself into view and arms the pinned-vs-latest comparison.
   const [benchFocus, setBenchFocus] = useState(0);
@@ -1592,6 +1598,22 @@ export function MandateDetailView({
           />
         </Section>
       </div>
+
+      <Section
+        title="Notes & observations"
+        meta="what you noticed while this agent worked"
+        open={notesOpen}
+        onToggle={setNotesOpen}
+      >
+        <div className="p-3">
+          <MandateNotesPanel
+            key={row.id}
+            mandateId={row.mandate.id}
+            mandateKey={row.mandate.mandate_key}
+            observedAgentId={row.agentId ?? null}
+          />
+        </div>
+      </Section>
 
       {/* "Bindings", not "overrides" — in this system, "overrides" means the
           config_overrides list sent to the API on a run. A mandate_binding row is
