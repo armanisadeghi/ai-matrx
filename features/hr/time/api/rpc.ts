@@ -151,6 +151,44 @@ function serveMock<T>(rpc: HrTimeRpcName, mockCase: HrFixtureCase | undefined): 
   return fixture.data as T;
 }
 
+interface PostgrestLikeError {
+  code?: string;
+  message: string;
+  hint?: string | null;
+  details?: string | null;
+}
+
+interface RpcCallResult {
+  data: unknown;
+  error: PostgrestLikeError | null;
+}
+
+/**
+ * 🚨 **THIS CAST IS TEMPORARY AND ITS REMOVAL IS THE DRIFT DETECTOR — DO NOT MAKE IT PERMANENT.**
+ *
+ * `supabase.rpc()` is typed against `Database["public"]["Functions"]`, and the `public.hr_*`
+ * wrappers this module calls **do not exist in the live catalog yet** — they are being built now.
+ * Without the cast every call resolves to `never` and `pnpm type-check` reports a wall of
+ * "Property 'ok' does not exist on type 'never'".
+ *
+ * The moment the wrappers land and `pnpm db-types` regenerates, `Database["public"]["Functions"]`
+ * carries them and **this whole block deletes**, restoring real argument and return typing. That
+ * red-then-green transition is exactly the signal SPEC-CONTRACTS §6.3 step 4 is built around; a
+ * permanent cast would destroy it. Do not widen it to hide a genuine mismatch — a call whose args
+ * disagree with the shipped function must go red.
+ */
+type RpcQuery = PromiseLike<RpcCallResult> & {
+  abortSignal: (signal: AbortSignal) => PromiseLike<RpcCallResult>;
+};
+
+interface UntypedRpcClient {
+  rpc: (fn: string, args: Record<string, unknown>) => RpcQuery;
+}
+
+/** The client, seen through the untyped door above. `bind` is avoided: it re-instantiates the
+ *  generated `Database` generic and trips TS2589 (excessively deep instantiation). */
+const rpcClient = supabase as unknown as UntypedRpcClient;
+
 /**
  * Call one `public.hr_*` RPC. Returns the unwrapped payload; throws {@link HrRpcError} on a typed
  * refusal and a plain `Error` on a transport failure.
@@ -163,7 +201,7 @@ export async function callHrTimeRpc<T>(
   if (HR_MOCK_ENABLED) return serveMock<T>(rpc, opts?.mockCase);
 
   // `hr_*` wrappers live in `public`, which is exposed — see the header. No `.schema("hr")` here.
-  const query = supabase.rpc(rpc as never, args as never);
+  const query = rpcClient.rpc(rpc, args);
   const { data, error } = await (opts?.signal ? query.abortSignal(opts.signal) : query);
 
   if (error) {
