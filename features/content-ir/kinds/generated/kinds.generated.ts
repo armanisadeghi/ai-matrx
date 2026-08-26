@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 484 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 483 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "a86d764d3d42";
+export const KIND_REGISTRY_FINGERPRINT = "4c2806c9bc81";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -6344,7 +6344,7 @@ export interface CompetitorOpportunityAutopsyResult {
 }
 
 /**
- * Kind `competitor_opportunity_autopsy_v1` (registry v4).
+ * Kind `competitor_opportunity_autopsy_v1` (registry v5).
  */
 export interface CompetitorOpportunityAutopsyV1 {
   error: string | null;
@@ -6365,72 +6365,7 @@ export interface CompetitorOpportunityAutopsyV1 {
 }
 
 /**
- * Kind `competitor_page_autopsy_pro` (registry v2).
- */
-export interface CompetitorPageAutopsyPro {
-  error?: string | number | boolean | Record<string, unknown> | unknown[] | null;
-  topic?: string;
-  __kind: "competitor_page_autopsy_pro";
-  verdict: string;
-  page_type?: string;
-  entity_gaps?: ({
-    gap?: string;
-    __kind: "page_autopsy_gap";
-    action?: string;
-    evidence?: string;
-    severity?: string;
-  })[];
-  own_page_id?: string;
-  why_it_wins?: ({
-    __kind: "page_autopsy_win_factor";
-    factor?: string;
-    impact?: number;
-    evidence?: string;
-    confidence?: number;
-  })[];
-  content_gaps?: ({
-    gap?: string;
-    __kind: "page_autopsy_gap";
-    action?: string;
-    evidence?: string;
-    severity?: string;
-  })[];
-  own_page_url: string;
-  competitor_url: string;
-  analyst_version?: string;
-  recommended_move?: string;
-  competitor_domain: string;
-  schema_advantages?: ({
-    gap?: string;
-    __kind: "page_autopsy_gap";
-    action?: string;
-    evidence?: string;
-    severity?: string;
-  })[];
-  backlink_advantage?: {
-    __kind: "page_autopsy_backlink_advantage";
-    summary?: string;
-    own_referring_domains?: number;
-    competitor_referring_domains?: number;
-  };
-  overall_confidence?: number;
-  recommended_actions?: ({
-    __kind: "page_autopsy_action";
-    action?: string;
-    effort?: string;
-    impact?: string;
-    rationale?: string;
-  })[];
-  internal_link_advantage?: {
-    __kind: "page_autopsy_link_advantage";
-    summary?: string;
-    own_supporting_links?: string | number | boolean | Record<string, unknown> | unknown[] | null;
-    competitor_supporting_links?: string | number | boolean | Record<string, unknown> | unknown[] | null;
-  };
-}
-
-/**
- * Kind `competitor_page_autopsy_v1` (registry v4).
+ * Kind `competitor_page_autopsy_v1` (registry v5).
  */
 export interface CompetitorPageAutopsyV1 {
   error: string | null;
@@ -6953,7 +6888,7 @@ export interface DiagramSpec {
 }
 
 /**
- * Kind `digital_pr_reputation_brief_v1` (registry v5).
+ * Kind `digital_pr_reputation_brief_v1` (registry v6).
  */
 export interface DigitalPrReputationBriefV1 {
   cases: ReputationCase[];
@@ -7848,7 +7783,7 @@ export interface GscOpportunities {
 /**
  * The intake agent's input — four period slices + site-level headlines.
  *  *
- *  * Kind `gsc_site_intake_bundle` (registry v8).
+ *  * Kind `gsc_site_intake_bundle` (registry v9).
  */
 export interface GscSiteIntakeBundle {
   /**
@@ -7871,7 +7806,7 @@ export interface GscSiteIntakeBundle {
  * The intake agent's structured output — the ``gsc_site_intake_proposal``
  * content-ir kind. Confirmable-card material, never chat-only.
  *  *
- *  * Kind `gsc_site_intake_proposal` (registry v5).
+ *  * Kind `gsc_site_intake_proposal` (registry v6).
  */
 export interface GscSiteIntakeProposal {
   gaps?: string[];
@@ -8300,7 +8235,7 @@ export interface JsonPathResult {
 }
 
 /**
- * Kind `keyword_classification_batch_v1` (registry v8).
+ * Kind `keyword_classification_batch_v1` (registry v9).
  */
 export interface KeywordClassificationBatchV1 {
   /**
@@ -9858,7 +9793,7 @@ export interface PageImage {
 /**
  * `page_keyword_analysis_v1` — the Page Analyzer's artifact.
  *  *
- *  * Kind `page_keyword_analysis_v1` (registry v4).
+ *  * Kind `page_keyword_analysis_v1` (registry v5).
  */
 export interface PageKeywordAnalysisV1 {
   gaps?: ContentGap[];
@@ -9881,7 +9816,7 @@ export interface PageKeywordAnalysisV1 {
 /**
  * `page_keyword_map_v1` — the Page↔Keyword Mapper's artifact.
  *  *
- *  * Kind `page_keyword_map_v1` (registry v4).
+ *  * Kind `page_keyword_map_v1` (registry v5).
  */
 export interface PageKeywordMapV1 {
   error?: string | null;
@@ -11732,7 +11667,7 @@ export interface ResearchCoverageAudit {
 }
 
 /**
- * Kind `research_cross_cutting_tags` (registry v4).
+ * Kind `research_cross_cutting_tags` (registry v5).
  */
 export interface ResearchCrossCuttingTags {
   /**
@@ -11743,7 +11678,7 @@ export interface ResearchCrossCuttingTags {
 }
 
 /**
- * Kind `research_page_analysis` (registry v4).
+ * Kind `research_page_analysis` (registry v5).
  */
 export interface ResearchPageAnalysis {
   id?: string;
@@ -11852,7 +11787,7 @@ export interface ResearchReport {
 }
 
 /**
- * Kind `research_setup_suggestion` (registry v5).
+ * Kind `research_setup_suggestion` (registry v6).
  */
 export interface ResearchSetupSuggestion {
   title?: string;
@@ -11875,7 +11810,7 @@ export interface ResearchSetupSuggestion {
 }
 
 /**
- * Kind `research_tag_suggestions` (registry v4).
+ * Kind `research_tag_suggestions` (registry v5).
  */
 export interface ResearchTagSuggestions {
   /**
@@ -11886,19 +11821,19 @@ export interface ResearchTagSuggestions {
 }
 
 /**
- * Kind `resellresearchreport` (registry v2).
+ * Kind `resell_research_report` (registry v3).
  */
-export interface Resellresearchreport {
-  __kind: "resellresearchreport";
+export interface ResellResearchReport {
+  __kind: "resell_research_report";
   product_name: string;
   product_images?: ({
     url?: string;
-    __kind: "ProductImage";
+    __kind: "product_image";
     source?: string;
   })[];
   market_listings?: ({
     notes?: string;
-    __kind: "MarketListing";
+    __kind: "market_listing";
     platform?: string;
     example_url?: string;
     price_range?: string;
@@ -11906,7 +11841,7 @@ export interface Resellresearchreport {
     average_price?: string;
   })[];
   resell_analysis?: {
-    __kind: "ResellAnalysis";
+    __kind: "resell_analysis";
     verdict?: string;
     reasoning?: string;
     confidence?: string;
@@ -11916,13 +11851,13 @@ export interface Resellresearchreport {
   };
   research_summary?: string;
   follow_up_questions?: ({
-    __kind: "FollowUpQuestion";
+    __kind: "follow_up_question";
     question?: string;
     why_it_matters?: string;
   })[];
   key_product_knowledge?: ({
     topic?: string;
-    __kind: "ProductKnowledgeItem";
+    __kind: "product_knowledge_item";
     detail?: string;
   })[];
 }
@@ -12538,7 +12473,7 @@ export interface ScraperCrawlResult {
 /**
  * The `seo_authority_route_analysis` Content IR Shape.
  *  *
- *  * Kind `seo_authority_route_analysis` (registry v4).
+ *  * Kind `seo_authority_route_analysis` (registry v5).
  */
 export interface SeoAuthorityRouteAnalysis {
   __kind: "seo_authority_route_analysis";
@@ -12687,7 +12622,7 @@ export interface SeoCompetitorDiscoveryResult {
 /**
  * The fixer's whole world: one finding, one page, one site.
  *  *
- *  * Kind `seo_finding_fix_context` (registry v9).
+ *  * Kind `seo_finding_fix_context` (registry v10).
  */
 export interface SeoFindingFixContext {
   page: FixPageContext;
@@ -12705,7 +12640,7 @@ export interface SeoFindingFixContext {
 /**
  * A drafted fix. Only the fields the finding actually calls for are set.
  *  *
- *  * Kind `seo_finding_fix_proposal` (registry v9).
+ *  * Kind `seo_finding_fix_proposal` (registry v10).
  */
 export interface SeoFindingFixProposal {
   risks: string[];
@@ -14934,7 +14869,7 @@ export interface ToolTraceIncidentReport {
 }
 
 /**
- * Kind `topic_assignment_batch_v1` (registry v5).
+ * Kind `topic_assignment_batch_v1` (registry v6).
  */
 export interface TopicAssignmentBatchV1 {
   /**
@@ -18915,7 +18850,6 @@ export type GeneratedKindSlug =
   | "competitor_lookup_result"
   | "competitor_opportunity_autopsy_result"
   | "competitor_opportunity_autopsy_v1"
-  | "competitor_page_autopsy_pro"
   | "competitor_page_autopsy_v1"
   | "content_fingerprint"
   | "content_plan_archetype_instantiation"
@@ -19130,7 +19064,7 @@ export type GeneratedKindSlug =
   | "research_report"
   | "research_setup_suggestion"
   | "research_tag_suggestions"
-  | "resellresearchreport"
+  | "resell_research_report"
   | "resource_collection"
   | "retrieved_chunk"
   | "reviewer_result_card"
@@ -19402,7 +19336,6 @@ export interface KindPayloadBySlug {
   "competitor_lookup_result": CompetitorLookupResult;
   "competitor_opportunity_autopsy_result": CompetitorOpportunityAutopsyResult;
   "competitor_opportunity_autopsy_v1": CompetitorOpportunityAutopsyV1;
-  "competitor_page_autopsy_pro": CompetitorPageAutopsyPro;
   "competitor_page_autopsy_v1": CompetitorPageAutopsyV1;
   "content_fingerprint": ContentFingerprint;
   "content_plan_archetype_instantiation": ContentPlanArchetypeInstantiation;
@@ -19617,7 +19550,7 @@ export interface KindPayloadBySlug {
   "research_report": ResearchReport;
   "research_setup_suggestion": ResearchSetupSuggestion;
   "research_tag_suggestions": ResearchTagSuggestions;
-  "resellresearchreport": Resellresearchreport;
+  "resell_research_report": ResellResearchReport;
   "resource_collection": ResourceCollection;
   "retrieved_chunk": RetrievedChunk;
   "reviewer_result_card": ReviewerResultCard;
@@ -19893,7 +19826,6 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "competitor_lookup_result",
   "competitor_opportunity_autopsy_result",
   "competitor_opportunity_autopsy_v1",
-  "competitor_page_autopsy_pro",
   "competitor_page_autopsy_v1",
   "content_fingerprint",
   "content_plan_archetype_instantiation",
@@ -20108,7 +20040,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "research_report",
   "research_setup_suggestion",
   "research_tag_suggestions",
-  "resellresearchreport",
+  "resell_research_report",
   "resource_collection",
   "retrieved_chunk",
   "reviewer_result_card",
