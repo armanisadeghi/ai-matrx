@@ -256,8 +256,9 @@ export function RunsManageView({
         resolveContextOnOpen={resolveMenuTarget}
         getApplicationScope={() => {
           const run = menuRunRef.current;
+          const selection = window.getSelection();
           return buildApplicationScopeFromMenuContext({
-            selectedText: window.getSelection()?.toString() ?? "",
+            selectedText: selection ? selection.toString() : "",
             selectionRange: null,
             contextData: {
               ...getSurfaceScope(),
