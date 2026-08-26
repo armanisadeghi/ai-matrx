@@ -265,3 +265,60 @@ describe("the mounted-SurfaceRuntime underlay", () => {
     expect(scope.content).toBe("still here");
   });
 });
+
+
+// ---------------------------------------------------------------------------
+// THE AMBIENT LAYER (Phase 1, 2026-08-25)
+// ---------------------------------------------------------------------------
+
+describe("the ambient layer", () => {
+  const ambient = {
+    active_organization_id: "org-1",
+    active_scope_ids: ["scope-a"],
+    surface_name: "matrx-user/rulebook",
+  };
+
+  it("lands on ONE namespaced key, never spread across the scope", () => {
+    const scope = resolveApplicationScope({
+      contextData: {},
+      selectedText: "",
+      selectionRange: null,
+      ambient,
+    });
+    expect(scope.ambient).toEqual(ambient);
+    // The individual facts must NOT leak in as top-level values — that would
+    // collide with surface value names and flood Context Admin.
+    expect(scope.active_organization_id).toBeUndefined();
+    expect(scope.surface_name).toBeUndefined();
+  });
+
+  it("never overrides a surface that emits its own `ambient`", () => {
+    const scope = resolveApplicationScope({
+      contextData: { ambient: { mine: true } },
+      selectedText: "",
+      selectionRange: null,
+      ambient,
+    });
+    expect(scope.ambient).toEqual({ mine: true });
+  });
+
+  it("never overrides a live builder's `ambient`", () => {
+    const scope = resolveApplicationScope({
+      getApplicationScope: () => ({ ambient: { fromBuilder: true } }),
+      contextData: {},
+      selectedText: "",
+      selectionRange: null,
+      ambient,
+    });
+    expect(scope.ambient).toEqual({ fromBuilder: true });
+  });
+
+  it("is absent when the engine passes nothing", () => {
+    const scope = resolveApplicationScope({
+      contextData: {},
+      selectedText: "",
+      selectionRange: null,
+    });
+    expect(scope.ambient).toBeUndefined();
+  });
+});
