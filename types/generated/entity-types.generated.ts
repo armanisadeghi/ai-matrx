@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 591 active entity tokens. A token here is FK-valid for
+// 593 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -307,6 +307,8 @@ export type EntityTypeToken =
   | "hr_position_assignment"
   | "hr_posting"
   | "hr_posting_publication"
+  | "hr_provider_binding"
+  | "hr_provider_event"
   | "hr_provisioning_result"
   | "hr_punch"
   | "hr_recalculation_batch"
@@ -866,6 +868,7 @@ export type ComponentEntityToken =
   | "hr_payroll_export_line"
   | "hr_position_assignment"
   | "hr_posting_publication"
+  | "hr_provider_event"
   | "hr_provisioning_result"
   | "hr_punch"
   | "hr_reporting_line"
@@ -1271,6 +1274,8 @@ export type ScopeableEntityToken =
   | "hr_position_assignment"
   | "hr_posting"
   | "hr_posting_publication"
+  | "hr_provider_binding"
+  | "hr_provider_event"
   | "hr_provisioning_result"
   | "hr_punch"
   | "hr_recalculation_batch"
@@ -1646,6 +1651,7 @@ export type ListedEntityToken =
   | "hr_location"
   | "hr_pay_group"
   | "hr_posting"
+  | "hr_provider_binding"
   | "hr_requisition"
   | "hr_schedule"
   | "hr_schedule_guidance"
@@ -1955,6 +1961,8 @@ export const ENTITY_TYPE_METADATA = {
   "hr_position_assignment": { token: "hr_position_assignment", schema: "hr", table: "position_assignment", label: "Position assignment", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_posting": { token: "hr_posting", schema: "hr", table: "posting", label: "Job posting", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "hr_posting_publication": { token: "hr_posting_publication", schema: "hr", table: "posting_publication", label: "Posting publication", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_provider_binding": { token: "hr_provider_binding", schema: "hr", table: "provider_binding", label: "Provider binding", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hr_provider_event": { token: "hr_provider_event", schema: "hr", table: "provider_event", label: "Provider seam event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_provisioning_result": { token: "hr_provisioning_result", schema: "hr", table: "provisioning_result", label: "Provisioning result", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_punch": { token: "hr_punch", schema: "hr", table: "punch", label: "Punch", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_recalculation_batch": { token: "hr_recalculation_batch", schema: "hr", table: "recalculation_batch", label: "Recalculation batch", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2550,6 +2558,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hr_position_assignment",
   "hr_posting",
   "hr_posting_publication",
+  "hr_provider_binding",
+  "hr_provider_event",
   "hr_provisioning_result",
   "hr_punch",
   "hr_recalculation_batch",
