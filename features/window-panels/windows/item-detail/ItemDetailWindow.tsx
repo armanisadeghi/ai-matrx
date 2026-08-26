@@ -34,7 +34,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AlertCircle, Check, Copy, Loader2 } from "lucide-react";
+import { AlertCircle, Braces, Check, Copy, Loader2 } from "lucide-react";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -59,6 +59,9 @@ import {
 } from "@/features/item-presentation/registry";
 import type { ItemType } from "@/features/item-presentation/types";
 import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { toast } from "@/lib/toast";
 
 export interface ItemDetailWindowProps {
   isOpen: boolean;
@@ -298,6 +301,47 @@ function ItemDetailWindowInner({
       record_fields: fields.length > 0 ? recordFields : undefined,
     });
 
+  // Surface-specific items only — Copy / Copy-as / Export / Download as
+  // Markdown / AI already come from the core menu acting on `dossierText`.
+  // This is the one shape a generic record dossier has that plain text
+  // doesn't: its raw field map.
+  const recordSection: ContextMenuExtraSection = {
+    id: "item-detail-record",
+    label: "Record",
+    icon: Braces,
+    items: [
+      {
+        kind: "item",
+        id: "item-detail-copy-id",
+        label: "Copy record ID",
+        icon: Copy,
+        disabled: !itemId,
+        onSelect: () => {
+          if (!itemId) return;
+          void copyToClipboard(itemId, {
+            formatJson: false,
+            onSuccess: () => toast.success("Record ID copied"),
+            onError: () => toast.error("Could not copy record ID"),
+          });
+        },
+      },
+      {
+        kind: "item",
+        id: "item-detail-copy-fields-json",
+        label: "Copy fields as JSON",
+        icon: Braces,
+        disabled: fields.length === 0,
+        onSelect: () => {
+          void copyToClipboard(JSON.stringify(recordFields, null, 2), {
+            formatJson: false,
+            onSuccess: () => toast.success("Fields copied"),
+            onError: () => toast.error("Could not copy fields"),
+          });
+        },
+      },
+    ],
+  };
+
   const handleCopyId = () => {
     if (!itemId) return;
     void navigator.clipboard?.writeText(itemId).then(() => {
@@ -393,6 +437,7 @@ function ItemDetailWindowInner({
               }
             : {})}
           getApplicationScope={getScope}
+          extraSections={[recordSection]}
         >
           {/* `min-h-full` so the menu answers a right-click anywhere in the
               window, not only on the rows — a short dossier otherwise leaves a

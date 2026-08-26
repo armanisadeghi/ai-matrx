@@ -1,11 +1,11 @@
 // components/content-editor/types.ts
 
+import type { SourceFeature } from "@/features/agents/types/instance.types";
+import type { ContentSource } from "@/features/rich-document/types";
+import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
+
 export type EditorMode =
-  | "plain"
-  | "wysiwyg"
-  | "markdown"
-  | "matrx-split"
-  | "preview";
+  "plain" | "wysiwyg" | "markdown" | "matrx-split" | "preview";
 
 export interface HeaderAction {
   id: string;
@@ -56,6 +56,15 @@ export interface ContentEditorProps {
   placeholder?: string;
   showModeSelector?: boolean;
   className?: string;
+
+  // Context menu (v3) — a caller with a real record passes these so
+  // Copy-as / Export / Convert / Attach To / Share resolve the actual
+  // document instead of rendering an inert menu. Omit `entity` for a
+  // scratch/no-record editor; `contentSource` still lights up Export.
+  sourceFeature?: SourceFeature;
+  surfaceName?: string;
+  contentSource?: ContentSource;
+  entity?: ContextMenuEntityRef;
 }
 
 export interface EditorModeConfig {

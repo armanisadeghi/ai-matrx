@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -11,9 +11,10 @@ import {
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ConversationList } from "@/features/messaging/components/ConversationList";
 import { ChatThread } from "@/features/messaging/components/ChatThread";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { MESSAGES_SURFACE_NAME } from "@/features/messaging/lib/messaging-menu-actions";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 
 interface MessagesWindowProps {
   isOpen: boolean;
@@ -38,6 +39,11 @@ export default function MessagesWindow({
   const activeConversationId = useAppSelector(selectCurrentConversationId);
   const activeConversation = useAppSelector(selectCurrentConversation);
 
+  // Hoisted at the window root (composition-root pattern): both the sidebar's
+  // own "+" button AND the body empty-state's context-menu item drive the
+  // SAME dialog instance, rather than each owning a separate one.
+  const [newConversationOpen, setNewConversationOpen] = useState(false);
+
   // Honor seeded conversationId once on open.
   useEffect(() => {
     if (conversationId && conversationId !== activeConversationId) {
@@ -60,6 +66,24 @@ export default function MessagesWindow({
     [activeConversationId],
   );
 
+  // Window-level extra section, DENSITY LAW: labels only. The one action the
+  // empty state makes obvious — everything else (copy/export/AI) already
+  // comes from the core menu acting on the resolved placeholder content.
+  const emptyStateSection: ContextMenuExtraSection = {
+    id: "messages-empty",
+    label: "Messages",
+    icon: Plus,
+    items: [
+      {
+        kind: "item",
+        id: "messages-new-conversation",
+        label: "New conversation…",
+        icon: Plus,
+        onSelect: () => setNewConversationOpen(true),
+      },
+    ],
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -79,6 +103,8 @@ export default function MessagesWindow({
           activeConversationId={activeConversationId}
           onSelectConversation={handleSelect}
           className="h-full"
+          newConversationOpen={newConversationOpen}
+          onNewConversationOpenChange={setNewConversationOpen}
         />
       }
       sidebarDefaultSize={280}
@@ -113,6 +139,9 @@ export default function MessagesWindow({
             content:
               "Messages — no conversation is open. Pick one from the list on the left, or start a new one.",
           }}
+          // No `entity`: nothing is selected, so there is no record for
+          // Attach To / Share to target — correctly absent, not missing.
+          extraSections={[emptyStateSection]}
         >
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
             <div className="w-14 h-14 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-3">
