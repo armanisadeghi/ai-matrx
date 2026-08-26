@@ -19,7 +19,7 @@
  */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Bookmark,
   BookmarkPlus,
@@ -40,7 +40,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
 import {
@@ -95,10 +94,6 @@ export function SavedViewBar({
     active !== null && !sameDefinition(active.definition, liveDefinition);
   const canSaveNew = !definitionIsEmpty(liveDefinition);
 
-  useEffect(() => {
-    if (!naming && renaming === null) setDraftName("");
-  }, [naming, renaming]);
-
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     try {
@@ -115,6 +110,7 @@ export function SavedViewBar({
     const target = renaming ? views.find((v) => v.id === renaming) : null;
     setNaming(false);
     setRenaming(null);
+    setDraftName("");
     if (target) void run(() => onRename(target, name));
     else void run(() => onSaveNew(name));
   };
@@ -154,7 +150,13 @@ export function SavedViewBar({
             <button
               type="button"
               className="flex items-center gap-1.5 rounded-l-full py-1 pl-2.5 pr-1"
-              onClick={() => (isActive ? onClearActive() : onApply(view))}
+              // CLICKING A VIEW ALWAYS SHOWS THAT VIEW. It used to toggle —
+              // clicking the active chip cleared it — which meant that after
+              // wandering off a view, the obvious gesture for "put me back"
+              // did the opposite and nothing appeared to happen. "Un-apply" is
+              // not something anyone wants from a name; that is what Reset
+              // view is for.
+              onClick={() => onApply(view)}
               title={describeDefinition(view.definition, displayNameFor)}
             >
               {view.isDefault && (
@@ -251,7 +253,10 @@ export function SavedViewBar({
           size="sm"
           className="h-7 gap-1.5 px-2 text-xs"
           disabled={busy}
-          onClick={() => setNaming(true)}
+          onClick={() => {
+            setDraftName("");
+            setNaming(true);
+          }}
           title="Save the current search, sort, filters and columns as a named view"
         >
           {busy ? (
@@ -277,6 +282,7 @@ export function SavedViewBar({
                 e.preventDefault();
                 setNaming(false);
                 setRenaming(null);
+                setDraftName("");
               }
             }}
             placeholder={renaming ? "Rename this view" : "Name this view"}
@@ -300,6 +306,7 @@ export function SavedViewBar({
             onClick={() => {
               setNaming(false);
               setRenaming(null);
+              setDraftName("");
             }}
           >
             Cancel

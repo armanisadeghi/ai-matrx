@@ -2483,7 +2483,12 @@ const UserTableViewer = ({
             variant="ghost"
             size="sm"
             className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
-            onClick={resetView}
+            onClick={() => {
+              resetView();
+              // The bar must stop claiming a view is active — otherwise it
+              // highlights a chip whose settings are no longer on screen.
+              savedViews.clearActive();
+            }}
             title="Clear search, sort, filters and column choices"
           >
             Reset view
