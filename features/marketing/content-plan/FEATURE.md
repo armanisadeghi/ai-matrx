@@ -396,9 +396,15 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
    **Every chip and run arrow carries a real `Tooltip`, never `title=`** (a
    `title` never appears on touch and cannot be styled): the step's name,
    what the step IS (`PIPELINE_STEPS[].what`), where it stands, and what a
-   click does. Chip geometry lives in ONE exported constant
-   (`STEP_CHIP_CLASS` / `STEP_RUN_BUTTON_CLASS` in `NodeStepRail.tsx`) — the
-   NodePanel's "Page" chip consumes it so the strip cannot drift.
+   click does. **The tab strip is ONE contained segmented control**
+   (2026-08-20, after Arman called the pill row "one of the ugliest UI
+   elements"): geometry lives in `stepSegmentClass` (`NodeStepRail.tsx`), the
+   "Page" segment rides inside the rail via its `leading` prop, and at most
+   ONE run arrow is visible — the ACTIVE segment's (non-tab hosts keep every
+   arrow; `STEP_CHIP_CLASS` / `STEP_RUN_BUTTON_CLASS` still own that mode).
+   The SEO-plan tab opens with "Research SEO with AI" — the same Deepen
+   seam as the header button and the p1 segment arrow, never a second
+   producer (the Write tab's "Write with AI" precedent).
 
 3. **Site map** (`SiteMap.tsx`, `?view=map`, code-split behind the view
    switch) — the plan drawn the way a WEBSITE is shaped, rebuilt 2026-08-20 to
@@ -931,6 +937,10 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   header collapses to a back-only chevron instead of a "Pick a site" picker
   over a record the user DID pick. Was map-rebuild evidence finding 1: a
   no-membership admin saw a silent blank canvas.
+- 2026-08-20 — **Pipeline strip round 3**: the tab strip became ONE
+  segmented control (`stepSegmentClass`, Page as the rail's `leading`
+  segment, run arrow only on the active segment); the SEO-plan tab and p1
+  segment gained "Research SEO with AI" via the existing Deepen seam.
 - 2026-08-20 — **Site map round 2** (Arman's live feedback): semantic zoom
   (details hide, deep branches auto-collapse far out), drag-to-reparent
   restored via the tree's dnd-kit pattern, click lights the selected page's

@@ -99,7 +99,7 @@ import { NodeRealityCard } from "./NodeRealityCard";
 import { NodeMeasureCard } from "./NodeMeasureCard";
 import {
   NodeStepRail,
-  STEP_CHIP_CLASS,
+  stepSegmentClass,
   StepArtifactView,
 } from "./NodeStepRail";
 import { usePageStepRun } from "../hooks/usePageStepRun";
@@ -882,22 +882,24 @@ export function NodePanel({
           content, so the page flows keyword → research → write → review →
           build → publish instead of a pile of sections. "Page" holds the
           non-step identity fields. */}
-            {/* ONE horizontal strip: never wraps — it scrolls sideways when
-                the panel is narrow (chips on three lines was the defect). */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-1">
-              <Button
-                type="button"
-                variant={activeTab === "page" ? "secondary" : "outline"}
-                size="sm"
-                onClick={() => setActiveTab("page")}
-                className={cn(
-                  STEP_CHIP_CLASS,
-                  activeTab === "page" && "ring-1 ring-primary/60",
-                )}
-              >
-                Page
-              </Button>
+            {/* ONE horizontal segmented strip: a single contained bar whose
+                segments are the tabs (Page + the seven steps), never wrapping
+                — it scrolls sideways when the panel is narrow. The "Page"
+                segment rides INSIDE the rail as `leading` so the bar is one
+                visual object. */}
+            <div className="overflow-x-auto pb-1">
               <NodeStepRail
+                leading={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActiveTab("page")}
+                    className={stepSegmentClass(activeTab === "page")}
+                  >
+                    Page
+                  </Button>
+                }
                 nodeId={node.id}
                 siteId={siteId}
                 pageLabel={node.route ?? node.label}
@@ -921,6 +923,17 @@ export function NodePanel({
                 // their own canonical producers — the rail gets an arrow, the
                 // producer stays the one it always was.
                 extraRunners={{
+                  p1_keywords: {
+                    action: "Research this page's SEO",
+                    explains:
+                      "Study this page, pick its target search term, and write its brief (the same Deepen run — saves immediately).",
+                    busy: deepeningThisNode,
+                    blockedReason:
+                      deepening && !deepeningThisNode
+                        ? "Another page is being researched — one run at a time."
+                        : null,
+                    run: () => void deepen.start(node.id),
+                  },
                   p2_research: {
                     action: "Deepen research",
                     explains:
@@ -1377,6 +1390,34 @@ export function NodePanel({
 
             {activeTab === "p1_keywords" ? (
               <PanelSection title="SEO plan">
+                {/* An AI app researches with AI FIRST (same pattern as the
+                  Write tab): the page's SEO research IS the Deepen run — one
+                  seam, never a second producer. */}
+                <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1.5 px-2 text-xs"
+                    disabled={deepening}
+                    title={
+                      deepeningThisNode
+                        ? (deepen.run.stage ?? "Researching…")
+                        : deepening
+                          ? "Another page is being researched — one run at a time"
+                          : "AI: research this page's SEO — study the page, pick its target search term, and write its brief (saves immediately)"
+                    }
+                    onClick={() => void deepen.start(node.id)}
+                  >
+                    {deepeningThisNode ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <BrainCircuit className="h-3.5 w-3.5" />
+                    )}
+                    {deepeningThisNode
+                      ? "Researching…"
+                      : "Research SEO with AI"}
+                  </Button>
+                </div>
                 {/* 🚨 ONE SEO PLAN PER PAGE, ON `web.page` (content-planning
                   invariant 9). A node without that record gets one honest
                   state and the ONE planned-page writer. Once it exists, every

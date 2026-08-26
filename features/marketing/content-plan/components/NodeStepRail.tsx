@@ -107,6 +107,23 @@ export const STEP_CHIP_CLASS =
 /** Same height as a chip, square — the run arrow sits flush beside it. */
 export const STEP_RUN_BUTTON_CLASS = "h-7 w-7 shrink-0 p-0 md:h-6 md:w-6";
 
+/**
+ * TAB-MODE segment style — the strip is ONE contained segmented control
+ * (single outer border, borderless segments, the active one lifted on
+ * `bg-background`), not a row of nine outlined pills with ghost arrows
+ * floating between them (Arman, 2026-08-20: "one of the ugliest UI elements
+ * I've ever seen"). The NodePanel's "Page" segment consumes this too, so the
+ * strip cannot drift.
+ */
+export function stepSegmentClass(active: boolean): string {
+  return cn(
+    "h-6 shrink-0 gap-1 rounded-md border-0 px-2 text-[11px] font-medium",
+    active
+      ? "bg-background text-foreground shadow-sm hover:bg-background"
+      : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+  );
+}
+
 function StatusIcon({
   status,
   stale = false,
@@ -376,6 +393,7 @@ export function NodeStepRail({
   onSelectStep,
   stepRun: stepRunProp,
   extraRunners,
+  leading,
 }: {
   nodeId: string;
   /** Needed to refresh the site-wide step query after a run. */
@@ -411,6 +429,8 @@ export function NodeStepRail({
    * canonical path — never a second client for an existing producer.
    */
   extraRunners?: Partial<Record<string, StepRunnerOverride>>;
+  /** Rendered as the strip's FIRST segment (the NodePanel's "Page" tab). */
+  leading?: React.ReactNode;
 }) {
   const artifacts = useNodeArtifacts(nodeId);
   const [openArtifact, setOpenArtifact] = useState<PlanNodeArtifactRow | null>(
@@ -450,10 +470,13 @@ export function NodeStepRail({
           (Arman, 2026-08-20). Non-tab hosts (context panel) still wrap. */}
       <div
         className={cn(
-          "flex items-center gap-1",
-          tabMode ? "flex-nowrap" : "flex-wrap",
+          "flex items-center",
+          tabMode
+            ? "w-max flex-nowrap gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5"
+            : "flex-wrap gap-1",
         )}
       >
+        {leading}
         {PIPELINE_STEPS.map(({ step, label, what }) => {
           const state = byStep.get(step);
           const stepArtifacts = artifactsByStep.get(step) ?? [];
@@ -517,7 +540,7 @@ export function NodeStepRail({
                 <TooltipTrigger asChild>
                   <Button
                     type="button"
-                    variant={isActive ? "secondary" : "outline"}
+                    variant={tabMode ? "ghost" : "outline"}
                     size="sm"
                     disabled={tabMode ? false : !opens}
                     onClick={() =>
@@ -526,15 +549,19 @@ export function NodeStepRail({
                         : opens && setOpenArtifact(opens)
                     }
                     className={cn(
-                      STEP_CHIP_CLASS,
-                      status === "failed" && "border-destructive/50",
+                      tabMode ? stepSegmentClass(isActive) : STEP_CHIP_CLASS,
+                      status === "failed" &&
+                        (tabMode
+                          ? "text-destructive"
+                          : "border-destructive/50"),
                       staleness &&
                         status !== "failed" &&
-                        "border-amber-500/50 text-amber-700 dark:text-amber-400",
+                        (tabMode
+                          ? "text-amber-700 dark:text-amber-400"
+                          : "border-amber-500/50 text-amber-700 dark:text-amber-400"),
                       // Tab mode: an un-run step is a place to GO (that's where
                       // you run it), never a dimmed dead control.
                       !status && !tabMode && "opacity-60",
-                      isActive && "ring-1 ring-primary/60",
                     )}
                   >
                     <StatusIcon
@@ -565,7 +592,10 @@ export function NodeStepRail({
                   </p>
                 </TooltipContent>
               </Tooltip>
-              {runnable ? (
+              {/* Tab mode shows at most ONE run arrow — the active step's —
+                  so the strip reads as a stepper, not a field of floating
+                  ghost buttons. Non-tab hosts keep every arrow. */}
+              {runnable && (!tabMode || isActive) ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -620,7 +650,7 @@ export function NodeStepRail({
                   </TooltipContent>
                 </Tooltip>
               ) : null}
-              {override ? (
+              {override && (!tabMode || isActive) ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
