@@ -32,13 +32,10 @@
  * neither renders `<PageAgents>` nor sits in a feature whose manifest declares
  * that job as an agent role.
  *
- * 🚨 THE SELF-CONTEXT EXCEPTION, and why it is not a loophole: a surface where
- * you BUILD or EDIT an agent (the agent builder, the mandate console, agent
- * settings) must NOT disclose the agent under construction as its own worker —
- * the agent there is the page's SUBJECT, and giving it context of itself is the
- * opposite of what those pages want. Those paths are exempt below, by path, so
- * the exemption is a list you can read rather than a judgement each reader has
- * to re-make.
+ * EXCEPTIONS are reasoned, not silent: (1) a surface where the agent is the
+ * SUBJECT, and (2) a universal agent host such as Chat, where the user may
+ * choose any agent and none is a fixed surface worker. Those paths are exempt
+ * below so the boundary is readable instead of re-decided by every reader.
  *
  * ADVISORY, on purpose (Arman: scream, never block). It prints what it found
  * and exits 0 unless --strict is passed.
@@ -71,10 +68,10 @@ const DISCLOSURE_SIGNALS: RegExp[] = [
 ];
 
 /**
- * Paths where an agent is the SUBJECT, not the worker. Each entry is a prefix
- * plus the reason it is exempt — never add one without the reason.
+ * Paths with no fixed surface worker. Each entry is a prefix plus the reason it
+ * is exempt — never add one without the reason.
  */
-const SELF_CONTEXT_EXEMPT: Array<{ prefix: string; why: string }> = [
+const DISCLOSURE_EXEMPT: Array<{ prefix: string; why: string }> = [
   {
     prefix: "features/agents/mandates/",
     why: "the mandate system itself — resolution, the override editor, the picker",
@@ -89,7 +86,7 @@ const SELF_CONTEXT_EXEMPT: Array<{ prefix: string; why: string }> = [
   },
   {
     prefix: "features/agents/components/",
-    why: "the agent builder and its panels — the agent is the page's subject",
+    why: "agent-authoring components and universal agent-host components have no fixed worker",
   },
   {
     prefix: "features/agent-shortcuts/",
@@ -102,6 +99,10 @@ const SELF_CONTEXT_EXEMPT: Array<{ prefix: string; why: string }> = [
   {
     prefix: "app/(dev)/",
     why: "demos — sample code is not a shipped surface",
+  },
+  {
+    prefix: "app/(core)/chat/",
+    why: "Chat is a universal host where the user chooses any agent; none is bound to the surface",
   },
 ];
 
@@ -172,7 +173,7 @@ function main(): void {
     if (signals.length === 0) continue;
 
     if (
-      SELF_CONTEXT_EXEMPT.some((entry) => rel.startsWith(entry.prefix)) ||
+      DISCLOSURE_EXEMPT.some((entry) => rel.startsWith(entry.prefix)) ||
       !rendersUi(rel, source)
     ) {
       exempt += 1;
@@ -186,7 +187,7 @@ function main(): void {
   }
 
   console.log(
-    `Agent disclosure: ${disclosed} disclosed, ${findings.length} undisclosed, ${exempt} skipped (agent-authoring surfaces + execution machinery).`,
+    `Agent disclosure: ${disclosed} disclosed, ${findings.length} undisclosed, ${exempt} skipped (no fixed surface worker + execution machinery).`,
   );
 
   if (findings.length > 0) {

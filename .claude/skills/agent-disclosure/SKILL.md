@@ -2,7 +2,7 @@
 name: agent-disclosure
 description: >-
   Make a surface NAME the AI it runs, and open that AI in place. The sweep recipe for
-  THE DISCLOSURE LAW — add `<PageAgents>` inline, declare the job as a manifest
+  THE DISCLOSURE LAW — add PageAgents inline, declare the job as a manifest
   `agentRole` carrying `mandateKey`, and replace every link to a mandate route with the
   `mandateWindow` panel. Use whenever a page, panel, overlay, or window runs an agent
   behind a button, chip, assist, or automatic action; whenever `pnpm check:agent-disclosure`
@@ -10,11 +10,11 @@ description: >-
   broad UI enhancement pass on a surface that touches AI. Triggers on "this page runs an
   agent", "name the AI", "disclose the agent", "mandate link", "PageAgents", "agentRoles",
   "AI doing jobs here", "surface runs a mandate", "secret AI". NOT for agent-AUTHORING
-  surfaces (the builder, the mandate console, agent settings) — they disclose nothing, and
-  that exception is part of the law.
+  surfaces or universal agent hosts such as Chat, where the user can choose any agent;
+  neither has a fixed surface worker to disclose.
 ---
 
-# Agent disclosure — a surface names the AI it runs
+# Agent disclosure — a surface names its fixed AI workers
 
 ## The law (Arman, 2026-08-25 / 2026-08-26 — quoted)
 
@@ -36,7 +36,7 @@ Cross-repo SoR: `../../../common-docs/systems/agents/mandates/CLIENT-SURFACES.md
 § THE DISCLOSURE LAW. Frontend detail: [`features/surfaces/FEATURE.md`](../../../features/surfaces/FEATURE.md)
 § "AI doing jobs here" · [`features/agents/mandates/FEATURE.md`](../../../features/agents/mandates/FEATURE.md).
 
-## 🚨 THE SELF-CONTEXT EXCEPTION — read this before you touch anything
+## 🚨 Decide whether the surface has a fixed worker — read this first
 
 A surface where the user **builds, edits, pins, tests, or reviews an agent** discloses
 NOTHING. There the agent is the page's **subject**, not its worker, and handing it context
@@ -46,10 +46,17 @@ reason, in `scripts/check-agent-disclosure.ts`:
 `features/agents/mandates/**` · `features/admin/mandates/**` · `features/surfaces/**` ·
 `features/agents/components/**` · `features/agent-shortcuts/**` · `app/(dev)/**` · `scripts/**`
 
-Adding a path there is a RULING, not housekeeping: write the reason, and only for a surface
-whose subject IS an agent. "It was noisy" is not a reason.
+Adding a path there is a RULING, not housekeeping: write the reason, and only when the agent is
+the subject or the surface is a genuine universal host. "It was noisy" is not a reason.
 
-The same boundary in the other direction is surface-check S5: an agent-PURPOSE surface
+**THE UNIVERSAL-HOST EXCEPTION.** A surface where the user chooses or chats with arbitrary agents
+has no fixed surface worker. Chat, agent pickers, pinned agents, history, and quick-action chips do
+not become bound roles merely because they can start conversations. Do not mount `<PageAgents>` for
+the available agents and do not add manifest `agentRoles` for them. The active agent's identity is
+the content of the host, not an "AI doing jobs here" roster. A separate, recurring mandate that
+performs a fixed job _on the host_ is still disclosed.
+
+The same boundary in the other direction is surface-check S5: an agent-purpose surface
 (chat, agent run, battle) launches its own primary conversation with
 `runtime: { surfaceName: null }`. Disclosure and that opt-out are different rules about the
 same boundary — read S5 when the surface's whole point is the agent.
@@ -78,9 +85,14 @@ deliberate: a guard that prints 124 rows teaches its readers to skip it.
 import { PageAgents } from "@/components/agents/PageAgents";
 
 <PageAgents
-  agents={[{ mandateKey: "seo.topic_assigner", does: "places keywords onto the Offering tree" }]}
+  agents={[
+    {
+      mandateKey: "seo.topic_assigner",
+      does: "places keywords onto the Offering tree",
+    },
+  ]}
   surfaceName="matrx-admin/marketing-run-console"
-/>
+/>;
 ```
 
 - **A mandate KEY, never a raw agent id.** The Holder is DB-managed and moves without a
@@ -128,8 +140,13 @@ agentRoles: [
 ### 3. Open it IN PLACE — never a link to a mandate route
 
 ```tsx
-const openMandate = useOpenMandateWindow();   // features/overlays/openers/mandateWindow
-openMandate({ initialMandateKey, mandateKeys, surfaceName, initialView: "yours" });
+const openMandate = useOpenMandateWindow(); // features/overlays/openers/mandateWindow
+openMandate({
+  initialMandateKey,
+  mandateKeys,
+  surfaceName,
+  initialView: "yours",
+});
 ```
 
 A `<Link href="/agents/mandates…">` or `/administration/agents/mandates…` **from a working
@@ -141,29 +158,29 @@ WRAPS THE CANONICAL COMPONENT before adding any pane to it.
 
 ## Decide, never ask
 
-| Situation | Verdict |
-|---|---|
-| Button/assist/automatic action runs a mandate for the USER | **Disclose.** Both halves. |
-| The page builds/edits/tests/reviews the agent itself | **Exempt** — self-context exception. |
-| A thunk, service, launcher, or tool handler runs it | **Not a surface.** The surface that calls it discloses. |
-| The surface runs a DIFFERENT mandate per mode/engine/tab | Disclose the LIVE one — `<PageAgents>` re-registers when the set changes. |
-| The mandate is disabled or unseeded | Still disclose. The menu shows it "off"; silence would be worse. |
-| The agent runs only in a window/overlay on this page | The WINDOW discloses (mount `<PageAgents>` inside it); a window is a surface. |
-| It runs a raw agent UUID, no mandate | Stop. That is `check:hardcoded-agents` work first — never invent a mandate key. |
+| Situation                                                  | Verdict                                                                              |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Button/assist/automatic action runs a mandate for the USER | **Disclose.** Both halves.                                                           |
+| The page builds/edits/tests/reviews the agent itself       | **Exempt** — self-context exception.                                                 |
+| The page lets the user choose/chat with any agent          | **Exempt** — universal host; available agents and quick actions are not bound roles. |
+| A thunk, service, launcher, or tool handler runs it        | **Not a surface.** The surface that calls it discloses.                              |
+| The surface runs a DIFFERENT mandate per mode/engine/tab   | Disclose the LIVE one — `<PageAgents>` re-registers when the set changes.            |
+| The mandate is disabled or unseeded                        | Still disclose. The menu shows it "off"; silence would be worse.                     |
+| The agent runs only in a window/overlay on this page       | The WINDOW discloses (mount `<PageAgents>` inside it); a window is a surface.        |
+| It runs a raw agent UUID, no mandate                       | Stop. That is `check:hardcoded-agents` work first — never invent a mandate key.      |
 
 ## Verify — per surface, live
 
 1. `pnpm check:agent-disclosure` — the file is gone from the list, and the total dropped by
    what you fixed. It never goes UP in your change.
-2. Open the route. The chip is visible where the agent acts, and its wording reads like the
-   product, not the code.
-3. Open **Agents for this page** → "AI doing jobs here" lists the mandate; the surface's own
-   jobs sort above the family's.
-4. Click it → the mandate window opens **over the page**, on Yours for a user, Admin for a
-   super-admin. The page behind it is still there.
-5. Admin only: write a note, reopen the window, confirm it is there with the surface stamped
-   on it.
-6. `pnpm type-check` clean for your files; console clean.
+2. Open the route. For a fixed worker, the chip is visible where it acts and reads like the
+   product, not the code. For an exempt universal host, confirm no roster overlays its UI.
+3. Fixed worker only: open **Agents for this page** → "AI doing jobs here" lists the mandate;
+   click it and confirm its window opens **over the page**. Universal host: confirm available
+   agents do not appear as surface jobs.
+4. Fixed worker, admin only: write a note, reopen the window, and confirm it persists with the
+   surface stamped on it.
+5. `pnpm type-check` clean for your files; console clean.
 
 ## Sweep discipline
 

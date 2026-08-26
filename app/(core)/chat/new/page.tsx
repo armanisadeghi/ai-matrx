@@ -6,13 +6,8 @@ import {
 } from "@/features/agents/components/chat/ChatNewClient";
 import { ChatNewHeader } from "@/features/agents/components/chat/ChatNewHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import {
-  DEFAULT_NEW_CHAT_MANDATE_KEY,
-  PRIMARY_QUICK_ACTIONS,
-  SECONDARY_QUICK_ACTIONS,
-} from "@/features/agents/components/chat/chat-quick-actions.config";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { resolveMandateServer } from "@/features/agents/mandates/service.server";
-import { PageAgents } from "@/components/agents/PageAgents";
 
 /**
  * SSR mandate resolution: which agent owns `/chat/new` for THIS user (system
@@ -54,15 +49,6 @@ async function resolveAgentName(agentId: string): Promise<string | null> {
   return data.name ?? null;
 }
 
-const CHAT_NEW_PAGE_AGENTS = [
-  {
-    mandateKey: DEFAULT_NEW_CHAT_MANDATE_KEY,
-    does: "answers the open conversation",
-  },
-  ...PRIMARY_QUICK_ACTIONS,
-  ...SECONDARY_QUICK_ACTIONS,
-].map(({ mandateKey, does }) => ({ mandateKey, does }));
-
 export default async function NewChatPage() {
   const agentId = await resolveDefaultChatAgentId();
   const defaultAgentName = agentId ? await resolveAgentName(agentId) : null;
@@ -75,15 +61,7 @@ export default async function NewChatPage() {
         />
       </PageHeader>
       <Suspense fallback={<ChatNewLandingSkeleton />}>
-        <ChatNewClient
-          agentId={agentId}
-          agentDisclosure={
-            <PageAgents
-              agents={CHAT_NEW_PAGE_AGENTS}
-              surfaceName="matrx-user/chat"
-            />
-          }
-        />
+        <ChatNewClient agentId={agentId} />
       </Suspense>
       {/* No conversion nudge here: the send gate is gone (guests send for
           real), so gate-attempt-driven nudges can never fire on this page. */}

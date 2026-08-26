@@ -19,8 +19,6 @@ export interface ChatQuickAction {
   mandateKey: string;
   /** Chip label as the user sees it. */
   label: string;
-  /** What this agent does on the landing, in plain user-facing language. */
-  does: string;
 }
 
 /**
@@ -50,27 +48,22 @@ export const PRIMARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
   {
     mandateKey: "chat.quick_showcase",
     label: "Show off what you can do",
-    does: "shows what AI Matrx can do",
   },
   {
     mandateKey: "chat.quick_fair_news",
     label: "I want fair news",
-    does: "summarizes current events from multiple perspectives",
   },
   {
     mandateKey: "chat.quick_writing_partner",
     label: "Help me write something",
-    does: "helps draft and revise writing",
   },
   {
     mandateKey: "chat.quick_flashcards",
     label: "Make me flashcards",
-    does: "turns source material into flashcards",
   },
   {
     mandateKey: "chat.quick_org_chart",
     label: "Make an Org Chart",
-    does: "builds organization charts",
   },
 ];
 
@@ -81,21 +74,17 @@ export const SECONDARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
   {
     mandateKey: "chat.quick_image",
     label: "Create an Image",
-    does: "creates images from a description",
   },
   {
     mandateKey: "chat.quick_research",
     label: "Conduct Research",
-    does: "conducts sourced research",
   },
   {
     mandateKey: "chat.quick_audio_plan",
     label: "Audio to Structured Plan",
-    does: "turns audio into a structured plan",
   },
   {
     mandateKey: "chat.cx_default",
     label: "Customize Chat",
-    does: "helps configure chat behavior",
   },
 ];

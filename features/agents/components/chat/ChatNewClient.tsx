@@ -30,26 +30,16 @@ import { useMandate } from "@/features/agents/mandates/useMandate";
  *
  * Chip agent IDs and labels live in `chat-quick-actions.config.ts`.
  */
-export function ChatNewClient({
-  agentId,
-  agentDisclosure,
-}: {
-  agentId: string | null;
-  agentDisclosure: React.ReactNode;
-}) {
+export function ChatNewClient({ agentId }: { agentId: string | null }) {
   return agentId ? (
-    <ChatNewBody agentId={agentId} agentDisclosure={agentDisclosure} />
+    <ChatNewBody agentId={agentId} />
   ) : (
-    <ChatNewClientResolved agentDisclosure={agentDisclosure} />
+    <ChatNewClientResolved />
   );
 }
 
 /** SSR resolution failed — re-resolve client-side, loud on failure. */
-function ChatNewClientResolved({
-  agentDisclosure,
-}: {
-  agentDisclosure: React.ReactNode;
-}) {
+function ChatNewClientResolved() {
   const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   if (loading) return <ChatNewLandingSkeleton />;
   if (error || !mandate) {
@@ -63,27 +53,18 @@ function ChatNewClientResolved({
             </p>
             <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
               The default chat agent could not be resolved
-              {error ? ` — ${error}` : ""}. Open the default chat agent below to
-              inspect its assignment, or try again shortly.
+              {error ? ` — ${error}` : ""}. Check your chat settings, or try
+              again shortly.
             </p>
-            <div className="mt-4 text-left">{agentDisclosure}</div>
           </div>
         </div>
       </div>
     );
   }
-  return (
-    <ChatNewBody agentId={mandate.agentId} agentDisclosure={agentDisclosure} />
-  );
+  return <ChatNewBody agentId={mandate.agentId} />;
 }
 
-function ChatNewBody({
-  agentId,
-  agentDisclosure,
-}: {
-  agentId: string;
-  agentDisclosure: React.ReactNode;
-}) {
+function ChatNewBody({ agentId }: { agentId: string }) {
   // No eager agent-list fetch here. Chip labels are hardcoded in
   // chat-quick-actions.config.ts (no agent registry lookup) and the default
   // agent's execution payload is fetched on-demand by ChatRoomClient via
@@ -103,7 +84,6 @@ function ChatNewBody({
         <NewChatGreeting
           sourceConversationId={conversationId}
           surfaceKey={surfaceKey}
-          agentDisclosure={agentDisclosure}
         />
       )}
     />

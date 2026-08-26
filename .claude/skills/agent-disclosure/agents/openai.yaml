@@ -1,4 +1,4 @@
 interface:
   display_name: "Agent Disclosure"
-  short_description: "Make every surface name the AI it runs, and open it in place"
-  default_prompt: "Use $agent-disclosure to sweep the surfaces that run an agent without naming it: add the inline PageAgents chip, declare the job as a manifest agentRole by mandateKey, replace any mandate-route link with the mandate window, and verify each surface live."
+  short_description: "Name fixed AI workers and open them in place"
+  default_prompt: "Use $agent-disclosure to identify fixed AI workers, exempt agent-authoring and universal-host surfaces, add the PageAgents and manifest role disclosures where required, and verify each surface live."

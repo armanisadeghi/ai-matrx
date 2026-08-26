@@ -23,8 +23,6 @@ interface NewChatGreetingProps {
   sourceConversationId: string | null;
   /** Surface key forwarded to the landing input's smartExecute dispatch. */
   surfaceKey: string;
-  /** Runtime disclosure for every Mandate this landing can launch. */
-  agentDisclosure: React.ReactNode;
 }
 
 /**
@@ -56,7 +54,6 @@ const OPTIONAL_QUICK_ACTION_KEYS: readonly string[] = ["chat.quick_org_chart"];
 export function NewChatGreeting({
   sourceConversationId,
   surfaceKey,
-  agentDisclosure,
 }: NewChatGreetingProps) {
   const router = useRouter();
   const store = useAppStore();
@@ -192,8 +189,6 @@ export function NewChatGreeting({
             );
           })}
         </section>
-
-        <div className="w-full">{agentDisclosure}</div>
       </div>
     </div>
   );
