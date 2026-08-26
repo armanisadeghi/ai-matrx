@@ -19,7 +19,6 @@ import { useRouter } from "next/navigation";
 import {
   FolderKanban,
   Plus,
-  Loader2,
   Building2,
   Settings,
   ArrowRight,
@@ -39,6 +38,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -607,9 +607,7 @@ export function ProjectsHub({
             )}
 
             {loading ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="h-7 w-7 animate-spin text-primary" />
-              </div>
+              <ProjectsHubSkeleton view={view} />
             ) : filtered.length === 0 ? (
               <Card className="p-12 text-center">
                 <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
@@ -700,6 +698,81 @@ function Section({
       </h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">{children}</div>
     </section>
+  );
+}
+
+function ProjectsHubSkeleton({ view }: { view: "cards" | "table" }) {
+  if (view === "table") {
+    return (
+      <div
+        className="overflow-hidden rounded-lg border border-border bg-card"
+        aria-label="Loading projects"
+      >
+        <div className="grid grid-cols-[minmax(12rem,1fr)_15rem_6rem_6rem_9rem_10rem] gap-3 border-b border-border bg-muted/20 px-4 py-3">
+          {[52, 48, 36, 36, 44, 46].map((width, index) => (
+            <Skeleton
+              key={index}
+              className="h-3"
+              style={{ width: `${width}%` }}
+            />
+          ))}
+        </div>
+        <div className="divide-y divide-border">
+          {[0, 1, 2, 3, 4].map((row) => (
+            <div
+              key={row}
+              className="grid grid-cols-[minmax(12rem,1fr)_15rem_6rem_6rem_9rem_10rem] items-center gap-3 px-4 py-3"
+            >
+              <div className="flex items-center gap-2.5">
+                <Skeleton className="h-7 w-7 rounded-md" />
+                <Skeleton className="h-4 w-36" />
+              </div>
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="ml-auto h-4 w-6" />
+              <Skeleton className="ml-auto h-4 w-6" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="ml-auto h-7 w-24" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3"
+      aria-label="Loading projects"
+    >
+      {[0, 1, 2, 3, 4, 5].map((card) => (
+        <Card key={card} className="overflow-hidden">
+          <div className="space-y-3 p-5">
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-11 w-11 rounded-xl" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            </div>
+            <Skeleton className="h-8 w-full" />
+            <div className="space-y-2 rounded-lg border border-border p-3">
+              <Skeleton className="h-3 w-4/5" />
+              <Skeleton className="h-3 w-3/5" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+            <div className="flex gap-4">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+          <div className="flex gap-2 border-t border-border px-5 py-3">
+            <Skeleton className="h-8 w-8" />
+            <Skeleton className="h-8 flex-1" />
+            <Skeleton className="h-8 w-24" />
+          </div>
+        </Card>
+      ))}
+    </div>
   );
 }
 
@@ -1500,8 +1573,13 @@ function ProjectHubCard({
 
         <div className="rounded-lg border border-border bg-muted/20 p-2.5 flex-1">
           {!stat ? (
-            <div className="flex items-center justify-center py-3">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <div
+              className="space-y-2 px-1 py-1.5"
+              aria-label={`Loading tasks for ${project.name}`}
+            >
+              <Skeleton className="h-3 w-4/5" />
+              <Skeleton className="h-3 w-3/5" />
+              <Skeleton className="h-3 w-2/3" />
             </div>
           ) : preview.length === 0 ? (
             <p className="text-[11px] text-muted-foreground italic py-1 px-1">
