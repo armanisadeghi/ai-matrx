@@ -656,7 +656,7 @@ export default function PerformanceReviewApp() {
         <div
           ref={reportCaptureRef}
           aria-hidden="true"
-          className="pointer-events-none fixed left-[-10000px] top-0 w-[816px] bg-white"
+          className="pointer-events-none fixed left-[-10000px] top-0 w-[816px]"
         >
           <style>{REVIEW_REPORT_STYLES}</style>
           <div dangerouslySetInnerHTML={{ __html: reportHtml }} />

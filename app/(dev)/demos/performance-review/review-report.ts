@@ -402,7 +402,7 @@ function renderRatings(review: Review, summary: ReviewReportSummary): string {
       })
       .join("");
     return `<section class="pr-rating-category">
-      <div class="pr-rating-category-head">${escapeHtml(category.label)}<span>${average === null ? "Not rated" : `${average.toFixed(1)} avg`}</span></div>
+      <div class="pr-rating-category-head">${escapeHtml(category.label)}<span>${average == null ? "Not rated" : `${average.toFixed(1)} avg`}</span></div>
       ${rows}
     </section>`;
   }).join("");
