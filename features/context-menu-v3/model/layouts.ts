@@ -205,18 +205,30 @@ export function collectAllLeaves(model: MenuModel): Array<{ node: MenuLeafNode; 
   return out;
 }
 
+/**
+ * Case- and diacritic-insensitive fold: "Résumé" matches "resume" and
+ * vice-versa. NFD splits base chars from combining marks; the marks are
+ * stripped before lowercasing.
+ */
+export function foldForMatch(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 /** Rank leaves against a query. Empty query → []. Prefix > word-start > substring > path. */
 export function filterLeaves(
   leaves: Array<{ node: MenuLeafNode; path: string[] }>,
   query: string,
   limit = 40,
 ): FilteredLeaf[] {
-  const q = query.trim().toLowerCase();
+  const q = foldForMatch(query.trim());
   if (!q) return [];
   const scored: FilteredLeaf[] = [];
   for (const l of leaves) {
-    const label = l.node.label.toLowerCase();
-    const pathText = l.path.join(" ").toLowerCase();
+    const label = foldForMatch(l.node.label);
+    const pathText = foldForMatch(l.path.join(" "));
     let score = 0;
     if (label.startsWith(q)) score = 4;
     else if (label.split(/\s+/).some((w) => w.startsWith(q))) score = 3;
