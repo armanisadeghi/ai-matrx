@@ -273,6 +273,24 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).not.toContain("max-sm:sticky");
   });
 
+  it("can keep the card presentation through portrait tablet widths", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        detail={{ enabled: false }}
+        mobileCards={(row) => <article>Compact {row.name}</article>}
+        mobileCardsBreakpoint="lg"
+      />,
+    );
+
+    expect(markup).toContain("Compact Alpha");
+    expect(markup).toContain("lg:hidden");
+    expect(markup).toContain("max-lg:hidden");
+    expect(markup).toContain("<table");
+  });
+
   it("hands phone cards the canonical selection state", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable

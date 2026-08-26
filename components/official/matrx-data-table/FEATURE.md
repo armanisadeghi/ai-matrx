@@ -135,17 +135,16 @@ rather than raw overflow.
 - **Zero-config.** Consumers do nothing. Opt out with `mobile="plain"`
   (removes the frozen column + affordance; content-sized scrolling stays —
   wrapping every column at 390px is never the right rendering).
-- **Explicit card exception.** `mobileCards={(row) => ...}` replaces only the
-  phone row presentation when a product surface must expose every essential
-  value and action without horizontal discovery. The caller owns the card's
-  information hierarchy; MatrxDataTable still owns the single query, toolbar,
-  loading/empty states, pagination, and selection. Its third argument exposes
-  `selected`, `selectable`, and `onSelectedChange`, so a card never forks or
-  bypasses controlled/URL-backed selection. `controls.actions` carries the
-  canonical row Copy/Copy-for-AI group and consumer `rowActions`; render it
-  instead of rebuilding either action path. The canonical table remains
-  mounted from `sm` upward. This is opt-in because a primitive cannot guess
-  which record fields earn scarce phone space.
+- **Explicit card exception.** `mobileCards={(row) => ...}` replaces the narrow
+  row presentation when a product surface must expose every essential value
+  and action without horizontal discovery. The default handoff is below `sm`;
+  set `mobileCardsBreakpoint="lg"` when portrait tablets need the same cards.
+  The caller owns the information hierarchy; MatrxDataTable still owns the
+  single query, toolbar, loading/empty states, pagination, and selection. Its
+  third argument exposes `selected`, `selectable`, and `onSelectedChange`, so a
+  card never forks or bypasses controlled/URL-backed selection.
+  `controls.actions` carries the canonical row Copy/Copy-for-AI group and
+  consumer `rowActions`; render it instead of rebuilding either action path.
 - The first visible column is the identity column — order columns so the
   row's name/title/id comes first.
 
@@ -264,6 +263,10 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-25 — Added `mobileCardsBreakpoint="sm" | "lg"`; card consumers stay
+  phone-only by default and can deliberately include portrait tablets without
+  forking the canonical query, toolbar, pagination, selection, or table.
 
 - 2026-08-25 — Rebuilt hierarchy drag-and-drop for correctness and speed: the
   per-mousemove preview state moved from the table component into a leaf

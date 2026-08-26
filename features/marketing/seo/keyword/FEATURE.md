@@ -101,7 +101,9 @@ subsequent discoveries retain their order and their per-keyword dossier state.
 Selecting a sidebar item swaps the entire inner dossier—including first-run,
 scope, tabs, stream, freshness, and failures—without opening a second window.
 A secondary/recommended phrase starts from its own evidence; it never borrows
-the parent keyword's completion state.
+the parent keyword's completion state. Opening any keyword door elsewhere while
+the singleton window is already mounted performs the same deduplicated add and
+select action; it never leaves the previous dossier pinned on screen.
 
 ### Optional expansion and enhanced classification
 
@@ -246,6 +248,10 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
   and toasts an Undo.
 
 ## Change Log
+
+- 2026-08-25 — Repeated external opens of the singleton Keyword Intelligence
+  window now add/select the requested phrase in its existing workspace while
+  preserving the original pinned target and deduplicated history.
 
 - 2026-08-24 — Codex: cut all page-level keyword/GSC readers over from broad
   browser scans of `seo.search_performance_daily` to the canonical set-based

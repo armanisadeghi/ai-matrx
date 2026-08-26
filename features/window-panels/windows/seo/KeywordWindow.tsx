@@ -88,6 +88,47 @@ function KeywordWindowInner({
       return [phrase];
     });
   });
+  const lastExternalOpenRef = useRef({
+    phraseKey: normalizeKeywordPhrase(initialPhrase ?? ""),
+    activeTab: normalizeKeywordIntelTab(initialTab),
+  });
+
+  // `openOverlay` replaces the singleton payload even when this WindowPanel is
+  // already mounted. Treat every changed external open as the same action as a
+  // dossier drill: keep the original target pinned, append the new phrase once,
+  // and select it in the existing workspace instead of leaving stale content.
+  useEffect(() => {
+    const nextPhrase = initialPhrase?.trim() ?? "";
+    const nextPhraseKey = normalizeKeywordPhrase(nextPhrase);
+    if (!nextPhraseKey) return;
+
+    const nextTab = normalizeKeywordIntelTab(initialTab);
+    const phraseChanged =
+      nextPhraseKey !== lastExternalOpenRef.current.phraseKey;
+    const tabChanged = nextTab !== lastExternalOpenRef.current.activeTab;
+    if (!phraseChanged && !tabChanged) return;
+
+    lastExternalOpenRef.current = {
+      phraseKey: nextPhraseKey,
+      activeTab: nextTab,
+    };
+
+    if (phraseChanged) {
+      const targetKey = normalizeKeywordPhrase(targetPhrase);
+      setTargetPhrase((current) => (current.trim() ? current : nextPhrase));
+      if (targetKey && targetKey !== nextPhraseKey) {
+        setDrilledKeywords((current) =>
+          current.some(
+            (entry) => normalizeKeywordPhrase(entry) === nextPhraseKey,
+          )
+            ? current
+            : [...current, nextPhrase],
+        );
+      }
+    }
+
+    setPanelState({ phrase: nextPhrase, activeTab: nextTab });
+  }, [initialPhrase, initialTab, targetPhrase]);
 
   // Debounced state mirror for persistence. State (not a ref) because the
   // WindowPanel save effect keys on the collector's identity — a ref-backed

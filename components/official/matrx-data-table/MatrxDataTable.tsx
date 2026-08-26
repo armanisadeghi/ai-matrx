@@ -267,12 +267,17 @@ function MatrxDataTableCore<T>({
   className,
   tableClassName,
   mobileCards,
+  mobileCardsBreakpoint = "sm",
   mobile = "scroll",
   onRowOpen,
 }: MatrxDataTableProps<T>) {
   // Two sticky leading cells would overlap, and a frozen checkbox identifies
   // nothing — selection and the mobile frozen identity column are exclusive.
   const mobileScroll = !mobileCards && mobile !== "plain" && !selection;
+  const mobileCardsClass =
+    mobileCardsBreakpoint === "lg" ? "lg:hidden" : "sm:hidden";
+  const tableWithCardsClass =
+    mobileCardsBreakpoint === "lg" ? "max-lg:hidden" : "max-sm:hidden";
   const controlledQuery =
     query?.mode === "controlled" || query?.mode === "controlled-local"
       ? query
@@ -832,8 +837,7 @@ function MatrxDataTableCore<T>({
     );
     if (!rowElement) return null;
     const rect = rowElement.getBoundingClientRect();
-    const ratio =
-      rect.height > 0 ? (pointerY - rect.top) / rect.height : 0.5;
+    const ratio = rect.height > 0 ? (pointerY - rect.top) / rect.height : 0.5;
     let position: "before" | "after" | "inside";
     if (!zones.siblingOk) {
       position = "inside";
@@ -1262,7 +1266,10 @@ function MatrxDataTableCore<T>({
           {mobileCards ? (
             <div
               aria-busy={isLoading || isFetching}
-              className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto rounded-md border border-border bg-card p-2 sm:hidden"
+              className={cn(
+                "flex h-full min-h-0 flex-col gap-2 overflow-y-auto rounded-md border border-border bg-card p-2",
+                mobileCardsClass,
+              )}
             >
               {isFetching && !isLoading ? (
                 <div
@@ -1361,7 +1368,7 @@ function MatrxDataTableCore<T>({
             aria-busy={isLoading || isFetching}
             className={cn(
               "relative h-full w-full overflow-auto rounded-md border border-border bg-card",
-              mobileCards && "max-sm:hidden",
+              mobileCards && tableWithCardsClass,
               tableClassName,
             )}
           >

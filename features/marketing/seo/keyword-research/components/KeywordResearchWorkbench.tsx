@@ -135,11 +135,36 @@ const DOSSIER_TABS: {
   hasData: string;
   noData: string;
 }[] = [
-  { key: "pipeline", short: "P", hasData: "Pipeline: saved research exists", noData: "Pipeline: no saved research yet" },
-  { key: "relationships", short: "K", hasData: "Keywords: has relationship edges", noData: "Keywords: no relationship edges yet" },
-  { key: "classification", short: "C", hasData: "Classification: intent is set", noData: "Classification: not classified yet" },
-  { key: "site", short: "S", hasData: "Site performance: tracked on a site", noData: "Site performance: not tracked on any site" },
-  { key: "visibility", short: "V", hasData: "Search visibility: has tracked rankings or SERP data", noData: "Search visibility: no rank tracking or SERP data yet" },
+  {
+    key: "pipeline",
+    short: "P",
+    hasData: "Pipeline: saved research exists",
+    noData: "Pipeline: no saved research yet",
+  },
+  {
+    key: "relationships",
+    short: "K",
+    hasData: "Keywords: has relationship edges",
+    noData: "Keywords: no relationship edges yet",
+  },
+  {
+    key: "classification",
+    short: "C",
+    hasData: "Classification: intent is set",
+    noData: "Classification: not classified yet",
+  },
+  {
+    key: "site",
+    short: "S",
+    hasData: "Site performance: tracked on a site",
+    noData: "Site performance: not tracked on any site",
+  },
+  {
+    key: "visibility",
+    short: "V",
+    hasData: "Search visibility: has tracked rankings or SERP data",
+    noData: "Search visibility: no rank tracking or SERP data yet",
+  },
 ];
 
 function DossierCompletenessCell({
@@ -912,6 +937,7 @@ export default function KeywordResearchWorkbench() {
               columns={columns}
               getRowId={(row) => row.id}
               mobileCards={renderMobileKeywordCard}
+              mobileCardsBreakpoint="lg"
               isLoading={loading}
               toolbar={toolbar}
               copy={{

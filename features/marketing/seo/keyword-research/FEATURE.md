@@ -112,13 +112,13 @@ Management (the ruling's other half — autosave must not become clutter):
   (detach-from-page chips, pre-existing). All archives confirm first
   (`confirm()` dialog) and toast an Undo that calls restore.
 
-The workbench explorer keeps the canonical table on desktop and tablet, but
-uses MatrxDataTable's `mobileCards` seam below `sm`. Each phone card keeps the
-full keyword readable (including long multilingual phrases), exposes Source,
-Volume, Intent, Trajectory, and Dossier as the priority summary, and keeps both
-selection and the shared Keyword Intelligence / Archive menu in 44px targets.
-The same selection state drives the canonical bulk bar, so Archive selected is
-never hidden behind horizontal scrolling.
+The workbench explorer keeps the canonical table on desktop and uses
+MatrxDataTable's `mobileCards` seam below `lg`, covering phones and portrait
+tablets. Each card keeps the full keyword readable (including long multilingual
+phrases), exposes Source, Volume, Intent, Trajectory, and Dossier as the
+priority summary, and keeps both selection and the shared Keyword Intelligence
+/ Archive menu in 44px targets. The same selection state drives the canonical
+bulk bar, so Archive selected is never hidden behind horizontal scrolling.
 
 **Every keyword row opens the same door, and offers the same actions.** On the
 Performance tab a row click opens the shared Keyword Intelligence dossier and a
@@ -281,6 +281,11 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-25 — **Keyword cards now cover portrait tablets.** The workbench
+  opts the canonical `mobileCardsBreakpoint="lg"` seam into its complete card
+  summary through 1023px; desktop keeps the full table and every width shares
+  one query, toolbar, selection state, and action path.
+
 - 2026-08-25 — **Deterministic non-writing replay and touch-safe launcher.** The
   super-admin workbench links both keyword output kinds to the canonical Shape
   stream simulator; its interruption control preserves the last partial
@@ -288,13 +293,12 @@ and the same block renders read-only in chat.
   shared keyword input, site picker, Research, and saved-research controls are
   44px minimum, and the phone launcher stacks instead of collapsing the input.
 
-- 2026-08-25 — **Keyword library mobile cards.** Replaced the phone-only
+- 2026-08-25 — **Keyword library mobile cards.** Replaced the narrow-width
   11-column scroller with MatrxDataTable's existing `mobileCards` seam. Cards
   preserve long and multilingual keyword wrapping, show the priority source /
   volume / intent / trajectory / dossier facts, retain the canonical Keyword
   Intelligence and archive menu, and share the desktop table's selection state
-  so bulk archive remains directly reachable. Desktop and tablet keep the full
-  canonical table.
+  so bulk archive remains directly reachable.
 
 - 2026-08-25 — **MSR-26 (Arman's ruling): keyword research belongs to a SITE, never
   the organization.** Supersedes the MSR-14 entry below — the derivative
@@ -321,7 +325,7 @@ and the same block renders read-only in chat.
     makes a researched keyword "belong to" the site while the phrase stays in
     the shared global library (`seo.keyword`).
   - New `seo.site_keyword_value_copy(p_from_site, p_to_site, p_keyword_ids?,
-    p_dry_run)` — sibling of `seo.site_meaning_copy`, same dry-run-then-write
+p_dry_run)` — sibling of `seo.site_meaning_copy`, same dry-run-then-write
     contract, permission-checked both ends via `seo.fn_is_site_editor`. UI:
     `CopyKeywordsFromSite.tsx`, mounted on the site's keyword-value settings
     page next to `CopyMeaningFromSite`.
@@ -333,7 +337,7 @@ and the same block renders read-only in chat.
     automatically comes from the parent"). Discovered live: a site editor
     without formal org membership got an empty saved-research library despite
     a real bound artifact. Fixed with `seo.fn_list_site_research_instance_ids
-    (p_site_id)`, gated on `seo.fn_is_site_editor` — the same site-based
+(p_site_id)`, gated on `seo.fn_is_site_editor` — the same site-based
     authorization every other keyword-plane site read/write in this feature
     already uses. `listSavedKeywordResearch`, `getLatestSavedKeywordResearch`,
     `getKeywordDossierCompleteness`, `useSavedKeywordResearch`,
@@ -413,7 +417,7 @@ and the same block renders read-only in chat.
   ONE definition of what you can do to a keyword.
 - 2026-08-15 — **The site keyword decision column now explains itself and is
   editable.** Raw `Workflow` / `candidate` / `Not classified` became `SEO
-  stage` / `Opportunity` / `Not tracked`, with hover explanations and one-line
+stage` / `Opportunity` / `Not tracked`, with hover explanations and one-line
   guidance above the table. The canonical MatrxDataTable staged editor writes
   the existing `seo.site_keyword_value` ledger directly through authenticated
   Supabase, compares the value the user saw, and completes the write with the
