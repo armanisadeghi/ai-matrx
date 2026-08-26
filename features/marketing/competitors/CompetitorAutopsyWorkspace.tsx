@@ -258,13 +258,6 @@ export default function CompetitorAutopsyWorkspace() {
     () => data?.competitors.filter((item) => item.classification_status === "proposed") ?? [],
     [data?.competitors],
   );
-  const unruled = useMemo(
-    () =>
-      data?.competitors.filter(
-        (item) => item.classification_status !== "confirmed",
-      ) ?? [],
-    [data?.competitors],
-  );
   const selectedSite = sites.data?.find((site) => site.id === resolvedSiteId) ?? null;
   const [discovering, setDiscovering] = useState(false);
   const [localKeyword, setLocalKeyword] = useState("");
@@ -1045,7 +1038,7 @@ export default function CompetitorAutopsyWorkspace() {
           "Processing…" shimmer — which, left mounted after completion, sat under
           a finished "Autopsy complete" run forever. The verdict card and the
           tables below ARE the finished output. */}
-        {run.status === "running" ? (
+        {activeView === "run" && run.status === "running" ? (
           <LiveRunDisplay
             requestId={run.requestId}
             pending={!run.requestId}
@@ -1053,7 +1046,7 @@ export default function CompetitorAutopsyWorkspace() {
             bodyClassName="max-h-[34rem]"
           />
         ) : null}
-        {run.error ? (
+        {activeView === "run" && run.error ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {run.error}
           </div>
@@ -1063,7 +1056,7 @@ export default function CompetitorAutopsyWorkspace() {
             render a button per proposal that scrolled to a table row; the Review
             tab is now where a proposal is ruled on, so a second list of the same
             rows is noise between the reader and the work. */}
-        {proposed.length ? (
+        {activeView === "run" && proposed.length ? (
           <Card className="border-amber-500/30 bg-amber-500/[0.04]">
             <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
               <div className="min-w-0">
@@ -1077,7 +1070,9 @@ export default function CompetitorAutopsyWorkspace() {
               <Button
                 size="sm"
                 className="shrink-0"
-                onClick={() => setActiveTab("ground-truth")}
+                onClick={() =>
+                  router.push(competitorViewHref("review", resolvedSiteId))
+                }
               >
                 Review them
               </Button>
@@ -1085,7 +1080,7 @@ export default function CompetitorAutopsyWorkspace() {
           </Card>
         ) : null}
 
-        {latestArtifact?.executive_verdict ? (
+        {activeView === "run" && latestArtifact?.executive_verdict ? (
           <Card className="border-primary/20">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm">
@@ -1106,45 +1101,12 @@ export default function CompetitorAutopsyWorkspace() {
           </Card>
         ) : null}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <TabsList>
-              <TabsTrigger value="ground-truth">
-                Review{" "}
-                <Badge variant="secondary" className="ml-2">
-                  {unruled.length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="opportunities">
-                Opportunities{" "}
-                <Badge variant="secondary" className="ml-2">
-                  {data?.opportunities.length ?? 0}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="competitors">
-                Competitors{" "}
-                <Badge variant="secondary" className="ml-2">
-                  {data?.competitors.length ?? 0}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="evidence">Evidence</TabsTrigger>
-              <TabsTrigger value="history">History</TabsTrigger>
-            </TabsList>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => void refresh()}
-            >
-              <RefreshCw className="size-3.5" />
-              Refresh
-            </Button>
-          </div>
-
+        <Tabs value={activeView} className="min-w-0">
           {/* THE STAGED-CONFIDENCE PATTERN, in the real product: establish the
               facts, then rule on the proposals built from them. His rulings ARE
               the ground truth, collected as a side effect of using the tool. */}
-          <TabsContent value="ground-truth" className="mt-4 space-y-4">
+          <TabsContent value="review" className="mt-0 space-y-3">
+            <ManualCompetitorAdd site={selectedSite} onAdded={refresh} />
             <LandscapeBriefCard site={selectedSite} onGuidanceSaved={refresh} />
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -1164,7 +1126,7 @@ export default function CompetitorAutopsyWorkspace() {
               <span className="text-xs text-muted-foreground">
                 {discovering && localStage
                   ? `${localStage}…`
-                  : "Pulls real rivals out of your own search results and proposes what each one is. Nothing counts until you say so."}
+                  : "Finds rivals in your search results for you to review."}
               </span>
             </div>
             <div className="rounded-md border border-border bg-card p-3">
@@ -1177,6 +1139,7 @@ export default function CompetitorAutopsyWorkspace() {
                     id="local-search-keyword"
                     value={localKeyword}
                     placeholder={LOCAL_SEARCH_KEYWORD_PLACEHOLDER}
+                    className="max-sm:text-base"
                     onChange={(event) => setLocalKeyword(event.target.value)}
                   />
                 </div>
@@ -1188,6 +1151,7 @@ export default function CompetitorAutopsyWorkspace() {
                     id="local-search-area"
                     value={localArea}
                     placeholder={LOCAL_SEARCH_AREA_PLACEHOLDER}
+                    className="max-sm:text-base"
                     onChange={(event) => setLocalArea(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") void findLocalCompetitors();
@@ -1219,9 +1183,7 @@ export default function CompetitorAutopsyWorkspace() {
                 </p>
               ) : null}
               <p className="mt-1.5 text-xs text-muted-foreground">
-                Runs the real local search a customer would run and shows who Google
-                puts on the map for it. For local businesses this is the truest
-                competitor list there is — each one lands below as a proposal.
+                Shows the businesses Google places on the map for this search.
               </p>
               {localResult ? (
                 <div className="mt-3 space-y-1">
@@ -1287,7 +1249,7 @@ export default function CompetitorAutopsyWorkspace() {
             />
           </TabsContent>
 
-          <TabsContent value="opportunities" className="mt-4">
+          <TabsContent value="opportunities" className="mt-0">
             <MatrxDataTable
               urlState={{ id: "competitor-opportunities" }}
               data={data?.opportunities ?? []}
@@ -1363,7 +1325,7 @@ export default function CompetitorAutopsyWorkspace() {
             />
           </TabsContent>
 
-          <TabsContent value="competitors" className="mt-4">
+          <TabsContent value="competitors" className="mt-0">
             <MatrxDataTable
               urlState={{ id: "competitors" }}
               data={data?.competitors ?? []}
@@ -1416,7 +1378,7 @@ export default function CompetitorAutopsyWorkspace() {
             />
           </TabsContent>
 
-          <TabsContent value="evidence" className="mt-4">
+          <TabsContent value="evidence" className="mt-0">
             <div className="grid gap-4 lg:grid-cols-3">
               <Card>
                 <CardHeader>
@@ -1478,7 +1440,7 @@ export default function CompetitorAutopsyWorkspace() {
             </div>
           </TabsContent>
 
-          <TabsContent value="history" className="mt-4">
+          <TabsContent value="history" className="mt-0">
             <MatrxDataTable
               urlState={{ id: "competitor-autopsy-runs" }}
               data={data?.runs ?? []}
@@ -1502,11 +1464,12 @@ export default function CompetitorAutopsyWorkspace() {
           </TabsContent>
         </Tabs>
 
-        <p className="text-xs text-muted-foreground">
-          {tracked} competitor{tracked === 1 ? "" : "s"} currently tracked.
-          Every provider fact, crawl observation, AI judgment, and human status
-          remains separate in the stored record.
-        </p>
+        {activeView !== "run" ? (
+          <p className="text-xs text-muted-foreground">
+            {tracked} competitor{tracked === 1 ? "" : "s"} tracked.
+          </p>
+        ) : null}
+        </div>
       </main>
     </SurfaceRuntimeProvider>
   );

@@ -108,11 +108,20 @@ export function buildGscKeyColumn<T extends { key: string }>(
   dimension: GscDimension,
   header: string,
   recordHref?: (row: T) => string | null | undefined,
+  /**
+   * Cap this column's width. Without one the key column is the only unbounded
+   * column in the table, so it takes every pixel the others leave and pushes
+   * the ones to its right off the screen — measured 2026-08-25 on Queries at
+   * 1362px: 592px of key column, and Position / Score / Level entirely
+   * off-screen. Pass a width wherever the table carries the value columns.
+   */
+  width?: number,
 ): MatrxColumnDef<T> {
   return {
     id: "key",
     accessorKey: "key",
     header,
+    ...(width === undefined ? {} : { width }),
     // MSR-03/04 — text contains, wired by the table to the same server-side
     // search the toolbar box already drives (one truth, two entry points).
     filter: "text",
@@ -122,7 +131,19 @@ export function buildGscKeyColumn<T extends { key: string }>(
       return (
         <span className="flex min-w-0 items-center gap-1">
           <span
-            className="block max-w-[28rem] truncate text-xs font-medium text-foreground sm:max-w-[36rem]"
+            className={
+              width === undefined
+                ? "block max-w-[28rem] truncate text-xs font-medium text-foreground sm:max-w-[36rem]"
+                : // A declared width is only a hint under `table-layout: auto`
+                  // — the CELL has to agree to be narrow, or the text just
+                  // widens the column back out.
+                  "block max-w-[28rem] truncate text-xs font-medium text-foreground"
+            }
+            style={
+              width === undefined
+                ? undefined
+                : { maxWidth: `${Math.max(width - 28, 120)}px` }
+            }
             title={row.key}
           >
             {label}

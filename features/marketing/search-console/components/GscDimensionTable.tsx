@@ -624,7 +624,9 @@ export function GscDimensionTable({
     // `mismatch` class, and the server requires a written reason for it that a
     // one-click door cannot collect — the same reason the Class cell above
     // omits it.
-    width: 270,
+    // 210, not 270: this table has to fit Class, Score and Level as well, and
+    // the offering's own root line sits under its name rather than beside it.
+    width: 210,
   });
 
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [
@@ -650,10 +652,20 @@ export function GscDimensionTable({
     // THE DOOR LAW: a page-dimension row names a canonical page the breakdown
     // already resolved (`page_id`) — so it gets a door to that page's
     // workspace. Query/country/device rows name no record we own.
-    buildGscKeyColumn<GscBreakdownRow>(dimension, labels.column, (row) =>
-      dimension === "page" && row.page_id
-        ? marketingRoutes.sitePage(null, siteId, row.page_id)
-        : null,
+    buildGscKeyColumn<GscBreakdownRow>(
+      dimension,
+      labels.column,
+      (row) =>
+        dimension === "page" && row.page_id
+          ? marketingRoutes.sitePage(null, siteId, row.page_id)
+          : null,
+      // The query dimension carries five more columns than any other
+      // (Offering, Class, Score, Level, Actions). Left unbounded, the key
+      // column took 592px of a 1,284px container and pushed Position, Score
+      // and Level clean off the right edge. Capped, the whole set fits at
+      // 1280px+ and the reader still gets the full phrase on hover and in the
+      // receipt. Other dimensions keep the roomier default.
+      dimension === "query" ? 300 : undefined,
     ),
     // MSR-07 — Class is the editable, primary field: it stays with the
     // identity columns on the left. Score and Level are read-only receipts
