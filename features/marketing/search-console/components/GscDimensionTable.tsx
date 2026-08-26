@@ -665,7 +665,7 @@ export function GscDimensionTable({
       // and Level clean off the right edge. Capped, the whole set fits at
       // 1280px+ and the reader still gets the full phrase on hover and in the
       // receipt. Other dimensions keep the roomier default.
-      dimension === "query" ? 300 : undefined,
+      dimension === "query" ? 280 : undefined,
     ),
     // MSR-07 — Class is the editable, primary field: it stays with the
     // identity columns on the left. Score and Level are read-only receipts

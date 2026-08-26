@@ -234,9 +234,6 @@ export default function CompetitorAutopsyWorkspace() {
   const router = useRouter();
   const requestedSiteId = searchParams.get("siteId");
   const activeView = competitorView(searchParams.get("view"));
-  const [siteId, setSiteId] = useState<string | null>(() =>
-    requestedSiteId,
-  );
   const [domains, setDomains] = useState("");
   const [maxCompetitors, setMaxCompetitors] = useState(3);
   const [pagesPerCompetitor, setPagesPerCompetitor] = useState(3);
@@ -244,7 +241,7 @@ export default function CompetitorAutopsyWorkspace() {
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
   const { sites, workspace, run, start, resolvedSiteId } =
-    useCompetitorAutopsy(siteId);
+    useCompetitorAutopsy(requestedSiteId);
 
   const data = workspace.data;
   const completedRun = data?.runs.find((item) => item.status === "completed");
@@ -277,12 +274,6 @@ export default function CompetitorAutopsyWorkspace() {
   const localScopeIncomplete =
     autopsyScope === "local" &&
     (!autopsyLocalKeyword.trim() || !autopsyLocalArea.trim());
-
-  useEffect(() => {
-    if (requestedSiteId && requestedSiteId !== siteId) {
-      setSiteId(requestedSiteId);
-    }
-  }, [requestedSiteId, siteId]);
 
   useEffect(() => {
     if (!resolvedSiteId || !proposed.length) return;

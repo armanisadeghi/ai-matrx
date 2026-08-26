@@ -1232,6 +1232,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/marketing/run-console",
         isNew: true,
       },
+      {
+        title: "SEO Operations",
+        description:
+          "Every SEO automation, mandate and agent in one console: run any of them by hand, watch the run live, and judge what it produced before a schedule is trusted with it.",
+        iconName: "Radar",
+        link: "/administration/marketing/seo-operations",
+        isNew: true,
+      },
     ],
   },
   {
