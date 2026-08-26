@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 433 active entity tokens. A token here is FK-valid for
+// 438 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -345,7 +345,9 @@ export type EntityTypeToken =
   | "seo_serp_result"
   | "seo_serp_snapshot"
   | "seo_site_geo_area"
+  | "seo_site_keyword_offering"
   | "seo_site_keyword_value"
+  | "seo_site_offering_value"
   | "seo_site_topic_value"
   | "seo_site_value_combo"
   | "seo_site_value_worth"
@@ -428,6 +430,7 @@ export type EntityTypeToken =
   | "web_analysis_item"
   | "web_brand"
   | "web_brand_asset"
+  | "web_brand_offering"
   | "web_business_fact"
   | "web_business_location"
   | "web_crawl_event"
@@ -441,6 +444,7 @@ export type EntityTypeToken =
   | "web_link_edge"
   | "web_listing_publisher"
   | "web_location_listing"
+  | "web_offering_template"
   | "web_page"
   | "web_page_content"
   | "web_page_evidence"
@@ -452,6 +456,7 @@ export type EntityTypeToken =
   | "web_site"
   | "web_site_endpoint_rule"
   | "web_site_item_config"
+  | "web_site_offering"
   | "web_sitemap"
   | "web_snapshot"
   | "wf_node_data_slot"
@@ -711,7 +716,9 @@ export type ComponentEntityToken =
   | "seo_serp_result"
   | "seo_serp_snapshot"
   | "seo_site_geo_area"
+  | "seo_site_keyword_offering"
   | "seo_site_keyword_value"
+  | "seo_site_offering_value"
   | "seo_site_topic_value"
   | "seo_site_value_combo"
   | "seo_site_value_worth"
@@ -735,6 +742,7 @@ export type ComponentEntityToken =
   | "wc_injury"
   | "wc_report"
   | "web_brand_asset"
+  | "web_brand_offering"
   | "web_business_fact"
   | "web_business_location"
   | "web_crawl_event"
@@ -756,6 +764,7 @@ export type ComponentEntityToken =
   | "web_screenshot"
   | "web_site_endpoint_rule"
   | "web_site_item_config"
+  | "web_site_offering"
   | "web_sitemap"
   | "web_snapshot"
   | "wf_node_data_slot"
@@ -1059,7 +1068,9 @@ export type ScopeableEntityToken =
   | "seo_serp_result"
   | "seo_serp_snapshot"
   | "seo_site_geo_area"
+  | "seo_site_keyword_offering"
   | "seo_site_keyword_value"
+  | "seo_site_offering_value"
   | "seo_site_topic_value"
   | "seo_site_value_combo"
   | "seo_site_value_worth"
@@ -1142,6 +1153,7 @@ export type ScopeableEntityToken =
   | "web_analysis_item"
   | "web_brand"
   | "web_brand_asset"
+  | "web_brand_offering"
   | "web_business_fact"
   | "web_business_location"
   | "web_crawl_event"
@@ -1155,6 +1167,7 @@ export type ScopeableEntityToken =
   | "web_link_edge"
   | "web_listing_publisher"
   | "web_location_listing"
+  | "web_offering_template"
   | "web_page"
   | "web_page_content"
   | "web_page_evidence"
@@ -1166,6 +1179,7 @@ export type ScopeableEntityToken =
   | "web_site"
   | "web_site_endpoint_rule"
   | "web_site_item_config"
+  | "web_site_offering"
   | "web_sitemap"
   | "web_snapshot"
   | "wf_node_data_slot"
@@ -1550,7 +1564,9 @@ export const ENTITY_TYPE_METADATA = {
   "seo_serp_result": { token: "seo_serp_result", schema: "seo", table: "serp_result", label: "SERP Result", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_serp_snapshot": { token: "seo_serp_snapshot", schema: "seo", table: "serp_snapshot", label: "SERP Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_geo_area": { token: "seo_site_geo_area", schema: "seo", table: "site_geo_area", label: "Site Geo Area", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_site_keyword_offering": { token: "seo_site_keyword_offering", schema: "seo", table: "site_keyword_offering", label: "Site Keyword Offering", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_keyword_value": { token: "seo_site_keyword_value", schema: "seo", table: "site_keyword_value", label: "Site Keyword Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_site_offering_value": { token: "seo_site_offering_value", schema: "seo", table: "site_offering_value", label: "Site Offering Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_topic_value": { token: "seo_site_topic_value", schema: "seo", table: "site_topic_value", label: "Site Topic Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_value_combo": { token: "seo_site_value_combo", schema: "seo", table: "site_value_combo", label: "Site Value Combination", baseTier: 1, isComponent: true, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_value_worth": { token: "seo_site_value_worth", schema: "seo", table: "site_value_worth", label: "Site Value Worth", baseTier: 1, isComponent: true, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1633,6 +1649,7 @@ export const ENTITY_TYPE_METADATA = {
   "web_analysis_item": { token: "web_analysis_item", schema: "web", table: "analysis_item", label: "Analysis Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "web_brand": { token: "web_brand", schema: "web", table: "brand", label: "Brand", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "web_brand_asset": { token: "web_brand_asset", schema: "web", table: "brand_asset", label: "Brand Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
+  "web_brand_offering": { token: "web_brand_offering", schema: "web", table: "brand_offering", label: "Brand Offering", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_business_fact": { token: "web_business_fact", schema: "web", table: "business_fact", label: "Business Fact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "web_business_location": { token: "web_business_location", schema: "web", table: "business_location", label: "Business Location", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_crawl_event": { token: "web_crawl_event", schema: "web", table: "crawl_event", label: "Web Crawl Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1646,6 +1663,7 @@ export const ENTITY_TYPE_METADATA = {
   "web_link_edge": { token: "web_link_edge", schema: "web", table: "link_edge", label: "Link Edge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_listing_publisher": { token: "web_listing_publisher", schema: "web", table: "listing_publisher", label: "Listing Publisher", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_location_listing": { token: "web_location_listing", schema: "web", table: "location_listing", label: "Location Listing", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_offering_template": { token: "web_offering_template", schema: "web", table: "offering_template", label: "Offering Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_page": { token: "web_page", schema: "web", table: "page", label: "Canonical Page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "url", contentRole: "source", referenceCategory: null },
   "web_page_content": { token: "web_page_content", schema: "web", table: "page_content", label: "Page Draft Content", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_page_evidence": { token: "web_page_evidence", schema: "web", table: "page_evidence", label: "Web Page Evidence", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1657,6 +1675,7 @@ export const ENTITY_TYPE_METADATA = {
   "web_site": { token: "web_site", schema: "web", table: "site", label: "Site", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "web_site_endpoint_rule": { token: "web_site_endpoint_rule", schema: "web", table: "site_endpoint_rule", label: "Site Endpoint Rule", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "path_prefix", contentRole: null, referenceCategory: null },
   "web_site_item_config": { token: "web_site_item_config", schema: "web", table: "site_item_config", label: "Site Item Config", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_site_offering": { token: "web_site_offering", schema: "web", table: "site_offering", label: "Site Offering", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_sitemap": { token: "web_sitemap", schema: "web", table: "sitemap", label: "Sitemap", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "url", contentRole: null, referenceCategory: null },
   "web_snapshot": { token: "web_snapshot", schema: "web", table: "snapshot", label: "Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "wf_node_data_slot": { token: "wf_node_data_slot", schema: "workflow", table: "node_data_slot", label: "Workflow Node Data Slot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1987,7 +2006,9 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "seo_serp_result",
   "seo_serp_snapshot",
   "seo_site_geo_area",
+  "seo_site_keyword_offering",
   "seo_site_keyword_value",
+  "seo_site_offering_value",
   "seo_site_topic_value",
   "seo_site_value_combo",
   "seo_site_value_worth",
@@ -2070,6 +2091,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "web_analysis_item",
   "web_brand",
   "web_brand_asset",
+  "web_brand_offering",
   "web_business_fact",
   "web_business_location",
   "web_crawl_event",
@@ -2083,6 +2105,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "web_link_edge",
   "web_listing_publisher",
   "web_location_listing",
+  "web_offering_template",
   "web_page",
   "web_page_content",
   "web_page_evidence",
@@ -2094,6 +2117,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "web_site",
   "web_site_endpoint_rule",
   "web_site_item_config",
+  "web_site_offering",
   "web_sitemap",
   "web_snapshot",
   "wf_node_data_slot",
