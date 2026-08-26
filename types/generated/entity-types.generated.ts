@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 577 active entity tokens. A token here is FK-valid for
+// 591 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -176,6 +176,20 @@ export type EntityTypeToken =
   | "dm_message"
   | "dm_participant"
   | "domain_classification"
+  | "esign_campaign"
+  | "esign_campaign_member"
+  | "esign_config_definition"
+  | "esign_config_value"
+  | "esign_consent_disclosure"
+  | "esign_envelope"
+  | "esign_envelope_certificate"
+  | "esign_envelope_document"
+  | "esign_envelope_event"
+  | "esign_envelope_external_ref"
+  | "esign_envelope_signer"
+  | "esign_provider"
+  | "esign_provider_binding"
+  | "esign_signing_key"
   | "fc_card"
   | "fc_detail"
   | "fc_set"
@@ -796,6 +810,11 @@ export type ComponentEntityToken =
   | "cx_user_todo"
   | "dm_message"
   | "dm_participant"
+  | "esign_campaign_member"
+  | "esign_envelope_certificate"
+  | "esign_envelope_document"
+  | "esign_envelope_external_ref"
+  | "esign_envelope_signer"
   | "fc_detail"
   | "file_analysis"
   | "file_entities"
@@ -1122,6 +1141,20 @@ export type ScopeableEntityToken =
   | "dm_message"
   | "dm_participant"
   | "domain_classification"
+  | "esign_campaign"
+  | "esign_campaign_member"
+  | "esign_config_definition"
+  | "esign_config_value"
+  | "esign_consent_disclosure"
+  | "esign_envelope"
+  | "esign_envelope_certificate"
+  | "esign_envelope_document"
+  | "esign_envelope_event"
+  | "esign_envelope_external_ref"
+  | "esign_envelope_signer"
+  | "esign_provider"
+  | "esign_provider_binding"
+  | "esign_signing_key"
   | "fc_card"
   | "fc_detail"
   | "fc_set"
@@ -1588,6 +1621,11 @@ export type ListedEntityToken =
   | "custom_field_definition"
   | "custom_field_target"
   | "dataset"
+  | "esign_campaign"
+  | "esign_config_definition"
+  | "esign_consent_disclosure"
+  | "esign_envelope"
+  | "esign_provider_binding"
   | "growth_loop_run"
   | "hindsight_regression_case"
   | "hindsight_replay_step"
@@ -1786,6 +1824,20 @@ export const ENTITY_TYPE_METADATA = {
   "dm_message": { token: "dm_message", schema: "communication", table: "dm_messages", label: "Direct Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "dm_participant": { token: "dm_participant", schema: "communication", table: "dm_conversation_participants", label: "DM Conversation Participant", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "domain_classification": { token: "domain_classification", schema: "platform", table: "domain_classification", label: "Domain Classification", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_campaign": { token: "esign_campaign", schema: "esign", table: "campaign", label: "Signature campaign", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_campaign_member": { token: "esign_campaign_member", schema: "esign", table: "campaign_member", label: "Campaign member", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_config_definition": { token: "esign_config_definition", schema: "esign", table: "config_definition", label: "E-sign configuration definition", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_config_value": { token: "esign_config_value", schema: "esign", table: "config_value", label: "E-sign configuration value", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_consent_disclosure": { token: "esign_consent_disclosure", schema: "esign", table: "consent_disclosure", label: "E-sign consent disclosure", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_envelope": { token: "esign_envelope", schema: "esign", table: "envelope", label: "Signature envelope", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_envelope_certificate": { token: "esign_envelope_certificate", schema: "esign", table: "envelope_certificate", label: "Completion certificate", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_envelope_document": { token: "esign_envelope_document", schema: "esign", table: "envelope_document", label: "Envelope document", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_envelope_event": { token: "esign_envelope_event", schema: "esign", table: "envelope_event", label: "Envelope event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_envelope_external_ref": { token: "esign_envelope_external_ref", schema: "esign", table: "envelope_external_ref", label: "Envelope external reference", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_envelope_signer": { token: "esign_envelope_signer", schema: "esign", table: "envelope_signer", label: "Envelope signer", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_provider": { token: "esign_provider", schema: "esign", table: "provider", label: "E-sign provider", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_provider_binding": { token: "esign_provider_binding", schema: "esign", table: "provider_binding", label: "E-sign provider binding", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "esign_signing_key": { token: "esign_signing_key", schema: "esign", table: "signing_key", label: "E-sign certificate signing key", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "fc_card": { token: "fc_card", schema: "education", table: "fc_card", label: "Flashcard", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "fc_detail": { token: "fc_detail", schema: "education", table: "fc_detail", label: "Flashcard Detail", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "fc_set": { token: "fc_set", schema: "education", table: "fc_set", label: "Flashcard Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -2367,6 +2419,20 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "dm_message",
   "dm_participant",
   "domain_classification",
+  "esign_campaign",
+  "esign_campaign_member",
+  "esign_config_definition",
+  "esign_config_value",
+  "esign_consent_disclosure",
+  "esign_envelope",
+  "esign_envelope_certificate",
+  "esign_envelope_document",
+  "esign_envelope_event",
+  "esign_envelope_external_ref",
+  "esign_envelope_signer",
+  "esign_provider",
+  "esign_provider_binding",
+  "esign_signing_key",
   "fc_card",
   "fc_detail",
   "fc_set",

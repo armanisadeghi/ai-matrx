@@ -33517,6 +33517,17 @@ export type Database = {
       }
     }
     Functions: {
+      _cf_as_double: { Args: { p_value: Json }; Returns: number }
+      _cf_int_opt: { Args: { p_name: string; p_rules: Json }; Returns: number }
+      _cf_num_opt: { Args: { p_name: string; p_rules: Json }; Returns: number }
+      _cf_options: { Args: { p_definition: Json }; Returns: string[] }
+      _cf_pattern_fails: {
+        Args: { p_pattern: string; p_value: string }
+        Returns: boolean
+      }
+      _cf_str_array: { Args: { p_value: Json }; Returns: string[] }
+      _cf_valid_date: { Args: { p_value: string }; Returns: boolean }
+      _cf_valid_datetime: { Args: { p_value: string }; Returns: boolean }
       _lifecycle_partition_guard: {
         Args: { p_partition: string }
         Returns: string
@@ -33600,6 +33611,13 @@ export type Database = {
         Returns: boolean
       }
       build_lifecycle_reference_map: { Args: never; Returns: Json }
+      cf_compact_json: { Args: { p_value: Json }; Returns: string }
+      cf_count_keys: { Args: { p_value: Json }; Returns: number }
+      cf_item_byte_size: { Args: { p_value: Json }; Returns: number }
+      cf_re_email: { Args: never; Returns: string }
+      cf_re_url: { Args: never; Returns: string }
+      cf_utf8_byte_length: { Args: { p_text: string }; Returns: number }
+      cf_ws_class: { Args: never; Returns: string }
       clear_output_feedback: {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: boolean
@@ -33709,6 +33727,24 @@ export type Database = {
       entity_type_has_shareable_ancestor: {
         Args: { p_type: string }
         Returns: boolean
+      }
+      extensibility_knob: {
+        Args: {
+          p_definition_id?: string
+          p_key: string
+          p_organization_id?: string
+          p_target_token?: string
+        }
+        Returns: Json
+      }
+      extensibility_knob_int: {
+        Args: {
+          p_definition_id?: string
+          p_key: string
+          p_organization_id?: string
+          p_target_token?: string
+        }
+        Returns: number
       }
       feature_knob_set: {
         Args: { p_feature: string; p_key: string; p_value: Json }
@@ -34178,6 +34214,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      validate_custom_values: {
+        Args: {
+          p_definitions: Json
+          p_limits?: Json
+          p_mode: string
+          p_values: Json
+        }
+        Returns: Json
       }
       validate_outsider_scope: {
         Args: { p_consumer_key: string; p_scope: Json }
