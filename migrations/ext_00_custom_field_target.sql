@@ -83,7 +83,7 @@ BEGIN
   ) THEN
     RAISE EXCEPTION '%.% has no `custom jsonb` column, so token % cannot participate yet', v_schema, v_table, NEW.target_token
       USING ERRCODE = 'check_violation',
-            HINT = 'Use platform.adopt_custom_fields(token, ...) - it adds the column, the GIN index and this row in one call (SPEC-EXTENSIBILITY 4.3).';
+            HINT = 'Use platform.adopt_custom_fields(token, ...) — it adds the column, the GIN index and this row in one call (SPEC-EXTENSIBILITY §4.3).';
   END IF;
 
   RETURN NEW;
