@@ -86,7 +86,7 @@
 - **RPC takes no argument.** Call `supabase.rpc("get_user_dashboard_metrics")` with no params; identity is `auth.uid()`.
 - **First-render text is timezone-neutral.** `DashboardGreeting` supplies `Welcome back` as its `useSyncExternalStore` server snapshot, then switches to the user's local time-aware client snapshot after hydration. Never read the clock in a render initializer: server UTC and browser local time can produce different text.
 - **The page is one read-only surface.** `DashboardClient` wraps the full hub with `NonEditableContextMenu`, passes the same live `createDashboardScope()` used by `SurfaceRuntimeProvider`, and the rendered sections expose `data-surface-value` anchors for the manifest values. Do not add a second menu or a divergent scope builder.
-- **Dashboard actions stay touch-safe.** Pin, unpin, rotation, quick-action, and metric links keep a minimum 44 px interactive target; pin/unpin controls are visible without hover so they remain discoverable on touch devices.
+- **Dashboard actions stay touch-safe.** Pin, unpin, rotation, quick-action, and metric links keep a minimum 44 px interactive target; pin/unpin controls are visible without hover so they remain discoverable on touch devices. Pinned cards use one column below `sm` so the permanent unpin target never crowds the item label.
 
 ---
 
