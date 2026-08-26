@@ -29832,6 +29832,408 @@ export type Database = {
           },
         ]
       }
+      custom_entity_definition: {
+        Row: {
+          ai_exposure: string
+          allow_record_sharing: boolean
+          archived_at: string | null
+          color: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_searchable: boolean
+          max_fields: number | null
+          max_records: number | null
+          metadata: Json
+          name: string
+          name_plural: string
+          organization_id: string
+          record_name_backfill_done: number
+          record_name_backfill_error: string | null
+          record_name_backfill_state: string
+          record_name_template: string | null
+          sensitivity_tier: string
+          slug: string
+          updated_at: string
+          updated_by: string | null
+          validation_mode: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          ai_exposure?: string
+          allow_record_sharing?: boolean
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_searchable?: boolean
+          max_fields?: number | null
+          max_records?: number | null
+          metadata?: Json
+          name: string
+          name_plural: string
+          organization_id: string
+          record_name_backfill_done?: number
+          record_name_backfill_error?: string | null
+          record_name_backfill_state?: string
+          record_name_template?: string | null
+          sensitivity_tier?: string
+          slug: string
+          updated_at?: string
+          updated_by?: string | null
+          validation_mode?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          ai_exposure?: string
+          allow_record_sharing?: boolean
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_searchable?: boolean
+          max_fields?: number | null
+          max_records?: number | null
+          metadata?: Json
+          name?: string
+          name_plural?: string
+          organization_id?: string
+          record_name_backfill_done?: number
+          record_name_backfill_error?: string | null
+          record_name_backfill_state?: string
+          record_name_template?: string | null
+          sensitivity_tier?: string
+          slug?: string
+          updated_at?: string
+          updated_by?: string | null
+          validation_mode?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_entity_definition_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_entity_definition_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_field_definition: {
+        Row: {
+          ai_exposure: string
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          default_value: Json | null
+          deleted_at: string | null
+          display_config: Json
+          display_name: string
+          field_key: string
+          field_order: number
+          field_type: string
+          id: string
+          index_error: string | null
+          index_name: string | null
+          index_state: string
+          is_indexed: boolean
+          is_multi: boolean
+          is_required: boolean
+          is_searchable: boolean
+          is_unique: boolean
+          metadata: Json
+          option_list_id: string | null
+          options: Json | null
+          organization_id: string
+          reference_target_definition_id: string | null
+          reference_target_token: string | null
+          sensitivity_tier: string
+          target_definition_id: string | null
+          target_kind: string
+          target_token: string | null
+          updated_at: string
+          updated_by: string | null
+          validation_rules: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          ai_exposure?: string
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_value?: Json | null
+          deleted_at?: string | null
+          display_config?: Json
+          display_name: string
+          field_key: string
+          field_order?: number
+          field_type: string
+          id?: string
+          index_error?: string | null
+          index_name?: string | null
+          index_state?: string
+          is_indexed?: boolean
+          is_multi?: boolean
+          is_required?: boolean
+          is_searchable?: boolean
+          is_unique?: boolean
+          metadata?: Json
+          option_list_id?: string | null
+          options?: Json | null
+          organization_id: string
+          reference_target_definition_id?: string | null
+          reference_target_token?: string | null
+          sensitivity_tier?: string
+          target_definition_id?: string | null
+          target_kind: string
+          target_token?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          validation_rules?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          ai_exposure?: string
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_value?: Json | null
+          deleted_at?: string | null
+          display_config?: Json
+          display_name?: string
+          field_key?: string
+          field_order?: number
+          field_type?: string
+          id?: string
+          index_error?: string | null
+          index_name?: string | null
+          index_state?: string
+          is_indexed?: boolean
+          is_multi?: boolean
+          is_required?: boolean
+          is_searchable?: boolean
+          is_unique?: boolean
+          metadata?: Json
+          option_list_id?: string | null
+          options?: Json | null
+          organization_id?: string
+          reference_target_definition_id?: string | null
+          reference_target_token?: string | null
+          sensitivity_tier?: string
+          target_definition_id?: string | null
+          target_kind?: string
+          target_token?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          validation_rules?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_field_definition_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_field_definition_reference_target_definition_id_fkey"
+            columns: ["reference_target_definition_id"]
+            isOneToOne: false
+            referencedRelation: "custom_entity_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_field_definition_target_definition_id_fkey"
+            columns: ["target_definition_id"]
+            isOneToOne: false
+            referencedRelation: "custom_entity_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_field_definition_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_field_target: {
+        Row: {
+          ai_exposure_ceiling: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_enabled: boolean
+          max_custom_bytes: number | null
+          max_fields: number | null
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          sensitivity_ceiling: string
+          target_token: string
+          updated_at: string
+          updated_by: string | null
+          validation_mode: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          ai_exposure_ceiling?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_enabled?: boolean
+          max_custom_bytes?: number | null
+          max_fields?: number | null
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          sensitivity_ceiling?: string
+          target_token: string
+          updated_at?: string
+          updated_by?: string | null
+          validation_mode?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          ai_exposure_ceiling?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_enabled?: boolean
+          max_custom_bytes?: number | null
+          max_fields?: number | null
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          sensitivity_ceiling?: string
+          target_token?: string
+          updated_at?: string
+          updated_by?: string | null
+          validation_mode?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_field_target_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_field_target_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_record: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: Json
+          deleted_at: string | null
+          entity_definition_id: string
+          external_key: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          record_name: string | null
+          search_vector: unknown
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          entity_definition_id: string
+          external_key?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          record_name?: string | null
+          search_vector?: unknown
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          entity_definition_id?: string
+          external_key?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          record_name?: string | null
+          search_vector?: unknown
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_record_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_record_entity_definition_id_fkey"
+            columns: ["entity_definition_id"]
+            isOneToOne: false
+            referencedRelation: "custom_entity_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_record_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ddl_guard_log: {
         Row: {
           ack_reason: string | null
