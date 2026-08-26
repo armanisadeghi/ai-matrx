@@ -767,6 +767,26 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-26 — **Queries fits, and the Location filter names a place.** (1) The
+  Query column had no declared width, so it took 592px of a 1,284px container
+  and pushed Position / Score / Level off the right edge with no affordance;
+  `buildGscKeyColumn` now takes a width (280 on the query dimension, which also
+  caps the cell's truncation — a declared width is only a hint under
+  `table-layout: auto`) and Offering narrows 270 → 210. Measured after: 1,284px
+  of table in 1,284px, every column in view at 1362px, and MatrxDataTable's
+  now-always-on scroll affordance covers narrower windows and phones. Nothing
+  sets `mobileHidden`: Class/Score/Level ship on a phone too, behind the
+  sideways scroll the affordance now announces. (2) `FilterBar` — the Location
+  filter was a free-text box that wanted a `web.business_location` uuid, so any
+  typed value produced an unreadable chip over an empty table. It is a
+  `CreatablePicker` over this brand's real locations plus the two bucket tokens
+  the decomposition already names (`unresolved` / `not_local`), with a
+  new-tab door to the locations screen; the chip renders the place's NAME. It
+  needs the new `brandId` prop and is not offered without one. (3) Escape, an
+  outside click and a new explicit **Cancel** button all discard the whole
+  draft, and every write leaves through one `emit()` that prunes blank-valued
+  keys — a valueless chip can no longer be applied by any path.
+
 - 2026-08-25 — UUID-validated both Search Console `?site` consumers so a
   malformed deep link cannot pass a path-like value through the workspace or
   shared site navigation into site-scoped reads.

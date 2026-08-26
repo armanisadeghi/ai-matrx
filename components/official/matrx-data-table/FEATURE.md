@@ -119,9 +119,19 @@ tables (AI Models, relationships, …) can cut over to one contract.
 **Chosen: a frozen-identity-column scroll surface, not a card/list mode.**
 Below `sm` the table sizes to its content (`w-max`) and the container scrolls
 horizontally; the **first column freezes** (`max-sm:sticky left-0`, opaque
-`bg-card` inherit) so every row stays identifiable, and a **right-edge fade +
-chevron affordance** renders while more columns sit off-screen (recomputed on
-scroll/resize, gone at scroll end). Desktop rendering is untouched.
+`bg-card` inherit) so every row stays identifiable. Desktop rendering is
+untouched.
+
+🚨 **The scroll affordance is NOT mobile-only, and no prop turns it off.** Edge
+fades + chevrons (both sides) and a sentence under the table ("More columns
+off-screen…") render from the **measured** overflow at every width — a
+`ResizeObserver` on the container and the table keeps it honest when a sidebar
+or panel changes the width without a window resize. It used to be `sm:hidden`
+AND gated on the frozen-column flag, which is false whenever `selection` is on:
+Search Console → Queries at 1362px put 1,662px of table in a 1,284px container
+with Position, Score and Level entirely off the right edge and nothing on
+screen saying so. A desktop viewport is not a promise that everything fits.
+`mobile="plain"` opts out of the frozen identity column only.
 
 _Why scroll over cards:_ every consumer keeps full parity for free — sort,
 per-column filters, inline edit, FK cells, row/window actions all keep working
@@ -133,7 +143,7 @@ frozen identity column + visible affordance is what makes it intentional
 rather than raw overflow.
 
 - **Zero-config.** Consumers do nothing. Opt out with `mobile="plain"`
-  (removes the frozen column + affordance; content-sized scrolling stays —
+  (removes the frozen column; content-sized scrolling stays —
   wrapping every column at 390px is never the right rendering).
 - **Explicit card exception.** `mobileCards={(row) => ...}` replaces the narrow
   row presentation when a product surface must expose every essential value
@@ -263,6 +273,21 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-26 — **Off-screen columns are discoverable at EVERY width, and a
+  checkbox is never inflated to the touch floor.** (1) The horizontal-scroll
+  affordance is no longer `sm:hidden` and no longer gated on the frozen-column
+  flag (false whenever `selection` is on): both edge fades, their chevrons, and
+  a sentence under the table now render from measured overflow, with a
+  `ResizeObserver` so a width change without a window resize still updates it.
+  Found on Search Console → Queries: 1,662px of table in a 1,284px container,
+  Position / Score / Level entirely off-screen, nothing saying so. (2) The
+  root's `max-lg:[&_button]:min-h-11/min-w-11` touch floor now excludes
+  `[role=checkbox|radio|switch]` — Radix renders those as `<button>`, so a 14px
+  checkbox became a 44×44 bordered empty box that read as an empty text input
+  at 375px. It keeps its size and gains an invisible 44×44 `::before` hit area
+  (`CHECKBOX_TAP_AREA`). The same missing exclusion was fixed in
+  `.matrx-touch-targets` (app/globals.css), whose comment had always claimed it.
 
 - 2026-08-25 — Added `mobileCardsBreakpoint="sm" | "lg"`; card consumers stay
   phone-only by default and can deliberately include portrait tablets without
