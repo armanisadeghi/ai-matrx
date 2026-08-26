@@ -74,6 +74,7 @@ export const MOBILE_TABLE_FROZEN = [
  * are intentionally touch-sized. Desktop layout resumes at `lg`.
  */
 export const MOBILE_TABLE_FROZEN_THROUGH_TABLET = [
+  "max-lg:table max-lg:overflow-visible",
   "w-max min-w-full max-w-none lg:w-full lg:min-w-0 lg:max-w-full",
   "max-lg:[&_th]:whitespace-nowrap max-lg:[&_td]:whitespace-nowrap",
   "max-lg:[&_thead_tr>*:first-child]:sticky max-lg:[&_thead_tr>*:first-child]:left-0 max-lg:[&_thead_tr>*:first-child]:z-20 max-lg:[&_thead_tr>*:first-child]:bg-muted",
