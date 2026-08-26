@@ -39,7 +39,11 @@ import { SettledOutputBody } from "./SettledOutputBody";
 import { useWorkflowRunControls } from "../hooks/useWorkflowRunControls";
 import { StructuredValueTabs } from "@/components/mardown-display/blocks/generic/StructuredValueTabs";
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
-import { selectRequestCarriesKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import {
+  selectRequestCarriesKindEnvelope,
+  selectRequestStreamingPartialValue,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
 import { explainRunFailure } from "../run-failure-explanation";
 import {
   selectRunError,
@@ -307,6 +311,9 @@ export function InvocationBody({
   const laneCarriesKind = useAppSelector(
     selectRequestCarriesKindEnvelope(laneRequestId ?? ""),
   );
+  const lanePartialValue = useAppSelector(
+    selectRequestStreamingPartialValue(laneRequestId ?? ""),
+  );
   // The step's promised shape: the definition's declaration (threaded by the
   // caller) or the engine's announcement on node_started — which is the ONLY
   // source for SPEC-level kinds like docproc.content.structure.
@@ -316,6 +323,12 @@ export function InvocationBody({
     // block yet) shows the declared kind's arriving silhouette, not raw
     // text. The moment any block identifies a kind, the lane takes over and
     // the real component streams — the swap is upgrade-only.
+    //
+    // FED, not frozen: the silhouette receives the region's LIVE parsed-so-far
+    // value every frame — title landing, counts stepping up, data-fed loaders
+    // performing the arrival. A silhouette that sat still while tokens poured
+    // in read as "nothing is happening" for the whole step (Arman,
+    // 2026-08-26).
     if (promisedKind && !laneCarriesKind && working) {
       return (
         <KindSlot
@@ -323,6 +336,10 @@ export function InvocationBody({
           kind={promisedKind}
           phase="arriving"
           chrome="bare"
+          early={{
+            ...earlyKeysFromValue(lanePartialValue, promisedKind),
+            value: lanePartialValue,
+          }}
         />
       );
     }

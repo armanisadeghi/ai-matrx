@@ -49,6 +49,10 @@ import { InterruptCard, RunErrorCard } from "./readout-parts";
 import { ReadoutView } from "./ReadoutView";
 import { nodeOutputKind } from "./run/node-presentation";
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
+import {
+  TileActionsProvider,
+  useTileActionsTarget,
+} from "@/components/mardown-display/blocks/generic/tile-actions-slot";
 
 /** nodeId → human label from the definition (label ?? id). */
 export function definitionNodeLabels(
@@ -186,6 +190,9 @@ function ReadoutCell({
   // read only while placeholding, so a live tile pays nothing for it.
   const placeholderKind =
     mode === "placeholder" ? readoutOutputKind(readout, definition) : null;
+  // Header-actions slot: body content (the Preview/JSON toggle) renders its
+  // tiny controls on THIS title line instead of spending a body row on them.
+  const { target: actionsTarget, targetProps } = useTileActionsTarget();
   // `h` is the author's intent for how much room this deserves — honoured as a
   // floor so a short readout keeps its shape, never as a ceiling that clips
   // live writing.
@@ -215,6 +222,9 @@ function ReadoutCell({
           <h3 className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground">
             {title}
           </h3>
+          {/* Body controls (Preview/JSON) land here — on the line that already
+              exists — never on a body row of their own. */}
+          <span {...targetProps} className="inline-flex shrink-0 items-center" />
           {mode === "placeholder" ? (
             <span className="shrink-0 text-[11px] text-muted-foreground">
               Coming up
@@ -249,12 +259,14 @@ function ReadoutCell({
             </div>
           )
         ) : (
-          <ReadoutView
-            runId={runId}
-            readout={readout}
-            ensureLane={ensureLane}
-            definition={definition}
-          />
+          <TileActionsProvider target={actionsTarget}>
+            <ReadoutView
+              runId={runId}
+              readout={readout}
+              ensureLane={ensureLane}
+              definition={definition}
+            />
+          </TileActionsProvider>
         )}
       </div>
     </div>

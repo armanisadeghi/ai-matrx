@@ -2119,3 +2119,36 @@ export const selectRequestCarriesKindEnvelope = (requestId: string) =>
       return false;
     },
   );
+
+/**
+ * The LIVE partial value of this request's streaming structured region — the
+ * parsed-so-far object of the largest streaming envelope, or null when no
+ * envelope is streaming. This is what lets a workflow step's arriving
+ * silhouette FILL as tokens arrive (title landing, counts stepping up)
+ * instead of sitting frozen until settlement — for kindless streams
+ * especially, where nothing else can render (Arman, 2026-08-26: "the content
+ * streamed in token by token, but none of it actually rendered until it was
+ * completely done").
+ */
+export const selectRequestStreamingPartialValue = (requestId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlocks,
+    (renderBlocks): Record<string, unknown> | null => {
+      if (!renderBlocks) return null;
+      let best: Record<string, unknown> | null = null;
+      let bestSize = -1;
+      for (const block of Object.values(renderBlocks)) {
+        const root = readEnvelope(block?.metadata)?.root;
+        if (!root || root.status !== "streaming") continue;
+        const value = root.value;
+        if (!value || typeof value !== "object") continue;
+        const size = Object.keys(value).length;
+        if (size > bestSize) {
+          best = value as Record<string, unknown>;
+          bestSize = size;
+        }
+      }
+      return best;
+    },
+  );

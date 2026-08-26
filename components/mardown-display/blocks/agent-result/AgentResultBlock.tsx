@@ -60,7 +60,8 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { AgentContentList } from "@/features/workflow-runtime/components/AgentContentList";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
-import { KIND_KEY } from "@ai-matrx/content-ir";
+import { KIND_KEY, readObjectKind } from "@ai-matrx/content-ir";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { cn } from "@/lib/utils";
 import type { AgentResultData } from "@/features/content-ir/kinds/agent-result";
 import type { AgentRunFacts } from "@/features/workflow-runtime/agent-run-output";
@@ -276,10 +277,7 @@ const AgentResultBlock: React.FC<AgentResultBlockProps> = ({
   }
 
   // Schema-bound runs put the answer in `structured_output` and leave
-  // `final_text` empty or duplicated; the bound payload wins. It goes through
-  // the pipeline FENCED only when it names a kind — that is what lets a
-  // schema-bound flashcard set render as flashcards. With no kind to reach,
-  // the fence is just a code block, so the payload goes to the floor instead.
+  // `final_text` empty or duplicated; the bound payload wins.
   const jsonText = structured
     ? JSON.stringify(structured, null, 2)
     : finalText && finalTextIsJson
@@ -289,10 +287,28 @@ const AgentResultBlock: React.FC<AgentResultBlockProps> = ({
   // Zero data loss: text that only LOOKED like JSON never parsed, so it keeps
   // the fence rather than becoming an empty document.
   const onTheFloor = jsonValue !== null && !carriesKind(jsonValue);
+  // A payload naming its own kind renders through THE instance renderer,
+  // directly. It used to be re-serialized into a ```json fence and pushed back
+  // through the markdown pipeline in the hope the detector would re-route it —
+  // a round-trip that showed the reader raw JSON whenever any link in that
+  // chain didn't fire (the "Name the kit" step sat as a JSON dump on Arman's
+  // 2026-08-26 run, permanently). One value, one renderer, no re-parse.
+  const topLevelKind =
+    jsonValue !== null && isRecord(jsonValue) ? readObjectKind(jsonValue) : null;
+  // Never recurse into ourselves — an envelope nested in an envelope falls to
+  // the floor path, which renders it honestly.
+  const kindOfValue = topLevelKind !== "agent_result" ? topLevelKind : null;
 
   return (
     <div className={cn("w-full", className)}>
-      {jsonText !== null ? (
+      {jsonValue !== null && kindOfValue ? (
+        <KindInstanceRender
+          kind={kindOfValue}
+          value={jsonValue}
+          showRoutingNote={false}
+          variant="bare"
+        />
+      ) : jsonText !== null ? (
         onTheFloor ? (
           <StructuredValueView value={jsonValue} />
         ) : (

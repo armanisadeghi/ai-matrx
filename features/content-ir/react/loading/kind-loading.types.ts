@@ -106,6 +106,17 @@ export function earlyKeysFromValue(
   const icon = str("icon");
   if (icon) props.icon = icon;
   const count = num("count");
-  if (count !== undefined) props.count = count;
+  if (count !== undefined) {
+    props.count = count;
+  } else {
+    // No explicit count: derive one from the largest top-level array, so a
+    // loader's item skeletons STEP UP as items arrive (sections landing one
+    // by one reads as progress; a frozen row count reads as a stall).
+    let largest = 0;
+    for (const item of Object.values(v)) {
+      if (Array.isArray(item) && item.length > largest) largest = item.length;
+    }
+    if (largest > 0) props.count = largest;
+  }
   return props;
 }
