@@ -221,6 +221,18 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "content-plan-empty-plan-precondition",
+    tier: "yellow",
+    reason:
+      "The keyword-strategy estimate answers 409 content_plan_empty_plan by design when a site has no planned pages. Setup gates the estimate query on the plan tree having pages and resolves this code to an empty estimate (useSetupPasses.resolveEstimateFailure), so the section shows its 'no planned pages yet' guidance; a residual capture is a benign race (pages removed between the tree read and the estimate), not a repair-queue failure.",
+    addedAt: "2026-08-26",
+    match: {
+      source: "api-http",
+      code: "content_plan_empty_plan",
+      status: 409,
+    },
+  },
+  {
     id: "cms-write-policy-denial",
     tier: "yellow",
     reason:

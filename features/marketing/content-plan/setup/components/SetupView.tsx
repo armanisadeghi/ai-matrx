@@ -352,7 +352,12 @@ export function SetupView() {
   // run on `chat.agent_run` and persists the proposal on the site before it
   // streams. `agents` still owns the small client-side steps (shape,
   // family names, entity curation).
-  const passes = useSetupPasses(siteId, researchTopicId);
+  // Null while the tree is loading (or still showing the previous site's
+  // placeholder rows) — the keyword estimate stays off until THIS site's plan
+  // is known to have pages, because an empty plan is a designed 409.
+  const plannedPageCount =
+    nodes.isPlaceholderData || !nodes.data ? null : nodes.data.length;
+  const passes = useSetupPasses(siteId, plannedPageCount);
   const researchReport =
     researchDoc.data?.status === "success" && researchDoc.data.content?.trim()
       ? researchDoc.data.content

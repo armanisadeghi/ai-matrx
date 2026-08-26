@@ -862,6 +862,26 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-26 — **Keyword estimate no longer asks with an empty plan.** The
+  Setup keyword-strategy estimate
+  (`GET /content-plan/sites/{site_id}/keyword-strategy/estimate`) used to fire
+  the moment a `siteId` existed, so every fresh site with zero planned pages
+  hit the server's DESIGNED 409 `content_plan_empty_plan` precondition —
+  duplicated ×4 in the Error Inspector by React Query's retry plus a stale
+  `researchTopicId` in the query key (the endpoint reads only the plan tree).
+  Fix at the choke point (`useSetupPasses`): the hook now takes
+  `plannedPageCount` (null while `usePlanNodes` is loading or showing
+  placeholder rows) and the estimate query is `enabled` only when the plan has
+  pages; the count is IN the key so growing/pruning the plan re-sizes the
+  estimate; `researchTopicId` left the hook entirely. Residual races (pages
+  deleted between the tree read and the estimate) resolve via
+  `resolveEstimateFailure` to an empty estimate — the section then shows its
+  existing `planEmpty` guidance ("There are no planned pages to assign
+  keywords to yet") instead of an error line. A matching yellow rule in
+  `lib/diagnostics/errorTierRules.ts`
+  (`content-plan-empty-plan-precondition`) keeps a residual capture out of
+  the red repair queue. Regression:
+  `hooks/__tests__/keyword-estimate-empty-plan.test.ts`.
 - 2026-08-24 — **Per-page research: "Run research for this page."** New
   `PageResearchWindow` (`features/window-panels/windows/marketing/`) +
   `useOpenPageResearchWindow` opener + the six registration points

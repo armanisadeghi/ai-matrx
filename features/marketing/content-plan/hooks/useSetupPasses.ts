@@ -113,6 +113,27 @@ function parseKeywordStrategyEstimate(value: unknown): KeywordStrategyEstimate {
   return { site_id: root.site_id, pages: root.pages, tiers };
 }
 
+/**
+ * The estimate endpoint answers 409 `content_plan_empty_plan` BY DESIGN when
+ * the site has no planned pages — that is a precondition state the Setup UI
+ * already explains ("There are no planned pages to assign keywords to yet"),
+ * not a failure. The query below is gated so it never asks while the plan is
+ * empty, but a race (pages deleted in another tab between our tree read and
+ * the estimate) can still surface it: resolve it to this empty estimate so
+ * the section falls back to its planEmpty guidance instead of an error line.
+ * Any other failure keeps its precise human headline.
+ */
+export function resolveEstimateFailure(
+  siteId: string,
+  error: { message: string; status?: number; serverDetail?: unknown },
+): KeywordStrategyEstimate {
+  const parsed = parseCallApiError(error);
+  if (parsed.code === "content_plan_empty_plan") {
+    return { site_id: siteId, pages: 0, tiers: [] };
+  }
+  throw new Error(describeBackendFailure(parsed).headline);
+}
+
 // `as const` matters: callApi's `path` is the generated literal union, so a
 // widened `string` here would not typecheck against the OpenAPI contract.
 const PASS_PATHS = {
@@ -159,7 +180,14 @@ function readPhaseMessage(event: TypedStreamEvent): string | null {
 
 export function useSetupPasses(
   siteId: string | null,
-  researchTopicId: string | null,
+  /**
+   * How many pages the plan tree currently holds, or null while the tree is
+   * still loading (or showing another site's placeholder rows). The keyword
+   * estimate is a paid-pass sizing read over the planned pages — asking with
+   * an empty plan is a known 409 (`content_plan_empty_plan`), so the query
+   * stays off until the caller can prove there is something to estimate.
+   */
+  plannedPageCount: number | null,
 ) {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
@@ -177,13 +205,17 @@ export function useSetupPasses(
     review: setupPassRunSetKey(siteId, "review"),
   };
   const keywordEstimate = useQuery({
+    // The plan-page count is part of the key so growing or pruning the plan
+    // re-sizes the estimate; the endpoint reads only the plan tree, so the
+    // research topic plays no part (its old presence in this key double-fired
+    // the request while setup hydrated).
     queryKey: [
       "content-plan",
       "keyword-strategy-estimate",
       siteId,
-      researchTopicId,
+      plannedPageCount,
     ],
-    enabled: Boolean(siteId),
+    enabled: Boolean(siteId) && plannedPageCount !== null && plannedPageCount > 0,
     queryFn: async (): Promise<KeywordStrategyEstimate> => {
       if (!siteId) throw new Error("Pick a site first.");
       const result = await dispatch(
@@ -194,9 +226,7 @@ export function useSetupPasses(
         }),
       );
       if (result.error) {
-        throw new Error(
-          describeBackendFailure(parseCallApiError(result.error)).headline,
-        );
+        return resolveEstimateFailure(siteId, result.error);
       }
       return parseKeywordStrategyEstimate(result.data);
     },
