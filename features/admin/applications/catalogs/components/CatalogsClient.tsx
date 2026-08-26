@@ -475,6 +475,11 @@ export function CatalogsClient({
         </p>
 
         <div className="min-h-0 flex-1">
+          {/* No entity: a kind row here is a rollup ("N entries, N active")
+              across many catalog_entries, not one DB record — and even a
+              single catalog_entries row has no registered EntityTypeToken
+              today (see CatalogKindTable.tsx). Copy/AI act on the raw
+              content only. */}
           <NonEditableContextMenu
             sourceFeature="admin"
             contentSource={{ type: "raw" }}

@@ -11,6 +11,7 @@ import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
 import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
+import { ADMIN_AGENT_REVIEW_SURFACE_NAME } from "@/features/surfaces/manifests/admin-agent-review.manifest";
 import { loadReviewQueue } from "@/features/admin/agent-review/service";
 import {
   EMPTY_REVIEW_REGISTRY,
@@ -291,8 +292,18 @@ export default function AgentReviewQueueTable() {
       </nav>
 
       <div className="min-h-0 flex-1">
+        {/* No entity: agent.review_queue has no registered EntityTypeToken
+            today — Copy/AI act on the raw content only.
+            surfaceName is `matrx-admin/agent-review` (registered manifest,
+            features/surfaces/manifests/admin-agent-review.manifest.ts) —
+            this IS that surface's own table. No `getApplicationScope` yet:
+            the manifest's doc comment claims an emitter is wired, but no
+            `<SurfaceRuntimeProvider>` exists anywhere in this file or its
+            page — that gap is real and pre-existing, not introduced here;
+            v3 will (correctly) scream a VALUE MAPPING GAP until it's built. */}
         <NonEditableContextMenu
           sourceFeature="admin"
+          surfaceName={ADMIN_AGENT_REVIEW_SURFACE_NAME}
           contentSource={{ type: "raw" }}
           contextData={{ content: "" }}
           resolveContextOnOpen={(element) => {

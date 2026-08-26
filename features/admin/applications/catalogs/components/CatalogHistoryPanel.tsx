@@ -208,6 +208,12 @@ export function CatalogHistoryPanel({
           : `${entries.length} snapshot${entries.length === 1 ? "" : "s"} — open a row to diff it against the CURRENT live entry.`}
       </p>
 
+      {/* No entity: public.catalog_entries_history has no registered
+          EntityTypeToken (nor does catalog_entries — see
+          CatalogKindTable.tsx), and a superseded snapshot is not something
+          to Attach/Share anyway. No surfaceName: this panel renders inside
+          the entry EDITOR, a sub-view of `matrx-admin/applications` that
+          cannot honestly fill that surface's declared scope from here. */}
       <NonEditableContextMenu
         sourceFeature="admin"
         contentSource={{ type: "raw" }}

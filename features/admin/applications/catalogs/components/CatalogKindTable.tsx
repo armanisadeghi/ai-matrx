@@ -33,6 +33,7 @@ import type {
 } from "@/components/official/matrx-data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
+import { ADMIN_APPLICATIONS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-applications.manifest";
 import {
   APPLICATIONS_ADMIN_LOCATION,
   catalogEntryHref,
@@ -414,8 +415,13 @@ export function CatalogKindTable({
       </div>
 
       <div className="min-h-0 flex-1">
+        {/* No entity: public.catalog_entries has no registered EntityTypeToken
+            today — Attach To / Share stay hidden and Copy/AI act on the raw
+            content only. Adding one is db-canonicalize-table work, out of
+            scope here. */}
         <NonEditableContextMenu
           sourceFeature="admin"
+          surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
           contentSource={{ type: "raw" }}
           contextData={{ content: "" }}
           resolveContextOnOpen={(element) => {
