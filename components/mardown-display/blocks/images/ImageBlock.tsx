@@ -15,7 +15,8 @@ import {
   PencilIcon,
 } from "lucide-react";
 import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
-import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 
 const MAX_IMAGE_HEIGHT = 700;
 
@@ -25,14 +26,32 @@ interface ImageBlockProps {
 }
 
 const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) => {
-  // A markdown image can be one of our own files. Route the URL through the
-  // self-heal primitive so a load failure refreshes the file-session cookie
-  // and retries the same durable URL instead of rendering a broken image. For
-  // non-owned URLs this is a transparent passthrough.
-  const { src, retryKey, onError: handleImageError } = useDurableSrc(srcProp);
+  // IDENTITY BEATS THE STORED STRING.
+  //
+  // A markdown image is frequently one of OUR files whose URL was written into
+  // the message long ago. Historically that string was an EXPIRING signed S3
+  // URL, so rendering `srcProp` verbatim shows a broken image the moment the
+  // signature lapses — no session refresh can resurrect it (see useDurableSrc's
+  // header). `recognizeOurFileUrl` hands back the STRONGEST FileSource it can
+  // recover — a `file_id` when the URL carries one — and the handler re-mints a
+  // live URL from that identity, so every historical row heals itself on read
+  // with no rewrite of stored content.
+  //
+  // A URL we don't recognise (a genuinely external image) yields no match, the
+  // handler is called with `null`, and `srcProp` passes through untouched.
+  const ourFile = recognizeOurFileUrl(srcProp);
+  const resolvedFromIdentity = useFileSrc(ourFile?.source ?? null);
+  const effectiveSrc = resolvedFromIdentity ?? srcProp;
+  // Session-cookie self-heal still applies on top: the identity-resolved URL is
+  // durable, so a load failure means the file session needs re-establishing.
+  const {
+    src,
+    retryKey,
+    onError: handleImageError,
+  } = useDurableSrc(effectiveSrc, ourFile?.fileId ?? undefined);
   // Our own media has a recoverable file_id → offer the "Edit" escape hatch
   // (open the real image editor); external/unknown URLs simply don't show it.
-  const editableFileId = fileIdFromUserFilesUrl(src);
+  const editableFileId = ourFile?.fileId ?? null;
   const [feedback, setFeedback] = useState<"none" | "like" | "dislike">("none");
   const [showCopySuccess, setShowCopySuccess] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
