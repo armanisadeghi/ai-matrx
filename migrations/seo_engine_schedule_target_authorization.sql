@@ -52,8 +52,13 @@ BEGIN
     END IF;
 
   ELSIF NEW.scope_tier = 'system' THEN
-    -- A system row governs every organization on the platform.
-    IF NOT public.is_platform_admin() THEN
+    -- A system row governs every organization on the platform, so a PERSON must
+    -- be a platform admin to set one. A background writer (the dispatcher
+    -- stamping `last_dispatched_at`, a migration, the scheduler) has no JWT and
+    -- therefore no `auth.uid()` — it is not a user escalating privilege, and
+    -- blocking it would wedge the very automation these rows exist to drive.
+    -- Caught live: the first claim against a system row failed on this check.
+    IF (SELECT auth.uid()) IS NOT NULL AND NOT public.is_platform_admin() THEN
       RAISE EXCEPTION
         'engine_schedule: only a platform admin may set the system-wide schedule'
         USING ERRCODE = '42501';
