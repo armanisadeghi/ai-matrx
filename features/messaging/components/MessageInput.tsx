@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { SendTapButton } from "@/components/icons/tap-buttons";
 import { AttachReferenceButton } from "@/features/matrx-envelope/components/AttachReferenceButton";
 import { ReferencePickerChip } from "@/features/matrx-envelope/components/ReferencePickerChip";
+import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import {
   composeTextWithAttachments,
   type AttachedReference,
@@ -27,6 +28,10 @@ interface MessageInputProps {
   draftInsert?: { text: string; nonce: number };
 }
 
+export function composeVoiceDraft(base: string, transcript: string): string {
+  return base ? `${base}\n${transcript}` : transcript;
+}
+
 export function MessageInput({
   onSendMessage,
   onTyping,
@@ -43,6 +48,13 @@ export function MessageInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
+  const contentRef = useRef(content);
+  const preRecordingContentRef = useRef<string | null>(null);
+  const [voiceBusy, setVoiceBusy] = useState(false);
+
+  useEffect(() => {
+    contentRef.current = content;
+  }, [content]);
 
   // Auto-focus on mount
   useEffect(() => {
@@ -104,7 +116,7 @@ export function MessageInput({
 
   // Handle send
   const handleSend = () => {
-    if (!canSend || isSending || disabled) return;
+    if (!canSend || isSending || disabled || voiceBusy) return;
 
     // Stop typing indicator
     if (typingTimeoutRef.current) {
@@ -122,6 +134,26 @@ export function MessageInput({
     // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
+    }
+  };
+
+  const writeVoiceTranscript = (transcript: string, final: boolean) => {
+    if (!transcript) {
+      if (final) preRecordingContentRef.current = null;
+      return;
+    }
+
+    if (preRecordingContentRef.current === null) {
+      preRecordingContentRef.current = contentRef.current;
+    }
+    const base = preRecordingContentRef.current;
+    const next = composeVoiceDraft(base, transcript);
+    setContent(next);
+    handleTyping();
+
+    if (final) {
+      preRecordingContentRef.current = null;
+      textareaRef.current?.focus();
     }
   };
 
@@ -174,7 +206,7 @@ export function MessageInput({
           placeholder={placeholder}
           disabled={disabled}
           className={cn(
-            "w-full min-h-[44px] max-h-[150px] resize-none text-base pl-10 pr-12",
+            "w-full min-h-[44px] max-h-[150px] resize-none text-base pl-[4.75rem] pr-12",
             "rounded-xl border-border",
             "bg-muted",
             "focus-visible:ring-1 focus-visible:ring-primary",
@@ -184,11 +216,25 @@ export function MessageInput({
         />
         {/* Attach a note / file / task / agent / link — no fence JSON typed by
             a human, ever (features/matrx-envelope/referenceText.ts). */}
-        <div className="absolute bottom-0 left-0">
+        <div className="absolute bottom-0 left-0 flex h-11 items-center">
           <AttachReferenceButton
             disabled={disabled || isSending}
             pickerScope="direct-message"
             onAttach={(refs) => setAttachments((prev) => [...prev, ...refs])}
+          />
+          <MicrophoneIconButton
+            size="md"
+            label="Record audio message"
+            disabled={disabled || isSending}
+            onLiveTranscript={(text) => writeVoiceTranscript(text, false)}
+            onTranscriptionComplete={(text) => writeVoiceTranscript(text, true)}
+            onRecordingStateChange={({ isRecording, isTranscribing }) => {
+              setVoiceBusy(isRecording || isTranscribing);
+            }}
+            onError={() => {
+              preRecordingContentRef.current = null;
+              setVoiceBusy(false);
+            }}
           />
         </div>
         <div className="absolute bottom-0 right-0">
@@ -205,7 +251,7 @@ export function MessageInput({
               variant="transparent"
               ariaLabel="Send message"
               onClick={handleSend}
-              disabled={!canSend || disabled}
+              disabled={!canSend || disabled || voiceBusy}
             />
           )}
         </div>
