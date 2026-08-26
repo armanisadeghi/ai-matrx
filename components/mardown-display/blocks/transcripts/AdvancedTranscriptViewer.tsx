@@ -31,6 +31,7 @@ import {
   type ParsedTranscript,
 } from "./transcript-parser";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import type {
   ContextMenuExtraItem,
   ContextMenuExtraSection,
@@ -294,6 +295,8 @@ const TranscriptSegmentItem = React.memo(
     return (
       <NonEditableContextMenu
         sourceFeature="transcription"
+        surfaceName="matrx-user/transcripts"
+        contentSource={{ type: "raw" }}
         contextData={{ content: segment.text }}
         extraSections={extraSections}
         enableFloatingIcon={false}
@@ -490,6 +493,7 @@ const AdvancedTranscriptViewer = ({
     useState<TranscriptSegment | null>(null);
   const [editValue, setEditValue] = useState("");
   const [editSpeaker, setEditSpeaker] = useState("");
+  const editSegmentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Split modal state
   const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
@@ -1107,12 +1111,22 @@ const AdvancedTranscriptViewer = ({
 
             <div className="space-y-2">
               <Label htmlFor="segment-text">Segment Text</Label>
-              <Textarea
-                id="segment-text"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                rows={15}
-              />
+              <EditableContextMenu
+                sourceFeature="transcription"
+                contentSource={{ type: "raw" }}
+                getTextarea={() => editSegmentTextareaRef.current}
+                onTextReplace={setEditValue}
+                onTextInsertBefore={(text) => setEditValue(`${text}${editValue}`)}
+                onTextInsertAfter={(text) => setEditValue(`${editValue}${text}`)}
+              >
+                <Textarea
+                  id="segment-text"
+                  ref={editSegmentTextareaRef}
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  rows={15}
+                />
+              </EditableContextMenu>
             </div>
 
             {editingSegment && (
