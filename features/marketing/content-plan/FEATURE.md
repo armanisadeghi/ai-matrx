@@ -2,7 +2,7 @@
 
 **Status:** active
 **Tier:** 1
-**Last updated:** 2026-08-18
+**Last updated:** 2026-08-26
 
 ## Draft brief — SERVER-side, persisted on arrival
 
@@ -95,6 +95,16 @@ plan CRUD through it.
   (this feature included) apply a binding's _agent_ but not its
   `config_overrides`, so a model/thinking-only override is inert here.
   Results stage into the view's own setters — the USER commits.
+- **Setup research is always reviewed before it can run.** "Plan company
+  research" opens the canonical Research AI intake with the company identity
+  prefilled. That intake proposes the topic and keywords, exposes the keyword
+  and pipeline quotas, and requires the human to edit/approve them before
+  `runPipeline`. Setup never owns a headless research chain and never generates
+  or attaches a report. It only links the returned topic; every AI build control
+  remains disabled until that topic has a successful Document explicitly
+  assembled in the Research workspace, where its sources remain inspectable
+  and correctable. `researchInitHref` and
+  `researchStartDestination` own the safe return contract.
 - 🚨 **The three WHOLE-PLAN Setup passes RUN ON THE SERVER** (since
   2026-08-11) — keyword strategy, entity attachment and the plan review are
   `POST /content-plan/sites/{id}/{keyword-strategy|entity-attachments|review}`,
@@ -862,6 +872,17 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-26 — **Company research regained its human approval gate; Resources
+  deletion became durable.** Removed the one-click
+  `useCompanyQuickResearch` chain from Setup and routed "Plan company research"
+  through the canonical Research AI intake. The human now reviews/edits the
+  proposed keywords, keyword count, and pipeline quotas before an explicit
+  Start Research; Content Plan cannot build until a completed Research Document
+  exists. The safe `return_to` handoff links only the reviewed topic. The
+  Resources X now clears both authorities that previously disagreed —
+  `web.site.settings.content_plan.research_topic_id` and the
+  `research_topic → web_site` `primary_grounding` association — and reports a
+  failed detach instead of silently pretending it worked.
 - 2026-08-26 — **Keyword estimate no longer asks with an empty plan.** The
   Setup keyword-strategy estimate
   (`GET /content-plan/sites/{site_id}/keyword-strategy/estimate`) used to fire
@@ -898,8 +919,7 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   topic + keyword rows + the `research_topic → plan_node` edge landed in the
   node's org, the pipeline ran in the canonical live-run window (150 sources,
   102 pages read), and the server's `node_research_topic_ids` read the edge
-  back. KNOWN LIMIT (shared with `useCompanyQuickResearch`, the shipped
-  precedent this follows): one `runPipeline` call can end with the research
+  back. KNOWN LIMIT: one `runPipeline` call can end with the research
   system still reporting "work pending" under its scrape/analysis quotas, so
   the assembled report can be thinner than a fully-finished topic's. The
   window links straight to the topic, where "Run pending work" + regenerate
@@ -1171,7 +1191,8 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   (`ContentPlanWorkbench`), zero aidream readers of `attributes.planned_topics`,
   and a review queue at 21 rows / 0 approvals. Assist chips: the RLS chip is
   resolved; two new ones opened for the unread `planned_topics` and the untested
-  Setup coercers. Details: `docs/handoffs/content-plan-ai-steps.md`.
+  Setup coercers. Details:
+  `../common-docs/systems/marketing/content-planning/HANDOFF.md`.
 - 2026-08-14 — **THE DOOR LAW on the WF-11 CMS badges.** The tree badge (`page` /
   `published`) and the table's Page column (`Draft` / `Published`) named a CMS page without
   opening it. Both are now links to `/cms/{siteId}/pages/{pageId}` in a new tab, built with
@@ -1460,32 +1481,25 @@ z-[10000]` `aria-hidden` overlay covers the header "Agents for this page"
   site-filtered, mounted in `ContentPlanWorkbench` under the generate bar on
   plan-bearing views). See `features/assists/FEATURE.md`.
 - 2026-08-08 — Claude: **Build with AI live progress + in-dialog research
-  picker** (Arman's first-test feedback). The dialog now STAYS OPEN through
-  the run as a live activity feed: REAL events parsed off the research
-  pipeline's NDJSON stream (`useCompanyQuickResearch` `onProgress` — deduped,
-  noise-filtered) plus every draft milestone, each line check/spinner-marked,
-  auto-scrolled; closing mid-run is allowed (run continues, bar shows
-  status). The dialog also embeds `ResearchTopicSelect` so an existing topic
-  is pickable in place — no cancel-out round trip.
+  picker** (Arman's first-test feedback). The dialog stays open through its
+  draft run as a live activity feed. The historical research-stream portion
+  was removed on 2026-08-26 when Setup stopped running research. The dialog
+  still embeds `ResearchTopicSelect` so an existing completed topic is pickable
+  in place.
 
 - 2026-08-08 — Claude: **Build with AI (guided intake).** The bar's primary
   button is now "Build with AI" (`setup/components/BuildWithAiDialog.tsx`):
   a few optional questions answered as HINTS, never commitments (size feel,
   single/multi location + rough count, free notes — serialized by
   `buildGuidanceInputs` in setup/ai.ts as an explicitly-overridable guidance
-  block + `target_page_count`). Works with ZERO research: the flow runs the
-  full company-research pipeline first (dialog states cost/time), reads the
-  fresh Document directly (`getLatestSuccessfulDocument`), then drafts the
-  whole work order. Bounded by design — everything stages; live plan
-  untouched until the user approves the routes. Guidance also threads into
-  the family-namer runs.
+  block + `target_page_count`). Since 2026-08-26 the flow requires a completed,
+  human-reviewed Research Document and never starts research itself. Everything
+  stages; the live plan remains untouched until the user approves the routes.
+  Guidance also threads into the family-namer runs.
 
-- 2026-08-08 — Claude: **Setup grounding + one-click work order.** The AI bar
-  can now CREATE the research from here — "Research this company" runs the
-  full pipeline headlessly via the new
-  `features/research/hooks/useCompanyQuickResearch.ts` (topic from the system
-  Company Research template → keywords → run → Document), selects + links the
-  topic the moment it exists, and refreshes the picker/report when done. New
+- 2026-08-08 — Claude: **Setup grounding + one-click work order.** The original
+  AI bar created research headlessly; that unsafe path and its hook were deleted
+  on 2026-08-26 in favor of the canonical reviewed Research intake. The
   primary "Draft the work order" button composes shape → per-family names →
   count-only topics in one confirmed click (all staged; the user still
   commits); "Recommend shape & counts" demoted to "Shape only".
@@ -1506,7 +1520,8 @@ z-[10000]` `aria-hidden` overlay covers the header "Agents for this page"
   server-side, so non-empty pages are excluded by design): sequential,
   cancellable between pages, per-page failure isolation, live progress in the
   PlanGenerateBar strip ("Deepen briefs (N)" behind a confirm). Closes the
-  last approved item in `docs/handoffs/content-plan-ai-steps.md`.
+  last approved item in
+  `../common-docs/systems/marketing/content-planning/HANDOFF.md`.
 - 2026-08-07 — Claude: **plan⇄CMS visibility (WF-11).** New aidream read
   `GET /content-plan/sites/{id}/cms-pages` (paired site's PageSummary rows,
   read-only, never pairs) consumed by `setup/bridge.ts#bridgeCmsPages` +
@@ -1573,7 +1588,8 @@ z-[10000]` `aria-hidden` overlay covers the header "Agents for this page"
   summary naming six missing pages and ONE finding (measured). Roles bound:
   `plan_architect` + `eeat_curator` (manifest + `ui.ui_surface_agent_role`);
   `brief_writer` deliberately left null (Deepen owns that job — reason
-  recorded in the manifest). Handoff: `docs/handoffs/content-plan-ai-steps.md`.
+  recorded in the manifest). Handoff:
+  `../common-docs/systems/marketing/content-planning/HANDOFF.md`.
 - 2026-07-30 — Claude (round 3): **adversarial-review fixes** (20-agent
   find+refute workflow over both repos' diffs; 14 confirmed). Setup now seeds
   from the FRESH site row (`fetchFreshSite`), never the 60s-stale siteOptions

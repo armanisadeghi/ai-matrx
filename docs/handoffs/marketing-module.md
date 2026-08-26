@@ -20,7 +20,7 @@ The module was **structurally repaired and then given its full intended shape**.
 | ↳ Per-page analysis workers (stabilization) | [per-page-analysis-stabilization.md](per-page-analysis-stabilization.md) |
 | Marketing ↔ CMS page join | [cms-page-hub.md](cms-page-hub.md) |
 | Page workspace authoring layer (desired values, drafts, keywords, tasks, Studio parity) | [marketing-page-workspace-evolution.md](marketing-page-workspace-evolution.md) |
-| Content Plan (client + server + CMS bridge) | SoR `common-docs/systems/marketing/content-planning/STATE.md` · `common-docs/systems/website-platform/cms/CMS-BUILDOUT-HANDOFF.md` (§3 Plan-side) · plan→site pipeline [website-factory-vision.md](website-factory-vision.md) · AI grounding [content-plan-ai-steps.md](content-plan-ai-steps.md) |
+| Content Plan (client + server + CMS bridge) | SoR `common-docs/systems/marketing/content-planning/STATE.md` · `common-docs/systems/website-platform/cms/CMS-BUILDOUT-HANDOFF.md` (§3 Plan-side) · plan→site pipeline [website-factory-vision.md](website-factory-vision.md) · AI grounding [Content Planning HANDOFF](/Users/armanisadeghi/code/common-docs/systems/marketing/content-planning/HANDOFF.md) |
 | The umbrella pipeline (research→plan→pages→live→crawl→findings→fixes) | [growth-loop.md](growth-loop.md) · `common-docs/systems/marketing/growth-loop/` + `features/growth-loop/map/loop-map.ts` (the ONLY status source) |
 | SEO vertical server side (rank/keyword/backlink collection, providers, budgets) | aidream via [common-docs/systems/marketing/seo/HANDOFF.md](/Users/armanisadeghi/code/common-docs/systems/marketing/seo/HANDOFF.md) |
 | `seo` chat-tool renderer | [seo-tool-renderer.md](seo-tool-renderer.md) |

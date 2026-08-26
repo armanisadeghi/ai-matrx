@@ -314,8 +314,8 @@ export function SetupView() {
   const [researchTopicId, setResearchTopicId] = useState<string | null>(null);
   const [draftingWorkOrder, setDraftingWorkOrder] = useState(false);
   const [buildDialogOpen, setBuildDialogOpen] = useState(false);
-  // The Build-with-AI live activity feed — every step (research stream events
-  // + draft milestones) lands here so the user WATCHES it happen. Newest last;
+  // The Build-with-AI live activity feed — every draft milestone lands here
+  // so the user WATCHES it happen. Newest last;
   // all-but-last render as completed. Capped so a chatty stream can't grow it
   // unbounded.
   const [buildLog, setBuildLog] = useState<BuildLogEntry[]>([]);
@@ -521,7 +521,7 @@ export function SetupView() {
     });
 
   // The canonical Research intake returns here only AFTER the user reviews
-  // and approves the keywords/settings. Link that approved topic once, then
+  // and approves the keywords/settings. Link that reviewed topic once, then
   // consume the one-shot URL handoff so reloads cannot repeat the write.
   useEffect(() => {
     if (
@@ -543,12 +543,12 @@ export function SetupView() {
         setResearchTopicId(researchTopicReturnId);
         invalidateSiteOptions();
         clearResearchTopicReturn();
-        toast.success("Approved research linked to this content plan.");
+        toast.success("Reviewed research topic linked to this content plan.");
       })
       .catch((error) => {
         if (cancelled) return;
         toast.error(
-          `Approved research was not linked: ${extractErrorMessage(error)}`,
+          `Reviewed research topic was not linked: ${extractErrorMessage(error)}`,
         );
       });
     return () => {
@@ -843,7 +843,7 @@ export function SetupView() {
   /**
    * Select a research topic AND record the site↔research link — aidream's
    * generator and deepen read the same key, so one pick grounds every later
-   * AI step. Shared by the picker and the quick-create flow below.
+   * AI step. Shared by the picker and the reviewed Research return flow.
    */
   const selectTopic = (topicId: string | null) => {
     setResearchTopicId(topicId);
@@ -1080,9 +1080,8 @@ export function SetupView() {
     try {
       let report = researchReport;
       // A topic can be SELECTED while its document query is still loading (or
-      // this hook's copy is stale) — check the DB directly before ever paying
-      // for a new pipeline. New research runs ONLY when the selected topic
-      // truly has no successful report, or no topic is selected at all.
+      // this hook's copy is stale) — check the DB directly before giving up.
+      // This build surface never starts research.
       if (!report && researchTopicId) {
         pushBuildProgress(
           "Checking the selected research topic for a finished report…",

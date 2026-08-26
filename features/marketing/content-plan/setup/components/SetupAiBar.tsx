@@ -2,9 +2,9 @@
 
 /**
  * The AI grounding strip at the top of Site Setup: pick which RESEARCH TOPIC
- * (the research system's deep company report) grounds the AI steps — or, when
- * none exists, CREATE one from here (the full pipeline runs and the report
- * lands back in this bar) — then draft the whole work order in one click.
+ * (the research system's deep company report) grounds the AI steps. When none
+ * exists, this opens the canonical reviewed Research intake; it never starts
+ * a pipeline or attaches an unreviewed report itself.
  *
  * The per-family "AI names" buttons live on the count rows in
  * SetupWorkOrderColumn; this bar owns the shared grounding + the shape step.
@@ -55,8 +55,8 @@ export function SetupAiBar({
   onRecommendShape: () => void;
   shapeBusy: boolean;
   /**
-   * Open the Build-with-AI intake (hints → research if needed → shape +
-   * counts + names + topics, all staged for review). Works with NO report.
+   * Open the Build-with-AI intake (hints → shape + counts + names + topics,
+   * all staged for review). Requires a completed research report.
    */
   onBuildWithAi: () => void;
   draftBusy: boolean;
@@ -143,7 +143,7 @@ export function SetupAiBar({
           title={
             reportReady
               ? "Just the first step: recommend the site shape and set every family count."
-              : "Ground the AI first: pick a research topic with a finished report, or research the company from here."
+              : "Ground the AI first: pick a research topic with a finished report, or plan company research from here."
           }
           onClick={onRecommendShape}
         >

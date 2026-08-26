@@ -670,12 +670,12 @@ export async function recordSiteResearchTopic(
   siteId: string,
   topicId: string | null,
 ): Promise<void> {
-  // Clearing must remove BOTH representations. Capture the old pointer before
-  // the guarded settings write removes it; otherwise the canonical edge has no
-  // identity left to detach and Resources rebuilds the supposedly-closed row.
-  const topicIdToDetach = topicId
-    ? null
-    : readSiteResearchTopicId((await fetchFreshSite(siteId)).settings);
+  // Capture the old pointer before the guarded settings write changes it.
+  // Clearing must remove BOTH representations, and replacing the primary must
+  // retire the old primary edge or Resources accumulates every historical pick.
+  const previousTopicId = readSiteResearchTopicId(
+    (await fetchFreshSite(siteId)).settings,
+  );
   const mutate = (block: Record<string, unknown>) => {
     if (topicId) block[SITE_RESEARCH_TOPIC_KEY] = topicId;
     else delete block[SITE_RESEARCH_TOPIC_KEY];
@@ -702,7 +702,10 @@ export async function recordSiteResearchTopic(
         `The primary research setting was saved, but its canonical lineage link failed: ${association.error.message}`,
       );
     }
-  } else if (topicIdToDetach) {
+  }
+
+  const topicIdToDetach = previousTopicId !== topicId ? previousTopicId : null;
+  if (topicIdToDetach) {
     const association = await associationsService.remove({
       sourceType: "research_topic",
       sourceId: topicIdToDetach,
@@ -712,7 +715,7 @@ export async function recordSiteResearchTopic(
     });
     if (!association.ok) {
       throw new Error(
-        `The primary research setting was cleared, but its canonical lineage link could not be removed: ${association.error.message}`,
+        `The primary research setting changed, but its previous canonical lineage link could not be removed: ${association.error.message}`,
       );
     }
   }

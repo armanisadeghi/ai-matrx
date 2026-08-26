@@ -26,7 +26,7 @@ endpoint map). **State** — feature-local Zustand (`state/topicStore.ts` via
 `context/ResearchContext.tsx`), server-hydrated; NOT the global Redux store.
 
 **Pure logic** — `readiness.ts`, `keywordQuota.ts`, `ranking.ts`, `costs.ts`, `copy.ts`,
-`format.ts`, `constants.ts`, `resources/` (catalog · manifest · selector · resolve),
+`format.ts`, `constants.ts`, `utils/init-route.ts`, `resources/` (catalog · manifest · selector · resolve),
 `agent-context/buildResearchContextData.ts`.
 
 ## The rules
@@ -38,6 +38,11 @@ endpoint map). **State** — feature-local Zustand (`state/topicStore.ts` via
   same amber family, never conflated. Report/document staleness is NOT runnable work.
 - **Every add-keyword entry point must route through `keywordQuota.ts` + `KeywordQuotaDialog`.**
   Never raise a cap without consent; never write the keyword row before the caps that govern it.
+- **A cross-feature research start opens the canonical intake; it never runs a headless pipeline.**
+  Build the door with `researchInitHref`, preserve its safe `return_to` while the user reviews the
+  AI-proposed topic, editable keywords, and quota/settings, then use `researchStartDestination`
+  only after the explicit Start Research action. The originating feature may link the returned
+  topic, but it must not generate a Document or treat that topic as completed research.
 - **Clicking a navigation item must never spend money.** Document generation is explicit-only.
 - **Never hand-render a research stream.** `useResearchStream` adopts via `adoptForeignStream`;
   content renders from `activeRequests` off the exposed `requestId`. `startStream`'s optional
@@ -90,3 +95,8 @@ endpoint map). **State** — feature-local Zustand (`state/topicStore.ts` via
 - **Tags are manual** — the graph's Tags node must not imply auto-generation.
 
 `pnpm type-check` is the only type gate; the build ignores type errors.
+
+## Change log
+
+- 2026-08-26 — Added the safe reviewed-intake return contract for cross-feature research starts;
+  Content Plan now uses it instead of the deleted headless company-research hook.

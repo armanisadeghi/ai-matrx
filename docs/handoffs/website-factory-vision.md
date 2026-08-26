@@ -109,7 +109,7 @@ Full detail, with evidence and row counts, in **STATE.md §4.3**. In priority or
   `SetupBridgeSection.tsx`, `lib/pipeline-progress.ts`, `lib/pipeline-staleness.ts`
 - Feature truth: `features/marketing/content-plan/FEATURE.md` ·
   `aidream/services/content_plan/FEATURE.md` (§ ONE BUTTON, FOUR AI STEPS PER PAGE)
-- CMS side: [cms-page-hub.md](./cms-page-hub.md) · Setup AI steps: [content-plan-ai-steps.md](./content-plan-ai-steps.md)
+- CMS side: [cms-page-hub.md](./cms-page-hub.md) · Setup AI steps: [Content Planning HANDOFF](/Users/armanisadeghi/code/common-docs/systems/marketing/content-planning/HANDOFF.md)
 - Workflow-node exposure: `aidream/docs/handoffs/features-to-workflows.md` (separately owned — the
   factory pipeline itself stays on the durable `cms_fill` queue, not workflow nodes)
 - **Models (Arman's binding, 2026-08-16):** p3_family → Claude Opus (it constrains the writer, the

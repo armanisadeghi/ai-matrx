@@ -3,8 +3,8 @@
 /**
  * The Build-with-AI intake AND live progress view — a FEW quick questions
  * answered as HINTS (never commitments), then the dialog STAYS OPEN as a live
- * activity feed while the run happens: research stream events and draft
- * milestones append in real time, so the user watches the work instead of
+ * activity feed while the run happens: draft milestones append in real time,
+ * so the user watches the work instead of
  * staring at a spinner. Closing mid-run is allowed — the run continues and
  * the AI bar keeps showing status.
  *
@@ -169,12 +169,12 @@ export function BuildWithAiDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   siteName: string;
-  /** A research report is already loaded — no pipeline run needed. */
+  /** A reviewed research topic has a completed report ready for this build. */
   reportReady: boolean;
   /**
    * A topic IS selected but no report is in memory (still loading, or the
-   * topic may genuinely have none). The build checks the DB first and only
-   * runs new research if no finished report exists.
+   * topic may genuinely have none). The build may check the DB once more, but
+   * it never starts research from this dialog.
    */
   reportPending?: boolean;
   /** The site's linked research topic — pickable RIGHT HERE, no cancel-out. */
@@ -229,8 +229,8 @@ export function BuildWithAiDialog({
                   {reportReady
                     ? "Report loaded — the build starts immediately."
                     : reportPending
-                      ? "Selected — the build uses its report if one is finished."
-                      : "None selected — the AI researches the company first."}
+                      ? "Selected, but no completed report is available yet."
+                      : "Choose a topic with a completed, reviewed report."}
                 </span>
               </div>
             </div>
@@ -291,8 +291,8 @@ export function BuildWithAiDialog({
             {!reportReady ? (
               <p className="rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2 text-xs text-foreground">
                 {reportPending
-                  ? "The build uses the selected topic's finished report if one exists, and only runs NEW research (several minutes, real AI credits) if none does. Keep this tab open."
-                  : "No research is linked, so this will FIRST research the company (full pipeline — several minutes, real AI credits), then build the work order from the report. You can watch every step here."}
+                  ? "This topic does not have a completed report yet. Finish reviewing its keywords and sources, then assemble its document in Research before building the content plan."
+                  : "Choose completed research first. New research must be planned, reviewed, and explicitly started in the Research workspace."}
               </p>
             ) : null}
           </div>
@@ -311,8 +311,12 @@ export function BuildWithAiDialog({
                 : "Cancel"}
           </Button>
           {!busy && !finished && !errored ? (
-            <Button size="sm" onClick={() => onSubmit(guidance)}>
-              {reportReady || reportPending ? "Build it" : "Research + build it"}
+            <Button
+              size="sm"
+              disabled={!reportReady}
+              onClick={() => onSubmit(guidance)}
+            >
+              Build it
             </Button>
           ) : null}
           {errored ? (
