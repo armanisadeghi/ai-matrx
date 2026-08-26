@@ -52,17 +52,52 @@ has no live provider, so there is no provider UI to build.
 
 ---
 
-## Ownership — routes 32/33 straddle two lanes
+## Ownership — routes 32/33, as the coordinator ruled it (2026-08-26)
 
-Readiness **U-5** resolves routes 32/33 as *"L3's mount of L13's component."* L3 built the
-pay-period half (`features/hr/time/periods/`) but never created the route files, so neither half
-was reachable. **L13 created both route files so its export half is reachable; L3 owns them.**
+Readiness **U-5** resolves routes 32/33 as *"L3's mount of L13's component."* L13 briefly created
+the route files because L3 had built the pay-period half but no routes, so neither half was
+reachable. **The coordinator has since ruled the seam, and this is the shape that stands:**
 
-- L3 replaces everything **above** `<ExportRunPanel>` in `PayPeriodRouteBody.tsx`, and the period
-  section in `PayPeriodsRouteBody.tsx`. Nothing below is theirs to touch; nothing above is L13's.
-- `PeriodStatePanel` / `PeriodTransitionBar` / `BoundaryWeeksPanel` / `PostLockAdjustments` exist
-  and are **not** mounted by L13 on purpose: they take a viewer `role` and a reopen permission, and
-  a lane that does not own the permission model must not guess one to make a page look finished.
+> L3 keeps the pay-period page **shells** (`features/hr/time/periods/` → `PayPeriodsPage`,
+> `PeriodDetailPage`, mounted by `app/(core)/hr/time/periods/`). **The export surfaces inside them
+> are this feature's**: `<ExportRunList>` and the history on route 32, `<ExportRunPanel>` and the
+> dialog set on route 33. L3 swaps its own fork's export components for these and deletes the fork.
+
+Consequences, both discharged:
+
+- `PayPeriodsRouteBody` / `PayPeriodRouteBody` were L13's temporary mounts. The ruling makes them
+  dead, and they are **deleted** rather than left dormant ([no-legacy](/policies/no-legacy.md) —
+  the fork that survives is the one that is mounted, and the loser goes).
+- The second component set at `features/hr/time/exports/` is L3's fork of this one. It consumes
+  this feature's `service.ts` and `types.ts` (the data layer was never duplicated) and nothing
+  imports it. **Ruled: it is annihilated by L3, not by L13** — a lane does not delete another
+  lane's files, and the ruling names the owner.
+- `PeriodStatePanel` / `PeriodTransitionBar` / `BoundaryWeeksPanel` / `PostLockAdjustments` are
+  L3's and are **not** mounted by L13 on purpose: they take a viewer `role` and a reopen
+  permission, and a lane that does not own the permission model must not guess one to make a page
+  look finished.
+
+---
+
+## Three things that look wrong and are RULED INTENDED
+
+Each was flagged to the coordinator during the build and each came back as designed. They are
+recorded here so the next reader does not "fix" one.
+
+1. **The domain idempotency key is `payperiod:<pay_period_id>:v1` — one export per period, and
+   the format is not part of the key.** That reads like a bug (you cannot generate `generic_csv`
+   *and* `adp_csv` side by side) and it is the guard working: two deliverable artifacts of one
+   period's money **is** the double-pay risk §4.5 exists to prevent. Wanting a different format is
+   a supersede-flow question, never a parallel artifact.
+2. **`X-Idempotency-Key` is sent on every mutating POST even where the generated stub does not
+   declare it.** §1.4 is the law — *"Every mutating POST in this spec requires
+   `X-Idempotency-Key`"* — and the stub under-declares it on E-24/E-25. The stub amendment is with
+   the contracts owner; the client keeps sending the header, and keeps **reusing** it across
+   retries of one user action, because a fresh key on retry defeats the entire mechanism.
+3. **A finished run's result is re-read from durable history, not lifted off the runtime
+   operation.** The spine does not carry feature results by design; `OperationView.result` is not
+   where an export lands. The correct pattern is: poll to terminal, then re-read the export
+   through `hr_exports_get` / `hr_payroll_export_list`.
 
 ---
 
