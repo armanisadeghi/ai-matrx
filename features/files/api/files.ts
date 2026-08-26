@@ -41,7 +41,6 @@ import type {
   RenameFileRequest,
   SearchFilesParams,
   SearchFilesResponse,
-  SignedUrlResponse,
   Visibility,
 } from "@/features/files/types";
 
@@ -163,6 +162,20 @@ export async function getFileByPath(
     buildPath("/files/by-path/{file_path}", { file_path: filePath }),
     opts,
   );
+}
+
+/**
+ * Compatibility reader for consumers that historically requested a signed
+ * URL. The live contract retired that endpoint; `FileRecord.url` is now the
+ * durable authenticated locator. `expiresIn` is accepted but intentionally
+ * ignored so callers can migrate without inventing a replacement wire shape.
+ */
+export async function getSignedUrl(
+  fileId: string,
+  _params: { expiresIn?: number } = {},
+  opts: RequestOptions = {},
+): Promise<{ data: FileRecordApi; meta: ResponseMeta }> {
+  return getFile(fileId, opts);
 }
 
 /**
@@ -304,22 +317,6 @@ export async function downloadFileWithProgress(
   );
 }
 
-export async function getSignedUrl(
-  fileId: string,
-  params: { expiresIn?: number } = {},
-  opts: RequestOptions = {},
-): Promise<{ data: SignedUrlResponse; meta: ResponseMeta }> {
-  // Clamp to the documented bounds (60s – 7d). An un-clamped value would
-  // either be silently re-clamped server-side — desyncing the client cache's
-  // expiry math from reality — or rejected outright.
-  const requested = params.expiresIn ?? 3600;
-  const expiresIn = Math.min(604800, Math.max(60, Math.floor(requested)));
-  return apiGet(buildPath("/files/{file_id}/url", { file_id: fileId }), {
-    ...opts,
-    query: { expires_in: expiresIn },
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Bulk operations
 // ---------------------------------------------------------------------------
@@ -377,9 +374,7 @@ export async function bulkMoveFiles(
  * Read the authenticated user's account tier + current storage usage.
  * Drives the storage indicator + tier badge + feature gating in the UI.
  */
-export async function getStorageUsage(
-  opts: RequestOptions = {},
-): Promise<{
+export async function getStorageUsage(opts: RequestOptions = {}): Promise<{
   data: components["schemas"]["StorageUsageResponse"];
   meta: ResponseMeta;
 }> {
@@ -394,9 +389,7 @@ export async function getStorageUsage(
  * List soft-deleted files + folders for the authenticated user.
  * Renders the trash view; pair with `restoreFile` to undo.
  */
-export async function listTrash(
-  opts: RequestOptions = {},
-): Promise<{
+export async function listTrash(opts: RequestOptions = {}): Promise<{
   data: components["schemas"]["TrashListResponse"];
   meta: ResponseMeta;
 }> {
@@ -444,10 +437,7 @@ export async function searchFiles(
     qs.push(`mime_prefix=${encodeURIComponent(params.mimePrefix)}`);
   if (params.limit !== undefined) qs.push(`limit=${params.limit}`);
   if (params.offset !== undefined) qs.push(`offset=${params.offset}`);
-  return getJson<SearchFilesResponse>(
-    `/files/search?${qs.join("&")}`,
-    opts,
-  );
+  return getJson<SearchFilesResponse>(`/files/search?${qs.join("&")}`, opts);
 }
 
 // ---------------------------------------------------------------------------

@@ -180,7 +180,9 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
     // "share links should be CDN" bug.
     url: row.url ?? null,
     cdnUrl: row.cdn_url ?? null,
-    signedUrl: row.signed_url ?? null,
+    // The live contract now exposes the authenticated durable locator as
+    // `url`; short-lived signed locators are no longer persisted on records.
+    signedUrl: null,
     downloadUrl: row.download_url ?? null,
     // Phase 1b: backend-rendered thumbnail (every file gets one). The
     // wire field is resolved server-side from the variants store now

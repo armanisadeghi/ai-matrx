@@ -246,10 +246,12 @@ export function useImageStudio(
   // read the LATEST state mid-flight. React's state-closure semantics mean
   // a saveAll() invoked immediately after `await generate()` would see the
   // pre-generate snapshot of `files` — every variant.dataUrl missing —
-  // unless we read through this ref. Updated synchronously on every render
-  // so the ref is fresh by the time React commits.
+  // unless we read through this ref. Synchronize after each committed state
+  // change so render stays pure and async handlers observe the latest snapshot.
   const filesRef = useRef<StudioSourceFile[]>(files);
-  filesRef.current = files;
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
   const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([]);
   const [format, setFormat] = useState<OutputFormat>(DEFAULT_FORMAT);
   const [quality, setQuality] = useState<number>(DEFAULT_QUALITY);
@@ -535,17 +537,17 @@ export function useImageStudio(
           );
 
           // The preview API returns either an inline `data_url` (small) or an
-          // ephemeral `signed_url` (large — a 5-minute S3 URL). A raw signed
-          // S3 URL must NEVER enter studio state: it would leak into the tile
+          // `ephemeral_url` (large, row-less 5-minute scratch). An ephemeral
+          // URL must NEVER enter studio state: it would leak into the tile
           // `<img src>`, break after its TTL, and — worst — a download anchor
           // to a cross-origin S3 URL navigates the tab away and wipes the
-          // studio. So we materialize every signed URL into a same-origin
+          // studio. So we materialize every ephemeral URL into a same-origin
           // `blob:` URL here, at the boundary, before anything renders it.
           // (`data:` URLs pass straight through.) See lib/media/durability.
           const resolvedUrlByPreset = new Map<string, string>();
           await Promise.all(
             data.variants.map(async (v) => {
-              const raw = v.data_url ?? v.signed_url;
+              const raw = v.data_url ?? v.ephemeral_url;
               if (!raw) return;
               if (raw.startsWith("data:") || raw.startsWith("blob:")) {
                 resolvedUrlByPreset.set(v.preset_id, raw);

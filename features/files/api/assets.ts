@@ -321,7 +321,7 @@ export interface PdfCompressResult {
  * preview flow; the user can then commit-to-save via `POST /assets`.
  *
  * Each variant comes back as either an inline `data_url` (small) or an
- * ephemeral `signed_url` (5-minute TTL).
+ * `ephemeral_url` (5-minute row-less preview scratch).
  */
 export async function previewAssetMultipart(
   file: File | Blob,

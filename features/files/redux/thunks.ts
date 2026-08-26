@@ -1857,14 +1857,11 @@ export const revokeShareLink = createAsyncThunk<
 });
 
 // ---------------------------------------------------------------------------
-// Utility — getSignedUrl (no slice state change; caller stores the URL).
+// Utility — getSignedUrl (compatibility name; no slice state change).
 //
-// Routes through the universal handler so we hit the lazy signed-URL cache
-// instead of always firing a network request. For public files this returns
-// the permanent CDN URL with zero network cost; for private/shared files it
-// returns the cached signed URL if still valid, otherwise mints one once.
-// `expiresIn` in the return shape is informational and pinned to the handler
-// default (3600s); callers never read it (verified across the codebase).
+// Routes through the universal handler and returns the live contract's durable
+// authenticated URL. `expiresIn` remains in the compatibility return shape;
+// callers do not use it.
 // ---------------------------------------------------------------------------
 
 export const getSignedUrl = createAsyncThunk<

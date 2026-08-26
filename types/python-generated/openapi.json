@@ -39631,6 +39631,146 @@
         }
       }
     },
+    "/proof-runs/scenarios": {
+      "get": {
+        "tags": [
+          "Proof Runs"
+        ],
+        "summary": "List Scenarios",
+        "operationId": "list_scenarios_proof_runs_scenarios_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenariosResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proof-runs/scenarios/{slug}": {
+      "put": {
+        "tags": [
+          "Proof Runs"
+        ],
+        "summary": "Save Scenario",
+        "description": "Create or update one scenario. The URL slug is the identity.",
+        "operationId": "save_scenario_proof_runs_scenarios__slug__put",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioRow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Proof Runs"
+        ],
+        "summary": "Delete Scenario",
+        "operationId": "delete_scenario_proof_runs_scenarios__slug__delete",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Scenario Proof Runs Scenarios  Slug  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proof-runs/mandate-catalog": {
+      "get": {
+        "tags": [
+          "Proof Runs"
+        ],
+        "summary": "Mandate Catalog",
+        "description": "Everything the scenario editor needs to offer real choices.\n\nThe mandates come from the code declarations (the same registry the runtime\nresolves through), each with its provision's offered values — so an author\npicks a mandate and immediately sees the exact variable names its call site\ndelivers, instead of guessing.",
+        "operationId": "mandate_catalog_proof_runs_mandate_catalog_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateCatalogResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/kg-inspector/entities": {
       "get": {
         "tags": [
@@ -41785,7 +41925,7 @@
           "Workflow"
         ],
         "summary": "Validate Workflow",
-        "description": "Validate a definition against the registry. No auth — stateless check.",
+        "description": "Validate a definition against the registry AND its step-to-step joints.\n\nValidate used to run the registry pass alone, which checks that every node\ntype exists and every config is well formed — and says nothing about\nwhether a step will actually RECEIVE what it requires. On 2026-08-25 that\nproduced the worst answer this button can give: a workflow the Steward had\njust emitted came back \"Definition is valid\", and the run then died at\n`Prepare Address` with `list index out of range` because its upstream\nproduced `values: []` and the terminal agent step's required Page Text was\nnever wired at all. A validator that greenlights an unrunnable workflow is\nworse than no validator: the author gets a stamp and finds out from a\nfailed run.\n\nThe interface pass already existed (``handshake_issues`` — a required field\nnothing certainly provides, a closed input refusing fields the upstream\ncertainly sends, mappings that can never resolve); nothing had wired it to\nthis button. It runs here rather than in ``validate_definition`` because it\nlives in aidream and matrx-graph may not import the host.\n\nIts findings are ADVISORY (warnings): the pass proves breaks from declared\nschemas, and a definition can still be legitimately incomplete mid-build.\nThey surface beside the errors instead of being invisible until run time.\nA crash inside the interface pass must never turn a valid definition\ninvalid — it is logged and skipped.",
         "operationId": "validate_workflow_workflows_validate_post",
         "requestBody": {
           "content": {
@@ -48905,61 +49045,6 @@
             "content": {
               "application/json": {
                 "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/files/{file_id}/url": {
-      "get": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "Get File Url",
-        "description": "Return the canonical inline-renderable URL for a file.\n\nMints via SyncEngine.build_urls_for_record_async — CDN if public + CDN\nconfigured, signed-inline otherwise. Use ``/files/{id}/asset`` if you\nalso need the download URL flavour or all variants in one response.",
-        "operationId": "get_file_url_files__file_id__url_get",
-        "parameters": [
-          {
-            "name": "file_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "File Id"
-            }
-          },
-          {
-            "name": "expires_in",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 604800,
-              "minimum": 60,
-              "default": 3600,
-              "title": "Expires In"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SignedUrlResponse"
-                }
               }
             }
           },
@@ -67295,17 +67380,6 @@
             "title": "Share Level",
             "default": "read"
           },
-          "signed_url_ttl": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Signed Url Ttl"
-          },
           "metadata": {
             "anyOf": [
               {
@@ -67323,7 +67397,7 @@
         },
         "type": "object",
         "title": "AssetPatchRequest",
-        "description": "Mutate an existing asset.\n\nUse to:\n  - change visibility (also moves the S3 object between buckets)\n  - grant new sharees\n  - refresh signed URLs (signed_url_ttl)"
+        "description": "Mutate an existing asset.\n\nUse to:\n  - change visibility (also moves the S3 object between buckets)\n  - grant new sharees"
       },
       "AssetPdfCompressRequest": {
         "properties": {
@@ -67390,7 +67464,7 @@
             ],
             "title": "Data Url"
           },
-          "signed_url": {
+          "ephemeral_url": {
             "anyOf": [
               {
                 "type": "string"
@@ -67399,7 +67473,8 @@
                 "type": "null"
               }
             ],
-            "title": "Signed Url"
+            "title": "Ephemeral Url",
+            "description": "Short-lived URL for the row-less compressed output. Expires by design (expires_in); NEVER persist or pass along."
           },
           "expires_in": {
             "anyOf": [
@@ -67411,7 +67486,7 @@
               }
             ],
             "title": "Expires In",
-            "description": "Seconds until signed_url expires (signed_url mode only)."
+            "description": "Seconds until ephemeral_url expires (ephemeral mode only)."
           },
           "level_requested": {
             "anyOf": [
@@ -67486,7 +67561,7 @@
             "type": "integer",
             "minimum": 1024,
             "title": "Max Inline Bytes",
-            "description": "Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.",
+            "description": "Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral_url (row-less scratch — the ONLY lawful expiring URL shape; see render_urls.py).",
             "default": 262144
           }
         },
@@ -67621,7 +67696,7 @@
             "title": "Data Url",
             "description": "base64 data URL when size <= max_inline_bytes"
           },
-          "signed_url": {
+          "ephemeral_url": {
             "anyOf": [
               {
                 "type": "string"
@@ -67630,8 +67705,8 @@
                 "type": "null"
               }
             ],
-            "title": "Signed Url",
-            "description": "Ephemeral signed URL when size > max_inline_bytes"
+            "title": "Ephemeral Url",
+            "description": "Short-lived URL for row-less preview scratch when size > max_inline_bytes. Expires by design (expires_in); NEVER persist or pass along — re-render instead."
           },
           "expires_in": {
             "anyOf": [
@@ -67643,7 +67718,7 @@
               }
             ],
             "title": "Expires In",
-            "description": "Seconds (with signed_url). 300 = 5-minute TTL."
+            "description": "Seconds (with ephemeral_url). 300 = 5-minute TTL."
           },
           "error": {
             "anyOf": [
@@ -67708,11 +67783,6 @@
               }
             ],
             "title": "Include Social Baseline"
-          },
-          "signed_url_ttl": {
-            "type": "integer",
-            "title": "Signed Url Ttl",
-            "default": 3600
           }
         },
         "type": "object",
@@ -67800,17 +67870,6 @@
             ],
             "title": "Cdn Url"
           },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Signed Url"
-          },
           "download_url": {
             "anyOf": [
               {
@@ -67821,17 +67880,6 @@
               }
             ],
             "title": "Download Url"
-          },
-          "signed_url_expires_at": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Signed Url Expires At"
           },
           "metadata": {
             "additionalProperties": {
@@ -89348,17 +89396,6 @@
             ],
             "title": "Cdn Url"
           },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Signed Url"
-          },
           "download_url": {
             "anyOf": [
               {
@@ -101647,6 +101684,77 @@
         ],
         "title": "ExpandResponse"
       },
+      "Expectation": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Stable slug — becomes the proof's id."
+          },
+          "rule": {
+            "type": "string",
+            "enum": [
+              "contains_marker",
+              "excludes_marker",
+              "routes_exist",
+              "path_present",
+              "path_absent",
+              "path_equals",
+              "min_items",
+              "max_items",
+              "matches",
+              "judge"
+            ],
+            "title": "Rule"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "proves": {
+            "type": "string",
+            "title": "Proves",
+            "default": ""
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "default": ""
+          },
+          "marker": {
+            "type": "string",
+            "title": "Marker",
+            "default": ""
+          },
+          "value": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          },
+          "rubric": {
+            "type": "string",
+            "title": "Rubric",
+            "default": ""
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "rule"
+        ],
+        "title": "Expectation",
+        "description": "One typed rule about the output. The unit an author writes in the UI."
+      },
       "ExpectationVerdict": {
         "properties": {
           "result": {
@@ -105366,17 +105474,6 @@
             ],
             "title": "Cdn Url"
           },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Signed Url"
-          },
           "download_url": {
             "anyOf": [
               {
@@ -105459,7 +105556,7 @@
               }
             ],
             "title": "Url",
-            "description": "Always-renderable URL (CDN if public, signed-inline otherwise)."
+            "description": "Always-renderable durable URL (CDN if public, the authenticated /files/{id}/download?inline=1 route otherwise)."
           },
           "cdn_url": {
             "anyOf": [
@@ -105473,30 +105570,6 @@
             "title": "Cdn Url",
             "description": "Permanent CDN URL — public files only."
           },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Signed Url",
-            "description": "Signed inline URL with TTL — non-public files."
-          },
-          "signed_url_expires_at": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Signed Url Expires At",
-            "description": "ms epoch when signed_url expires; None for CDN-only public."
-          },
           "download_url": {
             "anyOf": [
               {
@@ -105507,7 +105580,7 @@
               }
             ],
             "title": "Download Url",
-            "description": "Attachment-disposition signed URL (Download button)."
+            "description": "Durable attachment-disposition URL (Download button)."
           },
           "thumbnail_url": {
             "anyOf": [
@@ -105526,7 +105599,7 @@
           "file_id"
         ],
         "title": "FileRef",
-        "description": "The ONE lean, client-facing reference to a single stored file.\n\nThis is what any client (frontend, another service, an embedded\nattachment) receives when it needs to *point at* a file — as opposed\nto the richer file-browser row (``FileRecord`` in aidream) or the\nmulti-variant ``Asset`` envelope. It carries only what a client can\nactually act on:\n\n  1. ``file_id``  — the ID. From it, everything else is fetchable, and\n                    it round-trips straight back as ``MediaRef.file_id``.\n  2. ``url``      — ALWAYS renderable (CDN when public, signed-inline\n                    otherwise). Bind to <img>/<video> directly.\n  3. ``cdn_url``  — permanent public CDN URL (public files only).\n  4. ``signed_url`` + ``signed_url_expires_at`` — the expiring link and\n                    the ms-epoch it dies, so the client refreshes ahead\n                    of expiry without parsing X-Amz params.\n  5. ``download_url`` — attachment-disposition signed URL (Download btn).\n  6. display metadata the client renders: ``file_name``, ``mime_type``,\n     ``size_bytes``, ``visibility``, ``thumbnail_url``.\n\n🚫 What it DELIBERATELY OMITS — the whole point of this shape:\n  - ``storage_uri`` / ``file_uri`` — the native ``s3://bucket/owner/key``\n    location. A client can do NOTHING with it; exposing it is pure\n    info-disclosure. It is a server-only column and MUST NEVER cross a\n    client boundary. Enforced at the DB (column REVOKE + a realtime\n    publication that excludes it) and by ``scripts/audit_api_types.py``.\n  - ``file_path`` (the virtual folder path) — belongs on the file-browser\n    row, not on a bare reference; navigation shapes carry it, refs don't.\n  - internals: ``owner_id``, ``checksum``, ``current_version``,\n    ``parent_folder_id``, lineage/derivation fields, raw ``metadata``.\n\nPopulate via ``SyncEngine.build_urls_for_record_async`` for the URL\nflavours — never hand-mint URLs. Lives in matrx-utils so every host\nconsumes the identical contract."
+        "description": "The ONE lean, client-facing reference to a single stored file.\n\nThis is what any client (frontend, another service, an embedded\nattachment) receives when it needs to *point at* a file — as opposed\nto the richer file-browser row (``FileRecord`` in aidream) or the\nmulti-variant ``Asset`` envelope. It carries only what a client can\nactually act on:\n\n  1. ``file_id``  — the ID. From it, everything else is fetchable, and\n                    it round-trips straight back as ``MediaRef.file_id``.\n  2. ``url``      — ALWAYS renderable and DURABLE (CDN when public,\n                    the authenticated /files/{id}/download?inline=1\n                    route otherwise). Bind to <img>/<video> directly.\n  3. ``cdn_url``  — permanent public CDN URL (public files only).\n  4. ``download_url`` — durable attachment-disposition URL (Download btn).\n  5. display metadata the client renders: ``file_name``, ``mime_type``,\n     ``size_bytes``, ``visibility``, ``thumbnail_url``.\n\n🚫 What it DELIBERATELY OMITS — the whole point of this shape:\n  - ``storage_uri`` / ``file_uri`` — the native ``s3://bucket/owner/key``\n    location. A client can do NOTHING with it; exposing it is pure\n    info-disclosure. It is a server-only column and MUST NEVER cross a\n    client boundary. Enforced at the DB (column REVOKE + a realtime\n    publication that excludes it) and by ``scripts/audit_api_types.py``.\n  - ``file_path`` (the virtual folder path) — belongs on the file-browser\n    row, not on a bare reference; navigation shapes carry it, refs don't.\n  - internals: ``owner_id``, ``checksum``, ``current_version``,\n    ``parent_folder_id``, lineage/derivation fields, raw ``metadata``.\n\nPopulate via ``SyncEngine.build_urls_for_record_async`` for the URL\nflavours — never hand-mint URLs. Lives in matrx-utils so every host\nconsumes the identical contract."
       },
       "FileRefreshRequest": {
         "properties": {
@@ -121886,6 +121959,30 @@
         "title": "MandateCandidate",
         "description": "One labelled comparison column.\n\n``config_overrides=None`` means use the selection's normal configuration\nbehavior. An explicitly supplied ``{}`` means apply no run-scope\noverrides, including when the current principal has binding overrides."
       },
+      "MandateCatalogResponse": {
+        "properties": {
+          "mandates": {
+            "items": {
+              "$ref": "#/components/schemas/MandateOption"
+            },
+            "type": "array",
+            "title": "Mandates"
+          },
+          "rules": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rules"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MandateCatalogResponse"
+      },
       "MandateCodeTruth": {
         "properties": {
           "mandate_key": {
@@ -122148,6 +122245,75 @@
           "results"
         ],
         "title": "MandateExemplarTestResults"
+      },
+      "MandateOption": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "required_output_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Output Keys"
+          },
+          "accepts_user_input": {
+            "type": "boolean",
+            "title": "Accepts User Input",
+            "default": true
+          },
+          "provision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provision"
+          },
+          "offered_values": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Offered Values"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "label"
+        ],
+        "title": "MandateOption",
+        "description": "One mandate an author can point a scenario at, with what it offers."
       },
       "MandateResolutionResponse": {
         "properties": {
@@ -151149,6 +151315,195 @@
         ],
         "title": "ScanSummary"
       },
+      "ScenarioPayload": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_]{2,60}$",
+            "title": "Slug"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "mandate_key": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Mandate Key"
+          },
+          "variables": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Variables"
+          },
+          "allowed_routes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Routes"
+          },
+          "expectations": {
+            "items": {
+              "$ref": "#/components/schemas/Expectation"
+            },
+            "type": "array",
+            "title": "Expectations"
+          },
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Input"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "live_every_seconds": {
+            "type": "integer",
+            "maximum": 2592000,
+            "minimum": 300,
+            "title": "Live Every Seconds",
+            "default": 21600
+          },
+          "max_cost_usd": {
+            "type": "number",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Max Cost Usd",
+            "default": 0.75
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "label",
+          "mandate_key"
+        ],
+        "title": "ScenarioPayload",
+        "description": "A saved scenario, as the editor sends it.\n\n``variables`` / ``user_input`` / ``allowed_routes`` may carry the run-time\nplaceholders ``{{nonce}}`` and ``{{marker:NAME}}``; the runner mints fresh\nvalues per run so a saved marker can never become memorizable."
+      },
+      "ScenarioRow": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_]{2,60}$",
+            "title": "Slug"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "mandate_key": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Mandate Key"
+          },
+          "variables": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Variables"
+          },
+          "allowed_routes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Routes"
+          },
+          "expectations": {
+            "items": {
+              "$ref": "#/components/schemas/Expectation"
+            },
+            "type": "array",
+            "title": "Expectations"
+          },
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Input"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "live_every_seconds": {
+            "type": "integer",
+            "maximum": 2592000,
+            "minimum": 300,
+            "title": "Live Every Seconds",
+            "default": 21600
+          },
+          "max_cost_usd": {
+            "type": "number",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Max Cost Usd",
+            "default": 0.75
+          },
+          "check_slug": {
+            "type": "string",
+            "title": "Check Slug",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slug",
+          "label",
+          "mandate_key"
+        ],
+        "title": "ScenarioRow",
+        "description": "A stored scenario, plus the identity of the check it becomes."
+      },
+      "ScenariosResponse": {
+        "properties": {
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRow"
+            },
+            "type": "array",
+            "title": "Scenarios"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ScenariosResponse"
+      },
       "SchemaAllResponse": {
         "additionalProperties": {
           "$ref": "#/components/schemas/JsonValue"
@@ -155696,24 +156051,6 @@
           "pages_affected"
         ],
         "title": "ShellSiteIssue"
-      },
-      "SignedUrlResponse": {
-        "properties": {
-          "url": {
-            "type": "string",
-            "title": "Url"
-          },
-          "expires_in": {
-            "type": "integer",
-            "title": "Expires In"
-          }
-        },
-        "type": "object",
-        "required": [
-          "url",
-          "expires_in"
-        ],
-        "title": "SignedUrlResponse"
       },
       "SimulateProviderRetryRequest": {
         "properties": {

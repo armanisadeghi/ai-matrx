@@ -1,13 +1,12 @@
 /**
  * features/files/handler/intelligence/refresh.ts
  *
- * Re-mint a signed URL for a file we own. Wraps the cloud-files REST
- * endpoint so the resolver and the expiry wheel call the same code path.
+ * Resolve the durable authenticated URL for a file we own. The function name
+ * is retained while consumers migrate away from the former signed-URL model.
  *
  * Behavior:
- *   - On success → return { url, expiresAt } (epoch ms).
- *   - On 403 with expired-marker → throw FileExpiredError (callers never
- *     see this in practice because they came IN here BECAUSE of expiry).
+ *   - On success → return { url, expiresAt: Infinity }; durable locators do
+ *     not expire and authorization is evaluated when the URL is requested.
  *   - On 403 without expired-marker → throw FileAccessDeniedError. The
  *     user lost access between the original mint and now (e.g. share was
  *     revoked).
@@ -15,12 +14,7 @@
  */
 
 import * as Files from "@/features/files/api/files";
-import {
-  FileAccessDeniedError,
-  FileExpiredError,
-  FileNotFoundError,
-  isS3ExpiredError,
-} from "../errors";
+import { FileAccessDeniedError, FileNotFoundError } from "../errors";
 
 export interface RefreshResult {
   url: string;
@@ -29,20 +23,22 @@ export interface RefreshResult {
 
 export async function mintSignedUrl(
   fileId: string,
-  expiresInSec = 3600,
+  _expiresInSec = 3600,
 ): Promise<RefreshResult> {
   try {
-    const { data } = await Files.getSignedUrl(fileId, { expiresIn: expiresInSec });
-    // SignedUrlResponse contract: `expires_in` is the granted TTL in seconds.
+    const { data } = await Files.getFile(fileId);
+    const url = data.url ?? data.download_url;
+    if (!url) {
+      throw new Error(`File ${fileId} did not include a renderable URL`);
+    }
     return {
-      url: data.url,
-      expiresAt: Date.now() + data.expires_in * 1000,
+      url,
+      expiresAt: Number.POSITIVE_INFINITY,
     };
   } catch (err) {
     const status = (err as { status?: number })?.status;
     if (status === 404) throw new FileNotFoundError(undefined, { fileId });
     if (status === 403) {
-      if (isS3ExpiredError(err)) throw new FileExpiredError(undefined, { fileId });
       throw new FileAccessDeniedError(undefined, { fileId });
     }
     throw err;

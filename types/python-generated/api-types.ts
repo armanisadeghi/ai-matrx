@@ -15198,6 +15198,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proof-runs/scenarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Scenarios */
+        get: operations["list_scenarios_proof_runs_scenarios_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proof-runs/scenarios/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save Scenario
+         * @description Create or update one scenario. The URL slug is the identity.
+         */
+        put: operations["save_scenario_proof_runs_scenarios__slug__put"];
+        post?: never;
+        /** Delete Scenario */
+        delete: operations["delete_scenario_proof_runs_scenarios__slug__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proof-runs/mandate-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mandate Catalog
+         * @description Everything the scenario editor needs to offer real choices.
+         *
+         *     The mandates come from the code declarations (the same registry the runtime
+         *     resolves through), each with its provision's offered values — so an author
+         *     picks a mandate and immediately sees the exact variable names its call site
+         *     delivers, instead of guessing.
+         */
+        get: operations["mandate_catalog_proof_runs_mandate_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/kg-inspector/entities": {
         parameters: {
             query?: never;
@@ -16011,7 +16074,30 @@ export interface paths {
         put?: never;
         /**
          * Validate Workflow
-         * @description Validate a definition against the registry. No auth — stateless check.
+         * @description Validate a definition against the registry AND its step-to-step joints.
+         *
+         *     Validate used to run the registry pass alone, which checks that every node
+         *     type exists and every config is well formed — and says nothing about
+         *     whether a step will actually RECEIVE what it requires. On 2026-08-25 that
+         *     produced the worst answer this button can give: a workflow the Steward had
+         *     just emitted came back "Definition is valid", and the run then died at
+         *     `Prepare Address` with `list index out of range` because its upstream
+         *     produced `values: []` and the terminal agent step's required Page Text was
+         *     never wired at all. A validator that greenlights an unrunnable workflow is
+         *     worse than no validator: the author gets a stamp and finds out from a
+         *     failed run.
+         *
+         *     The interface pass already existed (``handshake_issues`` — a required field
+         *     nothing certainly provides, a closed input refusing fields the upstream
+         *     certainly sends, mappings that can never resolve); nothing had wired it to
+         *     this button. It runs here rather than in ``validate_definition`` because it
+         *     lives in aidream and matrx-graph may not import the host.
+         *
+         *     Its findings are ADVISORY (warnings): the pass proves breaks from declared
+         *     schemas, and a definition can still be legitimately incomplete mid-build.
+         *     They surface beside the errors instead of being invisible until run time.
+         *     A crash inside the interface pass must never turn a valid definition
+         *     invalid — it is logged and skipped.
          */
         post: operations["validate_workflow_workflows_validate_post"];
         delete?: never;
@@ -18734,30 +18820,6 @@ export interface paths {
          *     S3 chunked stream + buffered fallback + RFC-7233 parsing.
          */
         get: operations["download_file_files__file_id__download_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/files/{file_id}/url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get File Url
-         * @description Return the canonical inline-renderable URL for a file.
-         *
-         *     Mints via SyncEngine.build_urls_for_record_async — CDN if public + CDN
-         *     configured, signed-inline otherwise. Use ``/files/{id}/asset`` if you
-         *     also need the download URL flavour or all variants in one response.
-         */
-        get: operations["get_file_url_files__file_id__url_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -25584,7 +25646,6 @@ export interface components {
          *     Use to:
          *       - change visibility (also moves the S3 object between buckets)
          *       - grant new sharees
-         *       - refresh signed URLs (signed_url_ttl)
          */
         AssetPatchRequest: {
             /** Visibility */
@@ -25597,8 +25658,6 @@ export interface components {
              * @enum {string}
              */
             share_level?: "read" | "write" | "admin";
-            /** Signed Url Ttl */
-            signed_url_ttl?: number | null;
             /** Metadata */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -25648,11 +25707,14 @@ export interface components {
             mime_type?: string;
             /** Data Url */
             data_url?: string | null;
-            /** Signed Url */
-            signed_url?: string | null;
+            /**
+             * Ephemeral Url
+             * @description Short-lived URL for the row-less compressed output. Expires by design (expires_in); NEVER persist or pass along.
+             */
+            ephemeral_url?: string | null;
             /**
              * Expires In
-             * @description Seconds until signed_url expires (signed_url mode only).
+             * @description Seconds until ephemeral_url expires (ephemeral mode only).
              */
             expires_in?: number | null;
             /** Level Requested */
@@ -25683,7 +25745,7 @@ export interface components {
             variants: components["schemas"]["PreviewVariantSpec"][];
             /**
              * Max Inline Bytes
-             * @description Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.
+             * @description Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral_url (row-less scratch — the ONLY lawful expiring URL shape; see render_urls.py).
              * @default 262144
              */
             max_inline_bytes?: number;
@@ -25746,13 +25808,13 @@ export interface components {
              */
             data_url?: string | null;
             /**
-             * Signed Url
-             * @description Ephemeral signed URL when size > max_inline_bytes
+             * Ephemeral Url
+             * @description Short-lived URL for row-less preview scratch when size > max_inline_bytes. Expires by design (expires_in); NEVER persist or pass along — re-render instead.
              */
-            signed_url?: string | null;
+            ephemeral_url?: string | null;
             /**
              * Expires In
-             * @description Seconds (with signed_url). 300 = 5-minute TTL.
+             * @description Seconds (with ephemeral_url). 300 = 5-minute TTL.
              */
             expires_in?: number | null;
             /** Error */
@@ -25781,11 +25843,6 @@ export interface components {
             }[] | null;
             /** Include Social Baseline */
             include_social_baseline?: boolean | null;
-            /**
-             * Signed Url Ttl
-             * @default 3600
-             */
-            signed_url_ttl?: number;
         };
         /** AssetVariant */
         AssetVariant: {
@@ -25810,12 +25867,8 @@ export interface components {
             url?: string | null;
             /** Cdn Url */
             cdn_url?: string | null;
-            /** Signed Url */
-            signed_url?: string | null;
             /** Download Url */
             download_url?: string | null;
-            /** Signed Url Expires At */
-            signed_url_expires_at?: number | null;
             /** Metadata */
             metadata?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -34168,8 +34221,6 @@ export interface components {
             url?: string | null;
             /** Cdn Url */
             cdn_url?: string | null;
-            /** Signed Url */
-            signed_url?: string | null;
             /** Download Url */
             download_url?: string | null;
         };
@@ -38833,6 +38884,58 @@ export interface components {
             elapsed_ms: number;
         };
         /**
+         * Expectation
+         * @description One typed rule about the output. The unit an author writes in the UI.
+         */
+        Expectation: {
+            /**
+             * Id
+             * @description Stable slug — becomes the proof's id.
+             */
+            id: string;
+            /**
+             * Rule
+             * @enum {string}
+             */
+            rule: "contains_marker" | "excludes_marker" | "routes_exist" | "path_present" | "path_absent" | "path_equals" | "min_items" | "max_items" | "matches" | "judge";
+            /**
+             * Title
+             * @default
+             */
+            title?: string;
+            /**
+             * Proves
+             * @default
+             */
+            proves?: string;
+            /**
+             * Path
+             * @default
+             */
+            path?: string;
+            /**
+             * Marker
+             * @default
+             */
+            marker?: string;
+            value?: components["schemas"]["JsonValue"];
+            /**
+             * Count
+             * @default 0
+             */
+            count?: number;
+            /**
+             * Rubric
+             * @default
+             */
+            rubric?: string;
+            /**
+             * Required
+             * @default true
+             */
+            required?: boolean;
+        };
+        /**
          * ExpectationVerdict
          * @description The answer to "does this arm satisfy the case's claim?"
          *
@@ -40195,8 +40298,6 @@ export interface components {
             url?: string | null;
             /** Cdn Url */
             cdn_url?: string | null;
-            /** Signed Url */
-            signed_url?: string | null;
             /** Download Url */
             download_url?: string | null;
         };
@@ -40212,14 +40313,12 @@ export interface components {
          *
          *       1. ``file_id``  — the ID. From it, everything else is fetchable, and
          *                         it round-trips straight back as ``MediaRef.file_id``.
-         *       2. ``url``      — ALWAYS renderable (CDN when public, signed-inline
-         *                         otherwise). Bind to <img>/<video> directly.
+         *       2. ``url``      — ALWAYS renderable and DURABLE (CDN when public,
+         *                         the authenticated /files/{id}/download?inline=1
+         *                         route otherwise). Bind to <img>/<video> directly.
          *       3. ``cdn_url``  — permanent public CDN URL (public files only).
-         *       4. ``signed_url`` + ``signed_url_expires_at`` — the expiring link and
-         *                         the ms-epoch it dies, so the client refreshes ahead
-         *                         of expiry without parsing X-Amz params.
-         *       5. ``download_url`` — attachment-disposition signed URL (Download btn).
-         *       6. display metadata the client renders: ``file_name``, ``mime_type``,
+         *       4. ``download_url`` — durable attachment-disposition URL (Download btn).
+         *       5. display metadata the client renders: ``file_name``, ``mime_type``,
          *          ``size_bytes``, ``visibility``, ``thumbnail_url``.
          *
          *     🚫 What it DELIBERATELY OMITS — the whole point of this shape:
@@ -40257,7 +40356,7 @@ export interface components {
             size_bytes?: number | null;
             /**
              * Url
-             * @description Always-renderable URL (CDN if public, signed-inline otherwise).
+             * @description Always-renderable durable URL (CDN if public, the authenticated /files/{id}/download?inline=1 route otherwise).
              */
             url?: string | null;
             /**
@@ -40266,18 +40365,8 @@ export interface components {
              */
             cdn_url?: string | null;
             /**
-             * Signed Url
-             * @description Signed inline URL with TTL — non-public files.
-             */
-            signed_url?: string | null;
-            /**
-             * Signed Url Expires At
-             * @description ms epoch when signed_url expires; None for CDN-only public.
-             */
-            signed_url_expires_at?: number | null;
-            /**
              * Download Url
-             * @description Attachment-disposition signed URL (Download button).
+             * @description Durable attachment-disposition URL (Download button).
              */
             download_url?: string | null;
             /** Thumbnail Url */
@@ -46514,6 +46603,15 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
+        /** MandateCatalogResponse */
+        MandateCatalogResponse: {
+            /** Mandates */
+            mandates?: components["schemas"]["MandateOption"][];
+            /** Rules */
+            rules?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+        };
         /** MandateCodeTruth */
         MandateCodeTruth: {
             /** Mandate Key */
@@ -46590,6 +46688,36 @@ export interface components {
             exemplar_label: string;
             /** Results */
             results: components["schemas"]["MandateTestResult"][];
+        };
+        /**
+         * MandateOption
+         * @description One mandate an author can point a scenario at, with what it offers.
+         */
+        MandateOption: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Label */
+            label: string;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Required Output Keys */
+            required_output_keys?: string[];
+            /**
+             * Accepts User Input
+             * @default true
+             */
+            accepts_user_input?: boolean;
+            /** Provision */
+            provision?: string | null;
+            /** Offered Values */
+            offered_values?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
         };
         /**
          * MandateResolutionResponse
@@ -58610,6 +58738,104 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /**
+         * ScenarioPayload
+         * @description A saved scenario, as the editor sends it.
+         *
+         *     ``variables`` / ``user_input`` / ``allowed_routes`` may carry the run-time
+         *     placeholders ``{{nonce}}`` and ``{{marker:NAME}}``; the runner mints fresh
+         *     values per run so a saved marker can never become memorizable.
+         */
+        ScenarioPayload: {
+            /** Slug */
+            slug: string;
+            /** Label */
+            label: string;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Mandate Key */
+            mandate_key: string;
+            /** Variables */
+            variables?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Allowed Routes */
+            allowed_routes?: string[];
+            /** Expectations */
+            expectations?: components["schemas"]["Expectation"][];
+            /** User Input */
+            user_input?: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active?: boolean;
+            /**
+             * Live Every Seconds
+             * @default 21600
+             */
+            live_every_seconds?: number;
+            /**
+             * Max Cost Usd
+             * @default 0.75
+             */
+            max_cost_usd?: number;
+        };
+        /**
+         * ScenarioRow
+         * @description A stored scenario, plus the identity of the check it becomes.
+         */
+        ScenarioRow: {
+            /** Slug */
+            slug: string;
+            /** Label */
+            label: string;
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Mandate Key */
+            mandate_key: string;
+            /** Variables */
+            variables?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Allowed Routes */
+            allowed_routes?: string[];
+            /** Expectations */
+            expectations?: components["schemas"]["Expectation"][];
+            /** User Input */
+            user_input?: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active?: boolean;
+            /**
+             * Live Every Seconds
+             * @default 21600
+             */
+            live_every_seconds?: number;
+            /**
+             * Max Cost Usd
+             * @default 0.75
+             */
+            max_cost_usd?: number;
+            /**
+             * Check Slug
+             * @default
+             */
+            check_slug?: string;
+        };
+        /** ScenariosResponse */
+        ScenariosResponse: {
+            /** Scenarios */
+            scenarios?: components["schemas"]["ScenarioRow"][];
+        };
         /** SchemaAllResponse */
         SchemaAllResponse: {
             [key: string]: components["schemas"]["JsonValue"];
@@ -60393,13 +60619,6 @@ export interface components {
             message: string;
             /** Pages Affected */
             pages_affected: number;
-        };
-        /** SignedUrlResponse */
-        SignedUrlResponse: {
-            /** Url */
-            url: string;
-            /** Expires In */
-            expires_in: number;
         };
         /** SimulateProviderRetryRequest */
         SimulateProviderRetryRequest: {
@@ -96604,6 +96823,114 @@ export interface operations {
             };
         };
     };
+    list_scenarios_proof_runs_scenarios_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenariosResponse"];
+                };
+            };
+        };
+    };
+    save_scenario_proof_runs_scenarios__slug__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScenarioPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_scenario_proof_runs_scenarios__slug__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mandate_catalog_proof_runs_mandate_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateCatalogResponse"];
+                };
+            };
+        };
+    };
     list_entities_kg_inspector_entities_get: {
         parameters: {
             query?: {
@@ -102403,39 +102730,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_file_url_files__file_id__url_get: {
-        parameters: {
-            query?: {
-                expires_in?: number;
-            };
-            header?: never;
-            path: {
-                file_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SignedUrlResponse"];
                 };
             };
             /** @description Validation Error */

@@ -1,22 +1,16 @@
 /**
  * features/files/handler/intelligence/signed-url-cache.ts
  *
- * Lazy in-memory cache for signed URLs. The handler's policy is
- * "mint on demand, never preemptively" — there is no background timer,
- * no expiry wheel, no proactive refresh. Once the bytes are loaded
- * into the browser they stay rendered indefinitely even after the URL
- * expires; the URL only needs to be fresh at the moment something
- * actively asks for it.
+ * Lazy in-memory cache for durable authenticated file URLs. The exported names
+ * remain compatible with existing consumers while the former signed-URL model
+ * is retired. There is no background timer or proactive refresh.
  *
  * Responsibilities:
  *   1. Cache `{ url, expiresAt }` per fileId for the page session.
  *   2. Deduplicate concurrent mint requests for the same fileId so 20
  *      images sharing a file produce ONE network call, not 20.
- *   3. Treat URLs as expired a minute before their real S3 expiry so
- *      a download that takes 30s after `getOrMint()` returns still
- *      has a valid signature when it hits S3.
- *   4. Expose `invalidate(fileId)` so an `<img onError>` retry path
- *      (or a permissions-change event) can force a re-mint.
+ *   3. Expose `invalidate(fileId)` so an `<img onError>` retry path
+ *      (or a permissions-change event) can force a fresh record lookup.
  *
  * This module is intentionally tiny and pure(ish): it knows about the
  * mint function it's given, nothing else. No Redux, no React.
@@ -42,13 +36,12 @@ function isFresh(
 }
 
 /**
- * Return a fresh signed URL for `fileId` — from cache if one's still
- * valid, otherwise mint a new one. Concurrent calls for the same
+ * Return a durable URL for `fileId` — from cache if present, otherwise
+ * resolve a new one. Concurrent calls for the same
  * fileId share a single in-flight request.
  *
- * The returned `expiresAt` is the real S3 expiry (epoch ms), not the
- * cache's safety-adjusted view. Callers usually don't read it —
- * they just store the URL and trust the cache the next time around.
+ * The returned `expiresAt` is Infinity because the locator itself is durable;
+ * access remains subject to authentication at request time.
  */
 export async function getOrMintSignedUrl(
   fileId: string,

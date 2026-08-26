@@ -68,8 +68,8 @@ export interface FileActionHandlers {
    * handler fetches the REST record once to hydrate the CDN URL before
    * falling back to share-token creation.
    *
-   * Pass `{ expiresIn }` to use the legacy temporary signed-URL path —
-   * intended for the duplicate flow which needs to fetch bytes immediately.
+   * Pass `{ expiresIn }` for compatibility with callers that need to fetch
+   * bytes immediately; the live file contract now returns a durable URL.
    */
   copyShareUrl: (opts?: { expiresIn?: number }) => Promise<string | null>;
 }
@@ -189,9 +189,9 @@ export function useFileActions(fileId: string): FileActionHandlers {
     async (opts?: { expiresIn?: number }) => {
       if (isVirtual) return null;
 
-      // Legacy temporary-URL path — only used by the duplicate flow that
-      // needs to `fetch()` bytes immediately. A short-lived signed URL is
-      // the right tool there: no side-effects on the file's share state.
+      // Compatibility path used by the duplicate flow that needs to fetch
+      // bytes immediately. The resolved URL is durable and has no side effects
+      // on the file's share state.
       if (opts?.expiresIn !== undefined) {
         const result = await dispatch(
           getSignedUrl({ fileId, expiresIn: opts.expiresIn }),
@@ -256,7 +256,9 @@ export function useFileActions(fileId: string): FileActionHandlers {
         // Cache may be cold (no one has opened the Share dialog this
         // session). Load before deciding to create — keeps us from
         // accidentally creating duplicate links.
-        await dispatch(loadShareLinks({ resourceId: fileId, resourceType: "file" }))
+        await dispatch(
+          loadShareLinks({ resourceId: fileId, resourceType: "file" }),
+        )
           .unwrap()
           .catch(() => undefined);
         const refreshed = selectActiveShareLinksForResource(

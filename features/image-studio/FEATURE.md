@@ -273,6 +273,11 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## Change Log
 
+- **2026-08-26** — **Preview scratch URLs follow the live ephemeral contract.** Convert preview
+  variants now read `ephemeral_url` (the only lawful expiring row-less scratch field) instead of
+  the retired `signed_url` field, and still materialize it to a browser-owned `blob:` URL before
+  studio state or rendered tiles can retain it. The async-action file snapshot now synchronizes in
+  an effect so the hook does not mutate a ref during render.
 - **2026-08-17** — **Describe all dispatches the whole batch.** The Convert
   studio starts every independent image-description run immediately and leaves
   provider admission to `matrx-ai`; per-image status, failure isolation, and

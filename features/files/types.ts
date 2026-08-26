@@ -173,7 +173,6 @@ export type FileUploadResponse = components["schemas"]["FileUploadResponse"];
 export type FilePatchRequest = components["schemas"]["FilePatchRequest"];
 export type GrantPermissionRequest =
   components["schemas"]["GrantPermissionRequest"];
-export type SignedUrlResponse = components["schemas"]["SignedUrlResponse"];
 
 // ---------------------------------------------------------------------------
 // 4. Domain types (camelCase) — what the app works with

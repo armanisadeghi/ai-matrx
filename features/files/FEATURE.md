@@ -82,6 +82,11 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-26 — Durable file URL contract adopted.** The universal file handler now resolves
+  private and public bytes from the live `FileRecord.url` / `download_url` contract instead of the
+  retired `/files/{file_id}/url` signed-URL endpoint. Existing compatibility helpers retain their
+  names while caching the durable authenticated locator and no longer inventing a frontend wire
+  type for the removed response schema.
 - **2026-08-26 — Tablet row actions stay on-screen.** File and folder identity cells now truncate
   inside a bounded tablet name column while the 44px **More** control stays fixed-width and visible.
 - **2026-08-25 — LUI-007 `/files/all` static surface pass.** Both responsive

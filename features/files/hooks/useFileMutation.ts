@@ -18,7 +18,7 @@
  * import from `features/files/redux/*` — which closes the last Tier-4
  * ESLint hole: the cluster of cloud-image / Knowledge / WhatsApp surfaces that
  * dispatch `deleteFile` / `moveFile` / `updateFileMetadata` / `updateFolder`
- * / `deleteFolder` / `getSignedUrl` from event handlers with dynamic ids.
+ * / `deleteFolder` / the URL resolver from event handlers with dynamic ids.
  *
  * Each method returns the thunk's resolved value (`.unwrap()`) so callers
  * can `await` and `try/catch` per row without threading a redux-thunk
@@ -28,7 +28,9 @@
  * ──────
  * - `delete` is a reserved word, so the destructive ops are exposed as
  *   `remove(fileId)` / `removeFolder(folderId)`.
- * - `signedUrl(fileId)` returns `{ url, expiresIn }`; it's named like a
+ * - `signedUrl(fileId)` returns `{ url, expiresIn }`; the legacy name is
+ *   retained while callers move to the durable authenticated URL contract.
+ *   It's named like a
  *   reader because it doesn't mutate state, but it's grouped here because
  *   the consumers that need it (table row actions, "open in new tab") are
  *   the same surfaces that need the other ops.
@@ -66,9 +68,9 @@ export interface FileMutations {
   /** Soft-delete (trash) by default; pass `hard: true` to bypass trash. */
   remove(fileId: string, options?: { hard?: boolean }): Promise<void>;
   /**
-   * Fetch a fresh signed URL. Read-shaped, but lives here because the
+   * Fetch the durable authenticated URL. Read-shaped, but lives here because the
    * consumers (table actions, "open in new tab") are the same surfaces
-   * that need the mutation ops above. Default TTL 3600s.
+   * that need the mutation ops above. The TTL option is compatibility-only.
    */
   signedUrl(
     fileId: string,
@@ -93,11 +95,11 @@ export function useFileMutation(): FileMutations {
       updateMetadata: (fileId, patch) =>
         dispatch(updateFileMetadata({ fileId, patch })).unwrap(),
       setVisibility: (fileId, visibility) =>
-        dispatch(updateFileMetadata({ fileId, patch: { visibility } })).unwrap(),
-      remove: (fileId, options) =>
         dispatch(
-          deleteFile({ fileId, hardDelete: options?.hard }),
+          updateFileMetadata({ fileId, patch: { visibility } }),
         ).unwrap(),
+      remove: (fileId, options) =>
+        dispatch(deleteFile({ fileId, hardDelete: options?.hard })).unwrap(),
       signedUrl: (fileId, options) =>
         dispatch(
           getSignedUrl({ fileId, expiresIn: options?.expiresIn }),
