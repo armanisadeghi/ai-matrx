@@ -27263,6 +27263,78 @@ export type Database = {
           },
         ]
       }
+      proof_scenario: {
+        Row: {
+          allowed_routes: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string
+          expectations: Json
+          id: string
+          is_active: boolean
+          label: string
+          live_every_seconds: number
+          mandate_key: string
+          max_cost_usd: number
+          metadata: Json
+          organization_id: string
+          slug: string
+          updated_at: string
+          updated_by: string | null
+          user_input: string | null
+          variables: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          allowed_routes?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string
+          expectations?: Json
+          id?: string
+          is_active?: boolean
+          label: string
+          live_every_seconds?: number
+          mandate_key: string
+          max_cost_usd?: number
+          metadata?: Json
+          organization_id: string
+          slug: string
+          updated_at?: string
+          updated_by?: string | null
+          user_input?: string | null
+          variables?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          allowed_routes?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string
+          expectations?: Json
+          id?: string
+          is_active?: boolean
+          label?: string
+          live_every_seconds?: number
+          mandate_key?: string
+          max_cost_usd?: number
+          metadata?: Json
+          organization_id?: string
+          slug?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_input?: string | null
+          variables?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       system_error: {
         Row: {
           agent_id: string | null
