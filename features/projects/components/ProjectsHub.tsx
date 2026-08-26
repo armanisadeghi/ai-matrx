@@ -404,6 +404,7 @@ export function ProjectsHub({
   const buildListContextData = () =>
     buildProjectsListContextData({
       projects: listProjects,
+      projectsReadAvailable: !projectsReadFailed,
       searchQuery: query,
       view,
       organizationFilterId: orgFilterId,
@@ -520,10 +521,15 @@ export function ProjectsHub({
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                 <span
                   className="text-xs text-muted-foreground tabular-nums"
-                  data-surface-value="project_count"
+                  data-surface-value={
+                    projectsReadFailed ? undefined : "project_count"
+                  }
                 >
-                  {filtered.length}{" "}
-                  {filtered.length === 1 ? "project" : "projects"}
+                  {projectsReadFailed
+                    ? projects.length > 0
+                      ? `${filtered.length} shown`
+                      : "Projects unavailable"
+                    : `${filtered.length} ${filtered.length === 1 ? "project" : "projects"}`}
                 </span>
                 <div
                   className="relative min-w-0 flex-1 sm:flex-none"
@@ -1208,17 +1214,26 @@ function ProjectsTable({
     ) {
       return false;
     }
-    const open = stats.get(project.id)?.open ?? 0;
-    const done = stats.get(project.id)?.done ?? 0;
-    if (
-      !passesNumberRange(open, columnFilters.openMin, columnFilters.openMax)
-    ) {
-      return false;
-    }
-    if (
-      !passesNumberRange(done, columnFilters.doneMin, columnFilters.doneMax)
-    ) {
-      return false;
+    const projectStats = stats.get(project.id);
+    if (projectStats) {
+      if (
+        !passesNumberRange(
+          projectStats.open,
+          columnFilters.openMin,
+          columnFilters.openMax,
+        )
+      ) {
+        return false;
+      }
+      if (
+        !passesNumberRange(
+          projectStats.done,
+          columnFilters.doneMin,
+          columnFilters.doneMax,
+        )
+      ) {
+        return false;
+      }
     }
     return passesUpdatedFilter(project.updatedAt, columnFilters.updated);
   });
@@ -1233,10 +1248,12 @@ function ProjectsTable({
         case "org":
           return orgLabel(a).localeCompare(orgLabel(b)) * dir;
         case "open":
+          if (!stats.has(a.id) || !stats.has(b.id)) return 0;
           return (
             ((stats.get(a.id)?.open ?? 0) - (stats.get(b.id)?.open ?? 0)) * dir
           );
         case "done":
+          if (!stats.has(a.id) || !stats.has(b.id)) return 0;
           return (
             ((stats.get(a.id)?.done ?? 0) - (stats.get(b.id)?.done ?? 0)) * dir
           );
@@ -1503,22 +1520,32 @@ function ProjectsTable({
                   <TableCell className="py-2 text-right tabular-nums">
                     {!s && statsReadFailed ? (
                       <span title="Task summary unavailable">—</span>
+                    ) : !s ? (
+                      <Skeleton
+                        className="ml-auto h-4 w-6"
+                        aria-label={`Loading open-task count for ${p.name}`}
+                      />
                     ) : (
                       <Link
                         href={`/projects/${p.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        title={`Open ${p.name} — ${s?.open ?? 0} open task${
-                          (s?.open ?? 0) === 1 ? "" : "s"
+                        title={`Open ${p.name} — ${s.open} open task${
+                          s.open === 1 ? "" : "s"
                         }`}
                         className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 hover:bg-accent hover:underline lg:min-h-0 lg:min-w-0"
                       >
-                        {s?.open ?? 0}
+                        {s.open}
                       </Link>
                     )}
                   </TableCell>
                   <TableCell className="py-2 text-right tabular-nums text-muted-foreground">
                     {!s && statsReadFailed ? (
                       <span title="Task summary unavailable">—</span>
+                    ) : !s ? (
+                      <Skeleton
+                        className="ml-auto h-4 w-6"
+                        aria-label={`Loading completed-task count for ${p.name}`}
+                      />
                     ) : (
                       <Link
                         // `?done=1` expands the Done group on arrival — that
@@ -1527,12 +1554,12 @@ function ProjectsTable({
                         // counts are still hidden.
                         href={`/projects/${p.id}?done=1`}
                         onClick={(e) => e.stopPropagation()}
-                        title={`Open ${p.name} — ${s?.done ?? 0} completed task${
-                          (s?.done ?? 0) === 1 ? "" : "s"
+                        title={`Open ${p.name} — ${s.done} completed task${
+                          s.done === 1 ? "" : "s"
                         }`}
                         className="inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 hover:bg-accent hover:underline lg:min-h-0 lg:min-w-0"
                       >
-                        {s?.done ?? 0}
+                        {s.done}
                       </Link>
                     )}
                   </TableCell>

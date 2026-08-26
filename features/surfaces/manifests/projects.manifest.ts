@@ -312,7 +312,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "project_list",
     label: "Project list",
     description:
-      "Array of projects visible after the hub's route and search filters, including identity, organization, lifecycle fields, and open/done task counts when task summaries loaded successfully. Empty array when nothing matches; omitted on a single-project workspace.",
+      "Array of projects visible after the hub's route and search filters, including identity, organization, lifecycle fields, and open/done task counts when task summaries loaded successfully. Empty array when a successful read has no matches; omitted when the project-list read failed or on a single-project workspace.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 5000,

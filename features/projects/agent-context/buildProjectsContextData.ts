@@ -112,6 +112,8 @@ export interface ProjectsListContextProject {
 
 export interface BuildProjectsListContextDataArgs {
   projects: ProjectsListContextProject[];
+  /** False when the list read failed; unknown is never emitted as empty. */
+  projectsReadAvailable?: boolean;
   searchQuery: string;
   view: "cards" | "table";
   organizationFilterId?: string | null;
@@ -123,6 +125,7 @@ export interface BuildProjectsListContextDataArgs {
 /** Pure context contract for the `/projects` list mount. */
 export function buildProjectsListContextData({
   projects,
+  projectsReadAvailable = true,
   searchQuery,
   view,
   organizationFilterId = null,
@@ -130,52 +133,60 @@ export function buildProjectsListContextData({
   scopeFilterId = null,
   selectionText = "",
 }: BuildProjectsListContextDataArgs): Record<string, unknown> {
-  const projectList = projects.map((project) => ({
-    id: project.id,
-    name: project.name,
-    slug: project.slug || undefined,
-    description: project.description || undefined,
-    organization_id: project.organizationId || undefined,
-    organization_name: project.organizationName || undefined,
-    status: project.status || undefined,
-    priority: project.priority || undefined,
-    start_date: project.startDate || undefined,
-    target_date: project.targetDate || undefined,
-    updated_at: project.updatedAt || undefined,
-    ...(project.openTaskCount === undefined
-      ? {}
-      : { open_task_count: project.openTaskCount }),
-    ...(project.doneTaskCount === undefined
-      ? {}
-      : { done_task_count: project.doneTaskCount }),
-  }));
+  const projectList = projectsReadAvailable
+    ? projects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        slug: project.slug || undefined,
+        description: project.description || undefined,
+        organization_id: project.organizationId || undefined,
+        organization_name: project.organizationName || undefined,
+        status: project.status || undefined,
+        priority: project.priority || undefined,
+        start_date: project.startDate || undefined,
+        target_date: project.targetDate || undefined,
+        updated_at: project.updatedAt || undefined,
+        ...(project.openTaskCount === undefined
+          ? {}
+          : { open_task_count: project.openTaskCount }),
+        ...(project.doneTaskCount === undefined
+          ? {}
+          : { done_task_count: project.doneTaskCount }),
+      }))
+    : undefined;
   const projectListFilters = {
     organization_id: organizationFilterId || undefined,
     organization_name: organizationFilterName || undefined,
     scope_id: scopeFilterId || undefined,
     search_query: searchQuery,
   };
-  const content = projects
-    .map(
-      (project) =>
-        `${project.name}: ${project.description?.trim() || "No description"}`,
-    )
-    .join("\n");
+  const content = projectsReadAvailable
+    ? projects
+        .map(
+          (project) =>
+            `${project.name}: ${project.description?.trim() || "No description"}`,
+        )
+        .join("\n")
+    : "";
 
   return createProjectsScope({
     selection: selectionText || undefined,
     content: content || undefined,
     context: {
       surface_mode: "list",
-      project_count: projects.length,
       list_view: view,
       filters: projectListFilters,
+      ...(projectsReadAvailable ? { project_count: projects.length } : {}),
     },
     active_organization_id: organizationFilterId || undefined,
     active_organization_name: organizationFilterName || undefined,
-    selected_project_ids: [],
-    project_count: projects.length,
-    project_list: projectList,
+    ...(projectsReadAvailable
+      ? {
+          selected_project_ids: [],
+          project_count: projects.length,
+          project_list: projectList,
+        }
+      : {}),
     project_search_query: searchQuery,
     project_list_view: view,
     project_list_filters: projectListFilters,

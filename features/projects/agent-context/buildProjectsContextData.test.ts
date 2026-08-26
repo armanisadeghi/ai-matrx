@@ -85,4 +85,22 @@ describe("Projects list surface context", () => {
     expect(context).not.toHaveProperty("project_list.0.open_task_count");
     expect(context).not.toHaveProperty("project_list.0.done_task_count");
   });
+
+  it("does not fabricate an empty list or zero count after a failed read", () => {
+    const context = buildProjectsListContextData({
+      projects: [],
+      projectsReadAvailable: false,
+      searchQuery: "surface",
+      view: "cards",
+    });
+
+    expect(context).not.toHaveProperty("project_list");
+    expect(context).not.toHaveProperty("project_count");
+    expect(context).not.toHaveProperty("selected_project_ids");
+    expect(context).not.toHaveProperty("context.project_count");
+    expect(context).toMatchObject({
+      project_search_query: "surface",
+      project_list_view: "cards",
+    });
+  });
 });
