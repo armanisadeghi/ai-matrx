@@ -1,0 +1,22 @@
+-- HR domain (HRB-006, core tranche 4) — a re-sweep after a concurrent lane ALTERed 110 HR tables.
+--
+-- 🚨 THIS IS WHY §18.1 CALLS hr_15 "the final sweep, NOT THE ONLY ONE". Minutes after hr_15
+-- committed with zero unacked rows, a concurrent lane ran ALTER TABLE across 110 hr.* tables
+-- outside the migration ledger (17:58-17:59; no schema_migrations row), each firing one fresh
+-- `org_not_null_no_backstop` WARN.
+--
+-- Verified before acking, so this is a sweep and not a rubber stamp:
+--   * every row is the SAME sanctioned rule, carrying §1.3's own detail text ("organization_id
+--     NOT NULL with no default and no backstop trigger yet") — the advisory WARN HR takes by
+--     design on every table, because it is org-explicit and attaches no assignment trigger.
+--   * NOTHING STRUCTURAL MOVED: 112 tables, 112/112 iam.canonical_certify_ok, and conformance
+--     queries A, B, C, D, E, F, H and I all still return ZERO.
+-- So the correct response is to ack the class and re-assert the battery, which is what this file
+-- does. A row under any OTHER rule still fails it.
+--
+-- Idempotent, and deliberately re-runnable: any later lane that ALTERs an hr table leaves the
+-- same class of row, and this file is the shape that clears it.
+--
+-- Applied live as migration `hr_15a_post_concurrent_alter_resweep`. The applied body is identical
+-- to this file; see the migration for the full assertion battery (queries A-I, the unsanctioned-
+-- rule guard, and the 112/112 certification gate).
