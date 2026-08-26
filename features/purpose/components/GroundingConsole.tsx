@@ -77,6 +77,25 @@ function GroundingBadge({ tag }: { tag: GroundingTag }) {
   );
 }
 
+function missingUnitContent(u: MissingUnit): string {
+  const info = tryGetEntityInfo(u.unitType);
+  return [
+    u.name || "Untitled",
+    `Kind: ${info?.label ?? u.unitType}`,
+    `Id: ${u.unitId}`,
+    "Missing a purpose row.",
+  ].join("\n");
+}
+
+function orphanContent(o: OrphanedPurpose): string {
+  return [
+    o.title,
+    o.statement,
+    `Grounding: ${GROUNDING_LABEL[o.groundingTag]}`,
+    "Nothing currently references this purpose.",
+  ].join("\n");
+}
+
 /** One unit's row: always reachable — Open when a route exists, Peek always. */
 function UnitRow({
   unitType,
@@ -88,7 +107,10 @@ function UnitRow({
   const href = info?.hrefFor?.(unitId);
   const Icon = info?.Icon;
   return (
-    <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-sm last:border-b-0">
+    <div
+      data-row-id={unitId}
+      className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-sm last:border-b-0"
+    >
       {Icon ? <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
       <span className="min-w-0 flex-1 truncate">{name || "Untitled"}</span>
       <span className="shrink-0 text-xs text-muted-foreground">{info?.label ?? unitType}</span>
@@ -114,6 +136,7 @@ export function GroundingConsole() {
   const [openKind, setOpenKind] = useState<PurposeUnitType | null>(null);
   const [peek, setPeek] = useState<{ kind: string; id: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [clickedMissing, setClickedMissing] = useState<MissingUnit | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -225,10 +248,55 @@ export function GroundingConsole() {
             {missing.length === 0 ? (
               <p className="px-3 py-3 text-sm text-muted-foreground">Nothing to show.</p>
             ) : (
-              missing.map((u) => (
-                <UnitRow key={`${u.unitType}:${u.unitId}`} {...u}
-                         onPeek={(kind, id) => setPeek({ kind, id })} />
-              ))
+              <NonEditableContextMenu
+                sourceFeature="admin"
+                contentSource={{ type: "raw" }}
+                contextData={{ content: "" }}
+                resolveContextOnOpen={(element) => {
+                  const id = element?.closest("[data-row-id]")?.getAttribute("data-row-id");
+                  const row = id ? missing.find((u) => u.unitId === id) : undefined;
+                  setClickedMissing(row ?? null);
+                  if (!row) return null;
+                  return { content: missingUnitContent(row) };
+                }}
+                extraSections={[
+                  {
+                    id: "purpose-missing-row",
+                    label: "This unit",
+                    anchor: "after-compare",
+                    items: [
+                      {
+                        kind: "item",
+                        id: "purpose-missing-peek",
+                        label: "Peek unit",
+                        icon: AlertTriangle,
+                        disabled: !clickedMissing,
+                        onSelect: () => {
+                          if (clickedMissing)
+                            setPeek({ kind: clickedMissing.unitType, id: clickedMissing.unitId });
+                        },
+                      },
+                      ...(clickedMissing && tryGetEntityInfo(clickedMissing.unitType)?.hrefFor?.(clickedMissing.unitId)
+                        ? ([
+                            {
+                              kind: "link",
+                              id: "purpose-missing-open",
+                              label: "Open unit",
+                              icon: Unplug,
+                              href: tryGetEntityInfo(clickedMissing.unitType)!.hrefFor!(clickedMissing.unitId),
+                              target: "_blank",
+                            },
+                          ] satisfies ContextMenuExtraItem[])
+                        : []),
+                    ] satisfies ContextMenuExtraItem[],
+                  },
+                ]}
+              >
+                {missing.map((u) => (
+                  <UnitRow key={`${u.unitType}:${u.unitId}`} {...u}
+                           onPeek={(kind, id) => setPeek({ kind, id })} />
+                ))}
+              </NonEditableContextMenu>
             )}
           </div>
         ) : null}
@@ -246,16 +314,29 @@ export function GroundingConsole() {
               Every purpose on record is served by something.
             </p>
           ) : (
-            orphans.map((o) => (
-              <div key={o.purposeId}
-                   className="flex items-start gap-2 border-b border-border px-3 py-2 text-sm last:border-b-0">
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{o.title}</div>
-                  <div className="text-xs text-muted-foreground">{o.statement}</div>
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "" }}
+              resolveContextOnOpen={(element) => {
+                const id = element?.closest("[data-row-id]")?.getAttribute("data-row-id");
+                const row = id ? orphans.find((o) => o.purposeId === id) : undefined;
+                if (!row) return null;
+                return { content: orphanContent(row) };
+              }}
+            >
+              {orphans.map((o) => (
+                <div key={o.purposeId}
+                     data-row-id={o.purposeId}
+                     className="flex items-start gap-2 border-b border-border px-3 py-2 text-sm last:border-b-0">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">{o.title}</div>
+                    <div className="text-xs text-muted-foreground">{o.statement}</div>
+                  </div>
+                  <GroundingBadge tag={o.groundingTag} />
                 </div>
-                <GroundingBadge tag={o.groundingTag} />
-              </div>
-            ))
+              ))}
+            </NonEditableContextMenu>
           )}
           <p className="px-3 py-2 text-xs text-muted-foreground">
             These are kept on purpose. The job outlives the unit that used to do it —
