@@ -73,17 +73,56 @@ as $fn$
 declare
   v_uid uuid := auth.uid(); v_kind text := nullif(p_filter ->> 'case_kind','');
   v_ca jsonb := '{}'::jsonb; v_inc jsonb := '{}'::jsonb; v_rows jsonb := '[]'::jsonb;
+  v_filter jsonb;
 begin
   if v_uid is null then
     raise exception 'hr_relations_list: no authenticated caller' using errcode = '42501';
   end if;
 
+  -- 🚨 RECORDED TECHNICAL DECISION 16c — `granted` FROM THE DOOR IS NOT THE ACCESS VERDICT HERE,
+  -- AND TRUSTING IT LEAKED. Probed live as a user with no standing in the employer at all:
+  -- `hr._door_list` returned `granted:true, rows:[]` — because the door's job is to scope a list,
+  -- and a scope that matches nothing is an empty list, not a refusal. Rendered faithfully that is
+  -- **"you have access to Employee Relations and there are no cases"** told to a stranger, which
+  -- is precisely the statement §2.2 r15 forbids: no-access must make the route and the nav item
+  -- ABSENT, and "an empty list says there are no cases, which is a different and false statement".
+  --
+  -- So standing in the employer is checked FIRST, before the door is consulted at all. The
+  -- capability check stays the door's — this only establishes that the caller is somebody in this
+  -- employer, which is the floor beneath every relations lane.
+  if hr._l1_org_role(v_uid, p_organization_id) is null
+     and hr._l1_self_employment(v_uid, p_organization_id, current_date) is null then
+    perform hr._record_access_audit(
+      p_organization_id => p_organization_id, p_action => 'denied',
+      p_target_token => 'hr_incident', p_purpose => 'relations_list', p_basis => 'refused',
+      p_granted => false, p_row_count => 0, p_sensitivity_tier => 'restricted',
+      p_denial_reason => 'no_standing_in_employer');
+    return jsonb_build_object('granted', false, 'reason', 'not_reachable');
+  end if;
+
+  -- the shared door scopes a LIST by `p_filter.organization_id` and raises without it. This
+  -- function takes the employer as its own first argument (every other L1 door does), so the two
+  -- are reconciled here rather than pushed onto every caller — and the caller's own
+  -- `organization_id`, if they sent one, is overridden rather than trusted.
+  v_filter := coalesce(p_filter, '{}'::jsonb)
+              || jsonb_build_object('organization_id', p_organization_id);
+
+  -- 🚨 RECORDED TECHNICAL DECISION 16b — THE TWO CASE KINDS ARE NOT ON THE SAME TIER, AND THE
+  -- REGISTRY IS THE ONLY HONEST SOURCE FOR WHICH.
+  -- SPEC-EMPLOYEES §2.2 r15 calls `hr_restricted_list` for BOTH; §13 D-4 records the underlying
+  -- disagreement (SPEC-ACCESS makes `hr.corrective_action` CONF so the subject can read what they
+  -- are asked to sign; SPEC-DATA-MODEL §10.1 says restricted). Live, `hr._door_spec` returns
+  -- **confidential** for `hr_corrective_action` and **restricted** for `hr_incident` — and the
+  -- shared door RAISES on a tier mismatch, by design, because asking the wrong family is a caller
+  -- mistake and not a refusal. Passing the tier from the registry instead of a literal means this
+  -- function keeps working whichever way the ruling finally lands.
   if v_kind is null or v_kind = 'corrective_action' then
-    v_ca := hr._door_list('hr_corrective_action', p_filter, p_limit, null, 'relations_list',
-                          'restricted');
+    select hr._door_list('hr_corrective_action', v_filter, p_limit, null, 'relations_list', d.tier)
+      into v_ca from hr._door_spec('hr_corrective_action') d;
   end if;
   if v_kind is null or v_kind = 'incident' then
-    v_inc := hr._door_list('hr_incident', p_filter, p_limit, null, 'relations_list', 'restricted');
+    select hr._door_list('hr_incident', v_filter, p_limit, null, 'relations_list', d.tier)
+      into v_inc from hr._door_spec('hr_incident') d;
   end if;
 
   -- 🚨 no-access here is the STRONGEST instance of §1.3: the caller gets `granted:false` and the
@@ -675,8 +714,21 @@ $fn$;
 -- The privileged write aidream's E-37 handler needs. `hr.*` carries a write guard, so the server
 -- cannot update the row directly under `acting_as_user` without arming it — and arming it from
 -- application code would put the guard's token in Python. One definer RPC instead.
+-- 🚨 RECORDED TECHNICAL DECISION 19b — ONE DOOR, NOT TWO OVERLOADS.
+-- A concurrent agent created a second signature of this function taking a fourth
+-- `p_generated_at timestamptz`. Two overloads of one SECURITY DEFINER door is the "one canonical
+-- path per operation" rule broken at the worst possible place — and PostgREST cannot even pick
+-- between them: `supabase.rpc('hr_verification_generate_apply', …)` resolves by argument NAMES,
+-- so a three-key body against two candidates is an ambiguous-function error at runtime, not a
+-- compile-time one. Both are dropped and ONE function replaces them, with `p_generated_at`
+-- OPTIONAL and defaulting to `now()` — so the three-argument call (aidream's E-37 handler) and
+-- the four-argument call (whoever wanted to pin the timestamp) both still resolve.
+drop function if exists public.hr_verification_generate_apply(uuid, uuid, jsonb);
+drop function if exists public.hr_verification_generate_apply(uuid, uuid, jsonb, timestamptz);
+
 create or replace function public.hr_verification_generate_apply(
-  p_letter_id uuid, p_file_id uuid, p_snapshot jsonb)
+  p_letter_id uuid, p_file_id uuid, p_snapshot jsonb,
+  p_generated_at timestamptz default now())
 returns jsonb
 language plpgsql security definer set search_path = public, hr
 as $fn$
@@ -709,8 +761,8 @@ begin
 
   perform hr.arm_write();
   update hr.verification_letter_request set
-    state = 'generated', generated_at = now(), letter_file_id = p_file_id,
-    snapshot = p_snapshot
+    state = 'generated', generated_at = coalesce(p_generated_at, now()),
+    letter_file_id = p_file_id, snapshot = p_snapshot
   where id = p_letter_id;
 
   return jsonb_build_object('ok', true, 'verification_letter_request_id', p_letter_id,
@@ -737,7 +789,7 @@ do $$ declare f text; begin
     'public.hr_verification_consent(uuid, boolean, text)',
     'public.hr_verification_deny(uuid, text)',
     'public.hr_verification_deliver(uuid, text, jsonb)',
-    'public.hr_verification_generate_apply(uuid, uuid, jsonb)'] loop
+    'public.hr_verification_generate_apply(uuid, uuid, jsonb, timestamptz)'] loop
     execute format('revoke all on function %s from public', f);
     execute format('revoke all on function %s from anon', f);
     execute format('grant execute on function %s to authenticated, service_role', f);
@@ -758,7 +810,9 @@ begin
                        'hr_verification_deny','hr_verification_deliver',
                        'hr_verification_generate_apply');
   if v_bad <> 13 then
-    raise exception 'hr_l1_04: expected 13 public relations/verification RPCs, found %', v_bad;
+    raise exception 'hr_l1_04: expected 13 public relations/verification RPCs, found % — an '
+                    'overload of one of them is the likely cause, and two overloads of a definer '
+                    'door are ambiguous to PostgREST (RECORDED DECISION 19b)', v_bad;
   end if;
 
   select count(*) into v_bad from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -772,6 +826,15 @@ begin
      and has_function_privilege('anon', p.oid, 'execute');
   if v_bad > 0 then
     raise exception 'hr_l1_04: % relations RPCs are executable by anon', v_bad;
+  end if;
+
+  -- RECORDED DECISION 16c: standing is established before the door is consulted, or an outsider
+  -- is told "no cases" instead of nothing.
+  if (select p.prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname='public' and p.proname='hr_relations_list')
+       not like '%no_standing_in_employer%' then
+    raise exception 'hr_l1_04: hr_relations_list does not establish standing before listing '
+                    '(§2.2 r15 — an empty list is a statement, and to a stranger it is a false one)';
   end if;
 
   -- RECORDED DECISION 15: the list must go through the audited door, never a direct select.
