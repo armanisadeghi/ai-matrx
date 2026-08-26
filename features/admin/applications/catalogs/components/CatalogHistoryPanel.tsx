@@ -21,6 +21,8 @@ import { DiffViewer } from "@/components/diff/DiffViewer";
 import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { createClient } from "@/utils/supabase/client";
 import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { useAdminEmails } from "@/features/admin/shared/useAdminEmails";
@@ -67,6 +69,9 @@ export function CatalogHistoryPanel({
   const [restoreTarget, setRestoreTarget] =
     useState<CatalogEntryHistoryRow | null>(null);
   const [restoring, setRestoring] = useState(false);
+  const [clickedRow, setClickedRow] = useState<CatalogEntryHistoryRow | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -203,6 +208,47 @@ export function CatalogHistoryPanel({
           : `${entries.length} snapshot${entries.length === 1 ? "" : "s"} — open a row to diff it against the CURRENT live entry.`}
       </p>
 
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        contentSource={{ type: "raw" }}
+        contextData={{ content: "" }}
+        resolveContextOnOpen={(element) => {
+          const id = element
+            ?.closest("[data-row-id]")
+            ?.getAttribute("data-row-id");
+          const row = id
+            ? (entries ?? []).find((r) => String(r.id) === id)
+            : undefined;
+          setClickedRow(row ?? null);
+          if (!row) return null;
+          return {
+            content: [
+              `${app}/${kind}/${entryKey} @ ${row.changed_at} (${row.op}) by ${whoLabel(row.changed_by)}`,
+              historySnapshotJson(row),
+            ].join("\n"),
+          };
+        }}
+        extraSections={[
+          {
+            id: "catalog-history-row",
+            label: "This snapshot",
+            anchor: "after-compare",
+            items: [
+              {
+                kind: "item",
+                id: "catalog-history-restore",
+                label: "Restore this version",
+                icon: Undo2,
+                disabled: !clickedRow,
+                description: "Overwrite the live entry with this snapshot",
+                onSelect: () => {
+                  if (clickedRow) setRestoreTarget(clickedRow);
+                },
+              },
+            ] satisfies ContextMenuExtraItem[],
+          },
+        ]}
+      >
       <MatrxDataTable
         urlState={{ id: "application-catalog-history" }}
         data={entries ?? []}
@@ -279,6 +325,7 @@ export function CatalogHistoryPanel({
           </Button>
         )}
       />
+      </NonEditableContextMenu>
 
       <ConfirmDialog
         open={restoreTarget !== null}
