@@ -86,7 +86,16 @@ Rules that make this census real rather than performed:
 - Include **replay/history** surfaces: stored artifacts are re-rendered later; a field that
   vanishes today still exists in old rows and its renderer must not break.
 - A field with **zero** consumers is your best find — record the evidence, and it becomes a
-  legitimate candidate for deliberate removal.
+  legitimate candidate for deliberate removal. 🚨 **BUT a zero-consumer claim is the one
+  census result that can license DELETION, so it is never accepted from a single pass**
+  (adversarial finding, 2026-08-26): batch 2 claimed `commentary`/`wrap_rating` had "zero
+  consumers, grepped both repos" while both were load-bearing — one WAS the agent's spoken
+  turn, the other governed stage advancement. Before any zero-consumer claim may justify a
+  removal: (a) grep the field name in BOTH repos including bracket/dict access patterns
+  (`structured["field"]`, `.get("field")`, destructuring), (b) read the actual consumer
+  module end to end rather than trusting grep absence, and (c) the claim must survive the
+  batch's adversarial verification before anyone acts on it. Until then it is a candidate,
+  never a license.
 
 ### 3. The narrowing diff — agent schema vs target kind
 
@@ -109,6 +118,12 @@ the **mandate** (`output_kind`, `required_output_keys`, `accepts_user_input`), t
 the exact output shape it is now bound to; a prompt that describes a different shape than
 the schema is the drift this campaign keeps finding), and the **consumers** if a reader must
 change.
+
+**Report hygiene (adversarial findings, 2026-08-26):** run ids are `chat.agent_run` /
+workflow run ids — never present an agent VERSION id as a run id. And never write a kind's
+activation state into a code comment from a stale check: the Kind Architect completes
+server-side after client timeouts (proven twice), so re-verify by SQL immediately before
+writing any "inactive"/"active" claim into code or the register.
 
 ### 5. Prove it — the after-capture and the diff
 
