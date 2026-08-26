@@ -864,6 +864,14 @@ export type AssembledAgentStartRequest = Partial<
    * Omitted for Auto/default routing.
    */
   target_instance_id?: string;
+  /**
+   * Active scope TYPE ids — "I'm working in Clients" with no specific client
+   * chosen. NOT derivable from `scope_ids`: a type can be active with zero
+   * scopes selected, and until 2026-08-26 this half of the picker never left
+   * the browser, so a type-only selection was invisible to the agent. Additive
+   * aidream field; folds into the generated contract on the next regeneration.
+   */
+  active_scope_type_ids?: string[];
   /** Request-scoped overrides for media-variable file-family policy. */
   variable_resource_context?: Record<string, VariableResourceContextConfig>;
   /**
@@ -887,6 +895,14 @@ export type AssembledConversationRequest = Partial<
    * Omitted for Auto/default routing.
    */
   target_instance_id?: string;
+  /**
+   * Active scope TYPE ids — "I'm working in Clients" with no specific client
+   * chosen. NOT derivable from `scope_ids`: a type can be active with zero
+   * scopes selected, and until 2026-08-26 this half of the picker never left
+   * the browser, so a type-only selection was invisible to the agent. Additive
+   * aidream field; folds into the generated contract on the next regeneration.
+   */
+  active_scope_type_ids?: string[];
   /** Provenance attestation — see `AssembledAgentStartRequest.initiation`. */
   initiation?: "user" | "auto";
 };

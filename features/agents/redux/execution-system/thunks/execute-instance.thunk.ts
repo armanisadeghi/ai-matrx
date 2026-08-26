@@ -67,6 +67,7 @@ import {
 } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import {
   selectProjectId,
+  selectActiveScopeTypeIds,
   selectScopeSelectionsContext,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
@@ -283,6 +284,12 @@ export function assembleRequest(
     Object.values(selectScopeSelectionsContext(state) ?? {}).filter(
       (id): id is string => !!id,
     );
+  // Active scope TYPES — the other half of the picker. A user may activate a
+  // whole type ("I'm working in Clients") without choosing an instance, and
+  // that selection is NOT recoverable from scope_ids. It never left the browser
+  // until 2026-08-26, so the agent could not see it; the server now renders it
+  // into the per-turn <active_context> block.
+  const active_scope_type_ids = selectActiveScopeTypeIds(state) ?? [];
 
   // Source tracking
   const { sourceApp, sourceFeature } = instance;
@@ -321,6 +328,8 @@ export function assembleRequest(
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
   if (scope_ids.length > 0) request.scope_ids = scope_ids;
+  if (active_scope_type_ids.length > 0)
+    request.active_scope_type_ids = active_scope_type_ids;
   // Durable-entity identity, when the launch declared one. The SERVER reloads
   // that row and derives authoritative org/project/task from it — this is why
   // it is sent alongside (not instead of) the ambient scope above: conflicting
