@@ -9,6 +9,7 @@ import "server-only";
 import { createClient } from "@/utils/supabase/server";
 import { kindTitleKeyFromMetadata } from "./instance-title";
 import type { Json } from "@/types/database.types";
+import { isDataOnlyKindMetadata } from "@/features/content-ir/registry/schema-source-kind-tables";
 
 export interface ShapeDetail {
   id: string;
@@ -26,6 +27,8 @@ export interface ShapeDetail {
   loadingComponent: string | null;
   /** True only when `created_by` is the viewer; grants do not imply ownership. */
   isOwnedByViewer: boolean;
+  /** Machine-generated contract kinds have no human input/test surface. */
+  dataOnly: boolean;
 }
 
 function metadataString(metadata: Json, key: string): string | null {
@@ -81,5 +84,6 @@ export async function getShapeDetail(
     titleKey: kindTitleKeyFromMetadata(data.metadata),
     loadingComponent: metadataString(data.metadata, "loading_component"),
     isOwnedByViewer: Boolean(auth.user && data.created_by === auth.user.id),
+    dataOnly: isDataOnlyKindMetadata(data.metadata),
   };
 }

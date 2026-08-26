@@ -152,10 +152,15 @@ export default function KindInputForm({
           contract.dataOnly,
         );
         if (path.mode === "refused") {
-          captureError({
-            source: "content-ir",
-            message: refusalMessage(kind, path.reason),
-          });
+          // A generated machine contract is expected to have no human-input
+          // path. Keep the visible refusal as defence in depth, but do not
+          // persist expected classification as a production incident.
+          if (!contract.dataOnly) {
+            captureError({
+              source: "content-ir",
+              message: refusalMessage(kind, path.reason),
+            });
+          }
           setState({ status: "refused", reason: path.reason });
           return;
         }

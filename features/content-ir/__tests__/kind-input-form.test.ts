@@ -35,6 +35,7 @@ import {
   decideKindInputPath,
   GENERIC_INPUT_COMPONENT_KEY,
 } from "../input/kind-input-resolution";
+import { isDataOnlyKindMetadata } from "../registry/schema-source-kind-tables";
 import {
   assembleKindInstance,
   attributeStructuralErrors,
@@ -125,6 +126,12 @@ describe("generic input key parity", () => {
 });
 
 describe("input-path coverage", () => {
+  it("classifies generated contract metadata before a human input surface is offered", () => {
+    expect(isDataOnlyKindMetadata({ family: "workflow_io" })).toBe(true);
+    expect(isDataOnlyKindMetadata({ data_only: true })).toBe(true);
+    expect(isDataOnlyKindMetadata({ family: "render_block" })).toBe(false);
+  });
+
   it("every ACTIVE display root resolves an input path from the compiled floor alone", () => {
     for (const kind of ACTIVE_DISPLAY_ROOTS) {
       const resolution = resolveComponent(kind, "web", "input");

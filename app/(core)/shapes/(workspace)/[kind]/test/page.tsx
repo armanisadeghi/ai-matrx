@@ -1,7 +1,8 @@
 // /shapes/[kind]/test — the magic moment: fill the canonical KindInputForm
 // and watch YOUR component render the instance live through the real route.
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { shapeDetailHref } from "@/features/content-ir/studio/constants";
 import { getShapeDetail } from "@/features/content-ir/studio/shape-detail-server";
 import ShapeDetailHeader from "@/features/content-ir/studio/components/ShapeDetailHeader";
 import ShapeSurfaceRuntime from "@/features/content-ir/studio/components/ShapeSurfaceRuntime";
@@ -15,6 +16,7 @@ export default async function ShapeTestPage({ params }: PageProps) {
   const { kind } = await params;
   const detail = await getShapeDetail(decodeURIComponent(kind));
   if (!detail) notFound();
+  if (detail.dataOnly) redirect(shapeDetailHref(detail.kind));
 
   return (
     <>
@@ -23,6 +25,7 @@ export default async function ShapeTestPage({ params }: PageProps) {
         label={detail.label}
         isOwnedByViewer={detail.isOwnedByViewer}
         emittedJsonSchema={detail.emittedJsonSchema}
+        dataOnly={detail.dataOnly}
       />
       <div className="px-4 pb-10 pt-[var(--shell-header-h)] sm:px-6">
         <div className="mx-auto mt-3 max-w-6xl">

@@ -452,7 +452,7 @@ export function kindFamilyFromMetadata(metadata: Json | null): string | null {
   return typeof family === "string" && family.length > 0 ? family : null;
 }
 
-function isDataOnlyKindMetadata(metadata: Json | null): boolean {
+export function isDataOnlyKindMetadata(metadata: Json | null): boolean {
   if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
     return false;
   }

@@ -63,6 +63,7 @@ interface ShapeDetailHeaderProps {
   isOwnedByViewer?: boolean;
   /** The kind's emitted JSON Schema — rides its own agent variable. */
   emittedJsonSchema?: Json | null;
+  dataOnly?: boolean;
 }
 
 export default function ShapeDetailHeader({
@@ -70,6 +71,7 @@ export default function ShapeDetailHeader({
   label,
   isOwnedByViewer = false,
   emittedJsonSchema = null,
+  dataOnly = false,
 }: ShapeDetailHeaderProps) {
   const router = useRouter();
   const { launch, launching } = useKindAgentLaunch(
@@ -134,7 +136,9 @@ export default function ShapeDetailHeader({
       entityLabel={label}
       modes={[
         { name: "Preview", href: detailHref, icon: Eye },
-        { name: "Test", href: shapeTestHref(kind), icon: FlaskConical },
+        ...(!dataOnly
+          ? [{ name: "Test", href: shapeTestHref(kind), icon: FlaskConical }]
+          : []),
         { name: "Stream", href: shapeStreamHref(kind), icon: Radio },
         { name: "Instances", href: shapeInstancesHref(kind), icon: Boxes },
         { name: "Schema", href: shapeSchemaHref(kind), icon: FileJson },
