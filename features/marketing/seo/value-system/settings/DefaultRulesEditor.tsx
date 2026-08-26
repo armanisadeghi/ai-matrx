@@ -32,6 +32,7 @@ import {
   saveDefaultRule,
   type DefaultRule,
 } from "./default-rules-data";
+import { defaultRuleValidationMessage } from "./default-rules-validation";
 
 const RULES_KEY = ["marketing", "seo", "platform-default-rules"] as const;
 
@@ -143,6 +144,7 @@ function ChipInput({
 export function DefaultRulesEditor() {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
   const rules = useQuery({
     queryKey: RULES_KEY,
@@ -184,6 +186,7 @@ export function DefaultRulesEditor() {
     onSuccess: async () => {
       toast.success("Rule saved");
       setDraft(null);
+      setValidationMessage(null);
       await queryClient.invalidateQueries({ queryKey: RULES_KEY });
     },
     onError: (error) =>
@@ -221,7 +224,10 @@ export function DefaultRulesEditor() {
         <Button
           size="sm"
           className="gap-1.5"
-          onClick={() => setDraft(blankDraft())}
+          onClick={() => {
+            setValidationMessage(null);
+            setDraft(blankDraft());
+          }}
         >
           <Plus className="h-4 w-4" /> New rule
         </Button>
@@ -361,7 +367,11 @@ export function DefaultRulesEditor() {
               size="sm"
               className="gap-1.5"
               disabled={save.isPending}
-              onClick={() => save.mutate(draft)}
+              onClick={() => {
+                const message = defaultRuleValidationMessage(draft);
+                setValidationMessage(message);
+                if (!message) save.mutate(draft);
+              }}
             >
               {save.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -370,10 +380,22 @@ export function DefaultRulesEditor() {
               )}
               Save rule
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setDraft(null)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setValidationMessage(null);
+                setDraft(null);
+              }}
+            >
               Cancel
             </Button>
           </div>
+          {validationMessage ? (
+            <p role="alert" className="text-xs font-medium text-destructive">
+              {validationMessage}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -426,7 +448,10 @@ export function DefaultRulesEditor() {
                         size="sm"
                         variant="ghost"
                         className="h-6 px-2 text-[11px]"
-                        onClick={() => setDraft(toDraft(rule))}
+                        onClick={() => {
+                          setValidationMessage(null);
+                          setDraft(toDraft(rule));
+                        }}
                       >
                         Edit
                       </Button>
