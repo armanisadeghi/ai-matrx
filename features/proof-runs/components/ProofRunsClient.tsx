@@ -101,12 +101,12 @@ export default function ProofRunsClient() {
         fetchProofChecks(),
         fetchProofRuns({ limit: 25 }),
       ]);
-      setChecks(checksResponse.checks);
+      setChecks(checksResponse.checks ?? []);
       setSpend({
-        mtd: checksResponse.month_to_date_usd,
-        ceiling: checksResponse.monthly_ceiling_usd,
+        mtd: checksResponse.month_to_date_usd ?? 0,
+        ceiling: checksResponse.monthly_ceiling_usd ?? 0,
       });
-      setRuns(runsResponse.runs);
+      setRuns(runsResponse.runs ?? []);
     } catch (err) {
       setLoadError(extractErrorMessage(err));
     } finally {
@@ -391,17 +391,17 @@ export default function ProofRunsClient() {
                       <span
                         className={cn(
                           "rounded-full border px-1.5 py-px text-[10px] font-medium",
-                          verdictClass(row.verdict),
+                          verdictClass(row.verdict ?? null),
                         )}
                       >
                         {row.verdict ?? row.status}
                       </span>
                     </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap font-mono">
-                      ${row.cost_usd.toFixed(4)}
+                      ${(row.cost_usd ?? 0).toFixed(4)}
                     </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap text-muted-foreground">
-                      {(row.duration_ms / 1000).toFixed(1)}s
+                      {((row.duration_ms ?? 0) / 1000).toFixed(1)}s
                     </td>
                     <td className="py-1.5 pr-3 whitespace-nowrap text-muted-foreground">
                       {row.trigger_source}

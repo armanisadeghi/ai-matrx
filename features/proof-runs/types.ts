@@ -15,6 +15,8 @@ import type {
   ProofCheckStatus,
   ProofResultKind,
 } from "@/features/content-ir/kinds/generated/kinds.generated";
+import type { components } from "@/types/python-generated/api-types";
+import { isJsonObject, toJsonRecord } from "@/types/json";
 
 export type { ProofAttestation, ProofCheckStatus, ProofResultKind };
 
@@ -25,46 +27,36 @@ export const PROOF_CHECK_STATUS_KIND = "proof_check_status" as const;
 /** How a caller asks for a run. `auto` lets the gate decide — the default. */
 export type ProofRunMode = "auto" | "live" | "replay";
 
-export interface ProofChecksResponse {
-  checks: ProofCheckStatus[];
-  month_to_date_usd: number;
-  monthly_ceiling_usd: number;
-}
+export type ProofChecksResponse = components["schemas"]["ProofChecksResponse"];
 
 /** One row of run history — the list view, without the proof bodies. */
-export interface ProofRunSummary {
-  id: string;
-  check_id: string;
-  check_slug: string;
-  mode: "live" | "replay";
-  trigger_source: string;
-  status: string;
-  verdict: string | null;
-  started_at: string | null;
-  finished_at: string | null;
-  duration_ms: number;
-  cost_usd: number;
-  total_tokens: number;
-  provider_calls: number;
-  summary: string;
-  failure_reason: string | null;
-}
+export type ProofRunSummary = components["schemas"]["ProofRunSummary"];
 
 /** One run with its proofs. `proofs` is a `proof_result` array on the wire. */
-export interface ProofRunDetail extends ProofRunSummary {
-  nonce: string;
-  conversation_id: string | null;
-  user_request_id: string | null;
-  external_run_ref: string | null;
-  replayed_from_run_id: string | null;
-  recording_sha256: string | null;
-  git_sha: string;
-  environment: string;
-  proofs: ProofResultKind[];
-}
+export type ProofRunDetail = components["schemas"]["ProofRunDetail"];
 
-export interface ProofRunsResponse {
-  runs: ProofRunSummary[];
+export type ProofRunsResponse = components["schemas"]["ProofRunsResponse"];
+
+function proofResultFromWire(
+  value: Record<string, unknown>,
+): ProofResultKind {
+  const status =
+    value.status === "passed" ||
+    value.status === "failed" ||
+    value.status === "skipped"
+      ? value.status
+      : undefined;
+  return {
+    __kind: "proof_result",
+    id: typeof value.id === "string" ? value.id : undefined,
+    title: typeof value.title === "string" ? value.title : undefined,
+    detail: typeof value.detail === "string" ? value.detail : undefined,
+    status,
+    observed: isJsonObject(value.observed)
+      ? toJsonRecord(value.observed)
+      : undefined,
+    required: typeof value.required === "boolean" ? value.required : undefined,
+  };
 }
 
 /**
@@ -73,17 +65,19 @@ export interface ProofRunsResponse {
  * of a second, drifting readout (THE CANONICAL COMPONENT LAW).
  */
 export function attestationFromRun(run: ProofRunDetail): ProofAttestation {
-  const proofs = run.proofs ?? [];
+  const proofs = (run.proofs ?? []).map(proofResultFromWire);
   const count = (status: string) =>
     proofs.filter((p) => p.status === status).length;
+  const mode =
+    run.mode === "live" || run.mode === "replay" ? run.mode : undefined;
   return {
     __kind: "proof_attestation",
     verdict:
       run.verdict === "pass" || run.verdict === "fail"
         ? run.verdict
         : "inconclusive",
-    strength: run.mode === "live" ? "live_receipts" : "replay_only",
-    mode: run.mode,
+    strength: mode === "live" ? "live_receipts" : "replay_only",
+    mode,
     summary: run.summary,
     passed: count("passed"),
     failed: count("failed"),
