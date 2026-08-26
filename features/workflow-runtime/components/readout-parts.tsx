@@ -359,7 +359,19 @@ export function InvocationBody({
     // a declared-kind step whose tail is raw JSON shows the arriving
     // silhouette. Prose tails (an agent narrating) stay visible — covering
     // live words with a skeleton would be a downgrade.
-    const tailIsJson = /^[[{]/.test(invocation.textTail.trimStart());
+    //
+    // 🚨 The tail is END-KEEPING (4000-char cap, head cut first), so once the
+    // cap engages the tail starts MID-STRING and a `^[{[]` test fails at the
+    // exact moment it matters — caught live on 2026-08-26: "Structure
+    // knowledge" printed 4000 chars of raw mid-string JSON
+    // (`rupts the Water Cycle","body":"People alter…`) through this branch.
+    // JSON-ness must be detectable from ANY window of the region: a leading
+    // brace still counts, and so does key-colon density anywhere in the text
+    // (two or more `":` markers — prose essentially never has them).
+    const tail = invocation.textTail;
+    const tailIsJson =
+      /^[[{]/.test(tail.trimStart()) ||
+      (tail.match(/"\s*:\s*/g)?.length ?? 0) >= 2;
     if (promisedKind && working && tailIsJson) {
       return (
         <KindSlot
