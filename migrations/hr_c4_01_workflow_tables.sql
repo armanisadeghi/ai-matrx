@@ -100,6 +100,14 @@ do $$ begin
         'allows_withdraw boolean NOT NULL DEFAULT true',
         'allows_resubmit boolean NOT NULL DEFAULT true',
         'requires_reason_on_approve boolean NOT NULL DEFAULT false',
+        -- §2.2 eligibility rule 2 is conditioned on "the flow type marks the requester as an
+        -- interested party (`pay_change` proposed by a manager: the proposing manager does not also
+        -- approve their own proposal)" — a flow-type PROPERTY the spec names in prose and never
+        -- declares as a column. It is one here, defaulting FALSE. Applying the rule unconditionally
+        -- was tried and is an over-tightening defect: an HR owner who FILES a termination on
+        -- somebody else is then removed from the only rung that holds the authority, and the
+        -- request fails `approver_ineligible` with no possible fix. OWED: SPEC-WORKFLOW-ENGINE §1.1.
+        'requester_is_interested_party boolean NOT NULL DEFAULT false',
         $f$channel_policy jsonb NOT NULL DEFAULT '{}'$f$,
         'default_definition_id uuid',
         'is_active boolean NOT NULL DEFAULT true',
@@ -110,6 +118,11 @@ do $$ begin
       p_parents => null);
   end if;
 end $$;
+
+-- the column added after the table first shipped; `create_entity_table` is skipped once the token
+-- is registered, so an idempotent ALTER is the only way a later column reaches a live table.
+alter table hr.workflow_flow_type
+  add column if not exists requester_is_interested_party boolean not null default false;
 
 create unique index if not exists workflow_flow_type_key_uq
   on hr.workflow_flow_type (organization_id, flow_key) where deleted_at is null;
@@ -449,6 +462,31 @@ begin
   end loop;
 end $$;
 
+-- ============================================================ 10a. the instance token must be GRANTABLE
+-- 🚨 FOUND BY PROBE, NOT BY READING. §1.3's approver-reach design writes an `iam.permissions` row on
+-- `hr_workflow_instance`, and the live §6c guard REFUSES a grant whose `resource_type` is not in
+-- `platform.shareable_resource_registry` — with a message that says exactly why (a token stored
+-- there and then silently ignored by `iam.has_access` is the bug the guard exists to stop). Without
+-- this row every step activation would have raised, and §1.3's whole "this is not a new access
+-- mechanism" argument would have been true and inoperative. Same fix, same reason, as HRB-007's
+-- `hr_c3_05a_shareable_roots`.
+--
+-- `is_link_shareable => false`, deliberately: an approval request receives issued step grants and
+-- nothing else. There is no world in which a workflow instance is a public share link.
+insert into platform.shareable_resource_registry
+  (resource_type, schema_name, table_name, id_column, owner_column, display_label,
+   url_path_template, rls_uses_has_permission, is_link_shareable, is_active, notes)
+select 'hr_workflow_instance', 'hr', 'workflow_instance', 'id', 'created_by', 'HR approval request',
+       '/hr/tasks/{id}', true, false, true,
+       'SPEC-WORKFLOW-ENGINE §1.3: the instance is p_visibility => personal, so an approver reaches it only through the iam.permissions row hr.wf_activate_step issues (review_note = auto:wf_step:<step_id>) and deletes when the step closes — a byte-for-byte copy of workspace._sync_task_assignee_grant, which is why this is not a new access primitive (AD-2).'
+where not exists (select 1 from platform.shareable_resource_registry s
+                   where s.resource_type = 'hr_workflow_instance');
+
+update platform.shareable_resource_registry
+   set is_active = true, rls_uses_has_permission = true, is_link_shareable = false
+ where resource_type = 'hr_workflow_instance'
+   and (not is_active or not rls_uses_has_permission or is_link_shareable);
+
 -- ============================================================ 11. hr.workflow_notice — a VIEW
 -- SPEC-NOTIFICATIONS §5.3 (RECORDED DECISION 2). There is no hr_workflow_notice token and nothing
 -- to certify. The engine writes no notice rows; it emits notifications and reads them back here.
@@ -650,4 +688,10 @@ begin
 
   select count(*) into v_n from platform.feature_knob where feature = 'hr.workflow';
   if v_n <> 16 then raise exception 'hr_c4_01: expected 16 hr.workflow knobs, found %', v_n; end if;
+
+  -- the approver-reach lane is inoperative unless the token is grantable (§10a)
+  if not exists (select 1 from platform.shareable_resource_registry
+                  where resource_type = 'hr_workflow_instance' and is_active) then
+    raise exception 'hr_c4_01: hr_workflow_instance is not a registered active shareable resource';
+  end if;
 end $$;

@@ -208,7 +208,10 @@ begin
   -- audit/bookkeeping columns are not material: a `_touch_row` bump is not a change of substance.
   v_row := v_row - 'updated_at' - 'updated_by' - 'version' - 'created_at' - 'created_by'
                  - 'workflow_instance_id';
-  return encode(digest(convert_to(jsonb_pretty(v_row), 'UTF8'), 'sha256'), 'hex');
+  -- core `sha256(bytea)`, not pgcrypto's `digest()`: pgcrypto lives in the `extensions` schema and
+  -- is NOT on this function's pinned search_path, so `digest()` here resolves to nothing at runtime
+  -- while creating perfectly happily. Found by probe, not by reading.
+  return encode(sha256(convert_to(jsonb_pretty(v_row), 'UTF8')), 'hex');
 end $fn$;
 
 comment on function hr.wf_digest_whole_row is
@@ -337,7 +340,15 @@ begin
       p_source_url      => '/hr/tasks/' || inst.id::text || '?step=' || p_step::text,
       p_source_label    => 'HR approvals',
       p_due_date        => st.due_at::date,
-      p_priority        => inst.priority,
+      -- the instance's four-value priority mapped onto workspace.tasks' THREE-value
+      -- `task_priority` enum (low|medium|high, read live). `normal` and `urgent` do not exist
+      -- there; passing them through raised 22P02 and the projection silently swallowed it, which
+      -- is how the projection's own catch block is SUPPOSED to behave — but a projection that
+      -- never lands is still a defect, and only a probe found it.
+      p_priority        => case inst.priority when 'low' then 'low'
+                                              when 'urgent' then 'high'
+                                              when 'high' then 'high'
+                                              else 'medium' end,
       p_assignee_id     => u,
       p_organization_id => inst.organization_id,
       p_metadata        => jsonb_build_object('flow_key', inst.flow_key, 'instance_id', inst.id,
@@ -638,14 +649,11 @@ begin
                             'steps_opened', v_opened);
 end $fn$;
 
--- forward declaration satisfied in file 4; a stub here keeps _wf_route creatable and is REPLACED,
--- not shadowed, by the real join.
-create or replace function hr._wf_join(p_instance uuid)
-returns jsonb language plpgsql security definer set search_path to 'hr','public' as $fn$
-begin
-  return jsonb_build_object('granted', false, 'reason', 'join_not_installed',
-    'detail', 'hr_c4_04 installs the real join; this placeholder must never be the live body');
-end $fn$;
+-- `hr._wf_join` is file 4's — plpgsql resolves callees at RUNTIME, so `_wf_route` creates cleanly
+-- without it. 🚨 A PLACEHOLDER WAS TRIED HERE AND DELETED: re-applying this file after file 4
+-- silently clobbered the real join with the stub, and every instance then sat in `active` forever
+-- with no error anywhere. A forward stub for a function another file owns is a live-body hazard in
+-- any repo where migrations are re-applied, and this one cost an hour.
 
 -- ============================================================ 8. hr.wf_request (§4.2)
 create or replace function hr.wf_request(p_flow_key text, p_target_token text, p_target_id uuid,
@@ -896,7 +904,7 @@ begin
     'hr._wf_grant_step(uuid)', 'hr._wf_revoke_step(uuid)',
     'hr._wf_project_step(uuid)', 'hr._wf_unproject_step(uuid,text)',
     'hr._wf_auto_decide(uuid,jsonb)',
-    'hr.wf_activate_step(uuid,uuid[])', 'hr._wf_route(uuid)', 'hr._wf_join(uuid)',
+    'hr.wf_activate_step(uuid,uuid[])', 'hr._wf_route(uuid)',
     'hr.wf_request(text,text,uuid,uuid,jsonb,uuid,boolean,text)',
     'hr.wf_submit(uuid)'] loop
     execute format('revoke all on function %s from public', f);

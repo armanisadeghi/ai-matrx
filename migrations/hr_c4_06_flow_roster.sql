@@ -98,7 +98,7 @@ insert into hr.workflow_flow_type
   (organization_id, flow_key, label, description, target_token, requester_kind, sensitivity_tier,
    ai_ceiling, validate_fn, digest_fn, conflict_fn, apply_fn, compensate_fn, result_fn,
    on_target_change, on_reject, allows_withdraw, allows_resubmit, channel_policy,
-   is_active, inactive_reason, visibility)
+   requester_is_interested_party, is_active, inactive_reason, visibility)
 select '39c38960-d30c-4840-b0c1-c9960de95582'::uuid, v.flow_key, v.label, v.descr, v.target_token,
        'employment', v.tier, 'advisory',
        null,                                                    -- validate_fn: pillar's (RD 1 of file 3)
@@ -108,6 +108,11 @@ select '39c38960-d30c-4840-b0c1-c9960de95582'::uuid, v.flow_key, v.label, v.desc
        null,                                                    -- compensate_fn: pillar's
        case when v.needs_result then 'hr.wf_result_unimplemented(uuid)'::regprocedure end,
        v.on_change, 'terminate', true, true, v.channels,
+       -- §2.2 eligibility rule 2: the ONLY flows where the requester is an interested party are
+       -- the two the spec names by example — a manager PROPOSING their report's pay or position
+       -- does not also approve their own proposal. Everywhere else the filer is an administrator
+       -- doing their job, and striking them off would be over-tightening (see hr_c4_01's column).
+       v.flow_key in ('pay_change','position_change'),
        v.active, v.inactive_reason, 'public'::platform.visibility
 from (values
  ('leave_request','Leave request','Time off requested by an employee against a leave policy.',
@@ -164,6 +169,13 @@ from (values
 ) as v(flow_key, label, descr, target_token, tier, on_change, channels, active, inactive_reason, needs_result)
 where not exists (select 1 from hr.workflow_flow_type f
                    where f.flow_key = v.flow_key and f.deleted_at is null);
+
+-- §2.2 eligibility rule 2, applied to rows that may already exist from an earlier apply
+update hr.workflow_flow_type
+   set requester_is_interested_party = (flow_key in ('pay_change','position_change'))
+ where organization_id = '39c38960-d30c-4840-b0c1-c9960de95582'::uuid
+   and deleted_at is null
+   and requester_is_interested_party <> (flow_key in ('pay_change','position_change'));
 
 -- ============================================================ 3. the platform-default definitions
 insert into hr.workflow_definition

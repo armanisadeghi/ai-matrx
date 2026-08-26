@@ -82,10 +82,12 @@ begin
                                                'workflow.resolve_failure']) x)
    where role_key = 'hr_admin' and is_builtin and deleted_at is null;
 
+  -- assert the END STATE, not the delta: this migration is idempotent and gets re-applied.
   select count(distinct c) into v_after from hr.access_role, unnest(capabilities) c
-   where deleted_at is null;
-  if v_after <> v_before + 5 then
-    raise exception 'hr_c4_05: expected 5 new capabilities (% -> %)', v_before, v_after;
+   where deleted_at is null and c like 'workflow.%';
+  if v_after <> 5 then
+    raise exception 'hr_c4_05: expected 5 workflow.* capabilities live, found % (was % distinct caps before)',
+      v_after, v_before;
   end if;
   -- §1.4's separation of duties is unchanged: none of these five reads anything.
   if exists (select 1 from hr.access_role

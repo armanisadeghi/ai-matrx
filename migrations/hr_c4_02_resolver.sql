@@ -345,6 +345,7 @@ declare
   v_mgr       uuid;
   v_guard     integer;
   v_seen      uuid[];
+  v_requester_interested boolean;
 begin
   select * into st from hr.workflow_step where id = p_step_id;
   if not found then
@@ -361,6 +362,10 @@ begin
   v_target_tbl := hr._wf_target_table(inst.target_token);
   v_action    := sd.authority_action;
   v_retains   := (hr._knob('hr.workflow','delegation_principal_retains') #>> '{}')::boolean;
+  select f.requester_is_interested_party into v_requester_interested
+    from hr.workflow_flow_type f
+   where f.flow_key = inst.flow_key and f.deleted_at is null
+   order by (f.organization_id = inst.organization_id) desc limit 1;
 
   if v_target_tbl is null then
     return jsonb_build_object('granted', false, 'reason', 'definition_invalid',
@@ -414,8 +419,27 @@ begin
                     and d.source = 'delegated' and d.delegated_from_id = a.id
                     and d.is_active and d.effective_from <= v_at
                     and (d.effective_to is null or d.effective_to >= v_at)))
-           -- 'substitute' is the NEXT-RANK holder in the same scope for the same action (§2.2):
-           -- the rung is reached only when rank-0 emptied, so it deliberately skips the best rank.
+           -- 🚨 THE `authority` RUNG YIELDS ONLY THE BEST RANK, AND `substitute` YIELDS THE REST.
+           -- §2.2's pseudocode reads `order by rank` and returns every match, but that makes the
+           -- `substitute` rung — "the NEXT-RANK holder in the same scope for the same action, used
+           -- when every rank-0 holder is ineligible or absent" — unreachable, because its holders
+           -- are already in the rung above it. Worse, with the default `all` quorum it would make
+           -- every org-scoped backstop holder a MANDATORY co-approver of every ordinary request.
+           -- SPEC-ACCESS §1.3 settles it in the same words from the other side: "the rank+1 holder
+           -- in the same population is a holder's implicit standing substitute". So: authority =
+           -- min rank, substitute = strictly greater. OWED: SPEC-WORKFLOW-ENGINE §2.2's `authority`
+           -- rung records the rank restriction.
+           and (v_rung not in ('authority','fixed_authority_scope')
+                or a.rank = (select min(b.rank) from hr.approval_authority b
+                              where b.organization_id = a.organization_id
+                                and b.action_type = a.action_type and b.is_active
+                                and b.effective_from <= v_at
+                                and (b.effective_to is null or b.effective_to >= v_at)
+                                and (v_subject is null
+                                     or hr.population_contains(b.scope_kind, b.scope_id, v_subject, v_at,
+                                          case when b.holder_kind = 'employment'
+                                               then b.holder_id::uuid else null end,
+                                          b.scope_employment_ids))))
            and (v_rung <> 'substitute'
                 or a.rank > (select min(b.rank) from hr.approval_authority b
                               where b.organization_id = a.organization_id
@@ -551,9 +575,13 @@ begin
             v_refused := v_refused || jsonb_build_object('employment_id', c, 'why', 'is_subject');
             continue;
           end if;
-          -- 2. the requester, when requester <> subject and this rung is not the self-step
+          -- 2. the requester, when requester <> subject AND THE FLOW TYPE MARKS THE REQUESTER AS
+          -- AN INTERESTED PARTY (§2.2 rule 2 — `pay_change` proposed by a manager). Applying this
+          -- unconditionally is an over-tightening defect: the HR owner who FILES a termination is
+          -- then struck off the only rung holding termination_approve. Proven by probe.
           if inst.requester_employment_id is not null and c = inst.requester_employment_id
              and inst.requester_employment_id is distinct from v_subject
+             and coalesce(v_requester_interested, false)
              and v_rung <> 'requester' and not sd.allows_self then
             v_refused := v_refused || jsonb_build_object('employment_id', c, 'why', 'is_requester');
             continue;
