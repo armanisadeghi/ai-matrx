@@ -48,7 +48,7 @@ export function TaskSnoozeButton({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1 h-6 px-1.5 rounded-md border text-[10px] font-medium transition-colors hover:bg-accent",
+            "inline-flex items-center gap-1 h-6 max-lg:h-11 px-1.5 rounded-md border text-[10px] font-medium transition-colors hover:bg-accent",
             isSnoozed
               ? "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30"
               : "border-transparent text-muted-foreground/60 hover:text-foreground",

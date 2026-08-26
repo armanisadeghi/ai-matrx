@@ -60,10 +60,10 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   compareTimestamps,
   formatAbsoluteDate,
-  formatReadableDate,
   formatRelativeTime,
   toEpochMs,
 } from "@/utils/datetime";
+import { formatDateOnly } from "@/utils/dateOnly";
 import type { TaskWithProject } from "@/features/tasks/types";
 
 type SortKey =
@@ -864,7 +864,7 @@ export default function TasksTableView() {
                       )}
                     >
                       {task.dueDate
-                        ? formatReadableDate(task.dueDate, {
+                        ? formatDateOnly(task.dueDate, {
                             month: "short",
                             day: "numeric",
                           })

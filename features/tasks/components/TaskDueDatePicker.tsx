@@ -46,7 +46,7 @@ export function TaskDueDatePicker({
       <button
         type="button"
         className={cn(
-          "h-8 w-full inline-flex items-center gap-1.5 bg-card border border-border rounded-md px-2 text-xs outline-none transition-colors hover:border-foreground/30 focus:border-primary/60",
+          "h-8 max-lg:h-11 w-full inline-flex items-center gap-1.5 bg-card border border-border rounded-md px-2 text-xs outline-none transition-colors hover:border-foreground/30 focus:border-primary/60",
           value
             ? overdue
               ? "text-red-600 dark:text-red-400 font-medium"
@@ -70,7 +70,7 @@ export function TaskDueDatePicker({
         type="button"
         onKeyDown={onTriggerKeyDown}
         className={cn(
-          "inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-[12px] transition-colors hover:bg-accent",
+          "inline-flex items-center gap-1 h-6 max-lg:h-11 px-1.5 rounded-md text-[12px] transition-colors hover:bg-accent",
           value
             ? overdue
               ? "text-red-600 dark:text-red-400 font-medium"

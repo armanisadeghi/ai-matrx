@@ -2,7 +2,7 @@
 
 **Status:** `active` — both features in production
 **Tier:** `2`
-**Last updated:** `2026-08-25`
+**Last updated:** `2026-08-26`
 
 > Combined doc. **Projects and Tasks are first-class _containers_** (like orgs and scopes): nearly every resource table carries both a `project_id` and a `task_id` column, so "what belongs to this project/task" is a direct FK query — the same shape as the org workspace's `organization_id`. Tasks nest under projects (`project_id`) and under each other (`parent_task_id`). They share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
@@ -142,6 +142,7 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
 
 ## Change log
 
+- `2026-08-26` — **Task lifecycle verification closed the remaining responsive/date seams.** `TasksTableView` formats `YYYY-MM-DD` values through `formatDateOnly`, so the table cannot shift a day through UTC parsing; status, snooze, start/due-date, and repeat controls retain 44px targets through tablet widths while preserving compact desktop chrome.
 - `2026-08-26` — **`TaskListPane.tsx` (`/tasks` list, rows view) wired to the v3 menu.** One `NonEditableContextMenu` wraps the row list; `resolveContextOnOpen` reads the right-clicked row's `data-task-row-id` and reuses `createTasksExtraSections` from `agent-context/buildTasksContextData.ts` — the SAME action set `TaskEditorBody.tsx` already defines — for Complete/Reopen and Delete, plus a new Duplicate item (via `createTaskThunk`); per-row `__entity` (`task` token) lights up Attach To. The table view (`TasksTableView.tsx`) is still unwired — out of this pass's scope.
 - `2026-08-25` — `/tasks` now mounts a list-level surface runtime and v3 context menu, so the declared visible-task/project/count/search values exist even before an editor opens. The status write target now reads back through an exact live lifecycle draft twin while preserving the separate derived attention status. The route has a geometry-matched loading skeleton; task/project names in the row list are canonical doors; desktop list actions use official buttons; mobile actions preserve 44px touch targets; and date-only row labels no longer shift through UTC parsing. Independent browser certification is pending.
 - `2026-08-25` — Mobile `/tasks` reached lifecycle parity: its overflow renders the canonical smart-view registry and counts, task details reuse Status / Start date / Repeat / Snooze / provenance controls, selected details survive view-changing edits, all new touch targets are 44px, and date-only list labels use `formatDateOnly` instead of UTC parsing.

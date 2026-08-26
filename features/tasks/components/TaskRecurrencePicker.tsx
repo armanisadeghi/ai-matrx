@@ -44,7 +44,7 @@ export function TaskRecurrencePicker({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1 h-6 px-1.5 rounded-md border text-[10px] font-medium transition-colors hover:bg-accent",
+            "inline-flex items-center gap-1 h-6 max-lg:h-11 px-1.5 rounded-md border text-[10px] font-medium transition-colors hover:bg-accent",
             description
               ? "text-foreground border-border bg-muted/40"
               : "border-transparent text-muted-foreground/50 hover:text-foreground",

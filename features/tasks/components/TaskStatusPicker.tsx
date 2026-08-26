@@ -57,7 +57,7 @@ export function TaskStatusPicker({
               onClick={() => onChange(s)}
               title={meta.description}
               className={cn(
-                "h-6 px-2 rounded text-[11px] font-medium transition-colors inline-flex items-center gap-1",
+                "h-6 max-lg:min-h-11 px-2 rounded text-[11px] font-medium transition-colors inline-flex items-center gap-1",
                 active
                   ? cn("border", meta.chipClass)
                   : "text-muted-foreground hover:text-foreground",
