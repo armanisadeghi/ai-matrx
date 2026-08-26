@@ -567,6 +567,13 @@ export function TaskEditorBody({
               );
             }}
             contextData={contextData}
+            contentSource={{ type: "raw" }}
+            entity={{
+              type: "task",
+              id: taskId,
+              title: effective.title,
+              resourceType: "task",
+            }}
           >
             <ProTextarea
               ref={descriptionRef}
@@ -747,6 +754,13 @@ export function TaskEditorBody({
                 contextData={{
                   ...contextData,
                   content: comments.map((c) => c.body).join("\n\n"),
+                }}
+                contentSource={{ type: "raw" }}
+                entity={{
+                  type: "task",
+                  id: taskId,
+                  title: effective.title,
+                  resourceType: "task",
                 }}
               >
                 <div className="mb-2 space-y-1.5 pl-1.5">

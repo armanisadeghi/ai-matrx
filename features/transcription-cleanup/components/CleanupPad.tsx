@@ -2563,6 +2563,7 @@ export default function CleanupPad({
           getTextarea={() => transcriptTaRef.current}
           getApplicationScope={transcriptGetScope}
           contextData={menuContextData("transcript", transcriptDisplay)}
+          contentSource={{ type: "raw" }}
           className="flex min-h-0 flex-1 flex-col"
           {...transcriptHandlers}
         >
@@ -2663,6 +2664,7 @@ export default function CleanupPad({
           getTextarea={() => cleanTaRef.current}
           getApplicationScope={cleanGetScope}
           contextData={menuContextData("clean", responseValue)}
+          contentSource={{ type: "raw" }}
           className="flex min-h-0 flex-1 flex-col"
           {...cleanHandlers}
         >
@@ -2873,6 +2875,7 @@ export default function CleanupPad({
           getTextarea={() => customTaRef.current}
           getApplicationScope={customGetScope}
           contextData={menuContextData("custom", activeSlotValue)}
+          contentSource={{ type: "raw" }}
           className="flex min-h-0 flex-1 flex-col"
           {...customHandlers}
         >

@@ -93,9 +93,21 @@ const NON_TEXT_INPUT_TYPES = new Set([
 function yieldsToNativeTextMenu(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable) return true;
-  if (target instanceof HTMLTextAreaElement) return true;
+  // A read-only or disabled field is NOT a live text field: its native menu
+  // offers no Paste, no spellcheck, no autofill — nothing v3 lacks — so
+  // yielding there trades a rich menu for a poorer one. Found live on the
+  // notes tab strip (2026-08-29): the active tab's rename <input> swallowed
+  // the tab's entire v3 menu even while the user wasn't renaming. Fields that
+  // are only sometimes editable should render readOnly until editing intent
+  // (e.g. focus) — then the yield correctly returns while they type.
+  if (target instanceof HTMLTextAreaElement)
+    return !target.readOnly && !target.disabled;
   if (target instanceof HTMLInputElement)
-    return !NON_TEXT_INPUT_TYPES.has(target.type);
+    return (
+      !NON_TEXT_INPUT_TYPES.has(target.type) &&
+      !target.readOnly &&
+      !target.disabled
+    );
   return false;
 }
 

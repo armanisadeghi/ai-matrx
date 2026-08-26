@@ -167,10 +167,32 @@ export function TreeNode({
         ]
       : [];
 
+  // A list or item node is a real record with a registered entity type
+  // (structured_list / udt_structured_list_items) — Attach To / Share for the
+  // list, Attach To only for an item (items aren't in the share registry). A
+  // group node is a label, not a row of its own, so it stays entity-less.
+  const entity =
+    node.type === "list"
+      ? {
+          type: "structured_list" as const,
+          id: node.id,
+          title: node.label,
+          resourceType: "structured_list" as const,
+        }
+      : node.type === "item"
+        ? {
+            type: "udt_structured_list_items" as const,
+            id: node.id,
+            title: node.label,
+          }
+        : undefined;
+
   return (
     <NonEditableContextMenu
-      sourceFeature="files"
-      contextData={{ content: node.label }}
+      sourceFeature="udt"
+      contextData={{ content: node.description ?? node.label }}
+      contentSource={{ type: "raw" }}
+      entity={entity}
       extraSections={extraSections}
       enableFloatingIcon={false}
     >

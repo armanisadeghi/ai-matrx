@@ -545,6 +545,13 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
         {isActive ? (
           <input
             className="bg-transparent outline-none border-none min-w-0 w-full text-[0.6875rem] font-medium text-foreground truncate cursor-text"
+            // readOnly until focus: a live (editable) text input makes the v3
+            // menu yield to the browser's native menu, which swallowed the
+            // whole tab menu on the active tab. Focus (the same single click
+            // that always started a rename) lifts readOnly, so typing works
+            // exactly as before — and while actually renaming, right-click
+            // correctly yields to the native text menu.
+            readOnly={!titleFocused}
             value={localLabel}
             onChange={handleTitleChange}
             onClick={(e) => {

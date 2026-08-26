@@ -529,7 +529,7 @@ const SQL_ENTRIES: ToolLifecycleEntry[] = [
 // `note` tool — Redux/Supabase-backed renderer. Uses REAL note ids owned by
 // the local test user (admin@admin.com) so the card hydrates live content,
 // the Edit/Preview toggle, stats, and "Open in Notes" against actual data.
-// Log in via /login (admin@admin.com / Password1234#) for these to populate.
+// Log in via /login (admin@admin.com / <see AI_ADMIN_PASSWORD in .env>) for these to populate.
 const NOTE_ENTRIES: ToolLifecycleEntry[] = [
   entry({
     callId: "note-compact",
