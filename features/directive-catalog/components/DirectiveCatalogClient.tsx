@@ -48,7 +48,9 @@ export function DirectiveCatalogClient() {
   const activeServer = useAppSelector(selectActiveServer);
   const { catalog, isLoading, error, baseUrl, lastUpdatedAt, refresh } =
     useDirectiveCatalog(POLL_MS);
-  const [selection, setSelection] = useState<DirectiveShapeSelection | null>(null);
+  const [selection, setSelection] = useState<DirectiveShapeSelection | null>(
+    null,
+  );
   const [busyToggle, setBusyToggle] = useState<string | null>(null);
 
   async function toggleWritable(noun: NounDirectives, enabled: boolean) {
@@ -81,30 +83,33 @@ export function DirectiveCatalogClient() {
   return (
     <div className="flex h-full flex-col">
       {/* Header strip */}
-      <div className="flex items-center gap-3 border-b border-border bg-card px-3 py-2">
-        <div className="flex flex-col">
+      <div className="flex min-w-0 items-start gap-2 border-b border-border bg-card px-3 py-2 sm:items-center sm:gap-3">
+        <div className="flex min-w-0 flex-col">
           <h1 className="text-sm font-semibold text-foreground">
             Matrx Directive Catalog
           </h1>
-          <span className="text-xs text-muted-foreground">
+          <span className="hidden text-xs text-muted-foreground sm:block">
             Every noun × every verb, live from the backend
           </span>
         </div>
 
-        <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-2 text-xs text-muted-foreground sm:gap-3">
+          <span
+            className="inline-flex items-center gap-1"
+            aria-label={`Active server: ${activeServer}${baseUrl ? `, ${baseUrl}` : ", no base URL"}`}
+          >
             <Server className="h-3.5 w-3.5" />
             <span className="font-medium text-foreground">{activeServer}</span>
             {baseUrl ? (
-              <span className="font-mono">{baseUrl}</span>
+              <span className="hidden font-mono xl:inline">{baseUrl}</span>
             ) : (
-              <span className="text-amber-600 dark:text-amber-400">
+              <span className="hidden text-amber-600 dark:text-amber-400 sm:inline">
                 no base URL
               </span>
             )}
           </span>
           {lastUpdatedAt && (
-            <span>
+            <span className="hidden lg:inline">
               updated {new Date(lastUpdatedAt).toLocaleTimeString()}
             </span>
           )}
@@ -114,12 +119,13 @@ export function DirectiveCatalogClient() {
             size="sm"
             onClick={refresh}
             disabled={isLoading}
-            className="gap-1"
+            className="h-11 min-w-11 gap-1 px-2 lg:h-8 lg:min-w-0"
+            aria-label="Refresh directive catalog"
           >
             <RefreshCw
               className={isLoading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"}
             />
-            Refresh
+            <span className="sr-only lg:not-sr-only">Refresh</span>
           </Button>
         </div>
       </div>

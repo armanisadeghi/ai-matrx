@@ -59,14 +59,15 @@ export function StateCell({
   const Icon = meta.Icon;
   if (onToggle || onInspect) {
     return (
-      <span className="flex h-6 w-full items-center gap-0.5">
+      <span className="flex h-11 w-full items-center gap-1 lg:h-6 lg:gap-0.5">
         <button
           type="button"
           title={toggleLabel ?? meta.label}
+          aria-label={toggleLabel ?? meta.label}
           disabled={!onToggle || busy}
           onClick={onToggle}
           className={cn(
-            "inline-flex h-5 min-w-0 flex-1 items-center justify-center rounded-sm transition-colors",
+            "inline-flex h-11 min-w-11 flex-1 items-center justify-center rounded-sm transition-colors lg:h-5 lg:min-w-0",
             meta.bg,
             meta.text,
             onToggle && "hover:ring-1 hover:ring-current",
@@ -82,8 +83,9 @@ export function StateCell({
           <button
             type="button"
             title={inspectLabel ?? "Inspect shape"}
+            aria-label={inspectLabel ?? "Inspect shape"}
             onClick={onInspect}
-            className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:h-5 lg:w-5"
           >
             <Braces className="h-3 w-3" />
           </button>
@@ -112,7 +114,7 @@ export function StateBadge({ state }: { state: DirectiveState }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-border px-2 py-0.5 text-xs font-medium",
         meta.bg,
         meta.text,
       )}

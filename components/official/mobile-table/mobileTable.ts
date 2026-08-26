@@ -69,6 +69,18 @@ export const MOBILE_TABLE_FROZEN = [
 ].join(" ");
 
 /**
+ * The same frozen identity-column treatment through the tablet breakpoint.
+ * Use this when a wide matrix still collapses at 768px and its tablet controls
+ * are intentionally touch-sized. Desktop layout resumes at `lg`.
+ */
+export const MOBILE_TABLE_FROZEN_THROUGH_TABLET = [
+  "w-max min-w-full max-w-none lg:w-full lg:min-w-0 lg:max-w-full",
+  "max-lg:[&_th]:whitespace-nowrap max-lg:[&_td]:whitespace-nowrap",
+  "max-lg:[&_thead_tr>*:first-child]:sticky max-lg:[&_thead_tr>*:first-child]:left-0 max-lg:[&_thead_tr>*:first-child]:z-20 max-lg:[&_thead_tr>*:first-child]:bg-muted",
+  "max-lg:[&_tbody_tr>*:first-child]:sticky max-lg:[&_tbody_tr>*:first-child]:left-0 max-lg:[&_tbody_tr>*:first-child]:z-10 max-lg:[&_tbody_tr>*:first-child]:bg-card",
+].join(" ");
+
+/**
  * Same treatment, but freezing the SECOND column — for the very common shape
  * where a narrow control column (expand chevron, row index, icon) sits in front
  * of the identity column. The narrow first column simply scrolls under the

@@ -33,9 +33,7 @@ import {
   type NounDirectives,
 } from "@/features/directive-catalog/types";
 import type { DirectiveShapeSelection } from "@/features/directive-catalog/components/DirectiveShapePanel";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+import { MOBILE_TABLE_FROZEN_THROUGH_TABLET } from "@/components/official/mobile-table/mobileTable";
 
 const ALL_FAMILIES = "__all__";
 
@@ -101,19 +99,23 @@ export function DirectiveCatalogGrid({
   return (
     <div className="flex h-full flex-col">
       {/* Filter bar + legend */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-3 py-2">
-        <div className="relative">
+      <div className="grid grid-cols-2 items-center gap-2 border-b border-border bg-card px-3 py-2 sm:flex sm:flex-wrap">
+        <div className="relative col-span-2 w-full sm:w-auto">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search noun / table…"
-            className="h-8 w-56 pl-7 text-sm"
+            aria-label="Search directive nouns and tables"
+            className="h-11 w-full pl-7 text-base sm:w-56 lg:h-8 lg:text-sm"
           />
         </div>
 
         <Select value={familyFilter} onValueChange={setFamilyFilter}>
-          <SelectTrigger className="h-8 w-56 text-sm">
+          <SelectTrigger
+            className="h-11 w-full text-base sm:w-56 lg:h-8 lg:text-sm"
+            aria-label="Filter directive nouns by family"
+          >
             <SelectValue placeholder="All families" />
           </SelectTrigger>
           <SelectContent>
@@ -126,28 +128,36 @@ export function DirectiveCatalogGrid({
           </SelectContent>
         </Select>
 
-        <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground lg:min-h-0">
           <Checkbox
             checked={writableOnly}
             onCheckedChange={(checked) => setWritableOnly(checked === true)}
+            className="h-6 w-6 lg:h-4 lg:w-4"
           />
           Writable only
         </label>
 
-        <span className="text-xs text-muted-foreground">
-          {filtered.length} of {catalog.nouns.length} nouns
-        </span>
+        <div className="col-span-2 flex items-center justify-between gap-2 sm:contents">
+          <span className="text-xs text-muted-foreground">
+            {filtered.length} of {catalog.nouns.length} nouns
+          </span>
 
-        <div className="ml-auto flex items-center gap-2">
-          <StateBadge state="yes" />
-          <StateBadge state="planned" />
-          <StateBadge state="no" />
+          <div className="flex shrink-0 items-center gap-2 sm:ml-auto">
+            <StateBadge state="yes" />
+            <StateBadge state="planned" />
+            <StateBadge state="no" />
+          </div>
         </div>
       </div>
 
       {/* The matrix */}
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className={cn("border-collapse text-sm", MOBILE_TABLE_FROZEN)}>
+        <table
+          className={cn(
+            "border-collapse text-sm",
+            MOBILE_TABLE_FROZEN_THROUGH_TABLET,
+          )}
+        >
           <thead className="sticky top-0 z-10 bg-card">
             <tr className="border-b border-border text-left">
               <th className="px-3 py-1.5 font-medium text-muted-foreground">
@@ -217,7 +227,9 @@ function CustomActionsSection({
   const customActions = catalog.actions ?? [];
   const q = query.trim().toLowerCase();
   const visible = q
-    ? customActions.filter((entry) => `${entry.name} ${entry.doc ?? ""}`.toLowerCase().includes(q))
+    ? customActions.filter((entry) =>
+        `${entry.name} ${entry.doc ?? ""}`.toLowerCase().includes(q),
+      )
     : customActions;
   if (visible.length === 0) return null;
   return (
@@ -225,18 +237,30 @@ function CustomActionsSection({
       <div className="bg-muted/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Custom Actions (Plane 2) &amp; legacy Directives
       </div>
-      <table className={cn("border-collapse text-sm", MOBILE_TABLE_FROZEN)}>
+      <table
+        className={cn(
+          "border-collapse text-sm",
+          MOBILE_TABLE_FROZEN_THROUGH_TABLET,
+        )}
+      >
         <tbody>
           {visible.map((f) => (
-            <tr
-              key={f.slug}
-              className="cursor-pointer border-b border-border/60 transition-colors hover:bg-accent/40"
-              onClick={() => onInspect({ kind: "custom_action", customAction: f })}
-            >
-              <td className="w-64 px-3 py-1 font-mono text-xs font-medium text-foreground">
-                {f.name}
+            <tr key={f.slug} className="border-b border-border/60">
+              <td className="w-64 font-mono text-xs font-medium text-foreground">
+                <button
+                  type="button"
+                  className="min-h-11 w-full px-3 py-2 text-left transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  onClick={() =>
+                    onInspect({ kind: "custom_action", customAction: f })
+                  }
+                  aria-label={`Inspect custom action ${f.name}`}
+                >
+                  {f.name}
+                </button>
               </td>
-              <td className="px-3 py-1 text-xs text-muted-foreground">{f.doc}</td>
+              <td className="px-3 py-2 text-xs text-muted-foreground">
+                {f.doc}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -310,8 +334,7 @@ function DirectiveStateCell({
   onInspect: (selection: DirectiveShapeSelection) => void;
 }) {
   const state = noun[verb];
-  const writeVerb =
-    verb === "create" || verb === "update" || verb === "delete";
+  const writeVerb = verb === "create" || verb === "update" || verb === "delete";
   const canToggle = writeVerb && state !== "no";
   const enabled = noun.create === "yes" || noun.update === "yes";
   const schema = noun.schemas?.[verb];
@@ -320,18 +343,14 @@ function DirectiveStateCell({
     <StateCell
       state={state}
       busy={busy}
-      onToggle={
-        canToggle ? () => onToggleWritable(noun, !enabled) : undefined
-      }
+      onToggle={canToggle ? () => onToggleWritable(noun, !enabled) : undefined}
       toggleLabel={
         canToggle
           ? `${enabled ? "Disable" : "Enable"} generic write Directives for ${noun.noun}`
           : undefined
       }
       onInspect={
-        schema
-          ? () => onInspect({ kind: "directive", noun, verb })
-          : undefined
+        schema ? () => onInspect({ kind: "directive", noun, verb }) : undefined
       }
       inspectLabel={`Inspect ${verb}:${noun.noun} shape`}
     />

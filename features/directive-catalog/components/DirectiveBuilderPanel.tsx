@@ -186,7 +186,8 @@ export function DirectiveBuilderPanel({
     if (!nounName) return null;
     if (isReference)
       return buildDirectiveEnvelope(verb, nounName, currentReferenceFields);
-    return buildKindDirective(buildDirectiveSlug(verb, nounName),
+    return buildKindDirective(
+      buildDirectiveSlug(verb, nounName),
       payloadOk ? [parsed.value] : [],
     );
   }, [
@@ -326,7 +327,10 @@ export function DirectiveBuilderPanel({
               if (isDirectiveVerb(value)) handleVerbChange(value);
             }}
           >
-            <SelectTrigger className="h-8 text-sm">
+            <SelectTrigger
+              className="h-11 text-base lg:h-8 lg:text-sm"
+              aria-label="Directive verb"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -341,7 +345,10 @@ export function DirectiveBuilderPanel({
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted-foreground">Noun</label>
           <Select value={nounName} onValueChange={handleNounChange}>
-            <SelectTrigger className="h-8 text-sm">
+            <SelectTrigger
+              className="h-11 text-base lg:h-8 lg:text-sm"
+              aria-label="Directive noun"
+            >
               <SelectValue placeholder="Select a noun" />
             </SelectTrigger>
             <SelectContent>
@@ -399,7 +406,7 @@ export function DirectiveBuilderPanel({
                     onChange={(e) => setField(f.key, e.target.value)}
                     placeholder={`Select or enter ${nounName}.${f.key}`}
                     className={cn(
-                      "h-8 min-w-0 flex-1 font-mono text-sm",
+                      "h-11 min-w-0 flex-1 font-mono text-base lg:h-8 lg:text-sm",
                       invalid && "border-red-500 focus-visible:ring-red-500",
                     )}
                   />
@@ -408,7 +415,7 @@ export function DirectiveBuilderPanel({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-8 shrink-0 gap-1 px-2"
+                      className="h-11 shrink-0 gap-1 px-3 lg:h-8 lg:px-2"
                       onClick={() => void chooseIdentity(f.key, picker)}
                       aria-label={`Search ${picker.labelPlural} for ${f.label}`}
                     >
@@ -445,7 +452,7 @@ export function DirectiveBuilderPanel({
               variant="ghost"
               size="sm"
               onClick={handleCopy}
-              className="h-7 gap-1 text-xs"
+              className="h-11 gap-1 text-xs lg:h-7"
             >
               {copied ? (
                 <Check className="h-3.5 w-3.5" />
@@ -469,7 +476,7 @@ export function DirectiveBuilderPanel({
             size="sm"
             disabled={!canLiveRender}
             onClick={() => setRenderNonce((n) => n + 1)}
-            className="h-8 w-fit gap-1"
+            className="h-11 w-fit gap-1 lg:h-8"
           >
             <Play className="h-3.5 w-3.5" />
             Render live
@@ -512,7 +519,7 @@ export function DirectiveBuilderPanel({
               onChange={(e) => setWritePayload(e.target.value)}
               spellCheck={false}
               className={cn(
-                "min-h-[120px] font-mono text-xs",
+                "min-h-[120px] font-mono text-base lg:text-xs",
                 payloadError && "border-red-500 focus-visible:ring-red-500",
               )}
               placeholder={writePayloadPlaceholder}
@@ -522,7 +529,7 @@ export function DirectiveBuilderPanel({
             )}
           </div>
 
-          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <label className="flex min-h-11 items-center gap-2 text-xs text-muted-foreground">
             <Checkbox
               checked={force}
               onCheckedChange={(v) => setForce(v === true)}
@@ -536,7 +543,7 @@ export function DirectiveBuilderPanel({
               size="sm"
               disabled={!canExecute}
               onClick={handleExecute}
-              className="h-8 w-fit gap-1"
+              className="h-11 w-fit gap-1 lg:h-8"
             >
               {executing ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

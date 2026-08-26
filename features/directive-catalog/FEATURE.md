@@ -36,6 +36,7 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 - **Envelope render (the "test it" payoff):** `reference`/`view` with state `yes` renders LIVE through the canonical `MatrxEnvelopeBlock` + `referenceResolvers.ts` from `features/matrx-envelope/` — the same reference-chip renderer chat uses (resolves the value from Supabase, opens the entity on click). No second renderer.
 - **Identity selection:** searchable fields reuse `RecordReferencePicker` + the RLS-aware `reference_search_candidates` path; files use `openFilePicker`. The ephemeral `directiveReferencePickerWindow` returns selection through `callbackManager`; Redux carries no callbacks or chosen-record state.
 - **Reference examples stay derived:** `referenceFieldsForSpecs` projects only the current noun's server-declared fields and fills missing values with `<noun.field>` placeholders. Changing noun clears prior ids; selected records render through `EntityRef` with open/new-tab/peek doors.
+- **Phone/tablet layout stays deliberate:** compact header metadata, 44 px filter/builder/action controls, and `MOBILE_TABLE_FROZEN_THROUGH_TABLET` horizontal scrolling keep noun identity visible without collapsing verb columns.
 - Component library: `Select`, `Input`, `Button`, `Badge`; Lucide icons; semantic tokens.
 
 ## Execute (writes)
@@ -77,6 +78,8 @@ alias map. Consequences here:
   reference resolvers derive from.
 
 ## Change Log
+
+- 2026-08-25 — Made the phone catalog intentional: compacted server metadata, raised interactive targets to 44 px, named icon-only actions, and preserved the frozen-noun horizontal matrix.
 
 - 2026-08-23 — Synchronized the unified directive grammar: `directive_version`
   replaces the retired envelope version, verbs derive from noun capabilities, Kind
